@@ -1,4 +1,4 @@
-import { Skeleton } from '@/components/ui/Skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Filter, Target, Activity, Brain } from 'lucide-react';
 
 export function ReportsSkeleton() {

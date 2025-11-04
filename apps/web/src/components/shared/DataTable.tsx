@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Skeleton } from "@/components/ui/Skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Column<T> {
   key: keyof T;

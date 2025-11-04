@@ -1,4 +1,4 @@
-import { Skeleton } from '@/components/ui/Skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Users, UserCheck, Building, Search } from 'lucide-react';
 
 export function UserManagementSkeleton() {

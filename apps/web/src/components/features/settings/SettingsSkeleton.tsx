@@ -1,4 +1,4 @@
-import { Skeleton } from '@/components/ui/Skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Calendar, Plus } from 'lucide-react';
 
 export function SettingsSkeleton() {
