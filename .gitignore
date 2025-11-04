@@ -143,7 +143,14 @@ dmypy.json
 *.p12
 *.pfx
 
+# ===========================
+# Database files
+# ===========================
+apps/api/test.db
+
+# ===========================
 # Playwright
+# ===========================
 /test-results/
 /playwright-report/
 /blob-report/

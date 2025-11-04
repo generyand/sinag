@@ -1,19 +1,30 @@
 import { defineConfig } from 'vitest/config';
-import { fileURLToPath } from 'node:url';
-import { resolve } from 'node:path';
+import react from '@vitejs/plugin-react';
+import path from 'path';
 
 export default defineConfig({
-  resolve: {
-    alias: {
-      '@': resolve(fileURLToPath(new URL('.', import.meta.url)), 'src'),
-    },
-  },
+  plugins: [react()],
   test: {
     environment: 'jsdom',
-    setupFiles: ['./vitest.setup.ts'],
     globals: true,
-    include: ['src/**/*.test.{ts,tsx}', 'src/**/__tests__/**/*.{ts,tsx}', 'src/components/**/*.test.{ts,tsx}', 'src/components/**/__tests__/**/*.{ts,tsx}', 'src/hooks/**/*.test.{ts,tsx}', 'src/hooks/**/__tests__/**/*.{ts,tsx}', 'src/**/validation/**/*.test.{ts,tsx}', '**/__tests__/**/*.{ts,tsx}'],
+    setupFiles: ['./vitest.setup.ts'],
+    css: true,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/',
+        'vitest.setup.ts',
+        '**/*.config.{ts,js}',
+        '**/types/**',
+      ],
+    },
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      '@vantage/shared': path.resolve(__dirname, '../../packages/shared/src/generated/index.ts'),
+    },
+    conditions: ['import', 'module', 'node', 'default'],
   },
 });
-
-

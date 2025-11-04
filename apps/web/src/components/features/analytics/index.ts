@@ -8,6 +8,7 @@ export * from "./AssessorAnalyticsUtils";
 export * from "./AssessorAnalyticsData";
 
 // Components
+export { BarangayMap } from "./BarangayMap";
 export { GlobalFilter } from "./GlobalFilter";
 export { PerformanceOverviewWidget } from "./PerformanceOverviewWidget";
 export { PerformanceHotspotsWidget } from "./PerformanceHotspotsWidget";

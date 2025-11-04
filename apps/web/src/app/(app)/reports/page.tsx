@@ -1,137 +1,106 @@
 "use client";
 
-import { ComplianceBadge } from "@/components/features/reports";
+import { useState } from "react";
 import { PageHeader } from "@/components/shared";
-import { useGetAssessmentsList } from "@vantage/shared";
-import { AssessmentStatus } from "@vantage/shared/src/generated/schemas/assessments";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  FilterControls,
+  VisualizationGrid,
+  ExportControls,
+} from "@/components/features/reports";
+import { useGetAnalyticsReports } from "@vantage/shared";
 
 export default function ReportsPage() {
-  // Fetch validated assessments
-  const {
-    data: assessments,
-    isLoading,
-    error,
-  } = useGetAssessmentsList({
-    status: AssessmentStatus.Validated,
+  // Filter state
+  const [filters, setFilters] = useState({
+    cycle_id: undefined as number | undefined,
+    start_date: undefined as string | undefined,
+    end_date: undefined as string | undefined,
+    governance_area: undefined as string[] | undefined,
+    barangay_id: undefined as number[] | undefined,
+    status: undefined as string | undefined,
+    page: 1,
+    page_size: 50,
   });
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background p-8">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="h-8 bg-muted rounded animate-pulse" />
-          <div className="grid grid-cols-1 gap-4">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-24 bg-muted rounded animate-pulse" />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Fetch reports data with filters
+  const { data, isLoading, error } = useGetAnalyticsReports({
+    cycle_id: filters.cycle_id,
+    start_date: filters.start_date,
+    end_date: filters.end_date,
+    governance_area: filters.governance_area,
+    barangay_id: filters.barangay_id,
+    status: filters.status,
+    page: filters.page,
+    page_size: filters.page_size,
+  });
 
+  // Handle filter changes - triggers automatic data re-fetch via TanStack Query
+  const handleFilterChange = (newFilters: typeof filters) => {
+    setFilters(newFilters);
+  };
+
+  // Error state
   if (error) {
     return (
       <div className="min-h-screen bg-background p-8">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto space-y-6">
           <PageHeader
-            title="Reports"
-            description={`Error loading reports: ${error.message}`}
+            title="Reports & Visualizations"
+            description="Analytics and reporting dashboard with interactive visualizations"
           />
+
+          <Alert variant="destructive">
+            <AlertDescription>
+              Failed to load reports data: {error.message || "Unknown error"}
+            </AlertDescription>
+          </Alert>
         </div>
       </div>
     );
   }
+
+  // Get user role (TODO: Get from actual auth context)
+  const userRole = "MLGOO_DILG";
 
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        <PageHeader
-          title="Assessment Reports"
-          description="View SGLGB compliance status for all validated barangay assessments"
-        />
+        {/* Page Header with Export Controls */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <PageHeader
+            title="Reports & Visualizations"
+            description="Analytics and reporting dashboard with interactive visualizations"
+          />
 
-        {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-card border border-border rounded-lg p-6">
-            <h3 className="text-sm font-medium text-muted-foreground mb-2">
-              Total Assessments
-            </h3>
-            <p className="text-3xl font-bold">{assessments?.length || 0}</p>
-          </div>
-
-          <div className="bg-card border border-border rounded-lg p-6">
-            <h3 className="text-sm font-medium text-muted-foreground mb-2">
-              Passed Compliance
-            </h3>
-            <p className="text-3xl font-bold text-green-600">
-              {assessments?.filter(
-                (a) => a.final_compliance_status === "Passed"
-              ).length || 0}
-            </p>
-          </div>
-
-          <div className="bg-card border border-border rounded-lg p-6">
-            <h3 className="text-sm font-medium text-muted-foreground mb-2">
-              Failed Compliance
-            </h3>
-            <p className="text-3xl font-bold text-red-600">
-              {assessments?.filter(
-                (a) => a.final_compliance_status === "Failed"
-              ).length || 0}
-            </p>
-          </div>
-        </div>
-
-        {/* Assessment List */}
-        <div className="bg-card border border-border rounded-lg shadow-sm">
-          <div className="px-6 py-4 border-b border-border">
-            <h3 className="text-lg font-semibold">Validated Assessments</h3>
-          </div>
-
-          {!assessments || assessments.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">
-              No validated assessments found
-            </div>
-          ) : (
-            <div className="divide-y divide-border">
-              {assessments.map((assessment) => (
-                <div
-                  key={assessment.id}
-                  className="px-6 py-4 hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-lg">
-                        {assessment.barangay_name || "Unknown Barangay"}
-                      </h4>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {assessment.blgu_user_name || "Unknown User"}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Validated:{" "}
-                        {assessment.validated_at
-                          ? new Date(
-                              assessment.validated_at
-                            ).toLocaleDateString()
-                          : "N/A"}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      {assessment.final_compliance_status && (
-                        <ComplianceBadge
-                          status={assessment.final_compliance_status}
-                          assessmentId={assessment.id}
-                        />
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
+          {/* Export Controls - Only for MLGOO_DILG */}
+          {userRole === "MLGOO_DILG" && data && (
+            <div className="flex-shrink-0">
+              <ExportControls
+                tableData={data.table_data.rows}
+                currentFilters={{
+                  cycle_id: filters.cycle_id,
+                  start_date: filters.start_date,
+                  end_date: filters.end_date,
+                  governance_area: filters.governance_area,
+                  barangay_id: filters.barangay_id,
+                  status: filters.status,
+                }}
+                reportsData={data}
+              />
             </div>
           )}
         </div>
+
+        {/* Filter Controls */}
+        <FilterControls
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          userRole={userRole}
+        />
+
+        {/* Visualization Grid */}
+        <VisualizationGrid data={data} isLoading={isLoading} />
       </div>
     </div>
   );

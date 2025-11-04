@@ -3,6 +3,15 @@
 // 📁 System-related types
 // 🏷️  Based on FastAPI tag: "system"
 
+import type { ComplianceRate } from '../common';
+import type { AreaBreakdown } from '../common';
+import type { FailedIndicator } from '../common';
+import type { BarangayRanking } from '../common';
+import type { TrendData } from '../common';
+import type { ChartData } from '../common';
+import type { MapData } from '../common';
+import type { TableData } from '../common';
+
 /**
  * SystemicWeakness
  */
@@ -32,6 +41,31 @@ export type SystemicWeaknessReason = string | null;
  */
 export interface ApiResponse {
   message: string;
+}
+
+
+/**
+ * DashboardKPIResponse
+ */
+export interface DashboardKPIResponse {
+  /** Overall pass/fail statistics */
+  overall_compliance_rate: ComplianceRate;
+  /** Completion status of assessments */
+  completion_status: ComplianceRate;
+  /** Compliance breakdown by governance area */
+  area_breakdown?: AreaBreakdown[];
+  /**
+   * Top 5 most frequently failed indicators
+   * @maxItems 5
+   */
+  top_failed_indicators?: FailedIndicator[];
+  /** Barangays ranked by compliance score */
+  barangay_rankings?: BarangayRanking[];
+  /**
+   * Historical trend data across cycles
+   * @maxItems 3
+   */
+  trends?: TrendData[];
 }
 
 
@@ -80,13 +114,7 @@ export interface MOVUploadResponse {
 /**
  * MOVUploadResponseMov
  */
-export type MOVUploadResponseMov = MOVUploadResponseMovAnyOf | null;
-
-
-/**
- * MOVUploadResponseMovAnyOf
- */
-export type MOVUploadResponseMovAnyOf = { [key: string]: unknown };
+export type MOVUploadResponseMov = unknown | null;
 
 
 /**
@@ -99,3 +127,75 @@ export type MOVUploadResponseMovId = number | null;
  * MOVUploadResponseStoragePath
  */
 export type MOVUploadResponseStoragePath = string | null;
+
+
+/**
+ * ReportMetadata
+ */
+export interface ReportMetadata {
+  /** Timestamp when the report was generated */
+  generated_at: string;
+  /** Filter: Assessment cycle ID */
+  cycle_id?: ReportMetadataCycleId;
+  /** Filter: Start date */
+  start_date?: ReportMetadataStartDate;
+  /** Filter: End date */
+  end_date?: ReportMetadataEndDate;
+  /** Filter: Governance area codes */
+  governance_areas?: ReportMetadataGovernanceAreas;
+  /** Filter: Barangay IDs */
+  barangay_ids?: ReportMetadataBarangayIds;
+  /** Filter: Status filter */
+  status?: ReportMetadataStatus;
+}
+
+
+/**
+ * ReportMetadataBarangayIds
+ */
+export type ReportMetadataBarangayIds = number[] | null;
+
+
+/**
+ * ReportMetadataCycleId
+ */
+export type ReportMetadataCycleId = number | null;
+
+
+/**
+ * ReportMetadataEndDate
+ */
+export type ReportMetadataEndDate = string | null;
+
+
+/**
+ * ReportMetadataGovernanceAreas
+ */
+export type ReportMetadataGovernanceAreas = string[] | null;
+
+
+/**
+ * ReportMetadataStartDate
+ */
+export type ReportMetadataStartDate = string | null;
+
+
+/**
+ * ReportMetadataStatus
+ */
+export type ReportMetadataStatus = string | null;
+
+
+/**
+ * ReportsDataResponse
+ */
+export interface ReportsDataResponse {
+  /** Data for bar, pie, and line charts */
+  chart_data: ChartData;
+  /** Geographic map data for barangays */
+  map_data: MapData;
+  /** Paginated table data for assessments */
+  table_data: TableData;
+  /** Report generation metadata and applied filters */
+  metadata: ReportMetadata;
+}

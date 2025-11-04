@@ -177,6 +177,29 @@ export type AssessmentResponseUpdateResponseDataAnyOf = { [key: string]: unknown
 
 
 /**
+ * AssessmentRow
+ */
+export interface AssessmentRow {
+  /** Unique identifier for the barangay */
+  barangay_id: number;
+  /** Name of the barangay */
+  barangay_name: string;
+  /** Governance area code */
+  governance_area: string;
+  /** Assessment status (Pass/Fail/In Progress) */
+  status: string;
+  /** Compliance score */
+  score?: AssessmentRowScore;
+}
+
+
+/**
+ * AssessmentRowScore
+ */
+export type AssessmentRowScore = number | null;
+
+
+/**
  * AssessmentStatus
  */
 export type AssessmentStatus = typeof AssessmentStatus[keyof typeof AssessmentStatus];

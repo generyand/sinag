@@ -119,13 +119,155 @@ Redis must be running for Celery to work.
 ```
 vantage/
 ├── apps/
-│   ├── api/              FastAPI backend (Python 3.13+)
-│   └── web/              Next.js 15 frontend (React 19)
+│   ├── api/                      # FastAPI backend (Python 3.13+)
+│   │   ├── alembic/              # Database migrations
+│   │   │   └── versions/         # Migration files
+│   │   ├── app/
+│   │   │   ├── api/v1/           # API endpoints (routers)
+│   │   │   │   ├── analytics.py
+│   │   │   │   ├── assessments.py
+│   │   │   │   ├── assessor.py
+│   │   │   │   ├── auth.py
+│   │   │   │   ├── lookups.py
+│   │   │   │   ├── system.py
+│   │   │   │   └── users.py
+│   │   │   ├── core/             # Config & security
+│   │   │   │   ├── celery_app.py
+│   │   │   │   ├── config.py
+│   │   │   │   └── security.py
+│   │   │   ├── db/
+│   │   │   │   ├── models/       # SQLAlchemy ORM models
+│   │   │   │   │   ├── assessment.py
+│   │   │   │   │   ├── auth.py
+│   │   │   │   │   ├── barangay.py
+│   │   │   │   │   ├── governance_area.py
+│   │   │   │   │   ├── system.py
+│   │   │   │   │   └── user.py
+│   │   │   │   ├── base.py
+│   │   │   │   └── enums.py
+│   │   │   ├── schemas/          # Pydantic models
+│   │   │   │   ├── analytics.py
+│   │   │   │   ├── assessment.py
+│   │   │   │   ├── assessor.py
+│   │   │   │   ├── lookups.py
+│   │   │   │   ├── system.py
+│   │   │   │   ├── token.py
+│   │   │   │   └── user.py
+│   │   │   ├── services/         # Business logic layer
+│   │   │   │   ├── analytics_service.py
+│   │   │   │   ├── assessment_service.py
+│   │   │   │   ├── assessor_service.py
+│   │   │   │   ├── barangay_service.py
+│   │   │   │   ├── governance_area_service.py
+│   │   │   │   ├── indicator_service.py
+│   │   │   │   ├── intelligence_service.py
+│   │   │   │   ├── startup_service.py
+│   │   │   │   ├── storage_service.py
+│   │   │   │   └── user_service.py
+│   │   │   └── workers/          # Celery background tasks
+│   │   │       ├── intelligence_worker.py
+│   │   │       ├── notifications.py
+│   │   │       └── sglgb_classifier.py
+│   │   ├── tests/                # pytest test suite
+│   │   ├── main.py               # FastAPI app entrypoint
+│   │   ├── pyproject.toml        # Python dependencies (uv)
+│   │   └── alembic.ini           # Alembic config
+│   │
+│   └── web/                      # Next.js 15 frontend (React 19)
+│       ├── public/               # Static assets
+│       │   ├── Assessment_Areas/
+│       │   ├── Scenery/
+│       │   ├── Toolkit/
+│       │   └── officialLogo/
+│       ├── src/
+│       │   ├── app/              # Next.js App Router
+│       │   │   ├── (app)/        # Authenticated routes
+│       │   │   │   ├── assessor/ # Assessor dashboard & validation
+│       │   │   │   ├── blgu/     # BLGU assessment submission
+│       │   │   │   ├── mlgoo/    # Admin/MLGOO features
+│       │   │   │   ├── reports/  # Analytics & reports
+│       │   │   │   └── user-management/
+│       │   │   ├── (auth)/       # Public routes
+│       │   │   │   └── login/
+│       │   │   └── layout.tsx
+│       │   ├── components/
+│       │   │   ├── features/     # Domain-specific components
+│       │   │   │   ├── analytics/
+│       │   │   │   ├── assessments/
+│       │   │   │   ├── assessor/
+│       │   │   │   ├── auth/
+│       │   │   │   ├── dashboard/
+│       │   │   │   ├── dashboard-analytics/
+│       │   │   │   ├── landing-page/
+│       │   │   │   ├── profile/
+│       │   │   │   ├── reports/
+│       │   │   │   ├── settings/
+│       │   │   │   ├── submissions/
+│       │   │   │   ├── system-settings/
+│       │   │   │   └── users/
+│       │   │   ├── shared/       # Cross-feature components
+│       │   │   └── ui/           # shadcn/ui primitives
+│       │   ├── hooks/            # Custom React hooks
+│       │   ├── lib/              # Utilities & configs
+│       │   │   ├── api.ts        # Axios instance
+│       │   │   ├── csv-export.ts
+│       │   │   ├── pdf-export.ts
+│       │   │   ├── png-export.ts
+│       │   │   └── utils.ts
+│       │   ├── providers/        # React context providers
+│       │   ├── store/            # Zustand state stores
+│       │   └── types/            # TypeScript type definitions
+│       ├── middleware.ts         # Next.js middleware
+│       ├── package.json
+│       └── tsconfig.json
+│
 ├── packages/
-│   └── shared/           Auto-generated types & API client
-├── docs/                 Architecture docs & PRDs
-├── tasks/                Task tracking & epics
-└── scripts/              Build & utility scripts
+│   └── shared/                   # Auto-generated types & API client
+│       └── src/generated/
+│           ├── endpoints/        # React Query hooks (by tag)
+│           │   ├── analytics/
+│           │   ├── assessments/
+│           │   ├── assessor/
+│           │   ├── auth/
+│           │   ├── lookups/
+│           │   ├── system/
+│           │   └── users/
+│           └── schemas/          # TypeScript types (by tag)
+│               ├── analytics/
+│               ├── assessments/
+│               ├── assessor/
+│               ├── auth/
+│               ├── system/
+│               └── users/
+│
+├── docs/                         # Documentation
+│   ├── api/                      # API documentation
+│   ├── architecture/             # System architecture
+│   ├── getting-started/          # Setup guides
+│   ├── guides/                   # Development guides
+│   ├── prds/                     # Product requirements
+│   ├── troubleshooting/          # Common issues
+│   ├── workflows/                # Workflow documentation
+│   └── project-roadmap.md
+│
+├── tasks/                        # Implementation task tracking
+│   ├── tasks-prd-analytics-reporting/
+│   └── temporary/
+│
+├── scripts/                      # Build & utility scripts
+│   ├── docker-dev.sh             # Docker development helper
+│   ├── generate-types.js         # Orval type generation
+│   └── watch-generate.js         # Watch mode for types
+│
+├── CHANGELOG.md                  # Project changelog
+├── CLAUDE.md                     # Claude Code instructions
+├── README.md                     # Project README
+├── docker-compose.yml            # Docker services
+├── orval.config.ts               # Type generation config
+├── package.json                  # Root package.json
+├── pnpm-workspace.yaml           # pnpm workspace config
+├── turbo.json                    # Turborepo config
+└── vercel.json                   # Vercel deployment config
 ```
 
 ### Backend Architecture (`apps/api`)

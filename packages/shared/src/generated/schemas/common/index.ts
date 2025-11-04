@@ -3,6 +3,29 @@
 // 📁 Common-related types
 // 🏷️  Based on FastAPI tag: "common"
 
+import type { AssessmentRow } from '../assessments';
+
+/**
+ * AreaBreakdown
+ */
+export interface AreaBreakdown {
+  /** Governance area code */
+  area_code: string;
+  /** Governance area name */
+  area_name: string;
+  /** Number of barangays that passed this area */
+  passed: number;
+  /** Number of barangays that failed this area */
+  failed: number;
+  /**
+   * Pass percentage for this area
+   * @minimum 0
+   * @maximum 100
+   */
+  percentage: number;
+}
+
+
 /**
  * AreaType
  */
@@ -17,6 +40,27 @@ export const AreaType = {
 
 
 /**
+ * BarChartData
+ */
+export interface BarChartData {
+  /** Governance area code */
+  area_code: string;
+  /** Governance area name */
+  area_name: string;
+  /** Number of barangays that passed */
+  passed: number;
+  /** Number of barangays that failed */
+  failed: number;
+  /**
+   * Pass rate percentage
+   * @minimum 0
+   * @maximum 100
+   */
+  pass_percentage: number;
+}
+
+
+/**
  * Barangay
  */
 export interface Barangay {
@@ -26,11 +70,121 @@ export interface Barangay {
 
 
 /**
+ * BarangayMapPoint
+ */
+export interface BarangayMapPoint {
+  /** Unique identifier for the barangay */
+  barangay_id: number;
+  /** Barangay name */
+  name: string;
+  /** Latitude coordinate */
+  lat?: BarangayMapPointLat;
+  /** Longitude coordinate */
+  lng?: BarangayMapPointLng;
+  /** Compliance status (Pass/Fail/In Progress) */
+  status: string;
+  /** Compliance score */
+  score?: BarangayMapPointScore;
+}
+
+
+/**
+ * BarangayMapPointLat
+ */
+export type BarangayMapPointLat = number | null;
+
+
+/**
+ * BarangayMapPointLng
+ */
+export type BarangayMapPointLng = number | null;
+
+
+/**
+ * BarangayMapPointScore
+ */
+export type BarangayMapPointScore = number | null;
+
+
+/**
+ * BarangayRanking
+ */
+export interface BarangayRanking {
+  /** Unique identifier for the barangay */
+  barangay_id: number;
+  /** Name of the barangay */
+  barangay_name: string;
+  /**
+   * Compliance score (0-100)
+   * @minimum 0
+   * @maximum 100
+   */
+  score: number;
+  /**
+   * Ranking position
+   * @minimum 1
+   */
+  rank: number;
+}
+
+
+/**
  * ChangePasswordRequest
  */
 export interface ChangePasswordRequest {
   current_password: string;
   new_password: string;
+}
+
+
+/**
+ * ChartData
+ */
+export interface ChartData {
+  /** Bar chart data showing pass/fail rates by governance area */
+  bar_chart?: BarChartData[];
+  /** Pie chart data showing overall status distribution */
+  pie_chart?: PieChartData[];
+  /** Line chart data showing trends over cycles */
+  line_chart?: TrendData[];
+}
+
+
+/**
+ * ComplianceRate
+ */
+export interface ComplianceRate {
+  /** Total number of barangays assessed */
+  total_barangays: number;
+  /** Number of barangays that passed */
+  passed: number;
+  /** Number of barangays that failed */
+  failed: number;
+  /**
+   * Percentage of barangays that passed
+   * @minimum 0
+   * @maximum 100
+   */
+  pass_percentage: number;
+}
+
+
+/**
+ * FailedIndicator
+ */
+export interface FailedIndicator {
+  /** Unique identifier for the indicator */
+  indicator_id: number;
+  /** Name of the indicator */
+  indicator_name: string;
+  /** Number of times this indicator failed */
+  failure_count: number;
+  /**
+   * Failure rate as percentage
+   * @minimum 0
+   * @maximum 100
+   */
+  percentage: number;
 }
 
 
@@ -73,6 +227,15 @@ export const MOVStatus = {
 
 
 /**
+ * MapData
+ */
+export interface MapData {
+  /** List of barangays with geographic coordinates and status */
+  barangays?: BarangayMapPoint[];
+}
+
+
+/**
  * PerformanceOverview
  */
 export interface PerformanceOverview {
@@ -91,12 +254,76 @@ export type PerformanceOverviewTrendSeriesItem = {[key: string]: number | string
 
 
 /**
+ * PieChartData
+ */
+export interface PieChartData {
+  /** Status label (Pass/Fail/In Progress) */
+  status: string;
+  /**
+   * Number of barangays in this status
+   * @minimum 0
+   */
+  count: number;
+  /**
+   * Percentage of total
+   * @minimum 0
+   * @maximum 100
+   */
+  percentage: number;
+}
+
+
+/**
  * ProgressSummary
  */
 export interface ProgressSummary {
   current: number;
   total: number;
   percentage: number;
+}
+
+
+/**
+ * TableData
+ */
+export interface TableData {
+  /** List of assessment rows for the current page */
+  rows?: AssessmentRow[];
+  /**
+   * Total number of assessments matching filters
+   * @minimum 0
+   */
+  total_count: number;
+  /**
+   * Current page number
+   * @minimum 1
+   */
+  page: number;
+  /**
+   * Number of rows per page
+   * @minimum 1
+   * @maximum 100
+   */
+  page_size: number;
+}
+
+
+/**
+ * TrendData
+ */
+export interface TrendData {
+  /** Assessment cycle identifier */
+  cycle_id: number;
+  /** Name of the assessment cycle */
+  cycle_name: string;
+  /**
+   * Pass rate for this cycle
+   * @minimum 0
+   * @maximum 100
+   */
+  pass_rate: number;
+  /** Date of the cycle */
+  date: string;
 }
 
 

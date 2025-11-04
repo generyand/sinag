@@ -30,6 +30,14 @@ from .assessment import (
     MOVListResponse,
     MOVUpdate,
 )
+from .analytics import (
+    AreaBreakdown,
+    BarangayRanking,
+    ComplianceRate,
+    DashboardKPIResponse,
+    FailedIndicator,
+    TrendData,
+)
 from .assessor import (
     AssessorAnalyticsResponse,
     AssessmentDetailsResponse,
@@ -46,6 +54,13 @@ from .token import AuthToken, LoginRequest, Token, TokenPayload
 from .user import User, UserCreate, UserInDB, UserUpdate
 
 __all__ = [
+    # Analytics schemas
+    "DashboardKPIResponse",
+    "ComplianceRate",
+    "AreaBreakdown",
+    "FailedIndicator",
+    "BarangayRanking",
+    "TrendData",
     # Assessment schemas
     "Assessment",
     "AssessmentCreate",

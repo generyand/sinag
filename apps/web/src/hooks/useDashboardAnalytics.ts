@@ -1,0 +1,109 @@
+import { useGetAnalyticsDashboard } from '@vantage/shared';
+import type { DashboardKPIResponse } from '@vantage/shared';
+
+/**
+ * Custom hook wrapper for analytics dashboard data fetching
+ *
+ * Wraps the Orval-generated useGetAnalyticsDashboard hook with:
+ * - Proper error handling
+ * - User-friendly error messages
+ * - Typed data with defaults for missing fields
+ * - Simplified return interface
+ *
+ * @param cycleId - Optional assessment cycle ID (defaults to latest cycle if not provided)
+ * @returns Object containing data, loading state, error, and refetch function
+ */
+export function useDashboardAnalytics(cycleId?: number | null) {
+  const {
+    data,
+    isLoading,
+    error: queryError,
+    refetch,
+  } = useGetAnalyticsDashboard({
+    cycle_id: cycleId,
+  });
+
+  // Format error message for user display
+  const error = queryError
+    ? formatErrorMessage(queryError)
+    : null;
+
+  // Provide typed data with defaults for missing fields
+  const dashboardData: DashboardKPIResponse | undefined = data
+    ? {
+        overall_compliance_rate: data.overall_compliance_rate || {
+          total_barangays: 0,
+          passed: 0,
+          failed: 0,
+          pass_percentage: 0,
+        },
+        completion_status: data.completion_status || {
+          total_barangays: 0,
+          passed: 0,
+          failed: 0,
+          pass_percentage: 0,
+        },
+        area_breakdown: data.area_breakdown || [],
+        top_failed_indicators: data.top_failed_indicators || [],
+        barangay_rankings: data.barangay_rankings || [],
+        trends: data.trends || [],
+      }
+    : undefined;
+
+  return {
+    data: dashboardData,
+    isLoading,
+    error,
+    refetch,
+  };
+}
+
+/**
+ * Format error object into user-friendly error message
+ *
+ * @param error - Error object from the API query
+ * @returns Formatted error message string
+ */
+function formatErrorMessage(error: unknown): string {
+  // Handle axios error response
+  if (error && typeof error === 'object' && 'response' in error) {
+    const axiosError = error as { response?: { status?: number; data?: { detail?: string } } };
+
+    if (axiosError.response?.status === 401) {
+      return 'Authentication required. Please log in again.';
+    }
+
+    if (axiosError.response?.status === 403) {
+      return 'You do not have permission to view analytics. MLGOO-DILG access required.';
+    }
+
+    if (axiosError.response?.status === 404) {
+      return 'Analytics data not found for the selected cycle.';
+    }
+
+    if (axiosError.response?.status === 500) {
+      return 'Server error occurred while fetching analytics data. Please try again later.';
+    }
+
+    // Try to get detail from response
+    if (axiosError.response?.data?.detail) {
+      return axiosError.response.data.detail;
+    }
+  }
+
+  // Handle network error
+  if (error && typeof error === 'object' && 'message' in error) {
+    const networkError = error as { message?: string };
+
+    if (networkError.message?.toLowerCase().includes('network')) {
+      return 'Network error. Please check your internet connection and try again.';
+    }
+
+    return networkError.message || 'An unexpected error occurred while fetching analytics data.';
+  }
+
+  // Fallback error message
+  return 'An unexpected error occurred. Please try refreshing the page.';
+}
+
+export default useDashboardAnalytics;
