@@ -82,6 +82,11 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
     activeTab,
   });
 
+  // MOV Checklist validation (must be before early returns per Rules of Hooks)
+  const movChecklistConfig = indicator?.mov_checklist_items as unknown as MOVChecklistConfig | undefined;
+  const movValidation = useMOVValidation(movChecklistConfig);
+  const movChecklistComplete = movChecklistConfig?.items && movChecklistConfig.items.length > 0 && movValidation.isValid;
+
   // Reset to form tab when indicator changes
   useEffect(() => {
     setActiveTab('form');
@@ -160,11 +165,6 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
 
   // Extract form fields for calculation builder
   const formFields = indicator.form_schema?.fields || [];
-
-  // MOV Checklist validation
-  const movChecklistConfig = indicator.mov_checklist_items as unknown as MOVChecklistConfig | undefined;
-  const movValidation = useMOVValidation(movChecklistConfig);
-  const movChecklistComplete = movChecklistConfig?.items && movChecklistConfig.items.length > 0 && movValidation.isValid;
 
   return (
     <div className="h-full flex flex-col">
