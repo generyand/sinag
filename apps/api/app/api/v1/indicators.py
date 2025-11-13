@@ -526,6 +526,124 @@ def get_indicator_form_schema(
 
 
 # =============================================================================
+# Tree Operations Endpoints (Phase 6: Hierarchical Indicator Management)
+# =============================================================================
+
+
+@router.get(
+    "/tree/{governance_area_id}",
+    response_model=List[dict],
+    summary="Get indicator tree structure",
+)
+def get_indicator_tree(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+    governance_area_id: int,
+) -> List[dict]:
+    """
+    Get hierarchical tree structure of indicators for a governance area.
+
+    **Permissions**: All authenticated users
+
+    **Path Parameters**:
+    - governance_area_id: Governance area ID
+
+    **Returns**: List of root indicator nodes with nested children
+
+    **Tree Structure**:
+    ```json
+    [
+        {
+            "id": 1,
+            "name": "Root Indicator",
+            "indicator_code": "1.1",
+            "sort_order": 0,
+            "selection_mode": "none",
+            "parent_id": null,
+            "children": [
+                {
+                    "id": 2,
+                    "name": "Child Indicator",
+                    "indicator_code": "1.1.1",
+                    "sort_order": 0,
+                    "parent_id": 1,
+                    "children": []
+                }
+            ]
+        }
+    ]
+    ```
+
+    **Features**:
+    - Hierarchical parent-child relationships
+    - Automatic code generation (1.1, 1.1.1, etc.)
+    - MOV checklist items included
+    - Form, calculation, and remark schemas included
+
+    **Raises**:
+    - 404: Governance area not found
+    """
+    tree = indicator_service.get_indicator_tree(
+        db=db,
+        governance_area_id=governance_area_id,
+    )
+
+    return tree
+
+
+@router.post(
+    "/recalculate-codes/{governance_area_id}",
+    response_model=List[IndicatorResponse],
+    summary="Recalculate indicator codes",
+)
+def recalculate_indicator_codes(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.require_mlgoo_dilg),
+    governance_area_id: int,
+) -> List[IndicatorResponse]:
+    """
+    Recalculate indicator codes for a governance area after reordering.
+
+    Automatically generates hierarchical codes like "1.1", "1.1.1", "1.2"
+    based on tree structure and sort_order.
+
+    **Permissions**: MLGOO_DILG only
+
+    **Path Parameters**:
+    - governance_area_id: Governance area ID
+
+    **Returns**: List of updated indicators with new codes
+
+    **Code Generation Logic**:
+    - Root nodes: "1", "2", "3", ...
+    - First-level children: "1.1", "1.2", "1.3", ...
+    - Second-level children: "1.1.1", "1.1.2", ...
+    - Sort order determines numbering within siblings
+
+    **Example**:
+    Before reorder:
+    - Indicator A (code: "1.1", sort_order: 1)
+    - Indicator B (code: "1.2", sort_order: 0)
+
+    After recalculate (sorted by sort_order):
+    - Indicator B (code: "1.1", sort_order: 0)
+    - Indicator A (code: "1.2", sort_order: 1)
+
+    **Raises**:
+    - 404: Governance area not found
+    """
+    updated_indicators = indicator_service.recalculate_codes(
+        db=db,
+        governance_area_id=governance_area_id,
+        user_id=current_user.id,
+    )
+
+    return updated_indicators
+
+
+# =============================================================================
 # Bulk Operations Endpoints (Phase 6: Hierarchical Indicator Creation)
 # =============================================================================
 

@@ -810,6 +810,176 @@ class IndicatorService:
 
         return errors
 
+    def get_indicator_tree(
+        self,
+        db: Session,
+        governance_area_id: int
+    ) -> List[Dict[str, Any]]:
+        """
+        Get hierarchical tree structure of indicators for a governance area.
+
+        Returns indicators organized in tree structure with parent-child relationships.
+        Each node includes children nested under it.
+
+        Args:
+            db: Database session
+            governance_area_id: Governance area ID to filter indicators
+
+        Returns:
+            List of root indicator dictionaries with nested children
+
+        Example return structure:
+        [
+            {
+                "id": 1,
+                "name": "Root Indicator",
+                "indicator_code": "1.1",
+                "children": [
+                    {
+                        "id": 2,
+                        "name": "Child Indicator",
+                        "indicator_code": "1.1.1",
+                        "children": []
+                    }
+                ]
+            }
+        ]
+        """
+        # Get all indicators for governance area with relationships loaded
+        indicators = (
+            db.query(Indicator)
+            .options(joinedload(Indicator.children))
+            .filter(
+                Indicator.governance_area_id == governance_area_id,
+                Indicator.is_active == True
+            )
+            .order_by(Indicator.sort_order)
+            .all()
+        )
+
+        # Build indicator map
+        indicator_map: Dict[int, Dict[str, Any]] = {}
+        for indicator in indicators:
+            indicator_map[indicator.id] = {
+                "id": indicator.id,
+                "name": indicator.name,
+                "description": indicator.description,
+                "indicator_code": indicator.indicator_code,
+                "sort_order": indicator.sort_order,
+                "selection_mode": indicator.selection_mode,
+                "parent_id": indicator.parent_id,
+                "is_active": indicator.is_active,
+                "is_auto_calculable": indicator.is_auto_calculable,
+                "is_profiling_only": indicator.is_profiling_only,
+                "form_schema": indicator.form_schema,
+                "calculation_schema": indicator.calculation_schema,
+                "remark_schema": indicator.remark_schema,
+                "mov_checklist_items": indicator.mov_checklist_items,
+                "version": indicator.version,
+                "created_at": indicator.created_at.isoformat() if indicator.created_at else None,
+                "updated_at": indicator.updated_at.isoformat() if indicator.updated_at else None,
+                "children": []
+            }
+
+        # Build tree structure
+        root_nodes: List[Dict[str, Any]] = []
+        for indicator_dict in indicator_map.values():
+            parent_id = indicator_dict["parent_id"]
+            if parent_id is None:
+                # Root node
+                root_nodes.append(indicator_dict)
+            else:
+                # Child node - add to parent's children
+                if parent_id in indicator_map:
+                    indicator_map[parent_id]["children"].append(indicator_dict)
+
+        return root_nodes
+
+    def recalculate_codes(
+        self,
+        db: Session,
+        governance_area_id: int,
+        user_id: int
+    ) -> List[Indicator]:
+        """
+        Recalculate indicator codes for a governance area after reordering.
+
+        Generates hierarchical codes like "1.1", "1.1.1", "1.2" based on
+        tree structure and sort_order.
+
+        Args:
+            db: Database session
+            governance_area_id: Governance area ID to recalculate codes for
+            user_id: ID of user performing the recalculation
+
+        Returns:
+            List of updated Indicator instances
+
+        Raises:
+            HTTPException: If indicators cannot be loaded or updated
+        """
+        # Get all indicators for governance area ordered by sort_order
+        indicators = (
+            db.query(Indicator)
+            .filter(
+                Indicator.governance_area_id == governance_area_id,
+                Indicator.is_active == True
+            )
+            .order_by(Indicator.sort_order)
+            .all()
+        )
+
+        if not indicators:
+            return []
+
+        # Build parent-child map
+        children_map: Dict[Optional[int], List[Indicator]] = {}
+        for indicator in indicators:
+            parent_id = indicator.parent_id
+            if parent_id not in children_map:
+                children_map[parent_id] = []
+            children_map[parent_id].append(indicator)
+
+        # Sort children by sort_order
+        for children_list in children_map.values():
+            children_list.sort(key=lambda x: x.sort_order or 0)
+
+        updated_indicators: List[Indicator] = []
+
+        def assign_codes(parent_id: Optional[int], prefix: str = "") -> None:
+            """Recursively assign codes to indicators."""
+            if parent_id not in children_map:
+                return
+
+            children = children_map[parent_id]
+            for index, indicator in enumerate(children, start=1):
+                if prefix:
+                    new_code = f"{prefix}.{index}"
+                else:
+                    new_code = str(index)
+
+                # Update indicator code
+                indicator.indicator_code = new_code
+                updated_indicators.append(indicator)
+
+                logger.info(
+                    f"Assigned code '{new_code}' to indicator '{indicator.name}' (ID: {indicator.id})"
+                )
+
+                # Recursively assign codes to children
+                assign_codes(indicator.id, new_code)
+
+        # Start from root nodes (parent_id = None)
+        assign_codes(None)
+
+        # Commit changes
+        db.commit()
+        logger.info(
+            f"Recalculated {len(updated_indicators)} indicator codes for governance area {governance_area_id}"
+        )
+
+        return updated_indicators
+
     # ========================================================================
     # Seed & Utility Methods (Legacy - preserved for development/testing)
     # ========================================================================

@@ -57,6 +57,9 @@ export interface IndicatorNode {
   /** Technical notes (plain text) */
   technical_notes_text?: string;
 
+  /** MOV checklist configuration (array of MOV items) */
+  mov_checklist_items?: Record<string, any>;
+
   /** Metadata for additional information (e.g., archived schemas) */
   metadata?: {
     /** Archived schemas when leaf transitions to parent */

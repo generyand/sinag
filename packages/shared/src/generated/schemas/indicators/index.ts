@@ -117,6 +117,12 @@ limit?: number;
 
 
 /**
+ * GetIndicatorsTreeGovernanceAreaId200Item
+ */
+export type GetIndicatorsTreeGovernanceAreaId200Item = { [key: string]: unknown };
+
+
+/**
  * IncompleteIndicatorDetail
  */
 export interface IncompleteIndicatorDetail {

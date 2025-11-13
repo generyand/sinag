@@ -15,6 +15,9 @@ import { FormSchemaBuilder } from '../FormSchemaBuilder';
 import { CalculationSchemaBuilder } from '../CalculationSchemaBuilder';
 import { RichTextEditor } from '../RichTextEditor';
 import { ParentAggregateDashboard } from './ParentAggregateDashboard';
+import MOVChecklistBuilder from '../MOVChecklistBuilder';
+import { useMOVValidation } from '@/hooks/useMOVValidation';
+import { MOVChecklistConfig } from '@/types/mov-checklist';
 
 /**
  * SchemaEditorPanel Component
@@ -34,7 +37,7 @@ interface SchemaEditorPanelProps {
 }
 
 export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
-  const [activeTab, setActiveTab] = useState<'form' | 'calculation' | 'remark'>('form');
+  const [activeTab, setActiveTab] = useState<'form' | 'calculation' | 'remark' | 'mov_checklist'>('form');
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
 
   const getNodeById = useIndicatorBuilderStore(state => state.getNodeById);
@@ -148,8 +151,20 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
     }
   };
 
+  const handleMOVChecklistChange = (config: MOVChecklistConfig) => {
+    if (indicatorId) {
+      updateNode(indicatorId, { mov_checklist_items: config as unknown as Record<string, any> });
+      markSchemaDirty(indicatorId);
+    }
+  };
+
   // Extract form fields for calculation builder
   const formFields = indicator.form_schema?.fields || [];
+
+  // MOV Checklist validation
+  const movChecklistConfig = indicator.mov_checklist_items as unknown as MOVChecklistConfig | undefined;
+  const movValidation = useMOVValidation(movChecklistConfig);
+  const movChecklistComplete = movChecklistConfig?.items && movChecklistConfig.items.length > 0 && movValidation.isValid;
 
   return (
     <div className="h-full flex flex-col">
@@ -223,6 +238,23 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
             isActive={activeTab === 'remark'}
             onClick={() => setActiveTab('remark')}
           />
+          <TabCompletionBadge
+            label="MOV Checklist"
+            isComplete={movChecklistComplete || false}
+            isActive={activeTab === 'mov_checklist'}
+            onClick={() => setActiveTab('mov_checklist')}
+            validationBadge={
+              !movValidation.isValid && movChecklistConfig?.items && movChecklistConfig.items.length > 0 ? (
+                <Badge variant="destructive" className="text-[10px] py-0 ml-1">
+                  {movValidation.errors.length}
+                </Badge>
+              ) : movValidation.warnings.length > 0 && movChecklistConfig?.items && movChecklistConfig.items.length > 0 ? (
+                <Badge variant="outline" className="text-[10px] py-0 ml-1 bg-yellow-500/10 text-yellow-700 border-yellow-300">
+                  {movValidation.warnings.length}
+                </Badge>
+              ) : undefined
+            }
+          />
         </div>
       </div>
 
@@ -241,6 +273,20 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
             <TabsTrigger value="remark" className="flex items-center gap-2">
               Remark Template
               {status?.remarkComplete && <Check className="h-3 w-3 text-green-600" />}
+            </TabsTrigger>
+            <TabsTrigger value="mov_checklist" className="flex items-center gap-2">
+              MOV Checklist
+              {movChecklistComplete && <Check className="h-3 w-3 text-green-600" />}
+              {!movValidation.isValid && movChecklistConfig?.items && movChecklistConfig.items.length > 0 && (
+                <Badge variant="destructive" className="text-[10px] py-0">
+                  {movValidation.errors.length}
+                </Badge>
+              )}
+              {movValidation.warnings.length > 0 && movChecklistConfig?.items && movChecklistConfig.items.length > 0 && movValidation.isValid && (
+                <Badge variant="outline" className="text-[10px] py-0 bg-yellow-500/10 text-yellow-700 border-yellow-300">
+                  {movValidation.warnings.length}
+                </Badge>
+              )}
             </TabsTrigger>
           </TabsList>
 
@@ -268,6 +314,14 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
                 onChange={handleRemarkSchemaChange}
                 placeholder="Enter remark template for this indicator..."
                 minHeight={400}
+                className="h-full"
+              />
+            </TabsContent>
+
+            <TabsContent value="mov_checklist" className="h-full mt-4 overflow-hidden">
+              <MOVChecklistBuilder
+                value={movChecklistConfig}
+                onChange={handleMOVChecklistChange}
                 className="h-full"
               />
             </TabsContent>
@@ -381,9 +435,10 @@ interface TabCompletionBadgeProps {
   isComplete: boolean;
   isActive: boolean;
   onClick: () => void;
+  validationBadge?: React.ReactNode;
 }
 
-function TabCompletionBadge({ label, isComplete, isActive, onClick }: TabCompletionBadgeProps) {
+function TabCompletionBadge({ label, isComplete, isActive, onClick, validationBadge }: TabCompletionBadgeProps) {
   return (
     <button
       type="button"
@@ -400,6 +455,7 @@ function TabCompletionBadge({ label, isComplete, isActive, onClick }: TabComplet
       ) : (
         <div className="h-3 w-3 rounded-full border-2 border-muted-foreground/30" />
       )}
+      {validationBadge}
     </button>
   );
 }
