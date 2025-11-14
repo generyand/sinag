@@ -126,12 +126,14 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
   // Show empty state if no indicator selected
   if (!indicatorId || !indicator) {
     return (
-      <div className="h-full flex items-center justify-center p-8">
-        <div className="text-center max-w-md space-y-4">
-          <FileText className="h-16 w-16 mx-auto text-muted-foreground/50" />
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold">No Indicator Selected</h3>
-            <p className="text-sm text-muted-foreground">
+      <div className="h-full flex items-center justify-center p-8 bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+        <div className="text-center max-w-md space-y-6 animate-in fade-in duration-500">
+          <div className="w-24 h-24 mx-auto rounded-2xl bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] flex items-center justify-center shadow-2xl">
+            <FileText className="h-12 w-12 text-black" />
+          </div>
+          <div className="space-y-3">
+            <h3 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">No Indicator Selected</h3>
+            <p className="text-base text-muted-foreground dark:text-gray-400 leading-relaxed">
               Select an indicator from the tree navigator to configure its properties.
             </p>
           </div>
@@ -186,65 +188,29 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
   const calculationComplete = indicator.is_auto_calculable !== undefined;
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="shrink-0 border-b bg-muted/20 p-4 space-y-3">
+    <div className="h-full flex flex-col bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+      {/* Header with Golden Theme */}
+      <div className="shrink-0 border-b bg-white dark:bg-gray-800 dark:border-gray-700 shadow-md p-5 space-y-4">
         {/* Indicator Title */}
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-3 mb-2">
               {indicator.code && (
-                <Badge variant="outline" className="font-mono text-xs shrink-0">
+                <Badge
+                  variant="outline"
+                  className="font-mono text-xs shrink-0 bg-gradient-to-r from-[#fbbf24]/10 to-[#f59e0b]/10 dark:from-[#fbbf24]/20 dark:to-[#f59e0b]/20 border-[#fbbf24] text-[#b45309] dark:text-[#fbbf24] font-bold px-2 py-1"
+                >
                   {indicator.code}
                 </Badge>
               )}
-              <h2 className="text-lg font-semibold truncate">{indicator.name}</h2>
+              <h2 className="text-xl font-extrabold tracking-tight truncate text-gray-900 dark:text-gray-100">{indicator.name}</h2>
             </div>
             {indicator.description && (
-              <p className="text-sm text-muted-foreground line-clamp-2">
+              <p className="text-sm text-muted-foreground dark:text-gray-400 line-clamp-2 leading-relaxed">
                 {indicator.description}
               </p>
             )}
           </div>
-        </div>
-
-        {/* Tab Completion Status */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <TabCompletionBadge
-            label="Basic Info"
-            isComplete={basicInfoComplete}
-            isActive={activeTab === 'basic_info'}
-            onClick={() => setActiveTab('basic_info')}
-          />
-          <TabCompletionBadge
-            label="Calculation"
-            isComplete={calculationComplete}
-            isActive={activeTab === 'calculation'}
-            onClick={() => setActiveTab('calculation')}
-          />
-          <TabCompletionBadge
-            label="MOV Checklist"
-            isComplete={movChecklistComplete || false}
-            isActive={activeTab === 'mov_checklist'}
-            onClick={() => setActiveTab('mov_checklist')}
-            validationBadge={
-              !movValidation.isValid && movChecklistConfig?.items && movChecklistConfig.items.length > 0 ? (
-                <Badge variant="destructive" className="text-[10px] py-0 ml-1">
-                  {movValidation.errors.length}
-                </Badge>
-              ) : movValidation.warnings.length > 0 && movChecklistConfig?.items && movChecklistConfig.items.length > 0 ? (
-                <Badge variant="outline" className="text-[10px] py-0 ml-1 bg-yellow-500/10 text-yellow-700 border-yellow-300">
-                  {movValidation.warnings.length}
-                </Badge>
-              ) : undefined
-            }
-          />
-          <TabCompletionBadge
-            label="Preview"
-            isComplete={false}
-            isActive={activeTab === 'preview'}
-            onClick={() => setActiveTab('preview')}
-          />
         </div>
       </div>
 
@@ -252,32 +218,32 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
       <div className="flex-1 overflow-hidden">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="h-full flex flex-col">
           <TabsList className="mx-4 mt-4 shrink-0">
-            <TabsTrigger value="basic_info" className="flex items-center gap-2">
+            <TabsTrigger value="basic_info" className="flex items-center gap-2 data-[state=active]:text-[#b45309] dark:data-[state=active]:text-[#fbbf24]">
               <Info className="h-3 w-3" />
               Basic Info
-              {basicInfoComplete && <Check className="h-3 w-3 text-green-600" />}
+              {basicInfoComplete && <Check className="h-3 w-3 text-green-600 dark:text-green-400" />}
             </TabsTrigger>
-            <TabsTrigger value="calculation" className="flex items-center gap-2">
+            <TabsTrigger value="calculation" className="flex items-center gap-2 data-[state=active]:text-[#b45309] dark:data-[state=active]:text-[#fbbf24]">
               <Calculator className="h-3 w-3" />
               Calculation
-              {calculationComplete && <Check className="h-3 w-3 text-green-600" />}
+              {calculationComplete && <Check className="h-3 w-3 text-green-600 dark:text-green-400" />}
             </TabsTrigger>
-            <TabsTrigger value="mov_checklist" className="flex items-center gap-2">
+            <TabsTrigger value="mov_checklist" className="flex items-center gap-2 data-[state=active]:text-[#b45309] dark:data-[state=active]:text-[#fbbf24]">
               <FileText className="h-3 w-3" />
               MOV Checklist
-              {movChecklistComplete && <Check className="h-3 w-3 text-green-600" />}
+              {movChecklistComplete && <Check className="h-3 w-3 text-green-600 dark:text-green-400" />}
               {!movValidation.isValid && movChecklistConfig?.items && movChecklistConfig.items.length > 0 && (
                 <Badge variant="destructive" className="text-[10px] py-0">
                   {movValidation.errors.length}
                 </Badge>
               )}
               {movValidation.warnings.length > 0 && movChecklistConfig?.items && movChecklistConfig.items.length > 0 && movValidation.isValid && (
-                <Badge variant="outline" className="text-[10px] py-0 bg-yellow-500/10 text-yellow-700 border-yellow-300">
+                <Badge variant="outline" className="text-[10px] py-0 bg-yellow-500/10 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-600">
                   {movValidation.warnings.length}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="preview" className="flex items-center gap-2">
+            <TabsTrigger value="preview" className="flex items-center gap-2 data-[state=active]:text-[#b45309] dark:data-[state=active]:text-[#fbbf24]">
               <Eye className="h-3 w-3" />
               Preview
             </TabsTrigger>
@@ -324,27 +290,29 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
         </Tabs>
       </div>
 
-      {/* Footer */}
-      <div className="shrink-0 border-t bg-muted/20 p-3 space-y-2">
+      {/* Footer with Golden Theme */}
+      <div className="shrink-0 border-t bg-white dark:bg-gray-800 dark:border-gray-700 shadow-lg p-4 space-y-3">
         {/* Navigation Buttons */}
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              size="sm"
+              size="default"
               onClick={goToPrevious}
               disabled={!hasPrevious}
               title="Previous indicator (↑ or Alt+←)"
+              className="border-2 hover:border-[#fbbf24] transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 font-semibold dark:border-gray-600 dark:text-gray-200"
             >
               <ChevronLeft className="h-4 w-4" />
               <span className="hidden sm:inline">Previous</span>
             </Button>
             <Button
               variant="outline"
-              size="sm"
+              size="default"
               onClick={goToNext}
               disabled={!hasNext}
               title="Next indicator (↓ or Alt+→)"
+              className="border-2 hover:border-[#fbbf24] transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 font-semibold dark:border-gray-600 dark:text-gray-200"
             >
               <span className="hidden sm:inline">Next</span>
               <ChevronRight className="h-4 w-4" />
@@ -354,43 +322,47 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
-              size="sm"
+              size="default"
               onClick={() => setShowKeyboardShortcuts(!showKeyboardShortcuts)}
               title="Show keyboard shortcuts"
-              className="text-xs"
+              className="text-xs hover:bg-[#fbbf24]/10 dark:hover:bg-[#fbbf24]/20 transition-all duration-300 dark:text-gray-200"
             >
-              <Keyboard className="h-3 w-3 mr-1" />
-              <span className="hidden md:inline">Shortcuts</span>
+              <Keyboard className="h-4 w-4 mr-1" />
+              <span className="hidden md:inline font-semibold">Shortcuts</span>
             </Button>
           </div>
         </div>
 
         {/* Keyboard Shortcuts Help */}
         {showKeyboardShortcuts && (
-          <div className="text-xs bg-muted/50 rounded p-2 space-y-1">
-            <div className="font-semibold mb-1">Keyboard Shortcuts:</div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
-              <div><kbd className="px-1 py-0.5 bg-background rounded border text-[10px]">↑</kbd> Previous indicator</div>
-              <div><kbd className="px-1 py-0.5 bg-background rounded border text-[10px]">↓</kbd> Next indicator</div>
-              <div><kbd className="px-1 py-0.5 bg-background rounded border text-[10px]">Ctrl/Cmd+N</kbd> Next incomplete</div>
-              <div><kbd className="px-1 py-0.5 bg-background rounded border text-[10px]">Esc</kbd> Unfocus editor</div>
+          <div className="text-xs bg-gradient-to-r from-[#fbbf24]/5 to-[#f59e0b]/5 dark:from-[#fbbf24]/10 dark:to-[#f59e0b]/10 border border-[#fbbf24]/20 dark:border-[#fbbf24]/30 rounded-lg p-3 space-y-2">
+            <div className="font-bold text-[#b45309] dark:text-[#fbbf24] mb-2">Keyboard Shortcuts:</div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 dark:text-gray-300">
+              <div><kbd className="px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 rounded border border-[#fbbf24]/30 text-[10px] font-mono">↑</kbd> Previous indicator</div>
+              <div><kbd className="px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 rounded border border-[#fbbf24]/30 text-[10px] font-mono">↓</kbd> Next indicator</div>
+              <div><kbd className="px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 rounded border border-[#fbbf24]/30 text-[10px] font-mono">Ctrl/Cmd+N</kbd> Next incomplete</div>
+              <div><kbd className="px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 rounded border border-[#fbbf24]/30 text-[10px] font-mono">Esc</kbd> Unfocus editor</div>
             </div>
           </div>
         )}
 
-        {/* Status Row */}
-        <div className="flex items-center justify-between">
+        {/* Status Row with Golden Accents */}
+        <div className="flex items-center justify-between pt-2 border-t dark:border-gray-700">
           {/* Auto-save Status */}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 text-xs">
             {isSaving ? (
               <>
-                <Clock className="h-3 w-3 animate-spin" />
-                <span>Saving...</span>
+                <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] flex items-center justify-center">
+                  <Clock className="h-3 w-3 text-black animate-spin" />
+                </div>
+                <span className="font-semibold text-[#b45309] dark:text-[#fbbf24]">Saving...</span>
               </>
             ) : (
               <>
-                <Check className="h-3 w-3 text-green-600" />
-                <span>{getLastSavedText()}</span>
+                <div className="w-5 h-5 rounded-md bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
+                  <Check className="h-3 w-3 text-white" />
+                </div>
+                <span className="font-semibold text-green-700 dark:text-green-500">{getLastSavedText()}</span>
               </>
             )}
           </div>
@@ -399,8 +371,10 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
           <div className="flex items-center gap-2 text-xs">
             {movValidation.errors.length > 0 || movValidation.warnings.length > 0 ? (
               <>
-                <AlertCircle className="h-3 w-3 text-amber-600" />
-                <span className="text-amber-600">
+                <div className="w-5 h-5 rounded-md bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
+                  <AlertCircle className="h-3 w-3 text-white" />
+                </div>
+                <span className="font-semibold text-amber-700 dark:text-amber-500">
                   {movValidation.errors.length > 0 && `${movValidation.errors.length} error${movValidation.errors.length > 1 ? 's' : ''}`}
                   {movValidation.errors.length > 0 && movValidation.warnings.length > 0 && ', '}
                   {movValidation.warnings.length > 0 && `${movValidation.warnings.length} warning${movValidation.warnings.length > 1 ? 's' : ''}`}
@@ -408,47 +382,15 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
               </>
             ) : (
               <>
-                <Check className="h-3 w-3 text-green-600" />
-                <span className="text-green-600">No errors</span>
+                <div className="w-5 h-5 rounded-md bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
+                  <Check className="h-3 w-3 text-white" />
+                </div>
+                <span className="font-semibold text-green-700 dark:text-green-500">No errors</span>
               </>
             )}
           </div>
         </div>
       </div>
     </div>
-  );
-}
-
-/**
- * Tab Completion Badge Component
- * Shows completion status for each tab
- */
-interface TabCompletionBadgeProps {
-  label: string;
-  isComplete: boolean;
-  isActive: boolean;
-  onClick: () => void;
-  validationBadge?: React.ReactNode;
-}
-
-function TabCompletionBadge({ label, isComplete, isActive, onClick, validationBadge }: TabCompletionBadgeProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors',
-        isActive && 'bg-primary text-primary-foreground',
-        !isActive && 'hover:bg-accent'
-      )}
-    >
-      <span className="font-medium">{label}</span>
-      {isComplete ? (
-        <Check className="h-3 w-3 text-green-600" />
-      ) : (
-        <div className="h-3 w-3 rounded-full border-2 border-muted-foreground/30" />
-      )}
-      {validationBadge}
-    </button>
   );
 }

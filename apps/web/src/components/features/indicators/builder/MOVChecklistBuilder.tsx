@@ -338,17 +338,17 @@ export default function MOVChecklistBuilder({
             isPaletteOpen ? 'w-64' : 'w-12'
           )}
         >
-          <Card className="h-full">
+          <Card className="h-full dark:bg-gray-800 dark:border-gray-700">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className={cn('text-sm', !isPaletteOpen && 'hidden')}>
+                <CardTitle className={cn('text-sm dark:text-gray-100', !isPaletteOpen && 'hidden')}>
                   MOV Item Types
                 </CardTitle>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setIsPaletteOpen(!isPaletteOpen)}
-                  className="h-8 w-8 p-0"
+                  className="h-8 w-8 p-0 dark:text-gray-200 dark:hover:bg-gray-700"
                 >
                   {isPaletteOpen ? <X className="h-4 w-4" /> : <Settings className="h-4 w-4" />}
                 </Button>
@@ -356,7 +356,7 @@ export default function MOVChecklistBuilder({
             </CardHeader>
             {isPaletteOpen && (
               <CardContent className="space-y-2">
-                <p className="text-xs text-muted-foreground mb-4">
+                <p className="text-xs text-muted-foreground dark:text-gray-400 mb-4">
                   Click to add item type to checklist
                 </p>
                 <div className="space-y-1">
@@ -366,7 +366,7 @@ export default function MOVChecklistBuilder({
                       variant="outline"
                       size="sm"
                       onClick={() => handleAddItem(itemType.type)}
-                      className="w-full justify-start text-left h-auto py-2"
+                      className="w-full justify-start text-left h-auto py-2 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
                       title={itemType.description}
                     >
                       <span className="text-lg mr-2">{itemType.emoji}</span>
@@ -374,8 +374,8 @@ export default function MOVChecklistBuilder({
                     </Button>
                   ))}
                 </div>
-                <Separator className="my-4" />
-                <div className="text-xs text-muted-foreground">
+                <Separator className="my-4 dark:bg-gray-700" />
+                <div className="text-xs text-muted-foreground dark:text-gray-400">
                   <p className="font-medium mb-1">9 Item Types:</p>
                   <p className="text-[10px] leading-tight">
                     Checkbox, Group, Currency, Number, Text, Date, Assessment, Radio, Dropdown
@@ -389,11 +389,11 @@ export default function MOVChecklistBuilder({
 
       {/* Main Canvas: Drag-drop area */}
       <div className="flex-1 min-w-0">
-        <Card className="h-full flex flex-col">
+        <Card className="h-full flex flex-col dark:bg-gray-800 dark:border-gray-700">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-base flex items-center gap-2">
+                <CardTitle className="text-base flex items-center gap-2 dark:text-gray-100">
                   MOV Checklist
                   {!validation.isValid && (
                     <Badge variant="destructive" className="text-[10px] py-0">
@@ -401,12 +401,12 @@ export default function MOVChecklistBuilder({
                     </Badge>
                   )}
                   {validation.warnings.length > 0 && (
-                    <Badge variant="outline" className="text-[10px] py-0 bg-yellow-500/10 text-yellow-700 border-yellow-300">
+                    <Badge variant="outline" className="text-[10px] py-0 bg-yellow-500/10 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-600">
                       {validation.warnings.length} warning{validation.warnings.length !== 1 ? 's' : ''}
                     </Badge>
                   )}
                 </CardTitle>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground dark:text-gray-400 mt-1">
                   {config.items.length} item{config.items.length !== 1 ? 's' : ''}
                 </p>
               </div>
@@ -419,7 +419,7 @@ export default function MOVChecklistBuilder({
                     variant="ghost"
                     size="sm"
                     onClick={handleClearAll}
-                    className="text-destructive hover:text-destructive"
+                    className="text-destructive hover:text-destructive dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-gray-700"
                   >
                     Clear All
                   </Button>
@@ -430,9 +430,9 @@ export default function MOVChecklistBuilder({
           <CardContent className="flex-1 overflow-auto">
             {config.items.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-sm text-muted-foreground mb-2">No MOV items yet</p>
-                <p className="text-xs text-muted-foreground max-w-sm">
+                <AlertCircle className="h-12 w-12 text-muted-foreground dark:text-gray-400 mb-4" />
+                <p className="text-sm text-muted-foreground dark:text-gray-300 mb-2">No MOV items yet</p>
+                <p className="text-xs text-muted-foreground dark:text-gray-400 max-w-sm">
                   {readonly
                     ? 'This indicator has no MOV checklist configured.'
                     : 'Click on item types from the left palette to start building your checklist.'}
@@ -467,12 +467,12 @@ export default function MOVChecklistBuilder({
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 className={cn(
-                                  'flex items-start gap-2 p-3 rounded-md border bg-card',
+                                  'flex items-start gap-2 p-3 rounded-md border bg-card dark:bg-gray-700 dark:border-gray-600',
                                   snapshot.isDragging && 'shadow-lg ring-2 ring-primary',
                                   selectedItemId === item.id && 'ring-2 ring-primary',
-                                  hasErrors && 'border-destructive bg-destructive/5',
-                                  hasWarnings && !hasErrors && 'border-yellow-500 bg-yellow-500/5',
-                                  'hover:border-primary/50 transition-all cursor-pointer'
+                                  hasErrors && 'border-destructive dark:border-red-500 bg-destructive/5 dark:bg-red-950/20',
+                                  hasWarnings && !hasErrors && 'border-yellow-500 dark:border-yellow-600 bg-yellow-500/5 dark:bg-yellow-950/20',
+                                  'hover:border-primary/50 dark:hover:border-[#fbbf24]/50 transition-all cursor-pointer'
                                 )}
                                 onClick={() => setSelectedItemId(item.id)}
                               >
@@ -482,7 +482,7 @@ export default function MOVChecklistBuilder({
                                   {...provided.dragHandleProps}
                                   className="mt-0.5 cursor-grab active:cursor-grabbing"
                                 >
-                                  <GripVertical className="h-5 w-5 text-muted-foreground" />
+                                  <GripVertical className="h-5 w-5 text-muted-foreground dark:text-gray-400" />
                                 </div>
                               )}
 
@@ -492,7 +492,7 @@ export default function MOVChecklistBuilder({
                                   <span className="text-base">
                                     {MOV_ITEM_TYPES[item.type]?.emoji || '📋'}
                                   </span>
-                                  <span className="text-sm font-medium">{item.label || 'Untitled'}</span>
+                                  <span className="text-sm font-medium dark:text-gray-100">{item.label || 'Untitled'}</span>
                                   <Badge variant="outline" className="text-[10px] py-0">
                                     {MOV_ITEM_TYPES[item.type]?.label || item.type}
                                   </Badge>
@@ -507,13 +507,13 @@ export default function MOVChecklistBuilder({
                                     </Badge>
                                   )}
                                   {hasWarnings && !hasErrors && (
-                                    <Badge variant="outline" className="text-[10px] py-0 bg-yellow-500/10 text-yellow-700 border-yellow-300">
+                                    <Badge variant="outline" className="text-[10px] py-0 bg-yellow-500/10 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-600">
                                       {itemErrors.filter((e) => e.severity === 'warning').length} warning{itemErrors.filter((e) => e.severity === 'warning').length !== 1 ? 's' : ''}
                                     </Badge>
                                   )}
                                 </div>
                                 {item.help_text && (
-                                  <p className="text-xs text-muted-foreground line-clamp-1">
+                                  <p className="text-xs text-muted-foreground dark:text-gray-400 line-clamp-1">
                                     {item.help_text}
                                   </p>
                                 )}
@@ -524,7 +524,7 @@ export default function MOVChecklistBuilder({
                                         key={idx}
                                         className={cn(
                                           'text-[10px] line-clamp-1',
-                                          error.severity === 'error' ? 'text-destructive' : 'text-yellow-700'
+                                          error.severity === 'error' ? 'text-destructive dark:text-red-400' : 'text-yellow-700 dark:text-yellow-400'
                                         )}
                                       >
                                         {error.message}
@@ -543,7 +543,7 @@ export default function MOVChecklistBuilder({
                                     e.stopPropagation();
                                     handleRemoveItem(item.id);
                                   }}
-                                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                  className="h-8 w-8 p-0 text-destructive hover:text-destructive dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-gray-600"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
@@ -566,22 +566,22 @@ export default function MOVChecklistBuilder({
       {/* Right Panel: Item Configuration */}
       {selectedItem && !readonly && (
         <div className="flex-shrink-0 w-80">
-          <Card className="h-full">
+          <Card className="h-full dark:bg-gray-800 dark:border-gray-700">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm">Configure Item</CardTitle>
+                <CardTitle className="text-sm dark:text-gray-100">Configure Item</CardTitle>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setSelectedItemId(null)}
-                  className="h-8 w-8 p-0"
+                  className="h-8 w-8 p-0 dark:text-gray-200 dark:hover:bg-gray-700"
                 >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
               <div className="flex items-center gap-2 mt-2">
                 <span className="text-lg">{MOV_ITEM_TYPES[selectedItem.type]?.emoji}</span>
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-xs dark:border-gray-600 dark:text-gray-200">
                   {MOV_ITEM_TYPES[selectedItem.type]?.label}
                 </Badge>
               </div>
@@ -589,21 +589,21 @@ export default function MOVChecklistBuilder({
             <CardContent className="space-y-4 overflow-y-auto max-h-[calc(100vh-200px)]">
               {/* Validation Errors for Selected Item */}
               {selectedItemErrors.length > 0 && (
-                <Card className="border-destructive bg-destructive/5">
+                <Card className="border-destructive dark:border-red-500 bg-destructive/5 dark:bg-red-950/20">
                   <CardContent className="p-3 space-y-2">
                     <div className="flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4 text-destructive" />
-                      <span className="text-xs font-medium">Validation Issues</span>
+                      <AlertCircle className="h-4 w-4 text-destructive dark:text-red-400" />
+                      <span className="text-xs font-medium dark:text-gray-100">Validation Issues</span>
                     </div>
                     {selectedItemErrors.map((error, idx) => (
                       <div key={idx} className="text-xs">
                         <span className={cn(
                           'font-medium',
-                          error.severity === 'error' ? 'text-destructive' : 'text-yellow-700'
+                          error.severity === 'error' ? 'text-destructive dark:text-red-400' : 'text-yellow-700 dark:text-yellow-400'
                         )}>
                           {error.severity === 'error' ? '❌' : '⚠️'} {error.field}:
                         </span>{' '}
-                        <span className="text-muted-foreground">{error.message}</span>
+                        <span className="text-muted-foreground dark:text-gray-400">{error.message}</span>
                       </div>
                     ))}
                   </CardContent>
