@@ -106,9 +106,9 @@ class Indicator(Base):
         String(20), nullable=True, default='none'
     )  # 'single', 'multiple', 'none'
 
-    # MOV checklist items (JSONB array) - Phase 6
+    # MOV checklist items (JSON array) - Phase 6
     mov_checklist_items: Mapped[dict | None] = mapped_column(
-        JSONB, nullable=True
+        JSON, nullable=True
     )  # Array of MOV item configurations
 
     # Timestamps
@@ -181,7 +181,7 @@ class IndicatorHistory(Base):
     indicator_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
     sort_order: Mapped[int | None] = mapped_column(Integer, nullable=True)
     selection_mode: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    mov_checklist_items: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    mov_checklist_items: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     # Foreign keys preserved from original indicator
     governance_area_id: Mapped[int] = mapped_column(nullable=False)

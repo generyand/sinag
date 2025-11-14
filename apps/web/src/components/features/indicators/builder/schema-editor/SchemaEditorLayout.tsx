@@ -7,7 +7,7 @@ import { Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useIndicatorBuilderStore } from '@/store/useIndicatorBuilderStore';
 import { useSchemaNavigation } from '@/hooks/useSchemaNavigation';
 import { useAutoSaveDelta } from '@/hooks/useAutoSaveDelta';
-import { IndicatorNavigator } from './IndicatorNavigator';
+import { DualModeTreePanel } from './DualModeTreePanel';
 import { SchemaEditorPanel } from './SchemaEditorPanel';
 
 /**
@@ -39,10 +39,11 @@ export function SchemaEditorLayout() {
   );
   const autoSave = useIndicatorBuilderStore(state => state.autoSave);
   const markSchemaSaved = useIndicatorBuilderStore(state => state.markSchemaSaved);
+  const isTreeEditModeActive = useIndicatorBuilderStore(state => state.isTreeEditModeActive);
 
   const progress = getSchemaProgress();
 
-  // Delta-based auto-save
+  // Delta-based auto-save (paused during tree edit mode)
   const { isSaving, saveNow, pendingCount } = useAutoSaveDelta({
     draftId: tree.draftId,
     data: tree,
@@ -64,7 +65,8 @@ export function SchemaEditorLayout() {
       console.error('[Auto-save] Delta save failed:', error);
     },
     debounceMs: 3000,
-    enabled: true,
+    // Disable auto-save when actively editing tree structure
+    enabled: !isTreeEditModeActive,
   });
 
   // Enable keyboard navigation
@@ -93,13 +95,11 @@ export function SchemaEditorLayout() {
     <>
       {/* Desktop/Tablet: Split Pane Layout */}
       <div className="hidden md:grid md:grid-cols-[300px_1fr] lg:grid-cols-[350px_1fr] gap-4 h-full">
-        {/* Left Panel: Tree Navigator */}
-        <div className="border-r bg-muted/20">
-          <IndicatorNavigator
-            currentIndicatorId={currentSchemaIndicatorId}
-            onNavigate={handleNavigate}
-          />
-        </div>
+        {/* Left Panel: Dual-Mode Tree (Navigate + Edit) */}
+        <DualModeTreePanel
+          currentIndicatorId={currentSchemaIndicatorId}
+          onNavigate={handleNavigate}
+        />
 
         {/* Right Panel: Schema Editor */}
         <div className="overflow-hidden">
@@ -119,18 +119,10 @@ export function SchemaEditorLayout() {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-[300px] p-0">
-              <div className="h-full flex flex-col">
-                <div className="p-4 border-b">
-                  <h3 className="font-semibold">Indicators</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {progress.complete} of {progress.total} complete ({progress.percentage}%)
-                  </p>
-                </div>
-                <IndicatorNavigator
-                  currentIndicatorId={currentSchemaIndicatorId}
-                  onNavigate={handleNavigate}
-                />
-              </div>
+              <DualModeTreePanel
+                currentIndicatorId={currentSchemaIndicatorId}
+                onNavigate={handleNavigate}
+              />
             </SheetContent>
           </Sheet>
 

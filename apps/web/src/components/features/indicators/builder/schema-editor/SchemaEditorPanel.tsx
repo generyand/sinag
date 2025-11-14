@@ -2,34 +2,35 @@
 
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, Check, Clock, Copy, FileText, ChevronLeft, ChevronRight, Keyboard, Clipboard, ClipboardPaste } from 'lucide-react';
+import { AlertCircle, Check, Clock, Eye, FileText, ChevronLeft, ChevronRight, Keyboard, Info, Calculator } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIndicatorBuilderStore } from '@/store/useIndicatorBuilderStore';
 import { useSchemaNavigation } from '@/hooks/useSchemaNavigation';
-import { useAutoSchemaValidation } from '@/hooks/useSchemaValidation';
-import { useSchemaCopyPaste } from '@/hooks/useSchemaCopyPaste';
-import { FormSchemaBuilder } from '../FormSchemaBuilder';
-import { CalculationSchemaBuilder } from '../CalculationSchemaBuilder';
-import { RichTextEditor } from '../RichTextEditor';
-import { ParentAggregateDashboard } from './ParentAggregateDashboard';
-import MOVChecklistBuilder from '../MOVChecklistBuilder';
 import { useMOVValidation } from '@/hooks/useMOVValidation';
+import { BasicInfoTab } from './BasicInfoTab';
+import { CalculationTab } from './CalculationTab';
+import { PreviewTab } from './PreviewTab';
+import MOVChecklistBuilder from '../MOVChecklistBuilder';
+import { ParentAggregateDashboard } from './ParentAggregateDashboard';
 import { MOVChecklistConfig } from '@/types/mov-checklist';
 
 /**
  * SchemaEditorPanel Component
  *
- * Right-side panel for editing indicator schemas.
- * Provides tabbed interface for Form, Calculation, and Remark schemas.
+ * Right-side panel for editing indicator properties.
+ * Provides tabbed interface per indicator-builder-specification.md lines 1714-1738:
+ * 1. Basic Info Tab - Code, name, description, parent, display order
+ * 2. Calculation Tab - auto_calc_method, logical_operator, selection_mode, BBI association
+ * 3. MOV Checklist Tab - Structured JSONB checklist for validator verification
+ * 4. Preview Tab - Live preview of BLGU/Validator views
  *
  * Features:
- * - Tab navigation between schema types
+ * - Tab navigation between property types
  * - Real-time validation and auto-save status
  * - Empty state when no indicator selected
- * - Integration with existing schema builders
+ * - Parent aggregate dashboard for parent indicators
  */
 
 interface SchemaEditorPanelProps {
@@ -37,16 +38,16 @@ interface SchemaEditorPanelProps {
 }
 
 export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
-  const [activeTab, setActiveTab] = useState<'form' | 'calculation' | 'remark' | 'mov_checklist'>('form');
+  const [activeTab, setActiveTab] = useState<'basic_info' | 'calculation' | 'mov_checklist' | 'preview'>('basic_info');
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
 
   const getNodeById = useIndicatorBuilderStore(state => state.getNodeById);
   const updateNode = useIndicatorBuilderStore(state => state.updateNode);
-  const schemaStatus = useIndicatorBuilderStore(state => state.schemaStatus);
+  const tree = useIndicatorBuilderStore(state => state.tree);
   const autoSave = useIndicatorBuilderStore(state => state.autoSave);
   const markSchemaDirty = useIndicatorBuilderStore(state => state.markSchemaDirty);
 
-  // NEW: Leaf detection and parent status (Phase 6)
+  // Parent/leaf detection
   const isLeafIndicator = useIndicatorBuilderStore(state => state.isLeafIndicator);
   const getParentStatusInfo = useIndicatorBuilderStore(state => state.getParentStatusInfo);
   const getDescendantLeavesOf = useIndicatorBuilderStore(state => state.getDescendantLeavesOf);
@@ -54,11 +55,9 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
   const navigateToNextIncomplete = useIndicatorBuilderStore(state => state.navigateToNextIncomplete);
 
   const indicator = indicatorId ? getNodeById(indicatorId) : null;
-  const status = indicatorId ? schemaStatus.get(indicatorId) : null;
   const isSaving = indicatorId ? autoSave.savingSchemas.has(indicatorId) : false;
   const lastSaved = indicatorId ? autoSave.lastSaved.get(indicatorId) : null;
 
-  // NEW: Check if indicator is a leaf (Phase 6)
   const isLeaf = indicatorId ? isLeafIndicator(indicatorId) : false;
   const parentStatus = indicatorId && !isLeaf ? getParentStatusInfo(indicatorId) : null;
   const leafIndicators = indicatorId && !isLeaf ? getDescendantLeavesOf(indicatorId) : [];
@@ -67,29 +66,61 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
   const {
     goToNext,
     goToPrevious,
-    goToNextIncomplete,
     hasNext,
     hasPrevious,
-    hasNextIncomplete,
   } = useSchemaNavigation({ enabled: true });
 
-  // Validation hook - runs automatically on schema changes (debounced 500ms)
-  const { errors, errorCount, warningCount, isValid } = useAutoSchemaValidation(indicatorId, 500);
-
-  // Copy/paste hook with keyboard shortcuts (Ctrl+Shift+C/V)
-  const { copy, paste, canPaste, copiedFrom } = useSchemaCopyPaste({
-    indicatorId,
-    activeTab,
-  });
-
-  // MOV Checklist validation (must be before early returns per Rules of Hooks)
+  // MOV Checklist validation
   const movChecklistConfig = indicator?.mov_checklist_items as unknown as MOVChecklistConfig | undefined;
   const movValidation = useMOVValidation(movChecklistConfig);
   const movChecklistComplete = movChecklistConfig?.items && movChecklistConfig.items.length > 0 && movValidation.isValid;
 
-  // Reset to form tab when indicator changes
+  // Get available parents (all nodes except self and descendants)
+  const availableParents = React.useMemo(() => {
+    if (!indicator) return [];
+    const parents: Array<{ id: string; code: string; name: string }> = [];
+    tree.nodes.forEach((node, id) => {
+      if (id !== indicatorId && id !== indicator.parent_temp_id) {
+        // Exclude self; TODO: also exclude descendants to prevent circular references
+        parents.push({
+          id,
+          code: node.code || '',
+          name: node.name,
+        });
+      }
+    });
+    return parents;
+  }, [indicator, indicatorId, tree.nodes]);
+
+  // TODO: Fetch available BBIs from API
+  const availableBBIs = React.useMemo(() => {
+    // Placeholder: In production, fetch from API
+    return [
+      { id: 1, code: 'BDRRMC', name: 'Barangay Disaster Risk Reduction and Management Committee' },
+      { id: 2, code: 'BADAC', name: 'Barangay Anti-Drug Abuse Council' },
+      { id: 3, code: 'BPOC', name: 'Barangay Peace and Order Committee' },
+      { id: 4, code: 'LT', name: 'Lupong Tagapamayapa' },
+      { id: 5, code: 'VAW', name: 'Barangay Violence Against Women Desk' },
+      { id: 6, code: 'BDC', name: 'Barangay Development Council' },
+      { id: 7, code: 'BCPC', name: 'Barangay Council for the Protection of Children' },
+      { id: 8, code: 'BNC', name: 'Barangay Nutrition Committee' },
+      { id: 9, code: 'BESWMC', name: 'Barangay Ecological Solid Waste Management Committee' },
+    ];
+  }, []);
+
+  // Check if indicator has children
+  const hasChildren = React.useMemo(() => {
+    if (!indicator) return false;
+    let childCount = 0;
+    tree.nodes.forEach((node) => {
+      if (node.parent_temp_id === indicatorId) childCount++;
+    });
+    return childCount > 0;
+  }, [indicator, indicatorId, tree.nodes]);
+
+  // Reset to basic_info tab when indicator changes
   useEffect(() => {
-    setActiveTab('form');
+    setActiveTab('basic_info');
   }, [indicatorId]);
 
   // Show empty state if no indicator selected
@@ -101,7 +132,7 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
           <div className="space-y-2">
             <h3 className="text-lg font-semibold">No Indicator Selected</h3>
             <p className="text-sm text-muted-foreground">
-              Select an indicator from the tree navigator to configure its schemas.
+              Select an indicator from the tree navigator to configure its properties.
             </p>
           </div>
         </div>
@@ -109,7 +140,7 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
     );
   }
 
-  // NEW: Show parent aggregate dashboard for parent indicators (Phase 6)
+  // Show parent aggregate dashboard for parent indicators
   if (!isLeaf && parentStatus) {
     return (
       <ParentAggregateDashboard
@@ -134,24 +165,10 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
     return `Saved ${hours}h ago`;
   };
 
-  // Handle schema updates with dirty marking
-  const handleFormSchemaChange = (schema: any) => {
+  // Handle updates with dirty marking
+  const handleUpdate = (updates: Partial<typeof indicator>) => {
     if (indicatorId) {
-      updateNode(indicatorId, { form_schema: schema });
-      markSchemaDirty(indicatorId);
-    }
-  };
-
-  const handleCalculationSchemaChange = (schema: any) => {
-    if (indicatorId) {
-      updateNode(indicatorId, { calculation_schema: schema });
-      markSchemaDirty(indicatorId);
-    }
-  };
-
-  const handleRemarkSchemaChange = (html: string) => {
-    if (indicatorId) {
-      updateNode(indicatorId, { remark_schema: { html } as Record<string, any> });
+      updateNode(indicatorId, updates);
       markSchemaDirty(indicatorId);
     }
   };
@@ -163,8 +180,10 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
     }
   };
 
-  // Extract form fields for calculation builder
-  const formFields = indicator.form_schema?.fields || [];
+  // Tab completion status
+  const basicInfoComplete = !!(indicator.name && indicator.description);
+  // TODO: Update when spec-aligned calculation properties are added to IndicatorNode
+  const calculationComplete = indicator.is_auto_calculable !== undefined;
 
   return (
     <div className="h-full flex flex-col">
@@ -187,56 +206,21 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
               </p>
             )}
           </div>
-
-          {/* Action Buttons: Copy/Paste */}
-          <div className="flex items-center gap-2 shrink-0">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={copy}
-              title={`Copy ${activeTab} schema (Ctrl+Shift+C)`}
-            >
-              <Clipboard className="h-4 w-4 mr-1" />
-              Copy
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={paste}
-              disabled={!canPaste}
-              title={
-                canPaste
-                  ? `Paste ${activeTab} schema from ${copiedFrom} (Ctrl+Shift+V)`
-                  : copiedFrom
-                  ? `Cannot paste ${copiedFrom.split(' (')[1]?.replace(')', '')} schema into ${activeTab} tab`
-                  : 'No schema copied (Ctrl+Shift+C to copy)'
-              }
-            >
-              <ClipboardPaste className="h-4 w-4 mr-1" />
-              Paste
-            </Button>
-          </div>
         </div>
 
         {/* Tab Completion Status */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <TabCompletionBadge
-            label="Form"
-            isComplete={status?.formComplete || false}
-            isActive={activeTab === 'form'}
-            onClick={() => setActiveTab('form')}
+            label="Basic Info"
+            isComplete={basicInfoComplete}
+            isActive={activeTab === 'basic_info'}
+            onClick={() => setActiveTab('basic_info')}
           />
           <TabCompletionBadge
             label="Calculation"
-            isComplete={status?.calculationComplete || false}
+            isComplete={calculationComplete}
             isActive={activeTab === 'calculation'}
             onClick={() => setActiveTab('calculation')}
-          />
-          <TabCompletionBadge
-            label="Remark"
-            isComplete={status?.remarkComplete || false}
-            isActive={activeTab === 'remark'}
-            onClick={() => setActiveTab('remark')}
           />
           <TabCompletionBadge
             label="MOV Checklist"
@@ -255,6 +239,12 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
               ) : undefined
             }
           />
+          <TabCompletionBadge
+            label="Preview"
+            isComplete={false}
+            isActive={activeTab === 'preview'}
+            onClick={() => setActiveTab('preview')}
+          />
         </div>
       </div>
 
@@ -262,19 +252,18 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
       <div className="flex-1 overflow-hidden">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="h-full flex flex-col">
           <TabsList className="mx-4 mt-4 shrink-0">
-            <TabsTrigger value="form" className="flex items-center gap-2">
-              Form Schema
-              {status?.formComplete && <Check className="h-3 w-3 text-green-600" />}
+            <TabsTrigger value="basic_info" className="flex items-center gap-2">
+              <Info className="h-3 w-3" />
+              Basic Info
+              {basicInfoComplete && <Check className="h-3 w-3 text-green-600" />}
             </TabsTrigger>
             <TabsTrigger value="calculation" className="flex items-center gap-2">
-              Calculation Schema
-              {status?.calculationComplete && <Check className="h-3 w-3 text-green-600" />}
-            </TabsTrigger>
-            <TabsTrigger value="remark" className="flex items-center gap-2">
-              Remark Template
-              {status?.remarkComplete && <Check className="h-3 w-3 text-green-600" />}
+              <Calculator className="h-3 w-3" />
+              Calculation
+              {calculationComplete && <Check className="h-3 w-3 text-green-600" />}
             </TabsTrigger>
             <TabsTrigger value="mov_checklist" className="flex items-center gap-2">
+              <FileText className="h-3 w-3" />
               MOV Checklist
               {movChecklistComplete && <Check className="h-3 w-3 text-green-600" />}
               {!movValidation.isValid && movChecklistConfig?.items && movChecklistConfig.items.length > 0 && (
@@ -288,42 +277,48 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
                 </Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="preview" className="flex items-center gap-2">
+              <Eye className="h-3 w-3" />
+              Preview
+            </TabsTrigger>
           </TabsList>
 
-          <div className="flex-1 overflow-hidden px-4 pb-4">
-            <TabsContent value="form" className="h-full mt-4 overflow-auto">
-              <FormSchemaBuilder
-                value={indicator.form_schema as unknown as any}
-                onChange={handleFormSchemaChange}
-                className="h-full"
-              />
+          <div className="flex-1 overflow-hidden">
+            <TabsContent value="basic_info" className="h-full mt-0 overflow-auto">
+              {activeTab === 'basic_info' && (
+                <BasicInfoTab
+                  indicator={indicator}
+                  availableParents={availableParents}
+                  onUpdate={handleUpdate}
+                />
+              )}
             </TabsContent>
 
-            <TabsContent value="calculation" className="h-full mt-4 overflow-auto">
-              <CalculationSchemaBuilder
-                value={indicator.calculation_schema as unknown as any}
-                formFields={formFields}
-                onChange={handleCalculationSchemaChange}
-                className="h-full"
-              />
+            <TabsContent value="calculation" className="h-full mt-0 overflow-auto">
+              {activeTab === 'calculation' && (
+                <CalculationTab
+                  indicator={indicator}
+                  availableBBIs={availableBBIs}
+                  hasChildren={hasChildren}
+                  onUpdate={handleUpdate}
+                />
+              )}
             </TabsContent>
 
-            <TabsContent value="remark" className="h-full mt-4 overflow-auto">
-              <RichTextEditor
-                value={(indicator.remark_schema as any)?.html || ''}
-                onChange={handleRemarkSchemaChange}
-                placeholder="Enter remark template for this indicator..."
-                minHeight={400}
-                className="h-full"
-              />
+            <TabsContent value="mov_checklist" className="h-full mt-0 overflow-hidden">
+              {activeTab === 'mov_checklist' && (
+                <MOVChecklistBuilder
+                  value={movChecklistConfig}
+                  onChange={handleMOVChecklistChange}
+                  className="h-full"
+                />
+              )}
             </TabsContent>
 
-            <TabsContent value="mov_checklist" className="h-full mt-4 overflow-hidden">
-              <MOVChecklistBuilder
-                value={movChecklistConfig}
-                onChange={handleMOVChecklistChange}
-                className="h-full"
-              />
+            <TabsContent value="preview" className="h-full mt-0 overflow-auto">
+              {activeTab === 'preview' && (
+                <PreviewTab indicator={indicator} />
+              )}
             </TabsContent>
           </div>
         </Tabs>
@@ -378,8 +373,6 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
               <div><kbd className="px-1 py-0.5 bg-background rounded border text-[10px]">↑</kbd> Previous indicator</div>
               <div><kbd className="px-1 py-0.5 bg-background rounded border text-[10px]">↓</kbd> Next indicator</div>
               <div><kbd className="px-1 py-0.5 bg-background rounded border text-[10px]">Ctrl/Cmd+N</kbd> Next incomplete</div>
-              <div><kbd className="px-1 py-0.5 bg-background rounded border text-[10px]">Ctrl/Cmd+Shift+C</kbd> Copy schema</div>
-              <div><kbd className="px-1 py-0.5 bg-background rounded border text-[10px]">Ctrl/Cmd+Shift+V</kbd> Paste schema</div>
               <div><kbd className="px-1 py-0.5 bg-background rounded border text-[10px]">Esc</kbd> Unfocus editor</div>
             </div>
           </div>
@@ -402,15 +395,15 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
             )}
           </div>
 
-          {/* Validation Status */}
+          {/* MOV Validation Status */}
           <div className="flex items-center gap-2 text-xs">
-            {errorCount > 0 || warningCount > 0 ? (
+            {movValidation.errors.length > 0 || movValidation.warnings.length > 0 ? (
               <>
                 <AlertCircle className="h-3 w-3 text-amber-600" />
                 <span className="text-amber-600">
-                  {errorCount > 0 && `${errorCount} error${errorCount > 1 ? 's' : ''}`}
-                  {errorCount > 0 && warningCount > 0 && ', '}
-                  {warningCount > 0 && `${warningCount} warning${warningCount > 1 ? 's' : ''}`}
+                  {movValidation.errors.length > 0 && `${movValidation.errors.length} error${movValidation.errors.length > 1 ? 's' : ''}`}
+                  {movValidation.errors.length > 0 && movValidation.warnings.length > 0 && ', '}
+                  {movValidation.warnings.length > 0 && `${movValidation.warnings.length} warning${movValidation.warnings.length > 1 ? 's' : ''}`}
                 </span>
               </>
             ) : (
@@ -428,7 +421,7 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
 
 /**
  * Tab Completion Badge Component
- * Shows completion status for each schema type
+ * Shows completion status for each tab
  */
 interface TabCompletionBadgeProps {
   label: string;

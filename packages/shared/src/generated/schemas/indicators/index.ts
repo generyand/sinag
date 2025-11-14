@@ -7,9 +7,11 @@ import type { CalculationSchema } from '../common';
 import type { BodyTestCalculationApiV1IndicatorsTestCalculationPostAssessmentData } from '../assessments';
 import type { BulkCreateError } from '../error';
 import type { FormSchema } from '../formschema';
+import type { RemarkSchema } from '../common';
 import type { IndicatorDraftResponseLockedByUserId } from '../users';
 import type { GovernanceAreaNested } from '../common';
 import type { IndicatorHistoryResponseArchivedByUser } from '../users';
+import type { ValidationError } from '../error';
 
 /**
  * BodyTestCalculationApiV1IndicatorsTestCalculationPost
@@ -157,9 +159,9 @@ export interface IndicatorCreate {
   technical_notes_text?: IndicatorCreateTechnicalNotesText;
   /** Form schema with validated field types */
   form_schema?: IndicatorCreateFormSchema;
-  /** Calculation schema (JSON) */
+  /** Calculation schema with validated rules */
   calculation_schema?: IndicatorCreateCalculationSchema;
-  /** Remark schema (JSON) */
+  /** Remark schema with validated templates */
   remark_schema?: IndicatorCreateRemarkSchema;
 }
 
@@ -167,13 +169,7 @@ export interface IndicatorCreate {
 /**
  * IndicatorCreateCalculationSchema
  */
-export type IndicatorCreateCalculationSchema = IndicatorCreateCalculationSchemaAnyOf | null;
-
-
-/**
- * IndicatorCreateCalculationSchemaAnyOf
- */
-export type IndicatorCreateCalculationSchemaAnyOf = { [key: string]: unknown };
+export type IndicatorCreateCalculationSchema = CalculationSchema | null;
 
 
 /**
@@ -197,13 +193,7 @@ export type IndicatorCreateParentId = number | null;
 /**
  * IndicatorCreateRemarkSchema
  */
-export type IndicatorCreateRemarkSchema = IndicatorCreateRemarkSchemaAnyOf | null;
-
-
-/**
- * IndicatorCreateRemarkSchemaAnyOf
- */
-export type IndicatorCreateRemarkSchemaAnyOf = { [key: string]: unknown };
+export type IndicatorCreateRemarkSchema = RemarkSchema | null;
 
 
 /**
@@ -237,9 +227,9 @@ export interface IndicatorCreateWithOrder {
   technical_notes_text?: IndicatorCreateWithOrderTechnicalNotesText;
   /** Form schema with validated field types */
   form_schema?: IndicatorCreateWithOrderFormSchema;
-  /** Calculation schema (JSON) */
+  /** Calculation schema with validated rules */
   calculation_schema?: IndicatorCreateWithOrderCalculationSchema;
-  /** Remark schema (JSON) */
+  /** Remark schema with validated templates */
   remark_schema?: IndicatorCreateWithOrderRemarkSchema;
   /** Temporary client-side UUID for this indicator */
   temp_id: string;
@@ -253,13 +243,7 @@ export interface IndicatorCreateWithOrder {
 /**
  * IndicatorCreateWithOrderCalculationSchema
  */
-export type IndicatorCreateWithOrderCalculationSchema = IndicatorCreateWithOrderCalculationSchemaAnyOf | null;
-
-
-/**
- * IndicatorCreateWithOrderCalculationSchemaAnyOf
- */
-export type IndicatorCreateWithOrderCalculationSchemaAnyOf = { [key: string]: unknown };
+export type IndicatorCreateWithOrderCalculationSchema = CalculationSchema | null;
 
 
 /**
@@ -289,13 +273,7 @@ export type IndicatorCreateWithOrderParentTempId = string | null;
 /**
  * IndicatorCreateWithOrderRemarkSchema
  */
-export type IndicatorCreateWithOrderRemarkSchema = IndicatorCreateWithOrderRemarkSchemaAnyOf | null;
-
-
-/**
- * IndicatorCreateWithOrderRemarkSchemaAnyOf
- */
-export type IndicatorCreateWithOrderRemarkSchemaAnyOf = { [key: string]: unknown };
+export type IndicatorCreateWithOrderRemarkSchema = RemarkSchema | null;
 
 
 /**
@@ -750,7 +728,9 @@ export interface IndicatorUpdate {
   is_auto_calculable?: IndicatorUpdateIsAutoCalculable;
   /** Form schema with validated field types */
   form_schema?: IndicatorUpdateFormSchema;
+  /** Calculation schema with validated rules */
   calculation_schema?: IndicatorUpdateCalculationSchema;
+  /** Remark schema with validated templates */
   remark_schema?: IndicatorUpdateRemarkSchema;
   technical_notes_text?: IndicatorUpdateTechnicalNotesText;
 }
@@ -759,13 +739,7 @@ export interface IndicatorUpdate {
 /**
  * IndicatorUpdateCalculationSchema
  */
-export type IndicatorUpdateCalculationSchema = IndicatorUpdateCalculationSchemaAnyOf | null;
-
-
-/**
- * IndicatorUpdateCalculationSchemaAnyOf
- */
-export type IndicatorUpdateCalculationSchemaAnyOf = { [key: string]: unknown };
+export type IndicatorUpdateCalculationSchema = CalculationSchema | null;
 
 
 /**
@@ -819,19 +793,41 @@ export type IndicatorUpdateParentId = number | null;
 /**
  * IndicatorUpdateRemarkSchema
  */
-export type IndicatorUpdateRemarkSchema = IndicatorUpdateRemarkSchemaAnyOf | null;
-
-
-/**
- * IndicatorUpdateRemarkSchemaAnyOf
- */
-export type IndicatorUpdateRemarkSchemaAnyOf = { [key: string]: unknown };
+export type IndicatorUpdateRemarkSchema = RemarkSchema | null;
 
 
 /**
  * IndicatorUpdateTechnicalNotesText
  */
 export type IndicatorUpdateTechnicalNotesText = string | null;
+
+
+/**
+ * IndicatorValidationRequest
+ */
+export interface IndicatorValidationRequest {
+  /** List of indicator dictionaries to validate */
+  indicators: IndicatorValidationRequestIndicatorsItem[];
+}
+
+
+/**
+ * IndicatorValidationRequestIndicatorsItem
+ */
+export type IndicatorValidationRequestIndicatorsItem = { [key: string]: unknown };
+
+
+/**
+ * IndicatorValidationResponse
+ */
+export interface IndicatorValidationResponse {
+  /** Whether the indicator tree is valid */
+  is_valid: boolean;
+  /** List of validation errors */
+  errors?: ValidationError[];
+  /** List of validation warnings */
+  warnings?: string[];
+}
 
 
 /**

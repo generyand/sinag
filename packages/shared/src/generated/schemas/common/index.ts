@@ -11,6 +11,7 @@ import type { MatchValueRule } from '../matchvaluerule';
 import type { BBIFunctionalityCheckRule } from '../bbis';
 import type { FileUploadFieldConditionalMovRequirement } from '../movs';
 import type { IndicatorItem } from '../indicators';
+import type { ConditionalRemark } from '../conditionalremark';
 import type { ReorderRequestIndicatorsItem } from '../indicators';
 import type { AssessmentRow } from '../assessments';
 
@@ -668,6 +669,21 @@ export interface RadioButtonField {
  * RadioButtonFieldHelpText
  */
 export type RadioButtonFieldHelpText = string | null;
+
+
+/**
+ * RemarkSchema
+ */
+export interface RemarkSchema {
+  /** List of conditional remark templates */
+  conditional_remarks?: ConditionalRemark[];
+  /**
+   * Default remark template used when no conditions match
+   * @minLength 1
+   * @maxLength 2000
+   */
+  default_template: string;
+}
 
 
 /**

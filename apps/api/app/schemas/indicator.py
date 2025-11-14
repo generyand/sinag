@@ -8,6 +8,8 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.form_schema import FormSchema
+from app.schemas.calculation_schema import CalculationSchema
+from app.schemas.remark_schema import RemarkSchema
 
 
 class GovernanceAreaNested(BaseModel):
@@ -37,8 +39,8 @@ class IndicatorCreate(IndicatorBase):
     """Schema for creating a new indicator."""
 
     form_schema: Optional[FormSchema] = Field(None, description="Form schema with validated field types")
-    calculation_schema: Optional[Dict[str, Any]] = Field(None, description="Calculation schema (JSON)")
-    remark_schema: Optional[Dict[str, Any]] = Field(None, description="Remark schema (JSON)")
+    calculation_schema: Optional[CalculationSchema] = Field(None, description="Calculation schema with validated rules")
+    remark_schema: Optional[RemarkSchema] = Field(None, description="Remark schema with validated templates")
 
 
 class IndicatorUpdate(BaseModel):
@@ -52,8 +54,8 @@ class IndicatorUpdate(BaseModel):
     is_profiling_only: Optional[bool] = None
     is_auto_calculable: Optional[bool] = None
     form_schema: Optional[FormSchema] = Field(None, description="Form schema with validated field types")
-    calculation_schema: Optional[Dict[str, Any]] = None
-    remark_schema: Optional[Dict[str, Any]] = None
+    calculation_schema: Optional[CalculationSchema] = Field(None, description="Calculation schema with validated rules")
+    remark_schema: Optional[RemarkSchema] = Field(None, description="Remark schema with validated templates")
     technical_notes_text: Optional[str] = None
 
 
@@ -280,4 +282,37 @@ class IndicatorDraftDeltaUpdate(BaseModel):
     metadata: Optional[Dict[str, Any]] = Field(
         None,
         description="Optional metadata (current_step, status, title, etc.)",
+    )
+
+
+# =============================================================================
+# Validation Schemas (Phase 6: Tree Structure & Schema Validation)
+# =============================================================================
+
+
+class IndicatorValidationRequest(BaseModel):
+    """Schema for validating indicator tree structure before publishing."""
+
+    indicators: List[Dict[str, Any]] = Field(
+        ..., description="List of indicator dictionaries to validate"
+    )
+
+
+class ValidationError(BaseModel):
+    """Schema for a single validation error."""
+
+    type: str = Field(..., description="Error type (circular_reference, invalid_code, etc.)")
+    message: str = Field(..., description="Human-readable error message")
+    indicator_id: Optional[str] = Field(None, description="Affected indicator ID or temp_id")
+
+
+class IndicatorValidationResponse(BaseModel):
+    """Response schema for indicator tree validation."""
+
+    is_valid: bool = Field(..., description="Whether the indicator tree is valid")
+    errors: List[ValidationError] = Field(
+        default_factory=list, description="List of validation errors"
+    )
+    warnings: List[str] = Field(
+        default_factory=list, description="List of validation warnings"
     )

@@ -34,10 +34,6 @@ import {
   Send,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { IndicatorTreeView } from './IndicatorTreeView';
-import { RichTextEditor } from './RichTextEditor';
-import { FormSchemaBuilder } from './FormSchemaBuilder';
-import { CalculationSchemaBuilder } from './CalculationSchemaBuilder';
 import { SchemaEditorLayout } from './schema-editor';
 
 /**
@@ -56,7 +52,7 @@ import { SchemaEditorLayout } from './schema-editor';
 // Types & Interfaces
 // ============================================================================
 
-export type WizardStep = 'select-mode' | 'build-structure' | 'configure-schemas' | 'review';
+export type WizardStep = 'select-mode' | 'build-and-configure' | 'review';
 export type CreationMode = 'incremental' | 'bulk-import';
 
 interface Draft {
@@ -219,121 +215,15 @@ function SelectModeStep({
 }
 
 /**
- * Step 2: Build Structure
- */
-interface BuildStructureStepProps {
-  selectedNodeId: string | null;
-}
-
-function BuildStructureStep({ selectedNodeId }: BuildStructureStepProps) {
-  const { getNodeById, updateNode } = useIndicatorBuilderStore();
-  const selectedNode = selectedNodeId ? getNodeById(selectedNodeId) : null;
-
-  const handleNameChange = (value: string) => {
-    if (selectedNodeId) {
-      updateNode(selectedNodeId, { name: value });
-    }
-  };
-
-  const handleDescriptionChange = (html: string) => {
-    if (selectedNodeId) {
-      updateNode(selectedNodeId, { description: html });
-    }
-  };
-
-  return (
-    <div className="flex h-full gap-4">
-      {/* Left Panel: Tree View */}
-      <div className="w-80 border rounded-lg overflow-hidden flex flex-col">
-        <div className="p-3 border-b bg-muted/50">
-          <h3 className="font-semibold text-sm">Indicator Hierarchy</h3>
-        </div>
-        <div className="flex-1 overflow-hidden">
-          <IndicatorTreeView height={600} />
-        </div>
-      </div>
-
-      {/* Right Panel: Indicator Details */}
-      <div className="flex-1 border rounded-lg overflow-hidden">
-        {selectedNode ? (
-          <div className="h-full flex flex-col">
-            <div className="p-4 border-b bg-muted/50">
-              <h3 className="font-semibold">
-                {selectedNode.code ? `${selectedNode.code} - ` : ''}
-                {selectedNode.name}
-              </h3>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {/* Name Input */}
-              <div className="space-y-2">
-                <Label>Indicator Name</Label>
-                <input
-                  type="text"
-                  value={selectedNode.name}
-                  onChange={(e) => handleNameChange(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-md"
-                  placeholder="Enter indicator name"
-                />
-              </div>
-
-              {/* Description Editor */}
-              <div className="space-y-2">
-                <Label>Minimum Requirements</Label>
-                <RichTextEditor
-                  value={selectedNode.description || ''}
-                  onChange={handleDescriptionChange}
-                  placeholder="Enter minimum requirements for this indicator..."
-                  minHeight={200}
-                />
-              </div>
-
-              {/* Metadata */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Is Active</Label>
-                  <Badge variant={selectedNode.is_active ? 'default' : 'secondary'}>
-                    {selectedNode.is_active ? 'Active' : 'Inactive'}
-                  </Badge>
-                </div>
-                <div className="space-y-2">
-                  <Label>Auto-Calculable</Label>
-                  <Badge variant={selectedNode.is_auto_calculable ? 'default' : 'secondary'}>
-                    {selectedNode.is_auto_calculable ? 'Yes' : 'No'}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="h-full flex items-center justify-center text-center p-8">
-            <div>
-              <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-semibold mb-2">No Indicator Selected</h3>
-              <p className="text-sm text-muted-foreground">
-                Select an indicator from the tree to view and edit its details
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/**
- * Step 3: Configure Schemas
+ * Step 2: Build & Configure (Combined)
  *
- * NEW: Uses split-pane layout with persistent tree navigator
- * This replaces the old single-indicator editor with a dual-pane interface:
- * - Left: Tree navigator with status icons and progress tracking
- * - Right: Schema editor (form, calculation, remark tabs)
- *
- * Navigation is now managed internally via Zustand store (currentSchemaIndicatorId)
- * No longer requires selectedNodeId prop - users click indicators in tree to switch
+ * This step combines tree structure building with full indicator configuration.
+ * Users can add/edit/reorder indicators while simultaneously configuring their properties.
  */
-function ConfigureSchemasStep() {
+function BuildAndConfigureStep() {
   return <SchemaEditorLayout />;
 }
+
 
 /**
  * Step 4: Review & Publish
@@ -473,8 +363,7 @@ export function IndicatorBuilderWizard({
   // Wizard steps configuration
   const steps: Array<{ id: WizardStep; label: string; icon: any }> = [
     { id: 'select-mode', label: 'Select Mode', icon: GitBranch },
-    { id: 'build-structure', label: 'Build Structure', icon: FileText },
-    { id: 'configure-schemas', label: 'Configure Schemas', icon: Settings },
+    { id: 'build-and-configure', label: 'Build & Configure', icon: Settings },
     { id: 'review', label: 'Review & Publish', icon: Send },
   ];
 
@@ -499,10 +388,8 @@ export function IndicatorBuilderWizard({
     switch (currentStep) {
       case 'select-mode':
         return selectedAreaId !== null;
-      case 'build-structure':
-        return nodes.size > 0;
-      case 'configure-schemas':
-        return true;
+      case 'build-and-configure':
+        return nodes.size > 0; // At least one indicator must exist
       case 'review':
         return validationErrors.length === 0;
       default:
@@ -542,7 +429,7 @@ export function IndicatorBuilderWizard({
   const handleResumeDraft = (draftId: string) => {
     // Load draft logic would go here
     console.log('Resume draft:', draftId);
-    setCurrentStep('build-structure');
+    setCurrentStep('build-and-configure');
   };
 
   return (
@@ -621,12 +508,8 @@ export function IndicatorBuilderWizard({
           />
         )}
 
-        {currentStep === 'build-structure' && (
-          <BuildStructureStep selectedNodeId={selectedNodeId} />
-        )}
-
-        {currentStep === 'configure-schemas' && (
-          <ConfigureSchemasStep />
+        {currentStep === 'build-and-configure' && (
+          <BuildAndConfigureStep />
         )}
 
         {currentStep === 'review' && (
@@ -634,7 +517,7 @@ export function IndicatorBuilderWizard({
             validationErrors={validationErrors}
             onSelectNode={(nodeId) => {
               selectNode(nodeId);
-              setCurrentStep('build-structure');
+              setCurrentStep('build-and-configure');
             }}
           />
         )}

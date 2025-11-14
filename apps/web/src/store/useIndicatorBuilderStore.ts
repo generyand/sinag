@@ -213,6 +213,9 @@ interface IndicatorBuilderState {
   /** Whether there are unsaved changes */
   isDirty: boolean;
 
+  /** Whether tree edit mode is active (pauses auto-save during tree structure editing) */
+  isTreeEditModeActive: boolean;
+
   // ============================================================================
   // NEW: Schema Configuration State (Phase 1)
   // ============================================================================
@@ -277,6 +280,9 @@ interface IndicatorBuilderState {
 
   /** Set current mode */
   setMode: (mode: 'browse' | 'edit') => void;
+
+  /** Set tree edit mode active state (for pausing auto-save) */
+  setTreeEditModeActive: (isActive: boolean) => void;
 
   /** Set current wizard step */
   setCurrentStep: (step: number) => void;
@@ -511,6 +517,7 @@ export const useIndicatorBuilderStore = create<IndicatorBuilderState>((set, get)
   selectedNodeId: null,
   editingNodeId: null,
   isDirty: false,
+  isTreeEditModeActive: false,
 
   // NEW: Schema configuration state
   currentSchemaIndicatorId: null,
@@ -904,7 +911,11 @@ export const useIndicatorBuilderStore = create<IndicatorBuilderState>((set, get)
 
   // UI State Actions
   selectNode: (tempId) => {
-    set({ selectedNodeId: tempId });
+    // Sync both selection states to maintain consistency between Navigate and Edit modes
+    set({
+      selectedNodeId: tempId,
+      currentSchemaIndicatorId: tempId,
+    });
   },
 
   setEditingNode: (tempId) => {
@@ -913,6 +924,10 @@ export const useIndicatorBuilderStore = create<IndicatorBuilderState>((set, get)
 
   setMode: (mode) => {
     set({ mode });
+  },
+
+  setTreeEditModeActive: (isActive) => {
+    set({ isTreeEditModeActive: isActive });
   },
 
   setCurrentStep: (step) => {
@@ -1030,7 +1045,10 @@ export const useIndicatorBuilderStore = create<IndicatorBuilderState>((set, get)
         console.log(
           `[Navigation] Parent clicked: auto-navigating to first incomplete leaf ${parentStatus.firstIncompleteLeaf.code}`
         );
-        set({ currentSchemaIndicatorId: parentStatus.firstIncompleteLeaf.temp_id });
+        set({
+          currentSchemaIndicatorId: parentStatus.firstIncompleteLeaf.temp_id,
+          selectedNodeId: parentStatus.firstIncompleteLeaf.temp_id, // Sync selection
+        });
         return;
       }
 
@@ -1044,13 +1062,20 @@ export const useIndicatorBuilderStore = create<IndicatorBuilderState>((set, get)
         console.log(
           `[Navigation] Parent clicked (all complete): navigating to first leaf ${leaves[0].code}`
         );
-        set({ currentSchemaIndicatorId: leaves[0].temp_id });
+        set({
+          currentSchemaIndicatorId: leaves[0].temp_id,
+          selectedNodeId: leaves[0].temp_id, // Sync selection
+        });
         return;
       }
     }
 
     // Update current indicator (leaf or forced parent selection)
-    set({ currentSchemaIndicatorId: indicatorId });
+    // Sync both selection states to prevent desync between Navigate/Edit modes
+    set({
+      currentSchemaIndicatorId: indicatorId,
+      selectedNodeId: indicatorId,
+    });
   },
 
   updateSchemaStatus: (indicatorId, statusUpdate) => {

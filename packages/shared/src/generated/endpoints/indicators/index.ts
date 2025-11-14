@@ -39,6 +39,8 @@ import type {
   IndicatorHistoryResponse,
   IndicatorResponse,
   IndicatorUpdate,
+  IndicatorValidationRequest,
+  IndicatorValidationResponse,
   PostIndicatorsTestCalculation200,
   PostIndicatorsValidateCalculationSchema200,
   PostIndicatorsValidateFormSchema200,
@@ -1825,6 +1827,145 @@ export const usePostIndicatorsDraftsDraftIdReleaseLock = <TError = HTTPValidatio
       > => {
 
       const mutationOptions = getPostIndicatorsDraftsDraftIdReleaseLockMutationOptions(options);
+
+      return useMutation(mutationOptions );
+    }
+    /**
+ * Validate indicator tree structure, relationships, and schemas before bulk publish.
+
+**Permissions**: MLGOO_DILG only
+
+**Validations Performed**:
+- Circular reference detection (DFS algorithm)
+- Parent-child relationship integrity
+- Indicator code format validation (pattern: `1`, `1.1`, `1.1.1`, etc.)
+- Sort order validation (sequential starting from 0)
+- Schema completeness (form, MOV, calculation, remark)
+- Weight sum validation (siblings must sum to 100%)
+
+**Request Body**:
+```json
+{
+  "indicators": [
+    {
+      "id": "temp_1",
+      "parent_id": null,
+      "indicator_code": "1",
+      "sort_order": 0,
+      "weight": 60,
+      "form_schema": {...},
+      "calculation_schema": {...},
+      "remark_schema": {...}
+    },
+    {
+      "id": "temp_2",
+      "parent_id": "temp_1",
+      "indicator_code": "1.1",
+      "sort_order": 0,
+      "weight": 100
+    }
+  ]
+}
+```
+
+**Returns**:
+```json
+{
+  "is_valid": true,
+  "errors": [],
+  "warnings": ["Indicator temp_3 has no indicator_code set"]
+}
+```
+
+**Error Response Example**:
+```json
+{
+  "is_valid": false,
+  "errors": [
+    {
+      "type": "circular_reference",
+      "message": "Circular reference detected: 1 → 1.1 → 1",
+      "indicator_id": "temp_1"
+    },
+    {
+      "type": "invalid_code",
+      "message": "Indicator 1. has invalid code format (must match pattern: 1, 1.1, 1.1.1, etc.)",
+      "indicator_id": "temp_2"
+    },
+    {
+      "type": "weight_sum",
+      "message": "Weights for indicators 1.1, 1.2 sum to 90%, must be 100% (parent temp_1)",
+      "indicator_id": null
+    }
+  ],
+  "warnings": []
+}
+```
+
+**Status Codes**:
+- 200: Validation completed (check `is_valid` field)
+- 401: Unauthorized (not authenticated)
+- 403: Forbidden (not MLGOO_DILG role)
+ * @summary Validate indicator tree structure before publishing
+ */
+export const postIndicatorsValidateTree = (
+    indicatorValidationRequest: IndicatorValidationRequest,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<IndicatorValidationResponse>(
+      {url: `http://localhost:8000/api/v1/indicators/validate-tree`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: indicatorValidationRequest, signal
+    },
+      options);
+    }
+  
+
+
+export const getPostIndicatorsValidateTreeMutationOptions = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsValidateTree>>, TError,{data: IndicatorValidationRequest}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsValidateTree>>, TError,{data: IndicatorValidationRequest}, TContext> => {
+
+const mutationKey = ['postIndicatorsValidateTree'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postIndicatorsValidateTree>>, {data: IndicatorValidationRequest}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postIndicatorsValidateTree(data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostIndicatorsValidateTreeMutationResult = NonNullable<Awaited<ReturnType<typeof postIndicatorsValidateTree>>>
+    export type PostIndicatorsValidateTreeMutationBody = IndicatorValidationRequest
+    export type PostIndicatorsValidateTreeMutationError = HTTPValidationError
+
+    /**
+ * @summary Validate indicator tree structure before publishing
+ */
+export const usePostIndicatorsValidateTree = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsValidateTree>>, TError,{data: IndicatorValidationRequest}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postIndicatorsValidateTree>>,
+        TError,
+        {data: IndicatorValidationRequest},
+        TContext
+      > => {
+
+      const mutationOptions = getPostIndicatorsValidateTreeMutationOptions(options);
 
       return useMutation(mutationOptions );
     }

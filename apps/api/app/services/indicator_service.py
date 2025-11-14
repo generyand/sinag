@@ -23,6 +23,7 @@ from app.services.form_schema_validator import (
     generate_validation_errors,
     validate_calculation_schema_field_references,
 )
+from app.services.audit_service import audit_service
 from app.core.security import sanitize_rich_text, sanitize_text_input
 
 
@@ -585,6 +586,20 @@ class IndicatorService:
             # Commit transaction
             db.commit()
             logger.info(f"Successfully created {len(created_indicators)} indicators in bulk")
+
+            # Log audit event for bulk publication
+            audit_service.log_audit_event(
+                db=db,
+                user_id=user_id,
+                entity_type="indicator",
+                entity_id=None,  # Bulk operation, no single entity
+                action="bulk_create",
+                changes={
+                    "governance_area_id": governance_area_id,
+                    "count": len(created_indicators),
+                    "indicator_ids": [ind.id for ind in created_indicators],
+                },
+            )
 
             return created_indicators, temp_id_mapping, errors
 
