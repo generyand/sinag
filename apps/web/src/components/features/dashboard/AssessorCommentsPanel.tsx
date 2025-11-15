@@ -55,11 +55,11 @@ export function AssessorCommentsPanel({
   const getCommentTypeColor = (commentType: string) => {
     switch (commentType.toLowerCase()) {
       case "specific issue":
-        return "text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800";
+        return "text-orange-600 bg-orange-50 border-orange-200";
       case "general":
-        return "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800";
+        return "text-blue-600 bg-blue-50 border-blue-200";
       default:
-        return "text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-950/30 border-gray-200 dark:border-gray-800";
+        return "text-[var(--text-muted)] bg-[var(--hover)] border-[var(--border)]";
     }
   };
 

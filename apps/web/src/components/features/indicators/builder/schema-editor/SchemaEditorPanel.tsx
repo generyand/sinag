@@ -126,14 +126,14 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
   // Show empty state if no indicator selected
   if (!indicatorId || !indicator) {
     return (
-      <div className="h-full flex items-center justify-center p-8 bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+      <div className="h-full flex items-center justify-center p-8 bg-[var(--background)]">
         <div className="text-center max-w-md space-y-6 animate-in fade-in duration-500">
-          <div className="w-24 h-24 mx-auto rounded-2xl bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] flex items-center justify-center shadow-2xl">
+          <div className="w-24 h-24 mx-auto rounded-2xl bg-gradient-to-br from-[#F7B520] to-[#f59e0b] flex items-center justify-center shadow-2xl">
             <FileText className="h-12 w-12 text-black" />
           </div>
           <div className="space-y-3">
-            <h3 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">No Indicator Selected</h3>
-            <p className="text-base text-muted-foreground dark:text-gray-400 leading-relaxed">
+            <h3 className="text-2xl font-extrabold tracking-tight text-[var(--foreground)]">No Indicator Selected</h3>
+            <p className="text-base text-[var(--text-muted)] leading-relaxed">
               Select an indicator from the tree navigator to configure its properties.
             </p>
           </div>
@@ -188,9 +188,9 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
   const calculationComplete = indicator.is_auto_calculable !== undefined;
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+    <div className="h-full flex flex-col bg-[var(--background)]">
       {/* Header with Golden Theme */}
-      <div className="shrink-0 border-b bg-white dark:bg-gray-800 dark:border-gray-700 shadow-md p-5 space-y-4">
+      <div className="shrink-0 border-b bg-[var(--card)] border-[var(--border)] shadow-md p-5 space-y-4">
         {/* Indicator Title */}
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
@@ -198,15 +198,15 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
               {indicator.code && (
                 <Badge
                   variant="outline"
-                  className="font-mono text-xs shrink-0 bg-gradient-to-r from-[#fbbf24]/10 to-[#f59e0b]/10 dark:from-[#fbbf24]/20 dark:to-[#f59e0b]/20 border-[#fbbf24] text-[#b45309] dark:text-[#fbbf24] font-bold px-2 py-1"
+                  className="font-mono text-xs shrink-0 bg-gradient-to-r from-[#F7B520]/10 to-[#f59e0b]/10 border-[#F7B520] text-[#F7B520] font-bold px-2 py-1"
                 >
                   {indicator.code}
                 </Badge>
               )}
-              <h2 className="text-xl font-extrabold tracking-tight truncate text-gray-900 dark:text-gray-100">{indicator.name}</h2>
+              <h2 className="text-xl font-extrabold tracking-tight truncate text-[var(--foreground)]">{indicator.name}</h2>
             </div>
             {indicator.description && (
-              <p className="text-sm text-muted-foreground dark:text-gray-400 line-clamp-2 leading-relaxed">
+              <p className="text-sm text-[var(--text-muted)] line-clamp-2 leading-relaxed">
                 {indicator.description}
               </p>
             )}
@@ -291,7 +291,7 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
       </div>
 
       {/* Footer with Golden Theme */}
-      <div className="shrink-0 border-t bg-white dark:bg-gray-800 dark:border-gray-700 shadow-lg p-4 space-y-3">
+      <div className="shrink-0 border-t bg-[var(--card)] border-[var(--border)] shadow-lg p-4 space-y-3">
         {/* Navigation Buttons */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -301,7 +301,7 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
               onClick={goToPrevious}
               disabled={!hasPrevious}
               title="Previous indicator (↑ or Alt+←)"
-              className="border-2 hover:border-[#fbbf24] transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 font-semibold dark:border-gray-600 dark:text-gray-200"
+              className="border-2 hover:border-[#F7B520] transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 font-semibold border-[var(--border)] text-[var(--foreground)]"
             >
               <ChevronLeft className="h-4 w-4" />
               <span className="hidden sm:inline">Previous</span>
@@ -312,7 +312,7 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
               onClick={goToNext}
               disabled={!hasNext}
               title="Next indicator (↓ or Alt+→)"
-              className="border-2 hover:border-[#fbbf24] transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 font-semibold dark:border-gray-600 dark:text-gray-200"
+              className="border-2 hover:border-[#F7B520] transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 font-semibold border-[var(--border)] text-[var(--foreground)]"
             >
               <span className="hidden sm:inline">Next</span>
               <ChevronRight className="h-4 w-4" />
@@ -325,7 +325,7 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
               size="default"
               onClick={() => setShowKeyboardShortcuts(!showKeyboardShortcuts)}
               title="Show keyboard shortcuts"
-              className="text-xs hover:bg-[#fbbf24]/10 dark:hover:bg-[#fbbf24]/20 transition-all duration-300 dark:text-gray-200"
+              className="text-xs hover:bg-[#F7B520]/10 transition-all duration-300 text-[var(--foreground)]"
             >
               <Keyboard className="h-4 w-4 mr-1" />
               <span className="hidden md:inline font-semibold">Shortcuts</span>
@@ -335,27 +335,27 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
 
         {/* Keyboard Shortcuts Help */}
         {showKeyboardShortcuts && (
-          <div className="text-xs bg-gradient-to-r from-[#fbbf24]/5 to-[#f59e0b]/5 dark:from-[#fbbf24]/10 dark:to-[#f59e0b]/10 border border-[#fbbf24]/20 dark:border-[#fbbf24]/30 rounded-lg p-3 space-y-2">
-            <div className="font-bold text-[#b45309] dark:text-[#fbbf24] mb-2">Keyboard Shortcuts:</div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 dark:text-gray-300">
-              <div><kbd className="px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 rounded border border-[#fbbf24]/30 text-[10px] font-mono">↑</kbd> Previous indicator</div>
-              <div><kbd className="px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 rounded border border-[#fbbf24]/30 text-[10px] font-mono">↓</kbd> Next indicator</div>
-              <div><kbd className="px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 rounded border border-[#fbbf24]/30 text-[10px] font-mono">Ctrl/Cmd+N</kbd> Next incomplete</div>
-              <div><kbd className="px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 rounded border border-[#fbbf24]/30 text-[10px] font-mono">Esc</kbd> Unfocus editor</div>
+          <div className="text-xs bg-gradient-to-r from-[#F7B520]/5 to-[#f59e0b]/5 border border-[#F7B520]/20 rounded-lg p-3 space-y-2">
+            <div className="font-bold text-[#F7B520] mb-2">Keyboard Shortcuts:</div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[var(--foreground)]">
+              <div><kbd className="px-2 py-1 bg-[var(--card)] rounded border border-[#F7B520]/30 text-[10px] font-mono">↑</kbd> Previous indicator</div>
+              <div><kbd className="px-2 py-1 bg-[var(--card)] rounded border border-[#F7B520]/30 text-[10px] font-mono">↓</kbd> Next indicator</div>
+              <div><kbd className="px-2 py-1 bg-[var(--card)] rounded border border-[#F7B520]/30 text-[10px] font-mono">Ctrl/Cmd+N</kbd> Next incomplete</div>
+              <div><kbd className="px-2 py-1 bg-[var(--card)] rounded border border-[#F7B520]/30 text-[10px] font-mono">Esc</kbd> Unfocus editor</div>
             </div>
           </div>
         )}
 
         {/* Status Row with Golden Accents */}
-        <div className="flex items-center justify-between pt-2 border-t dark:border-gray-700">
+        <div className="flex items-center justify-between pt-2 border-t border-[var(--border)]">
           {/* Auto-save Status */}
           <div className="flex items-center gap-2 text-xs">
             {isSaving ? (
               <>
-                <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] flex items-center justify-center">
+                <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[#F7B520] to-[#f59e0b] flex items-center justify-center">
                   <Clock className="h-3 w-3 text-black animate-spin" />
                 </div>
-                <span className="font-semibold text-[#b45309] dark:text-[#fbbf24]">Saving...</span>
+                <span className="font-semibold text-[#F7B520]">Saving...</span>
               </>
             ) : (
               <>

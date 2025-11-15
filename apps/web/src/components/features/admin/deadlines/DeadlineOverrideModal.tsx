@@ -238,10 +238,10 @@ export function DeadlineOverrideModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto bg-[var(--card)]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-[var(--cityscape-yellow)]" />
+            <Calendar className="w-5 h-5 text-[#F7B520]" />
             Extend Deadline
           </DialogTitle>
         </DialogHeader>
@@ -255,8 +255,8 @@ export function DeadlineOverrideModal({
                   step < currentStep
                     ? "bg-green-500 text-white"
                     : step === currentStep
-                    ? "bg-[var(--cityscape-yellow)] text-white"
-                    : "bg-gray-200 dark:bg-gray-700 text-gray-500"
+                    ? "bg-[#F7B520] text-white"
+                    : "bg-[var(--border)] text-[var(--text-muted)]"
                 }`}
               >
                 {step < currentStep ? <Check className="w-4 h-4" /> : step}
@@ -264,7 +264,7 @@ export function DeadlineOverrideModal({
               {step < 4 && (
                 <div
                   className={`w-16 h-0.5 ${
-                    step < currentStep ? "bg-green-500" : "bg-gray-200 dark:bg-gray-700"
+                    step < currentStep ? "bg-green-500" : "bg-[var(--border)]"
                   }`}
                 />
               )}

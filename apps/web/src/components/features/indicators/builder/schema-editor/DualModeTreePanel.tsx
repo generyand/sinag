@@ -70,18 +70,18 @@ export function DualModeTreePanel({ currentIndicatorId, onNavigate }: DualModeTr
   }, [treeMode, setTreeEditModeActive]);
 
   return (
-    <div className="h-full flex flex-col border-r bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 shadow-lg dark:border-gray-700">
+    <div className="h-full flex flex-col border-r bg-[var(--background)] shadow-lg border-[var(--border)]">
       {/* Header with Mode Toggle - Golden Theme */}
-      <div className="p-4 border-b bg-white dark:bg-gray-800 dark:border-gray-700 space-y-4">
+      <div className="p-4 border-b bg-[var(--card)] border-[var(--border)] space-y-4">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <h3 className="font-extrabold text-base tracking-tight dark:text-gray-100">Indicators</h3>
+            <h3 className="font-extrabold text-base tracking-tight text-[var(--foreground)]">Indicators</h3>
             {/* Mode indicator badge with golden accent */}
             <Badge
               variant={treeMode === 'edit' ? 'default' : 'secondary'}
               className={cn(
                 "text-xs px-2 py-1 font-semibold transition-all duration-300",
-                treeMode === 'edit' ? "bg-gradient-to-r from-[#fbbf24] to-[#f59e0b] text-black" : "dark:bg-gray-700 dark:text-gray-300"
+                treeMode === 'edit' ? "bg-gradient-to-r from-[#F7B520] to-[#f59e0b] text-black" : "bg-[var(--hover)] text-[var(--text-muted)]"
               )}
             >
               {treeMode === 'edit' ? (
@@ -104,8 +104,8 @@ export function DualModeTreePanel({ currentIndicatorId, onNavigate }: DualModeTr
             className={cn(
               "h-9 text-xs font-semibold transition-all duration-300 hover:scale-105",
               treeMode === 'edit'
-                ? "bg-gradient-to-r from-[#fbbf24] to-[#f59e0b] hover:from-[#f59e0b] hover:to-[#d97706] text-black shadow-md hover:shadow-lg"
-                : "border-2 hover:border-[#fbbf24] dark:border-gray-600 dark:text-gray-200"
+                ? "bg-gradient-to-r from-[#F7B520] to-[#f59e0b] hover:from-[#f59e0b] hover:to-[#d97706] text-black shadow-md hover:shadow-lg"
+                : "border-2 hover:border-[#F7B520] border-[var(--border)] text-[var(--foreground)]"
             )}
           >
             {treeMode === 'edit' ? (
@@ -125,13 +125,13 @@ export function DualModeTreePanel({ currentIndicatorId, onNavigate }: DualModeTr
         {/* Enhanced Progress Bar with Golden Gradient */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-gray-600 dark:text-gray-400">Configuration Progress</span>
-            <span className="font-bold text-[#fbbf24]">{progress.complete}/{progress.total}</span>
+            <span className="font-semibold text-[var(--text-muted)]">Configuration Progress</span>
+            <span className="font-bold text-[#F7B520]">{progress.complete}/{progress.total}</span>
           </div>
           <div className="relative">
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+            <div className="w-full bg-[var(--border)] rounded-full h-2.5 overflow-hidden">
               <div
-                className="bg-gradient-to-r from-[#fbbf24] via-[#f59e0b] to-[#d97706] h-2.5 rounded-full transition-all duration-500 ease-out shadow-sm"
+                className="bg-gradient-to-r from-[#F7B520] via-[#f59e0b] to-[#d97706] h-2.5 rounded-full transition-all duration-500 ease-out shadow-sm"
                 style={{ width: `${progress.percentage}%` }}
               />
             </div>
@@ -139,9 +139,9 @@ export function DualModeTreePanel({ currentIndicatorId, onNavigate }: DualModeTr
         </div>
 
         {/* Contextual help text with golden accent */}
-        <div className="flex items-start gap-2 p-2 rounded-lg bg-gradient-to-r from-[#fbbf24]/5 to-[#f59e0b]/5 dark:from-[#fbbf24]/10 dark:to-[#f59e0b]/10 border border-[#fbbf24]/20 dark:border-[#fbbf24]/30">
-          <Navigation className="h-4 w-4 text-[#fbbf24] flex-shrink-0 mt-0.5" />
-          <span className="text-xs text-gray-700 dark:text-gray-300 font-medium">
+        <div className="flex items-start gap-2 p-2 rounded-lg bg-gradient-to-r from-[#F7B520]/5 to-[#f59e0b]/5 border border-[#F7B520]/20">
+          <Navigation className="h-4 w-4 text-[#F7B520] flex-shrink-0 mt-0.5" />
+          <span className="text-xs text-[var(--foreground)] font-medium">
             {treeMode === 'navigate'
               ? 'Click indicators to configure schemas'
               : 'Add, remove, or reorder indicators'}
@@ -149,7 +149,7 @@ export function DualModeTreePanel({ currentIndicatorId, onNavigate }: DualModeTr
         </div>
       </div>
 
-      <Separator className="bg-[#fbbf24]/20 dark:bg-[#fbbf24]/30" />
+      <Separator className="bg-[#F7B520]/20" />
 
       {/* Tree View - Switches between modes */}
       <div className="flex-1 overflow-hidden">
@@ -166,23 +166,23 @@ export function DualModeTreePanel({ currentIndicatorId, onNavigate }: DualModeTr
       </div>
 
       {/* Footer Help Text with Golden Theme */}
-      <div className="p-4 border-t bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-700 dark:border-gray-700">
-        <div className="flex items-start gap-2 p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600">
-          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] flex items-center justify-center flex-shrink-0">
+      <div className="p-4 border-t bg-[var(--card)] border-[var(--border)]">
+        <div className="flex items-start gap-2 p-2 rounded-lg bg-[var(--hover)] border border-[var(--border)]">
+          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-[#F7B520] to-[#f59e0b] flex items-center justify-center flex-shrink-0">
             {treeMode === 'navigate' ? (
               <Settings className="h-3.5 w-3.5 text-black" />
             ) : (
               <Edit2 className="h-3.5 w-3.5 text-black" />
             )}
           </div>
-          <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+          <p className="text-xs text-[var(--foreground)] leading-relaxed">
             {treeMode === 'navigate' ? (
               <>
-                <strong className="text-[#fbbf24]">Tip:</strong> Click "Edit Structure" to add or reorder indicators
+                <strong className="text-[#F7B520]">Tip:</strong> Click "Edit Structure" to add or reorder indicators
               </>
             ) : (
               <>
-                <strong className="text-[#fbbf24]">Edit Mode:</strong> Drag to reorder • Right-click for more actions
+                <strong className="text-[#F7B520]">Edit Mode:</strong> Drag to reorder • Right-click for more actions
               </>
             )}
           </p>

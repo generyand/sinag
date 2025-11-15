@@ -18,28 +18,28 @@ export function WeaknessDetailModal({ weakness, data, isOpen, onClose }: Weaknes
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-sm border border-gray-200 dark:border-gray-700 shadow-2xl p-8 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+      <div className="bg-[var(--card)] rounded-sm border border-[var(--border)] shadow-2xl p-8 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
         <div className="flex items-start justify-between mb-6">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-3">
               <div className={`w-4 h-4 rounded-full bg-${severity.color}-500`}></div>
-              <span className={`px-3 py-1 rounded-full text-xs font-medium bg-${severity.color}-100 dark:bg-${severity.color}-900/50 text-${severity.color}-700 dark:text-${severity.color}-300`}>
+              <span className={`px-3 py-1 rounded-full text-xs font-medium bg-${severity.color}-100 text-${severity.color}-700`}>
                 {severity.level} SEVERITY
               </span>
             </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            <h3 className="text-xl font-bold text-[var(--foreground)] mb-2">
               Performance Hotspot Details
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 font-medium">
+            <p className="text-[var(--text-muted)] font-medium">
               {weakness.indicator}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-sm transition-colors duration-200 ml-4"
+            className="p-2 hover:bg-[var(--hover)] rounded-sm transition-colors duration-200 ml-4"
           >
             <svg
-              className="w-6 h-6 text-gray-500 dark:text-gray-400"
+              className="w-6 h-6 text-[var(--text-muted)]"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -55,21 +55,21 @@ export function WeaknessDetailModal({ weakness, data, isOpen, onClose }: Weaknes
         </div>
 
         {/* Summary Stats */}
-        <div className="bg-gray-50 dark:bg-gray-700 rounded-sm p-4 mb-6 border border-gray-200 dark:border-gray-600">
+        <div className="bg-[var(--hover)] rounded-sm p-4 mb-6 border border-[var(--border)]">
           <div className="grid grid-cols-2 gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              <div className="text-2xl font-bold text-[var(--foreground)]">
                 {weakness.failedCount}
               </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
+              <div className="text-sm text-[var(--text-muted)]">
                 Affected Barangays
               </div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              <div className="text-2xl font-bold text-[var(--foreground)]">
                 {impactPercentage}%
               </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
+              <div className="text-sm text-[var(--text-muted)]">
                 Impact Rate
               </div>
             </div>
@@ -78,12 +78,12 @@ export function WeaknessDetailModal({ weakness, data, isOpen, onClose }: Weaknes
           {/* Progress Bar */}
           <div className="mt-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Coverage</span>
-              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+              <span className="text-sm text-[var(--text-muted)]">Coverage</span>
+              <span className="text-sm font-medium text-[var(--foreground)]">
                 {weakness.failedCount} of {data.assignedBarangays} barangays
               </span>
             </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
+            <div className="w-full bg-[var(--border)] rounded-full h-3">
               <div
                 className={`h-3 rounded-full bg-${severity.color}-500`}
                 style={{ width: `${impactPercentage}%` }}
@@ -94,7 +94,7 @@ export function WeaknessDetailModal({ weakness, data, isOpen, onClose }: Weaknes
 
         {/* Affected Barangays List */}
         <div>
-          <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+          <h4 className="text-lg font-semibold text-[var(--foreground)] mb-4 flex items-center gap-2">
             <svg
               className="w-5 h-5 text-red-500"
               fill="none"
@@ -138,7 +138,7 @@ export function WeaknessDetailModal({ weakness, data, isOpen, onClose }: Weaknes
         </div>
 
         {/* Action Button */}
-        <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
+        <div className="mt-6 pt-4 border-t border-[var(--border)]">
           <button
             onClick={onClose}
             className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-sm transition-colors duration-200 flex items-center justify-center gap-2"

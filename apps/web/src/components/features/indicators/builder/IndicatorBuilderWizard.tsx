@@ -114,18 +114,18 @@ function SelectModeStep({
   return (
     <div className="space-y-8 max-w-3xl mx-auto animate-in fade-in duration-500">
       {/* Governance Area Selection */}
-      <Card className="group relative overflow-hidden shadow-xl rounded-2xl border-gray-100 dark:border-gray-700 dark:bg-gray-800 transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 hover:border-[#fbbf24]/30 dark:hover:border-[#fbbf24]/50">
+      <Card className="group relative overflow-hidden shadow-xl rounded-2xl border-[var(--border)] bg-[var(--card)] transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 hover:border-[#F7B520]/30">
         {/* Gradient accent bar */}
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#fbbf24] via-[#f59e0b] to-[#d97706] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
         <CardHeader className="space-y-2">
-          <CardTitle className="text-2xl font-extrabold tracking-tight flex items-center gap-3 dark:text-gray-100">
+          <CardTitle className="text-2xl font-extrabold tracking-tight flex items-center gap-3 text-[var(--foreground)]">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
               <Settings className="h-6 w-6 text-black" />
             </div>
             Select Governance Area
           </CardTitle>
-          <CardDescription className="text-base dark:text-gray-400">
+          <CardDescription className="text-base text-[var(--text-muted)]">
             Choose the governance area for the indicators you want to create
           </CardDescription>
         </CardHeader>
@@ -134,17 +134,17 @@ function SelectModeStep({
             value={selectedAreaId?.toString()}
             onValueChange={(value) => onAreaChange(parseInt(value, 10))}
           >
-            <SelectTrigger className="h-12 rounded-lg border-2 hover:border-[#fbbf24] transition-colors duration-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+            <SelectTrigger className="h-12 rounded-lg border-2 hover:border-[#F7B520] transition-colors duration-300 border-[var(--border)] bg-[var(--input)] text-[var(--foreground)]">
               <SelectValue placeholder="Select governance area" />
             </SelectTrigger>
-            <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+            <SelectContent className="bg-[var(--card)] border-[var(--border)]">
               {governanceAreas.length === 0 ? (
-                <div className="p-2 text-sm text-muted-foreground dark:text-gray-400">
+                <div className="p-2 text-sm text-[var(--text-muted)]">
                   No governance areas available
                 </div>
               ) : (
                 governanceAreas.map((area) => (
-                  <SelectItem key={area.id} value={area.id.toString()} className="dark:text-gray-200 dark:focus:bg-gray-700">
+                  <SelectItem key={area.id} value={area.id.toString()} className="text-[var(--foreground)] focus:bg-[var(--hover)]">
                     {area.area_type} - {area.name}
                   </SelectItem>
                 ))
@@ -161,18 +161,18 @@ function SelectModeStep({
       </Card>
 
       {/* Creation Mode Selection */}
-      <Card className="group relative overflow-hidden shadow-xl rounded-2xl border-gray-100 dark:border-gray-700 dark:bg-gray-800 transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 hover:border-[#fbbf24]/30 dark:hover:border-[#fbbf24]/50">
+      <Card className="group relative overflow-hidden shadow-xl rounded-2xl border-[var(--border)] bg-[var(--card)] transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 hover:border-[#F7B520]/30">
         {/* Gradient accent bar */}
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#f59e0b] via-[#d97706] to-[#b45309] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
         <CardHeader className="space-y-2">
-          <CardTitle className="text-2xl font-extrabold tracking-tight flex items-center gap-3 dark:text-gray-100">
+          <CardTitle className="text-2xl font-extrabold tracking-tight flex items-center gap-3 text-[var(--foreground)]">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#f59e0b] to-[#d97706] flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
               <GitBranch className="h-6 w-6 text-black" />
             </div>
             Creation Mode
           </CardTitle>
-          <CardDescription className="text-base dark:text-gray-400">
+          <CardDescription className="text-base text-[var(--text-muted)]">
             Choose how you want to create indicators
           </CardDescription>
         </CardHeader>
@@ -181,29 +181,29 @@ function SelectModeStep({
             <div className={cn(
               "relative overflow-hidden flex items-center space-x-4 p-6 border-2 rounded-xl cursor-pointer transition-all duration-300",
               creationMode === 'incremental'
-                ? "border-[#fbbf24] bg-gradient-to-br from-[#fbbf24]/10 to-[#f59e0b]/5 dark:from-[#fbbf24]/20 dark:to-[#f59e0b]/10 shadow-lg scale-[1.02]"
-                : "border-gray-200 dark:border-gray-600 hover:border-[#fbbf24]/50 hover:shadow-md hover:scale-[1.01]"
+                ? "border-[#F7B520] bg-gradient-to-br from-[#F7B520]/10 to-[#f59e0b]/5 shadow-lg scale-[1.02]"
+                : "border-[var(--border)] hover:border-[#F7B520]/50 hover:shadow-md hover:scale-[1.01]"
             )}>
               <RadioGroupItem value="incremental" id="incremental" className="h-5 w-5" />
-              <Label htmlFor="incremental" className="flex-1 cursor-pointer dark:text-gray-200">
+              <Label htmlFor="incremental" className="flex-1 cursor-pointer text-[var(--foreground)]">
                 <div className="font-bold text-lg mb-1">Incremental Creation</div>
-                <div className="text-sm text-muted-foreground dark:text-gray-400">
+                <div className="text-sm text-[var(--text-muted)]">
                   Build indicators one at a time with full control
                 </div>
               </Label>
               {creationMode === 'incremental' && (
-                <CheckCircle2 className="h-6 w-6 text-[#fbbf24] animate-in zoom-in duration-300" />
+                <CheckCircle2 className="h-6 w-6 text-[#F7B520] animate-in zoom-in duration-300" />
               )}
             </div>
-            <div className="relative overflow-hidden flex items-center space-x-4 p-6 border-2 rounded-xl opacity-50 cursor-not-allowed border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50">
+            <div className="relative overflow-hidden flex items-center space-x-4 p-6 border-2 rounded-xl opacity-50 cursor-not-allowed border-[var(--border)] bg-[var(--hover)]">
               <RadioGroupItem value="bulk-import" id="bulk-import" disabled className="h-5 w-5" />
-              <Label htmlFor="bulk-import" className="flex-1 dark:text-gray-300">
+              <Label htmlFor="bulk-import" className="flex-1 text-[var(--foreground)]">
                 <div className="font-bold text-lg mb-1">Bulk Import</div>
-                <div className="text-sm text-muted-foreground dark:text-gray-400">
+                <div className="text-sm text-[var(--text-muted)]">
                   Import indicators from JSON or Excel file
                 </div>
               </Label>
-              <Badge variant="secondary" className="text-xs dark:bg-gray-600 dark:text-gray-300">Coming Soon</Badge>
+              <Badge variant="secondary" className="text-xs bg-[var(--hover)] text-[var(--foreground)]">Coming Soon</Badge>
             </div>
           </RadioGroup>
         </CardContent>
@@ -211,18 +211,18 @@ function SelectModeStep({
 
       {/* Existing Drafts */}
       {drafts.length > 0 && (
-        <Card className="group relative overflow-hidden shadow-xl rounded-2xl border-gray-100 dark:border-gray-700 dark:bg-gray-800 transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 hover:border-[#fbbf24]/30 dark:hover:border-[#fbbf24]/50">
+        <Card className="group relative overflow-hidden shadow-xl rounded-2xl border-[var(--border)] bg-[var(--card)] transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 hover:border-[#F7B520]/30">
           {/* Gradient accent bar */}
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#d97706] via-[#b45309] to-[#92400e] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
           <CardHeader className="space-y-2">
-            <CardTitle className="text-2xl font-extrabold tracking-tight flex items-center gap-3 dark:text-gray-100">
+            <CardTitle className="text-2xl font-extrabold tracking-tight flex items-center gap-3 text-[var(--foreground)]">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#d97706] to-[#b45309] flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
                 <FileText className="h-6 w-6 text-white" />
               </div>
               Resume Draft
             </CardTitle>
-            <CardDescription className="text-base dark:text-gray-400">
+            <CardDescription className="text-base text-[var(--text-muted)]">
               Continue working on a saved draft
             </CardDescription>
           </CardHeader>
@@ -230,13 +230,13 @@ function SelectModeStep({
             {drafts.map((draft) => (
               <div
                 key={draft.id}
-                className="group/draft flex items-center justify-between p-4 border-2 rounded-xl hover:border-[#fbbf24] hover:shadow-md transition-all duration-300 hover:scale-[1.02] bg-white dark:bg-gray-700 dark:border-gray-600"
+                className="group/draft flex items-center justify-between p-4 border-2 rounded-xl hover:border-[#F7B520] hover:shadow-md transition-all duration-300 hover:scale-[1.02] bg-[var(--card)] border-[var(--border)]"
               >
                 <div className="flex-1">
-                  <div className="font-bold text-lg mb-1 group-hover/draft:text-[#fbbf24] transition-colors duration-300 dark:text-gray-200">
+                  <div className="font-bold text-lg mb-1 group-hover/draft:text-[#F7B520] transition-colors duration-300 text-[var(--foreground)]">
                     {draft.title}
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-muted-foreground dark:text-gray-400">
+                  <div className="flex items-center gap-3 text-sm text-[var(--text-muted)]">
                     <span className="flex items-center gap-1">
                       <FileText className="h-3 w-3" />
                       {draft.indicator_count} indicators
@@ -250,7 +250,7 @@ function SelectModeStep({
                 <Button
                   size="lg"
                   onClick={() => onResumeDraft(draft.id)}
-                  className="bg-gradient-to-r from-[#fbbf24] to-[#f59e0b] hover:from-[#f59e0b] hover:to-[#d97706] text-black font-bold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
+                  className="bg-gradient-to-r from-[#F7B520] to-[#f59e0b] hover:from-[#f59e0b] hover:to-[#d97706] text-black font-bold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
                 >
                   Resume
                   <ChevronRight className="h-4 w-4 ml-1" />
@@ -294,47 +294,47 @@ function ReviewStep({ validationErrors, onSelectNode }: ReviewStepProps) {
     <div className="space-y-8 max-w-5xl mx-auto animate-in fade-in duration-500">
       {/* Summary Cards with Gradient Accents */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="group relative overflow-hidden shadow-xl rounded-2xl border-gray-100 dark:border-gray-700 dark:bg-gray-800 transition-all duration-500 hover:shadow-2xl hover:-translate-y-2">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#fbbf24] to-[#f59e0b]" />
+        <Card className="group relative overflow-hidden shadow-xl rounded-2xl border-[var(--border)] bg-[var(--card)] transition-all duration-500 hover:shadow-2xl hover:-translate-y-2">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#F7B520] to-[#f59e0b]" />
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-bold text-muted-foreground dark:text-gray-400 uppercase tracking-wider">Total Indicators</CardTitle>
+            <CardTitle className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider">Total Indicators</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] flex items-center justify-center shadow-lg">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#F7B520] to-[#f59e0b] flex items-center justify-center shadow-lg">
                 <FileText className="h-6 w-6 text-black" />
               </div>
-              <div className="text-4xl font-black text-[#fbbf24]">{totalIndicators}</div>
+              <div className="text-4xl font-black text-[#F7B520]">{totalIndicators}</div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="group relative overflow-hidden shadow-xl rounded-2xl border-gray-100 dark:border-gray-700 dark:bg-gray-800 transition-all duration-500 hover:shadow-2xl hover:-translate-y-2">
+        <Card className="group relative overflow-hidden shadow-xl rounded-2xl border-[var(--border)] bg-[var(--card)] transition-all duration-500 hover:shadow-2xl hover:-translate-y-2">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-400 to-green-600" />
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-bold text-muted-foreground dark:text-gray-400 uppercase tracking-wider">Complete</CardTitle>
+            <CardTitle className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider">Complete</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                 <CheckCircle2 className="h-6 w-6 text-white" />
               </div>
-              <div className="text-4xl font-black text-green-600 dark:text-green-500">{completeCount}</div>
+              <div className="text-4xl font-black text-green-600">{completeCount}</div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="group relative overflow-hidden shadow-xl rounded-2xl border-gray-100 dark:border-gray-700 dark:bg-gray-800 transition-all duration-500 hover:shadow-2xl hover:-translate-y-2">
+        <Card className="group relative overflow-hidden shadow-xl rounded-2xl border-[var(--border)] bg-[var(--card)] transition-all duration-500 hover:shadow-2xl hover:-translate-y-2">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-400 to-red-600" />
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-bold text-muted-foreground dark:text-gray-400 uppercase tracking-wider">Errors</CardTitle>
+            <CardTitle className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider">Errors</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                 <AlertCircle className="h-6 w-6 text-white" />
               </div>
-              <div className="text-4xl font-black text-red-600 dark:text-red-500">{errorCount}</div>
+              <div className="text-4xl font-black text-red-600">{errorCount}</div>
             </div>
           </CardContent>
         </Card>
@@ -342,16 +342,16 @@ function ReviewStep({ validationErrors, onSelectNode }: ReviewStepProps) {
 
       {/* Validation Errors */}
       {errorCount > 0 && (
-        <Card className="relative overflow-hidden shadow-xl rounded-2xl border-red-200 dark:border-red-900/50 bg-red-50/30 dark:bg-red-950/20">
+        <Card className="relative overflow-hidden shadow-xl rounded-2xl border-red-200 bg-red-50/30">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-400 to-red-600" />
           <CardHeader>
-            <CardTitle className="text-2xl font-extrabold tracking-tight flex items-center gap-3 dark:text-gray-100">
+            <CardTitle className="text-2xl font-extrabold tracking-tight flex items-center gap-3 text-[var(--foreground)]">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center shadow-lg">
                 <AlertCircle className="h-6 w-6 text-white" />
               </div>
               Validation Errors
             </CardTitle>
-            <CardDescription className="text-base dark:text-gray-400">
+            <CardDescription className="text-base text-[var(--text-muted)]">
               Fix these errors before publishing
             </CardDescription>
           </CardHeader>
@@ -360,17 +360,17 @@ function ReviewStep({ validationErrors, onSelectNode }: ReviewStepProps) {
               {validationErrors.map((error, index) => (
                 <div
                   key={index}
-                  className="group/error flex items-start gap-3 p-4 border-2 rounded-xl hover:border-[#fbbf24] hover:shadow-md transition-all duration-300 cursor-pointer bg-white dark:bg-gray-800 dark:border-gray-600 hover:scale-[1.01]"
+                  className="group/error flex items-start gap-3 p-4 border-2 rounded-xl hover:border-[#F7B520] hover:shadow-md transition-all duration-300 cursor-pointer bg-[var(--card)] border-[var(--border)] hover:scale-[1.01]"
                   onClick={() => onSelectNode(error.nodeId)}
                 >
                   <AlertCircle className="h-6 w-6 text-red-500 flex-shrink-0 mt-0.5" />
                   <div className="flex-1">
-                    <div className="font-bold text-lg mb-1 group-hover/error:text-[#fbbf24] transition-colors duration-300 dark:text-gray-200">
+                    <div className="font-bold text-lg mb-1 group-hover/error:text-[#F7B520] transition-colors duration-300 text-[var(--foreground)]">
                       {nodes.get(error.nodeId)?.name || 'Unknown Indicator'}
                     </div>
-                    <div className="text-sm text-muted-foreground dark:text-gray-400">{error.message}</div>
+                    <div className="text-sm text-[var(--text-muted)]">{error.message}</div>
                   </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground dark:text-gray-400 flex-shrink-0 group-hover/error:text-[#fbbf24] transition-colors duration-300" />
+                  <ChevronRight className="h-5 w-5 text-[var(--text-muted)] flex-shrink-0 group-hover/error:text-[#F7B520] transition-colors duration-300" />
                 </div>
               ))}
             </div>
@@ -380,16 +380,16 @@ function ReviewStep({ validationErrors, onSelectNode }: ReviewStepProps) {
 
       {/* Success Message */}
       {errorCount === 0 && totalIndicators > 0 && (
-        <Card className="relative overflow-hidden shadow-2xl rounded-2xl border-[#fbbf24] dark:border-[#fbbf24]/50 bg-gradient-to-br from-[#fbbf24]/10 via-[#f59e0b]/5 to-transparent dark:from-[#fbbf24]/20 dark:via-[#f59e0b]/10 dark:to-transparent dark:bg-gray-800 animate-in zoom-in duration-500">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#fbbf24] via-[#f59e0b] to-[#d97706]" />
+        <Card className="relative overflow-hidden shadow-2xl rounded-2xl border-[#F7B520] bg-gradient-to-br from-[#F7B520]/10 via-[#f59e0b]/5 to-transparent animate-in zoom-in duration-500">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#F7B520] via-[#f59e0b] to-[#d97706]" />
           <CardContent className="pt-8 pb-8">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] flex items-center justify-center shadow-xl animate-pulse">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#F7B520] to-[#f59e0b] flex items-center justify-center shadow-xl animate-pulse">
                 <CheckCircle2 className="h-10 w-10 text-black" />
               </div>
               <div className="flex-1">
-                <h3 className="text-3xl font-black text-[#fbbf24] mb-2 tracking-tight">Ready to Publish</h3>
-                <p className="text-base text-muted-foreground dark:text-gray-400">
+                <h3 className="text-3xl font-black text-[#F7B520] mb-2 tracking-tight">Ready to Publish</h3>
+                <p className="text-base text-[var(--text-muted)]">
                   All indicators are valid and ready to be published to the system
                 </p>
               </div>
@@ -504,18 +504,18 @@ export function IndicatorBuilderWizard({
   };
 
   return (
-    <div className={cn('flex flex-col h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800', className)}>
+    <div className={cn('flex flex-col h-screen bg-[var(--background)]', className)}>
       {/* Header with Golden Theme */}
-      <div className="border-b bg-white dark:bg-gray-800 shadow-lg dark:border-gray-700">
+      <div className="border-b bg-[var(--card)] shadow-lg border-[var(--border)]">
         <div className="px-6 py-5">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] flex items-center justify-center shadow-xl">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#F7B520] to-[#f59e0b] flex items-center justify-center shadow-xl">
                 <Settings className="h-8 w-8 text-black" />
               </div>
               <div>
-                <h1 className="text-3xl font-black tracking-tight text-gray-900 dark:text-gray-100">Indicator Builder</h1>
-                <p className="text-sm text-muted-foreground dark:text-gray-400">Create and configure hierarchical indicators</p>
+                <h1 className="text-3xl font-black tracking-tight text-[var(--foreground)]">Indicator Builder</h1>
+                <p className="text-sm text-[var(--text-muted)]">Create and configure hierarchical indicators</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -523,7 +523,7 @@ export function IndicatorBuilderWizard({
                 variant="outline"
                 size="default"
                 onClick={onSaveDraft}
-                className="border-2 border-[#fbbf24] hover:bg-[#fbbf24] hover:text-black dark:hover:text-black transition-all duration-300 hover:scale-105 shadow-md hover:shadow-lg font-semibold dark:bg-transparent dark:text-gray-200"
+                className="border-2 border-[#F7B520] hover:bg-[#F7B520] hover:text-black transition-all duration-300 hover:scale-105 shadow-md hover:shadow-lg font-semibold bg-transparent text-[var(--foreground)]"
               >
                 <Save className="h-4 w-4 mr-2" />
                 Save Draft
@@ -532,7 +532,7 @@ export function IndicatorBuilderWizard({
                 variant="ghost"
                 size="default"
                 onClick={handleExit}
-                className="hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-300 hover:scale-105 dark:text-gray-200"
+                className="hover:bg-[var(--hover)] transition-all duration-300 hover:scale-105 text-[var(--foreground)]"
               >
                 <X className="h-4 w-4 mr-2" />
                 Exit
@@ -543,17 +543,17 @@ export function IndicatorBuilderWizard({
           {/* Enhanced Progress Bar */}
           <div className="space-y-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="font-bold text-[#fbbf24]">
+              <span className="font-bold text-[#F7B520]">
                 Step {currentStepIndex + 1} of {steps.length}
               </span>
-              <span className="text-base font-semibold text-gray-700 dark:text-gray-300">
+              <span className="text-base font-semibold text-[var(--text-secondary)]">
                 {steps[currentStepIndex].label}
               </span>
             </div>
             <div className="relative">
-              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div className="h-3 bg-[var(--border)] rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-[#fbbf24] via-[#f59e0b] to-[#d97706] transition-all duration-700 ease-out shadow-md"
+                  className="h-full bg-gradient-to-r from-[#F7B520] via-[#f59e0b] to-[#d97706] transition-all duration-700 ease-out shadow-md"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -572,9 +572,9 @@ export function IndicatorBuilderWizard({
                   <div
                     className={cn(
                       'flex items-center gap-2 px-4 py-3 rounded-xl transition-all duration-300 shadow-md',
-                      isActive && 'bg-gradient-to-r from-[#fbbf24] to-[#f59e0b] text-black scale-105 shadow-lg',
+                      isActive && 'bg-gradient-to-r from-[#F7B520] to-[#f59e0b] text-black scale-105 shadow-lg',
                       !isActive && isCompleted && 'bg-gradient-to-r from-green-400 to-green-600 text-white',
-                      !isActive && !isCompleted && 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                      !isActive && !isCompleted && 'bg-[var(--hover)] text-[var(--text-muted)]'
                     )}
                   >
                     <Icon className={cn("h-5 w-5", isActive && "animate-pulse")} />
@@ -584,7 +584,7 @@ export function IndicatorBuilderWizard({
                   {index < steps.length - 1 && (
                     <div className={cn(
                       "flex-1 h-1 rounded-full mx-2 transition-colors duration-500",
-                      isCompleted ? "bg-gradient-to-r from-green-400 to-green-600" : "bg-gray-200"
+                      isCompleted ? "bg-gradient-to-r from-green-400 to-green-600" : "bg-[var(--border)]"
                     )} />
                   )}
                 </React.Fragment>
@@ -624,14 +624,14 @@ export function IndicatorBuilderWizard({
       </div>
 
       {/* Footer with Golden Theme */}
-      <div className="border-t bg-white dark:bg-gray-800 shadow-lg px-6 py-5 dark:border-gray-700">
+      <div className="border-t bg-[var(--card)] shadow-lg px-6 py-5 border-[var(--border)]">
         <div className="flex items-center justify-between">
           <Button
             variant="outline"
             size="lg"
             onClick={handleBack}
             disabled={currentStepIndex === 0}
-            className="border-2 hover:border-[#fbbf24] transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 font-semibold dark:text-gray-200 dark:border-gray-600"
+            className="border-2 hover:border-[#F7B520] transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 font-semibold text-[var(--foreground)] border-[var(--border)]"
           >
             <ChevronLeft className="h-5 w-5 mr-2" />
             Back
@@ -645,7 +645,7 @@ export function IndicatorBuilderWizard({
               className={cn(
                 "min-w-40 font-bold shadow-lg transition-all duration-300",
                 canProceed
-                  ? "bg-gradient-to-r from-[#fbbf24] to-[#f59e0b] hover:from-[#f59e0b] hover:to-[#d97706] text-black hover:scale-105 hover:shadow-xl"
+                  ? "bg-gradient-to-r from-[#F7B520] to-[#f59e0b] hover:from-[#f59e0b] hover:to-[#d97706] text-black hover:scale-105 hover:shadow-xl"
                   : "opacity-50 cursor-not-allowed"
               )}
             >
@@ -660,7 +660,7 @@ export function IndicatorBuilderWizard({
               className={cn(
                 "min-w-40 font-bold shadow-lg transition-all duration-300",
                 canProceed
-                  ? "bg-gradient-to-r from-[#fbbf24] to-[#f59e0b] hover:from-[#f59e0b] hover:to-[#d97706] text-black hover:scale-105 hover:shadow-xl"
+                  ? "bg-gradient-to-r from-[#F7B520] to-[#f59e0b] hover:from-[#f59e0b] hover:to-[#d97706] text-black hover:scale-105 hover:shadow-xl"
                   : "opacity-50 cursor-not-allowed"
               )}
             >

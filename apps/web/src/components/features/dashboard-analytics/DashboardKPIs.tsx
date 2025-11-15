@@ -282,10 +282,10 @@ export function BarangayRankingsCard({ data }: BarangayRankingsCardProps) {
                     ranking.rank === 1
                       ? 'bg-yellow-500'
                       : ranking.rank === 2
-                        ? 'bg-gray-400 dark:bg-gray-500'
+                        ? 'bg-gray-400'
                         : ranking.rank === 3
-                          ? 'bg-orange-600 dark:bg-orange-500'
-                          : 'bg-blue-600 dark:bg-blue-500'
+                          ? 'bg-orange-600'
+                          : 'bg-blue-600'
                   }`}
                 >
                   {ranking.rank}
