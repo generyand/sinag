@@ -69,9 +69,9 @@ export default function LoginForm({ isDarkMode = false }: LoginFormProps) {
         toast.success("🎉 Welcome back! Redirecting to your dashboard...", {
           duration: 3000,
           style: {
-            background: isDarkMode ? "#1f2937" : "#ffffff",
-            color: isDarkMode ? "#ffffff" : "#1f2937",
-            border: `1px solid ${isDarkMode ? "#fbbf24" : "#f59e0b"}`,
+            background: isDarkMode ? "#1a1f2e" : "#ffffff",
+            color: isDarkMode ? "#ffffff" : "#1a1f2e",
+            border: `1px solid ${isDarkMode ? "#F7B520" : "#F7B520"}`,
             borderRadius: "12px",
             padding: "16px",
             fontSize: "14px",
@@ -91,8 +91,8 @@ export default function LoginForm({ isDarkMode = false }: LoginFormProps) {
         toast.error("Wrong email or password", {
           duration: 3000,
           style: {
-            background: isDarkMode ? "#1f2937" : "#ffffff",
-            color: isDarkMode ? "#ffffff" : "#1f2937",
+            background: isDarkMode ? "#1a1f2e" : "#ffffff",
+            color: isDarkMode ? "#ffffff" : "#1a1f2e",
             border: "1px solid #ef4444",
             borderRadius: "12px",
             padding: "16px",

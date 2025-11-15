@@ -9,7 +9,7 @@ export function ReportsSkeleton() {
           {/* Global Filters Skeleton */}
           <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg p-6">
             <div className="flex items-center gap-3 mb-4">
-              <Filter className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <Filter className="h-5 w-5" style={{ color: 'var(--cityscape-yellow)' }} />
               <Skeleton className="h-6 w-32" />
             </div>
             
@@ -96,7 +96,14 @@ export function ReportsSkeleton() {
                 
                 <div className="p-6 space-y-4">
                   {Array.from({ length: 5 }).map((_, index) => (
-                    <div key={index} className="bg-red-50/80 dark:bg-red-900/20 rounded-sm p-4 border border-red-200/50 dark:border-red-800/50">
+                    <div
+                      key={index}
+                      className="rounded-sm p-4 border"
+                      style={{
+                        backgroundColor: 'var(--analytics-danger-bg)',
+                        borderColor: 'var(--analytics-danger-border)'
+                      }}
+                    >
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
                           <Skeleton className="h-4 w-48 mb-1" />
@@ -106,11 +113,17 @@ export function ReportsSkeleton() {
                       </div>
                     </div>
                   ))}
-                  
+
                   {/* Capacity Development Priority */}
-                  <div className="mt-6 bg-blue-50/80 dark:bg-blue-900/20 rounded-sm p-4 border border-blue-200/50 dark:border-blue-800/50">
+                  <div
+                    className="mt-6 rounded-sm p-4 border"
+                    style={{
+                      backgroundColor: 'var(--kpi-blue-from)',
+                      borderColor: 'var(--kpi-blue-border, var(--border))'
+                    }}
+                  >
                     <div className="flex items-start gap-3">
-                      <Target className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                      <Target className="h-5 w-5 mt-0.5 flex-shrink-0" style={{ color: 'var(--kpi-blue-text)' }} />
                       <div>
                         <Skeleton className="h-4 w-48 mb-1" />
                         <Skeleton className="h-3 w-64" />
@@ -131,18 +144,31 @@ export function ReportsSkeleton() {
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 {Array.from({ length: 3 }).map((_, index) => (
-                  <div key={index} className="bg-green-50/80 dark:bg-green-900/20 rounded-sm p-6 text-center border border-green-200/50 dark:border-green-800/50">
+                  <div
+                    key={index}
+                    className="rounded-sm p-6 text-center border"
+                    style={{
+                      backgroundColor: 'var(--analytics-success-bg)',
+                      borderColor: 'var(--analytics-success-border)'
+                    }}
+                  >
                     <Skeleton className="h-12 w-16 mx-auto mb-2" />
                     <Skeleton className="h-4 w-32 mx-auto mb-1" />
                     <Skeleton className="h-3 w-24 mx-auto" />
                   </div>
                 ))}
               </div>
-              
+
               {/* Analysis Summary */}
-              <div className="bg-blue-50/80 dark:bg-blue-900/20 rounded-sm p-4 border border-blue-200/50 dark:border-blue-800/50">
+              <div
+                className="rounded-sm p-4 border"
+                style={{
+                  backgroundColor: 'var(--kpi-blue-from)',
+                  borderColor: 'var(--kpi-blue-border, var(--border))'
+                }}
+              >
                 <div className="flex items-start gap-3">
-                  <Activity className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                  <Activity className="h-5 w-5 mt-0.5 flex-shrink-0" style={{ color: 'var(--kpi-blue-text)' }} />
                   <div>
                     <Skeleton className="h-4 w-32 mb-1" />
                     <Skeleton className="h-3 w-80" />
@@ -156,7 +182,7 @@ export function ReportsSkeleton() {
           <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg overflow-hidden">
             <div className="p-6 border-b border-[var(--border)]">
               <div className="flex items-center gap-3">
-                <Brain className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                <Brain className="h-6 w-6" style={{ color: 'var(--kpi-purple-text)' }} />
                 <Skeleton className="h-6 w-64" />
               </div>
               <Skeleton className="h-4 w-80 mt-1" />

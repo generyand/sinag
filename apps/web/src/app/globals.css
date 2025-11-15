@@ -38,7 +38,7 @@
   --icon-muted: #adb5bd;
 
   /* Palette: interactive */
-  --focus: #fbbf24;
+  --focus: #F7B520;
   --hover: #f8f9fa;
 
   /* Palette: gradients */
@@ -64,10 +64,10 @@
   --cityscape-black: #000000;
   --cityscape-dark: #1a1a1a;
   --cityscape-gray: #2d2d2d;
-  --cityscape-yellow: #fbbf24;
+  --cityscape-yellow: #F7B520;
   --cityscape-yellow-light: #fcd34d;
-  --cityscape-yellow-dark: #f59e0b;
-  --cityscape-accent: #fbbf24;
+  --cityscape-yellow-dark: #d99b0a;
+  --cityscape-accent: #F7B520;
   --cityscape-accent-foreground: #000000;
 
   /* KPI Card Theme Colors - Light Mode */
@@ -151,7 +151,7 @@
 
   /* Form and system */
   --input: #f8f9fa;
-  --ring: #fbbf24;
+  --ring: #F7B520;
 
   /* Radius (see @styling.mdc spacing) */
   --radius-xs: 0.25rem;
@@ -188,23 +188,23 @@
 }
 
 .dark {
-  --background: #212529;
-  --card: #23272b;
+  --background: #1a1f2e;
+  --card: #252b3a;
   --overlay: rgba(0,0,0,0.7);
   --foreground: #ffffff;
   --text-primary: #ffffff;
   --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
-  --text-inverse: #212529;
-  --border: #495057;
-  --border-light: #343a40;
+  --text-inverse: #1a1f2e;
+  --border: #343a4a;
+  --border-light: #252b3a;
   --icon-default: #cbd5e1;
   --icon-muted: #94a3b8;
-  --focus: #fbbf24;
-  --hover: #23272b;
-  --gradient-start: #23272b;
-  --gradient-mid: #2d2f31;
-  --gradient-end: #343a40;
+  --focus: #F7B520;
+  --hover: #252b3a;
+  --gradient-start: #1a1f2e;
+  --gradient-mid: #1f2534;
+  --gradient-end: #252b3a;
   --blob-1: #fecaca;
   --blob-2: #fed7aa;
   --blob-3: #e2e8f0;
@@ -215,17 +215,17 @@
   --success: #28a745;
   --warning: #fd7e14;
   --destructive: #dc3545;
-  --input: #23272b;
-  --ring: #fbbf24;
+  --input: #252b3a;
+  --ring: #F7B520;
   
   /* Cityscape Theme Colors (NEW) - Dark mode */
   --cityscape-black: #000000;
-  --cityscape-dark: #1a1a1a;
-  --cityscape-gray: #2d2d2d;
-  --cityscape-yellow: #fbbf24;
+  --cityscape-dark: #1a1f2e;
+  --cityscape-gray: #252b3a;
+  --cityscape-yellow: #F7B520;
   --cityscape-yellow-light: #fcd34d;
-  --cityscape-yellow-dark: #f59e0b;
-  --cityscape-accent: #fbbf24;
+  --cityscape-yellow-dark: #d99b0a;
+  --cityscape-accent: #F7B520;
   --cityscape-accent-foreground: #000000;
   
   /* KPI Card Theme Colors - Dark Mode */
@@ -288,18 +288,18 @@
   --analytics-success-border: #16a34a40;
   --analytics-success-text: #86efac;
   --analytics-success-text-light: #4ade80;
-  
+
   --analytics-danger: #f87171;
   --analytics-danger-bg: #dc262620;
   --analytics-danger-border: #dc262640;
   --analytics-danger-text: #fca5a5;
   --analytics-danger-text-light: #f87171;
-  
-  --analytics-warning: #fbbf24;
-  --analytics-warning-bg: #f59e0b20;
-  --analytics-warning-border: #f59e0b40;
+
+  --analytics-warning: #F7B520;
+  --analytics-warning-bg: #F7B52020;
+  --analytics-warning-border: #F7B52040;
   --analytics-warning-text: #fcd34d;
-  --analytics-warning-text-light: #fbbf24;
+  --analytics-warning-text-light: #F7B520;
   
   --analytics-neutral: #9ca3af;
   --analytics-neutral-bg: #6b728020;
@@ -407,8 +407,8 @@
     box-shadow: 0 0 0 3px var(--ring);
   }
   ::selection {
-    background: var(--cityscape-yellow);
-    color: var(--cityscape-accent-foreground);
+    background: #F7B520;
+    color: #000000;
   }
 }
 
