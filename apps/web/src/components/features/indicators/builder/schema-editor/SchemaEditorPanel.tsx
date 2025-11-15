@@ -2,31 +2,35 @@
 
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, Check, Clock, Copy, FileText, ChevronLeft, ChevronRight, Keyboard, Clipboard, ClipboardPaste } from 'lucide-react';
+import { AlertCircle, Check, Clock, Eye, FileText, ChevronLeft, ChevronRight, Keyboard, Info, Calculator } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIndicatorBuilderStore } from '@/store/useIndicatorBuilderStore';
 import { useSchemaNavigation } from '@/hooks/useSchemaNavigation';
-import { useAutoSchemaValidation } from '@/hooks/useSchemaValidation';
-import { useSchemaCopyPaste } from '@/hooks/useSchemaCopyPaste';
-import { FormSchemaBuilder } from '../FormSchemaBuilder';
-import { CalculationSchemaBuilder } from '../CalculationSchemaBuilder';
-import { RichTextEditor } from '../RichTextEditor';
+import { useMOVValidation } from '@/hooks/useMOVValidation';
+import { BasicInfoTab } from './BasicInfoTab';
+import { CalculationTab } from './CalculationTab';
+import { PreviewTab } from './PreviewTab';
+import MOVChecklistBuilder from '../MOVChecklistBuilder';
 import { ParentAggregateDashboard } from './ParentAggregateDashboard';
+import { MOVChecklistConfig } from '@/types/mov-checklist';
 
 /**
  * SchemaEditorPanel Component
  *
- * Right-side panel for editing indicator schemas.
- * Provides tabbed interface for Form, Calculation, and Remark schemas.
+ * Right-side panel for editing indicator properties.
+ * Provides tabbed interface per indicator-builder-specification.md lines 1714-1738:
+ * 1. Basic Info Tab - Code, name, description, parent, display order
+ * 2. Calculation Tab - auto_calc_method, logical_operator, selection_mode, BBI association
+ * 3. MOV Checklist Tab - Structured JSONB checklist for validator verification
+ * 4. Preview Tab - Live preview of BLGU/Validator views
  *
  * Features:
- * - Tab navigation between schema types
+ * - Tab navigation between property types
  * - Real-time validation and auto-save status
  * - Empty state when no indicator selected
- * - Integration with existing schema builders
+ * - Parent aggregate dashboard for parent indicators
  */
 
 interface SchemaEditorPanelProps {
@@ -34,16 +38,16 @@ interface SchemaEditorPanelProps {
 }
 
 export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
-  const [activeTab, setActiveTab] = useState<'form' | 'calculation' | 'remark'>('form');
+  const [activeTab, setActiveTab] = useState<'basic_info' | 'calculation' | 'mov_checklist' | 'preview'>('basic_info');
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
 
   const getNodeById = useIndicatorBuilderStore(state => state.getNodeById);
   const updateNode = useIndicatorBuilderStore(state => state.updateNode);
-  const schemaStatus = useIndicatorBuilderStore(state => state.schemaStatus);
+  const tree = useIndicatorBuilderStore(state => state.tree);
   const autoSave = useIndicatorBuilderStore(state => state.autoSave);
   const markSchemaDirty = useIndicatorBuilderStore(state => state.markSchemaDirty);
 
-  // NEW: Leaf detection and parent status (Phase 6)
+  // Parent/leaf detection
   const isLeafIndicator = useIndicatorBuilderStore(state => state.isLeafIndicator);
   const getParentStatusInfo = useIndicatorBuilderStore(state => state.getParentStatusInfo);
   const getDescendantLeavesOf = useIndicatorBuilderStore(state => state.getDescendantLeavesOf);
@@ -51,11 +55,9 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
   const navigateToNextIncomplete = useIndicatorBuilderStore(state => state.navigateToNextIncomplete);
 
   const indicator = indicatorId ? getNodeById(indicatorId) : null;
-  const status = indicatorId ? schemaStatus.get(indicatorId) : null;
   const isSaving = indicatorId ? autoSave.savingSchemas.has(indicatorId) : false;
   const lastSaved = indicatorId ? autoSave.lastSaved.get(indicatorId) : null;
 
-  // NEW: Check if indicator is a leaf (Phase 6)
   const isLeaf = indicatorId ? isLeafIndicator(indicatorId) : false;
   const parentStatus = indicatorId && !isLeaf ? getParentStatusInfo(indicatorId) : null;
   const leafIndicators = indicatorId && !isLeaf ? getDescendantLeavesOf(indicatorId) : [];
@@ -64,36 +66,75 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
   const {
     goToNext,
     goToPrevious,
-    goToNextIncomplete,
     hasNext,
     hasPrevious,
-    hasNextIncomplete,
   } = useSchemaNavigation({ enabled: true });
 
-  // Validation hook - runs automatically on schema changes (debounced 500ms)
-  const { errors, errorCount, warningCount, isValid } = useAutoSchemaValidation(indicatorId, 500);
+  // MOV Checklist validation
+  const movChecklistConfig = indicator?.mov_checklist_items as unknown as MOVChecklistConfig | undefined;
+  const movValidation = useMOVValidation(movChecklistConfig);
+  const movChecklistComplete = movChecklistConfig?.items && movChecklistConfig.items.length > 0 && movValidation.isValid;
 
-  // Copy/paste hook with keyboard shortcuts (Ctrl+Shift+C/V)
-  const { copy, paste, canPaste, copiedFrom } = useSchemaCopyPaste({
-    indicatorId,
-    activeTab,
-  });
+  // Get available parents (all nodes except self and descendants)
+  const availableParents = React.useMemo(() => {
+    if (!indicator) return [];
+    const parents: Array<{ id: string; code: string; name: string }> = [];
+    tree.nodes.forEach((node, id) => {
+      if (id !== indicatorId && id !== indicator.parent_temp_id) {
+        // Exclude self; TODO: also exclude descendants to prevent circular references
+        parents.push({
+          id,
+          code: node.code || '',
+          name: node.name,
+        });
+      }
+    });
+    return parents;
+  }, [indicator, indicatorId, tree.nodes]);
 
-  // Reset to form tab when indicator changes
+  // TODO: Fetch available BBIs from API
+  const availableBBIs = React.useMemo(() => {
+    // Placeholder: In production, fetch from API
+    return [
+      { id: 1, code: 'BDRRMC', name: 'Barangay Disaster Risk Reduction and Management Committee' },
+      { id: 2, code: 'BADAC', name: 'Barangay Anti-Drug Abuse Council' },
+      { id: 3, code: 'BPOC', name: 'Barangay Peace and Order Committee' },
+      { id: 4, code: 'LT', name: 'Lupong Tagapamayapa' },
+      { id: 5, code: 'VAW', name: 'Barangay Violence Against Women Desk' },
+      { id: 6, code: 'BDC', name: 'Barangay Development Council' },
+      { id: 7, code: 'BCPC', name: 'Barangay Council for the Protection of Children' },
+      { id: 8, code: 'BNC', name: 'Barangay Nutrition Committee' },
+      { id: 9, code: 'BESWMC', name: 'Barangay Ecological Solid Waste Management Committee' },
+    ];
+  }, []);
+
+  // Check if indicator has children
+  const hasChildren = React.useMemo(() => {
+    if (!indicator) return false;
+    let childCount = 0;
+    tree.nodes.forEach((node) => {
+      if (node.parent_temp_id === indicatorId) childCount++;
+    });
+    return childCount > 0;
+  }, [indicator, indicatorId, tree.nodes]);
+
+  // Reset to basic_info tab when indicator changes
   useEffect(() => {
-    setActiveTab('form');
+    setActiveTab('basic_info');
   }, [indicatorId]);
 
   // Show empty state if no indicator selected
   if (!indicatorId || !indicator) {
     return (
-      <div className="h-full flex items-center justify-center p-8">
-        <div className="text-center max-w-md space-y-4">
-          <FileText className="h-16 w-16 mx-auto text-muted-foreground/50" />
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold">No Indicator Selected</h3>
-            <p className="text-sm text-muted-foreground">
-              Select an indicator from the tree navigator to configure its schemas.
+      <div className="h-full flex items-center justify-center p-8 bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+        <div className="text-center max-w-md space-y-6 animate-in fade-in duration-500">
+          <div className="w-24 h-24 mx-auto rounded-2xl bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] flex items-center justify-center shadow-2xl">
+            <FileText className="h-12 w-12 text-black" />
+          </div>
+          <div className="space-y-3">
+            <h3 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">No Indicator Selected</h3>
+            <p className="text-base text-muted-foreground dark:text-gray-400 leading-relaxed">
+              Select an indicator from the tree navigator to configure its properties.
             </p>
           </div>
         </div>
@@ -101,7 +142,7 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
     );
   }
 
-  // NEW: Show parent aggregate dashboard for parent indicators (Phase 6)
+  // Show parent aggregate dashboard for parent indicators
   if (!isLeaf && parentStatus) {
     return (
       <ParentAggregateDashboard
@@ -126,103 +167,50 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
     return `Saved ${hours}h ago`;
   };
 
-  // Handle schema updates with dirty marking
-  const handleFormSchemaChange = (schema: any) => {
+  // Handle updates with dirty marking
+  const handleUpdate = (updates: Partial<typeof indicator>) => {
     if (indicatorId) {
-      updateNode(indicatorId, { form_schema: schema });
+      updateNode(indicatorId, updates);
       markSchemaDirty(indicatorId);
     }
   };
 
-  const handleCalculationSchemaChange = (schema: any) => {
+  const handleMOVChecklistChange = (config: MOVChecklistConfig) => {
     if (indicatorId) {
-      updateNode(indicatorId, { calculation_schema: schema });
+      updateNode(indicatorId, { mov_checklist_items: config as unknown as Record<string, any> });
       markSchemaDirty(indicatorId);
     }
   };
 
-  const handleRemarkSchemaChange = (html: string) => {
-    if (indicatorId) {
-      updateNode(indicatorId, { remark_schema: { html } as Record<string, any> });
-      markSchemaDirty(indicatorId);
-    }
-  };
-
-  // Extract form fields for calculation builder
-  const formFields = indicator.form_schema?.fields || [];
+  // Tab completion status
+  const basicInfoComplete = !!(indicator.name && indicator.description);
+  // TODO: Update when spec-aligned calculation properties are added to IndicatorNode
+  const calculationComplete = indicator.is_auto_calculable !== undefined;
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="shrink-0 border-b bg-muted/20 p-4 space-y-3">
+    <div className="h-full flex flex-col bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+      {/* Header with Golden Theme */}
+      <div className="shrink-0 border-b bg-white dark:bg-gray-800 dark:border-gray-700 shadow-md p-5 space-y-4">
         {/* Indicator Title */}
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-3 mb-2">
               {indicator.code && (
-                <Badge variant="outline" className="font-mono text-xs shrink-0">
+                <Badge
+                  variant="outline"
+                  className="font-mono text-xs shrink-0 bg-gradient-to-r from-[#fbbf24]/10 to-[#f59e0b]/10 dark:from-[#fbbf24]/20 dark:to-[#f59e0b]/20 border-[#fbbf24] text-[#b45309] dark:text-[#fbbf24] font-bold px-2 py-1"
+                >
                   {indicator.code}
                 </Badge>
               )}
-              <h2 className="text-lg font-semibold truncate">{indicator.name}</h2>
+              <h2 className="text-xl font-extrabold tracking-tight truncate text-gray-900 dark:text-gray-100">{indicator.name}</h2>
             </div>
             {indicator.description && (
-              <p className="text-sm text-muted-foreground line-clamp-2">
+              <p className="text-sm text-muted-foreground dark:text-gray-400 line-clamp-2 leading-relaxed">
                 {indicator.description}
               </p>
             )}
           </div>
-
-          {/* Action Buttons: Copy/Paste */}
-          <div className="flex items-center gap-2 shrink-0">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={copy}
-              title={`Copy ${activeTab} schema (Ctrl+Shift+C)`}
-            >
-              <Clipboard className="h-4 w-4 mr-1" />
-              Copy
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={paste}
-              disabled={!canPaste}
-              title={
-                canPaste
-                  ? `Paste ${activeTab} schema from ${copiedFrom} (Ctrl+Shift+V)`
-                  : copiedFrom
-                  ? `Cannot paste ${copiedFrom.split(' (')[1]?.replace(')', '')} schema into ${activeTab} tab`
-                  : 'No schema copied (Ctrl+Shift+C to copy)'
-              }
-            >
-              <ClipboardPaste className="h-4 w-4 mr-1" />
-              Paste
-            </Button>
-          </div>
-        </div>
-
-        {/* Tab Completion Status */}
-        <div className="flex items-center gap-3">
-          <TabCompletionBadge
-            label="Form"
-            isComplete={status?.formComplete || false}
-            isActive={activeTab === 'form'}
-            onClick={() => setActiveTab('form')}
-          />
-          <TabCompletionBadge
-            label="Calculation"
-            isComplete={status?.calculationComplete || false}
-            isActive={activeTab === 'calculation'}
-            onClick={() => setActiveTab('calculation')}
-          />
-          <TabCompletionBadge
-            label="Remark"
-            isComplete={status?.remarkComplete || false}
-            isActive={activeTab === 'remark'}
-            onClick={() => setActiveTab('remark')}
-          />
         </div>
       </div>
 
@@ -230,72 +218,101 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
       <div className="flex-1 overflow-hidden">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="h-full flex flex-col">
           <TabsList className="mx-4 mt-4 shrink-0">
-            <TabsTrigger value="form" className="flex items-center gap-2">
-              Form Schema
-              {status?.formComplete && <Check className="h-3 w-3 text-green-600" />}
+            <TabsTrigger value="basic_info" className="flex items-center gap-2 data-[state=active]:text-[#b45309] dark:data-[state=active]:text-[#fbbf24]">
+              <Info className="h-3 w-3" />
+              Basic Info
+              {basicInfoComplete && <Check className="h-3 w-3 text-green-600 dark:text-green-400" />}
             </TabsTrigger>
-            <TabsTrigger value="calculation" className="flex items-center gap-2">
-              Calculation Schema
-              {status?.calculationComplete && <Check className="h-3 w-3 text-green-600" />}
+            <TabsTrigger value="calculation" className="flex items-center gap-2 data-[state=active]:text-[#b45309] dark:data-[state=active]:text-[#fbbf24]">
+              <Calculator className="h-3 w-3" />
+              Calculation
+              {calculationComplete && <Check className="h-3 w-3 text-green-600 dark:text-green-400" />}
             </TabsTrigger>
-            <TabsTrigger value="remark" className="flex items-center gap-2">
-              Remark Template
-              {status?.remarkComplete && <Check className="h-3 w-3 text-green-600" />}
+            <TabsTrigger value="mov_checklist" className="flex items-center gap-2 data-[state=active]:text-[#b45309] dark:data-[state=active]:text-[#fbbf24]">
+              <FileText className="h-3 w-3" />
+              MOV Checklist
+              {movChecklistComplete && <Check className="h-3 w-3 text-green-600 dark:text-green-400" />}
+              {!movValidation.isValid && movChecklistConfig?.items && movChecklistConfig.items.length > 0 && (
+                <Badge variant="destructive" className="text-[10px] py-0">
+                  {movValidation.errors.length}
+                </Badge>
+              )}
+              {movValidation.warnings.length > 0 && movChecklistConfig?.items && movChecklistConfig.items.length > 0 && movValidation.isValid && (
+                <Badge variant="outline" className="text-[10px] py-0 bg-yellow-500/10 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-600">
+                  {movValidation.warnings.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="preview" className="flex items-center gap-2 data-[state=active]:text-[#b45309] dark:data-[state=active]:text-[#fbbf24]">
+              <Eye className="h-3 w-3" />
+              Preview
             </TabsTrigger>
           </TabsList>
 
-          <div className="flex-1 overflow-hidden px-4 pb-4">
-            <TabsContent value="form" className="h-full mt-4 overflow-auto">
-              <FormSchemaBuilder
-                value={indicator.form_schema as unknown as any}
-                onChange={handleFormSchemaChange}
-                className="h-full"
-              />
+          <div className="flex-1 overflow-hidden">
+            <TabsContent value="basic_info" className="h-full mt-0 overflow-auto">
+              {activeTab === 'basic_info' && (
+                <BasicInfoTab
+                  indicator={indicator}
+                  availableParents={availableParents}
+                  onUpdate={handleUpdate}
+                />
+              )}
             </TabsContent>
 
-            <TabsContent value="calculation" className="h-full mt-4 overflow-auto">
-              <CalculationSchemaBuilder
-                value={indicator.calculation_schema as unknown as any}
-                formFields={formFields}
-                onChange={handleCalculationSchemaChange}
-                className="h-full"
-              />
+            <TabsContent value="calculation" className="h-full mt-0 overflow-auto">
+              {activeTab === 'calculation' && (
+                <CalculationTab
+                  indicator={indicator}
+                  availableBBIs={availableBBIs}
+                  hasChildren={hasChildren}
+                  onUpdate={handleUpdate}
+                />
+              )}
             </TabsContent>
 
-            <TabsContent value="remark" className="h-full mt-4 overflow-auto">
-              <RichTextEditor
-                value={(indicator.remark_schema as any)?.html || ''}
-                onChange={handleRemarkSchemaChange}
-                placeholder="Enter remark template for this indicator..."
-                minHeight={400}
-                className="h-full"
-              />
+            <TabsContent value="mov_checklist" className="h-full mt-0 overflow-hidden">
+              {activeTab === 'mov_checklist' && (
+                <MOVChecklistBuilder
+                  value={movChecklistConfig}
+                  onChange={handleMOVChecklistChange}
+                  className="h-full"
+                />
+              )}
+            </TabsContent>
+
+            <TabsContent value="preview" className="h-full mt-0 overflow-auto">
+              {activeTab === 'preview' && (
+                <PreviewTab indicator={indicator} />
+              )}
             </TabsContent>
           </div>
         </Tabs>
       </div>
 
-      {/* Footer */}
-      <div className="shrink-0 border-t bg-muted/20 p-3 space-y-2">
+      {/* Footer with Golden Theme */}
+      <div className="shrink-0 border-t bg-white dark:bg-gray-800 dark:border-gray-700 shadow-lg p-4 space-y-3">
         {/* Navigation Buttons */}
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              size="sm"
+              size="default"
               onClick={goToPrevious}
               disabled={!hasPrevious}
               title="Previous indicator (↑ or Alt+←)"
+              className="border-2 hover:border-[#fbbf24] transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 font-semibold dark:border-gray-600 dark:text-gray-200"
             >
               <ChevronLeft className="h-4 w-4" />
               <span className="hidden sm:inline">Previous</span>
             </Button>
             <Button
               variant="outline"
-              size="sm"
+              size="default"
               onClick={goToNext}
               disabled={!hasNext}
               title="Next indicator (↓ or Alt+→)"
+              className="border-2 hover:border-[#fbbf24] transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 font-semibold dark:border-gray-600 dark:text-gray-200"
             >
               <span className="hidden sm:inline">Next</span>
               <ChevronRight className="h-4 w-4" />
@@ -305,101 +322,75 @@ export function SchemaEditorPanel({ indicatorId }: SchemaEditorPanelProps) {
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
-              size="sm"
+              size="default"
               onClick={() => setShowKeyboardShortcuts(!showKeyboardShortcuts)}
               title="Show keyboard shortcuts"
-              className="text-xs"
+              className="text-xs hover:bg-[#fbbf24]/10 dark:hover:bg-[#fbbf24]/20 transition-all duration-300 dark:text-gray-200"
             >
-              <Keyboard className="h-3 w-3 mr-1" />
-              <span className="hidden md:inline">Shortcuts</span>
+              <Keyboard className="h-4 w-4 mr-1" />
+              <span className="hidden md:inline font-semibold">Shortcuts</span>
             </Button>
           </div>
         </div>
 
         {/* Keyboard Shortcuts Help */}
         {showKeyboardShortcuts && (
-          <div className="text-xs bg-muted/50 rounded p-2 space-y-1">
-            <div className="font-semibold mb-1">Keyboard Shortcuts:</div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
-              <div><kbd className="px-1 py-0.5 bg-background rounded border text-[10px]">↑</kbd> Previous indicator</div>
-              <div><kbd className="px-1 py-0.5 bg-background rounded border text-[10px]">↓</kbd> Next indicator</div>
-              <div><kbd className="px-1 py-0.5 bg-background rounded border text-[10px]">Ctrl/Cmd+N</kbd> Next incomplete</div>
-              <div><kbd className="px-1 py-0.5 bg-background rounded border text-[10px]">Ctrl/Cmd+Shift+C</kbd> Copy schema</div>
-              <div><kbd className="px-1 py-0.5 bg-background rounded border text-[10px]">Ctrl/Cmd+Shift+V</kbd> Paste schema</div>
-              <div><kbd className="px-1 py-0.5 bg-background rounded border text-[10px]">Esc</kbd> Unfocus editor</div>
+          <div className="text-xs bg-gradient-to-r from-[#fbbf24]/5 to-[#f59e0b]/5 dark:from-[#fbbf24]/10 dark:to-[#f59e0b]/10 border border-[#fbbf24]/20 dark:border-[#fbbf24]/30 rounded-lg p-3 space-y-2">
+            <div className="font-bold text-[#b45309] dark:text-[#fbbf24] mb-2">Keyboard Shortcuts:</div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 dark:text-gray-300">
+              <div><kbd className="px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 rounded border border-[#fbbf24]/30 text-[10px] font-mono">↑</kbd> Previous indicator</div>
+              <div><kbd className="px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 rounded border border-[#fbbf24]/30 text-[10px] font-mono">↓</kbd> Next indicator</div>
+              <div><kbd className="px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 rounded border border-[#fbbf24]/30 text-[10px] font-mono">Ctrl/Cmd+N</kbd> Next incomplete</div>
+              <div><kbd className="px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 rounded border border-[#fbbf24]/30 text-[10px] font-mono">Esc</kbd> Unfocus editor</div>
             </div>
           </div>
         )}
 
-        {/* Status Row */}
-        <div className="flex items-center justify-between">
+        {/* Status Row with Golden Accents */}
+        <div className="flex items-center justify-between pt-2 border-t dark:border-gray-700">
           {/* Auto-save Status */}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 text-xs">
             {isSaving ? (
               <>
-                <Clock className="h-3 w-3 animate-spin" />
-                <span>Saving...</span>
+                <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] flex items-center justify-center">
+                  <Clock className="h-3 w-3 text-black animate-spin" />
+                </div>
+                <span className="font-semibold text-[#b45309] dark:text-[#fbbf24]">Saving...</span>
               </>
             ) : (
               <>
-                <Check className="h-3 w-3 text-green-600" />
-                <span>{getLastSavedText()}</span>
+                <div className="w-5 h-5 rounded-md bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
+                  <Check className="h-3 w-3 text-white" />
+                </div>
+                <span className="font-semibold text-green-700 dark:text-green-500">{getLastSavedText()}</span>
               </>
             )}
           </div>
 
-          {/* Validation Status */}
+          {/* MOV Validation Status */}
           <div className="flex items-center gap-2 text-xs">
-            {errorCount > 0 || warningCount > 0 ? (
+            {movValidation.errors.length > 0 || movValidation.warnings.length > 0 ? (
               <>
-                <AlertCircle className="h-3 w-3 text-amber-600" />
-                <span className="text-amber-600">
-                  {errorCount > 0 && `${errorCount} error${errorCount > 1 ? 's' : ''}`}
-                  {errorCount > 0 && warningCount > 0 && ', '}
-                  {warningCount > 0 && `${warningCount} warning${warningCount > 1 ? 's' : ''}`}
+                <div className="w-5 h-5 rounded-md bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
+                  <AlertCircle className="h-3 w-3 text-white" />
+                </div>
+                <span className="font-semibold text-amber-700 dark:text-amber-500">
+                  {movValidation.errors.length > 0 && `${movValidation.errors.length} error${movValidation.errors.length > 1 ? 's' : ''}`}
+                  {movValidation.errors.length > 0 && movValidation.warnings.length > 0 && ', '}
+                  {movValidation.warnings.length > 0 && `${movValidation.warnings.length} warning${movValidation.warnings.length > 1 ? 's' : ''}`}
                 </span>
               </>
             ) : (
               <>
-                <Check className="h-3 w-3 text-green-600" />
-                <span className="text-green-600">No errors</span>
+                <div className="w-5 h-5 rounded-md bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
+                  <Check className="h-3 w-3 text-white" />
+                </div>
+                <span className="font-semibold text-green-700 dark:text-green-500">No errors</span>
               </>
             )}
           </div>
         </div>
       </div>
     </div>
-  );
-}
-
-/**
- * Tab Completion Badge Component
- * Shows completion status for each schema type
- */
-interface TabCompletionBadgeProps {
-  label: string;
-  isComplete: boolean;
-  isActive: boolean;
-  onClick: () => void;
-}
-
-function TabCompletionBadge({ label, isComplete, isActive, onClick }: TabCompletionBadgeProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors',
-        isActive && 'bg-primary text-primary-foreground',
-        !isActive && 'hover:bg-accent'
-      )}
-    >
-      <span className="font-medium">{label}</span>
-      {isComplete ? (
-        <Check className="h-3 w-3 text-green-600" />
-      ) : (
-        <div className="h-3 w-3 rounded-full border-2 border-muted-foreground/30" />
-      )}
-    </button>
   );
 }

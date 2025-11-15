@@ -445,3 +445,357 @@ class TestTreeValidation:
         )
 
         assert len(errors) == 0
+
+
+# ============================================================================
+# Tree Operations Tests (Phase 6: Story 2.2)
+# ============================================================================
+
+
+def test_get_indicator_tree_returns_hierarchical_structure(
+    db_session, test_governance_area, test_user
+):
+    """Test get_indicator_tree returns properly nested tree structure."""
+    # Create hierarchical indicators
+    root = indicator_service.create_indicator(
+        db=db_session,
+        data={
+            "name": "Root Indicator",
+            "governance_area_id": test_governance_area.id,
+            "sort_order": 0,
+        },
+        user_id=test_user.id,
+    )
+
+    child1 = indicator_service.create_indicator(
+        db=db_session,
+        data={
+            "name": "Child 1",
+            "governance_area_id": test_governance_area.id,
+            "parent_id": root.id,
+            "sort_order": 0,
+        },
+        user_id=test_user.id,
+    )
+
+    child2 = indicator_service.create_indicator(
+        db=db_session,
+        data={
+            "name": "Child 2",
+            "governance_area_id": test_governance_area.id,
+            "parent_id": root.id,
+            "sort_order": 1,
+        },
+        user_id=test_user.id,
+    )
+
+    grandchild = indicator_service.create_indicator(
+        db=db_session,
+        data={
+            "name": "Grandchild",
+            "governance_area_id": test_governance_area.id,
+            "parent_id": child1.id,
+            "sort_order": 0,
+        },
+        user_id=test_user.id,
+    )
+
+    # Get tree structure
+    tree = indicator_service.get_indicator_tree(
+        db=db_session,
+        governance_area_id=test_governance_area.id,
+    )
+
+    # Verify structure
+    assert len(tree) == 1  # One root node
+    root_node = tree[0]
+    assert root_node["id"] == root.id
+    assert root_node["name"] == "Root Indicator"
+    assert len(root_node["children"]) == 2  # Two children
+
+    # Verify children are properly nested
+    child1_node = root_node["children"][0]
+    assert child1_node["id"] == child1.id
+    assert len(child1_node["children"]) == 1  # One grandchild
+
+    grandchild_node = child1_node["children"][0]
+    assert grandchild_node["id"] == grandchild.id
+    assert len(grandchild_node["children"]) == 0  # No children
+
+
+def test_get_indicator_tree_includes_all_metadata(
+    db_session, test_governance_area, test_user
+):
+    """Test get_indicator_tree includes all indicator metadata."""
+    indicator = indicator_service.create_indicator(
+        db=db_session,
+        data={
+            "name": "Test Indicator",
+            "description": "Test description",
+            "governance_area_id": test_governance_area.id,
+            "is_auto_calculable": True,
+            "is_profiling_only": False,
+            "form_schema": {"type": "object", "properties": {}},
+        },
+        user_id=test_user.id,
+    )
+
+    tree = indicator_service.get_indicator_tree(
+        db=db_session,
+        governance_area_id=test_governance_area.id,
+    )
+
+    node = tree[0]
+    assert node["id"] == indicator.id
+    assert node["name"] == "Test Indicator"
+    assert node["description"] == "Test description"
+    assert node["is_auto_calculable"] is True
+    assert node["is_profiling_only"] is False
+    assert node["form_schema"] == {"type": "object", "properties": {}}
+    assert node["version"] == 1
+
+
+def test_get_indicator_tree_filters_by_governance_area(
+    db_session, test_user
+):
+    """Test get_indicator_tree only returns indicators for specified governance area."""
+    from app.db.enums import AreaType
+
+    # Create two governance areas
+    area1 = GovernanceArea(
+        id=1,
+        name="Area 1",
+        area_type=AreaType.CORE
+    )
+    area2 = GovernanceArea(
+        id=2,
+        name="Area 2",
+        area_type=AreaType.CORE
+    )
+    db_session.add(area1)
+    db_session.add(area2)
+    db_session.commit()
+
+    # Create indicators in each area
+    indicator_service.create_indicator(
+        db=db_session,
+        data={"name": "Area 1 Indicator", "governance_area_id": 1},
+        user_id=test_user.id,
+    )
+    indicator_service.create_indicator(
+        db=db_session,
+        data={"name": "Area 2 Indicator", "governance_area_id": 2},
+        user_id=test_user.id,
+    )
+
+    # Get tree for area 1
+    tree1 = indicator_service.get_indicator_tree(db=db_session, governance_area_id=1)
+    assert len(tree1) == 1
+    assert tree1[0]["name"] == "Area 1 Indicator"
+
+    # Get tree for area 2
+    tree2 = indicator_service.get_indicator_tree(db=db_session, governance_area_id=2)
+    assert len(tree2) == 1
+    assert tree2[0]["name"] == "Area 2 Indicator"
+
+
+def test_recalculate_codes_assigns_sequential_codes(
+    db_session, test_governance_area, test_user
+):
+    """Test recalculate_codes assigns sequential codes based on sort_order."""
+    # Create indicators
+    root1 = indicator_service.create_indicator(
+        db=db_session,
+        data={
+            "name": "Root 1",
+            "governance_area_id": test_governance_area.id,
+            "sort_order": 0,
+        },
+        user_id=test_user.id,
+    )
+
+    root2 = indicator_service.create_indicator(
+        db=db_session,
+        data={
+            "name": "Root 2",
+            "governance_area_id": test_governance_area.id,
+            "sort_order": 1,
+        },
+        user_id=test_user.id,
+    )
+
+    child1_1 = indicator_service.create_indicator(
+        db=db_session,
+        data={
+            "name": "Child 1.1",
+            "governance_area_id": test_governance_area.id,
+            "parent_id": root1.id,
+            "sort_order": 0,
+        },
+        user_id=test_user.id,
+    )
+
+    child1_2 = indicator_service.create_indicator(
+        db=db_session,
+        data={
+            "name": "Child 1.2",
+            "governance_area_id": test_governance_area.id,
+            "parent_id": root1.id,
+            "sort_order": 1,
+        },
+        user_id=test_user.id,
+    )
+
+    # Recalculate codes
+    updated = indicator_service.recalculate_codes(
+        db=db_session,
+        governance_area_id=test_governance_area.id,
+        user_id=test_user.id,
+    )
+
+    # Refresh from DB
+    db_session.refresh(root1)
+    db_session.refresh(root2)
+    db_session.refresh(child1_1)
+    db_session.refresh(child1_2)
+
+    # Verify codes
+    assert root1.indicator_code == "1"
+    assert root2.indicator_code == "2"
+    assert child1_1.indicator_code == "1.1"
+    assert child1_2.indicator_code == "1.2"
+
+
+def test_recalculate_codes_handles_deep_nesting(
+    db_session, test_governance_area, test_user
+):
+    """Test recalculate_codes handles deeply nested indicators."""
+    # Create 4-level hierarchy
+    level1 = indicator_service.create_indicator(
+        db=db_session,
+        data={
+            "name": "Level 1",
+            "governance_area_id": test_governance_area.id,
+            "sort_order": 0,
+        },
+        user_id=test_user.id,
+    )
+
+    level2 = indicator_service.create_indicator(
+        db=db_session,
+        data={
+            "name": "Level 2",
+            "governance_area_id": test_governance_area.id,
+            "parent_id": level1.id,
+            "sort_order": 0,
+        },
+        user_id=test_user.id,
+    )
+
+    level3 = indicator_service.create_indicator(
+        db=db_session,
+        data={
+            "name": "Level 3",
+            "governance_area_id": test_governance_area.id,
+            "parent_id": level2.id,
+            "sort_order": 0,
+        },
+        user_id=test_user.id,
+    )
+
+    level4 = indicator_service.create_indicator(
+        db=db_session,
+        data={
+            "name": "Level 4",
+            "governance_area_id": test_governance_area.id,
+            "parent_id": level3.id,
+            "sort_order": 0,
+        },
+        user_id=test_user.id,
+    )
+
+    # Recalculate codes
+    indicator_service.recalculate_codes(
+        db=db_session,
+        governance_area_id=test_governance_area.id,
+        user_id=test_user.id,
+    )
+
+    # Refresh from DB
+    db_session.refresh(level1)
+    db_session.refresh(level2)
+    db_session.refresh(level3)
+    db_session.refresh(level4)
+
+    # Verify codes
+    assert level1.indicator_code == "1"
+    assert level2.indicator_code == "1.1"
+    assert level3.indicator_code == "1.1.1"
+    assert level4.indicator_code == "1.1.1.1"
+
+
+def test_recalculate_codes_respects_sort_order(
+    db_session, test_governance_area, test_user
+):
+    """Test recalculate_codes respects sort_order for numbering."""
+    # Create indicators with specific sort_order
+    root = indicator_service.create_indicator(
+        db=db_session,
+        data={
+            "name": "Root",
+            "governance_area_id": test_governance_area.id,
+            "sort_order": 0,
+        },
+        user_id=test_user.id,
+    )
+
+    # Create children in reverse order
+    child_b = indicator_service.create_indicator(
+        db=db_session,
+        data={
+            "name": "Child B",
+            "governance_area_id": test_governance_area.id,
+            "parent_id": root.id,
+            "sort_order": 2,  # Higher sort_order
+        },
+        user_id=test_user.id,
+    )
+
+    child_a = indicator_service.create_indicator(
+        db=db_session,
+        data={
+            "name": "Child A",
+            "governance_area_id": test_governance_area.id,
+            "parent_id": root.id,
+            "sort_order": 0,  # Lower sort_order
+        },
+        user_id=test_user.id,
+    )
+
+    child_c = indicator_service.create_indicator(
+        db=db_session,
+        data={
+            "name": "Child C",
+            "governance_area_id": test_governance_area.id,
+            "parent_id": root.id,
+            "sort_order": 5,  # Even higher sort_order
+        },
+        user_id=test_user.id,
+    )
+
+    # Recalculate codes
+    indicator_service.recalculate_codes(
+        db=db_session,
+        governance_area_id=test_governance_area.id,
+        user_id=test_user.id,
+    )
+
+    # Refresh from DB
+    db_session.refresh(child_a)
+    db_session.refresh(child_b)
+    db_session.refresh(child_c)
+
+    # Verify codes are assigned based on sort_order, not creation order
+    assert child_a.indicator_code == "1.1"  # sort_order: 0
+    assert child_b.indicator_code == "1.2"  # sort_order: 2
+    assert child_c.indicator_code == "1.3"  # sort_order: 5

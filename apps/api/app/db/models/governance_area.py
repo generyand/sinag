@@ -93,6 +93,24 @@ class Indicator(Base):
         ForeignKey("indicators.id"), nullable=True
     )
 
+    # Hierarchical tree fields (Phase 6)
+    indicator_code: Mapped[str | None] = mapped_column(
+        String(50), nullable=True, index=True
+    )  # e.g., "1.1", "1.1.1", "2.3.4"
+
+    sort_order: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, default=0
+    )  # For maintaining tree order within siblings
+
+    selection_mode: Mapped[str | None] = mapped_column(
+        String(20), nullable=True, default='none'
+    )  # 'single', 'multiple', 'none'
+
+    # MOV checklist items (JSON array) - Phase 6
+    mov_checklist_items: Mapped[dict | None] = mapped_column(
+        JSON, nullable=True
+    )  # Array of MOV item configurations
+
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(default=func.now())
     updated_at: Mapped[datetime] = mapped_column(default=func.now(), onupdate=func.now())
@@ -158,6 +176,12 @@ class IndicatorHistory(Base):
     calculation_schema: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     remark_schema: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     technical_notes_text: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    # Hierarchical tree fields (archived snapshot - Phase 6)
+    indicator_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    sort_order: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    selection_mode: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    mov_checklist_items: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     # Foreign keys preserved from original indicator
     governance_area_id: Mapped[int] = mapped_column(nullable=False)

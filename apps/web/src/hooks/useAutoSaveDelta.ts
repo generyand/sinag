@@ -256,7 +256,8 @@ export function useAutoSaveDelta(
     treeData: IndicatorTreeState,
     dirtyIds: Set<string>
   ) => {
-    if (localOnly || dirtyIds.size === 0) return;
+    // Skip if no draft ID, local-only mode, or no dirty indicators
+    if (!draftId || localOnly || dirtyIds.size === 0) return;
 
     // Extract only changed indicators
     const changedIndicators: IndicatorNode[] = [];

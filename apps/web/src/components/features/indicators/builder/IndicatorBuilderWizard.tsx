@@ -32,12 +32,9 @@ import {
   GitBranch,
   Settings,
   Send,
+  Clock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { IndicatorTreeView } from './IndicatorTreeView';
-import { RichTextEditor } from './RichTextEditor';
-import { FormSchemaBuilder } from './FormSchemaBuilder';
-import { CalculationSchemaBuilder } from './CalculationSchemaBuilder';
 import { SchemaEditorLayout } from './schema-editor';
 
 /**
@@ -56,7 +53,7 @@ import { SchemaEditorLayout } from './schema-editor';
 // Types & Interfaces
 // ============================================================================
 
-export type WizardStep = 'select-mode' | 'build-structure' | 'configure-schemas' | 'review';
+export type WizardStep = 'select-mode' | 'build-and-configure' | 'review';
 export type CreationMode = 'incremental' | 'bulk-import';
 
 interface Draft {
@@ -115,12 +112,20 @@ function SelectModeStep({
   onResumeDraft,
 }: SelectModeStepProps) {
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
+    <div className="space-y-8 max-w-3xl mx-auto animate-in fade-in duration-500">
       {/* Governance Area Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Select Governance Area</CardTitle>
-          <CardDescription>
+      <Card className="group relative overflow-hidden shadow-xl rounded-2xl border-gray-100 dark:border-gray-700 dark:bg-gray-800 transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 hover:border-[#fbbf24]/30 dark:hover:border-[#fbbf24]/50">
+        {/* Gradient accent bar */}
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#fbbf24] via-[#f59e0b] to-[#d97706] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+        <CardHeader className="space-y-2">
+          <CardTitle className="text-2xl font-extrabold tracking-tight flex items-center gap-3 dark:text-gray-100">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
+              <Settings className="h-6 w-6 text-black" />
+            </div>
+            Select Governance Area
+          </CardTitle>
+          <CardDescription className="text-base dark:text-gray-400">
             Choose the governance area for the indicators you want to create
           </CardDescription>
         </CardHeader>
@@ -129,57 +134,76 @@ function SelectModeStep({
             value={selectedAreaId?.toString()}
             onValueChange={(value) => onAreaChange(parseInt(value, 10))}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-12 rounded-lg border-2 hover:border-[#fbbf24] transition-colors duration-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
               <SelectValue placeholder="Select governance area" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
               {governanceAreas.length === 0 ? (
-                <div className="p-2 text-sm text-muted-foreground">
+                <div className="p-2 text-sm text-muted-foreground dark:text-gray-400">
                   No governance areas available
                 </div>
               ) : (
                 governanceAreas.map((area) => (
-                  <SelectItem key={area.id} value={area.id.toString()}>
+                  <SelectItem key={area.id} value={area.id.toString()} className="dark:text-gray-200 dark:focus:bg-gray-700">
                     {area.area_type} - {area.name}
                   </SelectItem>
                 ))
               )}
             </SelectContent>
           </Select>
-          {/* Debug info */}
-          <p className="text-xs text-muted-foreground mt-2">
-            {governanceAreas.length} governance area(s) available
-          </p>
+          {selectedAreaId && (
+            <div className="mt-3 flex items-center gap-2 text-sm">
+              <CheckCircle2 className="h-4 w-4 text-[#f59e0b]" />
+              <span className="font-medium text-[#f59e0b]">Governance area selected</span>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Creation Mode Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Creation Mode</CardTitle>
-          <CardDescription>
+      <Card className="group relative overflow-hidden shadow-xl rounded-2xl border-gray-100 dark:border-gray-700 dark:bg-gray-800 transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 hover:border-[#fbbf24]/30 dark:hover:border-[#fbbf24]/50">
+        {/* Gradient accent bar */}
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#f59e0b] via-[#d97706] to-[#b45309] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+        <CardHeader className="space-y-2">
+          <CardTitle className="text-2xl font-extrabold tracking-tight flex items-center gap-3 dark:text-gray-100">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#f59e0b] to-[#d97706] flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
+              <GitBranch className="h-6 w-6 text-black" />
+            </div>
+            Creation Mode
+          </CardTitle>
+          <CardDescription className="text-base dark:text-gray-400">
             Choose how you want to create indicators
           </CardDescription>
         </CardHeader>
         <CardContent>
           <RadioGroup value={creationMode} onValueChange={(v) => onModeChange(v as CreationMode)}>
-            <div className="flex items-center space-x-2 p-4 border rounded-lg cursor-pointer hover:bg-accent">
-              <RadioGroupItem value="incremental" id="incremental" />
-              <Label htmlFor="incremental" className="flex-1 cursor-pointer">
-                <div className="font-semibold">Incremental Creation</div>
-                <div className="text-sm text-muted-foreground">
+            <div className={cn(
+              "relative overflow-hidden flex items-center space-x-4 p-6 border-2 rounded-xl cursor-pointer transition-all duration-300",
+              creationMode === 'incremental'
+                ? "border-[#fbbf24] bg-gradient-to-br from-[#fbbf24]/10 to-[#f59e0b]/5 dark:from-[#fbbf24]/20 dark:to-[#f59e0b]/10 shadow-lg scale-[1.02]"
+                : "border-gray-200 dark:border-gray-600 hover:border-[#fbbf24]/50 hover:shadow-md hover:scale-[1.01]"
+            )}>
+              <RadioGroupItem value="incremental" id="incremental" className="h-5 w-5" />
+              <Label htmlFor="incremental" className="flex-1 cursor-pointer dark:text-gray-200">
+                <div className="font-bold text-lg mb-1">Incremental Creation</div>
+                <div className="text-sm text-muted-foreground dark:text-gray-400">
                   Build indicators one at a time with full control
                 </div>
               </Label>
+              {creationMode === 'incremental' && (
+                <CheckCircle2 className="h-6 w-6 text-[#fbbf24] animate-in zoom-in duration-300" />
+              )}
             </div>
-            <div className="flex items-center space-x-2 p-4 border rounded-lg cursor-pointer hover:bg-accent opacity-50">
-              <RadioGroupItem value="bulk-import" id="bulk-import" disabled />
-              <Label htmlFor="bulk-import" className="flex-1 cursor-pointer">
-                <div className="font-semibold">Bulk Import (Coming Soon)</div>
-                <div className="text-sm text-muted-foreground">
+            <div className="relative overflow-hidden flex items-center space-x-4 p-6 border-2 rounded-xl opacity-50 cursor-not-allowed border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50">
+              <RadioGroupItem value="bulk-import" id="bulk-import" disabled className="h-5 w-5" />
+              <Label htmlFor="bulk-import" className="flex-1 dark:text-gray-300">
+                <div className="font-bold text-lg mb-1">Bulk Import</div>
+                <div className="text-sm text-muted-foreground dark:text-gray-400">
                   Import indicators from JSON or Excel file
                 </div>
               </Label>
+              <Badge variant="secondary" className="text-xs dark:bg-gray-600 dark:text-gray-300">Coming Soon</Badge>
             </div>
           </RadioGroup>
         </CardContent>
@@ -187,27 +211,49 @@ function SelectModeStep({
 
       {/* Existing Drafts */}
       {drafts.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Resume Draft</CardTitle>
-            <CardDescription>
+        <Card className="group relative overflow-hidden shadow-xl rounded-2xl border-gray-100 dark:border-gray-700 dark:bg-gray-800 transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 hover:border-[#fbbf24]/30 dark:hover:border-[#fbbf24]/50">
+          {/* Gradient accent bar */}
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#d97706] via-[#b45309] to-[#92400e] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+          <CardHeader className="space-y-2">
+            <CardTitle className="text-2xl font-extrabold tracking-tight flex items-center gap-3 dark:text-gray-100">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#d97706] to-[#b45309] flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
+                <FileText className="h-6 w-6 text-white" />
+              </div>
+              Resume Draft
+            </CardTitle>
+            <CardDescription className="text-base dark:text-gray-400">
               Continue working on a saved draft
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-3">
             {drafts.map((draft) => (
               <div
                 key={draft.id}
-                className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent"
+                className="group/draft flex items-center justify-between p-4 border-2 rounded-xl hover:border-[#fbbf24] hover:shadow-md transition-all duration-300 hover:scale-[1.02] bg-white dark:bg-gray-700 dark:border-gray-600"
               >
                 <div className="flex-1">
-                  <div className="font-medium">{draft.title}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {draft.indicator_count} indicators • Updated {new Date(draft.updated_at).toLocaleDateString()}
+                  <div className="font-bold text-lg mb-1 group-hover/draft:text-[#fbbf24] transition-colors duration-300 dark:text-gray-200">
+                    {draft.title}
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground dark:text-gray-400">
+                    <span className="flex items-center gap-1">
+                      <FileText className="h-3 w-3" />
+                      {draft.indicator_count} indicators
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      Updated {new Date(draft.updated_at).toLocaleDateString()}
+                    </span>
                   </div>
                 </div>
-                <Button size="sm" onClick={() => onResumeDraft(draft.id)}>
+                <Button
+                  size="lg"
+                  onClick={() => onResumeDraft(draft.id)}
+                  className="bg-gradient-to-r from-[#fbbf24] to-[#f59e0b] hover:from-[#f59e0b] hover:to-[#d97706] text-black font-bold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
+                >
                   Resume
+                  <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </div>
             ))}
@@ -219,121 +265,15 @@ function SelectModeStep({
 }
 
 /**
- * Step 2: Build Structure
- */
-interface BuildStructureStepProps {
-  selectedNodeId: string | null;
-}
-
-function BuildStructureStep({ selectedNodeId }: BuildStructureStepProps) {
-  const { getNodeById, updateNode } = useIndicatorBuilderStore();
-  const selectedNode = selectedNodeId ? getNodeById(selectedNodeId) : null;
-
-  const handleNameChange = (value: string) => {
-    if (selectedNodeId) {
-      updateNode(selectedNodeId, { name: value });
-    }
-  };
-
-  const handleDescriptionChange = (html: string) => {
-    if (selectedNodeId) {
-      updateNode(selectedNodeId, { description: html });
-    }
-  };
-
-  return (
-    <div className="flex h-full gap-4">
-      {/* Left Panel: Tree View */}
-      <div className="w-80 border rounded-lg overflow-hidden flex flex-col">
-        <div className="p-3 border-b bg-muted/50">
-          <h3 className="font-semibold text-sm">Indicator Hierarchy</h3>
-        </div>
-        <div className="flex-1 overflow-hidden">
-          <IndicatorTreeView height={600} />
-        </div>
-      </div>
-
-      {/* Right Panel: Indicator Details */}
-      <div className="flex-1 border rounded-lg overflow-hidden">
-        {selectedNode ? (
-          <div className="h-full flex flex-col">
-            <div className="p-4 border-b bg-muted/50">
-              <h3 className="font-semibold">
-                {selectedNode.code ? `${selectedNode.code} - ` : ''}
-                {selectedNode.name}
-              </h3>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {/* Name Input */}
-              <div className="space-y-2">
-                <Label>Indicator Name</Label>
-                <input
-                  type="text"
-                  value={selectedNode.name}
-                  onChange={(e) => handleNameChange(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-md"
-                  placeholder="Enter indicator name"
-                />
-              </div>
-
-              {/* Description Editor */}
-              <div className="space-y-2">
-                <Label>Minimum Requirements</Label>
-                <RichTextEditor
-                  value={selectedNode.description || ''}
-                  onChange={handleDescriptionChange}
-                  placeholder="Enter minimum requirements for this indicator..."
-                  minHeight={200}
-                />
-              </div>
-
-              {/* Metadata */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Is Active</Label>
-                  <Badge variant={selectedNode.is_active ? 'default' : 'secondary'}>
-                    {selectedNode.is_active ? 'Active' : 'Inactive'}
-                  </Badge>
-                </div>
-                <div className="space-y-2">
-                  <Label>Auto-Calculable</Label>
-                  <Badge variant={selectedNode.is_auto_calculable ? 'default' : 'secondary'}>
-                    {selectedNode.is_auto_calculable ? 'Yes' : 'No'}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="h-full flex items-center justify-center text-center p-8">
-            <div>
-              <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-semibold mb-2">No Indicator Selected</h3>
-              <p className="text-sm text-muted-foreground">
-                Select an indicator from the tree to view and edit its details
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/**
- * Step 3: Configure Schemas
+ * Step 2: Build & Configure (Combined)
  *
- * NEW: Uses split-pane layout with persistent tree navigator
- * This replaces the old single-indicator editor with a dual-pane interface:
- * - Left: Tree navigator with status icons and progress tracking
- * - Right: Schema editor (form, calculation, remark tabs)
- *
- * Navigation is now managed internally via Zustand store (currentSchemaIndicatorId)
- * No longer requires selectedNodeId prop - users click indicators in tree to switch
+ * This step combines tree structure building with full indicator configuration.
+ * Users can add/edit/reorder indicators while simultaneously configuring their properties.
  */
-function ConfigureSchemasStep() {
+function BuildAndConfigureStep() {
   return <SchemaEditorLayout />;
 }
+
 
 /**
  * Step 4: Review & Publish
@@ -351,38 +291,50 @@ function ReviewStep({ validationErrors, onSelectNode }: ReviewStepProps) {
   const completeCount = totalIndicators - errorCount;
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card>
+    <div className="space-y-8 max-w-5xl mx-auto animate-in fade-in duration-500">
+      {/* Summary Cards with Gradient Accents */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="group relative overflow-hidden shadow-xl rounded-2xl border-gray-100 dark:border-gray-700 dark:bg-gray-800 transition-all duration-500 hover:shadow-2xl hover:-translate-y-2">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#fbbf24] to-[#f59e0b]" />
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm text-muted-foreground">Total Indicators</CardTitle>
+            <CardTitle className="text-sm font-bold text-muted-foreground dark:text-gray-400 uppercase tracking-wider">Total Indicators</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{totalIndicators}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm text-muted-foreground">Complete</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-green-500" />
-              <div className="text-3xl font-bold text-green-600">{completeCount}</div>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] flex items-center justify-center shadow-lg">
+                <FileText className="h-6 w-6 text-black" />
+              </div>
+              <div className="text-4xl font-black text-[#fbbf24]">{totalIndicators}</div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="group relative overflow-hidden shadow-xl rounded-2xl border-gray-100 dark:border-gray-700 dark:bg-gray-800 transition-all duration-500 hover:shadow-2xl hover:-translate-y-2">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-400 to-green-600" />
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm text-muted-foreground">Errors</CardTitle>
+            <CardTitle className="text-sm font-bold text-muted-foreground dark:text-gray-400 uppercase tracking-wider">Complete</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-destructive" />
-              <div className="text-3xl font-bold text-destructive">{errorCount}</div>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <CheckCircle2 className="h-6 w-6 text-white" />
+              </div>
+              <div className="text-4xl font-black text-green-600 dark:text-green-500">{completeCount}</div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="group relative overflow-hidden shadow-xl rounded-2xl border-gray-100 dark:border-gray-700 dark:bg-gray-800 transition-all duration-500 hover:shadow-2xl hover:-translate-y-2">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-400 to-red-600" />
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-bold text-muted-foreground dark:text-gray-400 uppercase tracking-wider">Errors</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <AlertCircle className="h-6 w-6 text-white" />
+              </div>
+              <div className="text-4xl font-black text-red-600 dark:text-red-500">{errorCount}</div>
             </div>
           </CardContent>
         </Card>
@@ -390,29 +342,35 @@ function ReviewStep({ validationErrors, onSelectNode }: ReviewStepProps) {
 
       {/* Validation Errors */}
       {errorCount > 0 && (
-        <Card>
+        <Card className="relative overflow-hidden shadow-xl rounded-2xl border-red-200 dark:border-red-900/50 bg-red-50/30 dark:bg-red-950/20">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-400 to-red-600" />
           <CardHeader>
-            <CardTitle className="text-destructive">Validation Errors</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-2xl font-extrabold tracking-tight flex items-center gap-3 dark:text-gray-100">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center shadow-lg">
+                <AlertCircle className="h-6 w-6 text-white" />
+              </div>
+              Validation Errors
+            </CardTitle>
+            <CardDescription className="text-base dark:text-gray-400">
               Fix these errors before publishing
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {validationErrors.map((error, index) => (
                 <div
                   key={index}
-                  className="flex items-start gap-2 p-3 border rounded-lg hover:bg-accent cursor-pointer"
+                  className="group/error flex items-start gap-3 p-4 border-2 rounded-xl hover:border-[#fbbf24] hover:shadow-md transition-all duration-300 cursor-pointer bg-white dark:bg-gray-800 dark:border-gray-600 hover:scale-[1.01]"
                   onClick={() => onSelectNode(error.nodeId)}
                 >
-                  <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                  <AlertCircle className="h-6 w-6 text-red-500 flex-shrink-0 mt-0.5" />
                   <div className="flex-1">
-                    <div className="font-medium">
+                    <div className="font-bold text-lg mb-1 group-hover/error:text-[#fbbf24] transition-colors duration-300 dark:text-gray-200">
                       {nodes.get(error.nodeId)?.name || 'Unknown Indicator'}
                     </div>
-                    <div className="text-sm text-muted-foreground">{error.message}</div>
+                    <div className="text-sm text-muted-foreground dark:text-gray-400">{error.message}</div>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <ChevronRight className="h-5 w-5 text-muted-foreground dark:text-gray-400 flex-shrink-0 group-hover/error:text-[#fbbf24] transition-colors duration-300" />
                 </div>
               ))}
             </div>
@@ -422,14 +380,17 @@ function ReviewStep({ validationErrors, onSelectNode }: ReviewStepProps) {
 
       {/* Success Message */}
       {errorCount === 0 && totalIndicators > 0 && (
-        <Card className="border-green-500">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <CheckCircle2 className="h-8 w-8 text-green-500" />
-              <div>
-                <h3 className="font-semibold text-lg">Ready to Publish</h3>
-                <p className="text-sm text-muted-foreground">
-                  All indicators are valid and ready to be published
+        <Card className="relative overflow-hidden shadow-2xl rounded-2xl border-[#fbbf24] dark:border-[#fbbf24]/50 bg-gradient-to-br from-[#fbbf24]/10 via-[#f59e0b]/5 to-transparent dark:from-[#fbbf24]/20 dark:via-[#f59e0b]/10 dark:to-transparent dark:bg-gray-800 animate-in zoom-in duration-500">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#fbbf24] via-[#f59e0b] to-[#d97706]" />
+          <CardContent className="pt-8 pb-8">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] flex items-center justify-center shadow-xl animate-pulse">
+                <CheckCircle2 className="h-10 w-10 text-black" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-3xl font-black text-[#fbbf24] mb-2 tracking-tight">Ready to Publish</h3>
+                <p className="text-base text-muted-foreground dark:text-gray-400">
+                  All indicators are valid and ready to be published to the system
                 </p>
               </div>
             </div>
@@ -473,8 +434,7 @@ export function IndicatorBuilderWizard({
   // Wizard steps configuration
   const steps: Array<{ id: WizardStep; label: string; icon: any }> = [
     { id: 'select-mode', label: 'Select Mode', icon: GitBranch },
-    { id: 'build-structure', label: 'Build Structure', icon: FileText },
-    { id: 'configure-schemas', label: 'Configure Schemas', icon: Settings },
+    { id: 'build-and-configure', label: 'Build & Configure', icon: Settings },
     { id: 'review', label: 'Review & Publish', icon: Send },
   ];
 
@@ -499,10 +459,8 @@ export function IndicatorBuilderWizard({
     switch (currentStep) {
       case 'select-mode':
         return selectedAreaId !== null;
-      case 'build-structure':
-        return nodes.size > 0;
-      case 'configure-schemas':
-        return true;
+      case 'build-and-configure':
+        return nodes.size > 0; // At least one indicator must exist
       case 'review':
         return validationErrors.length === 0;
       default:
@@ -542,43 +500,68 @@ export function IndicatorBuilderWizard({
   const handleResumeDraft = (draftId: string) => {
     // Load draft logic would go here
     console.log('Resume draft:', draftId);
-    setCurrentStep('build-structure');
+    setCurrentStep('build-and-configure');
   };
 
   return (
-    <div className={cn('flex flex-col h-screen bg-background', className)}>
-      {/* Header */}
-      <div className="border-b bg-card">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold">Indicator Builder</h1>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={onSaveDraft}>
+    <div className={cn('flex flex-col h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800', className)}>
+      {/* Header with Golden Theme */}
+      <div className="border-b bg-white dark:bg-gray-800 shadow-lg dark:border-gray-700">
+        <div className="px-6 py-5">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] flex items-center justify-center shadow-xl">
+                <Settings className="h-8 w-8 text-black" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-black tracking-tight text-gray-900 dark:text-gray-100">Indicator Builder</h1>
+                <p className="text-sm text-muted-foreground dark:text-gray-400">Create and configure hierarchical indicators</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="default"
+                onClick={onSaveDraft}
+                className="border-2 border-[#fbbf24] hover:bg-[#fbbf24] hover:text-black dark:hover:text-black transition-all duration-300 hover:scale-105 shadow-md hover:shadow-lg font-semibold dark:bg-transparent dark:text-gray-200"
+              >
                 <Save className="h-4 w-4 mr-2" />
                 Save Draft
               </Button>
-              <Button variant="ghost" size="sm" onClick={handleExit}>
+              <Button
+                variant="ghost"
+                size="default"
+                onClick={handleExit}
+                className="hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-300 hover:scale-105 dark:text-gray-200"
+              >
                 <X className="h-4 w-4 mr-2" />
                 Exit
               </Button>
             </div>
           </div>
 
-          {/* Progress */}
-          <div className="space-y-2">
+          {/* Enhanced Progress Bar */}
+          <div className="space-y-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="font-medium">
+              <span className="font-bold text-[#fbbf24]">
                 Step {currentStepIndex + 1} of {steps.length}
               </span>
-              <span className="text-muted-foreground">
+              <span className="text-base font-semibold text-gray-700 dark:text-gray-300">
                 {steps[currentStepIndex].label}
               </span>
             </div>
-            <Progress value={progress} className="h-2" />
+            <div className="relative">
+              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-[#fbbf24] via-[#f59e0b] to-[#d97706] transition-all duration-700 ease-out shadow-md"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
           </div>
 
-          {/* Step Indicators */}
-          <div className="flex items-center justify-between mt-4">
+          {/* Step Indicators with Golden Theme */}
+          <div className="flex items-center justify-between mt-5 gap-2">
             {steps.map((step, index) => {
               const Icon = step.icon;
               const isActive = step.id === currentStep;
@@ -588,17 +571,21 @@ export function IndicatorBuilderWizard({
                 <React.Fragment key={step.id}>
                   <div
                     className={cn(
-                      'flex items-center gap-2 px-3 py-2 rounded-lg transition-colors',
-                      isActive && 'bg-primary text-primary-foreground',
-                      !isActive && isCompleted && 'bg-green-100 text-green-700',
-                      !isActive && !isCompleted && 'bg-muted text-muted-foreground'
+                      'flex items-center gap-2 px-4 py-3 rounded-xl transition-all duration-300 shadow-md',
+                      isActive && 'bg-gradient-to-r from-[#fbbf24] to-[#f59e0b] text-black scale-105 shadow-lg',
+                      !isActive && isCompleted && 'bg-gradient-to-r from-green-400 to-green-600 text-white',
+                      !isActive && !isCompleted && 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
                     )}
                   >
-                    <Icon className="h-4 w-4" />
-                    <span className="text-sm font-medium hidden md:inline">{step.label}</span>
+                    <Icon className={cn("h-5 w-5", isActive && "animate-pulse")} />
+                    <span className="text-sm font-bold hidden md:inline">{step.label}</span>
+                    {isCompleted && <CheckCircle2 className="h-4 w-4 ml-1" />}
                   </div>
                   {index < steps.length - 1 && (
-                    <div className="flex-1 h-px bg-border mx-2" />
+                    <div className={cn(
+                      "flex-1 h-1 rounded-full mx-2 transition-colors duration-500",
+                      isCompleted ? "bg-gradient-to-r from-green-400 to-green-600" : "bg-gray-200"
+                    )} />
                   )}
                 </React.Fragment>
               );
@@ -621,12 +608,8 @@ export function IndicatorBuilderWizard({
           />
         )}
 
-        {currentStep === 'build-structure' && (
-          <BuildStructureStep selectedNodeId={selectedNodeId} />
-        )}
-
-        {currentStep === 'configure-schemas' && (
-          <ConfigureSchemasStep />
+        {currentStep === 'build-and-configure' && (
+          <BuildAndConfigureStep />
         )}
 
         {currentStep === 'review' && (
@@ -634,21 +617,23 @@ export function IndicatorBuilderWizard({
             validationErrors={validationErrors}
             onSelectNode={(nodeId) => {
               selectNode(nodeId);
-              setCurrentStep('build-structure');
+              setCurrentStep('build-and-configure');
             }}
           />
         )}
       </div>
 
-      {/* Footer */}
-      <div className="border-t bg-card px-6 py-4">
+      {/* Footer with Golden Theme */}
+      <div className="border-t bg-white dark:bg-gray-800 shadow-lg px-6 py-5 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <Button
             variant="outline"
+            size="lg"
             onClick={handleBack}
             disabled={currentStepIndex === 0}
+            className="border-2 hover:border-[#fbbf24] transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 font-semibold dark:text-gray-200 dark:border-gray-600"
           >
-            <ChevronLeft className="h-4 w-4 mr-2" />
+            <ChevronLeft className="h-5 w-5 mr-2" />
             Back
           </Button>
 
@@ -656,19 +641,31 @@ export function IndicatorBuilderWizard({
             <Button
               onClick={handlePublish}
               disabled={!canProceed}
-              className="min-w-32"
+              size="lg"
+              className={cn(
+                "min-w-40 font-bold shadow-lg transition-all duration-300",
+                canProceed
+                  ? "bg-gradient-to-r from-[#fbbf24] to-[#f59e0b] hover:from-[#f59e0b] hover:to-[#d97706] text-black hover:scale-105 hover:shadow-xl"
+                  : "opacity-50 cursor-not-allowed"
+              )}
             >
-              <Send className="h-4 w-4 mr-2" />
-              Publish
+              <Send className="h-5 w-5 mr-2" />
+              Publish Indicators
             </Button>
           ) : (
             <Button
               onClick={handleNext}
               disabled={!canProceed}
-              className="min-w-32"
+              size="lg"
+              className={cn(
+                "min-w-40 font-bold shadow-lg transition-all duration-300",
+                canProceed
+                  ? "bg-gradient-to-r from-[#fbbf24] to-[#f59e0b] hover:from-[#f59e0b] hover:to-[#d97706] text-black hover:scale-105 hover:shadow-xl"
+                  : "opacity-50 cursor-not-allowed"
+              )}
             >
               Continue
-              <ChevronRight className="h-4 w-4 ml-2" />
+              <ChevronRight className="h-5 w-5 ml-2" />
             </Button>
           )}
         </div>

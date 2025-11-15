@@ -28,6 +28,7 @@ import type {
   FormSchemaResponse,
   GetIndicatorsDraftsParams,
   GetIndicatorsParams,
+  GetIndicatorsTreeGovernanceAreaId200Item,
   HTTPValidationError,
   IndicatorCreate,
   IndicatorDraftCreate,
@@ -38,6 +39,8 @@ import type {
   IndicatorHistoryResponse,
   IndicatorResponse,
   IndicatorUpdate,
+  IndicatorValidationRequest,
+  IndicatorValidationResponse,
   PostIndicatorsTestCalculation200,
   PostIndicatorsValidateCalculationSchema200,
   PostIndicatorsValidateFormSchema200,
@@ -900,6 +903,201 @@ export function useGetIndicatorsIndicatorIdFormSchema<TData = Awaited<ReturnType
 
 
 /**
+ * Get hierarchical tree structure of indicators for a governance area.
+
+**Permissions**: All authenticated users
+
+**Path Parameters**:
+- governance_area_id: Governance area ID
+
+**Returns**: List of root indicator nodes with nested children
+
+**Tree Structure**:
+```json
+[
+    {
+        "id": 1,
+        "name": "Root Indicator",
+        "indicator_code": "1.1",
+        "sort_order": 0,
+        "selection_mode": "none",
+        "parent_id": null,
+        "children": [
+            {
+                "id": 2,
+                "name": "Child Indicator",
+                "indicator_code": "1.1.1",
+                "sort_order": 0,
+                "parent_id": 1,
+                "children": []
+            }
+        ]
+    }
+]
+```
+
+**Features**:
+- Hierarchical parent-child relationships
+- Automatic code generation (1.1, 1.1.1, etc.)
+- MOV checklist items included
+- Form, calculation, and remark schemas included
+
+**Raises**:
+- 404: Governance area not found
+ * @summary Get indicator tree structure
+ */
+export const getIndicatorsTree$GovernanceAreaId = (
+    governanceAreaId: number,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<GetIndicatorsTreeGovernanceAreaId200Item[]>(
+      {url: `http://localhost:8000/api/v1/indicators/tree/${governanceAreaId}`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+export const getGetIndicatorsTreeGovernanceAreaIdQueryKey = (governanceAreaId: number,) => {
+    return [`http://localhost:8000/api/v1/indicators/tree/${governanceAreaId}`] as const;
+    }
+
+    
+export const getGetIndicatorsTreeGovernanceAreaIdQueryOptions = <TData = Awaited<ReturnType<typeof getIndicatorsTree$GovernanceAreaId>>, TError = HTTPValidationError>(governanceAreaId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsTree$GovernanceAreaId>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetIndicatorsTreeGovernanceAreaIdQueryKey(governanceAreaId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIndicatorsTree$GovernanceAreaId>>> = ({ signal }) => getIndicatorsTree$GovernanceAreaId(governanceAreaId, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(governanceAreaId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsTree$GovernanceAreaId>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetIndicatorsTreeGovernanceAreaIdQueryResult = NonNullable<Awaited<ReturnType<typeof getIndicatorsTree$GovernanceAreaId>>>
+export type GetIndicatorsTreeGovernanceAreaIdQueryError = HTTPValidationError
+
+
+/**
+ * @summary Get indicator tree structure
+ */
+
+export function useGetIndicatorsTreeGovernanceAreaId<TData = Awaited<ReturnType<typeof getIndicatorsTree$GovernanceAreaId>>, TError = HTTPValidationError>(
+ governanceAreaId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsTree$GovernanceAreaId>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetIndicatorsTreeGovernanceAreaIdQueryOptions(governanceAreaId,options)
+
+  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
+ * Recalculate indicator codes for a governance area after reordering.
+
+Automatically generates hierarchical codes like "1.1", "1.1.1", "1.2"
+based on tree structure and sort_order.
+
+**Permissions**: MLGOO_DILG only
+
+**Path Parameters**:
+- governance_area_id: Governance area ID
+
+**Returns**: List of updated indicators with new codes
+
+**Code Generation Logic**:
+- Root nodes: "1", "2", "3", ...
+- First-level children: "1.1", "1.2", "1.3", ...
+- Second-level children: "1.1.1", "1.1.2", ...
+- Sort order determines numbering within siblings
+
+**Example**:
+Before reorder:
+- Indicator A (code: "1.1", sort_order: 1)
+- Indicator B (code: "1.2", sort_order: 0)
+
+After recalculate (sorted by sort_order):
+- Indicator B (code: "1.1", sort_order: 0)
+- Indicator A (code: "1.2", sort_order: 1)
+
+**Raises**:
+- 404: Governance area not found
+ * @summary Recalculate indicator codes
+ */
+export const postIndicatorsRecalculateCodes$GovernanceAreaId = (
+    governanceAreaId: number,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<IndicatorResponse[]>(
+      {url: `http://localhost:8000/api/v1/indicators/recalculate-codes/${governanceAreaId}`, method: 'POST', signal
+    },
+      options);
+    }
+  
+
+
+export const getPostIndicatorsRecalculateCodesGovernanceAreaIdMutationOptions = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsRecalculateCodes$GovernanceAreaId>>, TError,{governanceAreaId: number}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsRecalculateCodes$GovernanceAreaId>>, TError,{governanceAreaId: number}, TContext> => {
+
+const mutationKey = ['postIndicatorsRecalculateCodesGovernanceAreaId'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postIndicatorsRecalculateCodes$GovernanceAreaId>>, {governanceAreaId: number}> = (props) => {
+          const {governanceAreaId} = props ?? {};
+
+          return  postIndicatorsRecalculateCodes$GovernanceAreaId(governanceAreaId,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostIndicatorsRecalculateCodesGovernanceAreaIdMutationResult = NonNullable<Awaited<ReturnType<typeof postIndicatorsRecalculateCodes$GovernanceAreaId>>>
+    
+    export type PostIndicatorsRecalculateCodesGovernanceAreaIdMutationError = HTTPValidationError
+
+    /**
+ * @summary Recalculate indicator codes
+ */
+export const usePostIndicatorsRecalculateCodesGovernanceAreaId = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsRecalculateCodes$GovernanceAreaId>>, TError,{governanceAreaId: number}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postIndicatorsRecalculateCodes$GovernanceAreaId>>,
+        TError,
+        {governanceAreaId: number},
+        TContext
+      > => {
+
+      const mutationOptions = getPostIndicatorsRecalculateCodesGovernanceAreaIdMutationOptions(options);
+
+      return useMutation(mutationOptions );
+    }
+    /**
  * Create multiple indicators in bulk with proper dependency ordering.
 
 **Permissions**: MLGOO_DILG only
@@ -1629,6 +1827,145 @@ export const usePostIndicatorsDraftsDraftIdReleaseLock = <TError = HTTPValidatio
       > => {
 
       const mutationOptions = getPostIndicatorsDraftsDraftIdReleaseLockMutationOptions(options);
+
+      return useMutation(mutationOptions );
+    }
+    /**
+ * Validate indicator tree structure, relationships, and schemas before bulk publish.
+
+**Permissions**: MLGOO_DILG only
+
+**Validations Performed**:
+- Circular reference detection (DFS algorithm)
+- Parent-child relationship integrity
+- Indicator code format validation (pattern: `1`, `1.1`, `1.1.1`, etc.)
+- Sort order validation (sequential starting from 0)
+- Schema completeness (form, MOV, calculation, remark)
+- Weight sum validation (siblings must sum to 100%)
+
+**Request Body**:
+```json
+{
+  "indicators": [
+    {
+      "id": "temp_1",
+      "parent_id": null,
+      "indicator_code": "1",
+      "sort_order": 0,
+      "weight": 60,
+      "form_schema": {...},
+      "calculation_schema": {...},
+      "remark_schema": {...}
+    },
+    {
+      "id": "temp_2",
+      "parent_id": "temp_1",
+      "indicator_code": "1.1",
+      "sort_order": 0,
+      "weight": 100
+    }
+  ]
+}
+```
+
+**Returns**:
+```json
+{
+  "is_valid": true,
+  "errors": [],
+  "warnings": ["Indicator temp_3 has no indicator_code set"]
+}
+```
+
+**Error Response Example**:
+```json
+{
+  "is_valid": false,
+  "errors": [
+    {
+      "type": "circular_reference",
+      "message": "Circular reference detected: 1 → 1.1 → 1",
+      "indicator_id": "temp_1"
+    },
+    {
+      "type": "invalid_code",
+      "message": "Indicator 1. has invalid code format (must match pattern: 1, 1.1, 1.1.1, etc.)",
+      "indicator_id": "temp_2"
+    },
+    {
+      "type": "weight_sum",
+      "message": "Weights for indicators 1.1, 1.2 sum to 90%, must be 100% (parent temp_1)",
+      "indicator_id": null
+    }
+  ],
+  "warnings": []
+}
+```
+
+**Status Codes**:
+- 200: Validation completed (check `is_valid` field)
+- 401: Unauthorized (not authenticated)
+- 403: Forbidden (not MLGOO_DILG role)
+ * @summary Validate indicator tree structure before publishing
+ */
+export const postIndicatorsValidateTree = (
+    indicatorValidationRequest: IndicatorValidationRequest,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<IndicatorValidationResponse>(
+      {url: `http://localhost:8000/api/v1/indicators/validate-tree`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: indicatorValidationRequest, signal
+    },
+      options);
+    }
+  
+
+
+export const getPostIndicatorsValidateTreeMutationOptions = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsValidateTree>>, TError,{data: IndicatorValidationRequest}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsValidateTree>>, TError,{data: IndicatorValidationRequest}, TContext> => {
+
+const mutationKey = ['postIndicatorsValidateTree'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postIndicatorsValidateTree>>, {data: IndicatorValidationRequest}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postIndicatorsValidateTree(data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostIndicatorsValidateTreeMutationResult = NonNullable<Awaited<ReturnType<typeof postIndicatorsValidateTree>>>
+    export type PostIndicatorsValidateTreeMutationBody = IndicatorValidationRequest
+    export type PostIndicatorsValidateTreeMutationError = HTTPValidationError
+
+    /**
+ * @summary Validate indicator tree structure before publishing
+ */
+export const usePostIndicatorsValidateTree = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsValidateTree>>, TError,{data: IndicatorValidationRequest}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postIndicatorsValidateTree>>,
+        TError,
+        {data: IndicatorValidationRequest},
+        TContext
+      > => {
+
+      const mutationOptions = getPostIndicatorsValidateTreeMutationOptions(options);
 
       return useMutation(mutationOptions );
     }

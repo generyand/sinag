@@ -99,29 +99,29 @@ function getSeverityConfig(severity: ValidationSeverity): {
       return {
         icon: <XCircle className="h-4 w-4" />,
         color: 'text-destructive',
-        bgColor: 'bg-red-50',
-        textColor: 'text-red-700',
+        bgColor: 'bg-red-50 dark:bg-red-950/20',
+        textColor: 'text-red-700 dark:text-red-400',
       };
     case 'warning':
       return {
         icon: <AlertTriangle className="h-4 w-4" />,
-        color: 'text-yellow-600',
-        bgColor: 'bg-yellow-50',
-        textColor: 'text-yellow-700',
+        color: 'text-yellow-600 dark:text-yellow-500',
+        bgColor: 'bg-yellow-50 dark:bg-yellow-950/20',
+        textColor: 'text-yellow-700 dark:text-yellow-400',
       };
     case 'info':
       return {
         icon: <AlertCircle className="h-4 w-4" />,
-        color: 'text-blue-600',
-        bgColor: 'bg-blue-50',
-        textColor: 'text-blue-700',
+        color: 'text-blue-600 dark:text-blue-500',
+        bgColor: 'bg-blue-50 dark:bg-blue-950/20',
+        textColor: 'text-blue-700 dark:text-blue-400',
       };
     default:
       return {
         icon: <AlertCircle className="h-4 w-4" />,
-        color: 'text-muted-foreground',
-        bgColor: 'bg-muted',
-        textColor: 'text-muted-foreground',
+        color: 'text-muted-foreground dark:text-gray-400',
+        bgColor: 'bg-muted dark:bg-gray-700',
+        textColor: 'text-muted-foreground dark:text-gray-400',
       };
   }
 }
@@ -177,11 +177,11 @@ interface StatCardProps {
 
 function StatCard({ title, value, icon, color }: StatCardProps) {
   return (
-    <div className="flex items-center gap-3 p-4 border rounded-lg">
+    <div className="flex items-center gap-3 p-4 border dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
       <div className={cn('flex-shrink-0', color)}>{icon}</div>
       <div className="flex-1 min-w-0">
-        <div className="text-2xl font-bold">{value}</div>
-        <div className="text-xs text-muted-foreground truncate">{title}</div>
+        <div className="text-2xl font-bold dark:text-gray-100">{value}</div>
+        <div className="text-xs text-muted-foreground dark:text-gray-400 truncate">{title}</div>
       </div>
     </div>
   );
@@ -200,7 +200,7 @@ function IndicatorValidationItem({ result, onNavigate }: IndicatorValidationItem
   const hasIssues = result.issues.length > 0;
 
   return (
-    <AccordionItem value={result.indicatorId} className="border rounded-lg px-4">
+    <AccordionItem value={result.indicatorId} className="border dark:border-gray-700 rounded-lg px-4 dark:bg-gray-800">
       <AccordionTrigger className="hover:no-underline py-3">
         <div className="flex items-center gap-3 flex-1 text-left">
           {/* Status Badge */}
@@ -211,14 +211,14 @@ function IndicatorValidationItem({ result, onNavigate }: IndicatorValidationItem
 
           {/* Indicator Info */}
           <div className="flex-1 min-w-0">
-            <div className="font-medium text-sm truncate">
+            <div className="font-medium text-sm truncate dark:text-gray-100">
               {result.indicatorCode && (
-                <span className="text-muted-foreground mr-2">{result.indicatorCode}</span>
+                <span className="text-muted-foreground dark:text-gray-400 mr-2">{result.indicatorCode}</span>
               )}
               {result.indicatorName}
             </div>
             {hasIssues && (
-              <div className="text-xs text-muted-foreground mt-1">
+              <div className="text-xs text-muted-foreground dark:text-gray-400 mt-1">
                 {result.issues.length} issue{result.issues.length !== 1 ? 's' : ''} found
               </div>
             )}
@@ -233,7 +233,7 @@ function IndicatorValidationItem({ result, onNavigate }: IndicatorValidationItem
                 e.stopPropagation();
                 onNavigate(result.indicatorId);
               }}
-              className="flex-shrink-0"
+              className="flex-shrink-0 dark:text-gray-200 dark:hover:bg-gray-700"
             >
               Go to Indicator
               <ChevronRight className="h-4 w-4 ml-1" />
@@ -315,10 +315,10 @@ export function ValidationSummary({
 
   if (isValidating) {
     return (
-      <Card className={className}>
+      <Card className={cn(className, 'dark:bg-gray-800 dark:border-gray-700')}>
         <CardContent className="py-12 text-center">
           <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
-          <p className="text-sm text-muted-foreground">Validating indicators...</p>
+          <p className="text-sm text-muted-foreground dark:text-gray-400">Validating indicators...</p>
         </CardContent>
       </Card>
     );
@@ -327,10 +327,10 @@ export function ValidationSummary({
   return (
     <div className={cn('space-y-6', className)}>
       {/* Summary Statistics */}
-      <Card>
+      <Card className="dark:bg-gray-800 dark:border-gray-700">
         <CardHeader>
-          <CardTitle>Validation Summary</CardTitle>
-          <CardDescription>
+          <CardTitle className="dark:text-gray-100">Validation Summary</CardTitle>
+          <CardDescription className="dark:text-gray-400">
             Overview of indicator completion and validation status
           </CardDescription>
         </CardHeader>
@@ -338,16 +338,16 @@ export function ValidationSummary({
           {/* Overall Progress */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="font-medium">Overall Completion</span>
-              <span className="text-muted-foreground">{completionPercentage}%</span>
+              <span className="font-medium dark:text-gray-200">Overall Completion</span>
+              <span className="text-muted-foreground dark:text-gray-400">{completionPercentage}%</span>
             </div>
             <Progress value={completionPercentage} className="h-3" />
-            <div className="text-xs text-muted-foreground">
+            <div className="text-xs text-muted-foreground dark:text-gray-400">
               {summary.completeIndicators} of {summary.totalIndicators} indicators complete
             </div>
           </div>
 
-          <Separator />
+          <Separator className="dark:bg-gray-700" />
 
           {/* Statistics Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -381,10 +381,10 @@ export function ValidationSummary({
 
       {/* Issues List */}
       {(errored.length > 0 || warned.length > 0 || incomplete.length > 0) && (
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
-            <CardTitle>Issues Requiring Attention</CardTitle>
-            <CardDescription>
+            <CardTitle className="dark:text-gray-100">Issues Requiring Attention</CardTitle>
+            <CardDescription className="dark:text-gray-400">
               Fix these issues to complete the indicator set
             </CardDescription>
           </CardHeader>
@@ -393,7 +393,7 @@ export function ValidationSummary({
               {/* Errors First */}
               {errored.length > 0 && (
                 <>
-                  <div className="text-sm font-semibold text-destructive mb-2 flex items-center gap-2">
+                  <div className="text-sm font-semibold text-destructive dark:text-red-400 mb-2 flex items-center gap-2">
                     <XCircle className="h-4 w-4" />
                     Errors ({errored.length})
                   </div>
@@ -410,7 +410,7 @@ export function ValidationSummary({
               {/* Warnings */}
               {warned.length > 0 && (
                 <>
-                  <div className="text-sm font-semibold text-yellow-600 mb-2 flex items-center gap-2 mt-4">
+                  <div className="text-sm font-semibold text-yellow-600 dark:text-yellow-500 mb-2 flex items-center gap-2 mt-4">
                     <AlertTriangle className="h-4 w-4" />
                     Warnings ({warned.length})
                   </div>
@@ -427,7 +427,7 @@ export function ValidationSummary({
               {/* Incomplete */}
               {incomplete.length > 0 && (
                 <>
-                  <div className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2 mt-4">
+                  <div className="text-sm font-semibold text-muted-foreground dark:text-gray-400 mb-2 flex items-center gap-2 mt-4">
                     <AlertCircle className="h-4 w-4" />
                     Incomplete ({incomplete.length})
                   </div>
@@ -447,13 +447,13 @@ export function ValidationSummary({
 
       {/* Success State */}
       {errored.length === 0 && warned.length === 0 && incomplete.length === 0 && summary.totalIndicators > 0 && (
-        <Card className="border-green-500">
+        <Card className="border-green-500 dark:border-green-600 dark:bg-gray-800">
           <CardContent className="py-8">
             <div className="flex flex-col items-center text-center gap-3">
-              <CheckCircle2 className="h-16 w-16 text-green-500" />
+              <CheckCircle2 className="h-16 w-16 text-green-500 dark:text-green-400" />
               <div>
-                <h3 className="text-xl font-semibold mb-1">All Indicators Valid!</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="text-xl font-semibold mb-1 dark:text-gray-100">All Indicators Valid!</h3>
+                <p className="text-sm text-muted-foreground dark:text-gray-400">
                   All {summary.totalIndicators} indicators are complete and ready for publication
                 </p>
               </div>
@@ -464,11 +464,11 @@ export function ValidationSummary({
 
       {/* Empty State */}
       {summary.totalIndicators === 0 && (
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardContent className="py-12 text-center">
-            <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-semibold mb-2">No Indicators to Validate</h3>
-            <p className="text-sm text-muted-foreground">
+            <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground dark:text-gray-400" />
+            <h3 className="text-lg font-semibold mb-2 dark:text-gray-100">No Indicators to Validate</h3>
+            <p className="text-sm text-muted-foreground dark:text-gray-400">
               Add indicators to your hierarchy to see validation results
             </p>
           </CardContent>

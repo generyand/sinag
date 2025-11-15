@@ -7,6 +7,7 @@ import type { IndicatorNode } from '@/store/useIndicatorBuilderStore';
 import { IndicatorTreeNode } from './IndicatorTreeNode';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
+import { useDebouncedCallback } from '@/hooks/useDebouncedCallback';
 
 /**
  * Indicator Tree View Component
@@ -68,6 +69,13 @@ export function IndicatorTreeView({
   }, [tree.nodes]);
 
   /**
+   * Debounced code recalculation
+   * Delays recalculation until 300ms after the last drag operation
+   * to prevent expensive recalculations during continuous dragging
+   */
+  const debouncedRecalculateCodes = useDebouncedCallback(recalculateCodes, 300);
+
+  /**
    * Handle drag-and-drop move
    */
   const handleMove = React.useCallback(
@@ -82,10 +90,11 @@ export function IndicatorTreeView({
       if (dragIds.length === 1) {
         const draggedId = dragIds[0];
         moveNode(draggedId, parentId, index);
-        recalculateCodes();
+        // Use debounced version to prevent excessive recalculations during drag
+        debouncedRecalculateCodes();
       }
     },
-    [moveNode, recalculateCodes]
+    [moveNode, debouncedRecalculateCodes]
   );
 
   /**

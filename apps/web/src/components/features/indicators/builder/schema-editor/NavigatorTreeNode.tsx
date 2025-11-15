@@ -189,21 +189,30 @@ export function NavigatorTreeNode({
       >
         {/* Expand/Collapse Icon (for parent nodes) */}
         {hasChildren && (
-          <button
-            type="button"
+          <div
+            role="button"
+            tabIndex={0}
             onClick={(e) => {
               e.stopPropagation();
               setIsExpanded(!isExpanded);
             }}
-            className="shrink-0 hover:bg-accent rounded p-0.5 transition-colors"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsExpanded(!isExpanded);
+              }
+            }}
+            className="shrink-0 hover:bg-accent rounded p-0.5 transition-colors cursor-pointer"
             aria-label={isExpanded ? 'Collapse' : 'Expand'}
+            aria-expanded={isExpanded}
           >
             {isExpanded ? (
               <ChevronDown className="h-3 w-3 text-muted-foreground" />
             ) : (
               <ChevronRight className="h-3 w-3 text-muted-foreground" />
             )}
-          </button>
+          </div>
         )}
 
         {/* Spacer for leaf nodes (no expand/collapse) */}

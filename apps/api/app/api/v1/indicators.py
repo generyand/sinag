@@ -23,12 +23,16 @@ from app.schemas.indicator import (
     IndicatorHistoryResponse,
     IndicatorResponse,
     IndicatorUpdate,
+    IndicatorValidationRequest,
+    IndicatorValidationResponse,
+    ValidationError,
     ReorderRequest,
 )
 from app.schemas.form_schema import FormSchema
 from app.schemas.calculation_schema import CalculationSchema
 from app.services.indicator_service import indicator_service
 from app.services.indicator_draft_service import indicator_draft_service
+from app.services.indicator_validation_service import indicator_validation_service
 from app.services.form_schema_validator import generate_validation_errors
 from app.services.intelligence_service import intelligence_service
 
@@ -526,6 +530,124 @@ def get_indicator_form_schema(
 
 
 # =============================================================================
+# Tree Operations Endpoints (Phase 6: Hierarchical Indicator Management)
+# =============================================================================
+
+
+@router.get(
+    "/tree/{governance_area_id}",
+    response_model=List[dict],
+    summary="Get indicator tree structure",
+)
+def get_indicator_tree(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+    governance_area_id: int,
+) -> List[dict]:
+    """
+    Get hierarchical tree structure of indicators for a governance area.
+
+    **Permissions**: All authenticated users
+
+    **Path Parameters**:
+    - governance_area_id: Governance area ID
+
+    **Returns**: List of root indicator nodes with nested children
+
+    **Tree Structure**:
+    ```json
+    [
+        {
+            "id": 1,
+            "name": "Root Indicator",
+            "indicator_code": "1.1",
+            "sort_order": 0,
+            "selection_mode": "none",
+            "parent_id": null,
+            "children": [
+                {
+                    "id": 2,
+                    "name": "Child Indicator",
+                    "indicator_code": "1.1.1",
+                    "sort_order": 0,
+                    "parent_id": 1,
+                    "children": []
+                }
+            ]
+        }
+    ]
+    ```
+
+    **Features**:
+    - Hierarchical parent-child relationships
+    - Automatic code generation (1.1, 1.1.1, etc.)
+    - MOV checklist items included
+    - Form, calculation, and remark schemas included
+
+    **Raises**:
+    - 404: Governance area not found
+    """
+    tree = indicator_service.get_indicator_tree(
+        db=db,
+        governance_area_id=governance_area_id,
+    )
+
+    return tree
+
+
+@router.post(
+    "/recalculate-codes/{governance_area_id}",
+    response_model=List[IndicatorResponse],
+    summary="Recalculate indicator codes",
+)
+def recalculate_indicator_codes(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.require_mlgoo_dilg),
+    governance_area_id: int,
+) -> List[IndicatorResponse]:
+    """
+    Recalculate indicator codes for a governance area after reordering.
+
+    Automatically generates hierarchical codes like "1.1", "1.1.1", "1.2"
+    based on tree structure and sort_order.
+
+    **Permissions**: MLGOO_DILG only
+
+    **Path Parameters**:
+    - governance_area_id: Governance area ID
+
+    **Returns**: List of updated indicators with new codes
+
+    **Code Generation Logic**:
+    - Root nodes: "1", "2", "3", ...
+    - First-level children: "1.1", "1.2", "1.3", ...
+    - Second-level children: "1.1.1", "1.1.2", ...
+    - Sort order determines numbering within siblings
+
+    **Example**:
+    Before reorder:
+    - Indicator A (code: "1.1", sort_order: 1)
+    - Indicator B (code: "1.2", sort_order: 0)
+
+    After recalculate (sorted by sort_order):
+    - Indicator B (code: "1.1", sort_order: 0)
+    - Indicator A (code: "1.2", sort_order: 1)
+
+    **Raises**:
+    - 404: Governance area not found
+    """
+    updated_indicators = indicator_service.recalculate_codes(
+        db=db,
+        governance_area_id=governance_area_id,
+        user_id=current_user.id,
+    )
+
+    return updated_indicators
+
+
+# =============================================================================
 # Bulk Operations Endpoints (Phase 6: Hierarchical Indicator Creation)
 # =============================================================================
 
@@ -913,3 +1035,164 @@ def release_draft_lock(
     )
 
     return draft
+
+
+# =============================================================================
+# Validation Endpoints (Phase 6: Pre-Publish Validation)
+# =============================================================================
+
+
+@router.post(
+    "/validate-tree",
+    response_model=IndicatorValidationResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Validate indicator tree structure before publishing",
+)
+def validate_indicator_tree(
+    *,
+    current_user: User = Depends(deps.require_mlgoo_dilg),
+    request_data: IndicatorValidationRequest,
+) -> IndicatorValidationResponse:
+    """
+    Validate indicator tree structure, relationships, and schemas before bulk publish.
+
+    **Permissions**: MLGOO_DILG only
+
+    **Validations Performed**:
+    - Circular reference detection (DFS algorithm)
+    - Parent-child relationship integrity
+    - Indicator code format validation (pattern: `1`, `1.1`, `1.1.1`, etc.)
+    - Sort order validation (sequential starting from 0)
+    - Schema completeness (form, MOV, calculation, remark)
+    - Weight sum validation (siblings must sum to 100%)
+
+    **Request Body**:
+    ```json
+    {
+      "indicators": [
+        {
+          "id": "temp_1",
+          "parent_id": null,
+          "indicator_code": "1",
+          "sort_order": 0,
+          "weight": 60,
+          "form_schema": {...},
+          "calculation_schema": {...},
+          "remark_schema": {...}
+        },
+        {
+          "id": "temp_2",
+          "parent_id": "temp_1",
+          "indicator_code": "1.1",
+          "sort_order": 0,
+          "weight": 100
+        }
+      ]
+    }
+    ```
+
+    **Returns**:
+    ```json
+    {
+      "is_valid": true,
+      "errors": [],
+      "warnings": ["Indicator temp_3 has no indicator_code set"]
+    }
+    ```
+
+    **Error Response Example**:
+    ```json
+    {
+      "is_valid": false,
+      "errors": [
+        {
+          "type": "circular_reference",
+          "message": "Circular reference detected: 1 → 1.1 → 1",
+          "indicator_id": "temp_1"
+        },
+        {
+          "type": "invalid_code",
+          "message": "Indicator 1. has invalid code format (must match pattern: 1, 1.1, 1.1.1, etc.)",
+          "indicator_id": "temp_2"
+        },
+        {
+          "type": "weight_sum",
+          "message": "Weights for indicators 1.1, 1.2 sum to 90%, must be 100% (parent temp_1)",
+          "indicator_id": null
+        }
+      ],
+      "warnings": []
+    }
+    ```
+
+    **Status Codes**:
+    - 200: Validation completed (check `is_valid` field)
+    - 401: Unauthorized (not authenticated)
+    - 403: Forbidden (not MLGOO_DILG role)
+    """
+    indicators = request_data.indicators
+
+    # Validate tree structure (circular refs, parent-child, codes, sort order)
+    tree_result = indicator_validation_service.validate_tree_structure(indicators)
+
+    # Validate weights
+    weight_result = indicator_validation_service.validate_weights(indicators)
+
+    # Collect all errors
+    all_errors: List[ValidationError] = []
+
+    # Add tree validation errors
+    for error_msg in tree_result.errors:
+        # Categorize errors by type
+        error_type = "tree_structure"
+        if "Circular reference" in error_msg:
+            error_type = "circular_reference"
+        elif "invalid code format" in error_msg:
+            error_type = "invalid_code"
+        elif "non-existent parent" in error_msg:
+            error_type = "invalid_parent"
+        elif "sort_order" in error_msg:
+            error_type = "invalid_sort_order"
+        elif "Duplicate indicator code" in error_msg:
+            error_type = "duplicate_code"
+
+        all_errors.append(
+            ValidationError(
+                type=error_type,
+                message=error_msg,
+                indicator_id=None,  # Could extract from message if needed
+            )
+        )
+
+    # Add weight validation errors
+    for parent_id, error_msg in weight_result.errors.items():
+        all_errors.append(
+            ValidationError(
+                type="weight_sum",
+                message=error_msg,
+                indicator_id=parent_id,
+            )
+        )
+
+    # Validate schemas for each indicator
+    for indicator in indicators:
+        schema_result = indicator_validation_service.validate_schemas(indicator)
+        if not schema_result.is_valid:
+            for schema_type, schema_errors in schema_result.errors.items():
+                for error_msg in schema_errors:
+                    all_errors.append(
+                        ValidationError(
+                            type=f"schema_{schema_type}",
+                            message=error_msg,
+                            indicator_id=indicator.get("id"),
+                        )
+                    )
+
+    # Overall validity
+    is_valid = len(all_errors) == 0
+
+    return IndicatorValidationResponse(
+        is_valid=is_valid,
+        errors=all_errors,
+        warnings=tree_result.warnings,
+    )
