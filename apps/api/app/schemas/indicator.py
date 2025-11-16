@@ -316,3 +316,64 @@ class IndicatorValidationResponse(BaseModel):
     warnings: List[str] = Field(
         default_factory=list, description="List of validation warnings"
     )
+
+
+# =============================================================================
+# Hard-Coded Indicator Schemas (Simplified Approach)
+# =============================================================================
+
+
+class ChecklistItemResponse(BaseModel):
+    """Response schema for individual checklist items."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    item_id: str = Field(..., description="Unique item identifier (e.g., '1_1_1_a')")
+    label: str = Field(..., description="Display text (e.g., 'a. Barangay Financial Report')")
+    group_name: Optional[str] = Field(None, description="Group header (e.g., 'ANNUAL REPORT')")
+    mov_description: Optional[str] = Field(None, description="Means of Verification description")
+    required: bool = Field(..., description="Required for indicator to pass")
+    requires_document_count: bool = Field(..., description="Needs document count input from validator")
+    display_order: int = Field(..., description="Sort order within indicator")
+
+
+class SimplifiedIndicatorResponse(BaseModel):
+    """Simplified response schema for hard-coded indicators."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    indicator_code: str = Field(..., description="Indicator code (e.g., '1.1', '1.1.1')")
+    name: str
+    description: Optional[str] = None
+    governance_area_id: int
+    parent_id: Optional[int] = None
+    is_bbi: bool = Field(..., description="Is this a BBI indicator")
+    is_active: bool
+    validation_rule: str = Field(..., description="Validation strategy")
+
+    # Nested relationships
+    governance_area: Optional[GovernanceAreaNested] = None
+    checklist_items: List[ChecklistItemResponse] = Field(default_factory=list, description="MOV checklist items")
+    children: List["SimplifiedIndicatorResponse"] = Field(default_factory=list, description="Child indicators")
+
+
+class IndicatorTreeResponse(BaseModel):
+    """Response schema for full indicator tree (parent with all children and checklist items)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    indicator_code: str
+    name: str
+    description: Optional[str] = None
+    governance_area_id: int
+    is_bbi: bool
+    is_active: bool
+    children: List[SimplifiedIndicatorResponse] = Field(..., description="Sub-indicators with checklists")
+    governance_area: Optional[GovernanceAreaNested] = None
+
+
+# Enable forward references for recursive model
+SimplifiedIndicatorResponse.model_rebuild()

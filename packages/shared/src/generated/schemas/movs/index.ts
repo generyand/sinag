@@ -4,6 +4,12 @@
 // 🏷️  Based on FastAPI tag: "movs"
 
 /**
+ * ChecklistItemResponseMovDescription
+ */
+export type ChecklistItemResponseMovDescription = string | null;
+
+
+/**
  * ConditionalMOVLogic
  */
 export interface ConditionalMOVLogic {

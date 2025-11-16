@@ -12,6 +12,7 @@ import type { IndicatorDraftResponseLockedByUserId } from '../users';
 import type { GovernanceAreaNested } from '../common';
 import type { IndicatorHistoryResponseArchivedByUser } from '../users';
 import type { ValidationError } from '../error';
+import type { ChecklistItemResponse } from '../system';
 
 /**
  * BodyTestCalculationApiV1IndicatorsTestCalculationPost
@@ -716,6 +717,35 @@ export type IndicatorResponseTechnicalNotesText = string | null;
 
 
 /**
+ * IndicatorTreeResponse
+ */
+export interface IndicatorTreeResponse {
+  id: number;
+  indicator_code: string;
+  name: string;
+  description?: IndicatorTreeResponseDescription;
+  governance_area_id: number;
+  is_bbi: boolean;
+  is_active: boolean;
+  /** Sub-indicators with checklists */
+  children: SimplifiedIndicatorResponse[];
+  governance_area?: IndicatorTreeResponseGovernanceArea;
+}
+
+
+/**
+ * IndicatorTreeResponseDescription
+ */
+export type IndicatorTreeResponseDescription = string | null;
+
+
+/**
+ * IndicatorTreeResponseGovernanceArea
+ */
+export type IndicatorTreeResponseGovernanceArea = GovernanceAreaNested | null;
+
+
+/**
  * IndicatorUpdate
  */
 export interface IndicatorUpdate {
@@ -852,6 +882,48 @@ export type PostIndicatorsValidateFormSchema200 = { [key: string]: unknown };
  * ReorderRequestIndicatorsItem
  */
 export type ReorderRequestIndicatorsItem = { [key: string]: unknown };
+
+
+/**
+ * SimplifiedIndicatorResponse
+ */
+export interface SimplifiedIndicatorResponse {
+  id: number;
+  /** Indicator code (e.g., '1.1', '1.1.1') */
+  indicator_code: string;
+  name: string;
+  description?: SimplifiedIndicatorResponseDescription;
+  governance_area_id: number;
+  parent_id?: SimplifiedIndicatorResponseParentId;
+  /** Is this a BBI indicator */
+  is_bbi: boolean;
+  is_active: boolean;
+  /** Validation strategy */
+  validation_rule: string;
+  governance_area?: SimplifiedIndicatorResponseGovernanceArea;
+  /** MOV checklist items */
+  checklist_items?: ChecklistItemResponse[];
+  /** Child indicators */
+  children?: SimplifiedIndicatorResponse[];
+}
+
+
+/**
+ * SimplifiedIndicatorResponseDescription
+ */
+export type SimplifiedIndicatorResponseDescription = string | null;
+
+
+/**
+ * SimplifiedIndicatorResponseGovernanceArea
+ */
+export type SimplifiedIndicatorResponseGovernanceArea = GovernanceAreaNested | null;
+
+
+/**
+ * SimplifiedIndicatorResponseParentId
+ */
+export type SimplifiedIndicatorResponseParentId = number | null;
 
 
 /**

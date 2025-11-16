@@ -7,6 +7,7 @@ import type { AuditLogResponseUserEmail } from '../users';
 import type { AuditLogResponseUserName } from '../users';
 import type { GovernanceAreaGroup } from '../common';
 import type { ReworkComment } from '../common';
+import type { ChecklistItemResponseMovDescription } from '../movs';
 import type { IncompleteIndicatorDetail } from '../indicators';
 import type { ComplianceRate } from '../common';
 import type { AreaBreakdown } from '../common';
@@ -177,6 +178,34 @@ export interface BarangayDeadlineStatusResponse {
   phase2: PhaseStatusResponse;
   calibration: PhaseStatusResponse;
 }
+
+
+/**
+ * ChecklistItemResponse
+ */
+export interface ChecklistItemResponse {
+  id: number;
+  /** Unique item identifier (e.g., '1_1_1_a') */
+  item_id: string;
+  /** Display text (e.g., 'a. Barangay Financial Report') */
+  label: string;
+  /** Group header (e.g., 'ANNUAL REPORT') */
+  group_name?: ChecklistItemResponseGroupName;
+  /** Means of Verification description */
+  mov_description?: ChecklistItemResponseMovDescription;
+  /** Required for indicator to pass */
+  required: boolean;
+  /** Needs document count input from validator */
+  requires_document_count: boolean;
+  /** Sort order within indicator */
+  display_order: number;
+}
+
+
+/**
+ * ChecklistItemResponseGroupName
+ */
+export type ChecklistItemResponseGroupName = string | null;
 
 
 /**
