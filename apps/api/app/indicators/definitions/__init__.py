@@ -6,11 +6,13 @@ Each indicator is defined in its own file for maintainability.
 """
 
 from app.indicators.definitions.indicator_1_1 import INDICATOR_1_1
+from app.indicators.definitions.indicator_1_2 import INDICATOR_1_2
 
 # Export all indicators as a list
 ALL_INDICATORS = [
     INDICATOR_1_1,
-    # TODO: Add remaining 28 indicators (1.2 - 6.X)
+    INDICATOR_1_2,
+    # TODO: Add remaining 27 indicators (1.3 - 6.X)
 ]
 
 # Export indicators as a dictionary by code for easy lookup
