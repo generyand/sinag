@@ -222,9 +222,19 @@ export function FileFieldComponent({
         </Label>
 
         {field.help_text && (
-          <p className="text-sm text-[var(--text-secondary)]">{field.help_text}</p>
+          <p className="text-sm text-[var(--text-secondary)] whitespace-pre-line">{field.help_text}</p>
         )}
       </div>
+
+      {/* Upload Instructions (show what documents are needed) */}
+      {field.instructions && (
+        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+          <h4 className="font-medium text-sm text-blue-900 mb-2">Required Documents:</h4>
+          <div className="text-sm text-gray-700 whitespace-pre-line">
+            {field.instructions}
+          </div>
+        </div>
+      )}
 
       {/* Permission Info (show if upload is disabled) */}
       {uploadDisabledReason && (

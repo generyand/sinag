@@ -25,32 +25,28 @@ INDICATOR_2_1 = Indicator(
             code="2.1.1",
             name="Structure: Organized BDRRMC with its composition compliant to the provisions of NDRRMC, DILG, DBM, and CSC JMC No. 2014-01",
             upload_instructions=(
-                "Upload the following document:\n"
-                "• EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) "
-                "organizing the BDRRMC with its composition compliant to the provisions of JMC No. 2014-01, covering January to October 2023\n\n"
-                "Please supply the required information:\n"
-                "• Date of approval\n\n"
+                "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the BDRRMC with its composition compliant to the provisions of JMC No. 2014-01, covering January to October 2023\n\n"
                 "Minimum Composition of the BDRRMC:\n"
-                "1. Punong Barangay\n"
-                "2. A Representative from the Sangguniang Barangay\n"
-                "3. Two (2) CSO representatives from the existing and active community-based people's organizations representing the most vulnerable "
-                "and marginalized groups in the barangay (Item 5.7. of NDRRMC, DILG, DBM, and CSC JMC No. 2014-01)"
+                "- Punong Barangay\n"
+                "- A Representative from the Sangguniang Barangay; and\n"
+                "- Two (2) CSO representatives from the existing and active community-based people's organizations representing the most vulnerable and marginalized groups in the barangay (Item 5.7. of NDRRMC, DILG, DBM, and CSC JMC No. 2014-01)\n\n"
+                "Please supply the required information:\n"
+                "Date of approval"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
                     id="2_1_1_eo",
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the BDRRMC with its composition compliant to the provisions of JMC No. 2014-01, covering January to October 2023",
-                    mov_description="Executive Order or similar issuance organizing BDRRMC with compliant composition",
                     required=True,
+                    requires_document_count=False,
                     display_order=1
                 ),
                 ChecklistItem(
                     id="2_1_1_date",
                     label="Date of approval",
-                    mov_description="Date when the EO/issuance was approved",
                     required=True,
-                    requires_document_count=True,  # Using this to indicate input field needed
+                    requires_document_count=True,  # Date input field
                     display_order=2
                 ),
             ]
@@ -62,31 +58,31 @@ INDICATOR_2_1 = Indicator(
             name="Plan: Approved Barangay Disaster Risk Reduction and Management (BDRRM) Plan covering CY 2023, adopted by the Sangguniang Barangay",
             upload_instructions=(
                 "Upload the following documents:\n"
-                "• Approved BDRRM Plan adopted by the Sangguniang Barangay\n"
-                "• Resolution adopting the BDRRM Plan signed by the Sangguniang Barangay with received stamp from the C/MDRRMO\n"
-                "• Certification on the list of barangays with approved BDRRM Plan covering CY 2023 signed by the C/MDRRMO"
+                "1. Approved BDRRM Plan adopted by the Sangguniang Barangay\n"
+                "2. Resolution adopting the BDRRM Plan signed by the Sangguniang Barangay with received stamp from the C/MDRRMO; and\n"
+                "3. Certification on the list of barangays with approved BDRRM Plan covering CY 2023 signed by the C/MDRRMO"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
                     id="2_1_2_plan",
                     label="Approved BDRRM Plan adopted by the Sangguniang Barangay",
-                    mov_description="Approved BDRRM Plan covering CY 2023",
                     required=True,
+                    requires_document_count=False,
                     display_order=1
                 ),
                 ChecklistItem(
                     id="2_1_2_resolution",
                     label="Resolution adopting the BDRRM Plan signed by the Sangguniang Barangay with received stamp from the C/MDRRMO",
-                    mov_description="Resolution with C/MDRRMO stamp",
                     required=True,
+                    requires_document_count=False,
                     display_order=2
                 ),
                 ChecklistItem(
                     id="2_1_2_certification",
                     label="Certification on the list of barangays with approved BDRRM Plan covering CY 2023 signed by the C/MDRRMO",
-                    mov_description="Certification from C/MDRRMO listing barangays with approved plans",
                     required=True,
+                    requires_document_count=False,
                     display_order=3
                 ),
             ]
@@ -97,38 +93,34 @@ INDICATOR_2_1 = Indicator(
             code="2.1.3",
             name="Budget: Allocation of at least 5% of the Estimated Revenue from Regular Sources as BDRRM Fund",
             upload_instructions=(
-                "Upload the following document:\n"
-                "• Certification on the allocation of at least 5% of the Estimated Revenue from Regular Sources as BDRRM Fund, "
-                "signed by the City/Municipal Budget Officer\n\n"
+                "Upload: Certification on the allocation of at least 5% of the Estimated Revenue from Regular Sources as BDRRM Fund, signed by the City/Municipal Budget Officer\n\n"
+                "To compute % allocation for BDRRMF:\n"
+                "(BDRRMF Allocated / Estimated Total Revenue from Regular Sources) x 100\n\n"
                 "Please supply the following information:\n"
-                "• Estimated revenue from regular sources\n"
-                "• Amount of BDRRMF\n\n"
-                "Note: To compute the allocation:\n"
-                "(BDRRMF Allocated / Estimated Total Revenue from Regular Sources) x 100"
+                "Estimated revenue from regular sources:\n"
+                "Amount of BDRRMF:"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
                     id="2_1_3_certification",
                     label="Certification on the allocation of at least 5% of the Estimated Revenue from Regular Sources as BDRRM Fund, signed by the City/Municipal Budget Officer",
-                    mov_description="Certification from City/Municipal Budget Officer on BDRRM Fund allocation",
                     required=True,
+                    requires_document_count=False,
                     display_order=1
                 ),
                 ChecklistItem(
                     id="2_1_3_estimated_revenue",
                     label="Estimated revenue from regular sources",
-                    mov_description="Input field for estimated revenue amount",
                     required=True,
-                    requires_document_count=True,  # Using this to indicate numeric input needed
+                    requires_document_count=True,  # Amount input
                     display_order=2
                 ),
                 ChecklistItem(
                     id="2_1_3_bdrrmf_amount",
                     label="Amount of BDRRMF",
-                    mov_description="Input field for BDRRMF allocated amount",
                     required=True,
-                    requires_document_count=True,  # Using this to indicate numeric input needed
+                    requires_document_count=True,  # Amount input
                     display_order=3
                 ),
             ]
@@ -139,90 +131,77 @@ INDICATOR_2_1 = Indicator(
             code="2.1.4",
             name="Accomplishment Reports: At least 50% accomplishment (physical OR financial)",
             upload_instructions=(
-                "Upload ONE of the following report options:\n\n"
-                "OPTION A - For Physical Accomplishment (2.1.4.1):\n"
-                "• Accomplishment Report\n"
-                "• Certification on the submission and correctness of Accomplishment Report signed by the C/MDRRMO\n\n"
-                "Please supply the required information for Option A:\n"
-                "• % of programs, project, and activities are completed\n\n"
-                "To compute Physical Accomplishment Rate:\n"
-                "(Total number of activities/projects accomplished / Total number of activities/projects reflected in the BDRRMP) x 100\n\n"
-                "OR\n\n"
-                "OPTION B - For Financial Accomplishment (2.1.4.2):\n"
-                "• Annual LDRRMF Utilization Report\n"
-                "• Certification on the submission and correctness of fund utilization report signed by the C/MDRRMO\n\n"
-                "Please supply the required information for Option B:\n"
-                "• Amount utilized (as of Dec. 31, 2023)\n"
-                "• Amount allocated for FPAs in the BDRRM Plan for CY 2023\n\n"
-                "To compute % utilization:\n"
-                "(Total Amount Utilized of the 70% component of CY 2023 BDRRMF as of Dec 31, 2023) / "
-                "(Total Amount Allocated for the 70% component of CY 2023 BDRRMF) x 100\n\n"
-                "Note: Barangay officials have the option to submit both the physical and financial reports. "
-                "However, for the SGLGB Assessment, only one of the above reports is required."
+                "Upload based on your chosen option (only ONE option is required):\n\n"
+                "1. (Option A: Physical) Accomplishment Report\n"
+                "2. (Option A: Physical) Certification on the submission and correctness of Accomplishment Report signed by the C/MDRRMO\n"
+                "3. (Option B: Financial) Annual LDRRMF Utilization Report\n"
+                "4. (Option B: Financial) Certification on the submission and correctness of fund utilization report signed by the C/MDRRMO\n\n"
+                "Note: Choose either Option A (upload fields 1 & 2) OR Option B (upload fields 3 & 4). Only ONE option is required."
             ),
             validation_rule="ANY_ITEM_REQUIRED",  # Only ONE option (A or B) is required
             checklist_items=[
-                # Option A: Physical Accomplishment (2.1.4.1)
+                # Instruction Section
                 ChecklistItem(
-                    id="2_1_4_1_report",
-                    label="a. At least 50% accomplishment of the physical targets in the BDRRM Plan - Accomplishment Report",
-                    group_name="Option A: Physical Accomplishment (at least 50%)",
-                    mov_description="Physical Accomplishment Report",
-                    required=False,  # Not all required since it's ANY_ITEM_REQUIRED
+                    id="2_1_4_instructions",
+                    label="Instruction: Put a check ✓ on the box that corresponds to your assessment.",
+                    mov_description="Instructions for assessor",
+                    required=False,
                     display_order=1
                 ),
+
+                # Option A: Physical Accomplishment
                 ChecklistItem(
-                    id="2_1_4_1_certification",
-                    label="Certification on the submission and correctness of Accomplishment Report signed by the C/MDRRMO (for Option A)",
-                    group_name="Option A: Physical Accomplishment (at least 50%)",
-                    mov_description="Certification from C/MDRRMO on Accomplishment Report",
+                    id="2_1_4_option_a_label",
+                    label="a. At least 50% accomplishment of the physical targets in the BDRRM Plan",
+                    mov_description="Option A label - informational only",
                     required=False,
                     display_order=2
                 ),
                 ChecklistItem(
-                    id="2_1_4_1_percentage",
-                    label="% of programs, project, and activities are completed (for Option A)",
-                    group_name="Option A: Physical Accomplishment (at least 50%)",
-                    mov_description="Input field for percentage of completed programs/projects/activities",
+                    id="2_1_4_upload_1",
+                    label="Accomplishment Report",
+                    mov_description="Verification of uploaded Accomplishment Report",
                     required=False,
-                    requires_document_count=True,  # Using this to indicate numeric input needed
                     display_order=3
                 ),
-
-                # Option B: Financial Accomplishment (2.1.4.2)
                 ChecklistItem(
-                    id="2_1_4_2_utilization_report",
-                    label="b. At least 50% fund utilization of the 70% component of CY 2023 BDRRMF - Annual LDRRMF Utilization Report",
-                    group_name="Option B: Financial Accomplishment (at least 50% fund utilization)",
-                    mov_description="Annual LDRRMF Utilization Report",
+                    id="2_1_4_upload_2",
+                    label="Certification on the submission and correctness of Accomplishment Report signed by the C/MDRRMO",
+                    mov_description="Verification of uploaded Certification on the submission and correctness of Accomplishment Report",
                     required=False,
                     display_order=4
                 ),
+
+                # OR Separator (informational)
                 ChecklistItem(
-                    id="2_1_4_2_certification",
-                    label="Certification on the submission and correctness of fund utilization report signed by the C/MDRRMO (for Option B)",
-                    group_name="Option B: Financial Accomplishment (at least 50% fund utilization)",
-                    mov_description="Certification from C/MDRRMO on fund utilization report",
+                    id="2_1_4_or_separator",
+                    label="OR",
+                    mov_description="OR separator between physical and financial options",
                     required=False,
                     display_order=5
                 ),
+
+                # Option B: Financial Accomplishment
                 ChecklistItem(
-                    id="2_1_4_2_amount_utilized",
-                    label="Amount utilized (as of Dec. 31, 2023) for Option B",
-                    group_name="Option B: Financial Accomplishment (at least 50% fund utilization)",
-                    mov_description="Input field for amount utilized as of Dec. 31, 2023",
+                    id="2_1_4_option_b_label",
+                    label="b. At least 50% fund utilization of the 70% component of CY 2023 BDRRMF",
+                    mov_description="Option B label - informational only",
                     required=False,
-                    requires_document_count=True,  # Using this to indicate numeric input needed
                     display_order=6
                 ),
                 ChecklistItem(
-                    id="2_1_4_2_amount_allocated",
-                    label="Amount allocated for FPAs in the BDRRM Plan for CY 2023 (for Option B)",
-                    group_name="Option B: Financial Accomplishment (at least 50% fund utilization)",
-                    mov_description="Input field for amount allocated for FPAs",
+                    id="2_1_4_upload_3",
+                    label="Annual LDRRMF Utilization Report",
+                    mov_description="Verification of uploaded Annual LDRRMF Utilization Report",
                     required=False,
-                    requires_document_count=True,  # Using this to indicate numeric input needed
                     display_order=7
+                ),
+                ChecklistItem(
+                    id="2_1_4_upload_4",
+                    label="Certification on the submission and correctness of fund utilization report signed by the C/MDRRMO",
+                    mov_description="Verification of uploaded Certification on the submission and correctness of fund utilization report",
+                    required=False,
+                    display_order=8
                 ),
             ]
         ),

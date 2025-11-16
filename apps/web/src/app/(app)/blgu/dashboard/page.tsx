@@ -30,24 +30,36 @@ import {
   SubmitAssessmentButton,
   ResubmitAssessmentButton,
 } from "@/components/features/assessments";
-import { useGetBlguDashboardAssessmentId } from "@vantage/shared";
+import { useGetBlguDashboardAssessmentId, useGetAssessmentsMyAssessment } from "@vantage/shared";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Loader2, AlertCircle } from "lucide-react";
 
 export default function BLGUDashboardPage() {
   const { user } = useAuthStore();
 
-  // Use assessment ID 68 (the correct ID for the test user)
-  // TODO: Make this dynamic - fetch from /api/v1/assessments/my-assessment
-  const assessmentId = 68;
+  // First, fetch the user's assessment to get the correct assessment ID
+  const {
+    data: myAssessment,
+    isLoading: isLoadingAssessment,
+    error: assessmentError,
+  } = useGetAssessmentsMyAssessment();
 
-  // Fetch dashboard data using generated hook
+  const assessmentId = myAssessment?.id;
+
+  // Fetch dashboard data using generated hook (only if we have an assessment ID)
   const {
     data: dashboardData,
-    isLoading,
-    error,
+    isLoading: isLoadingDashboard,
+    error: dashboardError,
     refetch,
-  } = useGetBlguDashboardAssessmentId(assessmentId);
+  } = useGetBlguDashboardAssessmentId(assessmentId!, {
+    query: {
+      enabled: !!assessmentId, // Only fetch when we have an assessment ID
+    },
+  });
+
+  const isLoading = isLoadingAssessment || isLoadingDashboard;
+  const error = assessmentError || dashboardError;
 
   // Loading state
   if (isLoading) {
@@ -62,7 +74,7 @@ export default function BLGUDashboardPage() {
   }
 
   // Error state
-  if (error || !dashboardData) {
+  if (error || (!isLoading && !dashboardData)) {
     return (
       <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
         <div className="text-center max-w-md">
@@ -71,13 +83,15 @@ export default function BLGUDashboardPage() {
             Failed to Load Dashboard
           </h2>
           <p className="text-[var(--text-secondary)] mb-6">
-            Unable to load dashboard data. Please try again.
+            {assessmentError
+              ? "Unable to load your assessment. You may not have an active assessment yet."
+              : "Unable to load dashboard data. Please try again."}
           </p>
           <button
-            onClick={() => refetch()}
+            onClick={() => window.location.reload()}
             className="px-4 py-2 bg-[var(--cityscape-yellow)] text-white rounded-lg hover:bg-[var(--cityscape-yellow-dark)] transition-colors"
           >
-            Try Again
+            Reload Page
           </button>
         </div>
       </div>

@@ -25,26 +25,25 @@ INDICATOR_3_6 = Indicator(
             code="3.6.1",
             name="Conducted BaRCO on a monthly basis in CY 2023",
             upload_instructions=(
-                "Upload the following documents:\n\n"
-                "• Three (3) Monthly BaRCO Reports covering July-September 2023\n\n"
-                "Please supply the required information:\n"
-                "• Number of Monthly BaRCO Reports submitted"
+                "Upload: Three (3) Monthly BaRCo Reports covering July-September 2023"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
+                # Upload Verification
                 ChecklistItem(
-                    id="3_6_1_reports",
-                    label="Monthly BaRCO Reports covering July-September 2023",
-                    mov_description="Three (3) Monthly BaRCO Reports covering July-September 2023",
+                    id="3_6_1_upload_1",
+                    label="Monthly BaRCo Reports covering July-September 2023",
+                    mov_description="Verification of uploaded Monthly BaRCo Reports covering July-September 2023",
                     required=True,
                     display_order=1
                 ),
+                # Text Input Field
                 ChecklistItem(
                     id="3_6_1_count",
-                    label="Number of Monthly BaRCO Reports submitted",
-                    mov_description="Input field for number of Monthly BaRCO Reports submitted",
+                    label="Please supply the number of documents submitted:\n_____ Monthly BaRCo Reports were submitted",
+                    mov_description="Input field for number of Monthly BaRCo Reports submitted",
                     required=True,
-                    requires_document_count=True,  # Requires numeric input
+                    requires_document_count=True,  # This is a text input field
                     display_order=2
                 ),
             ]

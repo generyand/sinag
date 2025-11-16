@@ -30,17 +30,23 @@ class ChecklistItem:
 @dataclass
 class SubIndicator:
     """
-    Represents a sub-indicator (leaf node) with a checklist.
+    Represents a sub-indicator (can be a leaf node with checklist OR a container with children).
 
     Examples:
-    - 1.1.1: "Posted the following CY 2023 financial documents in the BFDP board"
-    - 1.1.2: "Accomplished and signed BFR with received stamp"
+    - Leaf node (has checklist): 1.1.1, 1.1.2
+    - Container node (has children): 1.6.1 (parent of 1.6.1.1, 1.6.1.2, 1.6.1.3)
+
+    A SubIndicator can either:
+    - Have checklist_items (leaf node with actual data)
+    - Have children (container node for organization)
+    - Not both (one or the other)
     """
-    code: str  # Sub-indicator code (e.g., "1.1.1")
+    code: str  # Sub-indicator code (e.g., "1.1.1" or "1.6.1")
     name: str  # Sub-indicator name
-    checklist_items: List[ChecklistItem]  # Checklist items for this sub-indicator
-    upload_instructions: Optional[str] = None  # Instructions for BLGUs on what to upload
-    validation_rule: str = "ALL_ITEMS_REQUIRED"  # ALL_ITEMS_REQUIRED, ANY_ITEM_REQUIRED, CUSTOM
+    checklist_items: List[ChecklistItem] = field(default_factory=list)  # Checklist items (for leaf nodes)
+    children: List['SubIndicator'] = field(default_factory=list)  # Nested sub-indicators (for containers)
+    upload_instructions: Optional[str] = None  # Instructions for BLGUs on what to upload (only for leaf nodes)
+    validation_rule: Optional[str] = "ALL_ITEMS_REQUIRED"  # ALL_ITEMS_REQUIRED, ANY_ITEM_REQUIRED, CUSTOM (only for leaf nodes)
 
 
 @dataclass

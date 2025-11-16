@@ -58,56 +58,19 @@ INDICATOR_1_5 = Indicator(
             code="1.5.1",
             name="Barangay Citizens' Charter posted at a conspicuous place (e.g. barangay hall, market, transport terminal, or multi-purpose hall)",
             upload_instructions=(
-                "Upload TWO (2) Photo Documentation of the Barangay Citizens' Charter:\n\n"
-                "PHOTO REQUIREMENTS:\n"
-                "1. Photo 1: DISTANT VIEW\n"
-                "   - Shows the overall posting location and surrounding area\n"
-                "   - Demonstrates the CitCha is posted at a conspicuous (easily visible) place\n"
-                "   - Barangay name should be visible in the photo\n\n"
-                "2. Photo 2: CLOSE-UP VIEW\n"
-                "   - Shows the details of the Citizens' Charter content\n"
-                "   - Must clearly show the services, procedures, or other CitCha information\n"
-                "   - Barangay name should be visible in the photo\n\n"
-                "ACCEPTABLE POSTING LOCATIONS:\n"
-                "- Barangay hall (entrance, lobby, or public area)\n"
-                "- Public market\n"
-                "- Transport terminal\n"
-                "- Multi-purpose hall\n"
-                "- Other high-traffic public areas where residents can easily see it\n\n"
-                "IMPORTANT REMINDERS:\n"
-                "- Upload EXACTLY 2 photos (1 distant view + 1 close-up view)\n"
-                "- Ensure barangay name is visible in both photos\n"
-                "- Photos must be clear and legible\n"
-                "- The posting location must be genuinely accessible to the public"
+                "Upload Two (2) Photo documentation of the Barangay CitCha (name of the barangay should be visible):\n\n"
+                "Photo requirements:\n"
+                "• One (1) photo with Distant View; and\n"
+                "• One (1) photo with Close-up View"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
+                # Upload Verification
                 ChecklistItem(
-                    id="1_5_1_a",
+                    id="1_5_1_upload_1",
                     label="Two (2) Photo documentation of the Barangay CitCha (name of the barangay should be visible)",
-                    mov_description=(
-                        "Verify the following:\n"
-                        "1. EXACTLY TWO (2) photos are submitted\n\n"
-                        "2. Photo 1 - DISTANT VIEW:\n"
-                        "   - Shows the overall posting location\n"
-                        "   - Demonstrates the CitCha is at a conspicuous place\n"
-                        "   - Context of surrounding area is visible\n\n"
-                        "3. Photo 2 - CLOSE-UP VIEW:\n"
-                        "   - Shows the details of the Citizens' Charter\n"
-                        "   - Content is legible (services, procedures, etc.)\n\n"
-                        "4. BARANGAY NAME VISIBILITY:\n"
-                        "   - Barangay name is visible in the photos\n"
-                        "   - Name can be on the CitCha itself, signage, or visible context\n\n"
-                        "5. CONSPICUOUS LOCATION VERIFICATION:\n"
-                        "   - Confirm the posting is at a public, high-traffic area\n"
-                        "   - Acceptable locations: barangay hall, market, transport terminal,\n"
-                        "     multi-purpose hall, or similar public spaces\n"
-                        "   - The location should be accessible to barangay residents\n\n"
-                        "NOTE: Both photos must meet all requirements for the indicator to pass.\n"
-                        "If any requirement is missing, the submission does not meet the minimum requirements."
-                    ),
+                    mov_description="Verification of uploaded photo documentation showing the Barangay Citizens' Charter posted at a conspicuous place with barangay name visible",
                     required=True,
-                    requires_document_count=False,
                     display_order=1
                 ),
             ]

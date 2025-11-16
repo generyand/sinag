@@ -5,7 +5,7 @@ This module provides functionality to seed indicators from Python definitions
 into the database.
 """
 
-from typing import List
+from typing import List, Dict, Any
 from sqlalchemy.orm import Session
 from datetime import datetime
 
@@ -13,9 +13,210 @@ from app.indicators.base import Indicator, SubIndicator, ChecklistItem as Checkl
 from app.db.models.governance_area import Indicator as IndicatorModel, ChecklistItem as ChecklistItemModel
 
 
+def _parse_upload_sections_from_instructions(upload_instructions: str) -> List[Dict[str, Any]]:
+    """
+    Parse upload instructions to extract individual upload sections.
+
+    This parses numbered upload requirements from the upload_instructions string.
+    For example:
+        "Upload the following documents:
+        1. BFDP Monitoring Form A...
+        2. Two (2) Photo Documentation..."
+
+    Returns a list of upload field definitions.
+    """
+    if not upload_instructions:
+        return []
+
+    upload_sections = []
+    lines = upload_instructions.strip().split('\n')
+
+    current_number = 0
+    for line in lines:
+        line = line.strip()
+        # Look for numbered items (e.g., "1.", "2.", etc.)
+        if line and line[0].isdigit() and '.' in line[:3]:
+            current_number += 1
+            # Extract the label after the number
+            label = line.split('.', 1)[1].strip() if '.' in line else line
+
+            upload_sections.append({
+                "field_id": f"upload_section_{current_number}",
+                "field_type": "file_upload",
+                "label": label,
+                "description": label,
+                "required": True,
+                "accept": ".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png",
+                "multiple": True,
+                "max_size": 10
+            })
+
+    # If no numbered sections found, extract label from first meaningful line
+    if not upload_sections:
+        # Try to extract a specific label from the instructions
+        label = "Upload required documents"  # default fallback
+
+        for line in lines:
+            line = line.strip()
+            if line and not line.startswith('('):  # Skip parenthetical notes
+                # Remove common prefixes like "Upload:", "Upload the following:", etc.
+                if line.lower().startswith('upload:'):
+                    label = line.split(':', 1)[1].strip()
+                elif line.lower().startswith('upload '):
+                    # Try to extract after "upload" keyword
+                    after_upload = line[7:].strip()
+                    # Skip generic phrases like "the following documents"
+                    if after_upload and not after_upload.lower().startswith('the following'):
+                        label = after_upload
+                    else:
+                        label = line
+                else:
+                    label = line
+                break
+
+        upload_sections.append({
+            "field_id": "upload_section_1",
+            "field_type": "file_upload",
+            "label": label,
+            "description": upload_instructions,
+            "required": True,
+            "accept": ".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png",
+            "multiple": True,
+            "max_size": 10
+        })
+
+    return upload_sections
+
+
+def _generate_form_schema_from_checklist(checklist_items: List[ChecklistItemDef], upload_instructions: str = None, validation_rule: str = "ALL_ITEMS_REQUIRED") -> Dict[str, Any]:
+    """
+    Generate a form schema JSON from checklist items.
+
+    For BLGU users: Creates file upload fields based on upload_instructions
+    For Assessors: Creates validation form with upload section checkboxes + checklist item checkboxes
+
+    Args:
+        checklist_items: List of ChecklistItem definitions (for assessor validation)
+        upload_instructions: Upload instructions that define BLGU upload sections
+        validation_rule: Validation strategy (ALL_ITEMS_REQUIRED or ANY_ITEM_REQUIRED)
+
+    Returns:
+        Dictionary containing the form schema structure
+    """
+    if not upload_instructions and not checklist_items:
+        return {}
+
+    # Parse upload sections from instructions for BLGU users
+    fields = _parse_upload_sections_from_instructions(upload_instructions)
+
+    # Build complete form schema
+    schema = {
+        "type": "mov_checklist",
+        "fields": fields,
+        "validation_rule": validation_rule,  # Include validation rule for OR logic
+    }
+
+    if upload_instructions:
+        schema["upload_instructions"] = upload_instructions
+
+    # Build assessor validation schema
+    # This includes both upload section validations AND checklist item validations
+    assessor_fields = []
+
+    # 1. Add upload section checkboxes (from parsed upload instructions)
+    upload_sections = _parse_upload_sections_from_instructions(upload_instructions)
+    for section in upload_sections:
+        assessor_fields.append({
+            "type": "upload_section_checkbox",
+            "field_id": section["field_id"],
+            "label": section["label"],
+            "description": section["description"],
+            "requires_document_count": "number of documents submitted" in section["label"].lower()
+        })
+
+    # 2. Add checklist item checkboxes (from checklist_items)
+    if checklist_items:
+        for item in sorted(checklist_items, key=lambda x: x.display_order):
+            assessor_fields.append({
+                "type": "checklist_item_checkbox",
+                "item_id": item.id,
+                "label": item.label,
+                "group_name": item.group_name,
+                "description": item.mov_description,
+                "required": item.required,
+                "requires_document_count": item.requires_document_count,
+                "display_order": item.display_order
+            })
+
+    # Store complete assessor validation schema
+    schema["assessor_validation"] = {
+        "fields": assessor_fields
+    }
+
+    return schema
+
+
+def _seed_sub_indicator(
+    sub_def: SubIndicator,
+    parent_id: int,
+    governance_area_id: int,
+    db: Session
+) -> None:
+    """
+    Recursively seed a sub-indicator and its children.
+
+    This handles nested hierarchies like:
+    1.6 → 1.6.1 (container) → 1.6.1.1, 1.6.1.2, 1.6.1.3 (leaf nodes)
+    """
+    # Generate form_schema from checklist items OR upload_instructions
+    form_schema = None
+    if sub_def.checklist_items or sub_def.upload_instructions:
+        form_schema = _generate_form_schema_from_checklist(
+            sub_def.checklist_items,
+            sub_def.upload_instructions,
+            sub_def.validation_rule
+        )
+
+    # Create this sub-indicator
+    sub_indicator = IndicatorModel(
+        indicator_code=sub_def.code,
+        name=sub_def.name,
+        parent_id=parent_id,
+        governance_area_id=governance_area_id,
+        validation_rule=sub_def.validation_rule,
+        form_schema=form_schema,  # Add generated form schema
+        is_active=True,
+        is_auto_calculable=True,
+    )
+    db.add(sub_indicator)
+    db.flush()  # Get sub-indicator ID
+
+    # If this sub-indicator has checklist items, create them (it's a leaf node)
+    for item_def in sub_def.checklist_items:
+        checklist_item = ChecklistItemModel(
+            indicator_id=sub_indicator.id,
+            item_id=item_def.id,
+            label=item_def.label,
+            group_name=item_def.group_name,
+            mov_description=item_def.mov_description,
+            required=item_def.required,
+            requires_document_count=item_def.requires_document_count,
+            display_order=item_def.display_order,
+        )
+        db.add(checklist_item)
+
+    # If this sub-indicator has children, recursively create them (it's a container node)
+    for nested_child in sub_def.children:
+        _seed_sub_indicator(nested_child, sub_indicator.id, governance_area_id, db)
+
+
 def seed_indicators(indicators: List[Indicator], db: Session, effective_date: datetime = None) -> None:
     """
     Seed indicators from Python definitions into the database.
+
+    Supports hierarchical structures with multiple levels:
+    - 2-level: 1.1 → 1.1.1, 1.1.2 (leaf nodes)
+    - 4-level: 1.6 → 1.6.1 (container) → 1.6.1.1, 1.6.1.2, 1.6.1.3 (leaf nodes)
 
     Args:
         indicators: List of Indicator dataclass instances
@@ -30,7 +231,7 @@ def seed_indicators(indicators: List[Indicator], db: Session, effective_date: da
         effective_date = datetime.utcnow()
 
     for indicator_def in indicators:
-        # Create parent indicator
+        # Create parent indicator (root)
         parent = IndicatorModel(
             indicator_code=indicator_def.code,
             name=indicator_def.name,
@@ -48,33 +249,9 @@ def seed_indicators(indicators: List[Indicator], db: Session, effective_date: da
         db.add(parent)
         db.flush()  # Get parent ID
 
-        # Create sub-indicators (children)
+        # Recursively create sub-indicators (children and nested children)
         for child_def in indicator_def.children:
-            sub_indicator = IndicatorModel(
-                indicator_code=child_def.code,
-                name=child_def.name,
-                parent_id=parent.id,
-                governance_area_id=indicator_def.governance_area_id,
-                validation_rule=child_def.validation_rule,
-                is_active=True,
-                is_auto_calculable=True,
-            )
-            db.add(sub_indicator)
-            db.flush()  # Get sub-indicator ID
-
-            # Create checklist items
-            for item_def in child_def.checklist_items:
-                checklist_item = ChecklistItemModel(
-                    indicator_id=sub_indicator.id,
-                    item_id=item_def.id,
-                    label=item_def.label,
-                    group_name=item_def.group_name,
-                    mov_description=item_def.mov_description,
-                    required=item_def.required,
-                    requires_document_count=item_def.requires_document_count,
-                    display_order=item_def.display_order,
-                )
-                db.add(checklist_item)
+            _seed_sub_indicator(child_def, parent.id, indicator_def.governance_area_id, db)
 
         db.commit()
 

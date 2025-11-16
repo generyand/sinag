@@ -25,32 +25,57 @@ INDICATOR_3_4 = Indicator(
             code="3.4.1",
             name="Structure: Organized Barangay Tanod with its composition compliant to the provisions of DILG MC No. 2003-42",
             upload_instructions=(
-                "Upload the following document:\n\n"
-                "• EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) "
+                "Upload the following:\n\n"
+                "1. EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) "
                 "on the organization of the Barangay Tanod covering January to October 2023\n\n"
-                "Please supply the required information:\n"
-                "• Date of approval\n\n"
-                "Composition of a Barangay Tanod:\n"
-                "1. Chief Tanod/Executive Officer\n"
-                "2. Team Leaders\n"
-                "3. Team Members"
+                "The Barangay Tanod must include the following composition:\n"
+                "- Chief Tanod/Executive Officer\n"
+                "- Team Leaders\n"
+                "- Team Members\n\n"
+                "Please also supply the required information:\n"
+                "Date of approval"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
                     id="3_4_1_eo",
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the organization of the Barangay Tanod covering January to October 2023",
-                    mov_description="Executive Order or similar issuance organizing Barangay Tanod with compliant composition",
+                    mov_description="Verification that the EO/issuance creates Barangay Tanod with proper composition",
                     required=True,
+                    requires_document_count=False,
                     display_order=1
+                ),
+                ChecklistItem(
+                    id="3_4_1_comp_chief",
+                    label="Chief Tanod/Executive Officer",
+                    mov_description="Verify Chief Tanod/Executive Officer is listed in the composition",
+                    required=True,
+                    requires_document_count=False,
+                    display_order=2
+                ),
+                ChecklistItem(
+                    id="3_4_1_comp_leaders",
+                    label="Team Leaders",
+                    mov_description="Verify Team Leaders are listed in the composition",
+                    required=True,
+                    requires_document_count=False,
+                    display_order=3
+                ),
+                ChecklistItem(
+                    id="3_4_1_comp_members",
+                    label="Team Members",
+                    mov_description="Verify Team Members are listed in the composition",
+                    required=True,
+                    requires_document_count=False,
+                    display_order=4
                 ),
                 ChecklistItem(
                     id="3_4_1_date",
                     label="Date of approval",
                     mov_description="Date when the EO/issuance was approved",
                     required=True,
-                    requires_document_count=True,  # Using this to indicate input field needed
-                    display_order=2
+                    requires_document_count=True,  # Date input field
+                    display_order=5
                 ),
             ]
         ),
@@ -60,16 +85,15 @@ INDICATOR_3_4 = Indicator(
             code="3.4.2",
             name="Trainings: Attendance of barangay tanod to necessary training not earlier than 2020",
             upload_instructions=(
-                "Upload the following document:\n\n"
-                "• At least one (1) copy of proof of training such as Certificate of Completion and/or Participation"
+                "Upload: At least one (1) copy of proof of training such as Certificate of Completion and/or Participation"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
                     id="3_4_2_training",
                     label="At least one (1) copy of proof of training such as Certificate of Completion and/or Participation",
-                    mov_description="Proof of training attendance (Certificate of Completion/Participation) dated not earlier than 2020",
                     required=True,
+                    requires_document_count=False,
                     display_order=1
                 ),
             ]

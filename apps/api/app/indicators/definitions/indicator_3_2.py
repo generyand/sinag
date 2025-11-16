@@ -25,38 +25,104 @@ INDICATOR_3_2 = Indicator(
             code="3.2.1",
             name="Structure: Organized BPOC with its composition compliant to the provisions of EO No. 366, s. of 1996",
             upload_instructions=(
-                "Upload the following document:\n\n"
-                "• EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) "
+                "Upload the following:\n\n"
+                "1. EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) "
                 "indicating correct membership in accordance to the EO 366 s. of 1996, covering January to October 2023\n\n"
-                "Please supply the required information:\n"
-                "• Date of approval\n\n"
-                "Minimum composition of the BPOC:\n"
-                "1. Punong Barangay\n"
-                "2. Sangguniang Kabataan Chairperson\n"
-                "3. A member of the Lupon Tagapamayapa\n"
-                "4. A Public School Teacher\n"
-                "5. PNP Officer\n"
-                "6. A representative of the Interfaith Group\n"
-                "7. A Senior Citizen\n"
-                "8. At least three (3) members of the existing Barangay-Based Anti-Crime or Neighborhood Watch Groups or an NGO representative\n"
-                "9. A Barangay Tanod"
+                "The BPOC must include the following minimum composition:\n"
+                "- Punong Barangay\n"
+                "- Sangguniang Kabataan Chairperson\n"
+                "- A member of the Lupon Tagapamayapa\n"
+                "- A Public School Teacher\n"
+                "- PNP Officer\n"
+                "- A representative of the Interfaith Group\n"
+                "- A Senior Citizen\n"
+                "- At least three (3) members of the existing Barangay-Based Anti-Crime or Neighborhood Watch Groups or an NGO representative\n"
+                "- A Barangay Tanod\n\n"
+                "Please also supply the required information:\n"
+                "Date of approval"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
+                # Upload Verification
                 ChecklistItem(
-                    id="3_2_1_eo",
+                    id="3_2_1_upload_1",
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) indicating correct membership in accordance to the EO 366 s. of 1996, covering January to October 2023",
-                    mov_description="Executive Order or similar issuance organizing BPOC with compliant composition",
+                    mov_description="Verification of uploaded Executive Order or similar issuance organizing BPOC with compliant composition",
                     required=True,
                     display_order=1
                 ),
+                # Composition Verification Items
                 ChecklistItem(
-                    id="3_2_1_date",
-                    label="Date of approval",
-                    mov_description="Date when the EO/issuance was approved",
+                    id="3_2_1_comp_pb",
+                    label="Punong Barangay",
+                    mov_description="Verify Punong Barangay is listed in BPOC composition",
                     required=True,
-                    requires_document_count=True,  # Using this to indicate input field needed
                     display_order=2
+                ),
+                ChecklistItem(
+                    id="3_2_1_comp_sk",
+                    label="Sangguniang Kabataan Chairperson",
+                    mov_description="Verify SK Chairperson is listed in BPOC composition",
+                    required=True,
+                    display_order=3
+                ),
+                ChecklistItem(
+                    id="3_2_1_comp_lupon",
+                    label="A member of the Lupon Tagapamayapa",
+                    mov_description="Verify Lupon Tagapamayapa member is listed in BPOC composition",
+                    required=True,
+                    display_order=4
+                ),
+                ChecklistItem(
+                    id="3_2_1_comp_teacher",
+                    label="A Public School Teacher",
+                    mov_description="Verify Public School Teacher is listed in BPOC composition",
+                    required=True,
+                    display_order=5
+                ),
+                ChecklistItem(
+                    id="3_2_1_comp_pnp",
+                    label="PNP Officer",
+                    mov_description="Verify PNP Officer is listed in BPOC composition",
+                    required=True,
+                    display_order=6
+                ),
+                ChecklistItem(
+                    id="3_2_1_comp_interfaith",
+                    label="A representative of the Interfaith Group",
+                    mov_description="Verify Interfaith Group representative is listed in BPOC composition",
+                    required=True,
+                    display_order=7
+                ),
+                ChecklistItem(
+                    id="3_2_1_comp_senior",
+                    label="A Senior Citizen",
+                    mov_description="Verify Senior Citizen is listed in BPOC composition",
+                    required=True,
+                    display_order=8
+                ),
+                ChecklistItem(
+                    id="3_2_1_comp_watch",
+                    label="At least three (3) members of the existing Barangay-Based Anti-Crime or Neighborhood Watch Groups or an NGO representative",
+                    mov_description="Verify at least 3 members from Anti-Crime/Watch Groups or NGO representative are listed",
+                    required=True,
+                    display_order=9
+                ),
+                ChecklistItem(
+                    id="3_2_1_comp_tanod",
+                    label="A Barangay Tanod",
+                    mov_description="Verify Barangay Tanod is listed in BPOC composition",
+                    required=True,
+                    display_order=10
+                ),
+                # Text Input Field
+                ChecklistItem(
+                    id="3_2_1_date_of_approval",
+                    label="Date of approval",
+                    mov_description="Date of approval for the EO or similar issuance",
+                    required=True,
+                    requires_document_count=True,  # This is a text input field
+                    display_order=11
                 ),
             ]
         ),
@@ -66,15 +132,15 @@ INDICATOR_3_2 = Indicator(
             code="3.2.2",
             name="Plan: Formulated Barangay Peace and Order and Public Safety (BPOPS) Plan in accordance to DILG MC 2017-142 covering CY 2023",
             upload_instructions=(
-                "Upload the following document:\n\n"
-                "• Approved BPOPS Plan, covering CY 2023"
+                "Upload: Approved BPOPS Plan, covering CY 2023"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
+                # Upload Verification
                 ChecklistItem(
-                    id="3_2_2_plan",
+                    id="3_2_2_upload_1",
                     label="Approved BPOPS Plan, covering CY 2023",
-                    mov_description="Approved Barangay Peace and Order and Public Safety Plan covering CY 2023",
+                    mov_description="Verification of uploaded Approved Barangay Peace and Order and Public Safety Plan covering CY 2023",
                     required=True,
                     display_order=1
                 ),
@@ -86,73 +152,88 @@ INDICATOR_3_2 = Indicator(
             code="3.2.3",
             name="Accomplishment Reports: At least 50% accomplishment (physical OR financial)",
             upload_instructions=(
-                "Upload ONE of the following report options:\n\n"
-                "OPTION A - For Physical Accomplishment (3.2.3.1):\n"
-                "• Accomplishment Report with the status of implementation of target activities and utilization of funds "
+                "Upload: Accomplishment Report with the status of implementation of target activities and utilization of funds "
                 "submitted to the C/M POC with received stamp of the DILG City Director or C/MLGOO\n\n"
-                "Please supply the required information for Option A:\n"
-                "• % of programs, project, and activities are completed\n\n"
-                "To compute Physical Accomplishment Rate:\n"
-                "(Total number of activities/projects accomplished / Total number of activities/projects reflected in the BPOPS Plan) x 100\n\n"
+                "3.2.3.1. At least 50% accomplishment of the physical targets in the BPOPS Plan\n\n"
                 "OR\n\n"
-                "OPTION B - For Financial Accomplishment (3.2.3.2):\n"
-                "• Accomplishment Report with the status of implementation of target activities and utilization of funds "
-                "submitted to the C/M POC with received stamp of the DILG City Director or C/MLGOO\n\n"
-                "Please supply the required information for Option B:\n"
-                "• Amount utilized (as of Dec. 31, 2023)\n"
-                "• Amount allocated for FPAs in the BPOPS Plan for CY 2023\n\n"
-                "To compute % utilization:\n"
-                "(Total Amount Utilized) / (Total Amount Allocated) x 100\n\n"
+                "3.2.3.2. At least 50% fund utilization rate of the CY 2023 BPOPs Budget\n\n"
                 "Note: Barangay officials have the option to submit both the physical and financial reports. "
                 "However, for the SGLGB Assessment, only one of the above documents is required."
             ),
             validation_rule="ANY_ITEM_REQUIRED",  # Only ONE option (A or B) is required
             checklist_items=[
-                # Option A: Physical Accomplishment (3.2.3.1)
+                # Instruction Section
                 ChecklistItem(
-                    id="3_2_3_1_report",
-                    label="a. At least 50% accomplishment of the physical targets in the BPOPS Plan",
-                    group_name="Option A: Physical Accomplishment (at least 50%)",
-                    mov_description="Accomplishment Report with status of implementation submitted to C/M POC with DILG stamp",
-                    required=False,  # Not all required since it's ANY_ITEM_REQUIRED
+                    id="3_2_3_instructions",
+                    label="Instruction: Put a check ✓ on the box that corresponds to your assessment.",
+                    mov_description="Instructions for assessor",
+                    required=False,
                     display_order=1
                 ),
+
+                # Option A: Physical Accomplishment (3.2.3.1)
                 ChecklistItem(
-                    id="3_2_3_1_percentage",
-                    label="% of programs, project, and activities are completed (for Option A)",
-                    group_name="Option A: Physical Accomplishment (at least 50%)",
-                    mov_description="Input field for percentage of completed programs/projects/activities",
+                    id="3_2_3_1_checkbox",
+                    label="a. At least 50% accomplishment of the physical targets in the BPOPS Plan",
+                    mov_description="Checkbox for physical accomplishment option",
                     required=False,
-                    requires_document_count=True,  # Using this to indicate numeric input needed
                     display_order=2
                 ),
-
-                # Option B: Financial Accomplishment (3.2.3.2)
                 ChecklistItem(
-                    id="3_2_3_2_report",
-                    label="b. At least 50% fund utilization rate of the CY 2023 BPOPs Budget",
-                    group_name="Option B: Financial Accomplishment (at least 50% fund utilization)",
-                    mov_description="Accomplishment Report with status of implementation and utilization submitted to C/M POC with DILG stamp",
+                    id="3_2_3_1_upload",
+                    label="Accomplishment Report with the status of implementation of target activities and utilization of funds submitted to the C/M POC with received stamp of the DILG City Director or C/MLGOO",
+                    mov_description="Verification of uploaded Accomplishment Report for physical accomplishment",
                     required=False,
                     display_order=3
                 ),
                 ChecklistItem(
+                    id="3_2_3_1_percentage",
+                    label="Please supply the required information:\n% of programs, project, and activities are completed",
+                    mov_description="Input field for percentage of completed programs/projects/activities",
+                    required=False,
+                    requires_document_count=True,  # This is a text input field
+                    display_order=4
+                ),
+
+                # OR Separator (informational)
+                ChecklistItem(
+                    id="3_2_3_or_separator",
+                    label="OR",
+                    mov_description="OR separator between physical and financial options",
+                    required=False,
+                    display_order=5
+                ),
+
+                # Option B: Financial Accomplishment (3.2.3.2)
+                ChecklistItem(
+                    id="3_2_3_2_checkbox",
+                    label="b. At least 50% fund utilization rate of the CY 2023 BPOPs Budget",
+                    mov_description="Checkbox for financial accomplishment option",
+                    required=False,
+                    display_order=6
+                ),
+                ChecklistItem(
+                    id="3_2_3_2_upload",
+                    label="Accomplishment Report with the status of implementation of target activities and utilization of funds submitted to the C/M POC with received stamp of the DILG City Director or C/MLGOO",
+                    mov_description="Verification of uploaded Accomplishment Report for financial accomplishment",
+                    required=False,
+                    display_order=7
+                ),
+                ChecklistItem(
                     id="3_2_3_2_amount_utilized",
-                    label="Amount utilized (as of Dec. 31, 2023) for Option B",
-                    group_name="Option B: Financial Accomplishment (at least 50% fund utilization)",
+                    label="Please supply the required information:\nAmount utilized\n(as of Dec. 31, 2023):",
                     mov_description="Input field for amount utilized as of Dec. 31, 2023",
                     required=False,
-                    requires_document_count=True,  # Using this to indicate numeric input needed
-                    display_order=4
+                    requires_document_count=True,  # This is a text input field
+                    display_order=8
                 ),
                 ChecklistItem(
                     id="3_2_3_2_amount_allocated",
-                    label="Amount allocated for FPAs in the BPOPS Plan for CY 2023 (for Option B)",
-                    group_name="Option B: Financial Accomplishment (at least 50% fund utilization)",
+                    label="Amount allocated for FPAs in the BPOPS Plan for CY 2023:",
                     mov_description="Input field for amount allocated for FPAs in BPOPS Plan",
                     required=False,
-                    requires_document_count=True,  # Using this to indicate numeric input needed
-                    display_order=5
+                    requires_document_count=True,  # This is a text input field
+                    display_order=9
                 ),
             ]
         ),

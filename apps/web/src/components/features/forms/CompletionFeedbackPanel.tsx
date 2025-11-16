@@ -34,10 +34,16 @@ export function CompletionFeedbackPanel({
     }
 
     const fields = formSchema.fields as FormSchemaFieldsItem[];
+    const validationRule = (formSchema as any).validation_rule || "ALL_ITEMS_REQUIRED";
 
     // Get all required fields
     const requiredFields = fields.filter((field) => isFieldRequired(field));
-    const totalRequired = requiredFields.length;
+
+    // For OR logic (ANY_ITEM_REQUIRED), only ONE field needs to be completed
+    // For AND logic (ALL_ITEMS_REQUIRED), ALL fields need to be completed
+    const totalRequired = validationRule === "ANY_ITEM_REQUIRED" && requiredFields.length > 0
+      ? 1  // Only 1 of N required for OR logic
+      : requiredFields.length;  // All N required for AND logic
 
     // Calculate completed required fields
     const completedFields = requiredFields.filter((field) => {
@@ -56,7 +62,11 @@ export function CompletionFeedbackPanel({
       return true;
     });
 
-    const completed = completedFields.length;
+    // For OR logic, completion is binary: 0 if none completed, 1 if at least one completed
+    const completed = validationRule === "ANY_ITEM_REQUIRED"
+      ? (completedFields.length > 0 ? 1 : 0)  // 0 or 1 for OR logic
+      : completedFields.length;  // Actual count for AND logic
+
     const percentage = totalRequired > 0 ? Math.round((completed / totalRequired) * 100) : 0;
 
     // Get incomplete required fields

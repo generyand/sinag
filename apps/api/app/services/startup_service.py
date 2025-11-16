@@ -129,23 +129,28 @@ class StartupService:
             governance_area_service.seed_governance_areas(db)
             logger.info("  - Governance areas seeding complete.")
 
-            # Seed mock indicators
-            logger.info("  - Seeding mock indicators for testing...")
-            indicator_service.seed_mock_indicators(db)
-            logger.info("  - Mock indicators seeding complete.")
+            # NOTE: Mock indicators and old seeding logic is now DISABLED
+            # We use hardcoded indicators from app/indicators/definitions/ instead
+            # These are seeded via Alembic migrations
+            logger.info("  - Using hardcoded SGLGB indicators from migrations (not mock data)")
 
-            # Ensure Area 1 exists as a SINGLE indicator (sub-items live in schema only)
-            logger.info("  - Enforcing Area 1 as a single indicator (sub-indicators in schema)...")
-            indicator_service.enforce_area1_as_single_indicator(db)
-            logger.info("  - Area 1 DB indicator enforced as single.")
+            # # Seed mock indicators
+            # logger.info("  - Seeding mock indicators for testing...")
+            # indicator_service.seed_mock_indicators(db)
+            # logger.info("  - Mock indicators seeding complete.")
 
-            # Ensure official governance area names are used as indicator names
-            indicator_service.standardize_indicator_area_names(db)
+            # # Ensure Area 1 exists as a SINGLE indicator (sub-items live in schema only)
+            # logger.info("  - Enforcing Area 1 as a single indicator (sub-indicators in schema)...")
+            # indicator_service.enforce_area1_as_single_indicator(db)
+            # logger.info("  - Area 1 DB indicator enforced as single.")
 
-            # Seed indicators for areas 2-6 with specific codes (2.1.1, 3.1.1, 4.1.1, 5.1.1, 6.1.1)
-            logger.info("  - Seeding indicators for governance areas 2-6...")
-            indicator_service.seed_areas_2_to_6_indicators(db)
-            logger.info("  - Areas 2-6 indicators seeding complete.")
+            # # Ensure official governance area names are used as indicator names
+            # indicator_service.standardize_indicator_area_names(db)
+
+            # # Seed indicators for areas 2-6 with specific codes (2.1.1, 3.1.1, 4.1.1, 5.1.1, 6.1.1)
+            # logger.info("  - Seeding indicators for governance areas 2-6...")
+            # indicator_service.seed_areas_2_to_6_indicators(db)
+            # logger.info("  - Areas 2-6 indicators seeding complete.")
 
         except Exception as e:
             logger.warning(f"⚠️  Could not seed initial data: {str(e)}")

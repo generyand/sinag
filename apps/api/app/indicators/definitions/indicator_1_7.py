@@ -65,65 +65,23 @@ INDICATOR_1_7 = Indicator(
     governance_area_id=1,  # Financial Administration and Sustainability
     is_bbi=False,  # Barangay Assembly is NOT a BBI - it's a governance activity
     sort_order=7,
-    description="Conducted the 1st and 2nd semester Barangay Assembly for CY 2024",
+    description="Conducted the 1st semester Barangay Assembly for CY 2023",
     children=[
         # Sub-Indicator 1.7.1
         SubIndicator(
             code="1.7.1",
-            name="Conducted the 1st and 2nd semester Barangay Assembly for CY 2024",
+            name="Conducted the 1st semester Barangay Assembly for CY 2023",
             upload_instructions=(
-                "Upload documentation of the Barangay Assemblies conducted in CY 2024:\n\n"
-                "REQUIREMENTS:\n"
-                "1. BOTH 1st semester AND 2nd semester assemblies must be documented\n"
-                "   - 1st semester: January to June 2024\n"
-                "   - 2nd semester: July to December 2024\n\n"
-                "2. Acceptable document types (choose one format):\n"
-                "   - Post Activity Report of the Barangay Assembly, OR\n"
-                "   - Minutes of the Barangay Assembly\n\n"
-                "3. Document(s) must be duly approved by the Punong Barangay\n"
-                "   - Signature or approval mark must be visible\n\n"
-                "4. Submission format (choose one):\n"
-                "   - Option A: Upload 2 separate documents (one per semester)\n"
-                "   - Option B: Upload 1 consolidated report covering both semesters\n\n"
-                "5. Each assembly documentation should include:\n"
-                "   - Date and venue of the assembly\n"
-                "   - Attendance list of barangay residents\n"
-                "   - Assembly agenda and topics discussed\n"
-                "   - Resolutions or decisions made\n"
-                "   - Evidence of actual assembly conduct\n"
-                "   - Punong Barangay approval/signature"
+                "Upload: Post Activity Report/ Minutes on the conduct of the 1st semester Barangay Assembly 2023 duly approved by the Punong Barangay"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
+                # Upload Verification
                 ChecklistItem(
-                    id="1_7_1_a",
-                    label="Post Activity Report/ Minutes on the conduct of the 1st and 2nd semester Barangay Assembly 2024 duly approved by the Punong Barangay",
-                    mov_description=(
-                        "Verify the following:\n\n"
-                        "1. DOCUMENTATION PRESENCE:\n"
-                        "   - Post Activity Report OR Minutes is present\n"
-                        "   - BOTH 1st semester (Jan-Jun 2024) AND 2nd semester (Jul-Dec 2024) are covered\n"
-                        "   - May be submitted as 2 separate documents OR 1 consolidated report\n\n"
-                        "2. APPROVAL VERIFICATION:\n"
-                        "   - Document(s) are duly approved by the Punong Barangay\n"
-                        "   - Signature or approval mark is clearly visible\n\n"
-                        "3. CONTENT VERIFICATION:\n"
-                        "   - Check for date and venue of each assembly\n"
-                        "   - Verify presence of attendance list\n"
-                        "   - Confirm assembly agenda/topics are documented\n"
-                        "   - Look for resolutions or decisions made\n"
-                        "   - Assess evidence of legitimate assembly conduct\n\n"
-                        "4. COMPLETENESS CHECK:\n"
-                        "   - If 2 separate documents: verify one for 1st semester, one for 2nd semester\n"
-                        "   - If 1 consolidated report: verify it clearly covers both semesters\n"
-                        "   - Ensure no semester is missing\n\n"
-                        "NOTE: The final compliance determination should consider:\n"
-                        "- Presence of documentation for BOTH semesters (critical requirement)\n"
-                        "- Proper approval by Punong Barangay\n"
-                        "- Evidence that assemblies were legitimately conducted (not just formalities)"
-                    ),
+                    id="1_7_1_upload_1",
+                    label="Post Activity Report/ Minutes on the conduct of the 1st semester Barangay Assembly 2023 duly approved by the Punong Barangay",
+                    mov_description="Verification of uploaded Post Activity Report or Minutes of the 1st semester Barangay Assembly 2023 with approval from the Punong Barangay",
                     required=True,
-                    requires_document_count=False,
                     display_order=1
                 ),
             ]

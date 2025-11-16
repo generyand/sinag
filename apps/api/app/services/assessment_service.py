@@ -194,6 +194,7 @@ class AssessmentService:
             response = response_lookup.get(ind.id)
             node = {
                 "id": ind.id,
+                "indicator_code": ind.indicator_code,  # CRITICAL FIX: Include indicator_code (e.g., "1.1.1")
                 "name": ind.name,
                 "description": ind.description,
                 "form_schema": ind.form_schema,

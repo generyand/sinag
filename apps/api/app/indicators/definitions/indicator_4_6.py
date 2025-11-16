@@ -25,27 +25,25 @@ INDICATOR_4_6 = Indicator(
             code="4.6.1",
             name="Organized Barangay GAD Focal Point System",
             upload_instructions=(
-                "Upload the following document:\n\n"
-                "• EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) "
-                "organizing the Barangay GAD Focal Point System covering January to October 2023\n\n"
+                "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the Barangay GAD Focal Point System covering January to October 2023\n\n"
                 "Please supply the required information:\n"
-                "• Date of approval"
+                "Date of approval"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
-                    id="4_6_1_eo",
+                    id="4_6_1_upload_1",
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the Barangay GAD Focal Point System covering January to October 2023",
-                    mov_description="Executive Order or similar issuance organizing the Barangay GAD Focal Point System covering January to October 2023",
+                    mov_description="Verification of uploaded EO or similar issuance organizing the Barangay GAD Focal Point System covering January to October 2023",
                     required=True,
                     display_order=1
                 ),
                 ChecklistItem(
-                    id="4_6_1_date",
+                    id="4_6_1_date_of_approval",
                     label="Date of approval",
-                    mov_description="Input field for date of approval of the GAD Focal Point System",
+                    mov_description="Date of approval for the GAD Focal Point System",
                     required=True,
-                    requires_document_count=True,  # Repurposing this flag for date input
+                    requires_document_count=True,
                     display_order=2
                 ),
             ]

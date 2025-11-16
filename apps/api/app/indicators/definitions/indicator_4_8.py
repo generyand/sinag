@@ -26,32 +26,135 @@ INDICATOR_4_8 = Indicator(
             code="4.8.1",
             name="Structure: Organized BNC",
             upload_instructions=(
-                "Upload the following document:\n\n"
-                "• EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) "
-                "organizing the Barangay Nutrition Committee (BNC) covering January to October 2023\n\n"
-                "Minimum Composition of the BNC:\n"
-                "1. Barangay Captain (as chair)\n"
-                "2. President of the Rural Improvement Club (RIC)\n"
-                "3. President, Parent-Teacher Child Association (PTCA)\n"
-                "4. Head/President, local organization\n"
-                "5. Sangguniang Members on Health\n"
-                "6. SK Chairperson\n"
-                "7. Barangay Nutrition Scholar (BNS)\n"
-                "8. Day Care Worker\n"
-                "9. Barangay Nutrition Action Association (BNAO)\n"
-                "10. School Principal\n"
-                "11. Agriculture Technicians\n"
-                "12. Rural Health Midwife (RHM)\n"
-                "13. Other as may be identified"
+                "Upload the following:\n\n"
+                "1. EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the Barangay Nutrition Committee (BNC) covering January to October 2023\n\n"
+                "The BNC must include the following minimum composition:\n"
+                "- Barangay Captain (as chair)\n"
+                "- President of the Rural Improvement Club (RIC)\n"
+                "- President, Parent-Teacher Child Association (PTCA)\n"
+                "- Head/President, local organization\n"
+                "- Sangguniang Members on Health\n"
+                "- SK Chairperson\n"
+                "- Barangay Nutrition Scholar (BNS)\n"
+                "- Day Care Worker\n"
+                "- Barangay Nutrition Action Association (BNAO)\n"
+                "- School Principal\n"
+                "- Agriculture Technicians\n"
+                "- Rural Health Midwife (RHM)\n"
+                "- Other as may be identified"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
-                    id="4_8_1_eo",
+                    id="4_8_1_upload_1",
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the Barangay Nutrition Committee (BNC) covering January to October 2023",
-                    mov_description="Executive Order or similar issuance organizing the BNC covering January to October 2023",
+                    mov_description="Verification of uploaded EO or similar issuance organizing the Barangay Nutrition Committee (BNC) covering January to October 2023",
                     required=True,
                     display_order=1
+                ),
+                ChecklistItem(
+                    id="4_8_1_comp_captain",
+                    label="Barangay Captain (as chair)",
+                    mov_description="Verify Barangay Captain is listed in BNC composition",
+                    required=True,
+                    requires_document_count=False,
+                    display_order=2
+                ),
+                ChecklistItem(
+                    id="4_8_1_comp_ric",
+                    label="President of the Rural Improvement Club (RIC)",
+                    mov_description="Verify RIC President is listed in BNC composition",
+                    required=True,
+                    requires_document_count=False,
+                    display_order=3
+                ),
+                ChecklistItem(
+                    id="4_8_1_comp_ptca",
+                    label="President, Parent-Teacher Child Association (PTCA)",
+                    mov_description="Verify PTCA President is listed in BNC composition",
+                    required=True,
+                    requires_document_count=False,
+                    display_order=4
+                ),
+                ChecklistItem(
+                    id="4_8_1_comp_local_org",
+                    label="Head/President, local organization",
+                    mov_description="Verify local organization head is listed in BNC composition",
+                    required=True,
+                    requires_document_count=False,
+                    display_order=5
+                ),
+                ChecklistItem(
+                    id="4_8_1_comp_health",
+                    label="Sangguniang Members on Health",
+                    mov_description="Verify Sangguniang Members on Health are listed in BNC composition",
+                    required=True,
+                    requires_document_count=False,
+                    display_order=6
+                ),
+                ChecklistItem(
+                    id="4_8_1_comp_sk",
+                    label="SK Chairperson",
+                    mov_description="Verify SK Chairperson is listed in BNC composition",
+                    required=True,
+                    requires_document_count=False,
+                    display_order=7
+                ),
+                ChecklistItem(
+                    id="4_8_1_comp_bns",
+                    label="Barangay Nutrition Scholar (BNS)",
+                    mov_description="Verify BNS is listed in BNC composition",
+                    required=True,
+                    requires_document_count=False,
+                    display_order=8
+                ),
+                ChecklistItem(
+                    id="4_8_1_comp_daycare",
+                    label="Day Care Worker",
+                    mov_description="Verify Day Care Worker is listed in BNC composition",
+                    required=True,
+                    requires_document_count=False,
+                    display_order=9
+                ),
+                ChecklistItem(
+                    id="4_8_1_comp_bnao",
+                    label="Barangay Nutrition Action Association (BNAO)",
+                    mov_description="Verify BNAO is listed in BNC composition",
+                    required=True,
+                    requires_document_count=False,
+                    display_order=10
+                ),
+                ChecklistItem(
+                    id="4_8_1_comp_principal",
+                    label="School Principal",
+                    mov_description="Verify School Principal is listed in BNC composition",
+                    required=True,
+                    requires_document_count=False,
+                    display_order=11
+                ),
+                ChecklistItem(
+                    id="4_8_1_comp_agriculture",
+                    label="Agriculture Technicians",
+                    mov_description="Verify Agriculture Technicians are listed in BNC composition",
+                    required=True,
+                    requires_document_count=False,
+                    display_order=12
+                ),
+                ChecklistItem(
+                    id="4_8_1_comp_rhm",
+                    label="Rural Health Midwife (RHM)",
+                    mov_description="Verify RHM is listed in BNC composition",
+                    required=True,
+                    requires_document_count=False,
+                    display_order=13
+                ),
+                ChecklistItem(
+                    id="4_8_1_comp_other",
+                    label="Other as may be identified",
+                    mov_description="Verify other members as may be identified are listed in BNC composition",
+                    required=False,
+                    requires_document_count=False,
+                    display_order=14
                 ),
             ]
         ),
@@ -61,15 +164,14 @@ INDICATOR_4_8 = Indicator(
             code="4.8.2",
             name="Plan: Presence of approved CY 2023 BNAP",
             upload_instructions=(
-                "Upload the following document:\n\n"
-                "• Approved CY 2023 BNAP signed by the BNC"
+                "Upload: Approved CY 2023 BNAP signed by the BNC"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
-                    id="4_8_2_bnap",
+                    id="4_8_2_upload_1",
                     label="Approved CY 2023 BNAP signed by the BNC",
-                    mov_description="Approved CY 2023 Barangay Nutrition Action Plan signed by the BNC",
+                    mov_description="Verification of uploaded Approved CY 2023 BNAP signed by the BNC",
                     required=True,
                     display_order=1
                 ),
@@ -81,54 +183,52 @@ INDICATOR_4_8 = Indicator(
             code="4.8.3",
             name="Decrease in Prevalence Rate in the barangay, for the following categories",
             upload_instructions=(
-                "Upload the following documents:\n\n"
-                "• Operation Timbang (OPT) Plus Form 1A (Barangay Tally and Summary Sheet of Preschoolers with Weight & Height "
-                "Measurement by Age Group, Sex and Nutritional Status) of CYs 2022 and 2023; and\n\n"
-                "• Certification from the C/MHO on the Decrease in Prevalence Rate\n\n"
-                "Instruction: Put a check ✓ on the box that corresponds to your assessment.\n\n"
-                "Categories:\n"
-                "1. Underweight and Severe Underweight\n"
-                "2. Stunting and Severe Stunting; and\n"
-                "3. Moderate Wasting and Severe Wasting"
+                "Upload the following (all required):\n\n"
+                "1. Operation Timbang (OPT) Plus Form 1A (Barangay Tally and Summary Sheet of Preschoolers with Weight & Height Measurement by Age Group, Sex and Nutritional Status) of CYs 2022 and 2023; and\n"
+                "2. Certification from the C/MHO on the Decrease in Prevalence Rate\n\n"
+                "The following categories will be assessed:\n"
+                "- Underweight and Severe Underweight\n"
+                "- Stunting and Severe Stunting\n"
+                "- Moderate Wasting and Severe Wasting"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
-                    id="4_8_3_opt_form",
+                    id="4_8_3_upload_opt",
                     label="Operation Timbang (OPT) Plus Form 1A (Barangay Tally and Summary Sheet of Preschoolers with Weight & Height Measurement by Age Group, Sex and Nutritional Status) of CYs 2022 and 2023",
-                    mov_description="OPT Plus Form 1A for CYs 2022 and 2023",
+                    mov_description="Verification of uploaded Operation Timbang (OPT) Plus Form 1A for CYs 2022 and 2023",
                     required=True,
                     display_order=1
                 ),
                 ChecklistItem(
-                    id="4_8_3_certification",
+                    id="4_8_3_upload_cert",
                     label="Certification from the C/MHO on the Decrease in Prevalence Rate",
-                    mov_description="Certification from C/MHO on the Decrease in Prevalence Rate",
+                    mov_description="Verification of uploaded Certification from the C/MHO on the Decrease in Prevalence Rate",
                     required=True,
                     display_order=2
                 ),
                 ChecklistItem(
                     id="4_8_3_underweight",
-                    label="1. With decrease in prevalence rate of Underweight and Severe Underweight",
-                    group_name="Decrease in Prevalence Rate Categories",
-                    mov_description="YES/NO checkbox: Decrease in prevalence rate of Underweight and Severe Underweight",
-                    required=False,
+                    label="Underweight and Severe Underweight",
+                    mov_description="Verify decrease in prevalence rate of Underweight and Severe Underweight",
+                    required=True,
+                    requires_document_count=False,
                     display_order=3
                 ),
                 ChecklistItem(
                     id="4_8_3_stunting",
-                    label="2. With decrease in prevalence rate of Stunting and Severe Stunting",
-                    group_name="Decrease in Prevalence Rate Categories",
-                    mov_description="YES/NO checkbox: Decrease in prevalence rate of Stunting and Severe Stunting",
-                    required=False,
+                    label="Stunting and Severe Stunting; and",
+                    mov_description="Verify decrease in prevalence rate of Stunting and Severe Stunting",
+                    required=True,
+                    requires_document_count=False,
                     display_order=4
                 ),
                 ChecklistItem(
                     id="4_8_3_wasting",
-                    label="3. With decrease in prevalence rate of Moderate Wasting and Severe Wasting",
-                    group_name="Decrease in Prevalence Rate Categories",
-                    mov_description="YES/NO checkbox: Decrease in prevalence rate of Moderate Wasting and Severe Wasting",
-                    required=False,
+                    label="Moderate Wasting and Severe Wasting",
+                    mov_description="Verify decrease in prevalence rate of Moderate Wasting and Severe Wasting",
+                    required=True,
+                    requires_document_count=False,
                     display_order=5
                 ),
             ]
@@ -139,93 +239,66 @@ INDICATOR_4_8 = Indicator(
             code="4.8.4",
             name="Accomplishment Report",
             upload_instructions=(
-                "Upload the following documents:\n\n"
-                "• Accomplishment Report on CY 2023 BNAP;\n\n"
-                "Choose ONE of the following options:\n\n"
-                "Option A - Physical Accomplishment (at least 50%):\n"
-                "• Certification on the submitted BNAP Accomplishment Report for CY 2023 signed by the C/MLGOO\n"
-                "Please supply the required information:\n"
-                "• % of programs, project, and activities are completed\n\n"
-                "OR\n\n"
-                "Option B - Fund Utilization (at least 50%):\n"
-                "• Certification on the submitted BNAP Accomplishment Report for CY 2023 indicating at least 50% fund utilization rate of the CY 2023 BNAP Budget signed by the C/MLGOO\n"
-                "Please supply the required information:\n"
-                "• Amount utilized (as of Dec. 31, 2023):\n"
-                "• Amount allocated for PPAs in the BNAP:\n\n"
-                "Note: To compute Physical Accomplishment Rate:\n"
-                "(Total number of activities/projects accomplished / Total number of activities/projects reflected in the BNAP) x 100\n\n"
-                "To compute % utilization:\n"
-                "(Total Amount Utilized)/(Total Amount Allocated) x 100"
+                "Upload the following:\n\n"
+                "1. Accomplishment Report on CY 2023 BNAP\n"
+                "2. Certification on the submitted BNAP Accomplishment Report for CY 2023 signed by the C/MLGOO\n\n"
+                "Note: The certification must indicate EITHER:\n"
+                "- 4.8.4 a) At least 50% accomplishment of the physical targets in the CY 2023 BNAP, OR\n"
+                "- 4.8.4 b) At least 50% fund utilization rate of the CY 2023 BNAP Budget"
             ),
-            validation_rule="ANY_ITEM_REQUIRED",  # Either Option A OR Option B
+            validation_rule="ALL_ITEMS_REQUIRED",  # Both uploads required, but assessor checks for either option A or B
             checklist_items=[
                 ChecklistItem(
-                    id="4_8_4_report",
+                    id="4_8_4_upload_report",
                     label="Accomplishment Report on CY 2023 BNAP",
-                    mov_description="Accomplishment Report on CY 2023 BNAP",
+                    mov_description="Verification of uploaded Accomplishment Report on CY 2023 BNAP",
                     required=True,
                     display_order=1
                 ),
-                # Option A: Physical Accomplishment
                 ChecklistItem(
-                    id="4_8_4_physical_cert",
-                    label="a. At least 50% accomplishment of the physical targets in the CY 2023 BNAP",
-                    group_name="Option A: Physical Accomplishment",
-                    mov_description="YES/NO checkbox: At least 50% accomplishment of physical targets",
-                    required=False,
+                    id="4_8_4_upload_cert",
+                    label="Certification on the submitted BNAP Accomplishment Report for CY 2023 signed by the C/MLGOO",
+                    mov_description="Verification of uploaded Certification on submitted BNAP Accomplishment Report for CY 2023",
+                    required=True,
                     display_order=2
                 ),
                 ChecklistItem(
-                    id="4_8_4_physical_certification",
-                    label="Certification on the submitted BNAP Accomplishment Report for CY 2023 indicating at least 50% accomplishment of the physical targets in the BNAP signed by the C/MLGOO",
-                    group_name="Option A: Physical Accomplishment",
-                    mov_description="Certification on submitted BNAP Accomplishment Report for CY 2023 (physical accomplishment)",
+                    id="4_8_4_option_a_check",
+                    label="4.8.4 a) At least 50% accomplishment of the physical targets in the CY 2023 BNAP",
+                    mov_description="Verify at least 50% accomplishment of physical targets (Option A)",
                     required=False,
                     display_order=3
                 ),
                 ChecklistItem(
                     id="4_8_4_physical_percentage",
                     label="% of programs, project, and activities are completed",
-                    group_name="Option A: Physical Accomplishment",
                     mov_description="Input field for percentage of programs, projects, and activities completed",
                     required=False,
-                    requires_document_count=True,  # Repurposing for percentage input
+                    requires_document_count=True,
                     display_order=4
                 ),
-                # Option B: Fund Utilization
                 ChecklistItem(
-                    id="4_8_4_fund_cert",
-                    label="b. At least 50% fund utilization rate of the CY 2023 BNAP Budget",
-                    group_name="Option B: Fund Utilization",
-                    mov_description="YES/NO checkbox: At least 50% fund utilization rate",
+                    id="4_8_4_option_b_check",
+                    label="4.8.4 b) At least 50% fund utilization rate of the CY 2023 BNAP Budget",
+                    mov_description="Verify at least 50% fund utilization rate (Option B)",
                     required=False,
                     display_order=5
                 ),
                 ChecklistItem(
-                    id="4_8_4_fund_certification",
-                    label="Certification on the submitted BNAP Accomplishment Report for CY 2023 indicating at least 50% fund utilization rate of the CY 2023 BNAP Budget signed by the C/MLGOO",
-                    group_name="Option B: Fund Utilization",
-                    mov_description="Certification on submitted BNAP Accomplishment Report for CY 2023 (fund utilization)",
-                    required=False,
-                    display_order=6
-                ),
-                ChecklistItem(
                     id="4_8_4_amount_utilized",
                     label="Amount utilized (as of Dec. 31, 2023)",
-                    group_name="Option B: Fund Utilization",
                     mov_description="Input field for amount utilized as of Dec. 31, 2023",
                     required=False,
-                    requires_document_count=True,  # Repurposing for amount input
-                    display_order=7
+                    requires_document_count=True,
+                    display_order=6
                 ),
                 ChecklistItem(
                     id="4_8_4_amount_allocated",
                     label="Amount allocated for PPAs in the BNAP",
-                    group_name="Option B: Fund Utilization",
                     mov_description="Input field for amount allocated for PPAs in the BNAP",
                     required=False,
-                    requires_document_count=True,  # Repurposing for amount input
-                    display_order=8
+                    requires_document_count=True,
+                    display_order=7
                 ),
             ]
         ),

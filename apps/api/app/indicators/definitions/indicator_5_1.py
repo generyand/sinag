@@ -25,15 +25,14 @@ INDICATOR_5_1 = Indicator(
             code="5.1.1",
             name="Enacted Barangay Tax Ordinance pursuant to Sec. 129 of the LGC",
             upload_instructions=(
-                "Upload the following document:\n\n"
-                "• Enacted Barangay Tax Ordinance signed by the PB, Barangay Secretary and SBMs"
+                "Upload: Enacted Barangay Tax Ordinance signed by the PB, Barangay Secretary and SBMs"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
-                    id="5_1_1_ordinance",
+                    id="5_1_1_upload_1",
                     label="Enacted Barangay Tax Ordinance signed by the PB, Barangay Secretary and SBMs",
-                    mov_description="Enacted Barangay Tax Ordinance pursuant to Sec. 129 of the LGC signed by PB, Barangay Secretary and SBMs",
+                    mov_description="Verification of uploaded Enacted Barangay Tax Ordinance signed by the PB, Barangay Secretary and SBMs",
                     required=True,
                     display_order=1
                 ),

@@ -6,7 +6,6 @@ import { AssessmentTreeNode } from "./AssessmentTreeNode";
 import { TreeHeader } from "./TreeHeader";
 import {
   calculateAreaProgress,
-  getAllLeafIndicators,
   loadExpandedState,
   saveExpandedState,
   getInitialExpandedAreas,
@@ -48,6 +47,37 @@ export function TreeNavigator({
 
   const handleIndicatorClick = (indicatorId: string) => {
     onIndicatorSelect(indicatorId);
+  };
+
+  // Recursive function to render indicator tree with proper nesting
+  const renderIndicatorTree = (indicators: any[], level: number = 1): JSX.Element[] => {
+    return indicators.map((indicator) => {
+      const hasChildren = indicator.children && indicator.children.length > 0;
+
+      // Only render leaf indicators (indicators without children)
+      // Parent containers with children are just organizational and shouldn't be clickable
+      if (hasChildren) {
+        // This is a parent container - recursively render its children
+        return (
+          <div key={indicator.id}>
+            {renderIndicatorTree(indicator.children, level)}
+          </div>
+        );
+      }
+
+      // This is a leaf indicator - render it normally
+      return (
+        <div key={indicator.id}>
+          <AssessmentTreeNode
+            type="indicator"
+            item={indicator}
+            isActive={selectedIndicatorId === indicator.id}
+            onClick={() => handleIndicatorClick(indicator.id)}
+            level={level}
+          />
+        </div>
+      );
+    });
   };
 
   // Keyboard navigation
@@ -98,7 +128,6 @@ export function TreeNavigator({
         {assessment.governanceAreas.map((area) => {
           const isExpanded = expandedAreas.has(area.id);
           const progress = calculateAreaProgress(area);
-          const leafIndicators = getAllLeafIndicators(area.indicators);
 
           return (
             <div key={area.id}>
@@ -112,19 +141,10 @@ export function TreeNavigator({
                 level={0}
               />
 
-              {/* Indicators (when expanded) */}
+              {/* Indicators (when expanded) - Render hierarchical tree */}
               {isExpanded && (
                 <div>
-                  {leafIndicators.map((indicator) => (
-                    <AssessmentTreeNode
-                      key={indicator.id}
-                      type="indicator"
-                      item={indicator}
-                      isActive={selectedIndicatorId === indicator.id}
-                      onClick={() => handleIndicatorClick(indicator.id)}
-                      level={1}
-                    />
-                  ))}
+                  {renderIndicatorTree(area.indicators, 1)}
                 </div>
               )}
             </div>

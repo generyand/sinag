@@ -140,7 +140,11 @@ export function useCurrentAssessment() {
         (indicator as any).responseIndicatorId ??
         (indicator as any).response_indicator_id,
       code: (() => {
-        // Use the code from backend if it exists
+        // Use indicator_code from backend if it exists (CRITICAL FIX: field name is indicator_code not code)
+        if ((indicator as any).indicator_code) {
+          return (indicator as any).indicator_code;
+        }
+        // Fallback: try code field for compatibility
         if ((indicator as any).code) {
           return (indicator as any).code;
         }

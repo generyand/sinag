@@ -77,50 +77,17 @@ INDICATOR_4_1 = Indicator(
             code="4.1.1",
             name="Structure: Organized Barangay VAW Desk and designated Barangay VAW Desk Officer",
             upload_instructions=(
-                "Upload documentation of VAW Desk organization:\n\n"
-                "REQUIRED DOCUMENT:\n"
-                "- EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs)\n"
-                "- Must document the establishment of Barangay VAW Desk and designated VAW Desk Officer\n"
-                "- Must cover January to October 2023\n\n"
-                "REQUIREMENTS:\n"
-                "- Document must be an Executive Order or similar official issuance\n"
-                "- Must be signed by the Punong Barangay (PB)\n"
-                "- Must be countersigned by Barangay Secretary and SBMs\n"
-                "- Must establish the Barangay VAW Desk\n"
-                "- Must designate a Barangay VAW Desk Officer\n"
-                "- Coverage period: January to October 2023\n\n"
-                "IMPORTANT:\n"
-                "- The EO/resolution must be properly signed and approved\n"
-                "- VAW Desk Officer must be clearly designated\n"
-                "- Document must clearly establish the VAW Desk organization"
+                "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) "
+                "on the establishment of Barangay VAW Desk and designated VAW Desk Officer covering January to October 2023"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
+                # Upload Verification
                 ChecklistItem(
-                    id="4_1_1_a",
+                    id="4_1_1_upload_1",
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the establishment of Barangay VAW Desk and designated VAW Desk Officer covering January to October 2023",
-                    mov_description=(
-                        "Verify the following:\n\n"
-                        "1. DOCUMENT PRESENCE:\n"
-                        "   - Executive Order (EO), resolution, or ordinance is present\n"
-                        "   - Document establishes the Barangay VAW Desk\n"
-                        "   - Document designates the Barangay VAW Desk Officer\n\n"
-                        "2. SIGNATURE VERIFICATION:\n"
-                        "   - Document is signed by the Punong Barangay (PB)\n"
-                        "   - Document is countersigned by Barangay Secretary\n"
-                        "   - Document is countersigned by Sangguniang Barangay Members (SBMs)\n"
-                        "   - All signatures are clearly visible\n\n"
-                        "3. VAW DESK ESTABLISHMENT:\n"
-                        "   - Barangay VAW Desk is established\n"
-                        "   - VAW Desk Officer is designated\n"
-                        "   - Designation is clear and unambiguous\n\n"
-                        "4. COVERAGE PERIOD:\n"
-                        "   - Document covers January to October 2023\n"
-                        "   - Coverage period is clearly indicated\n\n"
-                        "NOTE: The VAW Desk must be properly organized with a designated officer."
-                    ),
+                    mov_description="Verification of uploaded Executive Order or similar issuance establishing the Barangay VAW Desk and designating the VAW Desk Officer",
                     required=True,
-                    requires_document_count=False,
                     display_order=1
                 ),
             ]
@@ -131,60 +98,16 @@ INDICATOR_4_1 = Indicator(
             code="4.1.2",
             name="Training: Attendance of the Barangay VAW Desk Officer to at least one (1) training/orientation related to gender-sensitive handling of VAW Cases not earlier than CY 2020",
             upload_instructions=(
-                "Upload documentation of VAW Desk Officer training attendance:\n\n"
-                "REQUIRED DOCUMENT:\n"
-                "- At least one (1) copy of proof of training\n"
-                "- Certificate of Completion and/or Participation\n\n"
-                "REQUIREMENTS:\n"
-                "- Training or orientation must be related to gender-sensitive handling of VAW cases\n"
-                "- Training must be conducted NOT EARLIER than CY 2020\n"
-                "- Certificate must show VAW Desk Officer attendance\n"
-                "- Certificate should indicate:\n"
-                "  * Name of training/orientation\n"
-                "  * Date of training (CY 2020 or later)\n"
-                "  * Name of VAW Desk Officer attendee\n"
-                "  * Proof of completion/participation\n\n"
-                "ACCEPTABLE TRAINING/ORIENTATIONS:\n"
-                "- Gender-sensitive handling of VAW cases\n"
-                "- VAW desk management training\n"
-                "- Gender and development orientation\n"
-                "- Violence against women response training\n"
-                "- Other VAW-related capacity building activities\n\n"
-                "IMPORTANT:\n"
-                "- Training conducted before CY 2020 is NOT acceptable\n"
-                "- Ensure the date of training is clearly visible in the certificate"
+                "Upload: At least one (1) copy of proof of training such as Certificate of Completion and/or Participation"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
+                # Upload Verification
                 ChecklistItem(
-                    id="4_1_2_a",
+                    id="4_1_2_upload_1",
                     label="At least one (1) copy of proof of training such as Certificate of Completion and/or Participation",
-                    mov_description=(
-                        "Verify the following:\n\n"
-                        "1. DOCUMENT PRESENCE:\n"
-                        "   - Certificate of Completion and/or Participation is present\n"
-                        "   - At least 1 copy is submitted\n\n"
-                        "2. TRAINING TYPE:\n"
-                        "   - Training/orientation is related to gender-sensitive handling of VAW cases\n"
-                        "   - Topics include VAW response, gender sensitivity, or related matters\n\n"
-                        "3. DATE VERIFICATION:\n"
-                        "   - Training was conducted NOT EARLIER than CY 2020\n"
-                        "   - Date of training is clearly visible\n"
-                        "   - Any training before CY 2020 should be rejected\n\n"
-                        "4. ATTENDEE VERIFICATION:\n"
-                        "   - Certificate shows VAW Desk Officer attendance\n"
-                        "   - Name of attendee is clearly indicated\n"
-                        "   - Attendee is confirmed to be the VAW Desk Officer\n\n"
-                        "5. CERTIFICATE CONTENT:\n"
-                        "   - Contains name of training/orientation\n"
-                        "   - Shows date of training\n"
-                        "   - Indicates completion or participation\n"
-                        "   - Properly issued by training organizer\n\n"
-                        "NOTE: The critical requirement is that training was conducted in CY 2020 or later.\n"
-                        "Trainings before this date do not meet the minimum requirement."
-                    ),
+                    mov_description="Verification of uploaded proof of training for the Barangay VAW Desk Officer related to gender-sensitive handling of VAW cases not earlier than CY 2020",
                     required=True,
-                    requires_document_count=False,
                     display_order=1
                 ),
             ]
@@ -195,49 +118,16 @@ INDICATOR_4_1 = Indicator(
             code="4.1.3",
             name="Plan and Budget: Approved CY 2023 Barangay Gender and Development (GAD) Plan and Budget",
             upload_instructions=(
-                "Upload documentation of approved GAD Plan and Budget:\n\n"
-                "REQUIRED DOCUMENT:\n"
-                "- Approved Barangay GAD Plan and Budget for CY 2023\n\n"
-                "REQUIREMENTS:\n"
-                "- Document must be the approved GAD Plan and Budget\n"
-                "- Must be for Calendar Year 2023\n"
-                "- Must be properly approved by the Sangguniang Barangay\n"
-                "- Should contain:\n"
-                "  * GAD programs, projects, and activities\n"
-                "  * Budget allocation for GAD\n"
-                "  * Physical targets\n"
-                "  * Approval signatures\n\n"
-                "IMPORTANT:\n"
-                "- The GAD Plan and Budget must be approved\n"
-                "- Must cover CY 2023\n"
-                "- Ensure approval signatures are visible"
+                "Upload: Approved Barangay GAD Plan and Budget for CY 2023"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
+                # Upload Verification
                 ChecklistItem(
-                    id="4_1_3_a",
+                    id="4_1_3_upload_1",
                     label="Approved Barangay GAD Plan and Budget for CY 2023",
-                    mov_description=(
-                        "Verify the following:\n\n"
-                        "1. DOCUMENT PRESENCE:\n"
-                        "   - Barangay GAD Plan and Budget is present\n"
-                        "   - Document is for CY 2023\n\n"
-                        "2. APPROVAL VERIFICATION:\n"
-                        "   - Document is approved by the Sangguniang Barangay\n"
-                        "   - Approval signatures are visible\n"
-                        "   - Document is properly authorized\n\n"
-                        "3. CONTENT VERIFICATION:\n"
-                        "   - Contains GAD programs, projects, and activities\n"
-                        "   - Shows budget allocation for GAD\n"
-                        "   - Includes physical targets\n"
-                        "   - Properly structured as a GAD Plan and Budget\n\n"
-                        "4. COVERAGE PERIOD:\n"
-                        "   - Document is for Calendar Year 2023\n"
-                        "   - Coverage period is clearly indicated\n\n"
-                        "NOTE: The GAD Plan and Budget must be approved and cover CY 2023."
-                    ),
+                    mov_description="Verification of uploaded Approved Barangay Gender and Development (GAD) Plan and Budget for CY 2023",
                     required=True,
-                    requires_document_count=False,
                     display_order=1
                 ),
             ]
@@ -248,57 +138,30 @@ INDICATOR_4_1 = Indicator(
             code="4.1.4",
             name="Accomplishment Reports: Quarterly accomplishment reports based on the database/records of VAW cases reported in the barangay covering 1st to 3rd quarter of CY 2023 with received stamp by the C/MSWDO and C/MLGOO",
             upload_instructions=(
-                "Upload quarterly accomplishment reports on VAW cases:\n\n"
-                "REQUIRED DOCUMENTS:\n"
-                "- Accomplishment Report covering 1st to 3rd quarter of CY 2023\n"
-                "- Must have received stamp by the C/MSWDO and C/MLGOO\n\n"
-                "REQUIREMENTS:\n"
-                "- Quarterly accomplishment reports based on database/records of VAW cases\n"
-                "- Must cover 1st to 3rd quarter of CY 2023\n"
-                "- Must contain relevant information such as:\n"
-                "  * VAW services provided to victim-survivors\n"
-                "  * Total number of cases documented for violating RA 9262 and other VAW-related laws\n"
-                "  * Total barangay population\n"
-                "  * Number of male and female in the barangay\n"
-                "  * Minor to adult ratio\n"
-                "- Must have received stamp from C/MSWDO and C/MLGOO\n\n"
-                "VALIDATOR ACTION REQUIRED:\n"
-                "- Input the NUMBER of quarterly accomplishment reports submitted\n\n"
-                "IMPORTANT:\n"
-                "- Reports must be properly stamped by C/MSWDO and C/MLGOO\n"
-                "- Must cover the specified quarters of CY 2023"
+                "Upload: Accomplishment Report covering 1st to 3rd quarter of CY 2023 with received stamp by the C/MSWDO and C/MLGOO\n\n"
+                "Quarterly accomplishment reports based on the database/records of VAW cases reported in the barangay "
+                "with the following information at the minimum: total number of VAW cases received, assistance provided to victim-survivors, "
+                "total number of cases documented for violating RA 9262 and other VAW-related laws, total barangay population, number of male "
+                "and female in the barangay, and minor to adult ratio"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
+                # Upload Verification
                 ChecklistItem(
-                    id="4_1_4_a",
+                    id="4_1_4_upload_1",
                     label="Accomplishment Report covering 1st to 3rd quarter of CY 2023 with received stamp by the C/MSWDO and C/MLGOO",
-                    mov_description=(
-                        "Verify the following:\n\n"
-                        "1. DOCUMENT PRESENCE:\n"
-                        "   - Accomplishment reports are submitted\n"
-                        "   - Reports are based on database/records of VAW cases\n\n"
-                        "2. NUMBER INPUT REQUIRED:\n"
-                        "   - Validator must input the NUMBER of quarterly accomplishment reports submitted\n"
-                        "   - This is a required input field\n\n"
-                        "3. COVERAGE PERIOD:\n"
-                        "   - Reports cover 1st to 3rd quarter of CY 2023\n"
-                        "   - Coverage period is clearly indicated\n\n"
-                        "4. CONTENT VERIFICATION:\n"
-                        "   - Contains relevant information on VAW cases\n"
-                        "   - Includes services provided to victim-survivors\n"
-                        "   - Shows total number of cases (RA 9262 and other VAW-related laws)\n"
-                        "   - Includes barangay population data\n"
-                        "   - Contains male/female and minor/adult statistics\n\n"
-                        "5. STAMP VERIFICATION:\n"
-                        "   - Reports have received stamp from C/MSWDO\n"
-                        "   - Reports have received stamp from C/MLGOO\n"
-                        "   - Stamps are clearly visible\n\n"
-                        "NOTE: All quarterly reports must be properly stamped by both C/MSWDO and C/MLGOO."
-                    ),
+                    mov_description="Verification of uploaded quarterly accomplishment reports based on VAW cases database/records",
                     required=True,
-                    requires_document_count=True,
                     display_order=1
+                ),
+                # Text Input Field
+                ChecklistItem(
+                    id="4_1_4_count",
+                    label="Please supply the number of documents submitted:\n_____ Quarterly Accomplishment Reports were submitted",
+                    mov_description="Input field for number of quarterly accomplishment reports submitted",
+                    required=True,
+                    requires_document_count=True,  # This is a text input field
+                    display_order=2
                 ),
             ]
         ),
@@ -308,59 +171,55 @@ INDICATOR_4_1 = Indicator(
             code="4.1.5",
             name="Database: Updated database on VAW cases reported to the barangay, with the following information at the minimum",
             upload_instructions=(
-                "Upload documentation of updated VAW cases database:\n\n"
-                "REQUIRED DOCUMENT:\n"
-                "- Copy of the generated report or screenshot of the updated database on VAW cases\n"
-                "- Database must be updated as of Dec 2024\n\n"
-                "REQUIREMENTS:\n"
-                "- Updated database on VAW cases reported to the barangay\n"
-                "- Must contain the following information at the minimum:\n"
-                "  a. Total number of VAW cases received\n"
-                "     * Number of cases documented for violating RA 9262\n"
-                "     * Number of cases documented for violating other VAW-related laws\n"
-                "  b. Assistance provided to victim-survivors\n\n"
-                "VALIDATOR ACTION REQUIRED:\n"
-                "- Input the TOTAL NUMBER of VAW cases received\n"
-                "- Input the TOTAL NUMBER of cases documented for violating RA 9262\n"
-                "- Input the TOTAL NUMBER of cases documented for violating other VAW-related laws\n"
-                "- Input the TOTAL NUMBER of assistance provided to victim-survivors\n\n"
-                "IMPORTANT:\n"
-                "- Database must be current (as of Dec 2024)\n"
-                "- All required statistics must be available in the database"
+                "Upload: Copy of the generated report or screenshot of the updated database on VAW cases reported to the barangay "
+                "with the total no. of VAW cases and assistance provided\n\n"
+                "a. total number of VAW cases received\n"
+                "   - number of cases documented for violating RA 9262\n"
+                "   - number of cases documented for violating other VAW-related laws\n"
+                "b. assistance provided to victim-survivors"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
+                # Upload Verification
                 ChecklistItem(
-                    id="4_1_5_a",
-                    label="Copy of the generated report or screenshot of the updated database on VAW cases reported to the barangay with the following information at the minimum",
-                    mov_description=(
-                        "Verify the following:\n\n"
-                        "1. DOCUMENT PRESENCE:\n"
-                        "   - Generated report or screenshot of database is present\n"
-                        "   - Database is updated as of Dec 2024\n\n"
-                        "2. NUMBER INPUTS REQUIRED:\n"
-                        "   - INPUT 1: Total number of VAW cases received\n"
-                        "   - INPUT 2: Total number of cases documented for violating RA 9262\n"
-                        "   - INPUT 3: Total number of cases documented for violating other VAW-related laws\n"
-                        "   - INPUT 4: Total number of assistance provided to victim-survivors\n"
-                        "   - These are required input fields\n\n"
-                        "3. DATABASE VERIFICATION:\n"
-                        "   - Database contains VAW cases reported to the barangay\n"
-                        "   - Information is organized and accessible\n"
-                        "   - All required statistics are available\n\n"
-                        "4. CONTENT VERIFICATION:\n"
-                        "   - a. Total number of VAW cases received is documented\n"
-                        "      * Number of cases for RA 9262 violations\n"
-                        "      * Number of cases for other VAW-related law violations\n"
-                        "   - b. Assistance provided to victim-survivors is documented\n\n"
-                        "5. CURRENCY:\n"
-                        "   - Database is updated as of Dec 2024\n"
-                        "   - Information is current\n\n"
-                        "NOTE: All required statistics must be clearly available in the database."
-                    ),
+                    id="4_1_5_upload_1",
+                    label="Copy of the generated report or screenshot of the updated database on VAW cases reported to the barangay with the following information at the minimum:",
+                    mov_description="Verification of uploaded database report or screenshot showing VAW cases and assistance provided",
                     required=True,
-                    requires_document_count=False,
                     display_order=1
+                ),
+                # Text Input Fields
+                ChecklistItem(
+                    id="4_1_5_total_cases",
+                    label="Please supply the number of documents submitted:\nTotal number of VAW cases received",
+                    mov_description="Input field for total number of VAW cases received",
+                    required=True,
+                    requires_document_count=True,  # This is a text input field
+                    display_order=2
+                ),
+                ChecklistItem(
+                    id="4_1_5_ra_9262",
+                    label="Total number of cases documented for violating RA 9262",
+                    mov_description="Input field for total number of cases documented for violating RA 9262",
+                    required=True,
+                    requires_document_count=True,  # This is a text input field
+                    display_order=3
+                ),
+                ChecklistItem(
+                    id="4_1_5_other_laws",
+                    label="Total number of cases documented for violating other VAW-related laws",
+                    mov_description="Input field for total number of cases documented for violating other VAW-related laws",
+                    required=True,
+                    requires_document_count=True,  # This is a text input field
+                    display_order=4
+                ),
+                ChecklistItem(
+                    id="4_1_5_assistance",
+                    label="Total number of assistance provided to victim-survivors",
+                    mov_description="Input field for total number of assistance provided to victim-survivors",
+                    required=True,
+                    requires_document_count=True,  # This is a text input field
+                    display_order=5
                 ),
             ]
         ),
@@ -370,88 +229,106 @@ INDICATOR_4_1 = Indicator(
             code="4.1.6",
             name="Accomplishment Reports: Physical accomplishment OR fund utilization (only 1 of the below reports is required)",
             upload_instructions=(
-                "Upload accomplishment report documentation:\n\n"
-                "IMPORTANT: Choose ONE of the following options:\n\n"
-                "OPTION 1 - PHYSICAL ACCOMPLISHMENT:\n"
-                "- 2023 GAD Accomplishment Report, AND\n"
-                "- Certification on the submitted CY 2023 GAD Accomplishment Report signed by the C/MSWDO or C/MLGOO\n"
-                "- Must show at least 50% accomplishment of the physical targets in the GAD Plan\n\n"
-                "VALIDATOR ACTION FOR OPTION 1:\n"
-                "- Input the PERCENTAGE (%) of physical accomplishment rate\n"
-                "- Formula: (Total number of activities/projects accomplished / Total number of activities/projects reflected in the GAD Plan) × 100\n\n"
-                "OPTION 2 - FUND UTILIZATION:\n"
-                "- Certification on the submitted CY 2023 GAD Accomplishment Report indicating at least 50% fund utilization of the CY 2023 GAD Budget signed by the C/MSWDO or C/MLGOO\n"
-                "- Must show at least 50% fund utilization of the CY 2023 GAD Budget\n\n"
-                "VALIDATOR ACTION FOR OPTION 2:\n"
-                "- Input the AMOUNT UTILIZED (as of Dec 31, 2023)\n"
-                "- Input the AMOUNT ALLOCATED for PPAs in the GAD Plan\n"
-                "- Formula: (Total Amount Utilized / Total Amount Allocated) × 100\n\n"
-                "IMPORTANT:\n"
-                "- Only ONE option is required (either physical accomplishment OR fund utilization)\n"
-                "- Either option must meet the 50% threshold"
+                "Upload ONE of the following (only 1 required):\n\n"
+                "1. 4.1.6.1. At least 50% accomplishment of the physical targets in the GAD Plan\n"
+                "2. 4.1.6.2. At least 50% fund utilization of the CY 2023 GAD Budget\n\n"
+                "Note: You only need to upload ONE option (either option 1 OR option 2)."
             ),
             validation_rule="ANY_ITEM_REQUIRED",  # OR logic: either physical OR budget
             checklist_items=[
+                # Upload Verification for Option 1
                 ChecklistItem(
-                    id="4_1_6_a",
-                    label="a. At least 50% accomplishment of the physical targets in the GAD Plan",
-                    mov_description=(
-                        "Verify the following:\n\n"
-                        "1. APPLICABILITY:\n"
-                        "   - This is OPTION 1 (Physical Accomplishment)\n"
-                        "   - If barangay chose fund utilization option, check item 4_1_6_b instead\n\n"
-                        "2. DOCUMENT PRESENCE:\n"
-                        "   - 2023 GAD Accomplishment Report is present\n"
-                        "   - Certification is present\n\n"
-                        "3. CERTIFICATION VERIFICATION:\n"
-                        "   - Certification is on the submitted CY 2023 GAD Accomplishment Report\n"
-                        "   - Signed by C/MSWDO or C/MLGOO\n"
-                        "   - Indicates at least 50% accomplishment of physical targets\n\n"
-                        "4. PERCENTAGE INPUT REQUIRED:\n"
-                        "   - Validator must input the % of physical accomplishment rate\n"
-                        "   - Formula: (% of programs, project, and activities are completed / Total number of activities/projects reflected in the GAD Plan) × 100\n"
-                        "   - This is a required input field\n\n"
-                        "5. ACCOMPLISHMENT VERIFICATION:\n"
-                        "   - At least 50% of physical targets are accomplished\n"
-                        "   - Accomplishment is documented in the report\n"
-                        "   - Certification confirms the accomplishment rate\n\n"
-                        "NOTE: This is an OR requirement with option 4_1_6_b.\n"
-                        "Only one option needs to pass."
-                    ),
-                    required=True,
+                    id="4_1_6_upload_1",
+                    label="4.1.6.1. At least 50% accomplishment of the physical targets in the GAD Plan",
+                    mov_description="Verification of uploaded 2023 GAD Accomplishment Report (Option 1 - Physical Accomplishment)",
+                    required=False,  # OR logic - only one option is required
                     requires_document_count=False,
                     display_order=1
                 ),
+                # Upload Verification for Option 2
                 ChecklistItem(
-                    id="4_1_6_b",
-                    label="b. At least 50% fund utilization of the CY 2023 GAD Budget",
-                    mov_description=(
-                        "Verify the following:\n\n"
-                        "1. APPLICABILITY:\n"
-                        "   - This is OPTION 2 (Fund Utilization)\n"
-                        "   - If barangay chose physical accomplishment option, check item 4_1_6_a instead\n\n"
-                        "2. DOCUMENT PRESENCE:\n"
-                        "   - Certification is present\n\n"
-                        "3. CERTIFICATION VERIFICATION:\n"
-                        "   - Certification is on the submitted CY 2023 GAD Accomplishment Report\n"
-                        "   - Indicates at least 50% fund utilization of the CY 2023 GAD Budget\n"
-                        "   - Signed by C/MSWDO or C/MLGOO\n\n"
-                        "4. AMOUNT INPUTS REQUIRED:\n"
-                        "   - INPUT 1: Amount utilized (as of Dec 31, 2023)\n"
-                        "   - INPUT 2: Amount allocated for PPAs in the GAD Plan\n"
-                        "   - Formula: (Total Amount Utilized / Total Amount Allocated) × 100\n"
-                        "   - These are required input fields\n\n"
-                        "5. UTILIZATION VERIFICATION:\n"
-                        "   - At least 50% of GAD Budget is utilized\n"
-                        "   - Utilization is documented\n"
-                        "   - Certification confirms the utilization rate\n\n"
-                        "NOTE: This is an OR requirement with option 4_1_6_a.\n"
-                        "Only one option needs to pass.\n"
-                        "Either physical accomplishment OR fund utilization is acceptable."
-                    ),
-                    required=True,
+                    id="4_1_6_upload_2",
+                    label="4.1.6.2. At least 50% fund utilization of the CY 2023 GAD Budget",
+                    mov_description="Verification of uploaded 2023 GAD Accomplishment Report (Option 2 - Fund Utilization)",
+                    required=False,  # OR logic - only one option is required
                     requires_document_count=False,
                     display_order=2
+                ),
+                # Instruction Section
+                ChecklistItem(
+                    id="4_1_6_instructions",
+                    label="Instruction: Put a check ✓ on the box that corresponds to your assessment.",
+                    mov_description="Instructions for assessor",
+                    required=False,
+                    requires_document_count=False,
+                    display_order=3
+                ),
+                # Option A: Physical Accomplishment
+                ChecklistItem(
+                    id="4_1_6_a_checkbox",
+                    label="a. At least 50% accomplishment of the physical targets in the GAD Plan",
+                    mov_description="Checkbox for physical accomplishment option",
+                    required=False,  # OR logic
+                    requires_document_count=False,
+                    display_order=4
+                ),
+                ChecklistItem(
+                    id="4_1_6_a_cert",
+                    label="Certification on the submitted CY 2023 GAD Accomplishment Report indicating at least 50% accomplishment of the physical targets in the GAD Plan signed by the C/MSWDO or C/MLGOO",
+                    mov_description="Verification of certification for physical accomplishment",
+                    required=False,  # OR logic
+                    requires_document_count=False,
+                    display_order=5
+                ),
+                ChecklistItem(
+                    id="4_1_6_a_percentage",
+                    label="Please supply the required information:\n% of programs, project, and activities are completed",
+                    mov_description="Input field for percentage of completed programs/projects/activities",
+                    required=False,  # OR logic
+                    requires_document_count=True,  # This is a text input field
+                    display_order=6
+                ),
+                # OR Separator
+                ChecklistItem(
+                    id="4_1_6_or_separator",
+                    label="OR",
+                    mov_description="OR separator between physical and financial options",
+                    required=False,
+                    requires_document_count=False,
+                    display_order=7
+                ),
+                # Option B: Fund Utilization
+                ChecklistItem(
+                    id="4_1_6_b_checkbox",
+                    label="b. At least 50% fund utilization of the CY 2023 GAD Budget",
+                    mov_description="Checkbox for fund utilization option",
+                    required=False,  # OR logic
+                    requires_document_count=False,
+                    display_order=8
+                ),
+                ChecklistItem(
+                    id="4_1_6_b_cert",
+                    label="Certification on the submitted CY 2023 GAD Accomplishment Report indicating at least 50% fund utilization of the CY 2023 GAD Budget signed by the C/MSWDO or C/MLGOO",
+                    mov_description="Verification of certification for fund utilization",
+                    required=False,  # OR logic
+                    requires_document_count=False,
+                    display_order=9
+                ),
+                ChecklistItem(
+                    id="4_1_6_b_amount_utilized",
+                    label="Please supply the required information:\nAmount utilized\n(as of Dec. 31, 2023):",
+                    mov_description="Input field for amount utilized as of Dec 31, 2023",
+                    required=False,  # OR logic
+                    requires_document_count=True,  # This is a text input field
+                    display_order=10
+                ),
+                ChecklistItem(
+                    id="4_1_6_b_amount_allocated",
+                    label="Amount allocated for PPAs in the GAD Plan:",
+                    mov_description="Input field for amount allocated for PPAs in GAD Plan",
+                    required=False,  # OR logic
+                    requires_document_count=True,  # This is a text input field
+                    display_order=11
                 ),
             ]
         ),
@@ -461,59 +338,26 @@ INDICATOR_4_1 = Indicator(
             code="4.1.7",
             name="Referral Network (For Profiling): Presence of referral system and directory",
             upload_instructions=(
-                "Upload referral network documentation:\n\n"
-                "IMPORTANT: This sub-indicator is FOR PROFILING ONLY and does NOT affect pass/fail status.\n\n"
-                "REQUIRED DOCUMENTS:\n"
-                "1. Flow Chart based on Annex C - Establishment of Referral System\n"
-                "2. Annex J - Directory Form\n\n"
-                "REQUIREMENTS:\n"
-                "- 4.1.7.1: Presence of Referral System Flow Chart (For profiling)\n"
-                "- 4.1.7.2: Presence of Directory of agencies/individuals providing services to victim-survivors (For profiling)\n\n"
-                "NOTE:\n"
-                "- This is for profiling purposes only\n"
-                "- Does not affect the overall functionality assessment of VAW Desk"
+                "Upload the following (both required):\n\n"
+                "1. 4.1.7.1. Presence of Referral System Flow Chart (For profiling)\n"
+                "2. 4.1.7.2. Presence of Directory of agencies/individuals providing services to victim-survivors (For profiling)"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
+                # Upload Verification for Flow Chart
                 ChecklistItem(
-                    id="4_1_7_1_a",
-                    label="4.1.7.1: Presence of Referral System Flow Chart; and",
-                    mov_description=(
-                        "Verify the following:\n\n"
-                        "1. FOR PROFILING ONLY:\n"
-                        "   - This item is for PROFILING purposes only\n"
-                        "   - Does NOT affect pass/fail status of the indicator\n\n"
-                        "2. DOCUMENT PRESENCE:\n"
-                        "   - Flow Chart based on Annex C is present\n"
-                        "   - Shows Establishment of Referral System\n\n"
-                        "3. FLOW CHART VERIFICATION:\n"
-                        "   - Flow chart is present\n"
-                        "   - Shows referral system process\n"
-                        "   - Based on standard Annex C format\n\n"
-                        "NOTE: This is for profiling only and does not affect VAW Desk functionality status."
-                    ),
-                    required=False,  # Not required for pass/fail
-                    requires_document_count=False,
+                    id="4_1_7_1_upload",
+                    label="4.1.7.1. Presence of Referral System Flow Chart (For profiling) - Flow Chart based on Annex C - Establishment of Referral System",
+                    mov_description="Verification of uploaded Flow Chart based on Annex C (For profiling only)",
+                    required=False,  # Not required for pass/fail - profiling only
                     display_order=1
                 ),
+                # Upload Verification for Directory
                 ChecklistItem(
-                    id="4_1_7_2_a",
-                    label="4.1.7.2: Presence of Directory of agencies/individuals providing services to victim-survivors",
-                    mov_description=(
-                        "Verify the following:\n\n"
-                        "1. FOR PROFILING ONLY:\n"
-                        "   - This item is for PROFILING purposes only\n"
-                        "   - Does NOT affect pass/fail status of the indicator\n\n"
-                        "2. DOCUMENT PRESENCE:\n"
-                        "   - Annex J - Directory Form is present\n\n"
-                        "3. DIRECTORY VERIFICATION:\n"
-                        "   - Directory of agencies/individuals is present\n"
-                        "   - Lists service providers for victim-survivors\n"
-                        "   - Based on standard Annex J format\n\n"
-                        "NOTE: This is for profiling only and does not affect VAW Desk functionality status."
-                    ),
-                    required=False,  # Not required for pass/fail
-                    requires_document_count=False,
+                    id="4_1_7_2_upload",
+                    label="4.1.7.2. Presence of Directory of agencies/individuals providing services to victim-survivors (For profiling) - Annex J - Directory Form",
+                    mov_description="Verification of uploaded Annex J - Directory Form (For profiling only)",
+                    required=False,  # Not required for pass/fail - profiling only
                     display_order=2
                 ),
             ]

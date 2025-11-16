@@ -32,71 +32,81 @@ INDICATOR_1_4 = Indicator(
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
-                # Statutory Allocation Requirements (a-f)
+                # Upload Verification Section
                 ChecklistItem(
-                    id="1_4_1_a",
-                    label="a) At least 20% of the NTA is allocated for development programs",
-                    mov_description="Verification that at least 20% of the National Tax Allotment (NTA) is allocated for development programs",
+                    id="1_4_1_upload_1",
+                    label="Approved Barangay Appropriation Ordinance",
+                    mov_description="Verification of uploaded Approved Barangay Appropriation Ordinance",
                     required=True,
                     display_order=1
                 ),
                 ChecklistItem(
-                    id="1_4_1_b",
-                    label="b) Not less than five percent (5%) shall be set aside as the Local Disaster Risk Reduction and Management Fund",
-                    mov_description="Verification that at least 5% is allocated for LDRRM Fund",
+                    id="1_4_1_date_of_approval",
+                    label="Date of Approval",
+                    mov_description="Date of Approval for the Barangay Appropriation Ordinance",
                     required=True,
+                    requires_document_count=True,  # This is a text input field, not a checkbox
                     display_order=2
                 ),
+
+                # Statutory Allocation Requirements (a-f)
                 ChecklistItem(
-                    id="1_4_1_c",
-                    label="c) Gender and Development",
-                    mov_description="Verification of allocation for Gender and Development programs",
+                    id="1_4_1_a",
+                    label="At least 20% of the NTA is allocated for development programs",
+                    mov_description="Verification that at least 20% of the National Tax Allotment (NTA) is allocated for development programs",
                     required=True,
                     display_order=3
                 ),
                 ChecklistItem(
-                    id="1_4_1_d",
-                    label="d) Senior Citizens and Persons with Disabilities",
-                    mov_description="Verification of allocation for Senior Citizens and Persons with Disabilities programs",
+                    id="1_4_1_b",
+                    label="Not less than five percent (5%) shall be set aside at the Local Disaster Risk Reduction and Management Fund",
+                    mov_description="Verification that at least 5% is allocated for LDRRM Fund",
                     required=True,
                     display_order=4
                 ),
                 ChecklistItem(
-                    id="1_4_1_e",
-                    label="e) Implementation of the programs of the Local Councils for the Protection of Children",
-                    mov_description="Verification of allocation for LCPC programs",
+                    id="1_4_1_c",
+                    label="Gender and Development",
+                    mov_description="Verification of allocation for Gender and Development programs",
                     required=True,
                     display_order=5
                 ),
                 ChecklistItem(
-                    id="1_4_1_f",
-                    label="f) Ten percent (10%) for the Sangguniang Kabataan",
-                    mov_description="Verification that 10% is allocated for Sangguniang Kabataan",
+                    id="1_4_1_d",
+                    label="Senior Citizens and Persons with Disabilities",
+                    mov_description="Verification of allocation for Senior Citizens and Persons with Disabilities programs",
                     required=True,
                     display_order=6
                 ),
-
-                # MOV Documents
                 ChecklistItem(
-                    id="1_4_1_mov_a",
-                    label="Approved Barangay Appropriation Ordinance",
-                    mov_description="Approved Barangay Appropriation Ordinance",
+                    id="1_4_1_e",
+                    label="Implementation of the programs of the Local Councils for the Protection of Children",
+                    mov_description="Verification of allocation for LCPC programs",
                     required=True,
                     display_order=7
                 ),
                 ChecklistItem(
-                    id="1_4_1_mov_b",
-                    label="Annual Investment Program signed by Barangay Treasurer, Barangay Secretary, and Punong Barangay",
-                    mov_description="Annual Investment Program with required signatures",
+                    id="1_4_1_f",
+                    label="Ten percent (10%) for the Sangguniang Kabataan",
+                    mov_description="Verification that 10% is allocated for Sangguniang Kabataan",
                     required=True,
                     display_order=8
                 ),
+
+                # Additional Upload Verification
                 ChecklistItem(
-                    id="1_4_1_mov_c",
-                    label="Certification for the Allocation for Statutory Programs and Projects signed by the City/Municipal Budget Officer",
-                    mov_description="Certification from City/Municipal Budget Officer",
+                    id="1_4_1_upload_2",
+                    label="Annual Investment Program signed by Barangay Treasurer, Barangay Secretary, and Punong Barangay",
+                    mov_description="Verification of uploaded Annual Investment Program with required signatures",
                     required=True,
                     display_order=9
+                ),
+                ChecklistItem(
+                    id="1_4_1_upload_3",
+                    label="Certification for the Allocation for Statutory Programs and Projects signed by the City/Municipal Budget Officer",
+                    mov_description="Verification of uploaded Certification from City/Municipal Budget Officer",
+                    required=True,
+                    display_order=10
                 ),
             ]
         ),
