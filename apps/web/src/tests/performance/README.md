@@ -1,6 +1,6 @@
 # Performance Testing (Story 6.11)
 
-Performance tests for the VANTAGE BLGU assessment system.
+Performance tests for the SINAG BLGU assessment system.
 
 ## Test Fixtures
 

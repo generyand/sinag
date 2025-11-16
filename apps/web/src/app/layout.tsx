@@ -13,11 +13,11 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "VANTAGE - SGLGB Assessment Platform",
-  description: "Governance assessment platform for DILG's Seal of Good Local Governance for Barangays (SGLGB)",
+  title: "SINAG - SGLGB Analytics System",
+  description: "Strategic Insights Nurturing Assessments and Governance - SGLGB Analytics System for DILG",
   icons: {
-    icon: "/officialLogo/VANTAGE.webp",
-    apple: "/officialLogo/VANTAGE.webp",
+    icon: "/logo/logo.webp",
+    apple: "/logo/logo.webp",
   },
 };
 

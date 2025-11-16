@@ -78,7 +78,7 @@ export function ProcessSection() {
       color: "bg-[#28A745]", // Success Green for positive outcome
       activeColor: "#28A745",
       text: "Final results are analyzed, generating AI-powered insights and CapDev recommendations for strategic improvement.",
-      backgroundImage: "/Toolkit/analyze.mp4",
+      backgroundImage: "/Toolkit/Analyze.mp4",
       icon: <LineChart className="w-4 h-4 text-white" />,
       duration: "Ongoing",
       benefit: "Data-driven insights",
@@ -129,7 +129,7 @@ export function ProcessSection() {
           id="process-heading"
           className="text-3xl md:text-4xl lg:text-4xl font-extrabold text-black mb-2"
         >
-          How VANTAGE Works
+          How SINAG Works
         </h2>
         <p className="text-sm md:text-base text-gray-500 max-w-3xl font-normal">
           A clear, three-step process for efficient SGLGB preparation and
@@ -302,11 +302,13 @@ export function ProcessSection() {
                   loop
                   muted
                   playsInline
-                  preload="metadata"
+                  preload="auto"
                   style={{
                     willChange: "transform",
                     backfaceVisibility: "hidden",
                     transform: "translateZ(0)",
+                    WebkitTransform: "translateZ(0)",
+                    imageRendering: "crisp-edges",
                   }}
                 />
               ) : (

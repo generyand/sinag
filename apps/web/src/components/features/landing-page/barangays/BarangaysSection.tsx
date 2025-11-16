@@ -82,7 +82,7 @@ export function BarangaysSection() {
                 : "opacity-0 translate-y-4"
             }`}
           >
-            VANTAGE connects and empowers all 25 barangays of Sulop Municipality
+            SINAG connects and empowers all 25 barangays of Sulop Municipality
           </p>
         </div>
 

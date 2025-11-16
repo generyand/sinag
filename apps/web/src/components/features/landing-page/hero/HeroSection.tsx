@@ -17,23 +17,23 @@ interface HeroSlide {
 const heroSlides: HeroSlide[] = [
   {
     location: "Sulop, Philippines",
-    title: "VANTAGE",
+    title: "SINAG",
     subtitle:
-      "The official pre-assessment and analytics web application for the Municipality of Sulop's Seal of Good Local Governance for Barangays program.",
+      "Strategic Insights Nurturing Assessments and Governance - The official SGLGB Analytics System for the Municipality of Sulop utilizing Large Language Models and Classification Algorithms.",
     backgroundImage: "/Scenery/Sulop_Hall.png",
   },
   {
     location: "Sulop, Philippines",
-    title: "VANTAGE",
+    title: "SINAG",
     subtitle:
-      "The official pre-assessment and analytics web application for the Municipality of Sulop's Seal of Good Local Governance for Barangays program.",
+      "Strategic Insights Nurturing Assessments and Governance - The official SGLGB Analytics System for the Municipality of Sulop utilizing Large Language Models and Classification Algorithms.",
     backgroundImage: "/Scenery/Sulop_Hall.png",
   },
   {
     location: "Sulop, Philippines",
-    title: "VANTAGE",
+    title: "SINAG",
     subtitle:
-      "The official pre-assessment and analytics web application for the Municipality of Sulop's Seal of Good Local Governance for Barangays program.",
+      "Strategic Insights Nurturing Assessments and Governance - The official SGLGB Analytics System for the Municipality of Sulop utilizing Large Language Models and Classification Algorithms.",
     backgroundImage: "/Scenery/Sulop_Hall.png",
   },
 ];
@@ -96,7 +96,7 @@ export function HeroSection() {
       >
         <div className="max-w-7xl mx-auto px-4 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            {/* Left: VANTAGE Logo */}
+            {/* Left: SINAG Logo */}
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-sm bg-white border-2 border-gray-300/70 shadow-md flex items-center justify-center backdrop-blur-sm">
                 <Image
@@ -109,10 +109,10 @@ export function HeroSection() {
               </div>
               <div className="flex flex-col">
                 <span className="font-extrabold text-lg tracking-tight text-white leading-tight">
-                  VANTAGE
+                  SINAG
                 </span>
                 <span className="text-xs text-gray-400 font-medium">
-                  SGLGB Strategic Analytics Platform
+                  SGLGB Analytics System
                 </span>
               </div>
             </div>
@@ -121,7 +121,7 @@ export function HeroSection() {
             <Link href="/login">
               <button
                 className="bg-transparent border-2 border-[#fbbf24] text-white px-6 py-2 rounded-lg hover:bg-[#fbbf24] hover:text-black transition-all duration-300 font-semibold text-sm transform hover:scale-105 active:scale-95 hover:shadow-lg active:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#fbbf24] focus:ring-offset-2 focus:ring-offset-transparent"
-                aria-label="Login to VANTAGE platform"
+                aria-label="Login to SINAG platform"
                 type="button"
               >
                 <span className="flex items-center gap-2">
@@ -211,10 +211,10 @@ export function HeroSection() {
               </div>
               <div className="flex flex-col">
                 <span className="font-extrabold text-lg lg:text-xl tracking-tight text-white leading-tight">
-                  VANTAGE
+                  SINAG
                 </span>
                 <span className="text-xs text-gray-400 font-medium">
-                  SGLGB Strategic Analytics Platform
+                  SGLGB Analytics System
                 </span>
               </div>
             </div>
@@ -365,7 +365,7 @@ export function HeroSection() {
               </div>
             </div>
 
-            {/* Enhanced VANTAGE title */}
+            {/* Enhanced SINAG title */}
             <div
               className={`relative transition-all duration-1200 ease-out delay-500 ${
                 heroLoaded

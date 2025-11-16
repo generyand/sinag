@@ -413,15 +413,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="flex-shrink-0 flex items-center px-6 mb-8">
               <div className="flex items-center">
                 <Image
-                  src="/officialLogo/VANTAGE.webp"
-                  alt="VANTAGE Logo"
+                  src="/logo/logo.webp"
+                  alt="SINAG Logo"
                   width={32}
                   height={32}
                   className="w-8 h-8 lg:w-10 lg:h-10 object-contain flex-shrink-0"
                 />
                 <div className="ml-3">
                   <h1 className="text-lg font-bold text-[var(--foreground)]">
-                    VANTAGE
+                    SINAG
                   </h1>
                   <p className="text-sm text-[var(--text-secondary)]">
                     {isAdmin
@@ -463,15 +463,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center flex-shrink-0 px-6 mb-8">
               <div className="flex items-center">
                 <Image
-                  src="/officialLogo/VANTAGE.webp"
-                  alt="VANTAGE Logo"
+                  src="/logo/logo.webp"
+                  alt="SINAG Logo"
                   width={32}
                   height={32}
                   className="w-8 h-8 lg:w-10 lg:h-10 object-contain flex-shrink-0"
                 />
                 <div className="ml-3">
                   <h1 className="text-lg font-bold text-[var(--foreground)]">
-                    VANTAGE
+                    SINAG
                   </h1>
                   <p className="text-sm text-[var(--text-secondary)]">
                     {isAdmin

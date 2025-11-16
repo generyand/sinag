@@ -174,7 +174,7 @@ export default function ChangePasswordPage() {
               <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-[var(--cityscape-accent-foreground)]" />
             </div>
             <div>
-              <h1 className="text-lg sm:text-xl font-bold text-[var(--foreground)]">VANTAGE</h1>
+              <h1 className="text-lg sm:text-xl font-bold text-[var(--foreground)]">SINAG</h1>
               <p className="text-xs sm:text-sm text-[var(--text-secondary)]">Security Portal</p>
             </div>
           </div>

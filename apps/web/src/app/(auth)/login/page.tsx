@@ -242,13 +242,13 @@ export default function LoginPage() {
                 {/* Logo only - no box */}
                 <div className="flex items-center justify-center p-0">
                   <Image
-                    src="/officialLogo/VANTAGE.webp"
-                    alt="VANTAGE official logo"
-                    width={240}
-                    height={240}
-                    sizes="180px"
+                    src="/logo/logo.webp"
+                    alt="SINAG official logo"
+                    width={280}
+                    height={280}
+                    sizes="240px"
                     priority
-                    className="w-[180px] h-[180px] object-contain"
+                    className="w-[240px] h-[240px] object-contain"
                   />
                 </div>
               </div>
@@ -258,15 +258,14 @@ export default function LoginPage() {
                 isDarkMode ? "text-white" : "text-gray-900"
               }`}
             >
-              VANTAGE
+              SINAG
             </h1>
             <p
               className={`text-base font-medium text-center max-w-md mb-8 leading-relaxed ${
                 isDarkMode ? "text-gray-300" : "text-gray-600"
               }`}
             >
-              Validating Assessments and Nurturing Transparency for Advantaged
-              Governance and Evaluation
+              Strategic Insights Nurturing Assessments and Governance
             </p>
           </div>
         </div>

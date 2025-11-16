@@ -52,12 +52,12 @@ export function Header() {
           >
             <div className="relative">
               <Image
-                src="/officialLogo/VANTAGE.webp"
-                alt="VANTAGE official logo"
-                width={64}
-                height={64}
-                sizes="32px"
-                className="w-8 h-8 object-contain hover:scale-110 transition-transform duration-300"
+                src="/logo/logo.webp"
+                alt="SINAG official logo"
+                width={72}
+                height={72}
+                sizes="40px"
+                className="w-9 h-9 md:w-10 md:h-10 object-contain hover:scale-110 transition-transform duration-300"
                 priority
               />
               {isLoginHovered && (
@@ -66,10 +66,10 @@ export function Header() {
             </div>
             <div className="leading-tight">
               <div className="font-extrabold text-base md:text-lg tracking-tight text-black hover:text-[#fbbf24] transition-colors duration-300">
-                VANTAGE
+                SINAG
               </div>
               <div className="text-[10px] md:text-xs text-gray-500">
-                SGLGB Pre-Assessment for Sulop
+                SGLGB Analytics System for Sulop
               </div>
             </div>
           </div>

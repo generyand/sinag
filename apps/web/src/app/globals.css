@@ -1,5 +1,5 @@
 /*
-  VANTAGE GLOBAL STYLES
+  SINAG GLOBAL STYLES
   - Follows: @styling.mdc, @ui-components.mdc, @page-structure.mdc, @form-handling.mdc, @data-fetching.mdc, @hooks.mdc
   - Do not override shadcn/ui base classes directly; use theme variables and Tailwind utilities.
   - All theme tokens must be mapped to CSS variables for use in cva and Tailwind.

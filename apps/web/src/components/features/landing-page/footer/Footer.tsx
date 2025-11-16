@@ -86,7 +86,7 @@ export function Footer() {
                 </div>
               </div>
               <h3 className="text-xl font-bold text-white mb-3">
-                VANTAGE Platform
+                SINAG Platform
               </h3>
               <p className="text-gray-400 text-sm leading-relaxed">
                 The official digital platform for Sulop&apos;s Seal of Good
@@ -244,7 +244,7 @@ export function Footer() {
                 </div>
                 <div className="text-xs">
                   All Rights Reserved • Developed by{" "}
-                  <span className="text-[#fbbf24] font-semibold">VANTAGE</span>{" "}
+                  <span className="text-[#fbbf24] font-semibold">SINAG</span>{" "}
                   Team
                 </div>
               </div>

@@ -84,7 +84,7 @@ export default function ReportsPage() {
       predictionAccuracy: 92,
       falsePositives: 1,
       falseNegatives: 1,
-      summary: 'The VANTAGE pre-assessment system achieved a 92% accuracy rate, with 1 false positives and 1 false negatives. This indicates the system\'s effectiveness in predicting SGLGB outcomes.'
+      summary: 'The SINAG pre-assessment system achieved a 92% accuracy rate, with 1 false positives and 1 false negatives. This indicates the system\'s effectiveness in predicting SGLGB outcomes.'
     },
     aiReport: {
       title: 'Generate AI-Powered CapDev Report',
