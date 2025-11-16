@@ -23,8 +23,11 @@ INDICATOR_1_1 = Indicator(
             name="Posted the following CY 2023 financial documents in the BFDP board",
             upload_instructions=(
                 "Upload the following documents:\n"
-                "1. BFDP Monitoring Form A (covering 1st-3rd quarter data)\n"
-                "2. Two (2) Photo Documentation of the BFDP board showing the barangay name"
+                "1. BFDP Monitoring Form A of the DILG Advisory (covering 1st - 3rd quarter monitoring data)\n"
+                "2. Two (2) Photo Documentation of the BFDP board clearly showing:\n"
+                "   - Name of the barangay\n"
+                "   - Posted financial documents\n"
+                "   - Date visible (if possible)"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
@@ -33,7 +36,7 @@ INDICATOR_1_1 = Indicator(
                     id="1_1_1_a",
                     label="a. Barangay Financial Report",
                     group_name="ANNUAL REPORT",
-                    mov_description="Barangay Financial Report",
+                    mov_description="Barangay Financial Report for CY 2023",
                     required=True,
                     display_order=1
                 ),
@@ -41,7 +44,7 @@ INDICATOR_1_1 = Indicator(
                     id="1_1_1_b",
                     label="b. Barangay Budget",
                     group_name="ANNUAL REPORT",
-                    mov_description="Barangay Budget",
+                    mov_description="Barangay Budget for CY 2023",
                     required=True,
                     display_order=2
                 ),
@@ -49,7 +52,7 @@ INDICATOR_1_1 = Indicator(
                     id="1_1_1_c",
                     label="c. Summary of Income and Expenditures",
                     group_name="ANNUAL REPORT",
-                    mov_description="Summary of Income and Expenditures",
+                    mov_description="Summary of Income and Expenditures for CY 2023",
                     required=True,
                     display_order=3
                 ),
@@ -57,7 +60,7 @@ INDICATOR_1_1 = Indicator(
                     id="1_1_1_d",
                     label="d. 20% Component of the NTA Utilization",
                     group_name="ANNUAL REPORT",
-                    mov_description="20% Component of the NTA Utilization",
+                    mov_description="20% Component of the NTA Utilization for CY 2023",
                     required=True,
                     display_order=4
                 ),
@@ -65,7 +68,7 @@ INDICATOR_1_1 = Indicator(
                     id="1_1_1_e",
                     label="e. Annual Procurement Plan or Procurement List",
                     group_name="ANNUAL REPORT",
-                    mov_description="Annual Procurement Plan or Procurement List",
+                    mov_description="Annual Procurement Plan OR Procurement List (either one is acceptable)",
                     required=True,
                     display_order=5
                 ),
@@ -96,7 +99,8 @@ INDICATOR_1_1 = Indicator(
             code="1.1.2",
             name="Accomplished and signed BFR with received stamp from the Office of the C/M Accountant",
             upload_instructions=(
-                "Upload: Annex B of DBM-DOF-DILG JMC No. 2018-1"
+                "Upload: Annex B of DBM-DOF-DILG Joint Memorandum Circular (JMC) No. 2018-1\n"
+                "(Accomplished and signed BFR with received stamp from the Office of the City/Municipal Accountant)"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[

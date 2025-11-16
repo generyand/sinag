@@ -45,6 +45,22 @@ INDICATOR_1_2 = Indicator(
                     required=True,
                     display_order=2
                 ),
+                ChecklistItem(
+                    id="1_2_1_amount_2022",
+                    label="Total amount obtained from local resources in CY 2022",
+                    mov_description="Amount input field for CY 2022 local resources",
+                    required=True,
+                    requires_document_count=True,  # Reusing this field to indicate numeric input is required
+                    display_order=3
+                ),
+                ChecklistItem(
+                    id="1_2_1_amount_2023",
+                    label="Total amount obtained from local resources in CY 2023",
+                    mov_description="Amount input field for CY 2023 local resources",
+                    required=True,
+                    requires_document_count=True,  # Reusing this field to indicate numeric input is required
+                    display_order=4
+                ),
             ]
         ),
     ]
