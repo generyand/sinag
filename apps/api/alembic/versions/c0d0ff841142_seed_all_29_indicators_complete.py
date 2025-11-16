@@ -4,7 +4,7 @@ Complete seeding migration for all 29 SGLGB indicators.
 This migration seeds ALL indicators in the correct order, from 1.1 to 6.3.
 
 Revision ID: c0d0ff841142
-Revises: 00bed49217f7
+Revises: 469f24e4f57a
 Create Date: 2025-11-16 18:15:00.000000
 
 """
@@ -16,7 +16,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = 'c0d0ff841142'
-down_revision: Union[str, Sequence[str], None] = '00bed49217f7'
+down_revision: Union[str, Sequence[str], None] = '469f24e4f57a'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
