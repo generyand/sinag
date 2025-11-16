@@ -185,24 +185,14 @@ def get_blgu_dashboard(
                 if ind.governance_area_id == area.id and ind.parent_id is None
             ]
 
-            # Apply the same filtering logic as get_assessment_for_blgu_with_full_data
-            # For areas 1-6, separate Epic 3 format indicators from legacy indicators
-            # Epic 3 indicators have "fields" array in form_schema, legacy use "properties"
-            if area.id in [1, 2, 3, 4, 5, 6]:
-                epic3_indicators = []
-                legacy_indicators = []
+            # NOTE: All hardcoded SGLGB indicators are now properly seeded with sub-indicators
+            # Parent indicators (1.1, 1.2, etc.) don't have form_schema - their children do
+            # We should show ALL parent indicators, not filter them
+            # The previous filtering logic (keeping only legacy_indicators[:1]) was for backward
+            # compatibility during development, but is no longer needed
 
-                for ind in top_level_indicators:
-                    schema = ind.form_schema or {}
-                    # Epic 3 format has "fields" array
-                    if "fields" in schema and isinstance(schema.get("fields"), list):
-                        epic3_indicators.append(ind)
-                    else:
-                        legacy_indicators.append(ind)
-
-                # Use only the first legacy indicator for mock structure (backward compatibility)
-                # But include ALL Epic 3 indicators
-                top_level_indicators = legacy_indicators[:1] + epic3_indicators
+            # Skip the legacy filtering - show all parent indicators
+            # top_level_indicators is already correct (all parents for this governance area)
 
             for indicator in top_level_indicators:
                 process_indicator(indicator)
