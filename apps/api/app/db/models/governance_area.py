@@ -111,6 +111,20 @@ class Indicator(Base):
         JSON, nullable=True
     )  # Array of MOV item configurations
 
+    # Hard-coded indicator fields (added for simplified approach)
+    validation_rule: Mapped[str] = mapped_column(
+        String(50), nullable=False, server_default='ALL_ITEMS_REQUIRED'
+    )  # Validation strategy: ALL_ITEMS_REQUIRED, ANY_ITEM_REQUIRED, CUSTOM
+    is_bbi: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default='false'
+    )  # Is this a BBI indicator
+    effective_date: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True
+    )  # When this version became active
+    retired_date: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True
+    )  # When this version was retired
+
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(default=func.now())
     updated_at: Mapped[datetime] = mapped_column(default=func.now(), onupdate=func.now())
@@ -131,6 +145,7 @@ class Indicator(Base):
     history = relationship("IndicatorHistory", back_populates="indicator")
     deadline_overrides = relationship("DeadlineOverride", back_populates="indicator")
     mov_files = relationship("MOVFile", back_populates="indicator")
+    checklist_items = relationship("ChecklistItem", back_populates="indicator", cascade="all, delete-orphan")
 
 
 class IndicatorHistory(Base):
@@ -275,3 +290,56 @@ class IndicatorDraft(Base):
     user = relationship("User", foreign_keys=[user_id])
     governance_area = relationship("GovernanceArea")
     locked_by_user = relationship("User", foreign_keys=[locked_by_user_id])
+
+
+class ChecklistItem(Base):
+    """
+    ChecklistItem table model for database storage.
+
+    Represents individual checklist items within an indicator's MOV checklist.
+    Used for hard-coded indicators where checklists are defined in Python code
+    and seeded into the database.
+
+    Replaces the JSONB mov_checklist_items approach with a normalized table structure.
+    """
+
+    __tablename__ = "checklist_items"
+    __table_args__ = (
+        UniqueConstraint('indicator_id', 'item_id', name='uq_indicator_item_id'),
+    )
+
+    # Primary key
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+
+    # Foreign key to indicator
+    indicator_id: Mapped[int] = mapped_column(
+        ForeignKey("indicators.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+
+    # Item identifier (e.g., "1_1_1_a", "1_1_1_b")
+    item_id: Mapped[str] = mapped_column(String(20), nullable=False)
+
+    # Display text (e.g., "a. Barangay Financial Report")
+    label: Mapped[str] = mapped_column(String, nullable=False)
+
+    # Optional group name for visual organization (e.g., "ANNUAL REPORT", "QUARTERLY REPORT")
+    group_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+
+    # Means of Verification description (right column text)
+    mov_description: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    # Required for indicator to pass
+    required: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default='true')
+
+    # Requires document count input from validator
+    requires_document_count: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default='false')
+
+    # Sort order within indicator
+    display_order: Mapped[int] = mapped_column(Integer, nullable=False, server_default='0')
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
+
+    # Relationships
+    indicator = relationship("Indicator", back_populates="checklist_items")

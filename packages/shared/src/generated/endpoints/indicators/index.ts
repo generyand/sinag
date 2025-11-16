@@ -38,13 +38,15 @@ import type {
   IndicatorDraftUpdate,
   IndicatorHistoryResponse,
   IndicatorResponse,
+  IndicatorTreeResponse,
   IndicatorUpdate,
   IndicatorValidationRequest,
   IndicatorValidationResponse,
   PostIndicatorsTestCalculation200,
   PostIndicatorsValidateCalculationSchema200,
   PostIndicatorsValidateFormSchema200,
-  ReorderRequest
+  ReorderRequest,
+  SimplifiedIndicatorResponse
 } from '../../schemas';
 
 import { mutator } from '../../../../../../apps/web/src/lib/api';
@@ -1969,4 +1971,168 @@ export const usePostIndicatorsValidateTree = <TError = HTTPValidationError,
 
       return useMutation(mutationOptions );
     }
+    /**
+ * Get a single indicator by its code (e.g., "1.1", "1.1.1", "2.3").
+
+This endpoint is for hard-coded SGLGB indicators that are defined in Python
+and seeded into the database.
+
+**Path Parameters**:
+- indicator_code: Indicator code (e.g., "1.1", "1.1.1")
+
+**Returns**: Indicator with checklist items (if sub-indicator) or children (if parent)
+
+**Raises**:
+- 404: Indicator not found
+
+**Example**:
+```
+GET /api/v1/indicators/code/1.1.1
+```
+ * @summary Get indicator by code (hard-coded indicators)
+ */
+export const getIndicatorsCode$IndicatorCode = (
+    indicatorCode: string,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<SimplifiedIndicatorResponse>(
+      {url: `http://localhost:8000/api/v1/indicators/code/${indicatorCode}`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+export const getGetIndicatorsCodeIndicatorCodeQueryKey = (indicatorCode: string,) => {
+    return [`http://localhost:8000/api/v1/indicators/code/${indicatorCode}`] as const;
+    }
+
     
+export const getGetIndicatorsCodeIndicatorCodeQueryOptions = <TData = Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCode>>, TError = HTTPValidationError>(indicatorCode: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCode>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetIndicatorsCodeIndicatorCodeQueryKey(indicatorCode);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCode>>> = ({ signal }) => getIndicatorsCode$IndicatorCode(indicatorCode, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(indicatorCode),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCode>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetIndicatorsCodeIndicatorCodeQueryResult = NonNullable<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCode>>>
+export type GetIndicatorsCodeIndicatorCodeQueryError = HTTPValidationError
+
+
+/**
+ * @summary Get indicator by code (hard-coded indicators)
+ */
+
+export function useGetIndicatorsCodeIndicatorCode<TData = Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCode>>, TError = HTTPValidationError>(
+ indicatorCode: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCode>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetIndicatorsCodeIndicatorCodeQueryOptions(indicatorCode,options)
+
+  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
+ * Get a full indicator tree (parent with all children and checklist items).
+
+This endpoint returns the complete hierarchy for a parent indicator
+(e.g., "1.1" returns 1.1 with children 1.1.1, 1.1.2, and all checklist items).
+
+**Path Parameters**:
+- indicator_code: Parent indicator code (e.g., "1.1", "2.3")
+
+**Returns**: Complete indicator tree with all children and checklist items
+
+**Raises**:
+- 404: Indicator not found
+- 400: Indicator is not a parent (has no children)
+
+**Example**:
+```
+GET /api/v1/indicators/code/1.1/tree
+```
+
+Returns indicator 1.1 with:
+- 1.1.1 (with 7 checklist items)
+- 1.1.2 (with 1 checklist item)
+ * @summary Get full indicator tree by code
+ */
+export const getIndicatorsCode$IndicatorCodeTree = (
+    indicatorCode: string,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<IndicatorTreeResponse>(
+      {url: `http://localhost:8000/api/v1/indicators/code/${indicatorCode}/tree`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+export const getGetIndicatorsCodeIndicatorCodeTreeQueryKey = (indicatorCode: string,) => {
+    return [`http://localhost:8000/api/v1/indicators/code/${indicatorCode}/tree`] as const;
+    }
+
+    
+export const getGetIndicatorsCodeIndicatorCodeTreeQueryOptions = <TData = Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCodeTree>>, TError = HTTPValidationError>(indicatorCode: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCodeTree>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetIndicatorsCodeIndicatorCodeTreeQueryKey(indicatorCode);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCodeTree>>> = ({ signal }) => getIndicatorsCode$IndicatorCodeTree(indicatorCode, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(indicatorCode),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCodeTree>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetIndicatorsCodeIndicatorCodeTreeQueryResult = NonNullable<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCodeTree>>>
+export type GetIndicatorsCodeIndicatorCodeTreeQueryError = HTTPValidationError
+
+
+/**
+ * @summary Get full indicator tree by code
+ */
+
+export function useGetIndicatorsCodeIndicatorCodeTree<TData = Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCodeTree>>, TError = HTTPValidationError>(
+ indicatorCode: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCodeTree>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetIndicatorsCodeIndicatorCodeTreeQueryOptions(indicatorCode,options)
+
+  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+

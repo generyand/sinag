@@ -13,6 +13,7 @@ from app.schemas.indicator import (
     BulkCreateError,
     BulkIndicatorCreate,
     BulkIndicatorResponse,
+    ChecklistItemResponse,
     FormSchemaResponse,
     IndicatorCreate,
     IndicatorDraftCreate,
@@ -22,9 +23,11 @@ from app.schemas.indicator import (
     IndicatorDraftUpdate,
     IndicatorHistoryResponse,
     IndicatorResponse,
+    IndicatorTreeResponse,
     IndicatorUpdate,
     IndicatorValidationRequest,
     IndicatorValidationResponse,
+    SimplifiedIndicatorResponse,
     ValidationError,
     ReorderRequest,
 )
@@ -1196,3 +1199,136 @@ def validate_indicator_tree(
         errors=all_errors,
         warnings=tree_result.warnings,
     )
+
+
+# =============================================================================
+# Hard-Coded Indicator Endpoints (Simplified Approach)
+# =============================================================================
+
+
+@router.get(
+    "/code/{indicator_code}",
+    response_model=SimplifiedIndicatorResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get indicator by code (hard-coded indicators)",
+    tags=["indicators", "hard-coded"],
+)
+def get_indicator_by_code(
+    *,
+    db: Session = Depends(deps.get_db),
+    indicator_code: str,
+) -> SimplifiedIndicatorResponse:
+    """
+    Get a single indicator by its code (e.g., "1.1", "1.1.1", "2.3").
+
+    This endpoint is for hard-coded SGLGB indicators that are defined in Python
+    and seeded into the database.
+
+    **Path Parameters**:
+    - indicator_code: Indicator code (e.g., "1.1", "1.1.1")
+
+    **Returns**: Indicator with checklist items (if sub-indicator) or children (if parent)
+
+    **Raises**:
+    - 404: Indicator not found
+
+    **Example**:
+    ```
+    GET /api/v1/indicators/code/1.1.1
+    ```
+    """
+    from app.db.models.governance_area import Indicator, ChecklistItem
+    from sqlalchemy.orm import joinedload
+
+    # Query indicator with relationships
+    indicator = (
+        db.query(Indicator)
+        .filter(
+            Indicator.indicator_code == indicator_code,
+            Indicator.is_active == True
+        )
+        .options(
+            joinedload(Indicator.governance_area),
+            joinedload(Indicator.checklist_items),
+            joinedload(Indicator.children).joinedload(Indicator.checklist_items)
+        )
+        .first()
+    )
+
+    if not indicator:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Indicator with code '{indicator_code}' not found"
+        )
+
+    return indicator
+
+
+@router.get(
+    "/code/{indicator_code}/tree",
+    response_model=IndicatorTreeResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get full indicator tree by code",
+    tags=["indicators", "hard-coded"],
+)
+def get_indicator_tree(
+    *,
+    db: Session = Depends(deps.get_db),
+    indicator_code: str,
+) -> IndicatorTreeResponse:
+    """
+    Get a full indicator tree (parent with all children and checklist items).
+
+    This endpoint returns the complete hierarchy for a parent indicator
+    (e.g., "1.1" returns 1.1 with children 1.1.1, 1.1.2, and all checklist items).
+
+    **Path Parameters**:
+    - indicator_code: Parent indicator code (e.g., "1.1", "2.3")
+
+    **Returns**: Complete indicator tree with all children and checklist items
+
+    **Raises**:
+    - 404: Indicator not found
+    - 400: Indicator is not a parent (has no children)
+
+    **Example**:
+    ```
+    GET /api/v1/indicators/code/1.1/tree
+    ```
+
+    Returns indicator 1.1 with:
+    - 1.1.1 (with 7 checklist items)
+    - 1.1.2 (with 1 checklist item)
+    """
+    from app.db.models.governance_area import Indicator
+    from sqlalchemy.orm import joinedload
+
+    # Query parent indicator with all relationships
+    indicator = (
+        db.query(Indicator)
+        .filter(
+            Indicator.indicator_code == indicator_code,
+            Indicator.is_active == True,
+            Indicator.parent_id == None  # Only parent indicators
+        )
+        .options(
+            joinedload(Indicator.governance_area),
+            joinedload(Indicator.children).joinedload(Indicator.checklist_items),
+            joinedload(Indicator.children).joinedload(Indicator.governance_area)
+        )
+        .first()
+    )
+
+    if not indicator:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Parent indicator with code '{indicator_code}' not found"
+        )
+
+    if not indicator.children:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Indicator '{indicator_code}' has no children. Use /code/{indicator_code} instead."
+        )
+
+    return indicator
