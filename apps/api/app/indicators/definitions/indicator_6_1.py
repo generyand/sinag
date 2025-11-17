@@ -126,9 +126,7 @@ INDICATOR_6_1 = Indicator(
             name="Accomplishment Reports: Physical accomplishment OR fund utilization (only 1 of the below reports is required)",
             upload_instructions=(
                 "Upload: Three (3) Monthly Accomplishment Reports covering July-September 2023\n\n"
-                "Please supply the required information:\n"
-                "Number of Monthly Accomplishment Reports submitted:\n"
-                "% of programs, project, and activities completed:\n\n"
+                "Please supply the number of documents submitted: _____ Monthly Accomplishment Reports were submitted\n\n"
                 "To compute Physical Accomplishment Rate:\n"
                 "(Total number of activities/projects accomplished / Total number of activities/projects reflected in the BESWMP) × 100\n\n"
                 "OR\n\n"
@@ -137,49 +135,75 @@ INDICATOR_6_1 = Indicator(
                 "To compute % utilization:\n"
                 "(Total Amount Utilized / Total Amount Allocated) × 100"
             ),
-            validation_rule="ANY_ITEM_REQUIRED",  # OR logic: either physical OR budget
+            validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # OR logic: either physical OR budget
             checklist_items=[
+                # Document checkbox
                 ChecklistItem(
-                    id="6_1_4_a",
-                    label="a. At least 50% accomplishment of the physical targets in the BESWMP",
-                    required=True,
-                    requires_document_count=False,
+                    id="6_1_4_upload",
+                    label="Three (3) Monthly Accomplishment Reports covering July-September 2023",
+                    item_type="checkbox",
+                    mov_description="Please supply the number of documents submitted: _____ Monthly Accomplishment Reports were submitted",
+                    required=False,
                     display_order=1
                 ),
+                # OPTION A: YES/NO first, then calculations
                 ChecklistItem(
-                    id="6_1_4_a_count",
-                    label="Number of Monthly Accomplishment Reports submitted",
+                    id="6_1_4_option_a",
+                    label="a. At least 50% accomplishment of the physical targets in the BESWMP",
+                    item_type="assessment_field",
+                    mov_description="Assessment for physical accomplishment option",
                     required=False,
-                    requires_document_count=True,
                     display_order=2
                 ),
                 ChecklistItem(
-                    id="6_1_4_a_rate",
-                    label="% of programs, project, and activities completed",
+                    id="6_1_4_calc_a1",
+                    label="Number of Monthly Accomplishment Reports submitted",
+                    item_type="calculation_field",
+                    mov_description="Please supply the required information:",
                     required=False,
-                    requires_document_count=True,
                     display_order=3
                 ),
                 ChecklistItem(
-                    id="6_1_4_b",
-                    label="b. At least 50% utilization rate of CY 2023 BESWM Budget",
-                    required=True,
-                    requires_document_count=False,
+                    id="6_1_4_calc_a2",
+                    label="% of programs, project, and activities completed",
+                    item_type="calculation_field",
+                    mov_description="Please supply the required information:",
+                    required=False,
                     display_order=4
                 ),
+                # OR separator
                 ChecklistItem(
-                    id="6_1_4_b_utilized",
-                    label="Amount utilized (as of Dec 31, 2023)",
+                    id="6_1_4_or",
+                    label="OR",
+                    item_type="info_text",
+                    mov_description="OR separator between physical and financial options",
                     required=False,
-                    requires_document_count=True,
                     display_order=5
                 ),
+                # OPTION B: YES/NO first, then calculations
                 ChecklistItem(
-                    id="6_1_4_b_allocated",
-                    label="Amount allocated for PPAs in the BESWM Plan",
+                    id="6_1_4_option_b",
+                    label="b. At least 50% utilization rate of CY 2023 BESWM Budget",
+                    item_type="assessment_field",
+                    mov_description="Assessment for fund utilization option",
                     required=False,
-                    requires_document_count=True,
                     display_order=6
+                ),
+                ChecklistItem(
+                    id="6_1_4_calc_b1",
+                    label="Amount utilized (as of Dec 31, 2023):",
+                    item_type="calculation_field",
+                    mov_description="Please supply the required information:",
+                    required=False,
+                    display_order=7
+                ),
+                ChecklistItem(
+                    id="6_1_4_calc_b2",
+                    label="Amount allocated for PPAs in the BESWM Plan:",
+                    item_type="calculation_field",
+                    mov_description="Please supply the required information:",
+                    required=False,
+                    display_order=8
                 ),
             ]
         ),

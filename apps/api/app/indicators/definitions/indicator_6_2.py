@@ -27,63 +27,112 @@ INDICATOR_6_2 = Indicator(
             name="Presence of a Materials Recovery Facility (MRF)/Materials Recovery System (MRS)",
             upload_instructions=(
                 "Upload documents for ONE of the following options (only 1 option required):\n\n"
-                "For MRF operated by the barangay:\n"
-                "1. Photo documentation of the MRF/MRF Records of the barangay (Photo Requirements: One photo with Distant View and one photo with Close-up View)\n\n"
-                "For MRS:\n"
-                "2. MOA with junkshop\n"
-                "3. Mechanism to process biodegradable wastes\n"
-                "4. MOA with service provider for collection of biodegradable wastes and recyclables for treatment and temporary storage\n\n"
-                "For Clustered MRFs:\n"
-                "5. MOA with the host barangay (applicable for barangay-clustered MRFs)\n"
-                "6. MOA or similar document indicating coverage of city/municipal MRF (applicable for barangays clustered to the Central MRF of City/Municipality)\n\n"
-                "Note: You only need to submit documents for ONE option based on your barangay's situation."
+                "OPTION A - For MRF operated by the barangay:\n"
+                "- Photo documentation of the MRF/MRF Records of the barangay (Photo Requirements: One photo with Distant View and one photo with Close-up View)\n\n"
+                "OR\n\n"
+                "OPTION B - For MRS:\n"
+                "- MOA with junkshop\n"
+                "- Mechanism to process biodegradable wastes\n"
+                "- MOA with service provider for collection of biodegradable wastes and recyclables for treatment and temporary storage\n\n"
+                "OR\n\n"
+                "OPTION C - For Clustered MRFs:\n"
+                "- MOA with the host barangay (applicable for barangay-clustered MRFs)\n"
+                "- MOA or similar document indicating coverage of city/municipal MRF (applicable for barangays clustered to the Central MRF of City/Municipality)"
             ),
-            validation_rule="ANY_ITEM_REQUIRED",  # At least ONE option must pass
+            validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # At least ONE option must pass
             checklist_items=[
-                # Option 1: MRF operated by barangay
+                # OPTION A: MRF operated by barangay
                 ChecklistItem(
-                    id="6_2_1_mrf_photos",
-                    label="For MRF operated by the barangay:\nPhoto documentation of the MRF/MRF Records of the barangay (Photo Requirements: One photo with Distant View and one photo with Close-up View)",
-                    mov_description="Verification of uploaded photo documentation of the MRF/MRF Records (Option 1 - MRF operated by barangay)",
+                    id="6_2_1_option_a",
+                    label="A. For MRF operated by the barangay:",
+                    item_type="checkbox",
+                    mov_description="Option A - MRF operated by barangay",
                     required=False,
                     display_order=1
                 ),
-                # Option 2: MRS (3 documents)
                 ChecklistItem(
-                    id="6_2_1_mrs_junkshop",
-                    label="For MRS:\nMOA with junkshop",
-                    mov_description="Verification of uploaded MOA with junkshop (Option 2 - MRS)",
+                    id="6_2_1_a_photo",
+                    label="Photo documentation of the MRF/MRS Records of the barangay",
+                    item_type="checkbox",
+                    mov_description="Verification of photo documentation",
                     required=False,
                     display_order=2
                 ),
+                # OR separator 1
                 ChecklistItem(
-                    id="6_2_1_mrs_mechanism",
-                    label="For MRS:\nMechanism to process biodegradable wastes",
-                    mov_description="Verification of uploaded mechanism to process biodegradable wastes (Option 2 - MRS)",
+                    id="6_2_1_or_1",
+                    label="OR",
+                    item_type="info_text",
+                    mov_description="OR separator between option A and B",
                     required=False,
                     display_order=3
                 ),
+                # OPTION B: For MRS
                 ChecklistItem(
-                    id="6_2_1_mrs_service",
-                    label="For MRS:\nMOA with service provider for collection of biodegradable wastes and recyclables for treatment and temporary storage",
-                    mov_description="Verification of uploaded MOA with service provider (Option 2 - MRS)",
+                    id="6_2_1_option_b",
+                    label="B. For MRS:",
+                    item_type="checkbox",
+                    mov_description="Option B - For MRS",
                     required=False,
                     display_order=4
                 ),
-                # Option 3: Clustered MRFs (2 documents)
                 ChecklistItem(
-                    id="6_2_1_clustered_host",
-                    label="For Clustered MRFs:\nMOA with the host barangay (applicable for barangay-clustered MRFs)",
-                    mov_description="Verification of uploaded MOA with the host barangay (Option 3 - Clustered MRFs)",
+                    id="6_2_1_b_moa_junkshop",
+                    label="MOA with junkshop;",
+                    item_type="checkbox",
+                    mov_description="Verification of MOA with junkshop",
                     required=False,
                     display_order=5
                 ),
                 ChecklistItem(
-                    id="6_2_1_clustered_coverage",
-                    label="For Clustered MRFs:\nMOA or similar document indicating coverage of city/municipal MRF (applicable for barangays clustered to the Central MRF of City/Municipality)",
-                    mov_description="Verification of uploaded MOA or LGU document indicating coverage of city/municipal MRF (Option 3 - Clustered MRFs)",
+                    id="6_2_1_b_mechanism",
+                    label="Mechanism to process biodegradable wastes;",
+                    item_type="checkbox",
+                    mov_description="Verification of mechanism to process biodegradable wastes",
                     required=False,
                     display_order=6
+                ),
+                ChecklistItem(
+                    id="6_2_1_b_moa_service",
+                    label="MOA with service provider for collection of biodegradable and recyclables for treatment temporary storage",
+                    item_type="checkbox",
+                    mov_description="Verification of MOA with service provider",
+                    required=False,
+                    display_order=7
+                ),
+                # OR separator 2
+                ChecklistItem(
+                    id="6_2_1_or_2",
+                    label="OR",
+                    item_type="info_text",
+                    mov_description="OR separator between option B and C",
+                    required=False,
+                    display_order=8
+                ),
+                # OPTION C: For Clustered MRFs
+                ChecklistItem(
+                    id="6_2_1_option_c",
+                    label="C. For Clustered MRFs:",
+                    item_type="checkbox",
+                    mov_description="Option C - Clustered MRFs",
+                    required=False,
+                    display_order=9
+                ),
+                ChecklistItem(
+                    id="6_2_1_c_moa_host",
+                    label="MOA with the host barangay (applicable for barangay-clustered MRFs);",
+                    item_type="checkbox",
+                    mov_description="Verification of MOA with host barangay",
+                    required=False,
+                    display_order=10
+                ),
+                ChecklistItem(
+                    id="6_2_1_c_moa_lgu",
+                    label="MOA or LGU document indicating coverage of City/municipal MRF (applicable for barangays clustered to the Central MRF of City/Municipality)",
+                    item_type="checkbox",
+                    mov_description="Verification of MOA or LGU document",
+                    required=False,
+                    display_order=11
                 ),
             ]
         ),
