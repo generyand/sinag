@@ -144,24 +144,29 @@ INDICATOR_4_8 = Indicator(
             ),
             validation_rule="ALL_ITEMS_REQUIRED",  # Both uploads required, but assessor checks for either option A or B
             checklist_items=[
+                # Two document checkboxes
                 ChecklistItem(
                     id="4_8_4_upload_report",
                     label="Accomplishment Report on CY 2023 BNAP",
                     mov_description="Verification of uploaded Accomplishment Report on CY 2023 BNAP",
-                    required=True,
+                    item_type="checkbox",
+                    required=False,
                     display_order=1
                 ),
                 ChecklistItem(
                     id="4_8_4_upload_cert",
                     label="Certification on the submitted BNAP Accomplishment Report for CY 2023 signed by the C/MLGOO",
                     mov_description="Verification of uploaded Certification on submitted BNAP Accomplishment Report for CY 2023",
-                    required=True,
+                    item_type="checkbox",
+                    required=False,
                     display_order=2
                 ),
+                # OPTION A: YES/NO first, then calculation
                 ChecklistItem(
                     id="4_8_4_option_a_check",
                     label="4.8.4 a) At least 50% accomplishment of the physical targets in the CY 2023 BNAP",
                     mov_description="Verify at least 50% accomplishment of physical targets (Option A)",
+                    item_type="assessment_field",
                     required=False,
                     display_order=3
                 ),
@@ -169,14 +174,16 @@ INDICATOR_4_8 = Indicator(
                     id="4_8_4_physical_percentage",
                     label="% of programs, project, and activities are completed",
                     mov_description="Input field for percentage of programs, projects, and activities completed",
+                    item_type="calculation_field",
                     required=False,
-                    requires_document_count=True,
                     display_order=4
                 ),
+                # OPTION B: YES/NO first, then calculations
                 ChecklistItem(
                     id="4_8_4_option_b_check",
                     label="4.8.4 b) At least 50% fund utilization rate of the CY 2023 BNAP Budget",
                     mov_description="Verify at least 50% fund utilization rate (Option B)",
+                    item_type="assessment_field",
                     required=False,
                     display_order=5
                 ),
@@ -184,16 +191,16 @@ INDICATOR_4_8 = Indicator(
                     id="4_8_4_amount_utilized",
                     label="Amount utilized (as of Dec. 31, 2023)",
                     mov_description="Input field for amount utilized as of Dec. 31, 2023",
+                    item_type="calculation_field",
                     required=False,
-                    requires_document_count=True,
                     display_order=6
                 ),
                 ChecklistItem(
                     id="4_8_4_amount_allocated",
                     label="Amount allocated for PPAs in the BNAP",
                     mov_description="Input field for amount allocated for PPAs in the BNAP",
+                    item_type="calculation_field",
                     required=False,
-                    requires_document_count=True,
                     display_order=7
                 ),
             ]
