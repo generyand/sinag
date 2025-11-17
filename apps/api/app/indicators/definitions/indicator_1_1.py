@@ -31,6 +31,30 @@ INDICATOR_1_1 = Indicator(
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
+                # Top-level MOV items - checkboxes first
+                ChecklistItem(
+                    id="1_1_1_bfdp_form",
+                    label="BFDP Monitoring Form A of the DILG Advisory covering the 1st to 3rd quarter monitoring data signed by the City/Municipal C/MLGOO, Punong Barangay and Barangay Secretary",
+                    mov_description=None,
+                    required=True,
+                    display_order=0
+                ),
+                ChecklistItem(
+                    id="1_1_1_photo_docs",
+                    label="Two (2) Photo Documentation of the BFDP board showing the name of the barangay",
+                    mov_description="Photos must clearly show the BFDP board with barangay name and posted documents",
+                    required=True,
+                    display_order=0.5
+                ),
+                # Document count input (appears after both checkboxes in orange box)
+                ChecklistItem(
+                    id="1_1_1_bfdp_count",
+                    label="BFDP Monitoring Form A were submitted",
+                    mov_description="Please supply the number of documents submitted:",
+                    required=True,
+                    requires_document_count=True,
+                    display_order=0.7
+                ),
                 # ANNUAL REPORT Group
                 ChecklistItem(
                     id="1_1_1_a",

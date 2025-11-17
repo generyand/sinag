@@ -6,6 +6,8 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { AssessmentDetailsResponse } from '@vantage/shared';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -133,7 +135,7 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                     </div>
                   ) : null}
 
-                  {/* Checklist Items */}
+                  {/* Checklist Items with Interactive Controls */}
                   {(() => {
                     const checklistItems = (indicator?.checklist_items as any[]) || [];
                     const validationRule = indicator?.validation_rule || 'ALL_ITEMS_REQUIRED';
@@ -152,27 +154,83 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                             )}
                           </div>
                         </div>
-                        <div className="p-3 space-y-2">
-                          {checklistItems.map((item: any, itemIdx: number) => (
-                            <div key={item.id || itemIdx} className="text-xs border-l-2 border-muted pl-2">
-                              <div className="font-medium text-foreground">
-                                {item.required && validationRule === 'ALL_ITEMS_REQUIRED' && (
-                                  <span className="text-red-600 mr-1">*</span>
+                        <div className="p-3 space-y-3">
+                          {checklistItems.map((item: any, itemIdx: number) => {
+                            const itemKey = `checklist_${r.id}_${item.item_id}`;
+                            const prevItem = itemIdx > 0 ? checklistItems[itemIdx - 1] : null;
+                            const showGroupHeader = item.group_name && item.group_name !== prevItem?.group_name;
+
+                            return (
+                              <div key={item.id || itemIdx} className="space-y-2">
+                                {/* Group Header */}
+                                {showGroupHeader && (
+                                  <div className="text-xs font-semibold uppercase tracking-wide text-foreground mt-3 mb-1 pb-1 border-b border-border">
+                                    {item.group_name}
+                                  </div>
                                 )}
-                                {item.label}
+
+                                {item.requires_document_count ? (
+                                  // Document count input item (no checkbox, just description + input)
+                                  <div className="space-y-2">
+                                    {item.mov_description && (
+                                      <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded px-3 py-2">
+                                        <div className="text-xs text-orange-800 dark:text-orange-300 italic">
+                                          {item.mov_description}
+                                        </div>
+                                      </div>
+                                    )}
+                                    <div className="flex items-start gap-2">
+                                      <Controller
+                                        name={itemKey as any}
+                                        control={control}
+                                        render={({ field }) => (
+                                          <Input
+                                            id={itemKey}
+                                            type="text"
+                                            placeholder="Enter count"
+                                            {...field}
+                                            className="h-9 text-sm w-32 flex-shrink-0"
+                                          />
+                                        )}
+                                      />
+                                      <span className="text-xs text-foreground leading-relaxed">
+                                        {item.label}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  // Regular checkbox item
+                                  <div className="flex items-start gap-2">
+                                    <Controller
+                                      name={itemKey as any}
+                                      control={control}
+                                      render={({ field }) => (
+                                        <Checkbox
+                                          id={itemKey}
+                                          checked={field.value}
+                                          onCheckedChange={field.onChange}
+                                          className="mt-0.5"
+                                        />
+                                      )}
+                                    />
+                                    <div className="flex-1">
+                                      <Label htmlFor={itemKey} className="text-xs font-medium text-foreground cursor-pointer leading-relaxed">
+                                        {item.required && validationRule === 'ALL_ITEMS_REQUIRED' && (
+                                          <span className="text-red-600 mr-1">*</span>
+                                        )}
+                                        {item.label}
+                                      </Label>
+                                      {item.mov_description && (
+                                        <div className="text-[11px] text-muted-foreground italic mt-1">
+                                          {item.mov_description}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
-                              {item.mov_description && (
-                                <div className="text-muted-foreground mt-0.5 text-[11px] italic">
-                                  {item.mov_description}
-                                </div>
-                              )}
-                              {item.requires_document_count && (
-                                <div className="text-[10px] mt-1 text-blue-600">
-                                  ℹ️ Requires input field (date/count/amount)
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     );
