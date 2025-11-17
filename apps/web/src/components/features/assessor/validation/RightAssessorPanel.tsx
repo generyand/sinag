@@ -5,8 +5,6 @@ import { useForm, Controller, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { AssessmentDetailsResponse } from '@vantage/shared';
-import { usePostAssessorAssessmentResponsesResponseIdMovsUpload } from '@vantage/shared';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -35,8 +33,6 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
   const userRole = user?.role || '';
   const isValidator = userRole === 'VALIDATOR';
   const isAssessor = userRole === 'ASSESSOR';
-
-  const uploadMovMutation = usePostAssessorAssessmentResponsesResponseIdMovsUpload();
 
   // Zod schema: require publicComment when status is Fail/Conditional
   const ResponseSchema = z
@@ -95,20 +91,6 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watched]);
-
-  const handleUpload = async (responseId: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      await uploadMovMutation.mutateAsync({
-        responseId,
-        data: { file, filename: file.name },
-      });
-      // In a later step we'll refetch and show newly uploaded MOVs on the left
-    } catch {
-      // Ignore for now; footer flow will handle toasts later
-    }
-  };
 
   return (
     <div className="p-4">
@@ -266,13 +248,6 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                       {...register(`${key}.internalNote` as const)}
                       placeholder="Internal notes for DILG only"
                     />
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                      Upload "Pahabol" Documents (by {isValidator ? 'Validator' : 'Assessor'})
-                    </div>
-                    <Input type="file" onChange={(e) => handleUpload(r.id, e)} />
                   </div>
 
                   <div className="pt-2 flex items-center justify-between">
