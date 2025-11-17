@@ -234,24 +234,16 @@ INDICATOR_4_1 = Indicator(
                 "2. 4.1.6.2. At least 50% fund utilization of the CY 2023 GAD Budget\n\n"
                 "Note: You only need to upload ONE option (either option 1 OR option 2)."
             ),
-            validation_rule="ANY_ITEM_REQUIRED",  # OR logic: either physical OR budget
+            validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # OR logic: either physical OR budget
             checklist_items=[
-                # Document verification checkboxes at top
+                # Single document verification checkbox
                 ChecklistItem(
-                    id="4_1_6_upload_1",
-                    label="4.1.6.1. At least 50% accomplishment of the physical targets in the GAD Plan",
-                    mov_description="Verification of uploaded 2023 GAD Accomplishment Report (Option 1 - Physical Accomplishment)",
+                    id="4_1_6_report",
+                    label="2023 GAD Accomplishment Report",
+                    mov_description="Verification of uploaded 2023 GAD Accomplishment Report",
                     item_type="checkbox",
                     required=False,
                     display_order=1
-                ),
-                ChecklistItem(
-                    id="4_1_6_upload_2",
-                    label="4.1.6.2. At least 50% fund utilization of the CY 2023 GAD Budget",
-                    mov_description="Verification of uploaded 2023 GAD Accomplishment Report (Option 2 - Fund Utilization)",
-                    item_type="checkbox",
-                    required=False,
-                    display_order=2
                 ),
                 # Instruction (info_text)
                 ChecklistItem(
