@@ -49,17 +49,7 @@ INDICATOR_4_2 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=2
-                ),
-                # Instruction (info_text)
-                ChecklistItem(
-                    id="4_2_1_instructions",
-                    label="Instruction: Put a check ✓ on the box that corresponds to your assessment.",
-                    mov_description="Instructions for assessor",
-                    item_type="info_text",
-                    required=False,
-                    display_order=3
-                ),
-                # Option a - YES/NO assessment
+                ),                # Option a - YES/NO assessment
                 ChecklistItem(
                     id="4_2_1_option_a",
                     label="Barangay Health Station/Center operated",
@@ -152,17 +142,7 @@ INDICATOR_4_2 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=1
-                ),
-                # Instruction (info_text)
-                ChecklistItem(
-                    id="4_2_4_instructions",
-                    label="Instruction: Put a check ✓ on the box that corresponds to your assessment.",
-                    mov_description="Instructions for assessor",
-                    item_type="info_text",
-                    required=False,
-                    display_order=2
-                ),
-                # Health services - each with YES/NO assessment
+                ),                # Health services - each with YES/NO assessment
                 ChecklistItem(
                     id="4_2_4_a",
                     label="a. Immunization",

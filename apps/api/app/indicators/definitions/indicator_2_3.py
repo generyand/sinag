@@ -77,15 +77,6 @@ INDICATOR_2_3 = Indicator(
                     required=False,
                     display_order=1
                 ),
-                # Item Verification Instructions (informational text only)
-                ChecklistItem(
-                    id="2_3_2_instructions",
-                    label="Instruction: Put a check ✓ on the box that corresponds to your assessment.",
-                    mov_description="Instructions for assessor",
-                    item_type="info_text",
-                    required=False,
-                    display_order=2
-                ),
                 # Individual Equipment Items - Each with YES/NO assessment
                 ChecklistItem(
                     id="2_3_2_a",

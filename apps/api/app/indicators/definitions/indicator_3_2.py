@@ -98,16 +98,6 @@ INDICATOR_3_2 = Indicator(
             ),
             validation_rule="ANY_ITEM_REQUIRED",  # Only ONE option (A or B) is required
             checklist_items=[
-                # Instruction Section (info_text)
-                ChecklistItem(
-                    id="3_2_3_instructions",
-                    label="Instruction: Put a check ✓ on the box that corresponds to your assessment.",
-                    mov_description="Instructions for assessor",
-                    item_type="info_text",
-                    required=False,
-                    display_order=1
-                ),
-
                 # Option A: Physical Accomplishment - YES/NO assessment
                 ChecklistItem(
                     id="3_2_3_option_a",

@@ -232,17 +232,7 @@ INDICATOR_3_1 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=3
-                ),
-                # Instruction
-                ChecklistItem(
-                    id="3_1_6_instructions",
-                    label="Instruction: Put a check ✓ on the box that corresponds to your assessment.",
-                    mov_description="Instructions for assessor",
-                    item_type="info_text",
-                    required=False,
-                    display_order=4
-                ),
-                # YES/NO assessment for allocated amount
+                ),                # YES/NO assessment for allocated amount
                 ChecklistItem(
                     id="3_1_6_assessment",
                     label="Has allocated substantial amount for anti-illegal drugs initiative",

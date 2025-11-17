@@ -102,15 +102,6 @@ INDICATOR_4_8 = Indicator(
                     required=False,
                     display_order=2
                 ),
-                # Instruction (info_text)
-                ChecklistItem(
-                    id="4_8_3_instructions",
-                    label="Instruction: Put a check ✓ on the box that corresponds to your assessment.",
-                    mov_description="Instructions for assessor",
-                    item_type="info_text",
-                    required=False,
-                    display_order=3
-                ),
                 # Three categories with YES/NO assessment
                 ChecklistItem(
                     id="4_8_3_underweight",

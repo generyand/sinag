@@ -149,26 +149,7 @@ INDICATOR_4_3 = Indicator(
                     item_type="info_text",
                     required=False,
                     display_order=2
-                ),
-                # Instruction (info_text)
-                ChecklistItem(
-                    id="4_3_4_instructions",
-                    label="Instruction: Put a check ✓ on the box that corresponds to your assessment.",
-                    mov_description="Instructions for assessor",
-                    item_type="info_text",
-                    required=False,
-                    display_order=3
-                ),
-                # OPTION A label (info_text)
-                ChecklistItem(
-                    id="4_3_4_option_a_label",
-                    label="OPTION A - Physical Accomplishment",
-                    mov_description="Option A label - informational only",
-                    item_type="info_text",
-                    required=False,
-                    display_order=4
-                ),
-                # Calculation field BEFORE the YES/NO assessment
+                ),                # Calculation field BEFORE the YES/NO assessment
                 ChecklistItem(
                     id="4_3_4_calc_physical",
                     label="% of programs, projects, and activities completed",
@@ -194,17 +175,7 @@ INDICATOR_4_3 = Indicator(
                     item_type="info_text",
                     required=False,
                     display_order=7
-                ),
-                # OPTION B label (info_text)
-                ChecklistItem(
-                    id="4_3_4_option_b_label",
-                    label="OPTION B - Fund Utilization",
-                    mov_description="Option B label - informational only",
-                    item_type="info_text",
-                    required=False,
-                    display_order=8
-                ),
-                # Calculation fields BEFORE the YES/NO assessment
+                ),                # Calculation fields BEFORE the YES/NO assessment
                 ChecklistItem(
                     id="4_3_4_calc_b1",
                     label="Amount utilized (as of Dec 31, 2023):",

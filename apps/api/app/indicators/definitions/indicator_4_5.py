@@ -193,15 +193,6 @@ INDICATOR_4_5 = Indicator(
                     required=False,
                     display_order=1
                 ),
-                # Instruction (info_text)
-                ChecklistItem(
-                    id="4_5_6_instructions",
-                    label="Instruction: Put a check ✓ on the box that corresponds to your assessment.",
-                    mov_description="Instructions for assessor",
-                    item_type="info_text",
-                    required=False,
-                    display_order=2
-                ),
                 # OPTION A - Physical Accomplishment
                 ChecklistItem(
                     id="4_5_6_a",

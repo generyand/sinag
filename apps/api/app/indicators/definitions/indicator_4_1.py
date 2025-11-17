@@ -244,17 +244,7 @@ INDICATOR_4_1 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=1
-                ),
-                # Instruction (info_text)
-                ChecklistItem(
-                    id="4_1_6_instructions",
-                    label="Instruction: Put a check ✓ on the box that corresponds to your assessment.",
-                    mov_description="Instructions for assessor",
-                    item_type="info_text",
-                    required=False,
-                    display_order=3
-                ),
-                # Option A: Physical Accomplishment - YES/NO assessment
+                ),                # Option A: Physical Accomplishment - YES/NO assessment
                 ChecklistItem(
                     id="4_1_6_option_a",
                     label="a. At least 50% accomplishment of the physical targets in the GAD Plan",
