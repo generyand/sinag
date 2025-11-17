@@ -176,7 +176,7 @@ INDICATOR_6_1 = Indicator(
                     id="6_1_4_or",
                     label="OR",
                     item_type="info_text",
-                    mov_description="OR separator between physical and financial options",
+                    mov_description="OR",
                     required=False,
                     display_order=5
                 ),

@@ -178,7 +178,7 @@ INDICATOR_2_1 = Indicator(
                 ChecklistItem(
                     id="2_1_4_or_separator",
                     label="OR",
-                    mov_description="OR separator between physical and financial options",
+                    mov_description="OR",
                     item_type="info_text",
                     required=False,
                     display_order=6

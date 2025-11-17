@@ -219,7 +219,7 @@ INDICATOR_3_1 = Indicator(
                 ChecklistItem(
                     id="3_1_6_or",
                     label="OR",
-                    mov_description="OR separator between options",
+                    mov_description="OR",
                     item_type="info_text",
                     required=False,
                     display_order=2
