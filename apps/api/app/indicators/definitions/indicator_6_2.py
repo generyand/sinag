@@ -63,7 +63,7 @@ INDICATOR_6_2 = Indicator(
                     id="6_2_1_or_1",
                     label="OR",
                     item_type="info_text",
-                    mov_description="OR separator between option A and B",
+                    mov_description="OR",
                     required=False,
                     display_order=3
                 ),
@@ -105,7 +105,7 @@ INDICATOR_6_2 = Indicator(
                     id="6_2_1_or_2",
                     label="OR",
                     item_type="info_text",
-                    mov_description="OR separator between option B and C",
+                    mov_description="OR",
                     required=False,
                     display_order=8
                 ),
