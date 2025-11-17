@@ -151,24 +151,24 @@ INDICATOR_4_5 = Indicator(
                     id="4_5_5_a",
                     label="a. Presence of updated Localized Flow Chart of Referral System not earlier than CY 2020",
                     mov_description="Verification of uploaded Localized Flow Chart of Referral System",
+                    item_type="checkbox",
                     required=True,
-                    requires_document_count=False,
                     display_order=1
                 ),
                 ChecklistItem(
                     id="4_5_5_b",
-                    label="b. Presence of Comprehensive Barangay Juvenile Intervention Program/Diversion Program (For profiling)",
+                    label="b. Presence of Comprehensive Barangay Juvenile Intervention Program/Diversion Program (For profiling); and",
                     mov_description="Verification of uploaded Comprehensive Barangay Juvenile Intervention Program",
+                    item_type="checkbox",
                     required=True,
-                    requires_document_count=False,
                     display_order=2
                 ),
                 ChecklistItem(
                     id="4_5_5_c",
                     label="c. Presence of Children at Risk (CAR) and Children in Conflict with the Law (CICL) registry (For profiling)",
                     mov_description="Verification of uploaded CAR and CICL registry",
+                    item_type="checkbox",
                     required=True,
-                    requires_document_count=False,
                     display_order=3
                 ),
             ]
@@ -180,65 +180,78 @@ INDICATOR_4_5 = Indicator(
             name="Accomplishment Reports: Physical accomplishment OR financial utilization (only 1 of the below reports is required)",
             upload_instructions=(
                 "Upload: Approved Accomplishment Report on BCPC AWFP for CY 2023 with received stamp by the City/Municipality Inter-Agency Monitoring Task Force (IMTF)\n\n"
-                "Instruction: Put a check ✓ on the box that corresponds to your assessment.\n\n"
-                "YES     NO\n"
-                "☐      ☐     a. At least 50% accomplishment of the physical targets in the BCPC AWFP\n\n"
-                "Please supply the required information:\n"
-                "% of programs, project, and activities completed\n\n"
-                "To compute Physical Accomplishment Rate:\n"
-                "(Total number of activities/projects accomplished / Total number of activities/projects reflected in the BCPC AWFP) × 100\n\n"
-                "OR\n\n"
-                "YES     NO\n"
-                "☐      ☐     b. At least 50% utilization rate of CY 2023 BCPC AWFP Budget\n\n"
-                "Please supply the required information:\n"
-                "Amount utilized (as of Dec 31, 2023):\n"
-                "Amount allocated for PPAs in the BCPC AWFP:\n\n"
-                "To compute % utilization:\n"
-                "(Total Amount Utilized / Total Amount Allocated) × 100"
+                "IMPORTANT: Only ONE (1) of the options below is required"
             ),
-            validation_rule="ANY_ITEM_REQUIRED",  # OR logic: either physical OR budget
+            validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # OR logic: either physical OR budget
             checklist_items=[
+                # Single document verification checkbox
                 ChecklistItem(
                     id="4_5_6_upload",
                     label="Approved Accomplishment Report on BCPC AWFP for CY 2023 with received stamp by the City/Municipality Inter-Agency Monitoring Task Force (IMTF)",
-                    required=True,
-                    requires_document_count=False,
+                    mov_description="Verification of uploaded Accomplishment Report with received stamp by IMTF",
+                    item_type="checkbox",
+                    required=False,
                     display_order=1
                 ),
+                # Instruction (info_text)
+                ChecklistItem(
+                    id="4_5_6_instructions",
+                    label="Instruction: Put a check ✓ on the box that corresponds to your assessment.",
+                    mov_description="Instructions for assessor",
+                    item_type="info_text",
+                    required=False,
+                    display_order=2
+                ),
+                # OPTION A - Physical Accomplishment
                 ChecklistItem(
                     id="4_5_6_a",
                     label="a. At least 50% accomplishment of the physical targets in the BCPC AWFP",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=2
-                ),
-                ChecklistItem(
-                    id="4_5_6_a_rate",
-                    label="% of programs, project, and activities completed",
+                    mov_description="Assessment for physical accomplishment option",
+                    item_type="assessment_field",
                     required=False,
-                    requires_document_count=True,  # Percentage input
                     display_order=3
                 ),
                 ChecklistItem(
-                    id="4_5_6_b",
-                    label="b. At least 50% utilization rate of CY 2023 BCPC AWFP Budget",
-                    required=True,
-                    requires_document_count=False,
+                    id="4_5_6_calc_a",
+                    label="% of programs, project, and activities completed",
+                    mov_description="Please supply the required information:",
+                    item_type="calculation_field",
+                    required=False,
                     display_order=4
                 ),
+                # OR separator (info_text)
                 ChecklistItem(
-                    id="4_5_6_b_utilized",
-                    label="Amount utilized (as of Dec 31, 2023)",
+                    id="4_5_6_or",
+                    label="OR",
+                    mov_description="OR separator between physical and financial options",
+                    item_type="info_text",
                     required=False,
-                    requires_document_count=True,  # Amount input
                     display_order=5
                 ),
+                # OPTION B - Fund Utilization
                 ChecklistItem(
-                    id="4_5_6_b_allocated",
-                    label="Amount allocated for PPAs in the BCPC AWFP",
+                    id="4_5_6_b",
+                    label="b. At least 50% utilization rate of CY 2023 BCPC AWFP Budget",
+                    mov_description="Assessment for fund utilization option",
+                    item_type="assessment_field",
                     required=False,
-                    requires_document_count=True,  # Amount input
                     display_order=6
+                ),
+                ChecklistItem(
+                    id="4_5_6_calc_b1",
+                    label="Amount utilized (as of Dec 31, 2023):",
+                    mov_description="Please supply the required information:",
+                    item_type="calculation_field",
+                    required=False,
+                    display_order=7
+                ),
+                ChecklistItem(
+                    id="4_5_6_calc_b2",
+                    label="Amount allocated for PPAs in the BCPC AWFP:",
+                    mov_description="Please supply the required information:",
+                    item_type="calculation_field",
+                    required=False,
+                    display_order=8
                 ),
             ]
         ),

@@ -26,135 +26,31 @@ INDICATOR_4_8 = Indicator(
             code="4.8.1",
             name="Structure: Organized BNC",
             upload_instructions=(
-                "Upload the following:\n\n"
-                "1. EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the Barangay Nutrition Committee (BNC) covering January to October 2023\n\n"
-                "The BNC must include the following minimum composition:\n"
-                "- Barangay Captain (as chair)\n"
-                "- President of the Rural Improvement Club (RIC)\n"
-                "- President, Parent-Teacher Child Association (PTCA)\n"
-                "- Head/President, local organization\n"
-                "- Sangguniang Members on Health\n"
-                "- SK Chairperson\n"
-                "- Barangay Nutrition Scholar (BNS)\n"
-                "- Day Care Worker\n"
-                "- Barangay Nutrition Action Association (BNAO)\n"
-                "- School Principal\n"
-                "- Agriculture Technicians\n"
-                "- Rural Health Midwife (RHM)\n"
-                "- Other as may be identified"
+                "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the Barangay Nutrition Committee (BNC) covering January to October 2023\n\n"
+                "Minimum Composition of BNC:\n"
+                "1. Barangay Captain (as chair)\n"
+                "2. President of the Rural Improvement Club (RIC)\n"
+                "3. President, Parent-Teacher Child Association (PTCA)\n"
+                "4. Head/President, local organization\n"
+                "5. Sangguniang Members on Health\n"
+                "6. SK Chairperson\n"
+                "7. Barangay Nutrition Scholar (BNS)\n"
+                "8. Day Care Worker\n"
+                "9. Barangay Nutrition Action Association (BNAO)\n"
+                "10. School Principal\n"
+                "11. Agriculture Technicians\n"
+                "12. Rural Health Midwife (RHM)\n"
+                "13. Other as may be identified"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
-                    id="4_8_1_upload_1",
+                    id="4_8_1_upload",
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the Barangay Nutrition Committee (BNC) covering January to October 2023",
-                    mov_description="Verification of uploaded EO or similar issuance organizing the Barangay Nutrition Committee (BNC) covering January to October 2023",
+                    mov_description="Verification that the EO/issuance creates BNC with proper composition as per minimum requirement",
+                    item_type="checkbox",
                     required=True,
                     display_order=1
-                ),
-                ChecklistItem(
-                    id="4_8_1_comp_captain",
-                    label="Barangay Captain (as chair)",
-                    mov_description="Verify Barangay Captain is listed in BNC composition",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=2
-                ),
-                ChecklistItem(
-                    id="4_8_1_comp_ric",
-                    label="President of the Rural Improvement Club (RIC)",
-                    mov_description="Verify RIC President is listed in BNC composition",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=3
-                ),
-                ChecklistItem(
-                    id="4_8_1_comp_ptca",
-                    label="President, Parent-Teacher Child Association (PTCA)",
-                    mov_description="Verify PTCA President is listed in BNC composition",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=4
-                ),
-                ChecklistItem(
-                    id="4_8_1_comp_local_org",
-                    label="Head/President, local organization",
-                    mov_description="Verify local organization head is listed in BNC composition",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=5
-                ),
-                ChecklistItem(
-                    id="4_8_1_comp_health",
-                    label="Sangguniang Members on Health",
-                    mov_description="Verify Sangguniang Members on Health are listed in BNC composition",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=6
-                ),
-                ChecklistItem(
-                    id="4_8_1_comp_sk",
-                    label="SK Chairperson",
-                    mov_description="Verify SK Chairperson is listed in BNC composition",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=7
-                ),
-                ChecklistItem(
-                    id="4_8_1_comp_bns",
-                    label="Barangay Nutrition Scholar (BNS)",
-                    mov_description="Verify BNS is listed in BNC composition",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=8
-                ),
-                ChecklistItem(
-                    id="4_8_1_comp_daycare",
-                    label="Day Care Worker",
-                    mov_description="Verify Day Care Worker is listed in BNC composition",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=9
-                ),
-                ChecklistItem(
-                    id="4_8_1_comp_bnao",
-                    label="Barangay Nutrition Action Association (BNAO)",
-                    mov_description="Verify BNAO is listed in BNC composition",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=10
-                ),
-                ChecklistItem(
-                    id="4_8_1_comp_principal",
-                    label="School Principal",
-                    mov_description="Verify School Principal is listed in BNC composition",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=11
-                ),
-                ChecklistItem(
-                    id="4_8_1_comp_agriculture",
-                    label="Agriculture Technicians",
-                    mov_description="Verify Agriculture Technicians are listed in BNC composition",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=12
-                ),
-                ChecklistItem(
-                    id="4_8_1_comp_rhm",
-                    label="Rural Health Midwife (RHM)",
-                    mov_description="Verify RHM is listed in BNC composition",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=13
-                ),
-                ChecklistItem(
-                    id="4_8_1_comp_other",
-                    label="Other as may be identified",
-                    mov_description="Verify other members as may be identified are listed in BNC composition",
-                    required=False,
-                    requires_document_count=False,
-                    display_order=14
                 ),
             ]
         ),
@@ -185,51 +81,60 @@ INDICATOR_4_8 = Indicator(
             upload_instructions=(
                 "Upload the following (all required):\n\n"
                 "1. Operation Timbang (OPT) Plus Form 1A (Barangay Tally and Summary Sheet of Preschoolers with Weight & Height Measurement by Age Group, Sex and Nutritional Status) of CYs 2022 and 2023; and\n"
-                "2. Certification from the C/MHO on the Decrease in Prevalence Rate\n\n"
-                "The following categories will be assessed:\n"
-                "- Underweight and Severe Underweight\n"
-                "- Stunting and Severe Stunting\n"
-                "- Moderate Wasting and Severe Wasting"
+                "2. Certification from the C/MHO on the Decrease in Prevalence Rate"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
+                # Document verification checkboxes
                 ChecklistItem(
                     id="4_8_3_upload_opt",
                     label="Operation Timbang (OPT) Plus Form 1A (Barangay Tally and Summary Sheet of Preschoolers with Weight & Height Measurement by Age Group, Sex and Nutritional Status) of CYs 2022 and 2023",
                     mov_description="Verification of uploaded Operation Timbang (OPT) Plus Form 1A for CYs 2022 and 2023",
-                    required=True,
+                    item_type="checkbox",
+                    required=False,
                     display_order=1
                 ),
                 ChecklistItem(
                     id="4_8_3_upload_cert",
                     label="Certification from the C/MHO on the Decrease in Prevalence Rate",
                     mov_description="Verification of uploaded Certification from the C/MHO on the Decrease in Prevalence Rate",
-                    required=True,
+                    item_type="checkbox",
+                    required=False,
                     display_order=2
                 ),
+                # Instruction (info_text)
                 ChecklistItem(
-                    id="4_8_3_underweight",
-                    label="Underweight and Severe Underweight",
-                    mov_description="Verify decrease in prevalence rate of Underweight and Severe Underweight",
-                    required=True,
-                    requires_document_count=False,
+                    id="4_8_3_instructions",
+                    label="Instruction: Put a check ✓ on the box that corresponds to your assessment.",
+                    mov_description="Instructions for assessor",
+                    item_type="info_text",
+                    required=False,
                     display_order=3
                 ),
+                # Three categories with YES/NO assessment
                 ChecklistItem(
-                    id="4_8_3_stunting",
-                    label="Stunting and Severe Stunting; and",
-                    mov_description="Verify decrease in prevalence rate of Stunting and Severe Stunting",
-                    required=True,
-                    requires_document_count=False,
+                    id="4_8_3_underweight",
+                    label="1. With decrease in prevalence rate of Underweight and Severe Underweight",
+                    mov_description="Assessment for decrease in underweight prevalence",
+                    item_type="assessment_field",
+                    required=False,
                     display_order=4
                 ),
                 ChecklistItem(
-                    id="4_8_3_wasting",
-                    label="Moderate Wasting and Severe Wasting",
-                    mov_description="Verify decrease in prevalence rate of Moderate Wasting and Severe Wasting",
-                    required=True,
-                    requires_document_count=False,
+                    id="4_8_3_stunting",
+                    label="2. With decrease in prevalence rate of Stunting and Severe Stunting",
+                    mov_description="Assessment for decrease in stunting prevalence",
+                    item_type="assessment_field",
+                    required=False,
                     display_order=5
+                ),
+                ChecklistItem(
+                    id="4_8_3_wasting",
+                    label="3. With decrease in prevalence rate of Moderate Wasting and Severe Wasting",
+                    mov_description="Assessment for decrease in wasting prevalence",
+                    item_type="assessment_field",
+                    required=False,
+                    display_order=6
                 ),
             ]
         ),
