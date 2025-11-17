@@ -146,25 +146,26 @@ INDICATOR_6_1 = Indicator(
                     required=False,
                     display_order=1
                 ),
-                # OPTION A: YES/NO first, then calculations
+                # INPUT FIELD for report count (BEFORE YES/NO)
+                ChecklistItem(
+                    id="6_1_4_report_count",
+                    label="Number of Monthly Accomplishment Reports submitted",
+                    item_type="calculation_field",
+                    mov_description="Please supply the required information:",
+                    required=False,
+                    display_order=2
+                ),
+                # OPTION A: YES/NO, then % calculation
                 ChecklistItem(
                     id="6_1_4_option_a",
                     label="a. At least 50% accomplishment of the physical targets in the BESWMP",
                     item_type="assessment_field",
                     mov_description="Assessment for physical accomplishment option",
                     required=False,
-                    display_order=2
-                ),
-                ChecklistItem(
-                    id="6_1_4_calc_a1",
-                    label="Number of Monthly Accomplishment Reports submitted",
-                    item_type="calculation_field",
-                    mov_description="Please supply the required information:",
-                    required=False,
                     display_order=3
                 ),
                 ChecklistItem(
-                    id="6_1_4_calc_a2",
+                    id="6_1_4_calc_a_percentage",
                     label="% of programs, project, and activities completed",
                     item_type="calculation_field",
                     mov_description="Please supply the required information:",
@@ -180,7 +181,7 @@ INDICATOR_6_1 = Indicator(
                     required=False,
                     display_order=5
                 ),
-                # OPTION B: YES/NO first, then calculations
+                # OPTION B: YES/NO, then amount calculations
                 ChecklistItem(
                     id="6_1_4_option_b",
                     label="b. At least 50% utilization rate of CY 2023 BESWM Budget",
@@ -190,7 +191,7 @@ INDICATOR_6_1 = Indicator(
                     display_order=6
                 ),
                 ChecklistItem(
-                    id="6_1_4_calc_b1",
+                    id="6_1_4_calc_b_utilized",
                     label="Amount utilized (as of Dec 31, 2023):",
                     item_type="calculation_field",
                     mov_description="Please supply the required information:",
@@ -198,7 +199,7 @@ INDICATOR_6_1 = Indicator(
                     display_order=7
                 ),
                 ChecklistItem(
-                    id="6_1_4_calc_b2",
+                    id="6_1_4_calc_b_allocated",
                     label="Amount allocated for PPAs in the BESWM Plan:",
                     item_type="calculation_field",
                     mov_description="Please supply the required information:",
