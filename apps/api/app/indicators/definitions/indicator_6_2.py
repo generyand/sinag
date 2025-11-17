@@ -41,18 +41,18 @@ INDICATOR_6_2 = Indicator(
             ),
             validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # At least ONE option must pass
             checklist_items=[
-                # OPTION A: MRF operated by barangay
+                # OPTION A LABEL (info_text, not checkbox)
                 ChecklistItem(
-                    id="6_2_1_option_a",
+                    id="6_2_1_label_a",
                     label="A. For MRF operated by the barangay:",
-                    item_type="checkbox",
-                    mov_description="Option A - MRF operated by barangay",
+                    item_type="info_text",
+                    mov_description="Label for option A",
                     required=False,
                     display_order=1
                 ),
                 ChecklistItem(
                     id="6_2_1_a_photo",
-                    label="Photo documentation of the MRF/MRS Records of the barangay",
+                    label="Photo documentation of the MRF/MRF Records of the barangay",
                     item_type="checkbox",
                     mov_description="Verification of photo documentation",
                     required=False,
@@ -67,12 +67,12 @@ INDICATOR_6_2 = Indicator(
                     required=False,
                     display_order=3
                 ),
-                # OPTION B: For MRS
+                # OPTION B LABEL (info_text, not checkbox)
                 ChecklistItem(
-                    id="6_2_1_option_b",
+                    id="6_2_1_label_b",
                     label="B. For MRS:",
-                    item_type="checkbox",
-                    mov_description="Option B - For MRS",
+                    item_type="info_text",
+                    mov_description="Label for option B",
                     required=False,
                     display_order=4
                 ),
@@ -109,12 +109,12 @@ INDICATOR_6_2 = Indicator(
                     required=False,
                     display_order=8
                 ),
-                # OPTION C: For Clustered MRFs
+                # OPTION C LABEL (info_text, not checkbox)
                 ChecklistItem(
-                    id="6_2_1_option_c",
+                    id="6_2_1_label_c",
                     label="C. For Clustered MRFs:",
-                    item_type="checkbox",
-                    mov_description="Option C - Clustered MRFs",
+                    item_type="info_text",
+                    mov_description="Label for option C",
                     required=False,
                     display_order=9
                 ),
