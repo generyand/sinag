@@ -323,6 +323,9 @@ class ChecklistItem(Base):
     # Display text (e.g., "a. Barangay Financial Report")
     label: Mapped[str] = mapped_column(String, nullable=False)
 
+    # Item type (checkbox, info_text, assessment_field, document_count, calculation_field)
+    item_type: Mapped[str] = mapped_column(String(30), nullable=False, server_default='checkbox')
+
     # Optional group name for visual organization (e.g., "ANNUAL REPORT", "QUARTERLY REPORT")
     group_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
 

@@ -145,22 +145,25 @@ INDICATOR_2_1 = Indicator(
                     id="2_1_4_instructions",
                     label="Instruction: Put a check ✓ on the box that corresponds to your assessment.",
                     mov_description="Instructions for assessor",
+                    item_type="info_text",
                     required=False,
                     display_order=1
                 ),
 
-                # Option A: Physical Accomplishment
+                # Option A: Physical Accomplishment (with YES/NO assessment)
                 ChecklistItem(
-                    id="2_1_4_option_a_label",
+                    id="2_1_4_option_a",
                     label="a. At least 50% accomplishment of the physical targets in the BDRRM Plan",
                     mov_description="Option A label - informational only",
+                    item_type="assessment_field",
                     required=False,
                     display_order=2
                 ),
                 ChecklistItem(
                     id="2_1_4_upload_1",
-                    label="Accomplishment Report",
+                    label="Accomplishment Report, and",
                     mov_description="Verification of uploaded Accomplishment Report",
+                    item_type="checkbox",
                     required=False,
                     display_order=3
                 ),
@@ -168,8 +171,17 @@ INDICATOR_2_1 = Indicator(
                     id="2_1_4_upload_2",
                     label="Certification on the submission and correctness of Accomplishment Report signed by the C/MDRRMO",
                     mov_description="Verification of uploaded Certification on the submission and correctness of Accomplishment Report",
+                    item_type="checkbox",
                     required=False,
                     display_order=4
+                ),
+                ChecklistItem(
+                    id="2_1_4_calculation_a",
+                    label="% of programs, project, and activities are completed",
+                    mov_description="Please supply the required information:",
+                    item_type="calculation_field",
+                    required=False,
+                    display_order=5
                 ),
 
                 # OR Separator (informational)
@@ -177,31 +189,51 @@ INDICATOR_2_1 = Indicator(
                     id="2_1_4_or_separator",
                     label="OR",
                     mov_description="OR separator between physical and financial options",
-                    required=False,
-                    display_order=5
-                ),
-
-                # Option B: Financial Accomplishment
-                ChecklistItem(
-                    id="2_1_4_option_b_label",
-                    label="b. At least 50% fund utilization of the 70% component of CY 2023 BDRRMF",
-                    mov_description="Option B label - informational only",
+                    item_type="info_text",
                     required=False,
                     display_order=6
                 ),
+
+                # Option B: Financial Accomplishment (with YES/NO assessment)
                 ChecklistItem(
-                    id="2_1_4_upload_3",
-                    label="Annual LDRRMF Utilization Report",
-                    mov_description="Verification of uploaded Annual LDRRMF Utilization Report",
+                    id="2_1_4_option_b",
+                    label="b. At least 50% fund utilization of the 70% component of CY 2023 BDRRMF - Preparedness component as of December 31, 2023.",
+                    mov_description="Option B label - informational only",
+                    item_type="assessment_field",
                     required=False,
                     display_order=7
+                ),
+                ChecklistItem(
+                    id="2_1_4_upload_3",
+                    label="Annual LDRRMF Utilization Report, and",
+                    mov_description="Verification of uploaded Annual LDRRMF Utilization Report",
+                    item_type="checkbox",
+                    required=False,
+                    display_order=8
                 ),
                 ChecklistItem(
                     id="2_1_4_upload_4",
                     label="Certification on the submission and correctness of fund utilization report signed by the C/MDRRMO",
                     mov_description="Verification of uploaded Certification on the submission and correctness of fund utilization report",
+                    item_type="checkbox",
                     required=False,
-                    display_order=8
+                    display_order=9
+                ),
+                ChecklistItem(
+                    id="2_1_4_calculation_b1",
+                    label="Amount utilized (as of Dec. 31, 2023):",
+                    mov_description="Please supply the required information:",
+                    item_type="calculation_field",
+                    required=False,
+                    display_order=10.1
+                ),
+                ChecklistItem(
+                    id="2_1_4_calculation_b2",
+                    label="Amount allocated for PPAs in the BDRRM Plan for CY 2023:",
+                    mov_description="Please supply the required information:",
+                    item_type="calculation_field",
+                    required=False,
+                    display_order=10.2
                 ),
             ]
         ),

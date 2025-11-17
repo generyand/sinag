@@ -529,6 +529,8 @@ class AssessorService:
                             "id": item.id,
                             "item_id": item.item_id,
                             "label": item.label,
+                            "item_type": item.item_type,
+                            "group_name": item.group_name,
                             "mov_description": item.mov_description,
                             "required": item.required,
                             "requires_document_count": item.requires_document_count,

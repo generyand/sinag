@@ -17,13 +17,21 @@ class ChecklistItem:
     Examples:
     - "a. Barangay Financial Report"
     - "f. List of Notices of Award (1st - 3rd Quarter)"
+
+    Item Types:
+    - checkbox: Regular checkbox for document verification
+    - info_text: Instructional text (no input control)
+    - assessment_field: YES/NO radio buttons for validator assessment
+    - document_count: Number input for document counting
+    - calculation_field: Input field for calculated values (amount, percentage, etc.)
     """
     id: str  # Unique identifier (e.g., "1_1_1_a")
     label: str  # Display text (e.g., "a. Barangay Financial Report")
     required: bool = True  # Required for indicator to pass
+    item_type: str = "checkbox"  # Type of checklist item
     group_name: Optional[str] = None  # Group header (e.g., "ANNUAL REPORT")
     mov_description: Optional[str] = None  # Means of Verification description (right column)
-    requires_document_count: bool = False  # Needs document count input from validator
+    requires_document_count: bool = False  # DEPRECATED: Use item_type="document_count" instead
     display_order: int = 0  # Sort order within indicator
 
 

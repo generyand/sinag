@@ -73,58 +73,66 @@ INDICATOR_2_3 = Indicator(
                     id="2_3_2_upload_1",
                     label="Photo Documentation for each of disaster supplies equipment:",
                     mov_description="Verification of uploaded photo documentation for disaster supplies/equipment",
-                    required=True,
+                    item_type="checkbox",
+                    required=False,
                     display_order=1
                 ),
-                # Item Verification Instructions
+                # Item Verification Instructions (informational text only)
                 ChecklistItem(
                     id="2_3_2_instructions",
                     label="Instruction: Put a check ✓ on the box that corresponds to your assessment.",
-                    mov_description="Instructions for assessor to verify each disaster supply/equipment item",
+                    mov_description="Instructions for assessor",
+                    item_type="info_text",
                     required=False,
                     display_order=2
                 ),
-                # Individual Equipment Items
+                # Individual Equipment Items - Each with YES/NO assessment
                 ChecklistItem(
                     id="2_3_2_a",
                     label="a. Communication equipment;",
                     mov_description="Verification of communication equipment (i.e., 2 way radio mobile phone, satellite phone)",
-                    required=True,
+                    item_type="assessment_field",
+                    required=False,
                     display_order=3
                 ),
                 ChecklistItem(
                     id="2_3_2_b",
                     label="b. Rescue vehicle/Alternative vehicle;",
-                    mov_description="Verification of rescue vehicle/alternative vehicle (i.e., ambulance; amphibious vehicle, tricycle boats, vans, trucks, fire trucks, dump trucks and any appropriate vehicle depending on location at the minimum)",
-                    required=True,
+                    mov_description="Verification of rescue vehicle/alternative vehicle (i.e., ambulance, amphibious vehicle, tricycle boats, vans, trucks, fire trucks, dump trucks and any appropriate vehicle depending on location at the minimum)",
+                    item_type="assessment_field",
+                    required=False,
                     display_order=4
                 ),
                 ChecklistItem(
                     id="2_3_2_c",
                     label="c. Generator set/alternative sources of energy;",
                     mov_description="Verification of generator set/alternative sources of energy (i.e., portable generator, solar-powered generator)",
-                    required=True,
+                    item_type="assessment_field",
+                    required=False,
                     display_order=5
                 ),
                 ChecklistItem(
                     id="2_3_2_d",
                     label="d. First aid kit;",
                     mov_description="Verification of first aid kit",
-                    required=True,
+                    item_type="assessment_field",
+                    required=False,
                     display_order=6
                 ),
                 ChecklistItem(
                     id="2_3_2_e",
                     label="e. Flashlight; and",
                     mov_description="Verification of flashlight with batteries",
-                    required=True,
+                    item_type="assessment_field",
+                    required=False,
                     display_order=7
                 ),
                 ChecklistItem(
                     id="2_3_2_f",
                     label="f. Personal Protective Equipment.",
                     mov_description="Verification of Personal Protective Equipment (PPE)",
-                    required=True,
+                    item_type="assessment_field",
+                    required=False,
                     display_order=8
                 ),
             ]

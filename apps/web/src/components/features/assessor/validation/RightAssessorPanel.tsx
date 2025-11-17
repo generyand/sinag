@@ -169,7 +169,7 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                   </div>
                                 )}
 
-                                {item.requires_document_count ? (
+                                {(item.item_type === 'document_count' || item.requires_document_count) ? (
                                   // Document count input item (no checkbox, just description + input)
                                   <div className="space-y-2">
                                     {item.mov_description && (
@@ -196,6 +196,93 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                       <span className="text-xs text-foreground leading-relaxed">
                                         {item.label}
                                       </span>
+                                    </div>
+                                  </div>
+                                ) : item.item_type === 'info_text' ? (
+                                  // Instructional text (no input control)
+                                  <div className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded px-3 py-2">
+                                    {item.label}
+                                    {item.mov_description && (
+                                      <div className="text-[11px] italic mt-1">{item.mov_description}</div>
+                                    )}
+                                  </div>
+                                ) : item.item_type === 'assessment_field' ? (
+                                  // YES/NO radio buttons for validator assessment
+                                  <div className="space-y-2">
+                                    <div className="flex items-start gap-3">
+                                      <div className="flex gap-4">
+                                        <Controller
+                                          name={`${itemKey}_yes` as any}
+                                          control={control}
+                                          render={({ field }) => (
+                                            <div className="flex items-center gap-1">
+                                              <Checkbox
+                                                id={`${itemKey}_yes`}
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                              />
+                                              <Label htmlFor={`${itemKey}_yes`} className="text-xs font-medium cursor-pointer">
+                                                YES
+                                              </Label>
+                                            </div>
+                                          )}
+                                        />
+                                        <Controller
+                                          name={`${itemKey}_no` as any}
+                                          control={control}
+                                          render={({ field }) => (
+                                            <div className="flex items-center gap-1">
+                                              <Checkbox
+                                                id={`${itemKey}_no`}
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                              />
+                                              <Label htmlFor={`${itemKey}_no`} className="text-xs font-medium cursor-pointer">
+                                                NO
+                                              </Label>
+                                            </div>
+                                          )}
+                                        />
+                                      </div>
+                                      <div className="flex-1">
+                                        <div className="text-xs font-medium text-foreground">
+                                          {item.label}
+                                        </div>
+                                        {item.mov_description && (
+                                          <div className="text-[11px] text-muted-foreground italic mt-0.5">
+                                            {item.mov_description}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ) : item.item_type === 'calculation_field' ? (
+                                  // Calculation/input field
+                                  <div className="space-y-2">
+                                    {item.mov_description && (
+                                      <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded px-3 py-2">
+                                        <div className="text-xs text-orange-800 dark:text-orange-300 italic">
+                                          {item.mov_description}
+                                        </div>
+                                      </div>
+                                    )}
+                                    <div className="space-y-1">
+                                      <Label htmlFor={itemKey} className="text-xs font-medium text-foreground">
+                                        {item.label}
+                                      </Label>
+                                      <Controller
+                                        name={itemKey as any}
+                                        control={control}
+                                        render={({ field }) => (
+                                          <Input
+                                            id={itemKey}
+                                            type="text"
+                                            placeholder="Enter value"
+                                            {...field}
+                                            className="h-9 text-sm"
+                                          />
+                                        )}
+                                      />
                                     </div>
                                   </div>
                                 ) : (
