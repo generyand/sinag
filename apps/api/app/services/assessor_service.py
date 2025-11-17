@@ -387,6 +387,9 @@ class AssessorService:
                 joinedload(Assessment.responses)
                 .joinedload(AssessmentResponse.indicator)
                 .joinedload(Indicator.governance_area),
+                joinedload(Assessment.responses)
+                .joinedload(AssessmentResponse.indicator)
+                .joinedload(Indicator.checklist_items),
                 joinedload(Assessment.responses).joinedload(AssessmentResponse.movs),
                 joinedload(Assessment.responses).joinedload(
                     AssessmentResponse.feedback_comments
@@ -476,6 +479,7 @@ class AssessorService:
                     "name": response.indicator.name,
                     "description": response.indicator.description,
                     "form_schema": response.indicator.form_schema,
+                    "validation_rule": response.indicator.validation_rule,
                     "governance_area": {
                         "id": response.indicator.governance_area.id,
                         "name": response.indicator.governance_area.name,
@@ -484,6 +488,19 @@ class AssessorService:
                     # Technical notes - for now using description, but this could be a separate field
                     "technical_notes": response.indicator.description
                     or "No technical notes available",
+                    # Checklist items for validation
+                    "checklist_items": [
+                        {
+                            "id": item.id,
+                            "item_id": item.item_id,
+                            "label": item.label,
+                            "mov_description": item.mov_description,
+                            "required": item.required,
+                            "requires_document_count": item.requires_document_count,
+                            "display_order": item.display_order,
+                        }
+                        for item in sorted(response.indicator.checklist_items, key=lambda x: x.display_order)
+                    ],
                 },
                 "movs": [
                     {

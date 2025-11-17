@@ -135,6 +135,51 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                     </div>
                   ) : null}
 
+                  {/* Checklist Items */}
+                  {(() => {
+                    const checklistItems = (indicator?.checklist_items as any[]) || [];
+                    const validationRule = indicator?.validation_rule || 'ALL_ITEMS_REQUIRED';
+
+                    if (checklistItems.length === 0) return null;
+
+                    return (
+                      <div className="border border-black/10 rounded-sm bg-muted/10">
+                        <div className="px-3 py-2 border-b border-black/10 bg-muted/30">
+                          <div className="text-xs font-semibold uppercase tracking-wide">
+                            Validation Checklist
+                            {validationRule === 'ANY_ITEM_REQUIRED' && (
+                              <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-800 font-normal normal-case">
+                                OR Logic: At least 1 required
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="p-3 space-y-2">
+                          {checklistItems.map((item: any, itemIdx: number) => (
+                            <div key={item.id || itemIdx} className="text-xs border-l-2 border-muted pl-2">
+                              <div className="font-medium text-foreground">
+                                {item.required && validationRule === 'ALL_ITEMS_REQUIRED' && (
+                                  <span className="text-red-600 mr-1">*</span>
+                                )}
+                                {item.label}
+                              </div>
+                              {item.mov_description && (
+                                <div className="text-muted-foreground mt-0.5 text-[11px] italic">
+                                  {item.mov_description}
+                                </div>
+                              )}
+                              {item.requires_document_count && (
+                                <div className="text-[10px] mt-1 text-blue-600">
+                                  ℹ️ Requires input field (date/count/amount)
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   <div className="space-y-2">
                     <div className="text-xs uppercase tracking-wide text-muted-foreground">Validation Status</div>
                     <div className="flex items-center gap-2">
