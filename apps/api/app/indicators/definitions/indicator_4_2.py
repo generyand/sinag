@@ -31,23 +31,51 @@ INDICATOR_4_2 = Indicator(
                 "2. For clustered BHS/C: Certification from C/MHO on the clustering scheme\n\n"
                 "Note: Consideration - Clustered Health Station/Center accessed by several barangays in a city/municipality"
             ),
-            validation_rule="ANY_ITEM_REQUIRED",  # BHS/C operated OR clustered
+            validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # BHS/C operated OR clustered
             checklist_items=[
+                # Document verification checkboxes
                 ChecklistItem(
-                    id="4_2_1_photos",
+                    id="4_2_1_photo",
                     label="Photo documentation of the BHS/C (Photo Requirements: One photo with Distant View and one photo with Close-up View)",
                     mov_description="Verification of uploaded photos showing BHS/C (Option 1 - BHS/C Operated)",
+                    item_type="checkbox",
                     required=False,
-                    requires_document_count=False,
                     display_order=1
                 ),
                 ChecklistItem(
-                    id="4_2_1_certification_clustered",
+                    id="4_2_1_cert_clustered",
                     label="For clustered BHS/C: Certification from C/MHO on the clustering scheme",
                     mov_description="Verification of uploaded certification from C/MHO for clustered BHS/C (Option 2 - Clustered)",
+                    item_type="checkbox",
                     required=False,
-                    requires_document_count=False,
                     display_order=2
+                ),
+                # Instruction (info_text)
+                ChecklistItem(
+                    id="4_2_1_instructions",
+                    label="Instruction: Put a check ✓ on the box that corresponds to your assessment.",
+                    mov_description="Instructions for assessor",
+                    item_type="info_text",
+                    required=False,
+                    display_order=3
+                ),
+                # Option a - YES/NO assessment
+                ChecklistItem(
+                    id="4_2_1_option_a",
+                    label="Barangay Health Station/Center operated",
+                    mov_description="Assessment for BHS/C operated option",
+                    item_type="assessment_field",
+                    required=False,
+                    display_order=4
+                ),
+                # Option b - YES/NO assessment
+                ChecklistItem(
+                    id="4_2_1_option_b",
+                    label="Clustered Clustered Health Station/Center accessed by several barangays in a city/municipality (Consideration)",
+                    mov_description="Assessment for clustered BHS/C option",
+                    item_type="assessment_field",
+                    required=False,
+                    display_order=5
                 ),
             ]
         ),
@@ -114,46 +142,58 @@ INDICATOR_4_2 = Indicator(
                 "c. Family Planning\n"
                 "d. Health Education"
             ),
-            validation_rule="ALL_ITEMS_REQUIRED",  # Certification is required, plus at least some services
+            validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
+                # Certification checkbox
                 ChecklistItem(
-                    id="4_2_4_certification",
+                    id="4_2_4_cert",
                     label="Certification on the provision of health services signed by the C/MHO",
-                    required=True,
-                    requires_document_count=False,
+                    mov_description="Verification of uploaded certification",
+                    item_type="checkbox",
+                    required=False,
                     display_order=1
                 ),
+                # Instruction (info_text)
                 ChecklistItem(
-                    id="4_2_4_immunization",
-                    label="a. Immunization",
-                    group_name="Health Services Available",
+                    id="4_2_4_instructions",
+                    label="Instruction: Put a check ✓ on the box that corresponds to your assessment.",
+                    mov_description="Instructions for assessor",
+                    item_type="info_text",
                     required=False,
-                    requires_document_count=False,
                     display_order=2
                 ),
+                # Health services - each with YES/NO assessment
                 ChecklistItem(
-                    id="4_2_4_maternal",
-                    label="b. Maternal and child healthcare",
-                    group_name="Health Services Available",
+                    id="4_2_4_a",
+                    label="a. Immunization",
+                    mov_description="Assessment for Immunization service",
+                    item_type="assessment_field",
                     required=False,
-                    requires_document_count=False,
                     display_order=3
                 ),
                 ChecklistItem(
-                    id="4_2_4_family_planning",
-                    label="c. Family Planning",
-                    group_name="Health Services Available",
+                    id="4_2_4_b",
+                    label="b. Maternal and child healthcare",
+                    mov_description="Assessment for Maternal and child healthcare service",
+                    item_type="assessment_field",
                     required=False,
-                    requires_document_count=False,
                     display_order=4
                 ),
                 ChecklistItem(
-                    id="4_2_4_health_education",
-                    label="d. Health Education",
-                    group_name="Health Services Available",
+                    id="4_2_4_c",
+                    label="c. Family Planning",
+                    mov_description="Assessment for Family Planning service",
+                    item_type="assessment_field",
                     required=False,
-                    requires_document_count=False,
                     display_order=5
+                ),
+                ChecklistItem(
+                    id="4_2_4_d",
+                    label="d. Health Education",
+                    mov_description="Assessment for Health Education service",
+                    item_type="assessment_field",
+                    required=False,
+                    display_order=6
                 ),
             ]
         ),
