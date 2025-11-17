@@ -49,6 +49,25 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
 
   const [form, setForm] = React.useState<Record<number, { status?: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string; internalNote?: string; assessorRemarks?: string }>>({});
 
+  // Initialize form with existing validation data from responses
+  React.useEffect(() => {
+    const initialForm: typeof form = {};
+    for (const r of responses) {
+      const resp = r as AnyRecord;
+      if (resp.validation_status || resp.assessor_remarks) {
+        initialForm[resp.id] = {
+          status: resp.validation_status as 'Pass' | 'Fail' | 'Conditional' | undefined,
+          publicComment: undefined, // Comments are in feedback_comments, not loaded here
+          internalNote: undefined,
+          assessorRemarks: resp.assessor_remarks || undefined,
+        };
+      }
+    }
+    if (Object.keys(initialForm).length > 0) {
+      setForm(initialForm);
+    }
+  }, [responses]);
+
   const total = responses.length;
   const reviewed = responses.filter((r) => !!form[r.id]?.status).length;
   const allReviewed = total > 0 && reviewed === total;

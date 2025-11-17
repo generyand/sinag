@@ -326,12 +326,16 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                     );
                   })()}
 
-                  {/* VALIDATOR ONLY: Validation Status Buttons */}
+                  {/* VALIDATOR ONLY: Processing of Results Section */}
                   {isValidator && (
-                    <div className="space-y-2">
-                      <div className="text-xs uppercase tracking-wide text-muted-foreground">Validation Status</div>
-                      <div className="flex items-center gap-2">
-                        {(['Pass', 'Fail', 'Conditional'] as LocalStatus[]).map((s) => {
+                    <div className="border border-black/10 rounded-sm bg-muted/10 p-3 space-y-3">
+                      <div className="text-xs font-semibold uppercase tracking-wide bg-yellow-100 dark:bg-yellow-950/30 text-yellow-900 dark:text-yellow-200 px-3 py-2 rounded border border-yellow-200 dark:border-yellow-800">
+                        PROCESSING OF RESULTS
+                      </div>
+                      <div className="space-y-2">
+                        <div className="text-xs font-medium">Met all the minimum requirements on {indicatorLabel}?</div>
+                        <div className="flex items-center gap-2">
+                          {(['Pass', 'Fail', 'Conditional'] as LocalStatus[]).map((s) => {
                           const active = form[r.id]?.status === s;
                           const base = 'size-sm';
                           const cls = active
@@ -362,6 +366,7 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                             </Button>
                           );
                         })}
+                        </div>
                       </div>
                     </div>
                   )}
