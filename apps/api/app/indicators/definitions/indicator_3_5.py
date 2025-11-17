@@ -65,45 +65,22 @@ INDICATOR_3_5 = Indicator(
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
+                # Simplified checklist - only 1 checkbox for the main EO requirement
                 ChecklistItem(
-                    id="3_5_1_upload_1",
+                    id="3_5_1_upload",
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the organization of BHERTs covering January to October 2023",
                     mov_description="Verification of uploaded Executive Order or similar issuance organizing the BHERT",
-                    required=True,
-                    requires_document_count=False,
+                    item_type="checkbox",
+                    required=False,
                     display_order=1
                 ),
                 ChecklistItem(
-                    id="3_5_1_comp_exec",
-                    label="Executive Officer",
-                    mov_description="Verify Executive Officer is listed in BHERT composition",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=2
-                ),
-                ChecklistItem(
-                    id="3_5_1_comp_tanod",
-                    label="A Barangay Tanod",
-                    mov_description="Verify a Barangay Tanod is listed in BHERT composition",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=3
-                ),
-                ChecklistItem(
-                    id="3_5_1_comp_bhw",
-                    label="2 BHWs (Barangay Health Workers)",
-                    mov_description="Verify at least 2 BHWs are listed in BHERT composition",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=4
-                ),
-                ChecklistItem(
                     id="3_5_1_date_of_approval",
-                    label="Date of approval",
-                    mov_description="Date of approval for the EO or similar issuance",
-                    required=True,
-                    requires_document_count=True,  # Date input field
-                    display_order=5
+                    label="Date of approval for the EO or similar issuance",
+                    mov_description="Please supply the required information:",
+                    item_type="document_count",
+                    required=False,
+                    display_order=2
                 ),
             ]
         ),
