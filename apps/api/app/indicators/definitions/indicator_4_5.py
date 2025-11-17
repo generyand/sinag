@@ -149,7 +149,7 @@ INDICATOR_4_5 = Indicator(
             checklist_items=[
                 ChecklistItem(
                     id="4_5_5_a",
-                    label="a. Presence of updated Localized Flow Chart of Referral System not earlier than CY 2020",
+                    label="Updated Localized Flow Chart of Referral System",
                     mov_description="Verification of uploaded Localized Flow Chart of Referral System",
                     item_type="checkbox",
                     required=True,
@@ -157,7 +157,7 @@ INDICATOR_4_5 = Indicator(
                 ),
                 ChecklistItem(
                     id="4_5_5_b",
-                    label="b. Presence of Comprehensive Barangay Juvenile Intervention Program/Diversion Program (For profiling); and",
+                    label="Copy of Comprehensive Barangay Juvenile Intervention Program/Diversion Program",
                     mov_description="Verification of uploaded Comprehensive Barangay Juvenile Intervention Program",
                     item_type="checkbox",
                     required=True,
@@ -165,7 +165,7 @@ INDICATOR_4_5 = Indicator(
                 ),
                 ChecklistItem(
                     id="4_5_5_c",
-                    label="c. Presence of Children at Risk (CAR) and Children in Conflict with the Law (CICL) registry (For profiling)",
+                    label="Copy of Juvenile Justice and Welfare Council's Children at Risk (CAR) and Children in Conflict with the Law (CICL) registry",
                     mov_description="Verification of uploaded CAR and CICL registry",
                     item_type="checkbox",
                     required=True,

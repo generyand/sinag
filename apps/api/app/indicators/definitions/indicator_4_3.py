@@ -159,7 +159,7 @@ INDICATOR_4_3 = Indicator(
                     required=False,
                     display_order=3
                 ),
-                # OPTION A - Physical Accomplishment
+                # OPTION A label (info_text)
                 ChecklistItem(
                     id="4_3_4_option_a_label",
                     label="OPTION A - Physical Accomplishment",
@@ -168,6 +168,7 @@ INDICATOR_4_3 = Indicator(
                     required=False,
                     display_order=4
                 ),
+                # Calculation field BEFORE the YES/NO assessment
                 ChecklistItem(
                     id="4_3_4_calc_physical",
                     label="% of programs, projects, and activities completed",
@@ -176,9 +177,10 @@ INDICATOR_4_3 = Indicator(
                     required=False,
                     display_order=5
                 ),
+                # YES/NO assessment for Option A
                 ChecklistItem(
                     id="4_3_4_option_a",
-                    label="At least 50% accomplishment of the physical targets in the BDP",
+                    label="a. At least 50% accomplishment of the physical targets in the BDP",
                     mov_description="Verification that at least 50% of physical targets are accomplished",
                     item_type="assessment_field",
                     required=False,
@@ -193,7 +195,7 @@ INDICATOR_4_3 = Indicator(
                     required=False,
                     display_order=7
                 ),
-                # OPTION B - Fund Utilization
+                # OPTION B label (info_text)
                 ChecklistItem(
                     id="4_3_4_option_b_label",
                     label="OPTION B - Fund Utilization",
@@ -202,6 +204,7 @@ INDICATOR_4_3 = Indicator(
                     required=False,
                     display_order=8
                 ),
+                # Calculation fields BEFORE the YES/NO assessment
                 ChecklistItem(
                     id="4_3_4_calc_b1",
                     label="Amount utilized (as of Dec 31, 2023):",
@@ -218,9 +221,10 @@ INDICATOR_4_3 = Indicator(
                     required=False,
                     display_order=10
                 ),
+                # YES/NO assessment for Option B
                 ChecklistItem(
                     id="4_3_4_option_b",
-                    label="At least 50% fund utilization rate of the CY 2023 BDP Budget",
+                    label="b. At least 50% fund utilization rate of the CY 2023 BDP Budget",
                     mov_description="Verification that at least 50% of BDP Budget is utilized",
                     item_type="assessment_field",
                     required=False,
