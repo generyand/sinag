@@ -182,24 +182,6 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
         <div className="sticky top-[52px] z-10 bg-card/80 backdrop-blur">
           <div className="mx-auto max-w-7xl px-4 md:px-6 py-2 overflow-x-auto">
             <div className="flex items-center gap-2 min-w-max">
-              <select
-                className="text-xs border rounded px-2 py-1 bg-white"
-                onChange={(e) => {
-                  const sec = e.target.value;
-                  const section = sections.find((s) => s.label === sec);
-                  if (section && section.ids.length > 0) setExpandedId(section.ids[0]);
-                }}
-                defaultValue=""
-              >
-                <option value="" disabled>
-                  Jump to section
-                </option>
-                {sections.map((s) => (
-                  <option key={s.label} value={s.label}>
-                    Section {s.label}
-                  </option>
-                ))}
-              </select>
               <button
                 type="button"
                 className="text-xs px-2 py-1 rounded border border-black/10 bg-white hover:bg-black/5"
