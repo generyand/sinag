@@ -71,149 +71,22 @@ INDICATOR_3_1 = Indicator(
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
+                # Simplified checklist - only 1 checkbox for the main requirement
                 ChecklistItem(
-                    id="3_1_1_a",
+                    id="3_1_1_upload",
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) creating the BADAC with its composition and appropriate committees, covering January to October 2023",
                     mov_description="Verification that the EO/issuance creates BADAC with proper composition and committees",
-                    required=True,
-                    requires_document_count=False,
+                    item_type="checkbox",
+                    required=False,
                     display_order=1
-                ),
-                ChecklistItem(
-                    id="3_1_1_comp_badac_pb",
-                    label="Punong Barangay",
-                    mov_description="Verify Punong Barangay is listed in BADAC composition",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=2
-                ),
-                ChecklistItem(
-                    id="3_1_1_comp_badac_sbm",
-                    label="SBM",
-                    mov_description="Verify SBM is listed in BADAC composition",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=3
-                ),
-                ChecklistItem(
-                    id="3_1_1_comp_badac_sk",
-                    label="SK Chairperson",
-                    mov_description="Verify SK Chairperson is listed in BADAC composition",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=4
-                ),
-                ChecklistItem(
-                    id="3_1_1_comp_badac_school",
-                    label="Public School Principal/Representative",
-                    mov_description="Verify Public School Principal/Representative is listed in BADAC composition",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=5
-                ),
-                ChecklistItem(
-                    id="3_1_1_comp_badac_tanod",
-                    label="Chief Tanod/ Executive Officer",
-                    mov_description="Verify Chief Tanod/Executive Officer is listed in BADAC composition",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=6
-                ),
-                ChecklistItem(
-                    id="3_1_1_comp_badac_ngo",
-                    label="At least 2 representatives of NGOs/CSOs",
-                    mov_description="Verify at least 2 NGO/CSO representatives are listed in BADAC composition",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=7
-                ),
-                ChecklistItem(
-                    id="3_1_1_comp_badac_faith",
-                    label="Representative of Faith-Based Organization",
-                    mov_description="Verify Faith-Based Organization representative is listed in BADAC composition",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=8
-                ),
-                ChecklistItem(
-                    id="3_1_1_comp_badac_police",
-                    label="C/M Chief of Police or Representative",
-                    mov_description="Verify C/M Chief of Police or Representative is listed in BADAC composition",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=9
-                ),
-                ChecklistItem(
-                    id="3_1_1_comm_ops_sbm",
-                    label="SBM",
-                    mov_description="Verify SBM is in Committee on Operations",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=10
-                ),
-                ChecklistItem(
-                    id="3_1_1_comm_ops_exec",
-                    label="Executive Officer/Chief Tanod",
-                    mov_description="Verify Executive Officer/Chief Tanod is in Committee on Operations",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=11
-                ),
-                ChecklistItem(
-                    id="3_1_1_comm_ops_bat",
-                    label="BADAC Auxiliary Team (BAT)",
-                    mov_description="Verify BADAC Auxiliary Team (BAT) is in Committee on Operations",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=12
-                ),
-                ChecklistItem(
-                    id="3_1_1_comm_adv_sbm",
-                    label="SBM",
-                    mov_description="Verify SBM is in Committee on Advocacy",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=13
-                ),
-                ChecklistItem(
-                    id="3_1_1_comm_adv_sk",
-                    label="SK Chairperson",
-                    mov_description="Verify SK Chairperson is in Committee on Advocacy",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=14
-                ),
-                ChecklistItem(
-                    id="3_1_1_comm_adv_school",
-                    label="Public School Principal/Representative",
-                    mov_description="Verify Public School Principal/Representative is in Committee on Advocacy",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=15
-                ),
-                ChecklistItem(
-                    id="3_1_1_comm_adv_ngo",
-                    label="At least 2 representatives of NGOs/CSOs",
-                    mov_description="Verify at least 2 NGO/CSO representatives are in Committee on Advocacy",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=16
-                ),
-                ChecklistItem(
-                    id="3_1_1_comm_adv_faith",
-                    label="Representative of Faith-Based Organization",
-                    mov_description="Verify Faith-Based Organization representative is in Committee on Advocacy",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=17
                 ),
                 ChecklistItem(
                     id="3_1_1_date",
                     label="Date of approval",
-                    mov_description="Date when the EO/issuance was approved",
-                    required=True,
-                    requires_document_count=True,  # Date input field
-                    display_order=18
+                    mov_description="Please supply the required information:",
+                    item_type="document_count",
+                    required=False,
+                    display_order=2
                 ),
             ]
         ),
@@ -331,23 +204,52 @@ INDICATOR_3_1 = Indicator(
                 "2. Copy of Barangay Annual Investment Plan (AIP)\n\n"
                 "Note: You only need to upload ONE option (either option 1 OR option 2)."
             ),
-            validation_rule="ANY_ITEM_REQUIRED",  # OR logic: either BAO OR AIP
+            validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # OR logic: either BAO OR AIP
             checklist_items=[
+                # Option 1
                 ChecklistItem(
-                    id="3_1_6_a",
+                    id="3_1_6_option_1",
                     label="Approved Barangay Appropriation Ordinance signed by the PB, Barangay Secretary and SBMs",
                     mov_description="Verification of Approved Barangay Appropriation Ordinance (Option 1)",
-                    required=False,  # OR logic - only one is required
-                    requires_document_count=False,
+                    item_type="checkbox",
+                    required=False,
                     display_order=1
                 ),
+                # OR separator
                 ChecklistItem(
-                    id="3_1_6_b",
+                    id="3_1_6_or",
+                    label="OR",
+                    mov_description="OR separator between options",
+                    item_type="info_text",
+                    required=False,
+                    display_order=2
+                ),
+                # Option 2
+                ChecklistItem(
+                    id="3_1_6_option_2",
                     label="Copy of Barangay Annual Investment Plan (AIP)",
                     mov_description="Verification of Barangay Annual Investment Plan (Option 2)",
-                    required=False,  # OR logic - only one is required
-                    requires_document_count=False,
-                    display_order=2
+                    item_type="checkbox",
+                    required=False,
+                    display_order=3
+                ),
+                # Instruction
+                ChecklistItem(
+                    id="3_1_6_instructions",
+                    label="Instruction: Put a check ✓ on the box that corresponds to your assessment.",
+                    mov_description="Instructions for assessor",
+                    item_type="info_text",
+                    required=False,
+                    display_order=4
+                ),
+                # YES/NO assessment for allocated amount
+                ChecklistItem(
+                    id="3_1_6_assessment",
+                    label="Has allocated substantial amount for anti-illegal drugs initiative",
+                    mov_description="Assessment whether substantial amount is allocated for anti-illegal drugs initiative",
+                    item_type="assessment_field",
+                    required=False,
+                    display_order=5
                 ),
             ]
         ),
