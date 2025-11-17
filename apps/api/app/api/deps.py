@@ -243,6 +243,53 @@ async def get_current_validator_user_http(
     return user_with_area
 
 
+async def get_current_assessor_or_validator(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> User:
+    """
+    Dependency that accepts both ASSESSOR and VALIDATOR roles.
+
+    - VALIDATOR: Must have validator_area_id assigned
+    - ASSESSOR: Can optionally have validator_area_id for filtered access,
+                or None for system-wide access (flexible assignment)
+
+    Returns:
+        User: Current assessor or validator user with optional governance area
+
+    Raises:
+        HTTPException: 403 if user doesn't have ASSESSOR or VALIDATOR role
+        HTTPException: 403 if VALIDATOR doesn't have validator_area_id assigned
+    """
+    # Check role is ASSESSOR or VALIDATOR
+    if current_user.role not in (UserRole.ASSESSOR, UserRole.VALIDATOR):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. ASSESSOR or VALIDATOR role required.",
+        )
+
+    # Load user with validator_area relationship
+    user_with_area = (
+        db.query(User)
+        .options(joinedload(User.validator_area))
+        .filter(User.id == current_user.id)
+        .first()
+    )
+
+    # VALIDATOR must have validator_area_id assigned
+    if current_user.role == UserRole.VALIDATOR:
+        if user_with_area is None or user_with_area.validator_area is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Validator must be assigned to a governance area.",
+            )
+
+    # ASSESSOR can have validator_area_id (for filtered access) or None (system-wide)
+    # No additional validation required for ASSESSOR role
+
+    return user_with_area
+
+
 async def require_mlgoo_dilg(
     current_user: User = Depends(get_current_active_user),
 ) -> User:
@@ -306,7 +353,7 @@ def get_client_ip(request: Request) -> Optional[str]:
     return None
 
 
-# Temporary backwards compatibility aliases for assessor endpoints
-# TODO: Update assessor.py endpoints to use appropriate role checks (task 8.3.2)
-get_current_area_assessor_user = get_current_validator_user
-get_current_area_assessor_user_http = get_current_validator_user_http
+# Assessor/Validator endpoints use the new combined dependency
+# This supports both ASSESSOR (flexible assignment) and VALIDATOR (area-specific) roles
+get_current_area_assessor_user = get_current_assessor_or_validator
+get_current_area_assessor_user_http = get_current_assessor_or_validator

@@ -24,18 +24,26 @@ class AssessorService:
         """
         Return submissions filtered by the assessor's governance area.
 
+        - If assessor has validator_area_id: Show only assessments in that governance area
+        - If assessor has no validator_area_id: Show all assessments (system-wide access)
+
         Includes barangay name, submission date, status, and last updated.
         """
-        # Fetch assessments whose BLGU user belongs to barangays in the
-        # same governance area as the assessor via indicator governance area linkage.
-        # Simplified initial implementation: show assessments in Submitted/Needs Rework/Validated.
-        assessments = (
+        # Base query
+        query = (
             db.query(Assessment)
             .join(AssessmentResponse, AssessmentResponse.assessment_id == Assessment.id)
             .join(Indicator, Indicator.id == AssessmentResponse.indicator_id)
             .options(joinedload(Assessment.blgu_user).joinedload(User.barangay))
-            .filter(
-                Indicator.governance_area_id == assessor.governance_area_id,
+        )
+
+        # Filter by governance area only if assessor has validator_area_id assigned
+        if assessor.validator_area_id is not None:
+            query = query.filter(Indicator.governance_area_id == assessor.validator_area_id)
+
+        # Apply remaining filters
+        assessments = (
+            query.filter(
                 # Only include true submissions (must have been submitted)
                 Assessment.submitted_at.isnot(None),
                 Assessment.status.in_(
@@ -201,17 +209,27 @@ class AssessorService:
             }
 
         # Verify the assessor has permission to upload MOVs for this response
-        # by checking if the response's indicator belongs to the assessor's governance area
+        # - If assessor has validator_area_id: Check if indicator belongs to that area
+        # - If assessor has no validator_area_id: Grant access (system-wide)
         indicator = (
             db.query(Indicator).filter(Indicator.id == response.indicator_id).first()
         )
 
-        if not indicator or indicator.governance_area_id != assessor.governance_area_id:
+        if not indicator:
             return {
                 "success": False,
-                "message": "Access denied. You can only upload MOVs for responses in your governance area",
+                "message": "Indicator not found for this response",
                 "mov_id": None,
             }
+
+        # Check governance area permission only if assessor has validator_area_id
+        if assessor.validator_area_id is not None:
+            if indicator.governance_area_id != assessor.validator_area_id:
+                return {
+                    "success": False,
+                    "message": "Access denied. You can only upload MOVs for responses in your governance area",
+                    "mov_id": None,
+                }
 
         # Create the MOV
         db_mov = MOVModel(  # Use SQLAlchemy model, not Pydantic schema
@@ -277,19 +295,31 @@ class AssessorService:
             }
 
         # Verify the assessor has permission to upload MOVs for this response
-        # by checking if the response's indicator belongs to the assessor's governance area
+        # - If assessor has validator_area_id: Check if indicator belongs to that area
+        # - If assessor has no validator_area_id: Grant access (system-wide)
         indicator = (
             db.query(Indicator).filter(Indicator.id == response.indicator_id).first()
         )
 
-        if not indicator or indicator.governance_area_id != assessor.governance_area_id:
+        if not indicator:
             return {
                 "success": False,
-                "message": "Access denied. You can only upload MOVs for responses in your governance area",
+                "message": "Indicator not found for this response",
                 "mov_id": None,
                 "storage_path": None,
                 "mov": None,
             }
+
+        # Check governance area permission only if assessor has validator_area_id
+        if assessor.validator_area_id is not None:
+            if indicator.governance_area_id != assessor.validator_area_id:
+                return {
+                    "success": False,
+                    "message": "Access denied. You can only upload MOVs for responses in your governance area",
+                    "mov_id": None,
+                    "storage_path": None,
+                    "mov": None,
+                }
 
         # Upload file to Supabase Storage via storage_service
         try:
@@ -407,22 +437,22 @@ class AssessorService:
             }
 
         # Verify the assessor has permission to view this assessment
-        # by checking if any of the assessment's indicators belong to the assessor's governance area
-        # If there are no responses, we need to check if the BLGU user's barangay is in the assessor's governance area
+        # - If assessor has validator_area_id: Check if indicators belong to that area
+        # - If assessor has no validator_area_id: Grant access (system-wide)
         has_permission = False
 
-        if assessment.responses:
+        if assessor.validator_area_id is None:
+            # Assessor with no validator_area_id has system-wide access
+            has_permission = True
+        elif assessment.responses:
             # Check if any response's indicator belongs to the assessor's governance area
             for response in assessment.responses:
-                if response.indicator.governance_area_id == assessor.governance_area_id:
+                if response.indicator.governance_area_id == assessor.validator_area_id:
                     has_permission = True
                     break
         else:
-            # For assessments with no responses, check if the BLGU user's barangay
-            # belongs to the assessor's governance area (this would require additional logic
-            # to map barangays to governance areas, but for now we'll allow access)
-            # This is a simplified approach - in a real system, you'd need proper mapping
-            has_permission = True  # Allow access to empty assessments for now
+            # For assessments with no responses, allow access if assessor has area assigned
+            has_permission = True
 
         if not has_permission:
             return {
@@ -460,10 +490,13 @@ class AssessorService:
             },
         }
 
-        # Process only responses within the assessor's governance area
+        # Process responses based on assessor's governance area assignment
         for response in assessment.responses:
-            if response.indicator.governance_area_id != assessor.governance_area_id:
-                continue
+            # If assessor has validator_area_id, only show responses in that area
+            # If assessor has no validator_area_id, show all responses (system-wide)
+            if assessor.validator_area_id is not None:
+                if response.indicator.governance_area_id != assessor.validator_area_id:
+                    continue
             response_data = {
                 "id": response.id,
                 "is_completed": response.is_completed,
@@ -771,16 +804,19 @@ class AssessorService:
             dict: Analytics data structured for AssessorAnalyticsResponse
         """
         # Get governance area name
-        governance_area = (
-            db.query(GovernanceArea)
-            .filter(GovernanceArea.id == assessor.governance_area_id)
-            .first()
-        )
-        governance_area_name = governance_area.name if governance_area else "Unknown"
+        governance_area_name = "All Areas"  # Default for assessors without area assignment
+        if assessor.validator_area_id is not None:
+            governance_area = (
+                db.query(GovernanceArea)
+                .filter(GovernanceArea.id == assessor.validator_area_id)
+                .first()
+            )
+            governance_area_name = governance_area.name if governance_area else "Unknown"
 
-        # Get all assessments in the assessor's governance area
-        # via indicators that belong to responses
-        assessments = (
+        # Get assessments based on assessor's governance area assignment
+        # - If assessor has validator_area_id: Filter by that governance area
+        # - If assessor has no validator_area_id: Show all assessments (system-wide)
+        query = (
             db.query(Assessment)
             .join(AssessmentResponse, AssessmentResponse.assessment_id == Assessment.id)
             .join(Indicator, Indicator.id == AssessmentResponse.indicator_id)
@@ -790,8 +826,14 @@ class AssessorService:
                     AssessmentResponse.indicator
                 ),
             )
-            .filter(Indicator.governance_area_id == assessor.governance_area_id)
-            .filter(
+        )
+
+        # Filter by governance area only if assessor has validator_area_id
+        if assessor.validator_area_id is not None:
+            query = query.filter(Indicator.governance_area_id == assessor.validator_area_id)
+
+        assessments = (
+            query.filter(
                 Assessment.status.in_(
                     [
                         AssessmentStatus.SUBMITTED_FOR_REVIEW,
@@ -875,10 +917,12 @@ class AssessorService:
                 getattr(assessment.blgu_user, "barangay", None), "name", "Unknown"
             )
             for response in assessment.responses:
-                if (
-                    response.indicator.governance_area_id == assessor.governance_area_id
-                    and response.validation_status == ValidationStatus.FAIL
-                ):
+                # Filter by governance area only if assessor has validator_area_id
+                if assessor.validator_area_id is not None:
+                    if response.indicator.governance_area_id != assessor.validator_area_id:
+                        continue
+
+                if response.validation_status == ValidationStatus.FAIL:
                     indicator_id = response.indicator.id
                     indicator_name = response.indicator.name
 
