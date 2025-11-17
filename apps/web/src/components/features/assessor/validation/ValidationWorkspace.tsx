@@ -47,7 +47,7 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
   const statusText: string = core?.status ?? core?.assessment_status ?? '';
   const normalizedStatus = String(statusText || '').toLowerCase();
 
-  const [form, setForm] = React.useState<Record<number, { status?: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string; internalNote?: string }>>({});
+  const [form, setForm] = React.useState<Record<number, { status?: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string; internalNote?: string; assessorRemarks?: string }>>({});
 
   const total = responses.length;
   const reviewed = responses.filter((r) => !!form[r.id]?.status).length;
@@ -109,7 +109,7 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
   const onSaveDraft = async () => {
     const payloads = responses
       .map((r) => ({ id: r.id as number, v: form[r.id] }))
-      .filter((x) => x.v && x.v.status) as { id: number; v: { status: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string; internalNote?: string } }[];
+      .filter((x) => x.v && x.v.status) as { id: number; v: { status: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string; internalNote?: string; assessorRemarks?: string } }[];
     if (payloads.length === 0) return;
     await Promise.all(
       payloads.map((p) =>
@@ -119,6 +119,7 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
             validation_status: p.v.status!,
             public_comment: p.v.publicComment ?? null,
             internal_note: p.v.internalNote ?? null,
+            assessor_remarks: p.v.assessorRemarks ?? null,
           },
         })
       )

@@ -198,11 +198,20 @@ export interface AssessmentResponse {
   response_data?: AssessmentResponseResponseData;
   is_completed: boolean;
   requires_rework: boolean;
+  validation_status?: AssessmentResponseValidationStatus;
+  generated_remark?: AssessmentResponseGeneratedRemark;
+  assessor_remarks?: AssessmentResponseAssessorRemarks;
   assessment_id: number;
   indicator_id: number;
   created_at: string;
   updated_at: string;
 }
+
+
+/**
+ * AssessmentResponseAssessorRemarks
+ */
+export type AssessmentResponseAssessorRemarks = string | null;
 
 
 /**
@@ -228,6 +237,12 @@ export type AssessmentResponseCreateResponseDataAnyOf = { [key: string]: unknown
 
 
 /**
+ * AssessmentResponseGeneratedRemark
+ */
+export type AssessmentResponseGeneratedRemark = string | null;
+
+
+/**
  * AssessmentResponseResponseData
  */
 export type AssessmentResponseResponseData = AssessmentResponseResponseDataAnyOf | null;
@@ -246,7 +261,15 @@ export interface AssessmentResponseUpdate {
   response_data?: AssessmentResponseUpdateResponseData;
   is_completed?: AssessmentResponseUpdateIsCompleted;
   requires_rework?: AssessmentResponseUpdateRequiresRework;
+  validation_status?: AssessmentResponseUpdateValidationStatus;
+  assessor_remarks?: AssessmentResponseUpdateAssessorRemarks;
 }
+
+
+/**
+ * AssessmentResponseUpdateAssessorRemarks
+ */
+export type AssessmentResponseUpdateAssessorRemarks = string | null;
 
 
 /**
@@ -271,6 +294,18 @@ export type AssessmentResponseUpdateResponseData = AssessmentResponseUpdateRespo
  * AssessmentResponseUpdateResponseDataAnyOf
  */
 export type AssessmentResponseUpdateResponseDataAnyOf = { [key: string]: unknown };
+
+
+/**
+ * AssessmentResponseUpdateValidationStatus
+ */
+export type AssessmentResponseUpdateValidationStatus = string | null;
+
+
+/**
+ * AssessmentResponseValidationStatus
+ */
+export type AssessmentResponseValidationStatus = string | null;
 
 
 /**
@@ -308,6 +343,7 @@ export const AssessmentStatus = {
   SUBMITTED: 'SUBMITTED',
   IN_REVIEW: 'IN_REVIEW',
   REWORK: 'REWORK',
+  AWAITING_FINAL_VALIDATION: 'AWAITING_FINAL_VALIDATION',
   COMPLETED: 'COMPLETED',
   SUBMITTED_FOR_REVIEW: 'SUBMITTED_FOR_REVIEW',
   VALIDATED: 'VALIDATED',

@@ -91,6 +91,9 @@ class AssessmentResponse(BaseModel):
     response_data: Optional[Dict[str, Any]] = None
     is_completed: bool
     requires_rework: bool
+    validation_status: Optional[str] = None
+    generated_remark: Optional[str] = None
+    assessor_remarks: Optional[str] = None
     assessment_id: int
     indicator_id: int
     created_at: datetime
@@ -111,6 +114,8 @@ class AssessmentResponseUpdate(BaseModel):
     response_data: Optional[Dict[str, Any]] = None
     is_completed: Optional[bool] = None
     requires_rework: Optional[bool] = None
+    validation_status: Optional[str] = None
+    assessor_remarks: Optional[str] = None
 
 
 class AssessmentResponseWithDetails(AssessmentResponse):

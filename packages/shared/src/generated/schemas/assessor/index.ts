@@ -42,3 +42,9 @@ export interface AssessorQueueItem {
  * AssessorQueueItemSubmissionDate
  */
 export type AssessorQueueItemSubmissionDate = string | null;
+
+
+/**
+ * ValidationRequestAssessorRemarks
+ */
+export type ValidationRequestAssessorRemarks = string | null;

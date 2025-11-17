@@ -122,6 +122,7 @@ class Assessment(Base):
         An assessment is locked when it's in one of these states:
         - SUBMITTED: Submitted for assessor review
         - IN_REVIEW: Currently being reviewed by assessor
+        - AWAITING_FINAL_VALIDATION: Awaiting validator final validation
         - COMPLETED: Final validation complete
 
         Locked assessments cannot be edited by BLGU users.
@@ -132,6 +133,7 @@ class Assessment(Base):
         return self.status in [
             AssessmentStatus.SUBMITTED,
             AssessmentStatus.IN_REVIEW,
+            AssessmentStatus.AWAITING_FINAL_VALIDATION,
             AssessmentStatus.COMPLETED,
         ]
 
@@ -164,6 +166,9 @@ class AssessmentResponse(Base):
 
     # Generated remark (from remark_schema template)
     generated_remark: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Assessor's manual remarks for validators
+    assessor_remarks: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Foreign keys
     assessment_id: Mapped[int] = mapped_column(

@@ -15,8 +15,8 @@ import { useAuthStore } from '@/store/useAuthStore';
 
 interface RightAssessorPanelProps {
   assessment: AssessmentDetailsResponse;
-  form: Record<number, { status?: LocalStatus; publicComment?: string; internalNote?: string }>;
-  setField: (responseId: number, field: 'status' | 'publicComment' | 'internalNote', value: string) => void;
+  form: Record<number, { status?: LocalStatus; publicComment?: string; internalNote?: string; assessorRemarks?: string }>;
+  setField: (responseId: number, field: 'status' | 'publicComment' | 'internalNote' | 'assessorRemarks', value: string) => void;
   expandedId?: number | null;
   onToggle?: (responseId: number) => void;
 }
@@ -42,6 +42,7 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
       status: z.enum(['Pass', 'Fail', 'Conditional']).optional(),
       publicComment: z.string().optional(),
       internalNote: z.string().optional(),
+      assessorRemarks: z.string().optional(),
     })
     .refine(
       (val) => {
@@ -69,6 +70,7 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
         status: form[r.id]?.status,
         publicComment: form[r.id]?.publicComment,
         internalNote: form[r.id]?.internalNote,
+        assessorRemarks: form[r.id]?.assessorRemarks,
       };
     }
     return obj as ResponsesForm;
@@ -86,10 +88,11 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
     Object.entries(watched || {}).forEach(([key, v]) => {
       const id = Number(key);
       if (!Number.isFinite(id)) return;
-      const val = v as { status?: LocalStatus; publicComment?: string; internalNote?: string };
+      const val = v as { status?: LocalStatus; publicComment?: string; internalNote?: string; assessorRemarks?: string };
       if (val.status !== form[id]?.status) setField(id, 'status', String(val.status || ''));
       if (val.publicComment !== form[id]?.publicComment) setField(id, 'publicComment', val.publicComment || '');
       if (val.internalNote !== form[id]?.internalNote) setField(id, 'internalNote', val.internalNote || '');
+      if (val.assessorRemarks !== form[id]?.assessorRemarks) setField(id, 'assessorRemarks', val.assessorRemarks || '');
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watched]);
@@ -393,6 +396,25 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                       {...register(`${key}.internalNote` as const)}
                       placeholder="Internal notes for DILG only"
                     />
+                  </div>
+
+                  {/* Assessor Remarks for Validator */}
+                  <div className="space-y-1">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Assessor Remarks for Validator (DILG-only)
+                    </div>
+                    <Textarea
+                      {...register(`${key}.assessorRemarks` as const)}
+                      placeholder={isAssessor ? "Add remarks for the validator to review..." : "Remarks from assessor"}
+                      readOnly={isValidator}
+                      disabled={isValidator}
+                      className={isValidator ? 'bg-muted cursor-not-allowed' : ''}
+                    />
+                    {isAssessor && (
+                      <div className="text-[11px] text-muted-foreground italic">
+                        These remarks will be visible to validators during final validation
+                      </div>
+                    )}
                   </div>
 
                   <div className="pt-2 flex items-center justify-between">

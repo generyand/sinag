@@ -41,6 +41,7 @@ class AssessmentStatus(str, enum.Enum):
     - SUBMITTED: BLGU has submitted, assessment is locked for editing
     - IN_REVIEW: Assessor is actively reviewing the submission
     - REWORK: Assessor has requested changes, assessment is unlocked for BLGU
+    - AWAITING_FINAL_VALIDATION: Assessor completed review, awaiting validator final validation
     - COMPLETED: Final validation complete, assessment is finalized
 
     Legacy states (preserved for backward compatibility):
@@ -54,6 +55,7 @@ class AssessmentStatus(str, enum.Enum):
     SUBMITTED = "SUBMITTED"
     IN_REVIEW = "IN_REVIEW"
     REWORK = "REWORK"
+    AWAITING_FINAL_VALIDATION = "AWAITING_FINAL_VALIDATION"
     COMPLETED = "COMPLETED"
 
     # Legacy states (backward compatibility)
