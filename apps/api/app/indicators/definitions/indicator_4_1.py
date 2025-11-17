@@ -236,98 +236,97 @@ INDICATOR_4_1 = Indicator(
             ),
             validation_rule="ANY_ITEM_REQUIRED",  # OR logic: either physical OR budget
             checklist_items=[
-                # Upload Verification for Option 1
+                # Document verification checkboxes at top
                 ChecklistItem(
                     id="4_1_6_upload_1",
                     label="4.1.6.1. At least 50% accomplishment of the physical targets in the GAD Plan",
                     mov_description="Verification of uploaded 2023 GAD Accomplishment Report (Option 1 - Physical Accomplishment)",
-                    required=False,  # OR logic - only one option is required
-                    requires_document_count=False,
+                    item_type="checkbox",
+                    required=False,
                     display_order=1
                 ),
-                # Upload Verification for Option 2
                 ChecklistItem(
                     id="4_1_6_upload_2",
                     label="4.1.6.2. At least 50% fund utilization of the CY 2023 GAD Budget",
                     mov_description="Verification of uploaded 2023 GAD Accomplishment Report (Option 2 - Fund Utilization)",
-                    required=False,  # OR logic - only one option is required
-                    requires_document_count=False,
+                    item_type="checkbox",
+                    required=False,
                     display_order=2
                 ),
-                # Instruction Section
+                # Instruction (info_text)
                 ChecklistItem(
                     id="4_1_6_instructions",
                     label="Instruction: Put a check ✓ on the box that corresponds to your assessment.",
                     mov_description="Instructions for assessor",
+                    item_type="info_text",
                     required=False,
-                    requires_document_count=False,
                     display_order=3
                 ),
-                # Option A: Physical Accomplishment
+                # Option A: Physical Accomplishment - YES/NO assessment
                 ChecklistItem(
-                    id="4_1_6_a_checkbox",
+                    id="4_1_6_option_a",
                     label="a. At least 50% accomplishment of the physical targets in the GAD Plan",
                     mov_description="Checkbox for physical accomplishment option",
-                    required=False,  # OR logic
-                    requires_document_count=False,
+                    item_type="assessment_field",
+                    required=False,
                     display_order=4
                 ),
                 ChecklistItem(
-                    id="4_1_6_a_cert",
+                    id="4_1_6_cert_physical",
                     label="Certification on the submitted CY 2023 GAD Accomplishment Report indicating at least 50% accomplishment of the physical targets in the GAD Plan signed by the C/MSWDO or C/MLGOO",
                     mov_description="Verification of certification for physical accomplishment",
-                    required=False,  # OR logic
-                    requires_document_count=False,
+                    item_type="checkbox",
+                    required=False,
                     display_order=5
                 ),
                 ChecklistItem(
-                    id="4_1_6_a_percentage",
-                    label="Please supply the required information:\n% of programs, project, and activities are completed",
-                    mov_description="Input field for percentage of completed programs/projects/activities",
-                    required=False,  # OR logic
-                    requires_document_count=True,  # This is a text input field
+                    id="4_1_6_calc_physical",
+                    label="% of programs, project, and activities are completed",
+                    mov_description="Please supply the required information:",
+                    item_type="calculation_field",
+                    required=False,
                     display_order=6
                 ),
-                # OR Separator
+                # OR Separator (info_text)
                 ChecklistItem(
-                    id="4_1_6_or_separator",
+                    id="4_1_6_or",
                     label="OR",
                     mov_description="OR separator between physical and financial options",
+                    item_type="info_text",
                     required=False,
-                    requires_document_count=False,
                     display_order=7
                 ),
-                # Option B: Fund Utilization
+                # Option B: Fund Utilization - YES/NO assessment
                 ChecklistItem(
-                    id="4_1_6_b_checkbox",
+                    id="4_1_6_option_b",
                     label="b. At least 50% fund utilization of the CY 2023 GAD Budget",
                     mov_description="Checkbox for fund utilization option",
-                    required=False,  # OR logic
-                    requires_document_count=False,
+                    item_type="assessment_field",
+                    required=False,
                     display_order=8
                 ),
                 ChecklistItem(
-                    id="4_1_6_b_cert",
+                    id="4_1_6_cert_financial",
                     label="Certification on the submitted CY 2023 GAD Accomplishment Report indicating at least 50% fund utilization of the CY 2023 GAD Budget signed by the C/MSWDO or C/MLGOO",
-                    mov_description="Verification of certification for fund utilization",
-                    required=False,  # OR logic
-                    requires_document_count=False,
+                    mov_description="Verification of certification for 50% fund utilization",
+                    item_type="checkbox",
+                    required=False,
                     display_order=9
                 ),
                 ChecklistItem(
-                    id="4_1_6_b_amount_utilized",
-                    label="Please supply the required information:\nAmount utilized\n(as of Dec. 31, 2023):",
-                    mov_description="Input field for amount utilized as of Dec 31, 2023",
-                    required=False,  # OR logic
-                    requires_document_count=True,  # This is a text input field
+                    id="4_1_6_calc_b1",
+                    label="Amount utilized (as of Dec. 31, 2023):",
+                    mov_description="Please supply the required information:",
+                    item_type="calculation_field",
+                    required=False,
                     display_order=10
                 ),
                 ChecklistItem(
-                    id="4_1_6_b_amount_allocated",
+                    id="4_1_6_calc_b2",
                     label="Amount allocated for PPAs in the GAD Plan:",
-                    mov_description="Input field for amount allocated for PPAs in GAD Plan",
-                    required=False,  # OR logic
-                    requires_document_count=True,  # This is a text input field
+                    mov_description="Please supply the required information:",
+                    item_type="calculation_field",
+                    required=False,
                     display_order=11
                 ),
             ]
