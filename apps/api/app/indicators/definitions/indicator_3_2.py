@@ -43,86 +43,22 @@ INDICATOR_3_2 = Indicator(
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
-                # Upload Verification
+                # Simplified checklist - only 1 checkbox for the main EO requirement
                 ChecklistItem(
-                    id="3_2_1_upload_1",
+                    id="3_2_1_upload",
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) indicating correct membership in accordance to the EO 366 s. of 1996, covering January to October 2023",
                     mov_description="Verification of uploaded Executive Order or similar issuance organizing BPOC with compliant composition",
-                    required=True,
+                    item_type="checkbox",
+                    required=False,
                     display_order=1
                 ),
-                # Composition Verification Items
-                ChecklistItem(
-                    id="3_2_1_comp_pb",
-                    label="Punong Barangay",
-                    mov_description="Verify Punong Barangay is listed in BPOC composition",
-                    required=True,
-                    display_order=2
-                ),
-                ChecklistItem(
-                    id="3_2_1_comp_sk",
-                    label="Sangguniang Kabataan Chairperson",
-                    mov_description="Verify SK Chairperson is listed in BPOC composition",
-                    required=True,
-                    display_order=3
-                ),
-                ChecklistItem(
-                    id="3_2_1_comp_lupon",
-                    label="A member of the Lupon Tagapamayapa",
-                    mov_description="Verify Lupon Tagapamayapa member is listed in BPOC composition",
-                    required=True,
-                    display_order=4
-                ),
-                ChecklistItem(
-                    id="3_2_1_comp_teacher",
-                    label="A Public School Teacher",
-                    mov_description="Verify Public School Teacher is listed in BPOC composition",
-                    required=True,
-                    display_order=5
-                ),
-                ChecklistItem(
-                    id="3_2_1_comp_pnp",
-                    label="PNP Officer",
-                    mov_description="Verify PNP Officer is listed in BPOC composition",
-                    required=True,
-                    display_order=6
-                ),
-                ChecklistItem(
-                    id="3_2_1_comp_interfaith",
-                    label="A representative of the Interfaith Group",
-                    mov_description="Verify Interfaith Group representative is listed in BPOC composition",
-                    required=True,
-                    display_order=7
-                ),
-                ChecklistItem(
-                    id="3_2_1_comp_senior",
-                    label="A Senior Citizen",
-                    mov_description="Verify Senior Citizen is listed in BPOC composition",
-                    required=True,
-                    display_order=8
-                ),
-                ChecklistItem(
-                    id="3_2_1_comp_watch",
-                    label="At least three (3) members of the existing Barangay-Based Anti-Crime or Neighborhood Watch Groups or an NGO representative",
-                    mov_description="Verify at least 3 members from Anti-Crime/Watch Groups or NGO representative are listed",
-                    required=True,
-                    display_order=9
-                ),
-                ChecklistItem(
-                    id="3_2_1_comp_tanod",
-                    label="A Barangay Tanod",
-                    mov_description="Verify Barangay Tanod is listed in BPOC composition",
-                    required=True,
-                    display_order=10
-                ),
-                # Text Input Field
                 ChecklistItem(
                     id="3_2_1_date_of_approval",
-                    label="Date of approval",
-                    mov_description="Date of approval for the EO or similar issuance",
-                    required=True,
-                    requires_document_count=True,  # This is a text input field
-                    display_order=11
+                    label="Date of approval for the EO or similar issuance",
+                    mov_description="Please supply the required information:",
+                    item_type="document_count",
+                    required=False,
+                    display_order=2
                 ),
             ]
         ),
