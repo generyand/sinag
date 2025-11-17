@@ -149,40 +149,49 @@ INDICATOR_4_3 = Indicator(
                     item_type="info_text",
                     required=False,
                     display_order=2
-                ),                # Calculation field BEFORE the YES/NO assessment
-                ChecklistItem(
-                    id="4_3_4_calc_physical",
-                    label="% of programs, projects, and activities completed",
-                    mov_description="Please supply the percentage of programs, projects, and activities completed: ____% (Total number of activities/projects accomplished / Total number of activities/projects reflected in the BDP) x 100",
-                    item_type="calculation_field",
-                    required=False,
-                    display_order=5
                 ),
-                # YES/NO assessment for Option A
+                # OPTION A: YES/NO assessment first, then calculation
                 ChecklistItem(
                     id="4_3_4_option_a",
                     label="a. At least 50% accomplishment of the physical targets in the BDP",
                     mov_description="Verification that at least 50% of physical targets are accomplished",
                     item_type="assessment_field",
                     required=False,
-                    display_order=6
+                    display_order=3
                 ),
-                # OR separator (info_text)
+                ChecklistItem(
+                    id="4_3_4_calc_physical",
+                    label="% of programs, projects, and activities completed",
+                    mov_description="Please supply the percentage of programs, projects, and activities completed: ____% (Total number of activities/projects accomplished / Total number of activities/projects reflected in the BDP) x 100",
+                    item_type="calculation_field",
+                    required=False,
+                    display_order=4
+                ),
+                # OR separator
                 ChecklistItem(
                     id="4_3_4_or",
                     label="OR",
                     mov_description="OR separator between physical and financial options",
                     item_type="info_text",
                     required=False,
-                    display_order=7
-                ),                # Calculation fields BEFORE the YES/NO assessment
+                    display_order=5
+                ),
+                # OPTION B: YES/NO assessment first, then calculations
+                ChecklistItem(
+                    id="4_3_4_option_b",
+                    label="b. At least 50% fund utilization rate of the CY 2023 BDP Budget",
+                    mov_description="Verification that at least 50% of BDP Budget is utilized",
+                    item_type="assessment_field",
+                    required=False,
+                    display_order=6
+                ),
                 ChecklistItem(
                     id="4_3_4_calc_b1",
                     label="Amount utilized (as of Dec 31, 2023):",
                     mov_description="Please supply the amount utilized (as of Dec 31, 2023): _____ Amount Utilized",
                     item_type="calculation_field",
                     required=False,
-                    display_order=9
+                    display_order=7
                 ),
                 ChecklistItem(
                     id="4_3_4_calc_b2",
@@ -190,16 +199,7 @@ INDICATOR_4_3 = Indicator(
                     mov_description="Please supply the amount allocated for PPAs in the BDP: _____ Amount Allocated",
                     item_type="calculation_field",
                     required=False,
-                    display_order=10
-                ),
-                # YES/NO assessment for Option B
-                ChecklistItem(
-                    id="4_3_4_option_b",
-                    label="b. At least 50% fund utilization rate of the CY 2023 BDP Budget",
-                    mov_description="Verification that at least 50% of BDP Budget is utilized",
-                    item_type="assessment_field",
-                    required=False,
-                    display_order=11
+                    display_order=8
                 ),
             ]
         ),
