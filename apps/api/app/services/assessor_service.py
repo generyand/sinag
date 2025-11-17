@@ -22,10 +22,17 @@ from sqlalchemy.orm import Session, joinedload
 class AssessorService:
     def get_assessor_queue(self, db: Session, assessor: User) -> List[dict]:
         """
-        Return submissions filtered by the assessor's governance area.
+        Return submissions filtered by user role and governance area.
 
-        - If assessor has validator_area_id: Show only assessments in that governance area
-        - If assessor has no validator_area_id: Show all assessments (system-wide access)
+        **Validators** (users with validator_area_id):
+        - See only assessments in AWAITING_FINAL_VALIDATION status
+        - Filtered by their assigned governance area
+        - These are assessments where assessor clicked "Finalize Validation"
+
+        **Assessors** (users without validator_area_id):
+        - See assessments in SUBMITTED, IN_REVIEW, REWORK statuses
+        - System-wide access (all governance areas)
+        - These are assessments ready for initial review
 
         Includes barangay name, submission date, status, and last updated.
         """
@@ -37,22 +44,27 @@ class AssessorService:
             .options(joinedload(Assessment.blgu_user).joinedload(User.barangay))
         )
 
-        # Filter by governance area only if assessor has validator_area_id assigned
+        # Validators: Filter by governance area AND only show finalized assessments
         if assessor.validator_area_id is not None:
-            query = query.filter(Indicator.governance_area_id == assessor.validator_area_id)
+            query = query.filter(
+                Indicator.governance_area_id == assessor.validator_area_id,
+                Assessment.status == AssessmentStatus.AWAITING_FINAL_VALIDATION
+            )
+        # Assessors: Show assessments ready for initial review
+        else:
+            query = query.filter(
+                Assessment.status.in_([
+                    AssessmentStatus.SUBMITTED,
+                    AssessmentStatus.IN_REVIEW,
+                    AssessmentStatus.REWORK,
+                ])
+            )
 
         # Apply remaining filters
         assessments = (
             query.filter(
                 # Only include true submissions (must have been submitted)
                 Assessment.submitted_at.isnot(None),
-                Assessment.status.in_(
-                    [
-                        AssessmentStatus.SUBMITTED_FOR_REVIEW,
-                        AssessmentStatus.NEEDS_REWORK,
-                        AssessmentStatus.VALIDATED,
-                    ]
-                ),
             )
             .distinct(Assessment.id)
             .order_by(Assessment.id, Assessment.updated_at.desc())
@@ -630,7 +642,7 @@ class AssessorService:
         # In a more sophisticated system, we'd check specific permissions
 
         # Update assessment status and rework count
-        assessment.status = AssessmentStatus.NEEDS_REWORK
+        assessment.status = AssessmentStatus.REWORK
         assessment.rework_count = 1
         # Note: updated_at is automatically handled by SQLAlchemy's onupdate
 
@@ -670,12 +682,15 @@ class AssessorService:
         self, db: Session, assessment_id: int, assessor: User
     ) -> dict:
         """
-        Finalize assessment validation, permanently locking it.
+        Finalize assessor review and send to validator for final validation.
+
+        Changes assessment status to AWAITING_FINAL_VALIDATION, which makes it
+        visible to validators assigned to the governance area.
 
         Args:
             db: Database session
             assessment_id: ID of the assessment to finalize
-            assessor: The assessor performing the action (currently unused but kept for future audit logging)
+            assessor: The assessor performing the action
 
         Returns:
             dict: Result of the finalization operation
@@ -696,14 +711,14 @@ class AssessorService:
             raise ValueError(f"Assessment {assessment_id} not found")
 
         # Check if assessment can be finalized
-        if assessment.status == AssessmentStatus.VALIDATED:
-            raise ValueError("Assessment is already finalized")
+        if assessment.status in (AssessmentStatus.AWAITING_FINAL_VALIDATION, AssessmentStatus.COMPLETED):
+            raise ValueError("Assessment has already been finalized by assessor")
 
         if assessment.status == AssessmentStatus.DRAFT:
             raise ValueError("Cannot finalize a draft assessment")
 
-        # Only allow finalize from Submitted for Review or Needs Rework
-        if assessment.status not in (AssessmentStatus.SUBMITTED_FOR_REVIEW, AssessmentStatus.NEEDS_REWORK):
+        # Only allow finalize from SUBMITTED, IN_REVIEW, or REWORK statuses
+        if assessment.status not in (AssessmentStatus.SUBMITTED, AssessmentStatus.IN_REVIEW, AssessmentStatus.REWORK):
             raise ValueError("Cannot finalize assessment in its current status")
 
         # Check that all responses have been reviewed (have validation status)
@@ -719,13 +734,13 @@ class AssessorService:
             )
 
         # If first submission: do not allow finalize if there are Fail indicators (must use rework)
-        if assessment.status == AssessmentStatus.SUBMITTED_FOR_REVIEW:
+        if assessment.status == AssessmentStatus.SUBMITTED:
             has_fail = any(r.validation_status == ValidationStatus.FAIL for r in assessment.responses)
             if has_fail:
                 raise ValueError("Cannot finalize with Fail indicators on first submission; send for rework")
 
-        # Update assessment status
-        assessment.status = AssessmentStatus.VALIDATED
+        # Update assessment status to await validator final validation
+        assessment.status = AssessmentStatus.AWAITING_FINAL_VALIDATION
         assessment.validated_at = (
             db.query(Assessment)
             .filter(Assessment.id == assessment_id)
@@ -783,7 +798,7 @@ class AssessorService:
 
         return {
             "success": True,
-            "message": "Assessment finalized successfully",
+            "message": "Assessment review completed and sent to validator for final validation",
             "assessment_id": assessment_id,
             "new_status": assessment.status.value,
             "validated_at": assessment.validated_at.isoformat()
