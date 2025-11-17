@@ -130,73 +130,101 @@ INDICATOR_4_3 = Indicator(
                 "Upload: CY 2023 Accomplishment Report (with received stamp by the C/MPDC)\n\n"
                 "IMPORTANT: Only ONE (1) of the options below is required"
             ),
-            validation_rule="ANY_ITEM_REQUIRED",  # OR logic: either physical OR budget
+            validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # OR logic: either physical OR budget
             checklist_items=[
+                # Single document verification checkbox
                 ChecklistItem(
-                    id="4_3_4_upload_1",
+                    id="4_3_4_report",
                     label="CY 2023 Accomplishment Report (with received stamp by the C/MPDC)",
                     mov_description="Verification of uploaded CY 2023 Accomplishment Report with received stamp by the C/MPDC",
-                    required=True,
+                    item_type="checkbox",
+                    required=False,
                     display_order=1
                 ),
+                # Important note (info_text)
                 ChecklistItem(
-                    id="4_3_4_instructions",
+                    id="4_3_4_important",
                     label="IMPORTANT: Only ONE (1) of the options below is required",
                     mov_description="Instruction item - informational only",
+                    item_type="info_text",
                     required=False,
                     display_order=2
                 ),
+                # Instruction (info_text)
+                ChecklistItem(
+                    id="4_3_4_instructions",
+                    label="Instruction: Put a check ✓ on the box that corresponds to your assessment.",
+                    mov_description="Instructions for assessor",
+                    item_type="info_text",
+                    required=False,
+                    display_order=3
+                ),
+                # OPTION A - Physical Accomplishment
                 ChecklistItem(
                     id="4_3_4_option_a_label",
                     label="OPTION A - Physical Accomplishment",
                     mov_description="Option A label - informational only",
+                    item_type="info_text",
                     required=False,
-                    display_order=3
-                ),
-                ChecklistItem(
-                    id="4_3_4_percentage",
-                    label="Please supply the percentage of programs, projects, and activities completed:\n_____ % (Total number of activities/projects accomplished / Total number of activities/projects reflected in the BDP) x 100",
-                    mov_description="Input field for percentage of programs, projects, and activities completed",
-                    required=False,
-                    requires_document_count=True,
                     display_order=4
                 ),
                 ChecklistItem(
-                    id="4_3_4_option_a_check",
-                    label="At least 50% accomplishment of the physical targets in the BDP",
-                    mov_description="Verification that at least 50% of physical targets are accomplished",
+                    id="4_3_4_calc_physical",
+                    label="% of programs, projects, and activities completed",
+                    mov_description="Please supply the percentage of programs, projects, and activities completed: ____% (Total number of activities/projects accomplished / Total number of activities/projects reflected in the BDP) x 100",
+                    item_type="calculation_field",
                     required=False,
                     display_order=5
                 ),
                 ChecklistItem(
-                    id="4_3_4_option_b_label",
-                    label="OPTION B - Fund Utilization",
-                    mov_description="Option B label - informational only",
+                    id="4_3_4_option_a",
+                    label="At least 50% accomplishment of the physical targets in the BDP",
+                    mov_description="Verification that at least 50% of physical targets are accomplished",
+                    item_type="assessment_field",
                     required=False,
                     display_order=6
                 ),
+                # OR separator (info_text)
                 ChecklistItem(
-                    id="4_3_4_amount_utilized",
-                    label="Please supply the amount utilized (as of Dec 31, 2023):\n_____ Amount Utilized",
-                    mov_description="Input field for amount utilized",
+                    id="4_3_4_or",
+                    label="OR",
+                    mov_description="OR separator between physical and financial options",
+                    item_type="info_text",
                     required=False,
-                    requires_document_count=True,
                     display_order=7
                 ),
+                # OPTION B - Fund Utilization
                 ChecklistItem(
-                    id="4_3_4_amount_allocated",
-                    label="Please supply the amount allocated for PPAs in the BDP:\n_____ Amount Allocated",
-                    mov_description="Input field for amount allocated",
+                    id="4_3_4_option_b_label",
+                    label="OPTION B - Fund Utilization",
+                    mov_description="Option B label - informational only",
+                    item_type="info_text",
                     required=False,
-                    requires_document_count=True,
                     display_order=8
                 ),
                 ChecklistItem(
-                    id="4_3_4_option_b_check",
-                    label="At least 50% fund utilization rate of the CY 2023 BDP Budget\n(Total Amount Utilized / Total Amount Allocated) x 100",
-                    mov_description="Verification that at least 50% of BDP Budget is utilized",
+                    id="4_3_4_calc_b1",
+                    label="Amount utilized (as of Dec 31, 2023):",
+                    mov_description="Please supply the amount utilized (as of Dec 31, 2023): _____ Amount Utilized",
+                    item_type="calculation_field",
                     required=False,
                     display_order=9
+                ),
+                ChecklistItem(
+                    id="4_3_4_calc_b2",
+                    label="Amount allocated for PPAs in the BDP:",
+                    mov_description="Please supply the amount allocated for PPAs in the BDP: _____ Amount Allocated",
+                    item_type="calculation_field",
+                    required=False,
+                    display_order=10
+                ),
+                ChecklistItem(
+                    id="4_3_4_option_b",
+                    label="At least 50% fund utilization rate of the CY 2023 BDP Budget",
+                    mov_description="Verification that at least 50% of BDP Budget is utilized",
+                    item_type="assessment_field",
+                    required=False,
+                    display_order=11
                 ),
             ]
         ),
