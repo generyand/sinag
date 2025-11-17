@@ -18,6 +18,9 @@ interface LeftSubmissionViewProps {
 type AnyRecord = Record<string, any>;
 
 export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSubmissionViewProps) {
+  // State for expanded governance areas
+  const [expandedAreas, setExpandedAreas] = React.useState<Set<number>>(() => new Set());
+
   // Modal state for in-app MOV preview with next/prev
   const [modalOpen, setModalOpen] = React.useState(false);
   const [modalIndicatorTitle, setModalIndicatorTitle] = React.useState<string>('');
@@ -38,6 +41,29 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
   const data: AnyRecord = (assessment as unknown as AnyRecord) ?? {};
   const core = (data.assessment as AnyRecord) ?? data;
   const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
+
+  // Group responses by governance area for tree hierarchy
+  const groupedByArea = React.useMemo(() => {
+    const groups: Record<string, { areaId: number; areaName: string; responses: AnyRecord[] }> = {};
+
+    responses.forEach((r) => {
+      const indicator = (r.indicator as AnyRecord) ?? {};
+      const govArea = (indicator.governance_area as AnyRecord) ?? {};
+      const areaId = govArea.id || 0;
+      const areaName = govArea.name || 'Unknown Area';
+
+      if (!groups[areaId]) {
+        groups[areaId] = {
+          areaId,
+          areaName,
+          responses: [],
+        };
+      }
+      groups[areaId].responses.push(r);
+    });
+
+    return Object.values(groups).sort((a, b) => a.areaId - b.areaId);
+  }, [responses]);
 
   const resolveMov = async (mov: AnyRecord): Promise<string> => {
     const key: string | null = mov?.storage_path || mov?.url || null;
@@ -262,69 +288,117 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
     return <span>{formatPrimitive(val)}</span>;
   };
 
+  const toggleArea = (areaId: number) => {
+    setExpandedAreas((prev) => {
+      const next = new Set(prev);
+      if (next.has(areaId)) {
+        next.delete(areaId);
+      } else {
+        next.add(areaId);
+      }
+      return next;
+    });
+  };
+
   return (
     <div className="p-4">
       <div className="text-sm text-muted-foreground mb-3">BLGU Submission</div>
-      <div className="space-y-4">
+      <div className="space-y-3">
         {responses.length === 0 ? (
           <div className="text-sm text-muted-foreground">No submitted responses.</div>
         ) : (
-          responses.map((r, idx) => {
-            const indicator = (r.indicator as AnyRecord) ?? {};
-            const indicatorLabel = indicator?.name || `Indicator #${r.indicator_id ?? idx + 1}`;
-            const blguAnswer = r.response_data ?? r.answer ?? null;
-            const movs: AnyRecord[] = (r.movs as AnyRecord[]) ?? [];
-            const isOpen = expandedId == null ? true : expandedId === r.id;
+          groupedByArea.map((area) => {
+            const isAreaExpanded = expandedAreas.has(area.areaId);
 
             return (
-              <div key={r.id ?? idx} className="rounded-sm bg-card shadow-md border border-black/5 overflow-hidden" data-left-item-id={r.id}>
-                <button type="button" onClick={() => onToggle?.(r.id)} className="w-full text-left">
-                <div className="px-3 py-3 text-lg font-semibold rounded-t-sm flex items-center justify-between gap-2"
-                  style={{ background: 'var(--cityscape-yellow)', color: 'var(--cityscape-accent-foreground)' }}>
-                  <span>{indicatorLabel}</span>
-                  <span className="text-xs bg-white/70 text-black rounded px-2 py-0.5">{movs.length} MOV file{movs.length === 1 ? '' : 's'}</span>
-                </div>
+              <div key={area.areaId} className="border border-black/10 rounded-sm overflow-hidden">
+                {/* Governance Area Header */}
+                <button
+                  type="button"
+                  onClick={() => toggleArea(area.areaId)}
+                  className="w-full px-3 py-2 bg-muted/50 hover:bg-muted/70 text-left flex items-center justify-between transition-colors"
+                >
+                  <span className="font-semibold text-sm">{area.areaName}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">{area.responses.length} indicator{area.responses.length === 1 ? '' : 's'}</span>
+                    <svg
+                      className={`w-4 h-4 transition-transform ${isAreaExpanded ? 'rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
                 </button>
-                {isOpen ? (
-                <div className="p-3 text-sm">
-                  <div className="mb-2">
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">BLGU Answer</div>
-                    <div className="text-[13px] leading-5 bg-muted/30 rounded p-2">
-                      {renderValue(blguAnswer)}
-                    </div>
+
+                {/* Indicators under this governance area */}
+                {isAreaExpanded && (
+                  <div className="divide-y divide-black/5">
+                    {area.responses.map((r, idx) => {
+                      const indicator = (r.indicator as AnyRecord) ?? {};
+                      const indicatorLabel = indicator?.name || `Indicator #${r.indicator_id ?? idx + 1}`;
+                      const blguAnswer = r.response_data ?? r.answer ?? null;
+                      const movs: AnyRecord[] = (r.movs as AnyRecord[]) ?? [];
+                      const isOpen = expandedId === r.id;
+
+                      return (
+                        <div key={r.id ?? idx} data-left-item-id={r.id}>
+                          <button
+                            type="button"
+                            onClick={() => onToggle?.(r.id)}
+                            className={`w-full px-3 py-2 text-left hover:bg-muted/30 transition-colors ${isOpen ? 'bg-cityscape-yellow/10' : ''}`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-sm font-medium">{indicatorLabel}</span>
+                              <span className="text-xs bg-muted rounded px-2 py-0.5">{movs.length} MOV{movs.length === 1 ? '' : 's'}</span>
+                            </div>
+                          </button>
+                          {isOpen && (
+                            <div className="px-3 py-2 bg-muted/10 text-sm border-t border-black/5">
+                              <div className="mb-2">
+                                <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">BLGU Answer</div>
+                                <div className="text-[13px] leading-5 bg-white rounded p-2 border border-black/5">
+                                  {renderValue(blguAnswer)}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Uploaded MOVs</div>
+                                {movs.length === 0 ? (
+                                  <div className="text-muted-foreground">None</div>
+                                ) : (
+                                  <ul className="pl-0 space-y-2">
+                                    {movs.map((m, mi) => {
+                                      const name = m.original_filename || m.filename || 'MOV';
+                                      const ext = typeof name === 'string' && name.includes('.') ? name.split('.').pop()?.toUpperCase() : '';
+                                      return (
+                                        <li key={m.id ?? mi} className="list-none">
+                                          <button
+                                            type="button"
+                                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-black/10 bg-white text-foreground shadow-sm hover:bg-black/5"
+                                            onClick={() => openMovModal(indicatorLabel, movs, mi)}
+                                            title={name}
+                                          >
+                                            <span className="truncate max-w-[220px] text-sm">{name}</span>
+                                            {ext && (
+                                              <span className="text-[10px] uppercase rounded px-1.5 py-0.5 bg-muted/60 text-muted-foreground border border-black/10">
+                                                {ext}
+                                              </span>
+                                            )}
+                                          </button>
+                                        </li>
+                                      );
+                                    })}
+                                  </ul>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div>
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Uploaded MOVs</div>
-                    {movs.length === 0 ? (
-                      <div className="text-muted-foreground">None</div>
-                    ) : (
-                      <ul className="pl-0 space-y-2">
-                        {movs.map((m, mi) => {
-                          const name = m.original_filename || m.filename || 'MOV';
-                          const ext = typeof name === 'string' && name.includes('.') ? name.split('.').pop()?.toUpperCase() : '';
-                          return (
-                            <li key={m.id ?? mi} className="list-none">
-                              <button
-                                type="button"
-                                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-black/10 bg-white text-foreground shadow-sm hover:bg-black/5"
-                                onClick={() => openMovModal(indicatorLabel, movs, mi)}
-                                title={name}
-                              >
-                                <span className="truncate max-w-[220px] text-sm">{name}</span>
-                                {ext ? (
-                                  <span className="text-[10px] uppercase rounded px-1.5 py-0.5 bg-muted/60 text-muted-foreground border border-black/10">
-                                    {ext}
-                                  </span>
-                                ) : null}
-                              </button>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    )}
-                  </div>
-                </div>
-                ) : null}
+                )}
               </div>
             );
           })
