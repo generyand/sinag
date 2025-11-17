@@ -200,10 +200,10 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                   </div>
                                 ) : item.item_type === 'info_text' ? (
                                   // Instructional text (no input control)
-                                  <div className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded px-3 py-2">
+                                  <div className="text-xs text-blue-800 dark:text-blue-200 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-700 rounded px-3 py-2">
                                     {item.label}
                                     {item.mov_description && item.mov_description !== item.label && (
-                                      <div className="text-[11px] italic mt-1">{item.mov_description}</div>
+                                      <div className="text-[11px] text-blue-700 dark:text-blue-300 italic mt-1">{item.mov_description}</div>
                                     )}
                                   </div>
                                 ) : item.item_type === 'assessment_field' ? (
