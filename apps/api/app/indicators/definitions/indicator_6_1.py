@@ -151,7 +151,7 @@ INDICATOR_6_1 = Indicator(
                     id="6_1_4_report_count",
                     label="Number of Monthly Accomplishment Reports submitted",
                     item_type="calculation_field",
-                    mov_description="Please supply the required information:",
+                    mov_description="",
                     required=False,
                     display_order=2
                 ),
@@ -168,7 +168,7 @@ INDICATOR_6_1 = Indicator(
                     id="6_1_4_calc_a_percentage",
                     label="% of programs, project, and activities completed",
                     item_type="calculation_field",
-                    mov_description="Please supply the required information:",
+                    mov_description="",
                     required=False,
                     display_order=4
                 ),
@@ -194,7 +194,7 @@ INDICATOR_6_1 = Indicator(
                     id="6_1_4_calc_b_utilized",
                     label="Amount utilized (as of Dec 31, 2023):",
                     item_type="calculation_field",
-                    mov_description="Please supply the required information:",
+                    mov_description="",
                     required=False,
                     display_order=7
                 ),
@@ -202,7 +202,7 @@ INDICATOR_6_1 = Indicator(
                     id="6_1_4_calc_b_allocated",
                     label="Amount allocated for PPAs in the BESWM Plan:",
                     item_type="calculation_field",
-                    mov_description="Please supply the required information:",
+                    mov_description="",
                     required=False,
                     display_order=8
                 ),
