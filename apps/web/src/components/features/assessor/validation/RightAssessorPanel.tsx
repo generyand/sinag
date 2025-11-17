@@ -118,24 +118,31 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
       <div className="space-y-4">
         {responses.length === 0 ? (
           <div className="text-sm text-muted-foreground">No indicators found.</div>
+        ) : expandedId == null ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <div className="text-sm">Select an indicator from the left panel to begin validation</div>
+          </div>
         ) : (
-          responses.map((r, idx) => {
+          (() => {
+            // Show ONLY the selected indicator
+            const r = responses.find((resp) => resp.id === expandedId);
+            if (!r) return null;
+
+            const idx = responses.findIndex((resp) => resp.id === expandedId);
             const indicator = (r.indicator as AnyRecord) ?? {};
             const indicatorLabel = indicator?.name || `Indicator #${r.indicator_id ?? idx + 1}`;
             const techNotes = indicator?.technical_notes || indicator?.notes || null;
             const key = String(r.id);
             const errorsFor = (formState.errors as AnyRecord)?.[key]?.publicComment;
-            const isOpen = expandedId == null ? true : expandedId === r.id;
 
             return (
               <div key={r.id ?? idx} className="rounded-sm bg-card shadow-md border border-black/5 overflow-hidden" data-right-item-id={r.id}>
-                <button type="button" onClick={() => onToggle?.(r.id)} className="w-full text-left">
                 <div className="px-3 py-3 text-lg font-semibold rounded-t-sm"
                   style={{ background: 'var(--cityscape-yellow)', color: 'var(--cityscape-accent-foreground)' }}>
                   {indicatorLabel}
                 </div>
-                </button>
-                {isOpen ? (
+                {/* Content is always visible when indicator is selected */}
+                {(
                 <div className="p-3 space-y-4">
                   {techNotes ? (
                     <div className="text-xs text-muted-foreground bg-muted/30 rounded-sm p-2">
@@ -295,10 +302,10 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                     </Button>
                   </div>
                 </div>
-                ) : null}
+                )}
               </div>
             );
-          })
+          })()
         )}
       </div>
     </div>
