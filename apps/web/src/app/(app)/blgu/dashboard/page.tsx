@@ -44,7 +44,7 @@ export default function BLGUDashboardPage() {
     error: assessmentError,
   } = useGetAssessmentsMyAssessment();
 
-  const assessmentId = myAssessment?.id;
+  const assessmentId = myAssessment?.assessment?.id;
 
   // Fetch dashboard data using generated hook (only if we have an assessment ID)
   const {
