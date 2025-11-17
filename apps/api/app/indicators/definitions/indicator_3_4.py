@@ -37,45 +37,22 @@ INDICATOR_3_4 = Indicator(
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
+                # Simplified checklist - only 1 checkbox for the main EO requirement
                 ChecklistItem(
-                    id="3_4_1_eo",
+                    id="3_4_1_upload",
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the organization of the Barangay Tanod covering January to October 2023",
                     mov_description="Verification that the EO/issuance creates Barangay Tanod with proper composition",
-                    required=True,
-                    requires_document_count=False,
+                    item_type="checkbox",
+                    required=False,
                     display_order=1
-                ),
-                ChecklistItem(
-                    id="3_4_1_comp_chief",
-                    label="Chief Tanod/Executive Officer",
-                    mov_description="Verify Chief Tanod/Executive Officer is listed in the composition",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=2
-                ),
-                ChecklistItem(
-                    id="3_4_1_comp_leaders",
-                    label="Team Leaders",
-                    mov_description="Verify Team Leaders are listed in the composition",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=3
-                ),
-                ChecklistItem(
-                    id="3_4_1_comp_members",
-                    label="Team Members",
-                    mov_description="Verify Team Members are listed in the composition",
-                    required=True,
-                    requires_document_count=False,
-                    display_order=4
                 ),
                 ChecklistItem(
                     id="3_4_1_date",
                     label="Date of approval",
-                    mov_description="Date when the EO/issuance was approved",
-                    required=True,
-                    requires_document_count=True,  # Date input field
-                    display_order=5
+                    mov_description="Please supply the required information:",
+                    item_type="document_count",
+                    required=False,
+                    display_order=2
                 ),
             ]
         ),
