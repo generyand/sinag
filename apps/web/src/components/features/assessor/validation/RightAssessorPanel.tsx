@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { useAuthStore } from '@/store/useAuthStore';
 
 interface RightAssessorPanelProps {
   assessment: AssessmentDetailsResponse;
@@ -28,6 +29,12 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
   const data: AnyRecord = (assessment as unknown as AnyRecord) ?? {};
   const core = (data.assessment as AnyRecord) ?? data;
   const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
+
+  // Get user role to determine permissions
+  const { user } = useAuthStore();
+  const userRole = user?.role || '';
+  const isValidator = userRole === 'VALIDATOR';
+  const isAssessor = userRole === 'ASSESSOR';
 
   const uploadMovMutation = usePostAssessorAssessmentResponsesResponseIdMovsUpload();
 
@@ -105,7 +112,9 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
 
   return (
     <div className="p-4">
-      <div className="text-sm text-muted-foreground mb-3">Assessor Controls</div>
+      <div className="text-sm text-muted-foreground mb-3">
+        {isValidator ? 'Validator Controls' : 'Assessor Controls'}
+      </div>
       <div className="space-y-4">
         {responses.length === 0 ? (
           <div className="text-sm text-muted-foreground">No indicators found.</div>
@@ -180,45 +189,60 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                     );
                   })()}
 
-                  <div className="space-y-2">
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Validation Status</div>
-                    <div className="flex items-center gap-2">
-                      {(['Pass', 'Fail', 'Conditional'] as LocalStatus[]).map((s) => {
-                        const active = form[r.id]?.status === s;
-                        const base = 'size-sm';
-                        const cls = active
-                          ? s === 'Pass'
-                            ? 'text-white hover:opacity-90'
-                            : s === 'Fail'
+                  {/* VALIDATOR ONLY: Validation Status Buttons */}
+                  {isValidator && (
+                    <div className="space-y-2">
+                      <div className="text-xs uppercase tracking-wide text-muted-foreground">Validation Status</div>
+                      <div className="flex items-center gap-2">
+                        {(['Pass', 'Fail', 'Conditional'] as LocalStatus[]).map((s) => {
+                          const active = form[r.id]?.status === s;
+                          const base = 'size-sm';
+                          const cls = active
+                            ? s === 'Pass'
                               ? 'text-white hover:opacity-90'
-                              : 'text-[var(--cityscape-accent-foreground)] hover:opacity-90'
-                          : '';
-                        const style = active
-                          ? s === 'Pass'
-                            ? { background: 'var(--success)' }
-                            : s === 'Fail'
-                              ? { background: 'var(--destructive, #ef4444)' }
-                              : { background: 'var(--cityscape-yellow)' }
-                          : undefined;
-                        return (
-                          <Button
-                            key={s}
-                            type="button"
-                            variant={active ? 'default' : 'outline'}
-                            size="sm"
-                            className={cls}
-                            style={style}
-                            onClick={() => setField(r.id, 'status', s as string)}
-                          >
-                            {s}
-                          </Button>
-                        );
-                      })}
+                              : s === 'Fail'
+                                ? 'text-white hover:opacity-90'
+                                : 'text-[var(--cityscape-accent-foreground)] hover:opacity-90'
+                            : '';
+                          const style = active
+                            ? s === 'Pass'
+                              ? { background: 'var(--success)' }
+                              : s === 'Fail'
+                                ? { background: 'var(--destructive, #ef4444)' }
+                                : { background: 'var(--cityscape-yellow)' }
+                            : undefined;
+                          return (
+                            <Button
+                              key={s}
+                              type="button"
+                              variant={active ? 'default' : 'outline'}
+                              size="sm"
+                              className={cls}
+                              style={style}
+                              onClick={() => setField(r.id, 'status', s as string)}
+                            >
+                              {s}
+                            </Button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {/* ASSESSOR ONLY: Information Message */}
+                  {isAssessor && (
+                    <div className="border border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800 rounded-sm p-3">
+                      <div className="text-xs text-blue-800 dark:text-blue-300">
+                        <div className="font-semibold mb-1">ℹ️ Assessor Note</div>
+                        <div>As an assessor, you can review submissions and provide feedback. Only validators can mark indicators as Pass/Fail/Conditional.</div>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="space-y-1">
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Assessor's Findings (Visible to BLGU)</div>
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                      {isValidator ? "Validator's Findings (Visible to BLGU)" : "Assessor's Notes (Visible to BLGU)"}
+                    </div>
                     <Textarea
                       {...register(`${key}.publicComment` as const)}
                       placeholder="Provide clear, actionable feedback for BLGU to address for rework."
@@ -238,7 +262,9 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                   </div>
 
                   <div className="space-y-1">
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Upload "Pahabol" Documents (by Assessor)</div>
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Upload "Pahabol" Documents (by {isValidator ? 'Validator' : 'Assessor'})
+                    </div>
                     <Input type="file" onChange={(e) => handleUpload(r.id, e)} />
                   </div>
 
