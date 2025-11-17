@@ -219,20 +219,24 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <div className="rounded-sm shadow-md border border-black/5">
-          <LeftSubmissionView assessment={assessment} expandedId={expandedId ?? undefined} onToggle={(id) => setExpandedId((curr) => (curr === id ? null : id))} />
-        </div>
-        <div className="rounded-sm shadow-md border border-black/5">
-          <RightAssessorPanel assessment={assessment} form={form} expandedId={expandedId ?? undefined} onToggle={(id) => setExpandedId((curr) => (curr === id ? null : id))} setField={(id, field, value) => {
-            setForm((prev) => ({
-              ...prev,
-              [id]: {
-                ...prev[id],
-                [field]: value,
-              },
-            }));
-          }} />
+      <div className="w-full overflow-hidden">
+        <div className="mx-auto max-w-7xl px-4 md:px-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="rounded-sm shadow-md border border-black/5 overflow-hidden min-w-0 w-full">
+              <LeftSubmissionView assessment={assessment} expandedId={expandedId ?? undefined} onToggle={(id) => setExpandedId((curr) => (curr === id ? null : id))} />
+            </div>
+            <div className="rounded-sm shadow-md border border-black/5 overflow-hidden min-w-0 w-full">
+              <RightAssessorPanel assessment={assessment} form={form} expandedId={expandedId ?? undefined} onToggle={(id) => setExpandedId((curr) => (curr === id ? null : id))} setField={(id, field, value) => {
+                setForm((prev) => ({
+                  ...prev,
+                  [id]: {
+                    ...prev[id],
+                    [field]: value,
+                  },
+                }));
+              }} />
+            </div>
+          </div>
         </div>
       </div>
 

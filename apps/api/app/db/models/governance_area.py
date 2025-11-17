@@ -27,6 +27,7 @@ class GovernanceArea(Base):
 
     # Area information
     name = Column(String, nullable=False, unique=True)
+    code = Column(String(10), nullable=False, index=True)  # 2-letter code (FI, DI, SA, SO, BU, EN)
     area_type: AreaType = Column(
         Enum(AreaType, name="area_type_enum", create_constraint=True), nullable=False
     )

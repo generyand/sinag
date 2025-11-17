@@ -4,7 +4,9 @@ import { getSignedUrl } from '@/lib/uploadMov';
 import { resolveMovUrl } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { AssessmentTreeNode } from '@/components/features/assessments/tree-navigation/AssessmentTreeNode';
 import type { AssessmentDetailsResponse } from '@vantage/shared';
+import type { GovernanceArea, Indicator } from '@/types/assessment';
 import * as React from 'react';
 import dynamic from 'next/dynamic';
 const PdfAnnotator = dynamic(() => import('@/components/shared/PdfAnnotator'), { ssr: false });
@@ -42,27 +44,41 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
   const core = (data.assessment as AnyRecord) ?? data;
   const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
 
-  // Group responses by governance area for tree hierarchy
-  const groupedByArea = React.useMemo(() => {
-    const groups: Record<string, { areaId: number; areaName: string; responses: AnyRecord[] }> = {};
+  // Transform API response data to match BLGU Assessment tree structure
+  const governanceAreas: GovernanceArea[] = React.useMemo(() => {
+    const areaMap: Record<string, GovernanceArea> = {};
 
     responses.forEach((r) => {
       const indicator = (r.indicator as AnyRecord) ?? {};
       const govArea = (indicator.governance_area as AnyRecord) ?? {};
-      const areaId = govArea.id || 0;
+      const areaId = String(govArea.id || 0);
       const areaName = govArea.name || 'Unknown Area';
+      const areaCode = govArea.code || '';
 
-      if (!groups[areaId]) {
-        groups[areaId] = {
-          areaId,
-          areaName,
-          responses: [],
+      // Create governance area if not exists
+      if (!areaMap[areaId]) {
+        areaMap[areaId] = {
+          id: areaId,
+          name: areaName,
+          code: areaCode,
+          indicators: [],
         };
       }
-      groups[areaId].responses.push(r);
+
+      // Create indicator in BLGU tree format
+      const treeIndicator: Indicator = {
+        id: String(r.id), // Use response ID as indicator ID for selection
+        name: indicator.name || `Indicator ${r.indicator_id}`,
+        code: indicator.code || '',
+        status: 'completed', // All submitted indicators are considered completed
+        description: indicator.description || '',
+        technicalNotes: indicator.technical_notes || '',
+      };
+
+      areaMap[areaId].indicators.push(treeIndicator);
     });
 
-    return Object.values(groups).sort((a, b) => a.areaId - b.areaId);
+    return Object.values(areaMap).sort((a, b) => Number(a.id) - Number(b.id));
   }, [responses]);
 
   const resolveMov = async (mov: AnyRecord): Promise<string> => {
@@ -301,100 +317,54 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
   };
 
   return (
-    <div className="p-4">
-      <div className="text-sm text-muted-foreground mb-3">BLGU Submission</div>
-      <div className="space-y-3">
+    <div className="h-full flex flex-col bg-card overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-border flex-shrink-0">
+        <div className="text-sm font-medium text-foreground">BLGU Submission</div>
+        <div className="text-xs text-muted-foreground mt-0.5">
+          {responses.length} indicator{responses.length === 1 ? '' : 's'} submitted
+        </div>
+      </div>
+
+      {/* Tree Navigation */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
         {responses.length === 0 ? (
-          <div className="text-sm text-muted-foreground">No submitted responses.</div>
+          <div className="p-4 text-sm text-muted-foreground">No submitted responses.</div>
         ) : (
-          groupedByArea.map((area) => {
-            const isAreaExpanded = expandedAreas.has(area.areaId);
+          governanceAreas.map((area) => {
+            const isExpanded = expandedAreas.has(Number(area.id));
+            const progress = {
+              completed: area.indicators.length,
+              total: area.indicators.length,
+              percentage: 100, // All submitted indicators are complete
+            };
 
             return (
-              <div key={area.areaId} className="border border-black/10 rounded-sm overflow-hidden">
-                {/* Governance Area Header */}
-                <button
-                  type="button"
-                  onClick={() => toggleArea(area.areaId)}
-                  className="w-full px-3 py-2 bg-muted/50 hover:bg-muted/70 text-left flex items-center justify-between transition-colors"
-                >
-                  <span className="font-semibold text-sm">{area.areaName}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">{area.responses.length} indicator{area.responses.length === 1 ? '' : 's'}</span>
-                    <svg
-                      className={`w-4 h-4 transition-transform ${isAreaExpanded ? 'rotate-180' : ''}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </button>
+              <div key={area.id}>
+                {/* Governance Area Node */}
+                <AssessmentTreeNode
+                  type="area"
+                  item={area}
+                  isExpanded={isExpanded}
+                  onToggle={() => toggleArea(Number(area.id))}
+                  progress={progress}
+                  level={0}
+                />
 
-                {/* Indicators under this governance area */}
-                {isAreaExpanded && (
-                  <div className="divide-y divide-black/5">
-                    {area.responses.map((r, idx) => {
-                      const indicator = (r.indicator as AnyRecord) ?? {};
-                      const indicatorLabel = indicator?.name || `Indicator #${r.indicator_id ?? idx + 1}`;
-                      const blguAnswer = r.response_data ?? r.answer ?? null;
-                      const movs: AnyRecord[] = (r.movs as AnyRecord[]) ?? [];
-                      const isOpen = expandedId === r.id;
-
+                {/* Indicators (when expanded) */}
+                {isExpanded && (
+                  <div>
+                    {area.indicators.map((indicator) => {
+                      const isActive = expandedId === Number(indicator.id);
                       return (
-                        <div key={r.id ?? idx} data-left-item-id={r.id}>
-                          <button
-                            type="button"
-                            onClick={() => onToggle?.(r.id)}
-                            className={`w-full px-3 py-2 text-left hover:bg-muted/30 transition-colors ${isOpen ? 'bg-cityscape-yellow/10' : ''}`}
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-sm font-medium">{indicatorLabel}</span>
-                              <span className="text-xs bg-muted rounded px-2 py-0.5">{movs.length} MOV{movs.length === 1 ? '' : 's'}</span>
-                            </div>
-                          </button>
-                          {isOpen && (
-                            <div className="px-3 py-2 bg-muted/10 text-sm border-t border-black/5">
-                              <div className="mb-2">
-                                <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">BLGU Answer</div>
-                                <div className="text-[13px] leading-5 bg-white rounded p-2 border border-black/5">
-                                  {renderValue(blguAnswer)}
-                                </div>
-                              </div>
-                              <div>
-                                <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Uploaded MOVs</div>
-                                {movs.length === 0 ? (
-                                  <div className="text-muted-foreground">None</div>
-                                ) : (
-                                  <ul className="pl-0 space-y-2">
-                                    {movs.map((m, mi) => {
-                                      const name = m.original_filename || m.filename || 'MOV';
-                                      const ext = typeof name === 'string' && name.includes('.') ? name.split('.').pop()?.toUpperCase() : '';
-                                      return (
-                                        <li key={m.id ?? mi} className="list-none">
-                                          <button
-                                            type="button"
-                                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-black/10 bg-white text-foreground shadow-sm hover:bg-black/5"
-                                            onClick={() => openMovModal(indicatorLabel, movs, mi)}
-                                            title={name}
-                                          >
-                                            <span className="truncate max-w-[220px] text-sm">{name}</span>
-                                            {ext && (
-                                              <span className="text-[10px] uppercase rounded px-1.5 py-0.5 bg-muted/60 text-muted-foreground border border-black/10">
-                                                {ext}
-                                              </span>
-                                            )}
-                                          </button>
-                                        </li>
-                                      );
-                                    })}
-                                  </ul>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                        <AssessmentTreeNode
+                          key={indicator.id}
+                          type="indicator"
+                          item={indicator}
+                          isActive={isActive}
+                          onClick={() => onToggle?.(Number(indicator.id))}
+                          level={1}
+                        />
                       );
                     })}
                   </div>

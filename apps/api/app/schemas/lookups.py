@@ -13,6 +13,7 @@ class GovernanceAreaBase(BaseModel):
     """Base schema for a governance area, containing common attributes."""
 
     name: str
+    code: str  # 2-letter code (FI, DI, SA, SO, BU, EN)
     area_type: AreaType
 
 

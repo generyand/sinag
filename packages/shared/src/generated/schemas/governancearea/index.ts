@@ -10,6 +10,7 @@ import type { AreaType } from '../common';
  */
 export interface GovernanceArea {
   name: string;
+  code: string;
   area_type: AreaType;
   id: number;
 }

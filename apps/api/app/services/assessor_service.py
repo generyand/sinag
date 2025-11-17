@@ -510,12 +510,14 @@ class AssessorService:
                 "indicator": {
                     "id": response.indicator.id,
                     "name": response.indicator.name,
+                    "code": response.indicator.indicator_code,
                     "description": response.indicator.description,
                     "form_schema": response.indicator.form_schema,
                     "validation_rule": response.indicator.validation_rule,
                     "governance_area": {
                         "id": response.indicator.governance_area.id,
                         "name": response.indicator.governance_area.name,
+                        "code": response.indicator.governance_area.code,
                         "area_type": response.indicator.governance_area.area_type.value,
                     },
                     # Technical notes - for now using description, but this could be a separate field

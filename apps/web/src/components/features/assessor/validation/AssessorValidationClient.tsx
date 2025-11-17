@@ -29,13 +29,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     );
   }
 
-  return (
-    <div className="flex flex-col gap-6">
-      <div className="mx-auto max-w-7xl px-4 md:px-6">
-        <ValidationWorkspace assessment={data} />
-      </div>
-    </div>
-  );
+  return <ValidationWorkspace assessment={data} />;
 }
 
 
