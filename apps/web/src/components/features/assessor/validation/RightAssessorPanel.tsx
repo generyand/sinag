@@ -15,8 +15,8 @@ import { useAuthStore } from '@/store/useAuthStore';
 
 interface RightAssessorPanelProps {
   assessment: AssessmentDetailsResponse;
-  form: Record<number, { status?: LocalStatus; publicComment?: string; internalNote?: string; assessorRemarks?: string }>;
-  setField: (responseId: number, field: 'status' | 'publicComment' | 'internalNote' | 'assessorRemarks', value: string) => void;
+  form: Record<number, { status?: LocalStatus; publicComment?: string; internalNote?: string }>;
+  setField: (responseId: number, field: 'status' | 'publicComment' | 'internalNote', value: string) => void;
   expandedId?: number | null;
   onToggle?: (responseId: number) => void;
 }
@@ -42,7 +42,6 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
       status: z.enum(['Pass', 'Fail', 'Conditional']).optional(),
       publicComment: z.string().optional(),
       internalNote: z.string().optional(),
-      assessorRemarks: z.string().optional(),
     })
     .refine(
       (val) => {
@@ -70,7 +69,6 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
         status: form[r.id]?.status,
         publicComment: form[r.id]?.publicComment,
         internalNote: form[r.id]?.internalNote,
-        assessorRemarks: form[r.id]?.assessorRemarks,
       };
     }
     return obj as ResponsesForm;
@@ -88,11 +86,10 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
     Object.entries(watched || {}).forEach(([key, v]) => {
       const id = Number(key);
       if (!Number.isFinite(id)) return;
-      const val = v as { status?: LocalStatus; publicComment?: string; internalNote?: string; assessorRemarks?: string };
+      const val = v as { status?: LocalStatus; publicComment?: string; internalNote?: string };
       if (val.status !== form[id]?.status) setField(id, 'status', String(val.status || ''));
       if (val.publicComment !== form[id]?.publicComment) setField(id, 'publicComment', val.publicComment || '');
       if (val.internalNote !== form[id]?.internalNote) setField(id, 'internalNote', val.internalNote || '');
-      if (val.assessorRemarks !== form[id]?.assessorRemarks) setField(id, 'assessorRemarks', val.assessorRemarks || '');
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watched]);
@@ -191,7 +188,11 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                             id={itemKey}
                                             type="text"
                                             placeholder="Enter count"
-                                            {...field}
+                                            value={field.value as any}
+                                            onChange={field.onChange}
+                                            onBlur={field.onBlur}
+                                            name={field.name}
+                                            ref={field.ref}
                                             className="h-9 text-sm w-32 flex-shrink-0"
                                           />
                                         )}
@@ -221,7 +222,7 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                             <div className="flex items-center gap-1">
                                               <Checkbox
                                                 id={`${itemKey}_yes`}
-                                                checked={field.value}
+                                                checked={field.value as any}
                                                 onCheckedChange={field.onChange}
                                               />
                                               <Label htmlFor={`${itemKey}_yes`} className="text-xs font-medium cursor-pointer">
@@ -237,7 +238,7 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                             <div className="flex items-center gap-1">
                                               <Checkbox
                                                 id={`${itemKey}_no`}
-                                                checked={field.value}
+                                                checked={field.value as any}
                                                 onCheckedChange={field.onChange}
                                               />
                                               <Label htmlFor={`${itemKey}_no`} className="text-xs font-medium cursor-pointer">
@@ -281,7 +282,11 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                             id={itemKey}
                                             type="text"
                                             placeholder="Enter value"
-                                            {...field}
+                                            value={field.value as any}
+                                            onChange={field.onChange}
+                                            onBlur={field.onBlur}
+                                            name={field.name}
+                                            ref={field.ref}
                                             className="h-9 text-sm"
                                           />
                                         )}
@@ -297,7 +302,7 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                       render={({ field }) => (
                                         <Checkbox
                                           id={itemKey}
-                                          checked={field.value}
+                                          checked={field.value as any}
                                           onCheckedChange={field.onChange}
                                           className="mt-0.5"
                                         />
@@ -327,49 +332,69 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                   })()}
 
                   {/* VALIDATOR ONLY: Processing of Results Section */}
-                  {isValidator && (
-                    <div className="border border-black/10 rounded-sm bg-muted/10 p-3 space-y-3">
-                      <div className="text-xs font-semibold uppercase tracking-wide bg-yellow-100 dark:bg-yellow-950/30 text-yellow-900 dark:text-yellow-200 px-3 py-2 rounded border border-yellow-200 dark:border-yellow-800">
-                        PROCESSING OF RESULTS
-                      </div>
-                      <div className="space-y-2">
-                        <div className="text-xs font-medium">Met all the minimum requirements on {indicatorLabel}?</div>
-                        <div className="flex items-center gap-2">
-                          {(['Pass', 'Fail', 'Conditional'] as LocalStatus[]).map((s) => {
-                          const active = form[r.id]?.status === s;
-                          const base = 'size-sm';
-                          const cls = active
-                            ? s === 'Pass'
-                              ? 'text-white hover:opacity-90'
-                              : s === 'Fail'
-                                ? 'text-white hover:opacity-90'
-                                : 'text-[var(--cityscape-accent-foreground)] hover:opacity-90'
-                            : '';
-                          const style = active
-                            ? s === 'Pass'
-                              ? { background: 'var(--success)' }
-                              : s === 'Fail'
-                                ? { background: 'var(--destructive, #ef4444)' }
-                                : { background: 'var(--cityscape-yellow)' }
-                            : undefined;
-                          return (
-                            <Button
-                              key={s}
-                              type="button"
-                              variant={active ? 'default' : 'outline'}
-                              size="sm"
-                              className={cls}
-                              style={style}
-                              onClick={() => setField(r.id, 'status', s as string)}
-                            >
-                              {s}
-                            </Button>
-                          );
-                        })}
+                  {isValidator && (() => {
+                    // Check if indicator has consideration condition
+                    const indicator = (r as AnyRecord).indicator as AnyRecord | undefined;
+                    const remarkSchema = indicator?.remark_schema as AnyRecord | undefined;
+                    const conditionalRemarks = (remarkSchema?.conditional_remarks as AnyRecord[]) || [];
+                    const hasConsideration = conditionalRemarks.some(
+                      (cr) => cr.condition?.toLowerCase() === 'considered' || cr.condition?.toLowerCase() === 'conditional'
+                    );
+
+                    // Validator uses Met/Unmet/Considered instead of Pass/Fail/Conditional
+                    const validatorStatuses: Array<{value: LocalStatus; label: string}> = [
+                      { value: 'Pass', label: 'Met' },
+                      { value: 'Fail', label: 'Unmet' },
+                    ];
+
+                    // Only add "Considered" if indicator has consideration condition
+                    if (hasConsideration) {
+                      validatorStatuses.push({ value: 'Conditional', label: 'Considered' });
+                    }
+
+                    return (
+                      <div className="border border-black/10 rounded-sm bg-muted/10 p-3 space-y-3">
+                        <div className="text-xs font-semibold uppercase tracking-wide bg-yellow-100 dark:bg-yellow-950/30 text-yellow-900 dark:text-yellow-200 px-3 py-2 rounded border border-yellow-200 dark:border-yellow-800">
+                          PROCESSING OF RESULTS
+                        </div>
+                        <div className="space-y-2">
+                          <div className="text-xs font-medium">Met all the minimum requirements on {indicatorLabel}?</div>
+                          <div className="flex items-center gap-2">
+                            {validatorStatuses.map(({ value, label }) => {
+                              const active = form[r.id]?.status === value;
+                              const cls = active
+                                ? value === 'Pass'
+                                  ? 'text-white hover:opacity-90'
+                                  : value === 'Fail'
+                                    ? 'text-white hover:opacity-90'
+                                    : 'text-[var(--cityscape-accent-foreground)] hover:opacity-90'
+                                : '';
+                              const style = active
+                                ? value === 'Pass'
+                                  ? { background: 'var(--success)' }
+                                  : value === 'Fail'
+                                    ? { background: 'var(--destructive, #ef4444)' }
+                                    : { background: 'var(--cityscape-yellow)' }
+                                : undefined;
+                              return (
+                                <Button
+                                  key={value}
+                                  type="button"
+                                  variant={active ? 'default' : 'outline'}
+                                  size="sm"
+                                  className={cls}
+                                  style={style}
+                                  onClick={() => setField(r.id, 'status', value as string)}
+                                >
+                                  {label}
+                                </Button>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {/* ASSESSOR ONLY: Information Message */}
                   {isAssessor && (
@@ -403,24 +428,24 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                     />
                   </div>
 
-                  {/* Assessor Remarks for Validator */}
-                  <div className="space-y-1">
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                      Assessor Remarks for Validator (DILG-only)
-                    </div>
-                    <Textarea
-                      {...register(`${key}.assessorRemarks` as const)}
-                      placeholder={isAssessor ? "Add remarks for the validator to review..." : "Remarks from assessor"}
-                      readOnly={isValidator}
-                      disabled={isValidator}
-                      className={isValidator ? 'bg-muted cursor-not-allowed' : ''}
-                    />
-                    {isAssessor && (
-                      <div className="text-[11px] text-muted-foreground italic">
-                        These remarks will be visible to validators during final validation
-                      </div>
-                    )}
-                  </div>
+                  {/* Show assessor remarks for validators (read-only display) */}
+                  {isValidator && (() => {
+                    const resp = r as AnyRecord;
+                    const remarks = resp.assessor_remarks as string | undefined;
+                    if (remarks) {
+                      return (
+                        <div className="space-y-1">
+                          <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                            Remarks from Assessor
+                          </div>
+                          <div className="text-sm p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                            {remarks}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
 
                   <div className="pt-2 flex items-center justify-between">
                     <Button

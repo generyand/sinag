@@ -227,11 +227,11 @@ export function FileFieldComponent({
       </div>
 
       {/* Upload Instructions (show what documents are needed) */}
-      {field.instructions && (
+      {(field as any).instructions && (
         <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
           <h4 className="font-medium text-sm text-blue-900 mb-2">Required Documents:</h4>
           <div className="text-sm text-gray-700 whitespace-pre-line">
-            {field.instructions}
+            {(field as any).instructions}
           </div>
         </div>
       )}

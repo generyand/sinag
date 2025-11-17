@@ -44,7 +44,7 @@ export default function BLGUDashboardPage() {
     error: assessmentError,
   } = useGetAssessmentsMyAssessment();
 
-  const assessmentId = myAssessment?.assessment?.id;
+  const assessmentId = (myAssessment?.assessment as any)?.id;
 
   // Fetch dashboard data using generated hook (only if we have an assessment ID)
   const {
@@ -52,11 +52,7 @@ export default function BLGUDashboardPage() {
     isLoading: isLoadingDashboard,
     error: dashboardError,
     refetch,
-  } = useGetBlguDashboardAssessmentId(assessmentId!, {
-    query: {
-      enabled: !!assessmentId, // Only fetch when we have an assessment ID
-    },
-  });
+  } = useGetBlguDashboardAssessmentId(assessmentId!);
 
   const isLoading = isLoadingAssessment || isLoadingDashboard;
   const error = assessmentError || dashboardError;
@@ -96,6 +92,11 @@ export default function BLGUDashboardPage() {
         </div>
       </div>
     );
+  }
+
+  // TypeScript safety check
+  if (!dashboardData) {
+    return null;
   }
 
   return (

@@ -57,8 +57,8 @@ export function CalculationTab({ indicator, availableBBIs, hasChildren, onUpdate
         </CardHeader>
         <CardContent className="space-y-4">
           <Select
-            value={indicator.auto_calc_method || 'NONE'}
-            onValueChange={(value) => onUpdate({ auto_calc_method: value as 'AUTO' | 'MANUAL' | 'NONE' })}
+            value={(indicator as any).auto_calc_method || 'NONE'}
+            onValueChange={(value) => onUpdate({ auto_calc_method: value as 'AUTO' | 'MANUAL' | 'NONE' } as any)}
           >
             <SelectTrigger>
               <SelectValue />
@@ -86,13 +86,13 @@ export function CalculationTab({ indicator, availableBBIs, hasChildren, onUpdate
           </Select>
 
           <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
-            {indicator.auto_calc_method === 'NONE' && (
+            {(indicator as any).auto_calc_method === 'NONE' && (
               <p><strong>NONE:</strong> This indicator is directly assessed. Typically used for leaf indicators with MOV checklists.</p>
             )}
-            {indicator.auto_calc_method === 'AUTO' && (
+            {(indicator as any).auto_calc_method === 'AUTO' && (
               <p><strong>AUTO:</strong> Result is calculated from child indicators using the logical operator below.</p>
             )}
-            {indicator.auto_calc_method === 'MANUAL' && (
+            {(indicator as any).auto_calc_method === 'MANUAL' && (
               <p><strong>MANUAL:</strong> Validator manually determines the result after reviewing evidence.</p>
             )}
           </div>
@@ -113,8 +113,8 @@ export function CalculationTab({ indicator, availableBBIs, hasChildren, onUpdate
           </CardHeader>
           <CardContent className="space-y-4">
             <Select
-              value={indicator.logical_operator || 'AND'}
-              onValueChange={(value) => onUpdate({ logical_operator: value as 'AND' | 'OR' })}
+              value={(indicator as any).logical_operator || 'AND'}
+              onValueChange={(value) => onUpdate({ logical_operator: value as 'AND' | 'OR' } as any)}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -136,10 +136,10 @@ export function CalculationTab({ indicator, availableBBIs, hasChildren, onUpdate
             </Select>
 
             <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
-              {indicator.logical_operator === 'AND' && (
+              {(indicator as any).logical_operator === 'AND' && (
                 <p><strong>AND:</strong> This indicator passes only if ALL child indicators pass.</p>
               )}
-              {indicator.logical_operator === 'OR' && (
+              {(indicator as any).logical_operator === 'OR' && (
                 <p><strong>OR:</strong> This indicator passes if ANY child indicator passes.</p>
               )}
             </div>
@@ -161,8 +161,8 @@ export function CalculationTab({ indicator, availableBBIs, hasChildren, onUpdate
           </CardHeader>
           <CardContent className="space-y-4">
             <Select
-              value={indicator.selection_mode || 'all'}
-              onValueChange={(value) => onUpdate({ selection_mode: value as 'all' | 'one_of' })}
+              value={(indicator as any).selection_mode || 'all'}
+              onValueChange={(value) => onUpdate({ selection_mode: value as 'all' | 'one_of' } as any)}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -184,10 +184,10 @@ export function CalculationTab({ indicator, availableBBIs, hasChildren, onUpdate
             </Select>
 
             <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
-              {indicator.selection_mode === 'all' && (
+              {(indicator as any).selection_mode === 'all' && (
                 <p><strong>ALL:</strong> All child indicators are assessed. Example: Indicator 1.1 has both 1.1.1 and 1.1.2, both must be completed.</p>
               )}
-              {indicator.selection_mode === 'one_of' && (
+              {(indicator as any).selection_mode === 'one_of' && (
                 <p><strong>ONE_OF:</strong> Only ONE child applies per barangay. Example: Indicator 1.6.1 has three mutually exclusive scenarios (1.6.1.1, 1.6.1.2, 1.6.1.3) - validator selects which scenario applies.</p>
               )}
             </div>
@@ -208,8 +208,8 @@ export function CalculationTab({ indicator, availableBBIs, hasChildren, onUpdate
         </CardHeader>
         <CardContent className="space-y-4">
           <Select
-            value={indicator.associated_bbi_id?.toString() || 'none'}
-            onValueChange={(value) => onUpdate({ associated_bbi_id: value === 'none' ? null : parseInt(value, 10) })}
+            value={(indicator as any).associated_bbi_id?.toString() || 'none'}
+            onValueChange={(value) => onUpdate({ associated_bbi_id: value === 'none' ? null : parseInt(value, 10) } as any)}
           >
             <SelectTrigger>
               <SelectValue placeholder="No BBI association" />
@@ -229,7 +229,7 @@ export function CalculationTab({ indicator, availableBBIs, hasChildren, onUpdate
             </SelectContent>
           </Select>
 
-          {indicator.associated_bbi_id && (
+          {(indicator as any).associated_bbi_id && (
             <Alert>
               <InfoIcon className="h-4 w-4" />
               <AlertDescription>

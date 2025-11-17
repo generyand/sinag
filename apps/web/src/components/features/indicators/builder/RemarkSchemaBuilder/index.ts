@@ -1,2 +1,2 @@
-export { RemarkSchemaBuilder } from './RemarkSchemaBuilder';
-export default RemarkSchemaBuilder;
+export { default as RemarkSchemaBuilder } from './RemarkSchemaBuilder';
+export { default } from './RemarkSchemaBuilder';

@@ -101,8 +101,8 @@ export function BasicInfoTab({ indicator, availableParents, onUpdate }: BasicInf
         </CardHeader>
         <CardContent>
           <Select
-            value={indicator.parent_id || 'none'}
-            onValueChange={(value) => onUpdate({ parent_id: value === 'none' ? null : value })}
+            value={(indicator as any).parent_id || 'none'}
+            onValueChange={(value) => onUpdate({ parent_id: value === 'none' ? null : value } as any)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select parent indicator" />
@@ -130,8 +130,8 @@ export function BasicInfoTab({ indicator, availableParents, onUpdate }: BasicInf
         <CardContent>
           <Input
             type="number"
-            value={indicator.display_order ?? 0}
-            onChange={(e) => onUpdate({ display_order: parseInt(e.target.value, 10) || 0 })}
+            value={(indicator as any).display_order ?? 0}
+            onChange={(e) => onUpdate({ display_order: parseInt(e.target.value, 10) || 0 } as any)}
             min={0}
             className="w-32"
           />

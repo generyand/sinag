@@ -1,7 +1,7 @@
 "use client";
 
 import { Assessment } from "@/types/assessment";
-import { useEffect, useState } from "react";
+import { useEffect, useState, ReactElement } from "react";
 import { AssessmentTreeNode } from "./AssessmentTreeNode";
 import { TreeHeader } from "./TreeHeader";
 import {
@@ -50,7 +50,7 @@ export function TreeNavigator({
   };
 
   // Recursive function to render indicator tree with proper nesting
-  const renderIndicatorTree = (indicators: any[], level: number = 1): JSX.Element[] => {
+  const renderIndicatorTree = (indicators: any[], level: number = 1): ReactElement[] => {
     return indicators.map((indicator) => {
       const hasChildren = indicator.children && indicator.children.length > 0;
 

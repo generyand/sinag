@@ -61,6 +61,8 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
           id: areaId,
           name: areaName,
           code: areaCode,
+          description: '',
+          isCore: true,
           indicators: [],
         };
       }
@@ -73,6 +75,9 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
         status: 'completed', // All submitted indicators are considered completed
         description: indicator.description || '',
         technicalNotes: indicator.technical_notes || '',
+        governanceAreaId: areaId,
+        movFiles: [],
+        formSchema: { fields: [] } as any,
       };
 
       areaMap[areaId].indicators.push(treeIndicator);

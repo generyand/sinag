@@ -297,7 +297,7 @@ export default function MOVChecklistBuilder({
       ...config,
       items: config.items.map((item) =>
         item.id === itemId ? { ...item, ...updates } : item
-      ),
+      ) as MOVItem[],
     };
 
     handleConfigChange(newConfig);
