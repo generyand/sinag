@@ -98,77 +98,83 @@ INDICATOR_3_2 = Indicator(
             ),
             validation_rule="ANY_ITEM_REQUIRED",  # Only ONE option (A or B) is required
             checklist_items=[
-                # Instruction Section
+                # Instruction Section (info_text)
                 ChecklistItem(
                     id="3_2_3_instructions",
                     label="Instruction: Put a check ✓ on the box that corresponds to your assessment.",
                     mov_description="Instructions for assessor",
+                    item_type="info_text",
                     required=False,
                     display_order=1
                 ),
 
-                # Option A: Physical Accomplishment (3.2.3.1)
+                # Option A: Physical Accomplishment - YES/NO assessment
                 ChecklistItem(
-                    id="3_2_3_1_checkbox",
+                    id="3_2_3_option_a",
                     label="a. At least 50% accomplishment of the physical targets in the BPOPS Plan",
                     mov_description="Checkbox for physical accomplishment option",
+                    item_type="assessment_field",
                     required=False,
                     display_order=2
                 ),
                 ChecklistItem(
-                    id="3_2_3_1_upload",
+                    id="3_2_3_upload_physical",
                     label="Accomplishment Report with the status of implementation of target activities and utilization of funds submitted to the C/M POC with received stamp of the DILG City Director or C/MLGOO",
                     mov_description="Verification of uploaded Accomplishment Report for physical accomplishment",
+                    item_type="checkbox",
                     required=False,
                     display_order=3
                 ),
                 ChecklistItem(
-                    id="3_2_3_1_percentage",
-                    label="Please supply the required information:\n% of programs, project, and activities are completed",
-                    mov_description="Input field for percentage of completed programs/projects/activities",
+                    id="3_2_3_calc_physical",
+                    label="% of programs, project, and activities are completed",
+                    mov_description="Please supply the required information:",
+                    item_type="calculation_field",
                     required=False,
-                    requires_document_count=True,  # This is a text input field
                     display_order=4
                 ),
 
-                # OR Separator (informational)
+                # OR Separator (info_text)
                 ChecklistItem(
-                    id="3_2_3_or_separator",
+                    id="3_2_3_or",
                     label="OR",
                     mov_description="OR separator between physical and financial options",
+                    item_type="info_text",
                     required=False,
                     display_order=5
                 ),
 
-                # Option B: Financial Accomplishment (3.2.3.2)
+                # Option B: Financial Accomplishment - YES/NO assessment
                 ChecklistItem(
-                    id="3_2_3_2_checkbox",
+                    id="3_2_3_option_b",
                     label="b. At least 50% fund utilization rate of the CY 2023 BPOPs Budget",
                     mov_description="Checkbox for financial accomplishment option",
+                    item_type="assessment_field",
                     required=False,
                     display_order=6
                 ),
                 ChecklistItem(
-                    id="3_2_3_2_upload",
+                    id="3_2_3_upload_financial",
                     label="Accomplishment Report with the status of implementation of target activities and utilization of funds submitted to the C/M POC with received stamp of the DILG City Director or C/MLGOO",
                     mov_description="Verification of uploaded Accomplishment Report for financial accomplishment",
+                    item_type="checkbox",
                     required=False,
                     display_order=7
                 ),
                 ChecklistItem(
-                    id="3_2_3_2_amount_utilized",
-                    label="Please supply the required information:\nAmount utilized\n(as of Dec. 31, 2023):",
-                    mov_description="Input field for amount utilized as of Dec. 31, 2023",
+                    id="3_2_3_calc_b1",
+                    label="Amount utilized (as of Dec. 31, 2023):",
+                    mov_description="Please supply the required information:",
+                    item_type="calculation_field",
                     required=False,
-                    requires_document_count=True,  # This is a text input field
                     display_order=8
                 ),
                 ChecklistItem(
-                    id="3_2_3_2_amount_allocated",
+                    id="3_2_3_calc_b2",
                     label="Amount allocated for FPAs in the BPOPS Plan for CY 2023:",
-                    mov_description="Input field for amount allocated for FPAs in BPOPS Plan",
+                    mov_description="Please supply the required information:",
+                    item_type="calculation_field",
                     required=False,
-                    requires_document_count=True,  # This is a text input field
                     display_order=9
                 ),
             ]
