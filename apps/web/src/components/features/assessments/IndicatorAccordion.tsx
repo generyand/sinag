@@ -297,29 +297,8 @@ export function IndicatorAccordion({
                 </div>
 
                 {/* Progress Metadata (Only when collapsed) */}
-                {!isOpen && (() => {
-                  const { completedFields, totalFields } = calculateCompletionMetrics();
-                  return (
+                {!isOpen && (
                     <div className="flex items-center gap-2 md:gap-3 text-xs text-[var(--text-secondary)] flex-wrap">
-                      {/* Field Progress */}
-                      {totalFields > 0 && (
-                        <>
-                          <span className="flex items-center gap-1.5">
-                            <span className="font-medium text-[var(--foreground)]">
-                              {completedFields}
-                            </span>
-                            <span>of</span>
-                            <span>{totalFields}</span>
-                            <span>complete</span>
-                          </span>
-                        </>
-                      )}
-
-                      {/* Separator */}
-                      {totalFields > 0 && indicator.movFiles.length > 0 && (
-                        <span className="text-[var(--border)]">•</span>
-                      )}
-
                       {/* MOV Count */}
                       {indicator.movFiles.length > 0 && (
                         <span className="flex items-center gap-1.5">
@@ -333,7 +312,7 @@ export function IndicatorAccordion({
                       {/* Needs Rework Badge */}
                       {indicator.status === 'needs_rework' && (
                         <>
-                          {(totalFields > 0 || indicator.movFiles.length > 0) && (
+                          {indicator.movFiles.length > 0 && (
                             <span className="text-[var(--border)]">•</span>
                           )}
                           <span className="inline-flex items-center gap-1 text-orange-600 font-medium">
@@ -344,8 +323,7 @@ export function IndicatorAccordion({
                         </>
                       )}
                     </div>
-                  );
-                })()}
+                  )}
 
                 {/* Description - Show when expanded */}
                 {isOpen && indicator.description && (
