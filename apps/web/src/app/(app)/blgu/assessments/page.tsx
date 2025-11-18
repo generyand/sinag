@@ -196,7 +196,7 @@ export default function BLGUAssessmentsPage() {
       {/* Split Panel Layout */}
       <div className="flex-1 flex overflow-hidden">
         {/* Desktop: Left Sidebar Tree Navigation */}
-        <aside className="hidden lg:block w-80 xl:w-96 flex-shrink-0">
+        <aside className="hidden lg:block w-48 xl:w-56 flex-shrink-0">
           <TreeNavigator
             assessment={assessment}
             selectedIndicatorId={selectedIndicatorId}

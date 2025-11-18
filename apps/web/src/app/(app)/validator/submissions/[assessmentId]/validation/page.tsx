@@ -1,4 +1,4 @@
-import { AssessorValidationClient } from '@/components/features/assessor/validation';
+import { ValidatorValidationClient } from '@/components/features/validator';
 import { notFound } from 'next/navigation';
 
 interface PageProps {
@@ -11,5 +11,5 @@ export default async function ValidatorValidationPage({ params }: PageProps) {
     notFound();
   }
 
-  return <AssessorValidationClient assessmentId={numericId} />;
+  return <ValidatorValidationClient assessmentId={numericId} />;
 }

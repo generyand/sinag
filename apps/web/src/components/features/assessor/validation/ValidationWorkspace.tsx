@@ -14,6 +14,7 @@ import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 import { LeftSubmissionView } from './LeftSubmissionView';
+import { MiddleMovFilesPanel } from './MiddleMovFilesPanel';
 import { RightAssessorPanel } from './RightAssessorPanel';
 
 interface ValidationWorkspaceProps {
@@ -239,11 +240,19 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
 
       <div className="w-full overflow-hidden">
         <div className="mx-auto max-w-7xl px-4 md:px-6">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="rounded-sm shadow-md border border-black/5 overflow-hidden min-w-0 w-full">
+          <div className="grid grid-cols-1 md:grid-cols-[280px,320px,1fr] gap-6">
+            {/* Left Panel - Indicator Tree */}
+            <div className="rounded-sm shadow-md border border-black/5 overflow-hidden min-w-0 w-full min-h-[600px] bg-white">
               <LeftSubmissionView assessment={assessment} expandedId={expandedId ?? undefined} onToggle={(id) => setExpandedId((curr) => (curr === id ? null : id))} />
             </div>
-            <div className="rounded-sm shadow-md border border-black/5 overflow-hidden min-w-0 w-full">
+
+            {/* Middle Panel - MOV Files */}
+            <div className="rounded-sm shadow-md border border-black/5 overflow-hidden min-w-0 w-full min-h-[600px] bg-white">
+              <MiddleMovFilesPanel assessment={assessment} expandedId={expandedId ?? undefined} />
+            </div>
+
+            {/* Right Panel - MOV Checklist/Validation */}
+            <div className="rounded-sm shadow-md border border-black/5 overflow-hidden min-w-0 w-full min-h-[600px] bg-white">
               <RightAssessorPanel assessment={assessment} form={form} expandedId={expandedId ?? undefined} onToggle={(id) => setExpandedId((curr) => (curr === id ? null : id))} setField={(id, field, value) => {
                 setForm((prev) => ({
                   ...prev,

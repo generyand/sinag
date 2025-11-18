@@ -210,6 +210,7 @@ class StorageService:
         assessment_id: int,
         indicator_id: int,
         user_id: int,
+        field_id: str | None = None,
     ) -> MOVFile:
         """
         Upload a MOV file to Supabase Storage and create database record.
@@ -300,6 +301,7 @@ class StorageService:
                 assessment_id=assessment_id,
                 indicator_id=indicator_id,
                 user_id=user_id,
+                field_id=field_id,
             )
 
             logger.info(
@@ -333,6 +335,7 @@ class StorageService:
         assessment_id: int,
         indicator_id: int,
         user_id: int,
+        field_id: str | None = None,
     ) -> MOVFile:
         """
         Create and save a MOVFile database record.
@@ -346,6 +349,7 @@ class StorageService:
             assessment_id: ID of the assessment
             indicator_id: ID of the indicator
             user_id: ID of the user who uploaded the file
+            field_id: Optional field identifier for multi-field uploads
 
         Returns:
             MOVFile: The created and saved MOVFile instance
@@ -361,6 +365,7 @@ class StorageService:
             file_url=file_url,
             file_type=file_type,
             file_size=file_size,
+            field_id=field_id,
             uploaded_at=datetime.utcnow(),
         )
 

@@ -3,7 +3,7 @@
 import UserNav from "@/components/shared/UserNav";
 import { useAssessorGovernanceArea } from "@/hooks/useAssessorGovernanceArea";
 import { useAuthStore } from "@/store/useAuthStore";
-import { Bell, X } from "lucide-react";
+import { Bell, X, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -228,6 +228,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { isAuthenticated, user, mustChangePassword } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [isUserDataLoaded, setIsUserDataLoaded] = useState(false);
 
@@ -457,11 +458,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Desktop sidebar */}
-      <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
+      <div className={`hidden md:flex md:flex-col md:fixed md:inset-y-0 transition-all duration-300 ${
+        sidebarCollapsed ? 'md:w-20' : 'md:w-64'
+      }`}>
         <div className="flex-1 flex flex-col min-h-0 bg-[var(--card)] backdrop-blur-sm shadow-xl border-r border-[var(--border)] transition-colors duration-300">
           <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
-            <div className="flex items-center flex-shrink-0 px-6 mb-8">
-              <div className="flex items-center">
+            <div className={`flex items-center flex-shrink-0 px-6 mb-8 ${sidebarCollapsed ? 'justify-center' : ''}`}>
+              <div className={`flex items-center ${sidebarCollapsed ? 'flex-col' : ''}`}>
                 <Image
                   src="/logo/logo.webp"
                   alt="SINAG Logo"
@@ -469,44 +472,73 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   height={32}
                   className="w-8 h-8 lg:w-10 lg:h-10 object-contain flex-shrink-0"
                 />
-                <div className="ml-3">
-                  <h1 className="text-lg font-bold text-[var(--foreground)]">
-                    SINAG
-                  </h1>
-                  <p className="text-sm text-[var(--text-secondary)]">
-                    {isAdmin
-                      ? "Admin Portal"
-                      : isAssessor
-                      ? "Assessor Portal"
-                      : isValidator
-                      ? "Validator Portal"
-                      : "Barangay Portal"}
-                  </p>
-                </div>
+                {!sidebarCollapsed && (
+                  <div className="ml-3">
+                    <h1 className="text-lg font-bold text-[var(--foreground)]">
+                      SINAG
+                    </h1>
+                    <p className="text-sm text-[var(--text-secondary)]">
+                      {isAdmin
+                        ? "Admin Portal"
+                        : isAssessor
+                        ? "Assessor Portal"
+                        : isValidator
+                        ? "Validator Portal"
+                        : "Barangay Portal"}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
-            <nav className="flex-1 px-4 space-y-2">
+            <nav className="flex-1 px-2 space-y-2">
               {navigation.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`group flex items-center px-4 py-3 text-left rounded-sm transition-all duration-200 ${
+                  className={`group flex items-center ${sidebarCollapsed ? 'justify-center px-2' : 'px-4'} py-3 text-left rounded-sm transition-all duration-200 ${
                     pathname === item.href
                       ? "bg-[var(--cityscape-yellow)] text-[var(--cityscape-accent-foreground)] shadow-lg"
                       : "text-[var(--foreground)] hover:bg-[var(--hover)] hover:text-[var(--cityscape-yellow)]"
                   }`}
+                  title={sidebarCollapsed ? item.name : undefined}
                 >
-                  {getIcon(item.icon)}
-                  <span className="ml-3 font-medium">{item.name}</span>
+                  <div className="flex-shrink-0">
+                    {getIcon(item.icon)}
+                  </div>
+                  {!sidebarCollapsed && (
+                    <span className="ml-3 font-medium">{item.name}</span>
+                  )}
                 </Link>
               ))}
             </nav>
+
+            {/* Collapse/Expand toggle button */}
+            <div className="px-2 pt-4 border-t border-[var(--border)]">
+              <button
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className={`group flex items-center ${sidebarCollapsed ? 'justify-center px-2' : 'px-4'} w-full py-3 text-left rounded-sm transition-all duration-200 text-[var(--foreground)] hover:bg-[var(--hover)] hover:text-[var(--cityscape-yellow)]`}
+                title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              >
+                <div className="flex-shrink-0">
+                  {sidebarCollapsed ? (
+                    <ChevronRight className="w-5 h-5" />
+                  ) : (
+                    <ChevronLeft className="w-5 h-5" />
+                  )}
+                </div>
+                {!sidebarCollapsed && (
+                  <span className="ml-3 font-medium">Collapse</span>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Main content */}
-      <div className="md:pl-64 flex flex-col flex-1">
+      <div className={`flex flex-col flex-1 transition-all duration-300 ${
+        sidebarCollapsed ? 'md:pl-20' : 'md:pl-64'
+      }`}>
         <div className="sticky top-0 z-10 md:hidden pl-1 pt-1 sm:pl-3 sm:pt-3 bg-[var(--background)] transition-colors duration-300">
           <button
             className="-ml-0.5 -mt-0.5 h-12 w-12 inline-flex items-center justify-center rounded-md text-[var(--icon-default)] hover:text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--cityscape-yellow)] transition-colors duration-200"
