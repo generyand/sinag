@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useDeleteMovsFilesFileId, MOVFileResponse } from "@vantage/shared";
+import { getGetAssessmentsMyAssessmentQueryKey } from "@vantage/shared/src/generated/endpoints/assessments";
+import { useQueryClient } from "@tanstack/react-query";
 import { FileList } from "./FileList";
 import {
   AlertDialog,
@@ -46,6 +48,7 @@ export function FileListWithDelete({
 }: FileListWithDeleteProps) {
   const [fileToDelete, setFileToDelete] = useState<number | null>(null);
   const [deletingFileId, setDeletingFileId] = useState<number | null>(null);
+  const queryClient = useQueryClient();
 
   // Delete mutation hook
   const deleteMutation = useDeleteMovsFilesFileId({
@@ -61,6 +64,17 @@ export function FileListWithDelete({
         // Close dialog
         setFileToDelete(null);
         setDeletingFileId(null);
+
+        // CRITICAL: Invalidate and refetch assessment query to update progress tracking
+        queryClient.invalidateQueries({
+          queryKey: getGetAssessmentsMyAssessmentQueryKey(),
+          refetchType: 'active',
+        });
+
+        // Force immediate refetch
+        queryClient.refetchQueries({
+          queryKey: getGetAssessmentsMyAssessmentQueryKey(),
+        });
 
         // Notify parent component
         onDeleteSuccess?.(variables.fileId);
