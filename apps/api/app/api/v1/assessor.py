@@ -6,6 +6,9 @@ from typing import List, Optional
 from app.api import deps
 from app.db.models.user import User
 from app.schemas import (
+    AnnotationCreate,
+    AnnotationResponse,
+    AnnotationUpdate,
     AssessmentDetailsResponse,
     AssessorAnalyticsResponse,
     AssessorQueueItem,
@@ -14,7 +17,7 @@ from app.schemas import (
     ValidationRequest,
     ValidationResponse,
 )
-from app.services import assessor_service, intelligence_service
+from app.services import annotation_service, assessor_service, intelligence_service
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
@@ -314,4 +317,185 @@ async def get_assessor_analytics(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to retrieve analytics: {str(e)}",
+        )
+
+
+# ============================================================================
+# MOV Annotation Endpoints
+# ============================================================================
+
+
+@router.post(
+    "/movs/{mov_file_id}/annotations",
+    response_model=AnnotationResponse,
+    tags=["assessor"],
+)
+async def create_annotation(
+    mov_file_id: int,
+    annotation_data: AnnotationCreate,
+    db: Session = Depends(deps.get_db),
+    current_assessor: User = Depends(deps.get_current_area_assessor_user),
+):
+    """
+    Create a new annotation on a MOV file.
+
+    Allows assessors to add highlights and comments on PDF and image MOV files.
+    Supports both single-line and multi-line text selections for PDFs, and
+    rectangle annotations for images.
+    """
+    # Verify the mov_file_id matches the annotation data
+    if annotation_data.mov_file_id != mov_file_id:
+        raise HTTPException(
+            status_code=400,
+            detail="MOV file ID in URL does not match annotation data"
+        )
+
+    try:
+        annotation = annotation_service.create_annotation(
+            db=db,
+            annotation_data=annotation_data,
+            assessor_id=current_assessor.id
+        )
+        return annotation
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create annotation: {str(e)}"
+        )
+
+
+@router.get(
+    "/movs/{mov_file_id}/annotations",
+    response_model=List[AnnotationResponse],
+    tags=["assessor"],
+)
+async def get_annotations_for_mov(
+    mov_file_id: int,
+    db: Session = Depends(deps.get_db),
+    current_assessor: User = Depends(deps.get_current_area_assessor_user),
+):
+    """
+    Get all annotations for a specific MOV file.
+
+    Returns all annotations (highlights and comments) that the assessor has
+    made on the specified MOV file, ordered by creation time.
+    """
+    try:
+        annotations = annotation_service.get_annotations_for_mov(
+            db=db,
+            mov_file_id=mov_file_id
+        )
+        return annotations
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve annotations: {str(e)}"
+        )
+
+
+@router.get(
+    "/assessments/{assessment_id}/annotations",
+    response_model=List[AnnotationResponse],
+    tags=["assessor"],
+)
+async def get_annotations_for_assessment(
+    assessment_id: int,
+    db: Session = Depends(deps.get_db),
+    current_assessor: User = Depends(deps.get_current_area_assessor_user),
+):
+    """
+    Get all annotations for all MOV files in an assessment.
+
+    Returns all annotations across all MOV files in the assessment,
+    ordered by creation time.
+    """
+    try:
+        annotations = annotation_service.get_annotations_for_assessment(
+            db=db,
+            assessment_id=assessment_id
+        )
+        return annotations
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve annotations: {str(e)}"
+        )
+
+
+@router.patch(
+    "/annotations/{annotation_id}",
+    response_model=AnnotationResponse,
+    tags=["assessor"],
+)
+async def update_annotation(
+    annotation_id: int,
+    annotation_data: AnnotationUpdate,
+    db: Session = Depends(deps.get_db),
+    current_assessor: User = Depends(deps.get_current_area_assessor_user),
+):
+    """
+    Update an existing annotation.
+
+    Allows the assessor to edit the comment text of their own annotations.
+    Assessors can only update annotations they created.
+    """
+    try:
+        annotation = annotation_service.update_annotation(
+            db=db,
+            annotation_id=annotation_id,
+            annotation_data=annotation_data,
+            assessor_id=current_assessor.id
+        )
+
+        if not annotation:
+            raise HTTPException(
+                status_code=404,
+                detail="Annotation not found or you don't have permission to update it"
+            )
+
+        return annotation
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update annotation: {str(e)}"
+        )
+
+
+@router.delete(
+    "/annotations/{annotation_id}",
+    tags=["assessor"],
+)
+async def delete_annotation(
+    annotation_id: int,
+    db: Session = Depends(deps.get_db),
+    current_assessor: User = Depends(deps.get_current_area_assessor_user),
+):
+    """
+    Delete an annotation.
+
+    Removes the annotation from the MOV file. Assessors can only delete
+    annotations they created.
+    """
+    try:
+        success = annotation_service.delete_annotation(
+            db=db,
+            annotation_id=annotation_id,
+            assessor_id=current_assessor.id
+        )
+
+        if not success:
+            raise HTTPException(
+                status_code=404,
+                detail="Annotation not found or you don't have permission to delete it"
+            )
+
+        return {"success": True, "message": "Annotation deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete annotation: {str(e)}"
         )

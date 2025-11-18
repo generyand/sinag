@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { AssessmentTreeNode } from '@/components/features/assessments/tree-navigation/AssessmentTreeNode';
 import type { AssessmentDetailsResponse } from '@vantage/shared';
 import type { GovernanceArea, Indicator } from '@/types/assessment';
+import { useMovAnnotations } from '@/hooks/useMovAnnotations';
 import * as React from 'react';
 import dynamic from 'next/dynamic';
 const PdfAnnotator = dynamic(() => import('@/components/shared/PdfAnnotator'), { ssr: false });
@@ -32,13 +33,38 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
   const [currentExt, setCurrentExt] = React.useState<string>('');
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const [annotateMode, setAnnotateMode] = React.useState<boolean>(false);
-  const [annotations, setAnnotations] = React.useState<AnyRecord[]>([]);
   const [focusAnnotationId, setFocusAnnotationId] = React.useState<string | null>(null);
   const imgRef = React.useRef<HTMLImageElement | null>(null);
   const drawingRef = React.useRef<{ startX: number; startY: number; active: boolean } | null>(null);
   const [previewRect, setPreviewRect] = React.useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const [imageReady, setImageReady] = React.useState<boolean>(false);
-  const [annotateLoaded, setAnnotateLoaded] = React.useState<boolean>(false);
+
+  // Get current MOV file ID for database-backed annotations
+  const currentMovFileId = React.useMemo(() => {
+    const mov = modalMovs[modalIndex];
+    return mov?.id ? Number(mov.id) : null;
+  }, [modalMovs, modalIndex]);
+
+  // Use database-backed annotations hook
+  const {
+    annotations: dbAnnotations,
+    createAnnotation,
+    deleteAnnotation,
+    isLoading: annotationsLoading
+  } = useMovAnnotations(currentMovFileId);
+
+  // Transform database annotations to component format
+  const annotations = React.useMemo(() => {
+    return dbAnnotations.map((ann: any) => ({
+      id: String(ann.id),
+      type: ann.annotation_type === 'pdfRect' ? 'pdfRect' : 'rect',
+      page: ann.page,
+      rect: ann.rect,
+      rects: ann.rects,
+      comment: ann.comment,
+      createdAt: ann.created_at
+    }));
+  }, [dbAnnotations]);
 
   const data: AnyRecord = (assessment as unknown as AnyRecord) ?? {};
   const core = (data.assessment as AnyRecord) ?? data;
@@ -124,53 +150,12 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
         setCurrentUrl(url);
       })
       .finally(() => setIsLoading(false));
-    // Load annotations for this MOV from localStorage
-    try {
-      const key = String(mov.id || mov.storage_path || mov.url || '');
-      const raw = window.localStorage.getItem(`mov-annotations:${key}`);
-      setAnnotations(raw ? JSON.parse(raw) : []);
-      const savedMode = window.localStorage.getItem(`mov-annotate-enabled:${key}`);
-      setAnnotateMode(savedMode ? savedMode === '1' : ext === 'pdf');
-      setAnnotateLoaded(true);
-    } catch {
-      setAnnotations([]);
-      setAnnotateMode(false);
-      setAnnotateLoaded(true);
-    }
+
+    // Enable annotate mode for PDFs by default
+    setAnnotateMode(ext === 'pdf');
   }, [modalOpen, modalMovs, modalIndex]);
 
-  const saveAnnotations = React.useCallback(() => {
-    const mov = modalMovs[modalIndex];
-    if (!mov) return;
-    try {
-      const key = String(mov.id || mov.storage_path || mov.url || '');
-      window.localStorage.setItem(`mov-annotations:${key}`, JSON.stringify(annotations));
-    } catch {
-      // ignore
-    }
-  }, [annotations, modalMovs, modalIndex]);
-
-  React.useEffect(() => {
-    if (!modalOpen) return;
-    saveAnnotations();
-  }, [annotations, modalOpen, saveAnnotations]);
-
-  // Persist annotate mode per MOV
-  const persistAnnotateMode = React.useCallback((enabled: boolean) => {
-    const mov = modalMovs[modalIndex];
-    if (!mov) return;
-    try {
-      const key = String(mov.id || mov.storage_path || mov.url || '');
-      window.localStorage.setItem(`mov-annotate-enabled:${key}`, String(enabled ? '1' : '0'));
-    } catch {
-      // ignore
-    }
-  }, [modalMovs, modalIndex]);
-
-  React.useEffect(() => {
-    if (!modalOpen || !annotateLoaded) return;
-    persistAnnotateMode(annotateMode);
-  }, [annotateMode, modalOpen, annotateLoaded, persistAnnotateMode]);
+  // No need for saveAnnotations or persistAnnotateMode - database hook handles persistence
 
   const imageToNaturalRect = (rect: { x: number; y: number; w: number; h: number }): { x: number; y: number; w: number; h: number } => {
     const img = imgRef.current;
@@ -197,8 +182,8 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
     setPreviewRect({ x, y, w: 0, h: 0 });
   };
 
-  const onImageMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!annotateMode || !drawingRef.current?.active) return;
+  const onImageMouseUp = async (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!annotateMode || !drawingRef.current?.active || !currentMovFileId) return;
     const container = e.currentTarget.getBoundingClientRect();
     const x2 = e.clientX - container.left;
     const y2 = e.clientY - container.top;
@@ -211,10 +196,31 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
     const h = Math.abs(y2 - startY);
     setPreviewRect(null);
     if (w < 3 || h < 3) return; // ignore tiny selections
-    const naturalRect = imageToNaturalRect({ x, y, w, h });
+
+    // Convert to percentages for responsive rendering
+    const containerWidth = container.width;
+    const containerHeight = container.height;
+    const pctRect = {
+      x: (x / containerWidth) * 100,
+      y: (y / containerHeight) * 100,
+      w: (w / containerWidth) * 100,
+      h: (h / containerHeight) * 100
+    };
+
     const comment = window.prompt('Add a comment for this highlight (optional):', '') || '';
-    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    setAnnotations((prev) => [...prev, { id, type: 'rect', rect: naturalRect, comment, createdAt: new Date().toISOString() }]);
+
+    // Save to database
+    try {
+      await createAnnotation({
+        mov_file_id: currentMovFileId,
+        annotation_type: 'imageRect',
+        page: 0,
+        rect: pctRect,
+        comment
+      });
+    } catch (error) {
+      console.error('Failed to create annotation:', error);
+    }
   };
 
   const onImageMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -236,19 +242,12 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
     e.preventDefault();
   };
 
-  const onDeleteAnnotation = (id: string) => {
-    setAnnotations((prev) => {
-      const next = prev.filter((a) => a.id !== id);
-      // Persist deletion immediately
-      try {
-        const mov = modalMovs[modalIndex];
-        if (mov) {
-          const key = String(mov.id || mov.storage_path || mov.url || '');
-          window.localStorage.setItem(`mov-annotations:${key}`, JSON.stringify(next));
-        }
-      } catch {}
-      return next;
-    });
+  const onDeleteAnnotation = async (id: string) => {
+    try {
+      await deleteAnnotation(Number(id));
+    } catch (error) {
+      console.error('Failed to delete annotation:', error);
+    }
   };
 
   const formatPrimitive = (val: unknown): string => {
@@ -428,20 +427,20 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
                   annotateEnabled={annotateMode}
                   annotations={annotations.filter((a) => a.type === 'pdfRect') as any}
                   focusAnnotationId={focusAnnotationId || undefined}
-                  onAdd={(a: any) => {
-                    setAnnotations((prev) => {
-                      const next = [...prev, a];
-                      // Synchronously persist to localStorage to avoid data loss on immediate close
-                      try {
-                        const mov = modalMovs[modalIndex];
-                        if (mov) {
-                          const key = String(mov.id || mov.storage_path || mov.url || '');
-                          window.localStorage.setItem(`mov-annotations:${key}`, JSON.stringify(next));
-                        }
-                      } catch {}
-                      // Do not auto-scroll on add; only scroll when user clicks list item
-                      return next;
-                    });
+                  onAdd={async (a: any) => {
+                    if (!currentMovFileId) return;
+                    try {
+                      await createAnnotation({
+                        mov_file_id: currentMovFileId,
+                        annotation_type: 'pdfRect',
+                        page: a.page,
+                        rect: a.rect,
+                        rects: a.rects,
+                        comment: a.comment
+                      });
+                    } catch (error) {
+                      console.error('Failed to create PDF annotation:', error);
+                    }
                   }}
                 />
               ) : currentExt === 'png' || currentExt === 'jpg' || currentExt === 'jpeg' || currentExt === 'webp' ? (
@@ -458,16 +457,27 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
                   {(() => {
                     const img = imgRef.current;
                     if (!img || !imageReady) return null;
+                    const container = img.parentElement;
+                    if (!container) return null;
+                    const containerRect = container.getBoundingClientRect();
+
                     return (
                       <div className="absolute inset-0 pointer-events-none">
                         {annotations.map((a, idx) => {
                           if (a.type !== 'rect') return null;
-                          const r = naturalToImageRect(a.rect as any);
+                          // Convert from percentage to pixels
+                          const rect = a.rect as { x: number; y: number; w: number; h: number };
+                          const pixelRect = {
+                            x: (rect.x / 100) * containerRect.width,
+                            y: (rect.y / 100) * containerRect.height,
+                            w: (rect.w / 100) * containerRect.width,
+                            h: (rect.h / 100) * containerRect.height
+                          };
                           return (
                             <div
                               key={a.id}
                               className="absolute border-2 border-yellow-400 bg-yellow-300/20"
-                              style={{ left: r.x, top: r.y, width: r.w, height: r.h }}
+                              style={{ left: pixelRect.x, top: pixelRect.y, width: pixelRect.w, height: pixelRect.h }}
                             >
                               {/* Badge + inline comment label for visibility */}
                               <div className="absolute -top-2 -left-2 text-[10px] px-1.5 py-0.5 rounded bg-yellow-400 text-black shadow" style={{ pointerEvents: 'none' }}>{idx + 1}</div>

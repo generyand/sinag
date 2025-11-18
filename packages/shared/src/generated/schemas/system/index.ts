@@ -3,6 +3,7 @@
 // 📁 System-related types
 // 🏷️  Based on FastAPI tag: "system"
 
+import type { PdfRect } from '../common';
 import type { AuditLogResponseUserEmail } from '../users';
 import type { AuditLogResponseUserName } from '../users';
 import type { GovernanceAreaGroup } from '../common';
@@ -43,6 +44,12 @@ export type SystemicWeaknessIndicatorId = number | null;
  * SystemicWeaknessReason
  */
 export type SystemicWeaknessReason = string | null;
+
+
+/**
+ * AnnotationResponseRects
+ */
+export type AnnotationResponseRects = PdfRect[] | null;
 
 
 /**

@@ -58,6 +58,55 @@ class AssessmentDetailsResponse(BaseModel):
 
 
 # ============================================================================
+# MOV Annotation Schemas
+# ============================================================================
+
+
+class PdfRect(BaseModel):
+    """Rectangle coordinates for PDF/image annotations (percentages for responsive rendering)."""
+
+    x: float
+    y: float
+    w: float
+    h: float
+
+
+class AnnotationCreate(BaseModel):
+    """Request schema for creating a new annotation."""
+
+    mov_file_id: int
+    annotation_type: str  # 'pdfRect' or 'imageRect'
+    page: int  # 0-indexed page number
+    rect: PdfRect  # Primary rectangle
+    rects: list[PdfRect] | None = None  # Multi-line rectangles for PDFs
+    comment: str
+
+
+class AnnotationUpdate(BaseModel):
+    """Request schema for updating an annotation."""
+
+    comment: str | None = None
+
+
+class AnnotationResponse(BaseModel):
+    """Response schema for annotation data."""
+
+    id: int
+    mov_file_id: int
+    assessor_id: int
+    annotation_type: str
+    page: int
+    rect: PdfRect
+    rects: list[PdfRect] | None = None
+    comment: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ============================================================================
 # Analytics Schemas
 # ============================================================================
 

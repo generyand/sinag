@@ -39,10 +39,14 @@ from .analytics import (
     TrendData,
 )
 from .assessor import (
+    AnnotationCreate,
+    AnnotationResponse,
+    AnnotationUpdate,
     AssessorAnalyticsResponse,
     AssessmentDetailsResponse,
     AssessorQueueItem,
     MOVUploadResponse,
+    PdfRect,
     PerformanceOverview,
     SystemicWeakness,
     ValidationRequest,
@@ -118,6 +122,10 @@ __all__ = [
     "PerformanceOverview",
     "SystemicWeakness",
     "WorkflowMetrics",
+    "AnnotationCreate",
+    "AnnotationResponse",
+    "AnnotationUpdate",
+    "PdfRect",
     # BLGU Dashboard schemas
     "BLGUDashboardResponse",
     "GovernanceAreaGroup",
