@@ -399,7 +399,7 @@ class StorageService:
         """
         try:
             from app.services.completeness_validation_service import completeness_validation_service
-            from app.db.models.assessment import Indicator
+            from app.db.models.governance_area import Indicator
 
             # Get the assessment response for this indicator
             response = (
