@@ -390,6 +390,7 @@ export type BodyTestCalculationApiV1IndicatorsTestCalculationPostAssessmentData 
  */
 export interface BodyUploadMovFileApiV1MovsAssessmentsAssessmentIdIndicatorsIndicatorIdUploadPost {
   file: Blob;
+  field_id?: string;
 }
 
 

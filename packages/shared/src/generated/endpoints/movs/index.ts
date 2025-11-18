@@ -58,6 +58,9 @@ export const postMovsAssessments$AssessmentIdIndicators$IndicatorIdUpload = (
       
       const formData = new FormData();
 formData.append(`file`, bodyUploadMovFileApiV1MovsAssessmentsAssessmentIdIndicatorsIndicatorIdUploadPost.file)
+if(bodyUploadMovFileApiV1MovsAssessmentsAssessmentIdIndicatorsIndicatorIdUploadPost.field_id !== undefined) {
+ formData.append(`field_id`, bodyUploadMovFileApiV1MovsAssessmentsAssessmentIdIndicatorsIndicatorIdUploadPost.field_id)
+ }
 
       return mutator<MOVFileResponse>(
       {url: `http://localhost:8000/api/v1/movs/assessments/${assessmentId}/indicators/${indicatorId}/upload`, method: 'POST',
