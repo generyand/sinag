@@ -235,6 +235,14 @@ class CompletenessValidationService:
                 mov for mov in uploaded_movs
                 if hasattr(mov, 'field_id') and mov.field_id == field.field_id
             ]
+
+            # Debug logging to track validation
+            logger.info(
+                f"[VALIDATION] Field '{field.field_id}': "
+                f"Found {len(field_movs)} MOVs out of {len(uploaded_movs)} total. "
+                f"MOV field_ids: {[getattr(m, 'field_id', None) for m in uploaded_movs]}"
+            )
+
             return len(field_movs) > 0
 
         # Handle different data types
