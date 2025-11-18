@@ -373,7 +373,93 @@ class StorageService:
         db.commit()
         db.refresh(mov_file)
 
+        # After uploading the file, recalculate is_completed for the response
+        # This ensures progress tracking updates immediately
+        self._update_response_completion_status(db, assessment_id, indicator_id)
+
         return mov_file
+
+    def _update_response_completion_status(
+        self, db: Session, assessment_id: int, indicator_id: int
+    ) -> None:
+        """
+        Recalculate and update the is_completed status for an assessment response.
+
+        This method is called after uploading or deleting a MOV file to ensure
+        that the progress tracking reflects the current state of the response.
+
+        Args:
+            db: Database session
+            assessment_id: ID of the assessment
+            indicator_id: ID of the indicator
+
+        The is_completed status is calculated based on:
+        1. All required fields in form_schema have values in response_data
+        2. All required MOV files have been uploaded (conditional based on answers)
+        """
+        try:
+            from app.services.completeness_validation_service import completeness_validation_service
+            from app.db.models.assessment import Indicator
+
+            # Get the assessment response for this indicator
+            response = (
+                db.query(AssessmentResponse)
+                .filter(
+                    AssessmentResponse.assessment_id == assessment_id,
+                    AssessmentResponse.indicator_id == indicator_id,
+                )
+                .first()
+            )
+
+            if not response:
+                logger.warning(
+                    f"No response found for assessment {assessment_id}, indicator {indicator_id}"
+                )
+                return
+
+            # Get the indicator to access form_schema
+            indicator = db.query(Indicator).filter(Indicator.id == indicator_id).first()
+            if not indicator:
+                logger.warning(f"Indicator {indicator_id} not found")
+                return
+
+            # Get all uploaded MOVs for this response (exclude soft-deleted files)
+            uploaded_movs = (
+                db.query(MOVFile)
+                .filter(
+                    MOVFile.assessment_id == assessment_id,
+                    MOVFile.indicator_id == indicator_id,
+                    MOVFile.deleted_at.is_(None),
+                )
+                .all()
+            )
+
+            # Validate completeness using the completeness validation service
+            validation_result = completeness_validation_service.validate_completeness(
+                form_schema=indicator.form_schema,
+                response_data=response.response_data,
+                uploaded_movs=uploaded_movs,
+            )
+
+            # Update is_completed based on validation result
+            old_status = response.is_completed
+            response.is_completed = validation_result["is_complete"]
+            response.updated_at = datetime.utcnow()
+
+            db.commit()
+
+            logger.info(
+                f"Updated is_completed for response (assessment={assessment_id}, "
+                f"indicator={indicator_id}): {old_status} -> {response.is_completed}"
+            )
+
+        except Exception as e:
+            logger.error(
+                f"Failed to update completion status for assessment {assessment_id}, "
+                f"indicator {indicator_id}: {str(e)}"
+            )
+            # Don't raise - this is a non-critical operation
+            # The file was already uploaded successfully
 
     # ============================================================================
     # Story 4.6: Backend File Deletion Service (Epic 4.0)
@@ -528,6 +614,12 @@ class StorageService:
             logger.info(
                 f"Successfully soft deleted MOVFile {file_id} by user {user_id}. "
                 f"Storage deletion: {'success' if deletion_success else 'failed'}"
+            )
+
+            # After deleting the file, recalculate is_completed for the response
+            # This ensures progress tracking updates immediately
+            self._update_response_completion_status(
+                db, mov_file.assessment_id, mov_file.indicator_id
             )
 
             return mov_file
