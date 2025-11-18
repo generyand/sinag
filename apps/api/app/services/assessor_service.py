@@ -95,7 +95,6 @@ class AssessorService:
         assessor: User,
         validation_status: ValidationStatus,
         public_comment: str | None = None,
-        internal_note: str | None = None,
         assessor_remarks: str | None = None,
     ) -> dict:
         """
@@ -107,7 +106,6 @@ class AssessorService:
             assessor: The assessor performing the validation
             validation_status: The validation status (Pass/Fail/Conditional)
             public_comment: Public comment visible to BLGU user
-            internal_note: Internal note only visible to assessors
             assessor_remarks: Remarks from assessor for validators to review
 
         Returns:
@@ -170,17 +168,6 @@ class AssessorService:
                 is_internal_note=False,
             )
             db.add(public_feedback)
-
-        # Save internal note if provided
-        if internal_note:
-            internal_feedback = FeedbackComment(
-                comment=internal_note,
-                comment_type="internal_note",
-                response_id=response_id,
-                assessor_id=assessor.id,
-                is_internal_note=True,
-            )
-            db.add(internal_feedback)
 
         db.commit()
 

@@ -24,7 +24,6 @@ class ValidationRequest(BaseModel):
 
     validation_status: ValidationStatus
     public_comment: str | None = None
-    internal_note: str | None = None
     assessor_remarks: str | None = None
 
 
