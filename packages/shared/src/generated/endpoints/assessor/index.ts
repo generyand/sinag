@@ -20,6 +20,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AnnotationCreate,
+  AnnotationResponse,
+  AnnotationUpdate,
   AssessmentDetailsResponse,
   AssessorAnalyticsResponse,
   AssessorQueueItem,
@@ -696,3 +699,341 @@ export function useGetAssessorAnalytics<TData = Awaited<ReturnType<typeof getAss
 
 
 
+/**
+ * Create a new annotation on a MOV file.
+
+Allows assessors to add highlights and comments on PDF and image MOV files.
+Supports both single-line and multi-line text selections for PDFs, and
+rectangle annotations for images.
+ * @summary Create Annotation
+ */
+export const postAssessorMovs$MovFileIdAnnotations = (
+    movFileId: number,
+    annotationCreate: AnnotationCreate,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<AnnotationResponse>(
+      {url: `http://localhost:8000/api/v1/assessor/movs/${movFileId}/annotations`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: annotationCreate, signal
+    },
+      options);
+    }
+  
+
+
+export const getPostAssessorMovsMovFileIdAnnotationsMutationOptions = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessorMovs$MovFileIdAnnotations>>, TError,{movFileId: number;data: AnnotationCreate}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postAssessorMovs$MovFileIdAnnotations>>, TError,{movFileId: number;data: AnnotationCreate}, TContext> => {
+
+const mutationKey = ['postAssessorMovsMovFileIdAnnotations'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAssessorMovs$MovFileIdAnnotations>>, {movFileId: number;data: AnnotationCreate}> = (props) => {
+          const {movFileId,data} = props ?? {};
+
+          return  postAssessorMovs$MovFileIdAnnotations(movFileId,data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostAssessorMovsMovFileIdAnnotationsMutationResult = NonNullable<Awaited<ReturnType<typeof postAssessorMovs$MovFileIdAnnotations>>>
+    export type PostAssessorMovsMovFileIdAnnotationsMutationBody = AnnotationCreate
+    export type PostAssessorMovsMovFileIdAnnotationsMutationError = HTTPValidationError
+
+    /**
+ * @summary Create Annotation
+ */
+export const usePostAssessorMovsMovFileIdAnnotations = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessorMovs$MovFileIdAnnotations>>, TError,{movFileId: number;data: AnnotationCreate}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postAssessorMovs$MovFileIdAnnotations>>,
+        TError,
+        {movFileId: number;data: AnnotationCreate},
+        TContext
+      > => {
+
+      const mutationOptions = getPostAssessorMovsMovFileIdAnnotationsMutationOptions(options);
+
+      return useMutation(mutationOptions );
+    }
+    /**
+ * Get all annotations for a specific MOV file.
+
+Returns all annotations (highlights and comments) that the assessor has
+made on the specified MOV file, ordered by creation time.
+ * @summary Get Annotations For Mov
+ */
+export const getAssessorMovs$MovFileIdAnnotations = (
+    movFileId: number,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<AnnotationResponse[]>(
+      {url: `http://localhost:8000/api/v1/assessor/movs/${movFileId}/annotations`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+export const getGetAssessorMovsMovFileIdAnnotationsQueryKey = (movFileId: number,) => {
+    return [`http://localhost:8000/api/v1/assessor/movs/${movFileId}/annotations`] as const;
+    }
+
+    
+export const getGetAssessorMovsMovFileIdAnnotationsQueryOptions = <TData = Awaited<ReturnType<typeof getAssessorMovs$MovFileIdAnnotations>>, TError = HTTPValidationError>(movFileId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorMovs$MovFileIdAnnotations>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAssessorMovsMovFileIdAnnotationsQueryKey(movFileId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessorMovs$MovFileIdAnnotations>>> = ({ signal }) => getAssessorMovs$MovFileIdAnnotations(movFileId, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(movFileId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessorMovs$MovFileIdAnnotations>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAssessorMovsMovFileIdAnnotationsQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessorMovs$MovFileIdAnnotations>>>
+export type GetAssessorMovsMovFileIdAnnotationsQueryError = HTTPValidationError
+
+
+/**
+ * @summary Get Annotations For Mov
+ */
+
+export function useGetAssessorMovsMovFileIdAnnotations<TData = Awaited<ReturnType<typeof getAssessorMovs$MovFileIdAnnotations>>, TError = HTTPValidationError>(
+ movFileId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorMovs$MovFileIdAnnotations>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAssessorMovsMovFileIdAnnotationsQueryOptions(movFileId,options)
+
+  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
+ * Get all annotations for all MOV files in an assessment.
+
+Returns all annotations across all MOV files in the assessment,
+ordered by creation time.
+ * @summary Get Annotations For Assessment
+ */
+export const getAssessorAssessments$AssessmentIdAnnotations = (
+    assessmentId: number,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<AnnotationResponse[]>(
+      {url: `http://localhost:8000/api/v1/assessor/assessments/${assessmentId}/annotations`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+export const getGetAssessorAssessmentsAssessmentIdAnnotationsQueryKey = (assessmentId: number,) => {
+    return [`http://localhost:8000/api/v1/assessor/assessments/${assessmentId}/annotations`] as const;
+    }
+
+    
+export const getGetAssessorAssessmentsAssessmentIdAnnotationsQueryOptions = <TData = Awaited<ReturnType<typeof getAssessorAssessments$AssessmentIdAnnotations>>, TError = HTTPValidationError>(assessmentId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorAssessments$AssessmentIdAnnotations>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAssessorAssessmentsAssessmentIdAnnotationsQueryKey(assessmentId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessorAssessments$AssessmentIdAnnotations>>> = ({ signal }) => getAssessorAssessments$AssessmentIdAnnotations(assessmentId, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessorAssessments$AssessmentIdAnnotations>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAssessorAssessmentsAssessmentIdAnnotationsQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessorAssessments$AssessmentIdAnnotations>>>
+export type GetAssessorAssessmentsAssessmentIdAnnotationsQueryError = HTTPValidationError
+
+
+/**
+ * @summary Get Annotations For Assessment
+ */
+
+export function useGetAssessorAssessmentsAssessmentIdAnnotations<TData = Awaited<ReturnType<typeof getAssessorAssessments$AssessmentIdAnnotations>>, TError = HTTPValidationError>(
+ assessmentId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorAssessments$AssessmentIdAnnotations>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAssessorAssessmentsAssessmentIdAnnotationsQueryOptions(assessmentId,options)
+
+  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
+ * Update an existing annotation.
+
+Allows the assessor to edit the comment text of their own annotations.
+Assessors can only update annotations they created.
+ * @summary Update Annotation
+ */
+export const patchAssessorAnnotations$AnnotationId = (
+    annotationId: number,
+    annotationUpdate: AnnotationUpdate,
+ options?: SecondParameter<typeof mutator>,) => {
+      
+      
+      return mutator<AnnotationResponse>(
+      {url: `http://localhost:8000/api/v1/assessor/annotations/${annotationId}`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: annotationUpdate
+    },
+      options);
+    }
+  
+
+
+export const getPatchAssessorAnnotationsAnnotationIdMutationOptions = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAssessorAnnotations$AnnotationId>>, TError,{annotationId: number;data: AnnotationUpdate}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof patchAssessorAnnotations$AnnotationId>>, TError,{annotationId: number;data: AnnotationUpdate}, TContext> => {
+
+const mutationKey = ['patchAssessorAnnotationsAnnotationId'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchAssessorAnnotations$AnnotationId>>, {annotationId: number;data: AnnotationUpdate}> = (props) => {
+          const {annotationId,data} = props ?? {};
+
+          return  patchAssessorAnnotations$AnnotationId(annotationId,data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PatchAssessorAnnotationsAnnotationIdMutationResult = NonNullable<Awaited<ReturnType<typeof patchAssessorAnnotations$AnnotationId>>>
+    export type PatchAssessorAnnotationsAnnotationIdMutationBody = AnnotationUpdate
+    export type PatchAssessorAnnotationsAnnotationIdMutationError = HTTPValidationError
+
+    /**
+ * @summary Update Annotation
+ */
+export const usePatchAssessorAnnotationsAnnotationId = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAssessorAnnotations$AnnotationId>>, TError,{annotationId: number;data: AnnotationUpdate}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof patchAssessorAnnotations$AnnotationId>>,
+        TError,
+        {annotationId: number;data: AnnotationUpdate},
+        TContext
+      > => {
+
+      const mutationOptions = getPatchAssessorAnnotationsAnnotationIdMutationOptions(options);
+
+      return useMutation(mutationOptions );
+    }
+    /**
+ * Delete an annotation.
+
+Removes the annotation from the MOV file. Assessors can only delete
+annotations they created.
+ * @summary Delete Annotation
+ */
+export const deleteAssessorAnnotations$AnnotationId = (
+    annotationId: number,
+ options?: SecondParameter<typeof mutator>,) => {
+      
+      
+      return mutator<unknown>(
+      {url: `http://localhost:8000/api/v1/assessor/annotations/${annotationId}`, method: 'DELETE'
+    },
+      options);
+    }
+  
+
+
+export const getDeleteAssessorAnnotationsAnnotationIdMutationOptions = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAssessorAnnotations$AnnotationId>>, TError,{annotationId: number}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAssessorAnnotations$AnnotationId>>, TError,{annotationId: number}, TContext> => {
+
+const mutationKey = ['deleteAssessorAnnotationsAnnotationId'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAssessorAnnotations$AnnotationId>>, {annotationId: number}> = (props) => {
+          const {annotationId} = props ?? {};
+
+          return  deleteAssessorAnnotations$AnnotationId(annotationId,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAssessorAnnotationsAnnotationIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAssessorAnnotations$AnnotationId>>>
+    
+    export type DeleteAssessorAnnotationsAnnotationIdMutationError = HTTPValidationError
+
+    /**
+ * @summary Delete Annotation
+ */
+export const useDeleteAssessorAnnotationsAnnotationId = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAssessorAnnotations$AnnotationId>>, TError,{annotationId: number}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAssessorAnnotations$AnnotationId>>,
+        TError,
+        {annotationId: number},
+        TContext
+      > => {
+
+      const mutationOptions = getDeleteAssessorAnnotationsAnnotationIdMutationOptions(options);
+
+      return useMutation(mutationOptions );
+    }
+    

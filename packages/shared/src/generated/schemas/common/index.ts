@@ -22,6 +22,18 @@ export type AndAllRuleConditionsItem = AndAllRule | OrAnyRule | PercentageThresh
 
 
 /**
+ * AnnotationCreateRects
+ */
+export type AnnotationCreateRects = PdfRect[] | null;
+
+
+/**
+ * AnnotationUpdateComment
+ */
+export type AnnotationUpdateComment = string | null;
+
+
+/**
  * AreaBreakdown
  */
 export interface AreaBreakdown {
@@ -570,6 +582,17 @@ export type NumberInputFieldPlaceholder = string | null;
  * OrAnyRuleConditionsItem
  */
 export type OrAnyRuleConditionsItem = AndAllRule | OrAnyRule | PercentageThresholdRule | CountThresholdRule | MatchValueRule | BBIFunctionalityCheckRule;
+
+
+/**
+ * PdfRect
+ */
+export interface PdfRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
 
 
 /**

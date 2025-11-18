@@ -323,3 +323,55 @@ class FeedbackComment(Base):
     # Relationships
     response = relationship("AssessmentResponse", back_populates="feedback_comments")
     assessor = relationship("User", back_populates="feedback_comments")
+
+
+class MOVAnnotation(Base):
+    """
+    MOVAnnotation table model for database storage.
+
+    Represents annotations (highlights, comments, rectangles) made by assessors
+    on MOV files (PDFs and images). Supports both PDF text highlights and
+    image rectangle annotations with associated comments.
+    """
+
+    __tablename__ = "mov_annotations"
+
+    # Primary key
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+
+    # Foreign keys
+    mov_file_id: Mapped[int] = mapped_column(
+        ForeignKey("mov_files.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    assessor_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+
+    # Annotation type: 'pdfRect' for PDFs, 'imageRect' for images
+    annotation_type: Mapped[str] = mapped_column(String(20), nullable=False)
+
+    # Page number (for PDFs, 0-indexed)
+    page: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    # Primary rectangle coordinates (stored as percentages for responsive rendering)
+    # Format: {x: float, y: float, w: float, h: float}
+    rect: Mapped[dict] = mapped_column(JSON, nullable=False)
+
+    # Multi-line rectangles for PDF text selections (array of rect objects)
+    # Format: [{x: float, y: float, w: float, h: float}, ...]
+    rects: Mapped[list | None] = mapped_column(JSON, nullable=True)
+
+    # Comment text associated with the annotation
+    comment: Mapped[str] = mapped_column(Text, nullable=False)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=datetime.utcnow
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    # Relationships
+    mov_file = relationship("MOVFile", backref="annotations")
+    assessor = relationship("User", foreign_keys=[assessor_id])
