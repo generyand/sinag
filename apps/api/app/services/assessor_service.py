@@ -513,9 +513,11 @@ class AssessorService:
                     "id": response.indicator.id,
                     "name": response.indicator.name,
                     "code": response.indicator.indicator_code,
+                    "indicator_code": response.indicator.indicator_code,
                     "description": response.indicator.description,
                     "form_schema": response.indicator.form_schema,
                     "validation_rule": response.indicator.validation_rule,
+                    "remark_schema": response.indicator.remark_schema,
                     "governance_area": {
                         "id": response.indicator.governance_area.id,
                         "name": response.indicator.governance_area.name,
