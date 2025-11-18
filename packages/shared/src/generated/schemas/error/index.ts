@@ -56,12 +56,6 @@ export type ValidationErrorLocItem = string | number;
 
 
 /**
- * ValidationRequestInternalNote
- */
-export type ValidationRequestInternalNote = string | null;
-
-
-/**
  * ValidationRequestPublicComment
  */
 export type ValidationRequestPublicComment = string | null;

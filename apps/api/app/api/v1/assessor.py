@@ -48,8 +48,8 @@ async def validate_assessment_response(
     """
     Validate an assessment response.
 
-    Accepts validation status (Pass/Fail/Conditional), public comment, internal note, and assessor remarks.
-    Saves both comments to the feedback_comments table with appropriate flags.
+    Accepts validation status (Pass/Fail/Conditional), public comment, and assessor remarks.
+    Saves public comment to the feedback_comments table.
     Assessor remarks are saved to the assessment_response for validators to review.
     """
     result = assessor_service.validate_assessment_response(
@@ -58,7 +58,6 @@ async def validate_assessment_response(
         assessor=current_assessor,
         validation_status=validation_data.validation_status,
         public_comment=validation_data.public_comment,
-        internal_note=validation_data.internal_note,
         assessor_remarks=validation_data.assessor_remarks,
     )
 

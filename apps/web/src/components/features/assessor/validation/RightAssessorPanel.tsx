@@ -15,8 +15,8 @@ import { useAuthStore } from '@/store/useAuthStore';
 
 interface RightAssessorPanelProps {
   assessment: AssessmentDetailsResponse;
-  form: Record<number, { status?: LocalStatus; publicComment?: string; internalNote?: string }>;
-  setField: (responseId: number, field: 'status' | 'publicComment' | 'internalNote', value: string) => void;
+  form: Record<number, { status?: LocalStatus; publicComment?: string }>;
+  setField: (responseId: number, field: 'status' | 'publicComment', value: string) => void;
   expandedId?: number | null;
   onToggle?: (responseId: number) => void;
 }
@@ -41,7 +41,6 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
     .object({
       status: z.enum(['Pass', 'Fail', 'Conditional']).optional(),
       publicComment: z.string().optional(),
-      internalNote: z.string().optional(),
     })
     .refine(
       (val) => {
@@ -68,7 +67,6 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
       obj[key] = {
         status: form[r.id]?.status,
         publicComment: form[r.id]?.publicComment,
-        internalNote: form[r.id]?.internalNote,
       };
     }
     return obj as ResponsesForm;
@@ -80,19 +78,106 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
     mode: 'onChange',
   });
 
+  // Helper function to calculate automatic status based on checklist
+  const calculateAutomaticStatus = React.useCallback((responseId: number, checklistData: Record<string, any>): LocalStatus | null => {
+    const response = responses.find(r => r.id === responseId);
+    if (!response) return null;
+
+    const indicator = (response.indicator as AnyRecord) ?? {};
+    const checklistItems = (indicator?.checklist_items as any[]) || [];
+    const validationRule = indicator?.validation_rule || 'ALL_ITEMS_REQUIRED';
+
+    if (checklistItems.length === 0) return null;
+
+    // Filter out non-validatable items (info_text, etc.)
+    const validatableItems = checklistItems.filter((item: any) =>
+      item.item_type !== 'info_text' && !item.mov_description?.startsWith('Note:')
+    );
+
+    if (validatableItems.length === 0) return null;
+
+    // Count checked/filled items
+    let checkedCount = 0;
+    let totalRequired = 0;
+
+    for (const item of validatableItems) {
+      const itemKey = `checklist_${responseId}_${item.item_id}`;
+
+      // For document_count or calculation_field, check if value is provided
+      if (item.item_type === 'document_count' || item.item_type === 'calculation_field' || item.requires_document_count) {
+        const value = checklistData[itemKey];
+        if (value && String(value).trim() !== '') {
+          checkedCount++;
+        }
+        if (item.required || validationRule === 'ALL_ITEMS_REQUIRED') {
+          totalRequired++;
+        }
+      }
+      // For assessment_field (YES/NO), check if either YES or NO is selected
+      else if (item.item_type === 'assessment_field') {
+        const yesValue = checklistData[`${itemKey}_yes`];
+        const noValue = checklistData[`${itemKey}_no`];
+        if (yesValue === true) {
+          checkedCount++;
+        }
+        if (item.required || validationRule === 'ALL_ITEMS_REQUIRED') {
+          totalRequired++;
+        }
+      }
+      // Regular checkbox item
+      else {
+        if (checklistData[itemKey] === true) {
+          checkedCount++;
+        }
+        if (item.required || validationRule === 'ALL_ITEMS_REQUIRED') {
+          totalRequired++;
+        }
+      }
+    }
+
+    // Apply validation logic
+    if (validationRule === 'ALL_ITEMS_REQUIRED') {
+      // All required items must be checked
+      return checkedCount >= totalRequired ? 'Pass' : 'Fail';
+    } else if (validationRule === 'ANY_ITEM_REQUIRED') {
+      // At least one item must be checked
+      return checkedCount > 0 ? 'Pass' : 'Fail';
+    }
+
+    return null;
+  }, [responses]);
+
+  // Track manual overrides separately
+  const [manualOverrides, setManualOverrides] = React.useState<Record<number, boolean>>({});
+
   // Sync RHF state upward so footer logic remains accurate
   const watched = useWatch({ control });
   React.useEffect(() => {
     Object.entries(watched || {}).forEach(([key, v]) => {
       const id = Number(key);
       if (!Number.isFinite(id)) return;
-      const val = v as { status?: LocalStatus; publicComment?: string; internalNote?: string };
+      const val = v as { status?: LocalStatus; publicComment?: string };
       if (val.status !== form[id]?.status) setField(id, 'status', String(val.status || ''));
       if (val.publicComment !== form[id]?.publicComment) setField(id, 'publicComment', val.publicComment || '');
-      if (val.internalNote !== form[id]?.internalNote) setField(id, 'internalNote', val.internalNote || '');
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watched]);
+
+  // Auto-calculate status based on checklist for validators (only if not manually overridden)
+  React.useEffect(() => {
+    if (!isValidator || !expandedId) return;
+
+    // Don't auto-update if this indicator has been manually overridden
+    if (manualOverrides[expandedId]) return;
+
+    const checklistData = watched || {};
+    const autoStatus = calculateAutomaticStatus(expandedId, checklistData);
+
+    if (autoStatus && form[expandedId]?.status !== autoStatus) {
+      setField(expandedId, 'status', autoStatus);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watched, expandedId, isValidator, manualOverrides]);
 
   return (
     <div className="p-4">
@@ -341,6 +426,12 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                       (cr) => cr.condition?.toLowerCase() === 'considered' || cr.condition?.toLowerCase() === 'conditional'
                     );
 
+                    // Calculate automatic status
+                    const checklistData = watched || {};
+                    const autoStatus = calculateAutomaticStatus(r.id, checklistData);
+                    const isManualOverride = manualOverrides[r.id] || false;
+                    const currentStatus = form[r.id]?.status;
+
                     // Validator uses Met/Unmet/Considered instead of Pass/Fail/Conditional
                     const validatorStatuses: Array<{value: LocalStatus; label: string}> = [
                       { value: 'Pass', label: 'Met' },
@@ -357,11 +448,39 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                         <div className="text-xs font-semibold uppercase tracking-wide bg-yellow-100 dark:bg-yellow-950/30 text-yellow-900 dark:text-yellow-200 px-3 py-2 rounded border border-yellow-200 dark:border-yellow-800">
                           PROCESSING OF RESULTS
                         </div>
+
+                        {/* Automatic Result Display */}
+                        {autoStatus && (
+                          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-sm p-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="text-xs font-medium text-blue-900 dark:text-blue-200">
+                                Automatic Result:
+                              </div>
+                              <div className={`text-xs font-semibold px-2 py-1 rounded ${
+                                autoStatus === 'Pass'
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                  : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                              }`}>
+                                {autoStatus === 'Pass' ? 'Met' : 'Unmet'}
+                              </div>
+                            </div>
+                            <div className="text-[11px] text-blue-700 dark:text-blue-300 italic">
+                              Based on checklist validation. You can override this result below if needed.
+                            </div>
+                          </div>
+                        )}
+
                         <div className="space-y-2">
-                          <div className="text-xs font-medium">Met all the minimum requirements on {indicatorLabel}?</div>
-                          <div className="flex items-center gap-2">
+                          <div className="text-xs font-medium">
+                            {isManualOverride && (
+                              <span className="text-orange-600 dark:text-orange-400 mr-1">⚠️ Manual Override: </span>
+                            )}
+                            Met all the minimum requirements on {indicatorLabel}?
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
                             {validatorStatuses.map(({ value, label }) => {
-                              const active = form[r.id]?.status === value;
+                              const active = currentStatus === value;
+                              const isAutoRecommended = autoStatus === value && !isManualOverride;
                               const cls = active
                                 ? value === 'Pass'
                                   ? 'text-white hover:opacity-90'
@@ -384,13 +503,41 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                   size="sm"
                                   className={cls}
                                   style={style}
-                                  onClick={() => setField(r.id, 'status', value as string)}
+                                  onClick={() => {
+                                    setField(r.id, 'status', value as string);
+                                    // Mark as manual override if different from auto status
+                                    if (value !== autoStatus) {
+                                      setManualOverrides(prev => ({ ...prev, [r.id]: true }));
+                                    } else {
+                                      setManualOverrides(prev => ({ ...prev, [r.id]: false }));
+                                    }
+                                  }}
                                 >
                                   {label}
+                                  {isAutoRecommended && <span className="ml-1">✓</span>}
                                 </Button>
                               );
                             })}
                           </div>
+                          {isManualOverride && (
+                            <div className="text-[11px] text-orange-600 dark:text-orange-400 flex items-center gap-1">
+                              <span>You have manually overridden the automatic result.</span>
+                              <Button
+                                type="button"
+                                variant="link"
+                                size="sm"
+                                className="h-auto p-0 text-[11px] text-blue-600 dark:text-blue-400 underline"
+                                onClick={() => {
+                                  if (autoStatus) {
+                                    setField(r.id, 'status', autoStatus);
+                                    setManualOverrides(prev => ({ ...prev, [r.id]: false }));
+                                  }
+                                }}
+                              >
+                                Reset to automatic
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
@@ -418,14 +565,6 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                     {errorsFor ? (
                       <div className="text-xs text-red-600">{String(errorsFor.message || 'Required for Fail or Conditional')}</div>
                     ) : null}
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Internal Notes (DILG-only)</div>
-                    <Textarea
-                      {...register(`${key}.internalNote` as const)}
-                      placeholder="Internal notes for DILG only"
-                    />
                   </div>
 
                   {/* Show assessor remarks for validators (read-only display) */}

@@ -29,7 +29,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
 
   // All hooks must be called before any conditional returns
   const [selectedIndicatorId, setSelectedIndicatorId] = useState<string | null>(null);
-  const [form, setForm] = useState<Record<number, { status?: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string; internalNote?: string }>>({});
+  const [form, setForm] = useState<Record<number, { status?: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string }>>({});
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   // Set initial expandedId when data loads
@@ -126,7 +126,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const onSaveDraft = async () => {
     const payloads = responses
       .map((r) => ({ id: r.id as number, v: form[r.id] }))
-      .filter((x) => x.v && x.v.status) as { id: number; v: { status: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string; internalNote?: string } }[];
+      .filter((x) => x.v && x.v.status) as { id: number; v: { status: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string } }[];
     if (payloads.length === 0) return;
     await Promise.all(
       payloads.map((p) =>
@@ -135,7 +135,6 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
           data: {
             validation_status: p.v.status!,
             public_comment: p.v.publicComment ?? null,
-            internal_note: p.v.internalNote ?? null,
           },
         })
       )

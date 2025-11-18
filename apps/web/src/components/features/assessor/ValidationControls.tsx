@@ -19,7 +19,6 @@ interface ValidationControlsProps {
   indicatorDescription: string;
   currentValidationStatus: string | null;
   currentPublicComment: string | null;
-  currentInternalNote: string | null;
   technicalNotes?: string;
   assessmentId: string;
 }
@@ -30,14 +29,11 @@ export function ValidationControls({
   indicatorDescription,
   currentValidationStatus,
   currentPublicComment,
-  currentInternalNote,
   technicalNotes,
   assessmentId,
 }: ValidationControlsProps) {
   const [validationStatus, setValidationStatus] = useState(currentValidationStatus || "");
   const [publicComment, setPublicComment] = useState(currentPublicComment || "");
-  const [internalNote, setInternalNote] = useState(currentInternalNote || "");
-  const [isInternalNote, setIsInternalNote] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const queryClient = useQueryClient();
@@ -63,7 +59,6 @@ export function ValidationControls({
         data: {
           validation_status: validationStatus as ValidationStatus,
           public_comment: publicComment.trim() || null,
-          internal_note: isInternalNote ? internalNote.trim() || null : null,
         },
       });
 
@@ -91,7 +86,6 @@ export function ValidationControls({
         data: {
           validation_status: validationStatus as ValidationStatus,
           public_comment: publicComment.trim() || null,
-          internal_note: isInternalNote ? internalNote.trim() || null : null,
         },
       });
 
@@ -208,12 +202,6 @@ export function ValidationControls({
                 <p className="mt-1">{currentPublicComment}</p>
               </div>
             )}
-            {currentInternalNote && (
-              <div className="text-xs text-gray-600 mt-2">
-                <span className="font-medium">Internal Note:</span>
-                <p className="mt-1">{currentInternalNote}</p>
-              </div>
-            )}
           </div>
         )}
 
@@ -286,33 +274,6 @@ export function ValidationControls({
               Public comment is required for Conditional status
             </p>
           )}
-        </div>
-
-        {/* Internal Note */}
-        <div>
-          <Label htmlFor="internal-note" className="text-sm font-medium">
-            Internal Note
-          </Label>
-          <Textarea
-            id="internal-note"
-            placeholder="Add an internal note for other assessors..."
-            value={internalNote}
-            onChange={(e) => setInternalNote(e.target.value)}
-            className="mt-2"
-            rows={3}
-          />
-          <div className="flex items-center space-x-2 mt-2">
-            <input
-              type="checkbox"
-              id="is-internal"
-              checked={isInternalNote}
-              onChange={(e) => setIsInternalNote(e.target.checked)}
-              className="rounded border-gray-300"
-            />
-            <Label htmlFor="is-internal" className="text-sm">
-              Mark as internal note (only visible to assessors)
-            </Label>
-          </div>
         </div>
 
         {/* MOV Upload Section */}
