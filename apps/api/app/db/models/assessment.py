@@ -269,6 +269,7 @@ class MOVFile(Base):
     file_url: Mapped[str] = mapped_column(String, nullable=False)
     file_type: Mapped[str] = mapped_column(String(50), nullable=False)
     file_size: Mapped[int] = mapped_column(Integer, nullable=False)  # Size in bytes
+    field_id: Mapped[str | None] = mapped_column(String, nullable=True)  # Field identifier for multi-field uploads
 
     # Timestamps
     uploaded_at: Mapped[datetime] = mapped_column(

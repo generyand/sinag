@@ -6,7 +6,7 @@ Provides endpoints for uploading, listing, and deleting MOV (Means of Verificati
 
 from typing import List
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.api import deps
@@ -42,6 +42,7 @@ def upload_mov_file(
     assessment_id: int,
     indicator_id: int,
     file: UploadFile = File(...),
+    field_id: str = Form(None),
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
 ) -> MOVFileResponse:
@@ -82,6 +83,7 @@ def upload_mov_file(
             assessment_id=assessment_id,
             indicator_id=indicator_id,
             user_id=current_user.id,
+            field_id=field_id,
         )
 
         return MOVFileResponse.model_validate(mov_file)

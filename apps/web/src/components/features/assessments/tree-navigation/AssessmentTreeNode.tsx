@@ -123,16 +123,16 @@ export function AssessmentTreeNode({
     const indicator = item as Indicator;
     switch (indicator.status) {
       case "completed":
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className="h-3.5 w-3.5 text-green-500" />;
       case "needs_rework":
-        return <AlertCircle className="h-4 w-4 text-orange-500" />;
+        return <AlertCircle className="h-3.5 w-3.5 text-orange-500" />;
       default:
-        return <Circle className="h-4 w-4 text-gray-400" />;
+        return <Circle className="h-3.5 w-3.5 text-gray-400" />;
     }
   };
 
-  const height = type === "area" ? 48 : 40;
-  const indent = level * 16 + (type === "area" ? 0 : 24);
+  const height = type === "area" ? 40 : 32;
+  const indent = level * 12 + (type === "area" ? 0 : 20);
 
   return (
     <div
@@ -142,7 +142,7 @@ export function AssessmentTreeNode({
       aria-level={level + 1}
       tabIndex={0}
       className={`
-        group relative flex items-center gap-2 cursor-pointer transition-all duration-150
+        group relative flex items-center ${type === "area" ? "gap-2" : "gap-1.5"} cursor-pointer transition-all duration-150
         ${isActive ? "bg-[var(--cityscape-yellow)]/10 border-l-[3px] border-l-[var(--cityscape-yellow)]" : "border-l-[3px] border-l-transparent"}
         ${!isActive ? "hover:bg-[var(--hover)]" : ""}
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--cityscape-yellow)]
@@ -150,7 +150,7 @@ export function AssessmentTreeNode({
       style={{
         height: `${height}px`,
         paddingLeft: `${indent}px`,
-        minHeight: `44px`, // Accessibility: minimum touch target
+        minHeight: `${height}px`,
       }}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
@@ -189,19 +189,14 @@ export function AssessmentTreeNode({
           </>
         ) : (
           <>
-            {(item as Indicator).code && (
-              <span className="text-xs font-mono text-[var(--text-secondary)] flex-shrink-0">
-                {(item as Indicator).code}
-              </span>
-            )}
             <span
               className={`
-              text-sm truncate
-              ${isActive ? "font-medium text-[var(--foreground)]" : "text-[var(--text-secondary)]"}
+              text-xs font-medium
+              ${isActive ? "text-[var(--foreground)]" : "text-[var(--text-secondary)]"}
             `}
               title={item.name}
             >
-              {item.name}
+              {(item as Indicator).code || item.name}
             </span>
           </>
         )}

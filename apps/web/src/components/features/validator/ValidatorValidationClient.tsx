@@ -3,8 +3,8 @@
 import { TreeNavigator } from '@/components/features/assessments/tree-navigation';
 import { useGetAssessorAssessmentsAssessmentId } from '@vantage/shared';
 import { useState, useEffect } from 'react';
-import { RightAssessorPanel } from './RightAssessorPanel';
-import { MiddleMovFilesPanel } from './MiddleMovFilesPanel';
+import { RightAssessorPanel } from '../assessor/validation/RightAssessorPanel';
+import { MiddleMovFilesPanel } from '../assessor/validation/MiddleMovFilesPanel';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -13,20 +13,18 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   usePostAssessorAssessmentResponsesResponseIdValidate,
   usePostAssessorAssessmentsAssessmentIdFinalize,
-  usePostAssessorAssessmentsAssessmentIdRework,
 } from '@vantage/shared';
 
-interface AssessorValidationClientProps {
+interface ValidatorValidationClientProps {
   assessmentId: number;
 }
 
 type AnyRecord = Record<string, any>;
 
-export function AssessorValidationClient({ assessmentId }: AssessorValidationClientProps) {
+export function ValidatorValidationClient({ assessmentId }: ValidatorValidationClientProps) {
   const { data, isLoading, isError, error } = useGetAssessorAssessmentsAssessmentId(assessmentId);
   const qc = useQueryClient();
   const validateMut = usePostAssessorAssessmentResponsesResponseIdValidate();
-  const reworkMut = usePostAssessorAssessmentsAssessmentIdRework();
   const finalizeMut = usePostAssessorAssessmentsAssessmentIdFinalize();
 
   // All hooks must be called before any conditional returns
@@ -68,7 +66,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   const assessment: AnyRecord = (data as unknown as AnyRecord) ?? {};
   const core = (assessment.assessment as AnyRecord) ?? assessment;
   const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
-  const reworkCount: number = core.rework_count ?? 0;
   const barangayName: string = (core?.blgu_user?.barangay?.name
     ?? core?.barangay?.name
     ?? core?.barangay_name
@@ -115,7 +112,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   const total = responses.length;
   const reviewed = responses.filter((r) => !!form[r.id]?.status).length;
   const allReviewed = total > 0 && reviewed === total;
-  const anyFail = responses.some((r) => form[r.id]?.status === 'Fail');
   const progressPct = total > 0 ? Math.round((reviewed / total) * 100) : 0;
 
   const missingRequiredComments = responses.filter((r) => {
@@ -147,12 +143,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     await qc.invalidateQueries();
   };
 
-  const onSendRework = async () => {
-    await onSaveDraft();
-    await reworkMut.mutateAsync({ assessmentId });
-    await qc.invalidateQueries();
-  };
-
   const onFinalize = async () => {
     await onSaveDraft();
     await finalizeMut.mutateAsync({ assessmentId });
@@ -172,7 +162,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <Button asChild variant="ghost" size="sm" className="shrink-0">
-              <Link href="/assessor/submissions" className="flex items-center gap-1">
+              <Link href="/validator/submissions" className="flex items-center gap-1">
                 <ChevronLeft className="h-4 w-4" />
                 <span>Submissions Queue</span>
               </Link>
@@ -184,7 +174,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 {governanceArea ? `Governance Area: ${governanceArea}` : ''}
                 {cycleYear ? ` (CY ${cycleYear})` : ''}
               </div>
-              <div className="text-xs text-muted-foreground truncate">Assessor Validation Workspace</div>
+              <div className="text-xs text-muted-foreground truncate">Validator Assessment Review</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -274,31 +264,13 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               Save as Draft
             </Button>
             <Button
-              variant="secondary"
-              size="default"
-              type="button"
-              onClick={onSendRework}
-              disabled={
-                !allReviewed ||
-                reworkCount !== 0 ||
-                !anyFail ||
-                missingRequiredComments > 0 ||
-                reworkMut.isPending
-              }
-              className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90"
-              style={{ background: 'var(--cityscape-yellow)' }}
-            >
-              Compile and Send for Rework
-            </Button>
-            <Button
               size="default"
               type="button"
               onClick={onFinalize}
               disabled={
                 !allReviewed ||
                 missingRequiredComments > 0 ||
-                finalizeMut.isPending ||
-                (reworkCount === 0 && anyFail)
+                finalizeMut.isPending
               }
               className="w-full sm:w-auto text-white hover:opacity-90"
               style={{ background: 'var(--success)' }}
@@ -311,5 +283,3 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     </div>
   );
 }
-
-
