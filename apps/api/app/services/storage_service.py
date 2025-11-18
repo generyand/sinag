@@ -412,10 +412,23 @@ class StorageService:
             )
 
             if not response:
-                logger.warning(
-                    f"No response found for assessment {assessment_id}, indicator {indicator_id}"
+                # Auto-create response if it doesn't exist yet
+                # This handles the case where files are uploaded before answering the form
+                logger.info(
+                    f"Creating AssessmentResponse for assessment {assessment_id}, "
+                    f"indicator {indicator_id} (triggered by MOV upload)"
                 )
-                return
+                response = AssessmentResponse(
+                    assessment_id=assessment_id,
+                    indicator_id=indicator_id,
+                    response_data={},
+                    is_completed=False,
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow(),
+                )
+                db.add(response)
+                db.commit()
+                db.refresh(response)
 
             # Get the indicator to access form_schema
             indicator = db.query(Indicator).filter(Indicator.id == indicator_id).first()
