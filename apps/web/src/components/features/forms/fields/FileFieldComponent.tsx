@@ -16,11 +16,13 @@ import {
   MOVFileResponse,
   AssessmentStatus,
 } from "@vantage/shared";
+import { getGetAssessmentsMyAssessmentQueryKey } from "@vantage/shared/src/generated/endpoints/assessments";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useUploadStore } from "@/store/useUploadStore";
 import { FileUpload } from "@/components/features/movs/FileUpload";
 import { FileListWithDelete } from "@/components/features/movs/FileListWithDelete";
 import toast from "react-hot-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface FileFieldComponentProps {
   field: FileUploadField;
@@ -57,6 +59,9 @@ export function FileFieldComponent({
 
   // Get global upload queue
   const { addToQueue, completeCurrentUpload, currentUpload, queue } = useUploadStore();
+
+  // Get query client for invalidating queries
+  const queryClient = useQueryClient();
 
   // Fetch assessment details to check status
   const { data: assessmentData } = useGetAssessmentsMyAssessment({
@@ -122,6 +127,11 @@ export function FileFieldComponent({
             setShowSuccess(false);
             setSelectedFile(null);
             refetchFiles();
+
+            // CRITICAL: Invalidate assessment query to update progress tracking
+            queryClient.invalidateQueries({
+              queryKey: getGetAssessmentsMyAssessmentQueryKey(),
+            });
 
             // Tell global queue this upload is complete
             completeCurrentUpload();

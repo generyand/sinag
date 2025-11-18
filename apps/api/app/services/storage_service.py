@@ -463,7 +463,9 @@ class StorageService:
 
             logger.info(
                 f"Updated is_completed for response (assessment={assessment_id}, "
-                f"indicator={indicator_id}): {old_status} -> {response.is_completed}"
+                f"indicator={indicator_id}): {old_status} -> {response.is_completed}. "
+                f"Validation: {validation_result['filled_field_count']}/{validation_result['required_field_count']} fields, "
+                f"{len(uploaded_movs)} MOVs uploaded, missing: {validation_result.get('missing_fields', [])}"
             )
 
         except Exception as e:
