@@ -3,7 +3,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -17,6 +17,7 @@ import {
   AssessmentStatus,
 } from "@vantage/shared";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useUploadStore } from "@/store/useUploadStore";
 import { FileUpload } from "@/components/features/movs/FileUpload";
 import { FileListWithDelete } from "@/components/features/movs/FileListWithDelete";
 import toast from "react-hot-toast";
@@ -53,6 +54,9 @@ export function FileFieldComponent({
 
   // Get current user from auth store
   const { user } = useAuthStore();
+
+  // Get global upload queue
+  const { addToQueue, completeCurrentUpload, currentUpload, queue } = useUploadStore();
 
   // Fetch assessment details to check status
   const { data: assessmentData } = useGetAssessmentsMyAssessment({
@@ -111,13 +115,16 @@ export function FileFieldComponent({
 
           toast.success("File uploaded successfully");
 
-          // Reset after showing success
+          // Reset and process next file in queue
           setTimeout(() => {
-            setSelectedFile(null);
             setUploadError(null);
             setUploadProgress(0);
             setShowSuccess(false);
+            setSelectedFile(null);
             refetchFiles();
+
+            // Tell global queue this upload is complete
+            completeCurrentUpload();
           }, 1500);
         },
         onError: (error: any, variables, context: any) => {
@@ -133,14 +140,34 @@ export function FileFieldComponent({
             "Failed to upload file";
           setUploadError(errorMessage);
           setUploadProgress(0);
+          setSelectedFile(null);
           toast.error(errorMessage);
+
+          // Tell global queue this upload failed, move to next
+          completeCurrentUpload();
         },
       },
     });
 
   const handleFileSelect = (file: File) => {
-    setSelectedFile(file);
-    setUploadError(null);
+    // Add to global upload queue
+    addToQueue({
+      file,
+      fieldId: field.field_id,
+      assessmentId,
+      indicatorId,
+      onUpload: (fileToUpload) => {
+        // This will be called when it's this file's turn to upload
+        setSelectedFile(fileToUpload);
+        setUploadError(null);
+
+        uploadMutation.mutate({
+          assessmentId,
+          indicatorId,
+          data: { file: fileToUpload, field_id: field.field_id },
+        });
+      },
+    });
   };
 
   const handleFileRemove = () => {
@@ -167,18 +194,34 @@ export function FileFieldComponent({
     window.open(file.file_url, "_blank");
   };
 
-  const handleDownload = (file: MOVFileResponse) => {
-    // Create a temporary link and trigger download
-    const link = document.createElement("a");
-    link.href = file.file_url;
-    link.download = file.file_name;
-    link.target = "_blank";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownload = async (file: MOVFileResponse) => {
+    try {
+      // Fetch the file as a blob to bypass CORS restrictions on download attribute
+      const response = await fetch(file.file_url);
+      const blob = await response.blob();
+
+      // Create a blob URL and trigger download
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = file.file_name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up the blob URL
+      window.URL.revokeObjectURL(blobUrl);
+
+      toast.success("File downloaded successfully");
+    } catch (error) {
+      console.error("Download error:", error);
+      toast.error("Failed to download file");
+    }
   };
 
-  const files = filesResponse?.files || [];
+  // Filter files by field_id to show only files uploaded to this specific field
+  const allFiles = filesResponse?.files || [];
+  const files = allFiles.filter((f: any) => f.field_id === field.field_id);
 
   // Permission checks
   const assessmentStatus = (assessmentData as any)?.assessment?.status;
@@ -257,18 +300,17 @@ export function FileFieldComponent({
         </div>
       )}
 
-      {/* Upload Button (only show when file is selected and not uploading) */}
-      {selectedFile && !uploadMutation.isPending && !showSuccess && (
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={handleUpload}
-            disabled={uploadMutation.isPending}
-            className="px-6 py-2.5 bg-[var(--cityscape-yellow)] hover:bg-[var(--cityscape-yellow)]/90 text-gray-900 font-semibold rounded-md shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-          >
-            Upload File
-          </button>
-        </div>
+      {/* Queue Status (show when files are queued) */}
+      {(currentUpload || queue.length > 0) && currentUpload?.fieldId === field.field_id && (
+        <Alert className="border-blue-200 bg-blue-50">
+          <Info className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-900">
+            {uploadMutation.isPending
+              ? `Uploading...`
+              : `${queue.length} file(s) in global queue`
+            }
+          </AlertDescription>
+        </Alert>
       )}
 
       {/* Upload Progress Indicator */}

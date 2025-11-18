@@ -62,19 +62,20 @@ export function FileUpload({
         return;
       }
 
-      // Handle accepted file
+      // Handle accepted files (now supporting multiple)
       if (acceptedFiles.length > 0) {
-        const file = acceptedFiles[0];
+        // Process each file
+        for (const file of acceptedFiles) {
+          // Additional validation
+          if (file.size > MAX_FILE_SIZE) {
+            setValidationError(
+              `File ${file.name} size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds 50MB limit`
+            );
+            continue; // Skip this file but process others
+          }
 
-        // Additional validation
-        if (file.size > MAX_FILE_SIZE) {
-          setValidationError(
-            `File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds 50MB limit`
-          );
-          return;
+          onFileSelect(file);
         }
-
-        onFileSelect(file);
       }
     },
     [onFileSelect]
@@ -84,7 +85,7 @@ export function FileUpload({
     onDrop,
     accept: ALLOWED_FILE_TYPES,
     maxSize: MAX_FILE_SIZE,
-    multiple: false,
+    multiple: true,
     disabled,
   });
 
@@ -117,16 +118,16 @@ export function FileUpload({
           )} />
           <p className="text-sm font-medium text-[var(--text-primary)] mb-1">
             {isDragActive ? (
-              "Drop file here"
+              "Drop files here"
             ) : (
               <>
-                Drag and drop a file here, or{" "}
+                Drag and drop files here, or{" "}
                 <span className="text-blue-600 hover:text-blue-700 font-semibold">click to browse</span>
               </>
             )}
           </p>
           <p className="text-xs text-[var(--text-secondary)] mt-2">
-            Supported: PDF, DOCX, XLSX, JPG, PNG, MP4 (max 50MB)
+            Supported: PDF, DOCX, XLSX, JPG, PNG, MP4 (max 50MB each) • Multiple files allowed
           </p>
         </div>
       ) : (

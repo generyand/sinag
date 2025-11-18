@@ -127,6 +127,7 @@ export function FileList({
                 <div className="flex items-center gap-1 flex-shrink-0">
                   {onPreview && (
                     <Button
+                      type="button"
                       variant="ghost"
                       size="sm"
                       onClick={() => onPreview(file)}
@@ -137,6 +138,7 @@ export function FileList({
                   )}
                   {onDownload && (
                     <Button
+                      type="button"
                       variant="ghost"
                       size="sm"
                       onClick={() => onDownload(file)}
@@ -147,6 +149,7 @@ export function FileList({
                   )}
                   {canDelete && onDelete && (
                     <Button
+                      type="button"
                       variant="ghost"
                       size="sm"
                       onClick={() => onDelete(file.id)}

@@ -156,6 +156,7 @@ class MOVCreate(BaseModel):
     content_type: str
     storage_path: str
     response_id: int
+    field_id: Optional[str] = None  # Field identifier for multi-field uploads
 
 
 class MOVUpdate(BaseModel):
@@ -478,6 +479,7 @@ class MOVFileResponse(BaseModel):
     uploaded_by: int
     uploaded_at: datetime
     deleted_at: Optional[datetime] = None
+    field_id: Optional[str] = None
 
 
 class MOVFileListResponse(BaseModel):

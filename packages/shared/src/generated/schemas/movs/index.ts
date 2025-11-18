@@ -51,7 +51,14 @@ export interface MOVCreate {
   content_type: string;
   storage_path: string;
   response_id: number;
+  field_id?: MOVCreateFieldId;
 }
+
+
+/**
+ * MOVCreateFieldId
+ */
+export type MOVCreateFieldId = string | null;
 
 
 /**
@@ -76,6 +83,7 @@ export interface MOVFileResponse {
   uploaded_by: number;
   uploaded_at: string;
   deleted_at?: MOVFileResponseDeletedAt;
+  field_id?: MOVFileResponseFieldId;
 }
 
 
@@ -83,6 +91,12 @@ export interface MOVFileResponse {
  * MOVFileResponseDeletedAt
  */
 export type MOVFileResponseDeletedAt = string | null;
+
+
+/**
+ * MOVFileResponseFieldId
+ */
+export type MOVFileResponseFieldId = string | null;
 
 
 /**
