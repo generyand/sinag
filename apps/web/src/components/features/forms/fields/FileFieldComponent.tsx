@@ -128,8 +128,14 @@ export function FileFieldComponent({
             setSelectedFile(null);
             refetchFiles();
 
-            // CRITICAL: Invalidate assessment query to update progress tracking
+            // CRITICAL: Invalidate and refetch assessment query to update progress tracking
             queryClient.invalidateQueries({
+              queryKey: getGetAssessmentsMyAssessmentQueryKey(),
+              refetchType: 'active',
+            });
+
+            // Force immediate refetch
+            queryClient.refetchQueries({
               queryKey: getGetAssessmentsMyAssessmentQueryKey(),
             });
 
