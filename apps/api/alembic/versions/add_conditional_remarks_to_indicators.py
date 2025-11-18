@@ -39,7 +39,7 @@ def upgrade() -> None:
                 '[{"condition": "considered", "message": "Approval until March 31, 2023"}]'::jsonb
             ) AS json
         )
-        WHERE name = '1.3'
+        WHERE indicator_code = '1.3'
     """)
 
     # Update indicator 1.6.1.1
@@ -52,7 +52,7 @@ def upgrade() -> None:
                 '[{"condition": "considered", "message": "In the absence of deposit slips, bank statements will be considered"}]'::jsonb
             ) AS json
         )
-        WHERE name = '1.6.1.1'
+        WHERE indicator_code = '1.6.1.1'
     """)
 
     # Update indicator 1.6.1.2
@@ -65,7 +65,7 @@ def upgrade() -> None:
                 '[{"condition": "considered", "message": "In the absence of deposit slips, bank statements will be considered"}]'::jsonb
             ) AS json
         )
-        WHERE name = '1.6.1.2'
+        WHERE indicator_code = '1.6.1.2'
     """)
 
     # Update indicator 4.2.1
@@ -78,7 +78,7 @@ def upgrade() -> None:
                 '[{"condition": "considered", "message": "Clustered Health Station/Center accessed by several barangays in a city/municipality"}]'::jsonb
             ) AS json
         )
-        WHERE name = '4.2.1'
+        WHERE indicator_code = '4.2.1'
     """)
 
 
@@ -88,6 +88,8 @@ def downgrade() -> None:
     # Remove conditional_remarks from all affected indicators
     op.execute("""
         UPDATE indicators
-        SET remark_schema = remark_schema - 'conditional_remarks'
-        WHERE name IN ('1.3', '1.6.1.1', '1.6.1.2', '4.2.1')
+        SET remark_schema = CAST(
+            (CAST(remark_schema AS jsonb) - 'conditional_remarks') AS json
+        )
+        WHERE indicator_code IN ('1.3', '1.6.1.1', '1.6.1.2', '4.2.1')
     """)
