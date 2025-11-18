@@ -8,20 +8,41 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle2, AlertCircle } from "lucide-react";
-import type { FormSchema, FormSchemaFieldsItem } from "@vantage/shared";
+import type { FormSchema, FormSchemaFieldsItem, MOVFileResponse } from "@vantage/shared";
 import { isFieldRequired } from "@/lib/forms/formSchemaParser";
+import { useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles } from "@vantage/shared";
 
 interface CompletionFeedbackPanelProps {
   /** Current form values */
   formValues: Record<string, unknown>;
   /** Form schema defining fields and requirements */
   formSchema: FormSchema | Record<string, unknown>;
+  /** Assessment ID for fetching uploaded files */
+  assessmentId: number;
+  /** Indicator ID for fetching uploaded files */
+  indicatorId: number;
 }
 
 export function CompletionFeedbackPanel({
   formValues,
   formSchema,
+  assessmentId,
+  indicatorId,
 }: CompletionFeedbackPanelProps) {
+  // Fetch uploaded MOV files for this indicator
+  const { data: filesResponse } = useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles(
+    assessmentId,
+    indicatorId,
+    {
+      query: {
+        // Refetch when window regains focus to ensure fresh data
+        refetchOnWindowFocus: true,
+      },
+    } as any
+  );
+
+  const uploadedFiles = filesResponse?.files || [];
+
   // Calculate completion metrics
   const completionMetrics = useMemo(() => {
     if (!formSchema || !("fields" in formSchema) || !Array.isArray(formSchema.fields)) {
@@ -47,6 +68,18 @@ export function CompletionFeedbackPanel({
 
     // Calculate completed required fields
     const completedFields = requiredFields.filter((field) => {
+      // Check if this is a file upload field
+      const isFileField = field.field_type === "file_upload";
+
+      if (isFileField) {
+        // For file upload fields, check if there are uploaded files with matching field_id
+        const fieldFiles = uploadedFiles.filter(
+          (file: MOVFileResponse) => file.field_id === field.field_id
+        );
+        return fieldFiles.length > 0;
+      }
+
+      // For other field types, check formValues
       const value = formValues[field.field_id];
 
       // Check if value is non-empty
@@ -71,6 +104,18 @@ export function CompletionFeedbackPanel({
 
     // Get incomplete required fields
     const incompleteFields = requiredFields.filter((field) => {
+      // Check if this is a file upload field
+      const isFileField = field.field_type === "file_upload";
+
+      if (isFileField) {
+        // For file upload fields, check if there are uploaded files
+        const fieldFiles = uploadedFiles.filter(
+          (file: MOVFileResponse) => file.field_id === field.field_id
+        );
+        return fieldFiles.length === 0;
+      }
+
+      // For other field types, check formValues
       const value = formValues[field.field_id];
 
       if (value === undefined || value === null || value === "") {
@@ -90,7 +135,7 @@ export function CompletionFeedbackPanel({
       percentage,
       incompleteFields,
     };
-  }, [formValues, formSchema]);
+  }, [formValues, formSchema, uploadedFiles]);
 
   const { totalRequired, completed, percentage, incompleteFields } = completionMetrics;
 

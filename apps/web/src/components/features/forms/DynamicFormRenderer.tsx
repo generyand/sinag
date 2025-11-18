@@ -173,6 +173,8 @@ export function DynamicFormRenderer({
         <CompletionFeedbackPanel
           formValues={formValues}
           formSchema={formSchema}
+          assessmentId={assessmentId}
+          indicatorId={indicatorId}
         />
 
         {/* Form Sections */}
