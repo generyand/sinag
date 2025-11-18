@@ -229,10 +229,13 @@ class CompletenessValidationService:
 
         # For file upload fields, check MOVs instead of response_data
         if isinstance(field, FileUploadField):
-            # A file upload field is filled if there are uploaded MOVs
-            # Note: MOVs don't store field_id in the current schema, so we assume
-            # all MOVs in the list belong to this response
-            return len(uploaded_movs) > 0
+            # A file upload field is filled if there are uploaded MOVs with matching field_id
+            # Count MOVs that belong to this specific field
+            field_movs = [
+                mov for mov in uploaded_movs
+                if hasattr(mov, 'field_id') and mov.field_id == field.field_id
+            ]
+            return len(field_movs) > 0
 
         # Handle different data types
         if field_value is None:
