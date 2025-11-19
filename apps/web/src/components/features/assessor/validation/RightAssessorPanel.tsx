@@ -110,18 +110,13 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
 
     console.log('Final defaultValues object:', obj);
     return obj as ResponsesForm;
-  }, [responses, form]);
+  }, [responses]); // Remove 'form' dependency to prevent infinite loop
 
-  const { control, register, formState, reset } = useForm<ResponsesForm>({
+  const { control, register, formState } = useForm<ResponsesForm>({
     resolver: zodResolver(ResponsesSchema),
     defaultValues,
     mode: 'onChange',
   });
-
-  // Reset form when defaultValues change (e.g., when response data loads)
-  React.useEffect(() => {
-    reset(defaultValues);
-  }, [defaultValues, reset]);
 
   // Helper function to calculate automatic status based on checklist
   const calculateAutomaticStatus = React.useCallback((responseId: number, checklistData: Record<string, any>): LocalStatus | null => {
