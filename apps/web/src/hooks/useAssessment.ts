@@ -636,28 +636,29 @@ export function useAssessmentValidation(assessment: Assessment | null) {
       });
     }
 
-    const isComplete =
-      missingIndicators.length === 0 && missingMOVs.length === 0;
+    // OVERRIDE: Trust backend's is_completed flags instead of frontend logic
+    // The backend handles ALL validation including grouped OR logic, conditional MOVs, etc.
+    const isComplete = assessment.completedIndicators === assessment.totalIndicators;
+
     // Status comparison should be case-insensitive since backend returns lowercase
     const normalizedStatus = (assessment.status || '').toLowerCase();
     const canSubmit =
       isComplete &&
       (normalizedStatus === "draft" || normalizedStatus === "needs rework");
 
-    console.log('[VALIDATION] Final validation result:', {
+    console.log('[VALIDATION] Trusting backend is_completed flags:', {
       isComplete,
       canSubmit,
       status: assessment.status,
-      missingIndicators,
-      missingMOVs,
       totalIndicators: assessment.totalIndicators,
       completedIndicators: assessment.completedIndicators,
+      remainingIndicators: assessment.totalIndicators - assessment.completedIndicators,
     });
 
     return {
       isComplete,
-      missingIndicators,
-      missingMOVs,
+      missingIndicators: isComplete ? [] : [`${assessment.totalIndicators - assessment.completedIndicators} indicators remaining`],
+      missingMOVs: [],
       canSubmit,
     };
   }, [assessment]);
