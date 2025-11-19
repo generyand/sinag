@@ -151,6 +151,10 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   }).length;
 
   const onSaveDraft = async () => {
+    console.log('=== SAVE AS DRAFT DEBUG ===');
+    console.log('Current checklistData:', checklistData);
+    console.log('Current form:', form);
+
     // Get responses with validation status (validators)
     const responsesWithStatus = responses
       .map((r) => ({ id: r.id as number, v: form[r.id] }))
@@ -163,13 +167,21 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       return hasChecklistData || hasComments;
     });
 
+    console.log('Responses with status:', responsesWithStatus);
+    console.log('Responses with data:', responsesWithData);
+
     // Combine unique response IDs
     const allResponseIds = new Set([
       ...responsesWithStatus.map(p => p.id),
       ...responsesWithData.map(r => r.id)
     ]);
 
-    if (allResponseIds.size === 0) return;
+    console.log('All response IDs to save:', Array.from(allResponseIds));
+
+    if (allResponseIds.size === 0) {
+      console.log('No responses to save!');
+      return;
+    }
 
     // Save all responses
     await Promise.all(
@@ -185,6 +197,13 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             const fieldName = key.replace(`checklist_${responseId}_`, '');
             responseChecklistData[fieldName] = checklistData[key];
           }
+        });
+
+        console.log(`Response ${responseId} checklist data:`, responseChecklistData);
+        console.log(`Response ${responseId} payload:`, {
+          validation_status: formData?.status,
+          public_comment: formData?.publicComment,
+          response_data: responseChecklistData
         });
 
         return validateMut.mutateAsync({
