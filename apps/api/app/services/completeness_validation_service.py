@@ -121,7 +121,16 @@ class CompletenessValidationService:
             # Get all required fields
             required_fields = self._get_required_fields(schema_obj, response_data)
 
-            # Check each required field
+            # Check for grouped OR validation (e.g., indicator 2.1.4)
+            validation_rule = form_schema.get('validation_rule', 'ALL_ITEMS_REQUIRED')
+
+            if validation_rule == 'ANY_ITEM_REQUIRED':
+                # Detect and validate field groups
+                return self._validate_grouped_or_fields(
+                    required_fields, response_data, uploaded_movs
+                )
+
+            # Standard validation: check each required field
             missing_fields = []
             for field in required_fields:
                 if not self._is_field_filled(field, response_data, uploaded_movs):
@@ -310,6 +319,122 @@ class CompletenessValidationService:
             return "No data provided"
 
         return "Field is incomplete"
+
+    def _validate_grouped_or_fields(
+        self,
+        required_fields: List[FormField],
+        response_data: Dict[str, Any],
+        uploaded_movs: List[Any]
+    ) -> Dict[str, Any]:
+        """
+        Validate fields with grouped OR logic (e.g., indicator 2.1.4).
+
+        For indicators like 2.1.4 with validation_rule="ANY_ITEM_REQUIRED",
+        fields are grouped (e.g., upload_1 & upload_2 = Group A), and at least
+        one complete group must be filled.
+
+        Args:
+            required_fields: List of required fields to validate
+            response_data: The assessment response data
+            uploaded_movs: List of uploaded MOV objects
+
+        Returns:
+            Dict with validation results
+        """
+        # Detect field groups by analyzing field_ids
+        # Fields with similar patterns (upload_1, upload_2, etc.) belong to same group
+        groups = self._detect_field_groups(required_fields)
+
+        logger.info(f"[GROUPED OR] Detected {len(groups)} field groups: {list(groups.keys())}")
+
+        # Check if at least one complete group is filled
+        complete_groups = []
+        incomplete_groups = []
+
+        for group_name, group_fields in groups.items():
+            # Check if all fields in this group are filled
+            group_missing = []
+            for field in group_fields:
+                if not self._is_field_filled(field, response_data, uploaded_movs):
+                    group_missing.append(field)
+
+            if len(group_missing) == 0:
+                # This group is complete
+                complete_groups.append(group_name)
+                logger.info(f"[GROUPED OR] Group '{group_name}' is COMPLETE (all {len(group_fields)} fields filled)")
+            else:
+                incomplete_groups.append({
+                    "group_name": group_name,
+                    "missing_fields": group_missing,
+                    "total_fields": len(group_fields)
+                })
+                logger.info(f"[GROUPED OR] Group '{group_name}' is INCOMPLETE ({len(group_missing)}/{len(group_fields)} missing)")
+
+        # At least one group must be complete for OR logic
+        is_complete = len(complete_groups) > 0
+
+        # Build missing fields list from incomplete groups
+        # Only show as missing if NO groups are complete
+        missing_fields = []
+        if not is_complete:
+            # All groups are incomplete, show all missing fields
+            for group_info in incomplete_groups:
+                for field in group_info["missing_fields"]:
+                    missing_fields.append({
+                        "field_id": field.field_id,
+                        "label": field.label,
+                        "reason": self._get_missing_reason(field, response_data, uploaded_movs)
+                    })
+
+        # For OR logic, we report "1 of 1" complete if any group is complete
+        required_count = 1  # Only 1 complete group is required
+        filled_count = 1 if is_complete else 0
+
+        logger.info(f"[GROUPED OR] Validation result: {filled_count}/{required_count} groups complete")
+
+        return {
+            "is_complete": is_complete,
+            "missing_fields": missing_fields,
+            "required_field_count": required_count,
+            "filled_field_count": filled_count
+        }
+
+    def _detect_field_groups(self, fields: List[FormField]) -> Dict[str, List[FormField]]:
+        """
+        Detect field groups based on field_id patterns.
+
+        For example:
+        - upload_section_1, upload_section_2 → Group A
+        - upload_section_3, upload_section_4 → Group B
+
+        Args:
+            fields: List of fields to group
+
+        Returns:
+            Dict mapping group names to lists of fields
+        """
+        groups = {}
+
+        for field in fields:
+            # Extract group identifier from field_id
+            # Patterns: upload_section_1, upload_section_2 (Group A)
+            #           upload_section_3, upload_section_4 (Group B)
+            field_id = field.field_id
+
+            # Detect group by section number in field_id
+            if 'section_1' in field_id or 'section_2' in field_id:
+                group_name = "Group A (Option A)"
+            elif 'section_3' in field_id or 'section_4' in field_id:
+                group_name = "Group B (Option B)"
+            else:
+                # Default: each field is its own group
+                group_name = f"Field {field_id}"
+
+            if group_name not in groups:
+                groups[group_name] = []
+            groups[group_name].append(field)
+
+        return groups
 
     def get_completion_percentage(
         self,
