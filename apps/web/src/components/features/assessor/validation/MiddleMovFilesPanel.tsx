@@ -305,7 +305,7 @@ export function MiddleMovFilesPanel({ assessment, expandedId }: MiddleMovFilesPa
                     </div>
                   ) : (
                     pdfAnnotations.map((ann, idx) => (
-                      <div key={ann.id} className="p-3 rounded-lg bg-gray-50 border border-gray-200">
+                      <div key={ann.id} className="p-3 rounded-sm bg-gray-50 border border-gray-200">
                         <div className="flex items-start gap-2 mb-2">
                           <span className="shrink-0 font-bold text-yellow-600 text-sm">#{idx + 1}</span>
                           <Button
