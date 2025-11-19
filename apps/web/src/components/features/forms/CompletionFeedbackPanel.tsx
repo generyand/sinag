@@ -83,13 +83,6 @@ export function CompletionFeedbackPanel({
 
     // For grouped OR logic (e.g., indicator 2.1.4 with Option A vs Option B)
     if (validationRule === "ANY_ITEM_REQUIRED") {
-      console.log('[GROUPED OR FRONTEND] Starting validation...');
-      console.log('[GROUPED OR FRONTEND] validationRule:', validationRule);
-      console.log('[GROUPED OR FRONTEND] Total fields:', fields.length);
-      console.log('[GROUPED OR FRONTEND] Required fields count:', requiredFields.length);
-      console.log('[GROUPED OR FRONTEND] Uploaded files count:', uploadedFiles.length);
-      console.log('[GROUPED OR FRONTEND] Uploaded files:', uploadedFiles);
-
       // Detect field groups by analyzing field_ids
       const groups: Record<string, FormSchemaFieldsItem[]> = {};
 
@@ -123,19 +116,10 @@ export function CompletionFeedbackPanel({
         groups[groupName].push(field);
       });
 
-      console.log('[GROUPED OR FRONTEND] Detected groups:', groups);
-      console.log('[GROUPED OR FRONTEND] Required fields:', requiredFields.map(f => f.field_id));
-
       // Check if at least one complete group is filled
       const completeGroups = Object.entries(groups).filter(([groupName, groupFields]) => {
         // All fields in this group must be filled
-        const isComplete = groupFields.every(field => isFieldFilled(field));
-        console.log(`[GROUPED OR FRONTEND] Group "${groupName}": ${isComplete ? 'COMPLETE' : 'INCOMPLETE'} (${groupFields.length} fields)`);
-        groupFields.forEach(field => {
-          const filled = isFieldFilled(field);
-          console.log(`  - ${field.field_id}: ${filled ? 'FILLED' : 'EMPTY'}`);
-        });
-        return isComplete;
+        return groupFields.every(field => isFieldFilled(field));
       });
 
       // At least one group must be complete for OR logic
