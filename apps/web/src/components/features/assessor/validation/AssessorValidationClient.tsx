@@ -154,6 +154,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     console.log('=== SAVE AS DRAFT DEBUG ===');
     console.log('Current checklistData:', checklistData);
     console.log('Current form:', form);
+    console.log('Form for response 605:', form[605]);
 
     // Get responses with validation status (validators)
     const responsesWithStatus = responses
