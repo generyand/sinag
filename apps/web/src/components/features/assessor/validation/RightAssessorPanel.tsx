@@ -185,11 +185,16 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
   // Sync RHF state upward so footer logic remains accurate
   const watched = useWatch({ control });
   React.useEffect(() => {
+    console.log('=== RightAssessorPanel: watched data ===');
+    console.log('All watched keys:', Object.keys(watched || {}));
+    console.log('Full watched object:', watched);
+
     Object.entries(watched || {}).forEach(([key, v]) => {
       const id = Number(key);
       if (!Number.isFinite(id)) {
         // This is checklist data (not a response ID)
         // Sync checklist changes to parent
+        console.log(`Syncing checklist data: ${key} =`, v);
         if (onChecklistChange) {
           onChecklistChange(key, v);
         }
