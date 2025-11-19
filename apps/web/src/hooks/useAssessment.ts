@@ -708,11 +708,12 @@ export function useUploadMOV() {
     onSuccess: async () => {
       // Add delay to ensure backend has finished processing upload and updating is_completed
       await new Promise(resolve => setTimeout(resolve, 500));
-      // Ensure both local keys and the generated query key are refreshed
-      queryClient.invalidateQueries({ queryKey: getGetAssessmentsMyAssessmentQueryKey() });
-      await queryClient.refetchQueries({ queryKey: assessmentKeys.current() });
-      await queryClient.refetchQueries({ queryKey: assessmentKeys.validation() });
-      await queryClient.refetchQueries({ queryKey: getGetAssessmentsMyAssessmentQueryKey() });
+      // Force immediate refetch of all assessment-related queries
+      // Use type: 'active' to ensure actively mounted queries are refetched immediately
+      await queryClient.refetchQueries({
+        queryKey: getGetAssessmentsMyAssessmentQueryKey(),
+        type: 'active'
+      });
     },
   });
 }
@@ -748,11 +749,12 @@ export function useDeleteMOV() {
     onSuccess: async () => {
       // Add delay to ensure backend has finished processing deletion and updating is_completed
       await new Promise(resolve => setTimeout(resolve, 500));
-      // Invalidate and refetch to ensure UI updates immediately
-      queryClient.invalidateQueries({ queryKey: getGetAssessmentsMyAssessmentQueryKey() });
-      await queryClient.refetchQueries({ queryKey: assessmentKeys.current() });
-      await queryClient.refetchQueries({ queryKey: assessmentKeys.validation() });
-      await queryClient.refetchQueries({ queryKey: getGetAssessmentsMyAssessmentQueryKey() });
+      // Force immediate refetch of all assessment-related queries
+      // Use type: 'active' to ensure actively mounted queries are refetched immediately
+      await queryClient.refetchQueries({
+        queryKey: getGetAssessmentsMyAssessmentQueryKey(),
+        type: 'active'
+      });
     },
   });
 }
@@ -767,10 +769,13 @@ export function useSubmitAssessment() {
     mutationFn: async () => {
       return postAssessmentsSubmit();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: assessmentKeys.current() });
-      queryClient.invalidateQueries({ queryKey: assessmentKeys.validation() });
-      queryClient.invalidateQueries({ queryKey: getGetAssessmentsMyAssessmentQueryKey() });
+    onSuccess: async () => {
+      // Force immediate refetch of all assessment-related queries
+      // Use type: 'active' to ensure actively mounted queries are refetched immediately
+      await queryClient.refetchQueries({
+        queryKey: getGetAssessmentsMyAssessmentQueryKey(),
+        type: 'active'
+      });
     },
   });
 }
@@ -848,9 +853,12 @@ export function useUpdateResponse() {
       // Small delay to ensure backend has finished processing the update and computing is_completed
       // This prevents race conditions where refetch happens before backend finishes processing
       await new Promise(resolve => setTimeout(resolve, 500));
-      queryClient.invalidateQueries({ queryKey: assessmentKeys.current() });
-      queryClient.invalidateQueries({ queryKey: assessmentKeys.validation() });
-      queryClient.invalidateQueries({ queryKey: getGetAssessmentsMyAssessmentQueryKey() });
+      // Force immediate refetch of all assessment-related queries
+      // Use type: 'active' to ensure actively mounted queries are refetched immediately
+      await queryClient.refetchQueries({
+        queryKey: getGetAssessmentsMyAssessmentQueryKey(),
+        type: 'active'
+      });
     },
   });
 
