@@ -18,6 +18,13 @@ export function MiddleMovFilesPanel({ assessment, expandedId }: MiddleMovFilesPa
   const core = (data.assessment as AnyRecord) ?? data;
   const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
 
+  // Debug: Log the assessment data structure
+  console.log('[MiddleMovFilesPanel] Raw assessment data:', assessment);
+  console.log('[MiddleMovFilesPanel] Extracted responses count:', responses.length);
+  if (responses.length > 0) {
+    console.log('[MiddleMovFilesPanel] First response sample:', responses[0]);
+  }
+
   // Find the currently selected response
   const selectedResponse = responses.find((r) => r.id === expandedId);
   const indicator = (selectedResponse?.indicator as AnyRecord) ?? {};
@@ -33,31 +40,41 @@ export function MiddleMovFilesPanel({ assessment, expandedId }: MiddleMovFilesPa
     movCount: selectedResponse?.movs?.length || 0,
   });
 
+  // Additional debug: log the full selectedResponse structure
+  if (selectedResponse) {
+    console.log('[MiddleMovFilesPanel] Full selectedResponse:', selectedResponse);
+    console.log('[MiddleMovFilesPanel] Keys in selectedResponse:', Object.keys(selectedResponse));
+  }
+
   // Get MOV files from the selected response
   const movFiles = React.useMemo(() => {
     if (!selectedResponse) return [];
 
-    // MOV files are in the 'movs' array according to the schema
+    // MOV files are in the 'movs' array according to the backend schema
     const files = (selectedResponse.movs as AnyRecord[]) ?? [];
 
-    // Transform to MOVFileResponse format
-    return files.map((mov: AnyRecord) => {
-      // MOV files have a nested 'file' object
-      const fileData = mov.file || mov;
+    console.log('[MiddleMovFilesPanel] Raw MOVs from response:', files);
 
-      return {
-        id: fileData.id || mov.id,
-        assessment_id: fileData.assessment_id || mov.assessment_id,
-        indicator_id: fileData.indicator_id || mov.indicator_id,
-        file_name: fileData.file_name || fileData.filename || 'Unknown file',
-        file_url: fileData.file_url || fileData.url || '',
-        file_type: fileData.file_type || fileData.type || 'application/octet-stream',
-        file_size: fileData.file_size || fileData.size || 0,
-        uploaded_by: fileData.uploaded_by || 0,
-        uploaded_at: fileData.uploaded_at || fileData.created_at || new Date().toISOString(),
-        deleted_at: fileData.deleted_at || null,
-        field_id: fileData.field_id || null,
+    // Transform backend MOV format to FileList component format
+    // Backend sends: { id, filename, original_filename, file_size, content_type, storage_path, status, uploaded_at }
+    return files.map((mov: AnyRecord) => {
+      const transformed = {
+        id: mov.id,
+        assessment_id: selectedResponse.assessment_id,
+        indicator_id: selectedResponse.indicator_id,
+        file_name: mov.original_filename || mov.filename || 'Unknown file',
+        file_url: mov.storage_path || '', // Storage path is the URL to the file
+        file_type: mov.content_type || 'application/octet-stream',
+        file_size: mov.file_size || 0,
+        uploaded_by: 0, // Not provided by backend
+        uploaded_at: mov.uploaded_at || new Date().toISOString(),
+        deleted_at: null,
+        field_id: mov.field_id || null,
       };
+
+      console.log('[MiddleMovFilesPanel] Transformed MOV:', { original: mov, transformed });
+
+      return transformed;
     });
   }, [selectedResponse]);
 

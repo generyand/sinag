@@ -16,7 +16,7 @@ from app.db.models.user import User
 from app.schemas.assessment import MOV, MOVCreate  # Pydantic schema
 from app.services.storage_service import storage_service
 from fastapi import UploadFile
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 
 class AssessorService:
@@ -424,10 +424,12 @@ class AssessorService:
                 joinedload(Assessment.responses)
                 .joinedload(AssessmentResponse.indicator)
                 .joinedload(Indicator.checklist_items),
-                joinedload(Assessment.responses).joinedload(AssessmentResponse.movs),
+                # Epic 4.0: Load MOV files from the new mov_files table (removed old movs table loading)
+                # Use selectinload for better performance with many files
                 joinedload(Assessment.responses).joinedload(
                     AssessmentResponse.feedback_comments
                 ),
+                selectinload(Assessment.mov_files),
             )
             .filter(Assessment.id == assessment_id)
             .first()
@@ -547,16 +549,20 @@ class AssessorService:
                 },
                 "movs": [
                     {
-                        "id": mov.id,
-                        "filename": mov.filename,
-                        "original_filename": mov.original_filename,
-                        "file_size": mov.file_size,
-                        "content_type": mov.content_type,
-                        "storage_path": mov.storage_path,
-                        "status": mov.status.value,
-                        "uploaded_at": mov.uploaded_at.isoformat(),
+                        "id": mov_file.id,
+                        "filename": mov_file.file_name,
+                        "original_filename": mov_file.file_name,
+                        "file_size": mov_file.file_size,
+                        "content_type": mov_file.file_type,
+                        "storage_path": mov_file.file_url,
+                        "status": "uploaded",  # MOVFile doesn't have status field
+                        "uploaded_at": mov_file.uploaded_at.isoformat(),
+                        "field_id": mov_file.field_id,
                     }
-                    for mov in response.movs
+                    # Epic 4.0: Get MOV files from assessment.mov_files filtered by indicator_id
+                    # Filter out soft-deleted files (deleted_at is not None)
+                    for mov_file in assessment.mov_files
+                    if mov_file.indicator_id == response.indicator_id and mov_file.deleted_at is None
                 ],
                 "feedback_comments": [
                     {

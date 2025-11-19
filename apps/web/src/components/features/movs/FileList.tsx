@@ -101,65 +101,63 @@ export function FileList({
               key={file.id}
               className="p-3 rounded-lg border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--hover)] transition-colors"
             >
-              <div className="flex items-center justify-between gap-4">
-                {/* File Info */}
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="flex-shrink-0">
-                    {getFileIcon(file.file_type)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {file.file_name}
-                    </p>
-                    <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
-                      <span>{formatFileSize(file.file_size)}</span>
-                      <span>•</span>
-                      <span>
-                        {formatDistanceToNow(new Date(file.uploaded_at), {
-                          addSuffix: true,
-                        })}
-                      </span>
-                    </div>
+              {/* File Info Header */}
+              <div className="flex items-start gap-3 mb-3">
+                <div className="flex-shrink-0 mt-0.5">
+                  {getFileIcon(file.file_type)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 break-words">
+                    {file.file_name}
+                  </p>
+                  <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                    <span>{formatFileSize(file.file_size)}</span>
+                    <span>•</span>
+                    <span>
+                      {formatDistanceToNow(new Date(file.uploaded_at), {
+                        addSuffix: true,
+                      })}
+                    </span>
                   </div>
                 </div>
+              </div>
 
-                {/* Actions */}
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  {onPreview && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onPreview(file)}
-                      title="Preview file"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {onDownload && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onDownload(file)}
-                      title="Download file"
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {canDelete && onDelete && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onDelete(file.id)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      title="Delete file"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
+              {/* Action Buttons Row */}
+              <div className="flex items-center gap-1 pt-2 border-t border-[var(--border)]">
+                {onPreview && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onPreview(file)}
+                    title="Preview file"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                )}
+                {onDownload && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onDownload(file)}
+                    title="Download file"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                )}
+                {canDelete && onDelete && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onDelete(file.id)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    title="Delete file"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
           ))}
