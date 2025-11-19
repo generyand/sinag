@@ -706,6 +706,8 @@ export function useUploadMOV() {
       return postAssessmentsResponses$ResponseIdMovs(responseId, data);
     },
     onSuccess: async () => {
+      // Add delay to ensure backend has finished processing upload and updating is_completed
+      await new Promise(resolve => setTimeout(resolve, 500));
       // Ensure both local keys and the generated query key are refreshed
       queryClient.invalidateQueries({ queryKey: getGetAssessmentsMyAssessmentQueryKey() });
       await queryClient.refetchQueries({ queryKey: assessmentKeys.current() });
@@ -744,9 +746,13 @@ export function useDeleteMOV() {
       return deleteAssessmentsMovs$MovId(movId);
     },
     onSuccess: async () => {
-      // Await refetch to ensure UI updates immediately
+      // Add delay to ensure backend has finished processing deletion and updating is_completed
+      await new Promise(resolve => setTimeout(resolve, 500));
+      // Invalidate and refetch to ensure UI updates immediately
+      queryClient.invalidateQueries({ queryKey: getGetAssessmentsMyAssessmentQueryKey() });
       await queryClient.refetchQueries({ queryKey: assessmentKeys.current() });
       await queryClient.refetchQueries({ queryKey: assessmentKeys.validation() });
+      await queryClient.refetchQueries({ queryKey: getGetAssessmentsMyAssessmentQueryKey() });
     },
   });
 }
