@@ -248,9 +248,9 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       return;
     }
 
-    // Save all responses
-    await Promise.all(
-      Array.from(allResponseIds).map((responseId) => {
+    // Save all responses sequentially to avoid React Query mutation state conflicts
+    try {
+      for (const responseId of Array.from(allResponseIds)) {
         const formData = form[responseId];
 
         // Extract checklist data for this response
@@ -267,7 +267,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
           }
         });
 
-        return validateMut.mutateAsync({
+        await validateMut.mutateAsync({
           responseId: responseId,
           data: {
             validation_status: formData?.status ?? undefined,  // Optional - only validators set this
@@ -275,10 +275,15 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             response_data: Object.keys(responseChecklistData).length > 0 ? responseChecklistData : undefined,
           },
         });
-      })
-    );
+      }
 
-    await qc.invalidateQueries();
+      await qc.invalidateQueries();
+    } catch (error) {
+      console.error('Error saving validation data:', error);
+      // Reset mutation state to allow retry
+      validateMut.reset();
+      throw error;
+    }
   };
 
   const onSendRework = async () => {
