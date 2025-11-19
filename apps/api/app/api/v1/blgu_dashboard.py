@@ -137,13 +137,10 @@ def get_blgu_dashboard(
         response = response_lookup.get(indicator.id)
 
         if response:
-            # Use CompletenessValidationService to determine completion status
-            validation_result = completeness_validation_service.validate_completeness(
-                form_schema=indicator.form_schema,
-                response_data=response.response_data,
-                uploaded_movs=response.movs
-            )
-            is_complete = validation_result["is_complete"]
+            # TRUST DATABASE's is_completed FLAG
+            # This flag is already calculated and stored by storage_service.py
+            # after every MOV upload/delete using completeness_validation_service
+            is_complete = response.is_completed if response.is_completed is not None else False
         else:
             # No response yet - indicator is incomplete
             is_complete = False
@@ -307,14 +304,11 @@ def get_indicator_navigation(
     navigation_list = []
 
     for response in assessment.responses:
-        # Calculate completion status using CompletenessValidationService
-        validation_result = completeness_validation_service.validate_completeness(
-            form_schema=response.indicator.form_schema,
-            response_data=response.response_data,
-            uploaded_movs=response.movs
-        )
-
-        completion_status = "complete" if validation_result["is_complete"] else "incomplete"
+        # TRUST DATABASE's is_completed FLAG
+        # This flag is already calculated and stored by storage_service.py
+        # after every MOV upload/delete using completeness_validation_service
+        is_complete = response.is_completed if response.is_completed is not None else False
+        completion_status = "complete" if is_complete else "incomplete"
 
         # Generate frontend route path
         route_path = f"/blgu/assessment/{assessment_id}/indicator/{response.indicator.id}"
