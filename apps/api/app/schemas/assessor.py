@@ -22,7 +22,7 @@ class AssessorQueueItem(BaseModel):
 class ValidationRequest(BaseModel):
     """Request schema for validating an assessment response."""
 
-    validation_status: ValidationStatus
+    validation_status: ValidationStatus | None = None  # Optional for assessors, required for validators
     public_comment: str | None = None
     assessor_remarks: str | None = None
     response_data: dict[str, Any] | None = None  # Allow assessors to update checklist data
@@ -34,7 +34,7 @@ class ValidationResponse(BaseModel):
     success: bool
     message: str
     assessment_response_id: int
-    validation_status: ValidationStatus
+    validation_status: ValidationStatus | None = None
 
 
 class MOVUploadResponse(BaseModel):

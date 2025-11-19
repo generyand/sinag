@@ -21,6 +21,7 @@ import type { MapData } from '../common';
 import type { TableData } from '../common';
 import type { AssessmentStatus } from '../assessments';
 import type { SubmissionValidationResult } from '../error';
+import type { ValidationStatus } from '../error';
 
 /**
  * SystemicWeakness
@@ -488,3 +489,9 @@ export type ValidationRequestResponseData = ValidationRequestResponseDataAnyOf |
  * ValidationRequestResponseDataAnyOf
  */
 export type ValidationRequestResponseDataAnyOf = { [key: string]: unknown };
+
+
+/**
+ * ValidationResponseValidationStatus
+ */
+export type ValidationResponseValidationStatus = ValidationStatus | null;

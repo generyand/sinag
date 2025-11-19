@@ -3,16 +3,17 @@
 // 📁 Validation-related types
 // 🏷️  Based on FastAPI tag: "validation"
 
-import type { ValidationStatus } from '../error';
+import type { ValidationRequestValidationStatus } from '../error';
 import type { ValidationRequestPublicComment } from '../error';
 import type { ValidationRequestAssessorRemarks } from '../assessor';
 import type { ValidationRequestResponseData } from '../system';
+import type { ValidationResponseValidationStatus } from '../system';
 
 /**
  * ValidationRequest
  */
 export interface ValidationRequest {
-  validation_status: ValidationStatus;
+  validation_status?: ValidationRequestValidationStatus;
   public_comment?: ValidationRequestPublicComment;
   assessor_remarks?: ValidationRequestAssessorRemarks;
   response_data?: ValidationRequestResponseData;
@@ -26,5 +27,5 @@ export interface ValidationResponse {
   success: boolean;
   message: string;
   assessment_response_id: number;
-  validation_status: ValidationStatus;
+  validation_status?: ValidationResponseValidationStatus;
 }

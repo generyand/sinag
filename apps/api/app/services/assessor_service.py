@@ -95,7 +95,7 @@ class AssessorService:
         db: Session,
         response_id: int,
         assessor: User,
-        validation_status: ValidationStatus,
+        validation_status: ValidationStatus | None = None,
         public_comment: str | None = None,
         assessor_remarks: str | None = None,
         response_data: dict | None = None,
@@ -107,7 +107,7 @@ class AssessorService:
             db: Database session
             response_id: ID of the assessment response to validate
             assessor: The assessor performing the validation
-            validation_status: The validation status (Pass/Fail/Conditional)
+            validation_status: The validation status (Pass/Fail/Conditional) - optional for assessors
             public_comment: Public comment visible to BLGU user
             assessor_remarks: Remarks from assessor for validators to review
             response_data: Optional checklist/form data to save
@@ -130,9 +130,13 @@ class AssessorService:
                 "validation_status": validation_status,
             }
 
-        # Update the validation status and assessor remarks
-        response.validation_status = validation_status
-        response.assessor_remarks = assessor_remarks
+        # Update the validation status only if provided (validators only)
+        if validation_status is not None:
+            response.validation_status = validation_status
+
+        # Update assessor remarks if provided
+        if assessor_remarks is not None:
+            response.assessor_remarks = assessor_remarks
 
         # Update response_data if provided (for checklist data)
         if response_data is not None:
