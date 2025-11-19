@@ -60,74 +60,93 @@ export function CompletionFeedbackPanel({
     // Get all required fields
     const requiredFields = fields.filter((field) => isFieldRequired(field));
 
-    // For OR logic (ANY_ITEM_REQUIRED), only ONE field needs to be completed
-    // For AND logic (ALL_ITEMS_REQUIRED), ALL fields need to be completed
-    const totalRequired = validationRule === "ANY_ITEM_REQUIRED" && requiredFields.length > 0
-      ? 1  // Only 1 of N required for OR logic
-      : requiredFields.length;  // All N required for AND logic
-
-    // Calculate completed required fields
-    const completedFields = requiredFields.filter((field) => {
-      // Check if this is a file upload field
+    // Helper function to check if a field is filled
+    const isFieldFilled = (field: FormSchemaFieldsItem): boolean => {
       const isFileField = field.field_type === "file_upload";
 
       if (isFileField) {
-        // For file upload fields, check if there are uploaded files with matching field_id
         const fieldFiles = uploadedFiles.filter(
           (file: MOVFileResponse) => file.field_id === field.field_id
         );
         return fieldFiles.length > 0;
       }
 
-      // For other field types, check formValues
       const value = formValues[field.field_id];
-
-      // Check if value is non-empty
       if (value === undefined || value === null || value === "") {
         return false;
       }
-
-      // For arrays (checkbox groups), check if at least one item selected
       if (Array.isArray(value)) {
         return value.length > 0;
       }
-
       return true;
-    });
+    };
 
-    // For OR logic, completion is binary: 0 if none completed, 1 if at least one completed
-    const completed = validationRule === "ANY_ITEM_REQUIRED"
-      ? (completedFields.length > 0 ? 1 : 0)  // 0 or 1 for OR logic
-      : completedFields.length;  // Actual count for AND logic
+    // For grouped OR logic (e.g., indicator 2.1.4 with Option A vs Option B)
+    if (validationRule === "ANY_ITEM_REQUIRED") {
+      // Detect field groups by analyzing field_ids
+      const groups: Record<string, FormSchemaFieldsItem[]> = {};
 
+      requiredFields.forEach((field) => {
+        const fieldId = field.field_id;
+
+        // Detect group by pattern in field_id
+        // Pattern: upload_section_1, upload_section_2 = Group A
+        //          upload_section_3, upload_section_4 = Group B
+        let groupName: string;
+        if (fieldId.includes('section_1') || fieldId.includes('section_2')) {
+          groupName = "Group A (Option A)";
+        } else if (fieldId.includes('section_3') || fieldId.includes('section_4')) {
+          groupName = "Group B (Option B)";
+        } else {
+          // Default: each field is its own group
+          groupName = `Field ${fieldId}`;
+        }
+
+        if (!groups[groupName]) {
+          groups[groupName] = [];
+        }
+        groups[groupName].push(field);
+      });
+
+      console.log('[GROUPED OR FRONTEND] Detected groups:', groups);
+      console.log('[GROUPED OR FRONTEND] Required fields:', requiredFields.map(f => f.field_id));
+
+      // Check if at least one complete group is filled
+      const completeGroups = Object.entries(groups).filter(([groupName, groupFields]) => {
+        // All fields in this group must be filled
+        const isComplete = groupFields.every(field => isFieldFilled(field));
+        console.log(`[GROUPED OR FRONTEND] Group "${groupName}": ${isComplete ? 'COMPLETE' : 'INCOMPLETE'} (${groupFields.length} fields)`);
+        groupFields.forEach(field => {
+          const filled = isFieldFilled(field);
+          console.log(`  - ${field.field_id}: ${filled ? 'FILLED' : 'EMPTY'}`);
+        });
+        return isComplete;
+      });
+
+      // At least one group must be complete for OR logic
+      const totalRequired = 1; // Only 1 complete group is required
+      const completed = completeGroups.length > 0 ? 1 : 0;
+      const percentage = totalRequired > 0 ? Math.round((completed / totalRequired) * 100) : 0;
+
+      // Get incomplete required fields (only show if NO groups are complete)
+      const incompleteFields = completed === 0 ? requiredFields.filter((field) => !isFieldFilled(field)) : [];
+
+      return {
+        totalRequired,
+        completed,
+        percentage,
+        incompleteFields,
+      };
+    }
+
+    // Standard AND logic - all fields must be completed
+    const completedFields = requiredFields.filter(isFieldFilled);
+    const totalRequired = requiredFields.length;
+    const completed = completedFields.length;
     const percentage = totalRequired > 0 ? Math.round((completed / totalRequired) * 100) : 0;
 
-    // Get incomplete required fields
-    const incompleteFields = requiredFields.filter((field) => {
-      // Check if this is a file upload field
-      const isFileField = field.field_type === "file_upload";
-
-      if (isFileField) {
-        // For file upload fields, check if there are uploaded files
-        const fieldFiles = uploadedFiles.filter(
-          (file: MOVFileResponse) => file.field_id === field.field_id
-        );
-        return fieldFiles.length === 0;
-      }
-
-      // For other field types, check formValues
-      const value = formValues[field.field_id];
-
-      if (value === undefined || value === null || value === "") {
-        return true;
-      }
-
-      if (Array.isArray(value)) {
-        return value.length === 0;
-      }
-
-      return false;
-    });
+    // Get incomplete required fields (for AND logic)
+    const incompleteFields = requiredFields.filter((field) => !isFieldFilled(field));
 
     return {
       totalRequired,
