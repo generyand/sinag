@@ -317,7 +317,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                     }));
                   }}
                   onChecklistChange={(key, value) => {
-                    console.log(`AssessorValidationClient: onChecklistChange called - ${key} =`, value);
                     setChecklistData((prev) => ({
                       ...prev,
                       [key]: value,

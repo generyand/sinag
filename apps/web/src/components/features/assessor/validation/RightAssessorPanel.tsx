@@ -65,9 +65,6 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
   const defaultValues: ResponsesForm = React.useMemo(() => {
     const obj: AnyRecord = {};
 
-    console.log('=== RightAssessorPanel: Building defaultValues ===');
-    console.log('Responses count:', responses.length);
-
     // Initialize response-level data (status and comments)
     for (const r of responses) {
       const key = String(r.id);
@@ -81,9 +78,6 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
       const indicator = (r.indicator as AnyRecord) ?? {};
       const checklistItems = (indicator?.checklist_items as any[]) || [];
 
-      console.log(`Response ${r.id} - response_data:`, responseData);
-      console.log(`Response ${r.id} - checklist items count:`, checklistItems.length);
-
       // Load existing checklist values from response_data
       checklistItems.forEach((item: any) => {
         const itemKey = `checklist_${r.id}_${item.item_id}`;
@@ -94,23 +88,18 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
           const noKey = `${item.item_id}_no`;
           obj[`${itemKey}_yes`] = responseData[yesKey] ?? false;
           obj[`${itemKey}_no`] = responseData[noKey] ?? false;
-          console.log(`  Loading ${itemKey}_yes from ${yesKey}:`, responseData[yesKey]);
-          console.log(`  Loading ${itemKey}_no from ${noKey}:`, responseData[noKey]);
         } else if (item.item_type === 'document_count' || item.requires_document_count) {
           // Input fields
           obj[itemKey] = responseData[item.item_id] ?? '';
-          console.log(`  Loading ${itemKey} from ${item.item_id}:`, responseData[item.item_id]);
         } else if (item.item_type !== 'info_text') {
           // Regular checkboxes
           obj[itemKey] = responseData[item.item_id] ?? false;
-          console.log(`  Loading ${itemKey} from ${item.item_id}:`, responseData[item.item_id]);
         }
       });
     }
 
-    console.log('Final defaultValues object:', obj);
     return obj as ResponsesForm;
-  }, [responses]); // Remove 'form' dependency to prevent infinite loop
+  }, [responses]);
 
   const { control, register, formState } = useForm<ResponsesForm>({
     resolver: zodResolver(ResponsesSchema),
@@ -193,16 +182,11 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
   // Sync RHF state upward so footer logic remains accurate
   const watched = useWatch({ control });
   React.useEffect(() => {
-    console.log('=== RightAssessorPanel: watched data ===');
-    console.log('All watched keys:', Object.keys(watched || {}));
-    console.log('Full watched object:', watched);
-
     Object.entries(watched || {}).forEach(([key, v]) => {
       const id = Number(key);
       if (!Number.isFinite(id)) {
         // This is checklist data (not a response ID)
         // Sync checklist changes to parent
-        console.log(`Syncing checklist data: ${key} =`, v);
         if (onChecklistChange) {
           onChecklistChange(key, v);
         }
