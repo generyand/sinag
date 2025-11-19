@@ -6,6 +6,7 @@
 import type { ValidationStatus } from '../error';
 import type { ValidationRequestPublicComment } from '../error';
 import type { ValidationRequestAssessorRemarks } from '../assessor';
+import type { ValidationRequestResponseData } from '../system';
 
 /**
  * ValidationRequest
@@ -14,6 +15,7 @@ export interface ValidationRequest {
   validation_status: ValidationStatus;
   public_comment?: ValidationRequestPublicComment;
   assessor_remarks?: ValidationRequestAssessorRemarks;
+  response_data?: ValidationRequestResponseData;
 }
 
 

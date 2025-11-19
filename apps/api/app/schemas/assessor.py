@@ -25,6 +25,7 @@ class ValidationRequest(BaseModel):
     validation_status: ValidationStatus
     public_comment: str | None = None
     assessor_remarks: str | None = None
+    response_data: dict[str, Any] | None = None  # Allow assessors to update checklist data
 
 
 class ValidationResponse(BaseModel):

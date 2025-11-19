@@ -476,3 +476,15 @@ export type SubmissionStatusResponseReworkRequestedAt = string | null;
  * SubmissionStatusResponseReworkRequestedBy
  */
 export type SubmissionStatusResponseReworkRequestedBy = number | null;
+
+
+/**
+ * ValidationRequestResponseData
+ */
+export type ValidationRequestResponseData = ValidationRequestResponseDataAnyOf | null;
+
+
+/**
+ * ValidationRequestResponseDataAnyOf
+ */
+export type ValidationRequestResponseDataAnyOf = { [key: string]: unknown };

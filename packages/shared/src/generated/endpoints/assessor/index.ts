@@ -114,9 +114,10 @@ export function useGetAssessorQueue<TData = Awaited<ReturnType<typeof getAssesso
 /**
  * Validate an assessment response.
 
-Accepts validation status (Pass/Fail/Conditional), public comment, and assessor remarks.
+Accepts validation status (Pass/Fail/Conditional), public comment, assessor remarks, and optional response_data.
 Saves public comment to the feedback_comments table.
 Assessor remarks are saved to the assessment_response for validators to review.
+Response data (checklist) is saved to assessment_response.response_data if provided.
  * @summary Validate Assessment Response
  */
 export const postAssessorAssessmentResponses$ResponseIdValidate = (
