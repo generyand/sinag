@@ -57,6 +57,8 @@ class AssessorService:
                     AssessmentStatus.SUBMITTED,
                     AssessmentStatus.IN_REVIEW,
                     AssessmentStatus.REWORK,
+                    AssessmentStatus.SUBMITTED_FOR_REVIEW,  # Legacy status support
+                    AssessmentStatus.NEEDS_REWORK,  # Legacy status support
                 ])
             )
 
