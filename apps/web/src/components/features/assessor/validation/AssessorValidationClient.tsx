@@ -279,16 +279,14 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         });
       }
 
-      // Invalidate only the specific assessment query to refresh data
-      await qc.invalidateQueries({
-        queryKey: ['getAssessorAssessmentsAssessmentId', assessmentId]
-      });
-
       // Show success toast
       toast({
         title: "Saved successfully",
         description: "Your validation progress has been saved.",
       });
+
+      // Don't invalidate queries here - it causes the button to stay stuck
+      // Data will be fresh on next page load or when navigating indicators
     } catch (error) {
       console.error('Error saving validation data:', error);
       // Reset mutation state to allow retry
