@@ -4,7 +4,16 @@ import * as React from 'react';
 import type { AssessmentDetailsResponse } from '@vantage/shared';
 import { FileList } from '@/components/features/movs/FileList';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileIcon } from 'lucide-react';
+import { FileIcon, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useMovAnnotations } from '@/hooks/useMovAnnotations';
+import dynamic from 'next/dynamic';
+
+// Dynamically import PdfAnnotator to avoid SSR issues
+const PdfAnnotator = dynamic(() => import('@/components/shared/PdfAnnotator'), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-[70vh]">Loading PDF viewer...</div>,
+});
 
 interface MiddleMovFilesPanelProps {
   assessment: AssessmentDetailsResponse;
@@ -78,8 +87,27 @@ export function MiddleMovFilesPanel({ assessment, expandedId }: MiddleMovFilesPa
     });
   }, [selectedResponse]);
 
+  // State for PDF annotation modal
+  const [selectedFile, setSelectedFile] = React.useState<any | null>(null);
+  const [isAnnotating, setIsAnnotating] = React.useState(false);
+
+  // Use the annotations hook for the selected file
+  const {
+    annotations,
+    isLoading: annotationsLoading,
+    createAnnotation,
+    deleteAnnotation,
+  } = useMovAnnotations(selectedFile?.id || null);
+
   const handlePreview = (file: any) => {
-    window.open(file.file_url, "_blank");
+    // Check if file is PDF
+    if (file.file_type === 'application/pdf') {
+      setSelectedFile(file);
+      setIsAnnotating(true);
+    } else {
+      // For non-PDF files, open in new tab
+      window.open(file.file_url, "_blank");
+    }
   };
 
   const handleDownload = async (file: any) => {
@@ -96,6 +124,41 @@ export function MiddleMovFilesPanel({ assessment, expandedId }: MiddleMovFilesPa
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
       console.error("Download error:", error);
+    }
+  };
+
+  const closeAnnotationModal = () => {
+    setIsAnnotating(false);
+    setSelectedFile(null);
+  };
+
+  // Transform annotations from backend format to PdfAnnotator format
+  const pdfAnnotations = React.useMemo(() => {
+    return (annotations as any[])?.map((ann: any) => ({
+      id: String(ann.id),
+      type: 'pdfRect' as const,
+      page: ann.page_number || 0,
+      rect: ann.rect || { x: 0, y: 0, w: 10, h: 10 },
+      rects: ann.rects,
+      comment: ann.comment || '',
+      createdAt: ann.created_at || new Date().toISOString(),
+    })) || [];
+  }, [annotations]);
+
+  const handleAddAnnotation = async (annotation: any) => {
+    if (!selectedFile?.id) return;
+
+    try {
+      await createAnnotation({
+        mov_file_id: selectedFile.id,
+        annotation_type: 'pdfRect',
+        page: annotation.page,
+        rect: annotation.rect,
+        rects: annotation.rects || undefined,
+        comment: annotation.comment || '',
+      });
+    } catch (error) {
+      console.error('[MiddleMovFilesPanel] Failed to create annotation:', error);
     }
   };
 
@@ -139,6 +202,80 @@ export function MiddleMovFilesPanel({ assessment, expandedId }: MiddleMovFilesPa
           />
         )}
       </div>
+
+      {/* PDF Annotation Modal */}
+      {isAnnotating && selectedFile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-lg shadow-xl w-[70vw] h-[90vh] flex flex-row gap-4 p-4">
+            {/* Left: PDF Viewer */}
+            <div className="flex-1 flex flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-gray-200 mb-3">
+                <div className="flex-1">
+                  <h2 className="text-base font-semibold">{selectedFile.file_name}</h2>
+                  <p className="text-xs text-muted-foreground">Select text to add highlight and comment</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={closeAnnotationModal}
+                  className="shrink-0"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+
+              {/* PDF Content */}
+              <div className="flex-1" style={{ minHeight: 0 }}>
+                {annotationsLoading ? (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-muted-foreground">Loading annotations...</p>
+                  </div>
+                ) : (
+                  <PdfAnnotator
+                    url={selectedFile.file_url}
+                    annotateEnabled={true}
+                    annotations={pdfAnnotations}
+                    onAdd={handleAddAnnotation}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Right: Comments Sidebar */}
+            <div className="w-80 flex flex-col border-l border-gray-200 pl-4">
+              <h3 className="font-semibold text-sm mb-3 pb-2 border-b border-gray-200">
+                Comments ({pdfAnnotations.length})
+              </h3>
+              <div className="flex-1 overflow-y-auto space-y-3">
+                {pdfAnnotations.length === 0 ? (
+                  <div className="text-center py-8 text-sm text-muted-foreground">
+                    No comments yet. Select text to add a highlight with a comment.
+                  </div>
+                ) : (
+                  pdfAnnotations.map((ann, idx) => (
+                    <div key={ann.id} className="p-3 rounded-lg bg-gray-50 border border-gray-200">
+                      <div className="flex items-start gap-2 mb-2">
+                        <span className="shrink-0 font-bold text-yellow-600 text-sm">#{idx + 1}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteAnnotation(parseInt(ann.id))}
+                          className="ml-auto shrink-0 h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <p className="text-sm text-gray-800 leading-relaxed mb-2">{ann.comment || '(No comment)'}</p>
+                      <p className="text-xs text-gray-500">Page {ann.page + 1}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
