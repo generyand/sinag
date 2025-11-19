@@ -15,6 +15,7 @@ import {
   usePostAssessorAssessmentsAssessmentIdFinalize,
   usePostAssessorAssessmentsAssessmentIdRework,
 } from '@vantage/shared';
+import { useToast } from '@/hooks/use-toast';
 
 interface AssessorValidationClientProps {
   assessmentId: number;
@@ -28,6 +29,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   const validateMut = usePostAssessorAssessmentResponsesResponseIdValidate();
   const reworkMut = usePostAssessorAssessmentsAssessmentIdRework();
   const finalizeMut = usePostAssessorAssessmentsAssessmentIdFinalize();
+  const { toast } = useToast();
 
   // All hooks must be called before any conditional returns
   const [selectedIndicatorId, setSelectedIndicatorId] = useState<string | null>(null);
@@ -277,11 +279,27 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         });
       }
 
-      await qc.invalidateQueries();
+      // Invalidate only the specific assessment query to refresh data
+      await qc.invalidateQueries({
+        queryKey: ['getAssessorAssessmentsAssessmentId', assessmentId]
+      });
+
+      // Show success toast
+      toast({
+        title: "Saved successfully",
+        description: "Your validation progress has been saved.",
+      });
     } catch (error) {
       console.error('Error saving validation data:', error);
       // Reset mutation state to allow retry
       validateMut.reset();
+
+      // Show error toast
+      toast({
+        title: "Error saving",
+        description: "Failed to save validation progress. Please try again.",
+        variant: "destructive",
+      });
       throw error;
     }
   };
