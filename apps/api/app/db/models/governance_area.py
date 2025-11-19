@@ -142,6 +142,7 @@ class Indicator(Base):
         "Indicator",
         back_populates="parent",
         cascade="all, delete-orphan",
+        order_by="Indicator.sort_order, Indicator.indicator_code",
     )
     history = relationship("IndicatorHistory", back_populates="indicator")
     deadline_overrides = relationship("DeadlineOverride", back_populates="indicator")
