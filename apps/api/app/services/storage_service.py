@@ -239,8 +239,11 @@ class StorageService:
         # Get Supabase client
         supabase = _get_supabase_client()
 
-        # Generate unique filename
-        unique_filename = self._generate_unique_filename(file.filename or "file")
+        # Preserve original filename for display
+        original_filename = file.filename or "file"
+
+        # Generate unique filename for storage (with UUID prefix)
+        unique_filename = self._generate_unique_filename(original_filename)
 
         # Get storage path
         storage_path = self._get_storage_path(assessment_id, indicator_id, unique_filename)
@@ -295,7 +298,7 @@ class StorageService:
             mov_file = self._save_mov_file_record(
                 db=db,
                 file_url=file_url,
-                file_name=unique_filename,
+                file_name=original_filename,  # Store clean filename for display
                 file_type=content_type,
                 file_size=file_size,
                 assessment_id=assessment_id,

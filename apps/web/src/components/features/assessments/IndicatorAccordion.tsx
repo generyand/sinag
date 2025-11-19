@@ -25,12 +25,27 @@ interface IndicatorAccordionProps {
   indicator: Indicator;
   isLocked: boolean;
   updateAssessmentData?: (updater: (data: Assessment) => Assessment) => void;
+  /** Navigation props */
+  currentCode?: string;
+  currentPosition?: number;
+  totalIndicators?: number;
+  hasPrevious?: boolean;
+  hasNext?: boolean;
+  onPrevious?: () => void;
+  onNext?: () => void;
 }
 
 export function IndicatorAccordion({
   indicator,
   isLocked,
   updateAssessmentData,
+  currentCode,
+  currentPosition,
+  totalIndicators,
+  hasPrevious,
+  hasNext,
+  onPrevious,
+  onNext,
 }: IndicatorAccordionProps) {
   const { data: assessment } = useCurrentAssessment();
   const [isOpen, setIsOpen] = useState(false);
@@ -352,6 +367,13 @@ export function IndicatorAccordion({
                   indicator={child}
                   isLocked={isLocked}
                   updateAssessmentData={updateAssessmentData}
+                  currentCode={currentCode}
+                  currentPosition={currentPosition}
+                  totalIndicators={totalIndicators}
+                  hasPrevious={hasPrevious}
+                  hasNext={hasNext}
+                  onPrevious={onPrevious}
+                  onNext={onNext}
                   level={1}
                 />
               ))}
@@ -370,6 +392,14 @@ export function IndicatorAccordion({
                   formSchema={indicator.formSchema as any}
                   assessmentId={parseInt(assessment.id)}
                   indicatorId={parseInt(indicator.id)}
+                  isLocked={isLocked}
+                  currentCode={currentCode}
+                  currentPosition={currentPosition}
+                  totalIndicators={totalIndicators}
+                  hasPrevious={hasPrevious}
+                  hasNext={hasNext}
+                  onPrevious={onPrevious}
+                  onNext={onNext}
                   onSaveSuccess={() => {
                     // Optionally refresh assessment data after save
                     console.log('Answers saved successfully for indicator', indicator.id);
@@ -717,6 +747,13 @@ export function RecursiveIndicator({
   indicator,
   isLocked,
   updateAssessmentData,
+  currentCode,
+  currentPosition,
+  totalIndicators,
+  hasPrevious,
+  hasNext,
+  onPrevious,
+  onNext,
   level = 0,
 }: RecursiveIndicatorProps) {
   return (
@@ -725,6 +762,13 @@ export function RecursiveIndicator({
         indicator={indicator}
         isLocked={isLocked}
         updateAssessmentData={updateAssessmentData}
+        currentCode={currentCode}
+        currentPosition={currentPosition}
+        totalIndicators={totalIndicators}
+        hasPrevious={hasPrevious}
+        hasNext={hasNext}
+        onPrevious={onPrevious}
+        onNext={onNext}
       />
     </div>
   );

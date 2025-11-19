@@ -76,6 +76,13 @@ export function AssessmentContentPanel({
               indicator={selectedIndicator}
               isLocked={indicatorLocked}
               updateAssessmentData={updateAssessmentData}
+              currentCode={navigation.current?.indicator.code}
+              currentPosition={navigation.position}
+              totalIndicators={navigation.total}
+              hasPrevious={navigation.hasPrevious}
+              hasNext={navigation.hasNext}
+              onPrevious={navigation.navigatePrevious}
+              onNext={navigation.navigateNext}
               level={0}
             />
           </div>
