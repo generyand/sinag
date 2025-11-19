@@ -69,9 +69,16 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
     for (const r of responses) {
       const key = String(r.id);
 
-      // Load public comment from feedback_comments array
+      // Load public comment from feedback_comments array (get LATEST comment, not first)
       const feedbackComments = (r as AnyRecord).feedback_comments || [];
-      const publicFeedback = feedbackComments.find((fc: any) => fc.comment_type === 'validation' && !fc.is_internal_note);
+      const validationComments = feedbackComments.filter((fc: any) => fc.comment_type === 'validation' && !fc.is_internal_note);
+      // Sort by created_at DESC to get the latest comment
+      validationComments.sort((a: any, b: any) => {
+        const dateA = new Date(a.created_at || 0).getTime();
+        const dateB = new Date(b.created_at || 0).getTime();
+        return dateB - dateA; // DESC order
+      });
+      const publicFeedback = validationComments[0];
 
       obj[key] = {
         status: form[r.id]?.status,
