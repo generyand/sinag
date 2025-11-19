@@ -148,6 +148,22 @@ class FileUploadField(FormFieldBase):
         None,
         description="Conditional logic for when MOV is required"
     )
+    option_group: Optional[str] = Field(
+        None,
+        description="Optional group identifier for OR-logic validation (e.g., 'option_a', 'option_b')"
+    )
+
+
+class SectionHeaderField(FormFieldBase):
+    """Section header field for visual organization (display-only, not validated)"""
+    field_type: Literal["section_header"] = "section_header"
+    description: Optional[str] = Field(None, max_length=1000, description="Optional description for the section")
+
+
+class InfoTextField(FormFieldBase):
+    """Info text field for displaying information like 'OR' separators (display-only, not validated)"""
+    field_type: Literal["info_text"] = "info_text"
+    description: Optional[str] = Field(None, max_length=1000, description="Optional additional information")
 
 
 # Type alias for all field types using discriminated union
@@ -160,6 +176,8 @@ FormField = Annotated[
         TextAreaField,
         DatePickerField,
         FileUploadField,
+        SectionHeaderField,
+        InfoTextField,
     ],
     Field(discriminator="field_type")
 ]

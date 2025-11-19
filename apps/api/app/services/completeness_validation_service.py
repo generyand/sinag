@@ -354,21 +354,31 @@ class CompletenessValidationService:
         for group_name, group_fields in groups.items():
             # Check if all fields in this group are filled
             group_missing = []
+            group_filled = []
             for field in group_fields:
-                if not self._is_field_filled(field, response_data, uploaded_movs):
+                is_filled = self._is_field_filled(field, response_data, uploaded_movs)
+                if not is_filled:
                     group_missing.append(field)
+                else:
+                    group_filled.append(field)
 
             if len(group_missing) == 0:
                 # This group is complete
                 complete_groups.append(group_name)
-                logger.info(f"[GROUPED OR] Group '{group_name}' is COMPLETE (all {len(group_fields)} fields filled)")
+                logger.info(
+                    f"[GROUPED OR] Group '{group_name}' is COMPLETE (all {len(group_fields)} fields filled). "
+                    f"Filled fields: {[f.field_id for f in group_filled]}"
+                )
             else:
                 incomplete_groups.append({
                     "group_name": group_name,
                     "missing_fields": group_missing,
                     "total_fields": len(group_fields)
                 })
-                logger.info(f"[GROUPED OR] Group '{group_name}' is INCOMPLETE ({len(group_missing)}/{len(group_fields)} missing)")
+                logger.info(
+                    f"[GROUPED OR] Group '{group_name}' is INCOMPLETE ({len(group_missing)}/{len(group_fields)} missing). "
+                    f"Missing: {[f.field_id for f in group_missing]}, Filled: {[f.field_id for f in group_filled]}"
+                )
 
         # At least one group must be complete for OR logic
         is_complete = len(complete_groups) > 0
@@ -427,7 +437,10 @@ class CompletenessValidationService:
             field_id = field.field_id
 
             # Check if field has explicit option_group metadata (for 6.2.1-style indicators)
-            option_group = field.get('option_group')
+            # Only FileUploadField has option_group attribute
+            option_group = None
+            if isinstance(field, FileUploadField):
+                option_group = field.option_group
 
             if option_group:
                 # Use explicit option_group if available
@@ -451,6 +464,11 @@ class CompletenessValidationService:
             if group_name not in groups:
                 groups[group_name] = []
             groups[group_name].append(field)
+
+        # Log detected groups for debugging
+        logger.info(
+            f"[GROUPED OR] Detected groups: {[(name, [f.field_id for f in fields]) for name, fields in groups.items()]}"
+        )
 
         return groups
 

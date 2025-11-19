@@ -10,6 +10,8 @@ import type { CountThresholdRule } from '../countthresholdrule';
 import type { MatchValueRule } from '../matchvaluerule';
 import type { BBIFunctionalityCheckRule } from '../bbis';
 import type { FileUploadFieldConditionalMovRequirement } from '../movs';
+import type { SectionHeaderField } from '../sectionheaderfield';
+import type { InfoTextField } from '../infotextfield';
 import type { IndicatorItem } from '../indicators';
 import type { ConditionalRemark } from '../conditionalremark';
 import type { ReorderRequestIndicatorsItem } from '../indicators';
@@ -428,6 +430,8 @@ export interface FileUploadField {
   max_file_size_mb?: FileUploadFieldMaxFileSizeMb;
   /** Conditional logic for when MOV is required */
   conditional_mov_requirement?: FileUploadFieldConditionalMovRequirement;
+  /** Optional group identifier for OR-logic validation (e.g., 'option_a', 'option_b') */
+  option_group?: FileUploadFieldOptionGroup;
 }
 
 
@@ -450,9 +454,15 @@ export type FileUploadFieldMaxFileSizeMb = number | null;
 
 
 /**
+ * FileUploadFieldOptionGroup
+ */
+export type FileUploadFieldOptionGroup = string | null;
+
+
+/**
  * FormSchemaFieldsItem
  */
-export type FormSchemaFieldsItem = CheckboxGroupField | RadioButtonField | NumberInputField | TextInputField | TextAreaField | DatePickerField | FileUploadField;
+export type FormSchemaFieldsItem = CheckboxGroupField | RadioButtonField | NumberInputField | TextInputField | TextAreaField | DatePickerField | FileUploadField | SectionHeaderField | InfoTextField;
 
 
 /**
@@ -490,6 +500,12 @@ export interface GovernanceAreaProgress {
   completion_percentage: number;
   requires_rework_count: number;
 }
+
+
+/**
+ * InfoTextFieldHelpText
+ */
+export type InfoTextFieldHelpText = string | null;
 
 
 /**
@@ -739,6 +755,12 @@ export interface ReworkComment {
  * ReworkCommentCreatedAt
  */
 export type ReworkCommentCreatedAt = string | null;
+
+
+/**
+ * SectionHeaderFieldHelpText
+ */
+export type SectionHeaderFieldHelpText = string | null;
 
 
 /**
