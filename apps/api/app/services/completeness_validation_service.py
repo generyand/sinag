@@ -415,6 +415,13 @@ class CompletenessValidationService:
         """
         groups = {}
 
+        # Special case: If only 2 fields total with section_1/section_2, treat each as separate option
+        # (e.g., 1.6.1.3 with 2 separate upload options)
+        is_two_field_or = (
+            len(fields) == 2 and
+            all('section_1' in f.field_id or 'section_2' in f.field_id for f in fields)
+        )
+
         for field in fields:
             # Extract group identifier from field_id
             # Patterns: upload_section_1, upload_section_2 (Group A)
@@ -422,9 +429,14 @@ class CompletenessValidationService:
             field_id = field.field_id
 
             # Detect group by section number in field_id
-            if 'section_1' in field_id or 'section_2' in field_id:
+            if is_two_field_or:
+                # Only 2 fields, both with section_1 or section_2 → each is its own option
+                group_name = f"Field {field_id}"
+            elif 'section_1' in field_id or 'section_2' in field_id:
+                # Part of a multi-field group (Option A)
                 group_name = "Group A (Option A)"
             elif 'section_3' in field_id or 'section_4' in field_id:
+                # Part of a multi-field group (Option B)
                 group_name = "Group B (Option B)"
             else:
                 # Default: each field is its own group
