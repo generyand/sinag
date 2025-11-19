@@ -83,22 +83,22 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
       const indicator = (r.indicator as AnyRecord) ?? {};
       const checklistItems = (indicator?.checklist_items as any[]) || [];
 
-      // Load existing checklist values from response_data
+      // Load existing checklist values from response_data (with "assessor_val_" prefix)
       checklistItems.forEach((item: any) => {
         const itemKey = `checklist_${r.id}_${item.item_id}`;
 
         if (item.item_type === 'assessment_field') {
           // YES/NO checkboxes
-          const yesKey = `${item.item_id}_yes`;
-          const noKey = `${item.item_id}_no`;
+          const yesKey = `assessor_val_${item.item_id}_yes`;
+          const noKey = `assessor_val_${item.item_id}_no`;
           obj[`${itemKey}_yes`] = responseData[yesKey] ?? false;
           obj[`${itemKey}_no`] = responseData[noKey] ?? false;
         } else if (item.item_type === 'document_count' || item.requires_document_count) {
           // Input fields
-          obj[itemKey] = responseData[item.item_id] ?? '';
+          obj[itemKey] = responseData[`assessor_val_${item.item_id}`] ?? '';
         } else if (item.item_type !== 'info_text') {
           // Regular checkboxes
-          obj[itemKey] = responseData[item.item_id] ?? false;
+          obj[itemKey] = responseData[`assessor_val_${item.item_id}`] ?? false;
         }
       });
     }

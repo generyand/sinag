@@ -147,10 +147,20 @@ class AssessorService:
             response.assessor_remarks = assessor_remarks
 
         # Update response_data if provided (for checklist data)
+        # IMPORTANT: Merge with existing BLGU data, don't overwrite!
         if response_data is not None:
-            print(f"Updating response_data to: {response_data}")
-            response.response_data = response_data
-            print(f"response.response_data AFTER assignment: {response.response_data}")
+            print(f"Merging response_data. New validation data: {response_data}")
+
+            # Get existing BLGU response data or empty dict
+            existing_data = response.response_data or {}
+            print(f"Existing BLGU response_data: {existing_data}")
+
+            # Merge: Assessor validation data takes precedence for matching keys
+            # This preserves BLGU's assessment answers while adding assessor's validation checklist
+            merged_data = {**existing_data, **response_data}
+
+            response.response_data = merged_data
+            print(f"response.response_data AFTER merge: {response.response_data}")
 
         # Generate remark if indicator has calculation_schema and remark_schema
         if response.indicator.calculation_schema and response.is_completed:

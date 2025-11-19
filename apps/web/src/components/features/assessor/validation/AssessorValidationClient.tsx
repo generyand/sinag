@@ -99,7 +99,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       const hasChecklistData = Object.keys(checklistData).some(key => key.startsWith(`checklist_${r.id}_`));
       const hasComments = form[r.id]?.publicComment && form[r.id]!.publicComment!.trim().length > 0;
       const responseData = (r as AnyRecord).response_data || {};
-      const hasPersistedChecklistData = Object.keys(responseData).length > 0;
+      // Only check for ASSESSOR validation data (prefixed with "assessor_val_")
+      const hasPersistedChecklistData = Object.keys(responseData).some(key => key.startsWith('assessor_val_'));
 
       return hasChecklistData || hasComments || hasPersistedChecklistData;
     }).length,
@@ -135,9 +136,9 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         const hasChecklistData = Object.keys(checklistData).some(key => key.startsWith(`checklist_${resp.id}_`));
         const hasComments = form[resp.id]?.publicComment && form[resp.id]!.publicComment!.trim().length > 0;
 
-        // Also check backend response_data for persisted checklist data
+        // Also check backend response_data for persisted ASSESSOR checklist data (prefixed with "assessor_val_")
         const responseData = (resp as AnyRecord).response_data || {};
-        const hasPersistedChecklistData = Object.keys(responseData).length > 0;
+        const hasPersistedChecklistData = Object.keys(responseData).some(key => key.startsWith('assessor_val_'));
 
         if (hasChecklistData || hasComments || hasPersistedChecklistData) {
           status = 'completed';
@@ -222,7 +223,10 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             // Remove the checklist_${responseId}_ prefix to get the field name
             // For assessment_field items, keep the _yes/_no suffix
             const fieldName = key.replace(`checklist_${responseId}_`, '');
-            responseChecklistData[fieldName] = checklistData[key];
+
+            // PREFIX with "assessor_val_" to avoid conflicts with BLGU assessment data
+            const prefixedFieldName = `assessor_val_${fieldName}`;
+            responseChecklistData[prefixedFieldName] = checklistData[key];
           }
         });
 
