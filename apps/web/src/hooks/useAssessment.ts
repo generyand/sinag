@@ -330,164 +330,23 @@ export function useCurrentAssessment() {
           );
         })(),
         completedIndicators: (() => {
-          // Count only LEAF indicators (indicators without children, or use children if they exist)
-          // Use the same logic as validation: check complianceAnswer and MOVs
+          // TRUST BACKEND'S is_completed FLAG
+          // The backend handles ALL validation logic including:
+          // - Legacy compliance-based indicators (areas 1-6)
+          // - Grouped OR validation (e.g., 6.2.1 with option groups)
+          // - Conditional MOV requirements
+          // - All form schema validation types
+          // Frontend should NOT recalculate - just count backend's is_completed flags
           const countCompleted = (nodes: IndicatorNode[] | undefined): number =>
             (nodes || []).reduce((acc, n) => {
               // If node has children, count children instead of the parent
               if (n.children && n.children.length > 0) {
                 return acc + countCompleted(n.children);
               }
-              
-              // For leaf indicators, check if they're completed using validation logic:
-              // 1. Must have complianceAnswer (check response_data for _compliance fields or common fields)
-              // 2. If complianceAnswer is "yes", must have MOVs
-              // 3. If complianceAnswer is "no" or "na", no MOVs needed
-              
-              const responseData = n.response?.response_data as any;
-              if (!responseData) {
-                return acc; // No response data - not completed
-              }
-              
-              // Extract compliance answer from response_data (same logic as mapIndicatorTree)
-              let complianceAnswer: string | undefined;
-              
-              // Check for fields ending in _compliance (for areas 1-6)
-              const complianceFields: string[] = [];
-              for (const key in responseData) {
-                if (key.endsWith("_compliance") && typeof responseData[key] === "string") {
-                  const val = responseData[key].toLowerCase();
-                  if (val === "yes" || val === "no" || val === "na") {
-                    complianceFields.push(val);
-                  }
-                }
-              }
-              
-              if (complianceFields.length > 0) {
-                // Check form schema to see how many compliance fields are required
-                const formSchema = n.form_schema || {};
-                const requiredFields = formSchema.required || [];
-                const complianceRequiredFields = requiredFields.filter((f: string) => 
-                  f.endsWith("_compliance")
-                );
-                
-                // If we have all required compliance fields answered
-                if (complianceFields.length >= complianceRequiredFields.length || complianceRequiredFields.length === 0) {
-                  // If any field is "yes", return "yes" (need MOVs)
-                  if (complianceFields.some(v => v === "yes")) {
-                    complianceAnswer = "yes";
-                  } else {
-                    // All fields answered, use first one
-                    complianceAnswer = complianceFields[0];
-                  }
-                }
-              } else {
-                // Fall back to common compliance field names
-                const val =
-                  responseData.compliance ??
-                  responseData.is_compliant ??
-                  responseData.answer ??
-                  responseData.has_budget_plan ??
-                  responseData.is_compliance;
-                if (typeof val === "string") {
-                  complianceAnswer = val.toLowerCase();
-                } else if (typeof val === "boolean") {
-                  complianceAnswer = val ? "yes" : "no";
-                }
-              }
-              
-              if (!complianceAnswer) {
-                return acc; // No compliance answer - not completed
-              }
-              
-              // Check if MOVs are required and present
-              if (complianceAnswer === "yes") {
-                // Check MOVs only for sections with "yes" answers
-                // Sections with "no" or "na" don't need MOVs
-                const formSchema = n.form_schema || {};
-                const props = formSchema.properties || {};
-                
-                // Build map of field_name -> section for fields with mov_upload_section
-                const fieldToSection: Record<string, string> = {};
-                for (const [fieldName, fieldProps] of Object.entries(props)) {
-                  const section = (fieldProps as any)?.mov_upload_section;
-                  if (typeof section === 'string') {
-                    fieldToSection[fieldName] = section;
-                  }
-                }
-                
-                // Only require MOVs for sections where the answer is "yes"
-                const requiredSectionsWithYes = new Set<string>();
-                for (const [fieldName, section] of Object.entries(fieldToSection)) {
-                  const value = responseData[fieldName];
-                  if (typeof value === 'string' && value.toLowerCase() === 'yes') {
-                    requiredSectionsWithYes.add(section);
-                  }
-                }
-                
-                const movs = n.movs || [];
-                
-                if (requiredSectionsWithYes.size > 0) {
-                  const present = new Set<string>();
-                  for (const mov of movs) {
-                    const sp = (mov as any).storage_path || (mov as any).storagePath || '';
-                    // Detect section from storage path (same logic as validation)
-                    const movSection = (() => {
-                      if (typeof sp !== "string") return undefined;
-                      const sections = [
-                        "bfdp_monitoring_forms",
-                        "photo_documentation",
-                        "bdrrmc_documents",
-                        "bpoc_documents",
-                        "social_welfare_documents",
-                        "business_registration_documents",
-                        "beswmc_documents",
-                      ];
-                      for (const sec of sections) {
-                        const pathOnly = sp.split('?')[0];
-                        const hasSection = 
-                          pathOnly.includes(`/${sec}/`) ||
-                          pathOnly.endsWith(`/${sec}`) ||
-                          pathOnly.includes(`/${sec}-`) ||
-                          pathOnly.includes(`${sec}/`) ||
-                          new RegExp(`[/_-]${sec.replace(/_/g, '[_/]')}[_/-]`).test(pathOnly);
-                        if (hasSection) {
-                          return sec;
-                        }
-                      }
-                      return undefined;
-                    })();
-                    
-                    for (const rs of requiredSectionsWithYes) {
-                      // Check both explicit section detection and storage path
-                      if (movSection === rs) {
-                        present.add(rs);
-                      } else if (typeof sp === 'string' && sp.length > 0) {
-                        const pathOnly = sp.split('?')[0]; // Remove query params if present
-                        const hasSection = 
-                          pathOnly.includes(`/${rs}/`) ||
-                          pathOnly.endsWith(`/${rs}`) ||
-                          pathOnly.includes(`/${rs}-`) ||
-                          pathOnly.includes(`${rs}/`) ||
-                          new RegExp(`[/_-]${rs.replace(/_/g, '[_/]')}[_/-]`).test(pathOnly);
-                        
-                        if (hasSection) {
-                          present.add(rs);
-                        }
-                      }
-                    }
-                  }
-                  const allSectionsHaveMOVs = Array.from(requiredSectionsWithYes).every((s) => present.has(s));
-                  return acc + (allSectionsHaveMOVs ? 1 : 0);
-                } else {
-                  // Has "yes" but no section-based uploads, so require at least one MOV overall
-                  const hasMOVs = movs.length > 0;
-                  return acc + (hasMOVs ? 1 : 0);
-                }
-              }
-              
-              // "no" or "na" - no MOVs needed, so it's completed
-              return acc + 1;
+
+              // Trust backend's is_completed flag (set by completeness_validation_service.py)
+              const isCompleted = n.response?.is_completed === true;
+              return acc + (isCompleted ? 1 : 0);
             }, 0);
           return (
             assessmentData as unknown as APIAssessment
@@ -578,157 +437,11 @@ export function useCurrentAssessment() {
               return acc + countCompleted(n.children);
             }
             
-            // For leaf indicators, use validation logic:
-            // 1. Must have complianceAnswer (extract from responseData)
-            // 2. If "yes", must have MOVs (check per-section if applicable)
-            
-            // Use n.responseData (frontend format) first, then fall back to backend format
-            const responseData = n.responseData || (n.response?.response_data as any) || {};
-            if (!responseData || Object.keys(responseData).length === 0) {
-              return acc; // No response data - not completed
-            }
-            
-            // Extract compliance answer from responseData
-            let complianceAnswer: string | undefined;
-            
-            // Check for fields ending in _compliance (for areas 1-6)
-            const complianceFields: string[] = [];
-            for (const key in responseData) {
-              if (key.endsWith("_compliance") && typeof responseData[key] === "string") {
-                const val = String(responseData[key]).toLowerCase();
-                if (val === "yes" || val === "no" || val === "na") {
-                  complianceFields.push(val);
-                }
-              }
-            }
-            
-            if (complianceFields.length > 0) {
-              // Check form schema to see how many compliance fields are required
-              const formSchema = n.formSchema || {};
-              const requiredFields = formSchema.required || [];
-              const complianceRequiredFields = requiredFields.filter((f: string) => 
-                f.endsWith("_compliance")
-              );
-              
-              // If we have all required compliance fields answered
-              if (complianceFields.length >= complianceRequiredFields.length || complianceRequiredFields.length === 0) {
-                // If any field is "yes", return "yes" (need MOVs)
-                if (complianceFields.some(v => v === "yes")) {
-                  complianceAnswer = "yes";
-                } else {
-                  // All fields answered, use first one
-                  complianceAnswer = complianceFields[0];
-                }
-              }
-            } else {
-              // Fall back to common compliance field names
-              const val = responseData.compliance || responseData.is_compliant || responseData.answer;
-              if (typeof val === "string") {
-                complianceAnswer = val.toLowerCase();
-              } else if (typeof val === "boolean") {
-                complianceAnswer = val ? "yes" : "no";
-              }
-            }
-            
-            // Also check n.complianceAnswer as fallback (for when it's already mapped)
-            if (!complianceAnswer && n.complianceAnswer) {
-              complianceAnswer = String(n.complianceAnswer).toLowerCase();
-            }
-            
-            if (!complianceAnswer) {
-              return acc; // No compliance answer - not completed
-            }
-            
-            if (complianceAnswer === "yes") {
-              // Check MOVs only for sections with "yes" answers
-              // Sections with "no" or "na" don't need MOVs
-              const props = (n.formSchema as any)?.properties || {};
-              // Use n.responseData (frontend format) if available, otherwise fall back to n.response?.response_data
-              const responseData = n.responseData || (n.response?.response_data as any) || {};
-              
-              // Build map of field_name -> section for fields with mov_upload_section
-              const fieldToSection: Record<string, string> = {};
-              for (const [fieldName, fieldProps] of Object.entries(props)) {
-                const section = (fieldProps as any)?.mov_upload_section;
-                if (typeof section === 'string') {
-                  fieldToSection[fieldName] = section;
-                }
-              }
-              
-              // Only require MOVs for sections where the answer is "yes"
-              const requiredSectionsWithYes = new Set<string>();
-              for (const [fieldName, section] of Object.entries(fieldToSection)) {
-                const value = responseData[fieldName];
-                if (typeof value === 'string' && value.toLowerCase() === 'yes') {
-                  requiredSectionsWithYes.add(section);
-                }
-              }
-              
-              if (requiredSectionsWithYes.size > 0) {
-                const present = new Set<string>();
-                // Use n.movFiles (frontend format) if available, otherwise fall back to n.movs
-                const movsToCheck = n.movFiles || n.movs || [];
-                for (const mov of movsToCheck) {
-                  const sp = (mov as any).storage_path || (mov as any).storagePath || (mov as any).url || '';
-                  // Detect section from storage path (same logic as validation)
-                  const movSection = (() => {
-                    if (typeof sp !== "string") return undefined;
-                    const sections = [
-                      "bfdp_monitoring_forms",
-                      "photo_documentation",
-                      "bdrrmc_documents",
-                      "bpoc_documents",
-                      "social_welfare_documents",
-                      "business_registration_documents",
-                      "beswmc_documents",
-                    ];
-                    for (const sec of sections) {
-                      const pathOnly = sp.split('?')[0];
-                      const hasSection = 
-                        pathOnly.includes(`/${sec}/`) ||
-                        pathOnly.endsWith(`/${sec}`) ||
-                        pathOnly.includes(`/${sec}-`) ||
-                        pathOnly.includes(`${sec}/`) ||
-                        new RegExp(`[/_-]${sec.replace(/_/g, '[_/]')}[_/-]`).test(pathOnly);
-                      
-                      if (hasSection) {
-                        return sec;
-                      }
-                    }
-                    return undefined;
-                  })();
-                  
-                  for (const rs of requiredSectionsWithYes) {
-                    // Check both explicit section detection and storage path
-                    if (movSection === rs) {
-                      present.add(rs);
-                    } else if (typeof sp === 'string' && sp.length > 0) {
-                      const pathOnly = sp.split('?')[0];
-                      const hasSection = 
-                        pathOnly.includes(`/${rs}/`) ||
-                        pathOnly.endsWith(`/${rs}`) ||
-                        pathOnly.includes(`/${rs}-`) ||
-                        pathOnly.includes(`${rs}/`) ||
-                        new RegExp(`[/_-]${rs.replace(/_/g, '[_/]')}[_/-]`).test(pathOnly);
-                      
-                      if (hasSection) {
-                        present.add(rs);
-                      }
-                    }
-                  }
-                }
-                const allSectionsHaveMOVs = Array.from(requiredSectionsWithYes).every((s) => present.has(s));
-                return acc + (allSectionsHaveMOVs ? 1 : 0);
-              } else {
-                // Has "yes" but no section-based uploads, so require at least one MOV overall
-                const movsToCheck = n.movFiles || n.movs || [];
-                const hasMOVs = movsToCheck.length > 0;
-                return acc + (hasMOVs ? 1 : 0);
-              }
-            }
-            
-            // "no" or "na" - no MOVs needed, completed
-            return acc + 1;
+            // TRUST BACKEND'S STATUS
+            // Check the indicator's status field which is derived from backend's is_completed
+            // status is set to "completed" only when backend validates it as complete
+            const isCompleted = n.status === "completed";
+            return acc + (isCompleted ? 1 : 0);
           }, 0);
         const total = (next.governanceAreas || []).reduce(
           (sum, area: any) => sum + countAll(area.indicators),
