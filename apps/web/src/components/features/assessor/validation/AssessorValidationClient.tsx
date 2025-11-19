@@ -267,13 +267,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
           }
         });
 
-        console.log(`Response ${responseId} checklist data:`, responseChecklistData);
-        console.log(`Response ${responseId} payload:`, {
-          validation_status: formData?.status,
-          public_comment: formData?.publicComment,
-          response_data: responseChecklistData
-        });
-
         return validateMut.mutateAsync({
           responseId: responseId,
           data: {
@@ -337,7 +330,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               onClick={onSaveDraft}
               disabled={validateMut.isPending}
             >
-              Save as Draft
+              {validateMut.isPending ? 'Saving...' : 'Save as Draft'}
             </Button>
           </div>
         </div>
@@ -419,7 +412,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               disabled={validateMut.isPending}
               className="w-full sm:w-auto"
             >
-              Save as Draft
+              {validateMut.isPending ? 'Saving...' : 'Save as Draft'}
             </Button>
             <Button
               variant="secondary"
