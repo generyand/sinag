@@ -111,6 +111,15 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
       const isCompleted = hasChecklistData || hasComments || hasPersistedChecklistData;
 
+      // Debug logging for first 3 responses
+      if (r.id <= 603) {
+        console.log(`[Response ${r.id}] hasChecklistData:`, hasChecklistData,
+          'hasComments:', hasComments,
+          'hasPersistedChecklistData:', hasPersistedChecklistData,
+          'isCompleted:', isCompleted,
+          'responseData keys:', Object.keys(responseData).filter(k => k.startsWith('assessor_val_')));
+      }
+
       return isCompleted;
     }).length,
     totalIndicators: responses.length,
@@ -206,7 +215,13 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
     // Get responses with checklist data or comments (assessors)
     const responsesWithData = responses.filter(r => {
-      const hasChecklistData = Object.keys(checklistData).some(key => key.startsWith(`checklist_${r.id}_`));
+      // Check for TRUTHY values, not just key existence
+      const hasChecklistData = Object.keys(checklistData).some(key => {
+        if (!key.startsWith(`checklist_${r.id}_`)) return false;
+        const value = checklistData[key];
+        // For checkboxes, check if true; for inputs, check if non-empty string
+        return value === true || (typeof value === 'string' && value.trim().length > 0);
+      });
       const hasComments = form[r.id]?.publicComment && form[r.id]!.publicComment!.trim().length > 0;
       return hasChecklistData || hasComments;
     });
