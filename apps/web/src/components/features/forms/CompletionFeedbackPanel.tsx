@@ -83,6 +83,13 @@ export function CompletionFeedbackPanel({
 
     // For grouped OR logic (e.g., indicator 2.1.4 with Option A vs Option B)
     if (validationRule === "ANY_ITEM_REQUIRED") {
+      console.log('[GROUPED OR FRONTEND] Starting validation...');
+      console.log('[GROUPED OR FRONTEND] validationRule:', validationRule);
+      console.log('[GROUPED OR FRONTEND] Total fields:', fields.length);
+      console.log('[GROUPED OR FRONTEND] Required fields count:', requiredFields.length);
+      console.log('[GROUPED OR FRONTEND] Uploaded files count:', uploadedFiles.length);
+      console.log('[GROUPED OR FRONTEND] Uploaded files:', uploadedFiles);
+
       // Detect field groups by analyzing field_ids
       const groups: Record<string, FormSchemaFieldsItem[]> = {};
 
@@ -90,12 +97,20 @@ export function CompletionFeedbackPanel({
         const fieldId = field.field_id;
 
         // Detect group by pattern in field_id
-        // Pattern: upload_section_1, upload_section_2 = Group A
-        //          upload_section_3, upload_section_4 = Group B
+        // Special case: If only 2 fields total with section_1/section_2, treat each as separate option
+        // (e.g., 1.6.1.3 with 2 separate upload options)
+        // Otherwise, group section_1+section_2 together (e.g., 2.1.4 Option A)
         let groupName: string;
-        if (fieldId.includes('section_1') || fieldId.includes('section_2')) {
+
+        if (requiredFields.length === 2 &&
+            requiredFields.every(f => f.field_id.includes('section_1') || f.field_id.includes('section_2'))) {
+          // Only 2 fields, both with section_1 or section_2 → each is its own option
+          groupName = `Field ${fieldId}`;
+        } else if (fieldId.includes('section_1') || fieldId.includes('section_2')) {
+          // Part of a multi-field group (Option A)
           groupName = "Group A (Option A)";
         } else if (fieldId.includes('section_3') || fieldId.includes('section_4')) {
+          // Part of a multi-field group (Option B)
           groupName = "Group B (Option B)";
         } else {
           // Default: each field is its own group
