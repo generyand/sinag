@@ -286,6 +286,35 @@ interface FieldRendererProps {
 function FieldRenderer({ field, control, error, assessmentId, indicatorId, isLocked }: FieldRendererProps) {
   // Render appropriate field component based on field type
   switch (field.field_type) {
+    case "section_header":
+      // Render section header for grouped options (e.g., "OPTION A - For MRF:")
+      return (
+        <div className="pt-4 pb-2 border-b border-[var(--border)]">
+          <h3 className="text-base font-semibold text-[var(--foreground)]">
+            {field.label}
+          </h3>
+          {field.description && (
+            <p className="text-sm text-[var(--text-secondary)] mt-1">
+              {field.description}
+            </p>
+          )}
+        </div>
+      );
+
+    case "info_text":
+      // Render info text (e.g., "OR" separator)
+      return (
+        <div className="flex items-center justify-center py-3">
+          <div className="flex items-center gap-3">
+            <div className="h-px w-12 bg-[var(--border)]" />
+            <span className="text-sm font-medium text-[var(--text-secondary)] uppercase">
+              {field.label}
+            </span>
+            <div className="h-px w-12 bg-[var(--border)]" />
+          </div>
+        </div>
+      );
+
     case "text_input":
       return (
         <TextFieldComponent

@@ -17,11 +17,24 @@ def _parse_upload_sections_from_instructions(upload_instructions: str) -> List[D
     """
     Parse upload instructions to extract individual upload sections.
 
-    This parses numbered upload requirements from the upload_instructions string.
+    This parses upload requirements from the upload_instructions string, supporting:
+    1. Numbered items (e.g., "1.", "2.")
+    2. OPTION-based structures (e.g., "OPTION A", "OPTION B")
+
     For example:
         "Upload the following documents:
         1. BFDP Monitoring Form A...
         2. Two (2) Photo Documentation..."
+
+    Or:
+        "OPTION A - For MRF:
+        - Photo documentation
+
+        OR
+
+        OPTION B - For MRS:
+        - MOA with junkshop
+        - Mechanism..."
 
     Returns a list of upload field definitions.
     """
@@ -31,59 +44,108 @@ def _parse_upload_sections_from_instructions(upload_instructions: str) -> List[D
     upload_sections = []
     lines = upload_instructions.strip().split('\n')
 
-    current_number = 0
-    for line in lines:
-        line = line.strip()
-        # Look for numbered items (e.g., "1.", "2.", etc.)
-        if line and line[0].isdigit() and '.' in line[:3]:
-            current_number += 1
-            # Extract the label after the number
-            label = line.split('.', 1)[1].strip() if '.' in line else line
+    # Check if this uses OPTION-based structure
+    has_options = any('OPTION' in line.upper() for line in lines)
 
-            upload_sections.append({
-                "field_id": f"upload_section_{current_number}",
-                "field_type": "file_upload",
-                "label": label,
-                "description": label,
-                "required": True,
-                "accept": ".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png",
-                "multiple": True,
-                "max_size": 10
-            })
-
-    # If no numbered sections found, extract label from first meaningful line
-    if not upload_sections:
-        # Try to extract a specific label from the instructions
-        label = "Upload required documents"  # default fallback
+    if has_options:
+        # Parse OPTION-based structure (e.g., 6.2.1)
+        current_option = None
+        field_counter = 0
 
         for line in lines:
+            line_stripped = line.strip()
+
+            # Detect option headers (e.g., "OPTION A - For MRF:")
+            if 'OPTION' in line_stripped.upper():
+                current_option = line_stripped
+                # Add section header
+                upload_sections.append({
+                    "field_id": f"section_header_{len(upload_sections) + 1}",
+                    "field_type": "section_header",
+                    "label": line_stripped,
+                    "description": "",
+                    "required": False
+                })
+            # Detect "OR" separators
+            elif line_stripped.upper() == 'OR':
+                upload_sections.append({
+                    "field_id": f"or_separator_{len(upload_sections) + 1}",
+                    "field_type": "info_text",
+                    "label": "OR",
+                    "description": "",
+                    "required": False
+                })
+            # Detect bullet points (upload fields)
+            elif line_stripped.startswith('-') and current_option:
+                field_counter += 1
+                label = line_stripped[1:].strip()  # Remove leading "-"
+
+                upload_sections.append({
+                    "field_id": f"upload_section_{field_counter}",
+                    "field_type": "file_upload",
+                    "label": label,
+                    "description": label,
+                    "required": True,
+                    "accept": ".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.mp4",
+                    "multiple": True,
+                    "max_size": 50
+                })
+
+    else:
+        # Parse numbered structure (existing logic)
+        current_number = 0
+        for line in lines:
             line = line.strip()
-            if line and not line.startswith('('):  # Skip parenthetical notes
-                # Remove common prefixes like "Upload:", "Upload the following:", etc.
-                if line.lower().startswith('upload:'):
-                    label = line.split(':', 1)[1].strip()
-                elif line.lower().startswith('upload '):
-                    # Try to extract after "upload" keyword
-                    after_upload = line[7:].strip()
-                    # Skip generic phrases like "the following documents"
-                    if after_upload and not after_upload.lower().startswith('the following'):
-                        label = after_upload
+            # Look for numbered items (e.g., "1.", "2.", etc.)
+            if line and line[0].isdigit() and '.' in line[:3]:
+                current_number += 1
+                # Extract the label after the number
+                label = line.split('.', 1)[1].strip() if '.' in line else line
+
+                upload_sections.append({
+                    "field_id": f"upload_section_{current_number}",
+                    "field_type": "file_upload",
+                    "label": label,
+                    "description": label,
+                    "required": True,
+                    "accept": ".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.mp4",
+                    "multiple": True,
+                    "max_size": 50
+                })
+
+        # If no numbered sections found, extract label from first meaningful line
+        if not upload_sections:
+            # Try to extract a specific label from the instructions
+            label = "Upload required documents"  # default fallback
+
+            for line in lines:
+                line = line.strip()
+                if line and not line.startswith('('):  # Skip parenthetical notes
+                    # Remove common prefixes like "Upload:", "Upload the following:", etc.
+                    if line.lower().startswith('upload:'):
+                        label = line.split(':', 1)[1].strip()
+                    elif line.lower().startswith('upload '):
+                        # Try to extract after "upload" keyword
+                        after_upload = line[7:].strip()
+                        # Skip generic phrases like "the following documents"
+                        if after_upload and not after_upload.lower().startswith('the following'):
+                            label = after_upload
+                        else:
+                            label = line
                     else:
                         label = line
-                else:
-                    label = line
-                break
+                    break
 
-        upload_sections.append({
-            "field_id": "upload_section_1",
-            "field_type": "file_upload",
-            "label": label,
-            "description": upload_instructions,
-            "required": True,
-            "accept": ".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png",
-            "multiple": True,
-            "max_size": 10
-        })
+            upload_sections.append({
+                "field_id": "upload_section_1",
+                "field_type": "file_upload",
+                "label": label,
+                "description": upload_instructions,
+                "required": True,
+                "accept": ".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.mp4",
+                "multiple": True,
+                "max_size": 50
+            })
 
     return upload_sections
 
