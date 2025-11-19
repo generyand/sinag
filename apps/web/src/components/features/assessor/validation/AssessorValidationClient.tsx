@@ -151,51 +151,51 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   }).length;
 
   const onSaveDraft = async () => {
-    const payloads = responses
+    // Get responses with validation status (validators)
+    const responsesWithStatus = responses
       .map((r) => ({ id: r.id as number, v: form[r.id] }))
-      .filter((x) => x.v && x.v.status) as { id: number; v: { status?: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string } }[];
+      .filter((x) => x.v && x.v.status);
 
-    // Also save responses that have checklist data but no status yet
-    const checklistOnlyResponses = responses.filter(r => {
+    // Get responses with checklist data or comments (assessors)
+    const responsesWithData = responses.filter(r => {
       const hasChecklistData = Object.keys(checklistData).some(key => key.startsWith(`checklist_${r.id}_`));
-      const alreadyInPayloads = payloads.some(p => p.id === r.id);
-      return hasChecklistData && !alreadyInPayloads;
+      const hasComments = form[r.id]?.publicComment && form[r.id]!.publicComment!.trim().length > 0;
+      return hasChecklistData || hasComments;
     });
 
-    if (payloads.length === 0 && checklistOnlyResponses.length === 0) return;
+    // Combine unique response IDs
+    const allResponseIds = new Set([
+      ...responsesWithStatus.map(p => p.id),
+      ...responsesWithData.map(r => r.id)
+    ]);
 
-    // Save responses with status
-    if (payloads.length > 0) {
-      await Promise.all(
-        payloads.map((p) => {
-          // Extract checklist data for this response
-          const responseChecklistData: Record<string, any> = {};
-          Object.keys(checklistData).forEach(key => {
-            if (key.startsWith(`checklist_${p.id}_`)) {
-              // Remove the checklist_${responseId}_ prefix to get the field name
-              const fieldName = key.replace(`checklist_${p.id}_`, '');
-              responseChecklistData[fieldName] = checklistData[key];
-            }
-          });
+    if (allResponseIds.size === 0) return;
 
-          return validateMut.mutateAsync({
-            responseId: p.id,
-            data: {
-              validation_status: p.v.status!,
-              public_comment: p.v.publicComment ?? null,
-              response_data: Object.keys(responseChecklistData).length > 0 ? responseChecklistData : undefined,
-            },
-          });
-        })
-      );
-    }
+    // Save all responses
+    await Promise.all(
+      Array.from(allResponseIds).map((responseId) => {
+        const formData = form[responseId];
 
-    // Save checklist-only responses (no status set yet, just checklist data)
-    // This allows assessors to save their checklist progress without marking Pass/Fail
-    if (checklistOnlyResponses.length > 0) {
-      // For now, skip saving checklist-only data since ValidationRequest requires validation_status
-      // The assessor must set a status to save
-    }
+        // Extract checklist data for this response
+        const responseChecklistData: Record<string, any> = {};
+        Object.keys(checklistData).forEach(key => {
+          if (key.startsWith(`checklist_${responseId}_`)) {
+            // Remove the checklist_${responseId}_ prefix to get the field name
+            const fieldName = key.replace(`checklist_${responseId}_`, '');
+            responseChecklistData[fieldName] = checklistData[key];
+          }
+        });
+
+        return validateMut.mutateAsync({
+          responseId: responseId,
+          data: {
+            validation_status: formData?.status ?? undefined,  // Optional - only validators set this
+            public_comment: formData?.publicComment ?? null,
+            response_data: Object.keys(responseChecklistData).length > 0 ? responseChecklistData : undefined,
+          },
+        });
+      })
+    );
 
     await qc.invalidateQueries();
   };

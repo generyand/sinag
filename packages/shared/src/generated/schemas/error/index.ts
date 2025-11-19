@@ -62,6 +62,12 @@ export type ValidationRequestPublicComment = string | null;
 
 
 /**
+ * ValidationRequestValidationStatus
+ */
+export type ValidationRequestValidationStatus = ValidationStatus | null;
+
+
+/**
  * ValidationStatus
  */
 export type ValidationStatus = typeof ValidationStatus[keyof typeof ValidationStatus];
