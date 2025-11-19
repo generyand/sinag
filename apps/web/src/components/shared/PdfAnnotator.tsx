@@ -309,7 +309,7 @@ export default function PdfAnnotator({ url, annotateEnabled, annotations, onAdd,
   }, [focusAnnotationId, annotations]);
 
   return (
-    <div ref={containerRef} className="h-[70vh] w-full border border-black/10 rounded bg-white overflow-hidden">
+    <div ref={containerRef} className="h-full w-full border border-gray-200 rounded bg-white overflow-auto relative">
       <Worker workerUrl="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
         <Viewer
           fileUrl={url}
@@ -317,9 +317,6 @@ export default function PdfAnnotator({ url, annotateEnabled, annotations, onAdd,
           plugins={[highlightPluginInstance]}
         />
       </Worker>
-      <div className="mt-2 text-xs text-muted-foreground px-1.5">
-        Tip: Select text to add a highlight with a comment.
-      </div>
     </div>
   );
 }
