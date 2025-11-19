@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Save } from "lucide-react";
+import { AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import type { FormSchema } from "@vantage/shared";
 import {
@@ -49,6 +49,20 @@ interface DynamicFormRendererProps {
   isLoading?: boolean;
   /** Epic 5.0: Locked state - disables form editing when assessment is submitted */
   isLocked?: boolean;
+  /** Navigation: Current indicator code */
+  currentCode?: string;
+  /** Navigation: Current position in the assessment */
+  currentPosition?: number;
+  /** Navigation: Total number of indicators */
+  totalIndicators?: number;
+  /** Navigation: Has previous indicator */
+  hasPrevious?: boolean;
+  /** Navigation: Has next indicator */
+  hasNext?: boolean;
+  /** Navigation: Go to previous indicator */
+  onPrevious?: () => void;
+  /** Navigation: Go to next indicator */
+  onNext?: () => void;
 }
 
 export function DynamicFormRenderer({
@@ -58,6 +72,13 @@ export function DynamicFormRenderer({
   onSaveSuccess,
   isLoading = false,
   isLocked = false,
+  currentCode,
+  currentPosition,
+  totalIndicators,
+  hasPrevious,
+  hasNext,
+  onPrevious,
+  onNext,
 }: DynamicFormRendererProps) {
   // Generate validation schema from form schema
   const validationSchema = useMemo(() => {
@@ -166,9 +187,56 @@ export function DynamicFormRenderer({
     );
   }
 
+  // Show navigation controls
+  const showNavigation = currentPosition && totalIndicators && (hasPrevious || hasNext);
+
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {/* Navigation Header - Only show if navigation props are provided */}
+        {showNavigation && (
+          <div className="sticky top-0 z-10 bg-[var(--card)] border border-[var(--border)] rounded-lg px-4 py-3 shadow-sm">
+            <div className="flex items-center justify-between gap-4">
+              {/* Left: Previous Button */}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onPrevious}
+                disabled={!hasPrevious || isLocked}
+                className="flex items-center gap-2 border-[var(--border)] hover:bg-[var(--hover)]"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">Previous</span>
+              </Button>
+
+              {/* Center: Position Indicator */}
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-[var(--text-secondary)]">Indicator</span>
+                <span className="font-semibold text-[var(--foreground)]">
+                  {currentCode || `${currentPosition} of ${totalIndicators}`}
+                </span>
+                <span className="text-[var(--text-secondary)]">
+                  ({currentPosition} / {totalIndicators})
+                </span>
+              </div>
+
+              {/* Right: Next Button */}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onNext}
+                disabled={!hasNext || isLocked}
+                className="flex items-center gap-2 border-[var(--border)] hover:bg-[var(--hover)]"
+              >
+                <span className="hidden sm:inline">Next</span>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Completion Feedback Panel */}
         <CompletionFeedbackPanel
           formValues={formValues}
@@ -191,20 +259,6 @@ export function DynamicFormRenderer({
             isLocked={isLocked}
           />
         ))}
-
-        {/* Epic 5.0: Hide save button when assessment is locked */}
-        {!isLocked && (
-          <div className="flex justify-end pt-4 border-t border-[var(--border)] mt-6">
-            <Button
-              type="submit"
-              disabled={saveMutation.isPending || formState.isSubmitting}
-              className="min-w-40 bg-[var(--cityscape-yellow)] hover:bg-[var(--cityscape-yellow)]/90 text-gray-900 font-semibold shadow-md hover:shadow-lg transition-all duration-200"
-            >
-              <Save className="mr-2 h-4 w-4" />
-              {saveMutation.isPending ? "Saving..." : "Save Responses"}
-            </Button>
-          </div>
-        )}
       </form>
     </FormProvider>
   );
