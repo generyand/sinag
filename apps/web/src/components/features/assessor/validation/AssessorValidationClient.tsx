@@ -114,12 +114,18 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         return value === true || (typeof value === 'string' && value.trim().length > 0);
       });
 
-      const hasComments = form[r.id]?.publicComment && form[r.id]!.publicComment!.trim().length > 0;
+      // Check for comments (both local and persisted)
+      const hasLocalComments = form[r.id]?.publicComment && form[r.id]!.publicComment!.trim().length > 0;
+      const feedbackComments = (r as AnyRecord).feedback_comments || [];
+      const hasPersistedComments = feedbackComments.some((fc: any) =>
+        fc.comment_type === 'validation' && !fc.is_internal_note && fc.comment && fc.comment.trim().length > 0
+      );
+
       const responseData = (r as AnyRecord).response_data || {};
       // Only check for ASSESSOR validation data (prefixed with "assessor_val_")
       const hasPersistedChecklistData = Object.keys(responseData).some(key => key.startsWith('assessor_val_'));
 
-      const isCompleted = hasChecklistData || hasComments || hasPersistedChecklistData;
+      const isCompleted = hasChecklistData || hasLocalComments || hasPersistedComments || hasPersistedChecklistData;
 
       return isCompleted;
     }).length,
@@ -160,13 +166,18 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
           return value === true || (typeof value === 'string' && value.trim().length > 0);
         });
 
-        const hasComments = form[resp.id]?.publicComment && form[resp.id]!.publicComment!.trim().length > 0;
+        // Check for comments (both local and persisted)
+        const hasLocalComments = form[resp.id]?.publicComment && form[resp.id]!.publicComment!.trim().length > 0;
+        const feedbackComments = (resp as AnyRecord).feedback_comments || [];
+        const hasPersistedComments = feedbackComments.some((fc: any) =>
+          fc.comment_type === 'validation' && !fc.is_internal_note && fc.comment && fc.comment.trim().length > 0
+        );
 
         // Also check backend response_data for persisted ASSESSOR checklist data (prefixed with "assessor_val_")
         const responseData = (resp as AnyRecord).response_data || {};
         const hasPersistedChecklistData = Object.keys(responseData).some(key => key.startsWith('assessor_val_'));
 
-        if (hasChecklistData || hasComments || hasPersistedChecklistData) {
+        if (hasChecklistData || hasLocalComments || hasPersistedComments || hasPersistedChecklistData) {
           status = 'completed';
         }
       }
