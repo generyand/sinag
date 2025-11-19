@@ -85,12 +85,23 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   const transformedAssessment = {
     id: assessmentId,
     completedIndicators: responses.filter((r: any) => {
-      // Check local form state first, fall back to backend validation_status
       const localStatus = form[r.id]?.status;
+
+      // For validators: Check if status is Pass
       if (localStatus) {
         return localStatus === 'Pass';
       }
-      return r.validation_status === 'PASS';
+      if (r.validation_status === 'PASS') {
+        return true;
+      }
+
+      // For assessors: Check if they've worked on checklist or comments
+      const hasChecklistData = Object.keys(checklistData).some(key => key.startsWith(`checklist_${r.id}_`));
+      const hasComments = form[r.id]?.publicComment && form[r.id]!.publicComment!.trim().length > 0;
+      const responseData = (r as AnyRecord).response_data || {};
+      const hasPersistedChecklistData = Object.keys(responseData).length > 0;
+
+      return hasChecklistData || hasComments || hasPersistedChecklistData;
     }).length,
     totalIndicators: responses.length,
     governanceAreas: responses.reduce((acc: any[], resp: any) => {
@@ -112,10 +123,25 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       // Determine status from local form state first, then backend validation_status
       let status = 'not_started';
       const localStatus = form[resp.id]?.status;
+
+      // For validators: Use validation_status (Pass/Fail/Conditional)
       if (localStatus) {
         status = localStatus === 'Pass' ? 'completed' : (localStatus === 'Fail' ? 'needs_rework' : 'not_started');
       } else if (resp.validation_status) {
         status = resp.validation_status === 'PASS' ? 'completed' : (resp.validation_status === 'FAIL' ? 'needs_rework' : 'not_started');
+      }
+      // For assessors: Check if they've worked on checklist or comments
+      else {
+        const hasChecklistData = Object.keys(checklistData).some(key => key.startsWith(`checklist_${resp.id}_`));
+        const hasComments = form[resp.id]?.publicComment && form[resp.id]!.publicComment!.trim().length > 0;
+
+        // Also check backend response_data for persisted checklist data
+        const responseData = (resp as AnyRecord).response_data || {};
+        const hasPersistedChecklistData = Object.keys(responseData).length > 0;
+
+        if (hasChecklistData || hasComments || hasPersistedChecklistData) {
+          status = 'completed';
+        }
       }
 
       existingArea.indicators.push({
