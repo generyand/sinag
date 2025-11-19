@@ -96,13 +96,22 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       }
 
       // For assessors: Check if they've worked on checklist or comments
-      const hasChecklistData = Object.keys(checklistData).some(key => key.startsWith(`checklist_${r.id}_`));
+      // Check for LOCAL checklist data that has TRUTHY values (not just keys)
+      const hasChecklistData = Object.keys(checklistData).some(key => {
+        if (!key.startsWith(`checklist_${r.id}_`)) return false;
+        const value = checklistData[key];
+        // For checkboxes, check if true; for inputs, check if non-empty string
+        return value === true || (typeof value === 'string' && value.trim().length > 0);
+      });
+
       const hasComments = form[r.id]?.publicComment && form[r.id]!.publicComment!.trim().length > 0;
       const responseData = (r as AnyRecord).response_data || {};
       // Only check for ASSESSOR validation data (prefixed with "assessor_val_")
       const hasPersistedChecklistData = Object.keys(responseData).some(key => key.startsWith('assessor_val_'));
 
-      return hasChecklistData || hasComments || hasPersistedChecklistData;
+      const isCompleted = hasChecklistData || hasComments || hasPersistedChecklistData;
+
+      return isCompleted;
     }).length,
     totalIndicators: responses.length,
     governanceAreas: responses.reduce((acc: any[], resp: any) => {
@@ -133,7 +142,14 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       }
       // For assessors: Check if they've worked on checklist or comments
       else {
-        const hasChecklistData = Object.keys(checklistData).some(key => key.startsWith(`checklist_${resp.id}_`));
+        // Check for LOCAL checklist data that has TRUTHY values (not just keys)
+        const hasChecklistData = Object.keys(checklistData).some(key => {
+          if (!key.startsWith(`checklist_${resp.id}_`)) return false;
+          const value = checklistData[key];
+          // For checkboxes, check if true; for inputs, check if non-empty string
+          return value === true || (typeof value === 'string' && value.trim().length > 0);
+        });
+
         const hasComments = form[resp.id]?.publicComment && form[resp.id]!.publicComment!.trim().length > 0;
 
         // Also check backend response_data for persisted ASSESSOR checklist data (prefixed with "assessor_val_")
