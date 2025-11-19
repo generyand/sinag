@@ -68,7 +68,17 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
   const assessment: AnyRecord = (data as unknown as AnyRecord) ?? {};
   const core = (assessment.assessment as AnyRecord) ?? assessment;
-  const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
+  const responses: AnyRecord[] = ((core.responses as AnyRecord[]) ?? []).sort((a: any, b: any) => {
+    // Sort by governance_area.id first, then by indicator.id
+    const areaA = a.indicator?.governance_area?.id || 999;
+    const areaB = b.indicator?.governance_area?.id || 999;
+    if (areaA !== areaB) return areaA - areaB;
+
+    // Within same area, sort by indicator.id
+    const indA = a.indicator?.id || 999;
+    const indB = b.indicator?.id || 999;
+    return indA - indB;
+  });
   const reworkCount: number = core.rework_count ?? 0;
   const barangayName: string = (core?.blgu_user?.barangay?.name
     ?? core?.barangay?.name
@@ -171,7 +181,12 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       });
 
       return acc;
-    }, []).map((area: any) => {
+    }, [])
+    .sort((a: any, b: any) => {
+      // Sort governance areas by ID (FI=1, DI=2, SA=3, SO=4, BU=5, EN=6)
+      return Number(a.id) - Number(b.id);
+    })
+    .map((area: any) => {
       // Sort indicators by indicator_id (ascending order)
       area.indicators.sort((a: any, b: any) => a.indicator_id - b.indicator_id);
       return area;
