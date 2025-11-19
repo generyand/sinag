@@ -519,6 +519,76 @@ This application implements a structured workflow:
 5. **Intelligence**: Gemini API generates CapDev recommendations
 6. **Gap Analysis**: Compare initial vs. final results for insights
 
+## Recent Feature Implementations
+
+This section tracks major features and enhancements added to the platform (most recent first):
+
+### November 2025 - MOV File Management & Assessor Validation Enhancements
+
+**1. Clean Filename Display for BLGU Uploads**
+- **Issue**: Uploaded files were showing UUID prefixes (e.g., `465069ba-8235-4203-8a71-1468d8cc0e8b_sample5.pdf`)
+- **Solution**: Modified storage service to store original clean filename in database while using UUID-prefixed name for storage path
+- **Files Modified**:
+  - `apps/api/app/services/storage_service.py` - Store `original_filename` for display, use UUID prefix for storage only
+- **Impact**: BLGU users now see clean filenames in the UI while maintaining unique storage paths
+
+**2. BLGU Assessment Navigation Improvements**
+- **Enhancement**: Removed redundant "Save Responses" button (auto-save handles persistence)
+- **Enhancement**: Added Previous/Next indicator navigation at TOP of assessment form for quick navigation
+- **Files Modified**:
+  - `apps/web/src/components/features/forms/DynamicFormRenderer.tsx` - Added sticky navigation header with Previous/Next buttons
+  - `apps/web/src/components/features/assessments/IndicatorAccordion.tsx` - Pass navigation props through component hierarchy
+  - `apps/web/src/components/features/assessments/AssessmentContentPanel.tsx` - Top-level navigation state management
+- **Impact**: BLGU users can navigate between indicators without scrolling to bottom of long forms
+
+**3. Interactive Image Annotation for Assessors**
+- **Feature**: Assessors can now annotate images (similar to PDF annotations) with rectangle drawings and comments
+- **Implementation**: Created `ImageAnnotator.tsx` component with:
+  - Click-and-drag rectangle drawing on images
+  - Percentage-based coordinates for responsive scaling
+  - Comment modal for each annotation
+  - Visual overlays showing all annotations with accurate cursor positioning
+  - Boundary checking and clamping for coordinates
+- **Files Created**:
+  - `apps/web/src/components/shared/ImageAnnotator.tsx` - Interactive image annotation component
+- **Files Modified**:
+  - `apps/web/src/components/features/assessor/validation/MiddleMovFilesPanel.tsx` - Integrated ImageAnnotator for image previews
+- **Styling**: Applied consistent `rounded-sm` (2px border radius) across all annotation UI elements
+- **Impact**: Assessors can provide precise feedback on image MOVs with visual annotations
+
+**4. Image Preview Modal for Assessors**
+- **Enhancement**: Images now open in preview modal instead of new tab (consistent with PDF behavior)
+- **Files Modified**:
+  - `apps/web/src/components/features/assessor/validation/MiddleMovFilesPanel.tsx` - Updated `handlePreview` to work for all file types
+- **Impact**: Improved assessor workflow with inline image viewing
+
+**5. Consistent UI Styling**
+- **Enhancement**: Applied `rounded-sm` border radius consistently across all annotation-related UI components
+- **Components Updated**:
+  - Annotation rectangles on images
+  - Annotation comment cards (both PDF and image)
+  - Comment input modals and buttons
+- **Impact**: Consistent visual design across the assessor validation interface
+
+### Backend API Endpoints (Assessor Module)
+
+The following assessor-specific endpoints are available at `/api/v1/assessor/`:
+
+- `GET /queue` - Get assessor's submissions queue filtered by governance area
+- `GET /assessments/{assessment_id}` - Get detailed assessment data for review
+- `POST /assessment-responses/{response_id}/validate` - Validate an assessment response
+- `POST /assessments/{assessment_id}/rework` - Send assessment back for rework
+- `POST /assessments/{assessment_id}/finalize` - Finalize assessment validation
+- `POST /assessments/{assessment_id}/classify` - Trigger classification algorithm
+- `GET /analytics` - Get analytics for assessor's governance area
+- `POST /movs/{mov_file_id}/annotations` - Create annotation on MOV file
+- `GET /movs/{mov_file_id}/annotations` - Get all annotations for MOV
+- `GET /assessments/{assessment_id}/annotations` - Get all annotations for assessment
+- `PATCH /annotations/{annotation_id}` - Update annotation
+- `DELETE /annotations/{annotation_id}` - Delete annotation
+
+See `apps/api/app/api/v1/assessor.py` for complete endpoint documentation.
+
 ## User Roles and Permissions
 
 The system implements role-based access control (RBAC) with four distinct user roles:

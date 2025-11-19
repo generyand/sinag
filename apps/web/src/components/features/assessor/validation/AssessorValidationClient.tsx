@@ -32,6 +32,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   // All hooks must be called before any conditional returns
   const [selectedIndicatorId, setSelectedIndicatorId] = useState<string | null>(null);
   const [form, setForm] = useState<Record<number, { status?: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string }>>({});
+  const [checklistData, setChecklistData] = useState<Record<string, any>>({});  // Store checklist checkbox/input data
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   // Set initial expandedId when data loads
@@ -83,7 +84,14 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   // Transform to match BLGU assessment structure for TreeNavigator
   const transformedAssessment = {
     id: assessmentId,
-    completedIndicators: responses.filter((r: any) => r.validation_status === 'PASS').length,
+    completedIndicators: responses.filter((r: any) => {
+      // Check local form state first, fall back to backend validation_status
+      const localStatus = form[r.id]?.status;
+      if (localStatus) {
+        return localStatus === 'Pass';
+      }
+      return r.validation_status === 'PASS';
+    }).length,
     totalIndicators: responses.length,
     governanceAreas: responses.reduce((acc: any[], resp: any) => {
       const indicator = resp.indicator || {};
@@ -101,11 +109,20 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         acc.push(existingArea);
       }
 
+      // Determine status from local form state first, then backend validation_status
+      let status = 'not_started';
+      const localStatus = form[resp.id]?.status;
+      if (localStatus) {
+        status = localStatus === 'Pass' ? 'completed' : (localStatus === 'Fail' ? 'needs_rework' : 'not_started');
+      } else if (resp.validation_status) {
+        status = resp.validation_status === 'PASS' ? 'completed' : (resp.validation_status === 'FAIL' ? 'needs_rework' : 'not_started');
+      }
+
       existingArea.indicators.push({
         id: String(resp.id),
         code: indicator.indicator_code || indicator.code || String(resp.id),
         name: indicator.name || 'Unnamed Indicator',
-        status: resp.validation_status === 'PASS' ? 'completed' : (resp.validation_status === 'FAIL' ? 'needs_rework' : 'not_started'),
+        status: status,
         // Store indicator_id for sorting
         indicator_id: indicator.id || 0,
       });
@@ -136,19 +153,50 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   const onSaveDraft = async () => {
     const payloads = responses
       .map((r) => ({ id: r.id as number, v: form[r.id] }))
-      .filter((x) => x.v && x.v.status) as { id: number; v: { status: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string } }[];
-    if (payloads.length === 0) return;
-    await Promise.all(
-      payloads.map((p) =>
-        validateMut.mutateAsync({
-          responseId: p.id,
-          data: {
-            validation_status: p.v.status!,
-            public_comment: p.v.publicComment ?? null,
-          },
+      .filter((x) => x.v && x.v.status) as { id: number; v: { status?: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string } }[];
+
+    // Also save responses that have checklist data but no status yet
+    const checklistOnlyResponses = responses.filter(r => {
+      const hasChecklistData = Object.keys(checklistData).some(key => key.startsWith(`checklist_${r.id}_`));
+      const alreadyInPayloads = payloads.some(p => p.id === r.id);
+      return hasChecklistData && !alreadyInPayloads;
+    });
+
+    if (payloads.length === 0 && checklistOnlyResponses.length === 0) return;
+
+    // Save responses with status
+    if (payloads.length > 0) {
+      await Promise.all(
+        payloads.map((p) => {
+          // Extract checklist data for this response
+          const responseChecklistData: Record<string, any> = {};
+          Object.keys(checklistData).forEach(key => {
+            if (key.startsWith(`checklist_${p.id}_`)) {
+              // Remove the checklist_${responseId}_ prefix to get the field name
+              const fieldName = key.replace(`checklist_${p.id}_`, '');
+              responseChecklistData[fieldName] = checklistData[key];
+            }
+          });
+
+          return validateMut.mutateAsync({
+            responseId: p.id,
+            data: {
+              validation_status: p.v.status!,
+              public_comment: p.v.publicComment ?? null,
+              response_data: Object.keys(responseChecklistData).length > 0 ? responseChecklistData : undefined,
+            },
+          });
         })
-      )
-    );
+      );
+    }
+
+    // Save checklist-only responses (no status set yet, just checklist data)
+    // This allows assessors to save their checklist progress without marking Pass/Fail
+    if (checklistOnlyResponses.length > 0) {
+      // For now, skip saving checklist-only data since ValidationRequest requires validation_status
+      // The assessor must set a status to save
+    }
+
     await qc.invalidateQueries();
   };
 
@@ -238,6 +286,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                   form={form}
                   expandedId={expandedId ?? undefined}
                   onToggle={(id) => setExpandedId((curr) => (curr === id ? null : id))}
+                  onIndicatorSelect={handleIndicatorSelect}
                   setField={(id, field, value) => {
                     setForm((prev) => ({
                       ...prev,
@@ -245,6 +294,12 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                         ...prev[id],
                         [field]: value,
                       },
+                    }));
+                  }}
+                  onChecklistChange={(key, value) => {
+                    setChecklistData((prev) => ({
+                      ...prev,
+                      [key]: value,
                     }));
                   }}
                 />

@@ -98,6 +98,7 @@ class AssessorService:
         validation_status: ValidationStatus,
         public_comment: str | None = None,
         assessor_remarks: str | None = None,
+        response_data: dict | None = None,
     ) -> dict:
         """
         Validate an assessment response and save feedback comments.
@@ -109,6 +110,7 @@ class AssessorService:
             validation_status: The validation status (Pass/Fail/Conditional)
             public_comment: Public comment visible to BLGU user
             assessor_remarks: Remarks from assessor for validators to review
+            response_data: Optional checklist/form data to save
 
         Returns:
             dict: Success status and details
@@ -131,6 +133,10 @@ class AssessorService:
         # Update the validation status and assessor remarks
         response.validation_status = validation_status
         response.assessor_remarks = assessor_remarks
+
+        # Update response_data if provided (for checklist data)
+        if response_data is not None:
+            response.response_data = response_data
 
         # Generate remark if indicator has calculation_schema and remark_schema
         if response.indicator.calculation_schema and response.is_completed:

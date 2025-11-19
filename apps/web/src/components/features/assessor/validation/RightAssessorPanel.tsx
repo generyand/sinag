@@ -19,13 +19,15 @@ interface RightAssessorPanelProps {
   setField: (responseId: number, field: 'status' | 'publicComment', value: string) => void;
   expandedId?: number | null;
   onToggle?: (responseId: number) => void;
+  onIndicatorSelect?: (indicatorId: string) => void;
+  onChecklistChange?: (key: string, value: any) => void;
 }
 
 type AnyRecord = Record<string, any>;
 
 type LocalStatus = 'Pass' | 'Fail' | 'Conditional' | undefined;
 
-export function RightAssessorPanel({ assessment, form, setField, expandedId, onToggle }: RightAssessorPanelProps) {
+export function RightAssessorPanel({ assessment, form, setField, expandedId, onToggle, onIndicatorSelect, onChecklistChange }: RightAssessorPanelProps) {
   const data: AnyRecord = (assessment as unknown as AnyRecord) ?? {};
   const core = (data.assessment as AnyRecord) ?? data;
   const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
@@ -155,7 +157,14 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
   React.useEffect(() => {
     Object.entries(watched || {}).forEach(([key, v]) => {
       const id = Number(key);
-      if (!Number.isFinite(id)) return;
+      if (!Number.isFinite(id)) {
+        // This is checklist data (not a response ID)
+        // Sync checklist changes to parent
+        if (onChecklistChange) {
+          onChecklistChange(key, v);
+        }
+        return;
+      }
       const val = v as { status?: LocalStatus; publicComment?: string };
       if (val.status !== form[id]?.status) setField(id, 'status', String(val.status || ''));
       if (val.publicComment !== form[id]?.publicComment) setField(id, 'publicComment', val.publicComment || '');
@@ -593,7 +602,10 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                       size="sm"
                       onClick={() => {
                         const prev = responses[idx - 1];
-                        if (prev) onToggle?.(prev.id);
+                        if (prev) {
+                          onToggle?.(prev.id);
+                          onIndicatorSelect?.(String(prev.id));
+                        }
                       }}
                       disabled={idx === 0}
                     >
@@ -605,7 +617,10 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                       size="sm"
                       onClick={() => {
                         const next = responses[idx + 1];
-                        if (next) onToggle?.(next.id);
+                        if (next) {
+                          onToggle?.(next.id);
+                          onIndicatorSelect?.(String(next.id));
+                        }
                       }}
                       disabled={idx === responses.length - 1}
                     >
