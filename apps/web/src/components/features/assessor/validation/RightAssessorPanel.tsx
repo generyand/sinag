@@ -194,16 +194,6 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
   // Sync RHF state upward so footer logic remains accurate
   const watched = useWatch({ control });
   React.useEffect(() => {
-    // Debug: Log all watched keys
-    console.log('All watched keys:', Object.keys(watched || {}));
-
-    // Debug: Log the watched object when it contains response ID 605
-    if (watched && watched[605]) {
-      console.log('Watched data for response 605:', watched[605]);
-    } else {
-      console.log('Response 605 NOT in watched object!');
-    }
-
     Object.entries(watched || {}).forEach(([key, v]) => {
       const id = Number(key);
       if (!Number.isFinite(id)) {
@@ -215,11 +205,6 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
         return;
       }
       const val = v as { status?: LocalStatus; publicComment?: string };
-
-      // Debug: Log when syncing publicComment for response 605
-      if (id === 605 && val.publicComment) {
-        console.log(`Syncing publicComment for ${id}:`, val.publicComment);
-      }
 
       if (val.status !== form[id]?.status) setField(id, 'status', String(val.status || ''));
       if (val.publicComment !== form[id]?.publicComment) setField(id, 'publicComment', val.publicComment || '');

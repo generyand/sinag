@@ -111,15 +111,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
       const isCompleted = hasChecklistData || hasComments || hasPersistedChecklistData;
 
-      // Debug logging for first 3 responses
-      if (r.id <= 603) {
-        console.log(`[Response ${r.id}] hasChecklistData:`, hasChecklistData,
-          'hasComments:', hasComments,
-          'hasPersistedChecklistData:', hasPersistedChecklistData,
-          'isCompleted:', isCompleted,
-          'responseData keys:', Object.keys(responseData).filter(k => k.startsWith('assessor_val_')));
-      }
-
       return isCompleted;
     }).length,
     totalIndicators: responses.length,
@@ -203,11 +194,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   }).length;
 
   const onSaveDraft = async () => {
-    console.log('=== SAVE AS DRAFT DEBUG ===');
-    console.log('Current checklistData:', checklistData);
-    console.log('Current form:', form);
-    console.log('Form for response 605:', form[605]);
-
     // Get responses with validation status (validators)
     const responsesWithStatus = responses
       .map((r) => ({ id: r.id as number, v: form[r.id] }))
@@ -226,19 +212,13 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       return hasChecklistData || hasComments;
     });
 
-    console.log('Responses with status:', responsesWithStatus);
-    console.log('Responses with data:', responsesWithData);
-
     // Combine unique response IDs
     const allResponseIds = new Set([
       ...responsesWithStatus.map(p => p.id),
       ...responsesWithData.map(r => r.id)
     ]);
 
-    console.log('All response IDs to save:', Array.from(allResponseIds));
-
     if (allResponseIds.size === 0) {
-      console.log('No responses to save!');
       return;
     }
 
