@@ -106,10 +106,16 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         code: indicator.indicator_code || indicator.code || String(resp.id),
         name: indicator.name || 'Unnamed Indicator',
         status: resp.validation_status === 'PASS' ? 'completed' : (resp.validation_status === 'FAIL' ? 'needs_rework' : 'not_started'),
+        // Store indicator_id for sorting
+        indicator_id: indicator.id || 0,
       });
 
       return acc;
-    }, []),
+    }, []).map((area: any) => {
+      // Sort indicators by indicator_id (ascending order)
+      area.indicators.sort((a: any, b: any) => a.indicator_id - b.indicator_id);
+      return area;
+    }),
   };
 
   const total = responses.length;

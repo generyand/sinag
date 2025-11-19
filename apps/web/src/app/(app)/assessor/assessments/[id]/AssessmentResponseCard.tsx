@@ -67,6 +67,11 @@ export function AssessmentResponseCard({ response, assessmentId }: AssessmentRes
   const [showMOVs, setShowMOVs] = useState(false);
   const [showValidationForm, setShowValidationForm] = useState(false);
 
+  // Debug logging to verify MOVs data
+  console.log('[AssessmentResponseCard] Indicator:', response.indicator.name);
+  console.log('[AssessmentResponseCard] MOVs count:', response.movs?.length || 0);
+  console.log('[AssessmentResponseCard] MOVs data:', response.movs);
+
   const getValidationStatusIcon = (status: string | null) => {
     switch (status?.toLowerCase()) {
       case "pass":

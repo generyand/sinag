@@ -32,6 +32,14 @@ export default function AssessmentValidationPage() {
 
   const assessment = data.assessment as any;
 
+  // Debug logging to verify assessment data structure
+  console.log('[AssessmentValidationPage] Full data:', data);
+  console.log('[AssessmentValidationPage] Assessment:', assessment);
+  console.log('[AssessmentValidationPage] Responses count:', assessment.responses?.length || 0);
+  if (assessment.responses && assessment.responses.length > 0) {
+    console.log('[AssessmentValidationPage] First response MOVs:', assessment.responses[0].movs);
+  }
+
   const getStatusIcon = (status: string) => {
     switch (status.toLowerCase()) {
       case "submitted_for_review":
