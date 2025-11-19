@@ -50,6 +50,7 @@ def _parse_upload_sections_from_instructions(upload_instructions: str) -> List[D
     if has_options:
         # Parse OPTION-based structure (e.g., 6.2.1)
         current_option = None
+        current_option_id = None
         field_counter = 0
 
         for line in lines:
@@ -58,6 +59,16 @@ def _parse_upload_sections_from_instructions(upload_instructions: str) -> List[D
             # Detect option headers (e.g., "OPTION A - For MRF:")
             if 'OPTION' in line_stripped.upper():
                 current_option = line_stripped
+                # Extract option letter (A, B, C) for grouping
+                if 'OPTION A' in line_stripped.upper():
+                    current_option_id = 'option_a'
+                elif 'OPTION B' in line_stripped.upper():
+                    current_option_id = 'option_b'
+                elif 'OPTION C' in line_stripped.upper():
+                    current_option_id = 'option_c'
+                else:
+                    current_option_id = f'option_{len(upload_sections) + 1}'
+
                 # Add section header
                 upload_sections.append({
                     "field_id": f"section_header_{len(upload_sections) + 1}",
@@ -75,6 +86,8 @@ def _parse_upload_sections_from_instructions(upload_instructions: str) -> List[D
                     "description": "",
                     "required": False
                 })
+                # Reset option after OR separator
+                current_option_id = None
             # Detect bullet points (upload fields)
             elif line_stripped.startswith('-') and current_option:
                 field_counter += 1
@@ -88,7 +101,8 @@ def _parse_upload_sections_from_instructions(upload_instructions: str) -> List[D
                     "required": True,
                     "accept": ".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.mp4",
                     "multiple": True,
-                    "max_size": 50
+                    "max_size": 50,
+                    "option_group": current_option_id  # Add option group for frontend grouping
                 })
 
     else:

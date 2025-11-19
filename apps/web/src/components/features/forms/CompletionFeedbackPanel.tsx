@@ -81,33 +81,42 @@ export function CompletionFeedbackPanel({
       return true;
     };
 
-    // For grouped OR logic (e.g., indicator 2.1.4 with Option A vs Option B)
-    if (validationRule === "ANY_ITEM_REQUIRED") {
+    // For grouped OR logic (e.g., indicator 2.1.4 with Option A vs Option B, or 6.2.1 with Options A/B/C)
+    if (validationRule === "ANY_ITEM_REQUIRED" || validationRule === "OR_LOGIC_AT_LEAST_1_REQUIRED") {
       // Detect field groups by analyzing field_ids
       const groups: Record<string, FormSchemaFieldsItem[]> = {};
 
       requiredFields.forEach((field) => {
         const fieldId = field.field_id;
 
-        // Detect group by pattern in field_id
-        // Special case: If only 2 fields total with section_1/section_2, treat each as separate option
-        // (e.g., 1.6.1.3 with 2 separate upload options)
-        // Otherwise, group section_1+section_2 together (e.g., 2.1.4 Option A)
+        // Check if field has explicit option_group metadata (for 6.2.1-style indicators)
+        const optionGroup = (field as any).option_group;
+
         let groupName: string;
 
-        if (requiredFields.length === 2 &&
-            requiredFields.every(f => f.field_id.includes('section_1') || f.field_id.includes('section_2'))) {
-          // Only 2 fields, both with section_1 or section_2 → each is its own option
-          groupName = `Field ${fieldId}`;
-        } else if (fieldId.includes('section_1') || fieldId.includes('section_2')) {
-          // Part of a multi-field group (Option A)
-          groupName = "Group A (Option A)";
-        } else if (fieldId.includes('section_3') || fieldId.includes('section_4')) {
-          // Part of a multi-field group (Option B)
-          groupName = "Group B (Option B)";
+        if (optionGroup) {
+          // Use explicit option_group if available (e.g., "option_a", "option_b", "option_c")
+          groupName = optionGroup;
         } else {
-          // Default: each field is its own group
-          groupName = `Field ${fieldId}`;
+          // Fallback to pattern-based detection for backwards compatibility
+          // Special case: If only 2 fields total with section_1/section_2, treat each as separate option
+          // (e.g., 1.6.1.3 with 2 separate upload options)
+          // Otherwise, group section_1+section_2 together (e.g., 2.1.4 Option A)
+
+          if (requiredFields.length === 2 &&
+              requiredFields.every(f => f.field_id.includes('section_1') || f.field_id.includes('section_2'))) {
+            // Only 2 fields, both with section_1 or section_2 → each is its own option
+            groupName = `Field ${fieldId}`;
+          } else if (fieldId.includes('section_1') || fieldId.includes('section_2')) {
+            // Part of a multi-field group (Option A)
+            groupName = "Group A (Option A)";
+          } else if (fieldId.includes('section_3') || fieldId.includes('section_4')) {
+            // Part of a multi-field group (Option B)
+            groupName = "Group B (Option B)";
+          } else {
+            // Default: each field is its own group
+            groupName = `Field ${fieldId}`;
+          }
         }
 
         if (!groups[groupName]) {

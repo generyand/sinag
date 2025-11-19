@@ -121,10 +121,10 @@ class CompletenessValidationService:
             # Get all required fields
             required_fields = self._get_required_fields(schema_obj, response_data)
 
-            # Check for grouped OR validation (e.g., indicator 2.1.4)
+            # Check for grouped OR validation (e.g., indicator 2.1.4, 6.2.1)
             validation_rule = form_schema.get('validation_rule', 'ALL_ITEMS_REQUIRED')
 
-            if validation_rule == 'ANY_ITEM_REQUIRED':
+            if validation_rule in ('ANY_ITEM_REQUIRED', 'OR_LOGIC_AT_LEAST_1_REQUIRED'):
                 # Detect and validate field groups
                 return self._validate_grouped_or_fields(
                     required_fields, response_data, uploaded_movs
@@ -401,10 +401,11 @@ class CompletenessValidationService:
 
     def _detect_field_groups(self, fields: List[FormField]) -> Dict[str, List[FormField]]:
         """
-        Detect field groups based on field_id patterns.
+        Detect field groups based on explicit option_group or field_id patterns.
 
         For example:
-        - upload_section_1, upload_section_2 → Group A
+        - option_group="option_a" → Group option_a (explicit grouping for 6.2.1)
+        - upload_section_1, upload_section_2 → Group A (pattern-based for 2.1.4)
         - upload_section_3, upload_section_4 → Group B
 
         Args:
@@ -423,24 +424,29 @@ class CompletenessValidationService:
         )
 
         for field in fields:
-            # Extract group identifier from field_id
-            # Patterns: upload_section_1, upload_section_2 (Group A)
-            #           upload_section_3, upload_section_4 (Group B)
             field_id = field.field_id
 
-            # Detect group by section number in field_id
-            if is_two_field_or:
-                # Only 2 fields, both with section_1 or section_2 → each is its own option
-                group_name = f"Field {field_id}"
-            elif 'section_1' in field_id or 'section_2' in field_id:
-                # Part of a multi-field group (Option A)
-                group_name = "Group A (Option A)"
-            elif 'section_3' in field_id or 'section_4' in field_id:
-                # Part of a multi-field group (Option B)
-                group_name = "Group B (Option B)"
+            # Check if field has explicit option_group metadata (for 6.2.1-style indicators)
+            option_group = field.get('option_group')
+
+            if option_group:
+                # Use explicit option_group if available
+                group_name = option_group
             else:
-                # Default: each field is its own group
-                group_name = f"Field {field_id}"
+                # Fallback to pattern-based detection for backwards compatibility
+                # Detect group by section number in field_id
+                if is_two_field_or:
+                    # Only 2 fields, both with section_1 or section_2 → each is its own option
+                    group_name = f"Field {field_id}"
+                elif 'section_1' in field_id or 'section_2' in field_id:
+                    # Part of a multi-field group (Option A)
+                    group_name = "Group A (Option A)"
+                elif 'section_3' in field_id or 'section_4' in field_id:
+                    # Part of a multi-field group (Option B)
+                    group_name = "Group B (Option B)"
+                else:
+                    # Default: each field is its own group
+                    group_name = f"Field {field_id}"
 
             if group_name not in groups:
                 groups[group_name] = []
