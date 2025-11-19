@@ -115,6 +115,12 @@ class AssessorService:
         Returns:
             dict: Success status and details
         """
+        print(f"=== BACKEND: validate_assessment_response for response_id={response_id} ===")
+        print(f"validation_status: {validation_status}")
+        print(f"public_comment: {public_comment}")
+        print(f"assessor_remarks: {assessor_remarks}")
+        print(f"response_data: {response_data}")
+
         # Get the assessment response
         response = (
             db.query(AssessmentResponse)
@@ -130,6 +136,8 @@ class AssessorService:
                 "validation_status": validation_status,
             }
 
+        print(f"Current response.response_data BEFORE update: {response.response_data}")
+
         # Update the validation status only if provided (validators only)
         if validation_status is not None:
             response.validation_status = validation_status
@@ -140,7 +148,9 @@ class AssessorService:
 
         # Update response_data if provided (for checklist data)
         if response_data is not None:
+            print(f"Updating response_data to: {response_data}")
             response.response_data = response_data
+            print(f"response.response_data AFTER assignment: {response.response_data}")
 
         # Generate remark if indicator has calculation_schema and remark_schema
         if response.indicator.calculation_schema and response.is_completed:
