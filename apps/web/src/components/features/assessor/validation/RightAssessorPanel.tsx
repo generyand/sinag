@@ -64,21 +64,51 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
 
   const defaultValues: ResponsesForm = React.useMemo(() => {
     const obj: AnyRecord = {};
+
+    // Initialize response-level data (status and comments)
     for (const r of responses) {
       const key = String(r.id);
       obj[key] = {
         status: form[r.id]?.status,
         publicComment: form[r.id]?.publicComment,
       };
+
+      // Initialize checklist data from response_data
+      const responseData = (r as AnyRecord).response_data || {};
+      const indicator = (r.indicator as AnyRecord) ?? {};
+      const checklistItems = (indicator?.checklist_items as any[]) || [];
+
+      // Load existing checklist values from response_data
+      checklistItems.forEach((item: any) => {
+        const itemKey = `checklist_${r.id}_${item.item_id}`;
+
+        if (item.item_type === 'assessment_field') {
+          // YES/NO checkboxes
+          obj[`${itemKey}_yes`] = responseData[`${item.item_id}_yes`] ?? false;
+          obj[`${itemKey}_no`] = responseData[`${item.item_id}_no`] ?? false;
+        } else if (item.item_type === 'document_count' || item.requires_document_count) {
+          // Input fields
+          obj[itemKey] = responseData[item.item_id] ?? '';
+        } else if (item.item_type !== 'info_text') {
+          // Regular checkboxes
+          obj[itemKey] = responseData[item.item_id] ?? false;
+        }
+      });
     }
+
     return obj as ResponsesForm;
   }, [responses, form]);
 
-  const { control, register, formState } = useForm<ResponsesForm>({
+  const { control, register, formState, reset } = useForm<ResponsesForm>({
     resolver: zodResolver(ResponsesSchema),
     defaultValues,
     mode: 'onChange',
   });
+
+  // Reset form when defaultValues change (e.g., when response data loads)
+  React.useEffect(() => {
+    reset(defaultValues);
+  }, [defaultValues, reset]);
 
   // Helper function to calculate automatic status based on checklist
   const calculateAutomaticStatus = React.useCallback((responseId: number, checklistData: Record<string, any>): LocalStatus | null => {
