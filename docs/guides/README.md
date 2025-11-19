@@ -4,12 +4,19 @@ Step-by-step guides for common development tasks in the VANTAGE project.
 
 ## Available Guides
 
+### Development Workflow
 - [Adding Features](./adding-features.md) - Complete workflow for adding new features
 - [Database Migrations](./database-migrations.md) - Working with Alembic migrations
 - [Testing](./testing.md) - Testing strategy and guidelines
 - [Service Layer Pattern](./service-layer-pattern.md) - Backend architectural pattern
+- [Type Generation](./type-generation.md) - End-to-end type safety workflow
 - [Maintaining Changelog](./maintaining-changelog.md) - How to update CHANGELOG.md
 - [Deployment](./deployment.md) - Deployment procedures
+
+### UI Implementation Guides
+- [Indicator Builder User Guide](./indicator-builder-user-guide.md) - Guide for using the indicator builder system
+- [UI Implementation: Navigation & Logos](./ui-implementation-navigation-and-logos.md) - Next/Previous navigation and governance area logos
+- [UI Implementation: Tree Navigation](./ui-implementation-tree-navigation.md) - Tree hierarchical navigation for BLGU assessments
 
 ## Quick Reference
 

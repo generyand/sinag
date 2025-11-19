@@ -13,6 +13,11 @@ Documentation in this directory represents:
 ## Current Archive Contents
 
 - **[docker-development-journey.md](./docker-development-journey.md)** - Chronicles Docker issues encountered during development and their solutions
+- **[hard-coded-indicators-implementation-plan.md](./hard-coded-indicators-implementation-plan.md)** - Implementation plan for hard-coding all 29 SGLGB indicators (Phase 7 completed)
+- **[epic-6-completion-summary.md](./epic-6-completion-summary.md)** - Summary of Epic 6 completion
+- **[phase6-performance-testing-guide.md](./phase6-performance-testing-guide.md)** - Performance testing guide for Phase 6
+- **[test-organization-plan.md](./test-organization-plan.md)** - Test organization plan
+- **[prd-administrative-features-superseded-by-phase6.md](./prd-administrative-features-superseded-by-phase6.md)** - Original administrative features PRD superseded by Phase 6
 
 ## Why Archive Instead of Delete?
 
@@ -39,4 +44,4 @@ Keep documentation active (in `troubleshooting/` or `guides/`) when:
 
 ---
 
-**Archive maintained as of**: October 31, 2024
+**Archive maintained as of**: November 19, 2025

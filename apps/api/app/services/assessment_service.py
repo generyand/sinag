@@ -32,10 +32,45 @@ from sqlalchemy.orm import Session, joinedload  # type: ignore[reportMissingImpo
 
 
 class AssessmentService:
-    """Service class for assessment management operations."""
+    """Service for managing BLGU assessment submissions and validation workflow.
+
+    This service handles the complete SGLGB assessment lifecycle including:
+    - Assessment creation and retrieval for BLGU users
+    - Response management (create, update, validate completion)
+    - MOV (Means of Verification) file handling
+    - Assessment submission and preliminary compliance checks
+    - Dashboard data aggregation and progress tracking
+    - Feedback comment management for assessor communications
+
+    **SGLGB Workflow Stages**:
+    1. DRAFT: Initial assessment creation
+    2. SUBMITTED_FOR_REVIEW: BLGU submits for assessor review
+    3. NEEDS_REWORK: Assessor requests changes (one rework cycle allowed)
+    4. VALIDATED: Final assessor approval
+
+    **Business Rules**:
+    - Each BLGU user can have only one assessment
+    - All indicators must have responses before submission
+    - "YES" answers require MOVs (Means of Verification)
+    - Assessments can be sent for rework only once (rework_count limit)
+    - Response completion status is auto-calculated based on form_schema requirements
+
+    See Also:
+        - docs/workflows/blgu-assessment.md: BLGU submission workflow
+        - docs/workflows/assessor-validation.md: Assessor review process
+        - apps/api/app/api/v1/assessments.py: API endpoints
+    """
 
     # ----- Serialization helpers -----
     def _serialize_response_obj(self, response: Optional[AssessmentResponse]) -> Optional[Dict[str, Any]]:
+        """Serialize AssessmentResponse ORM model to dictionary for JSON responses.
+
+        Args:
+            response: AssessmentResponse instance to serialize, or None
+
+        Returns:
+            Dictionary with response fields (id, response_data, is_completed, etc.) or None
+        """
         if response is None:
             return None
         return {
@@ -50,6 +85,14 @@ class AssessmentService:
         }
 
     def _serialize_mov_list(self, movs: Optional[List[MOV]]) -> List[Dict[str, Any]]:
+        """Serialize list of MOV ORM models to dictionaries for JSON responses.
+
+        Args:
+            movs: List of MOV instances to serialize, or None
+
+        Returns:
+            List of dictionaries with MOV fields (id, filename, storage_path, etc.)
+        """
         if not movs:
             return []
         return [

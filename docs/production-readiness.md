@@ -522,10 +522,10 @@ NEXT_PUBLIC_SENTRY_DSN=<production-sentry-dsn>
 See: `EPIC_6_FINAL_STATUS.md`
 
 ### B. UAT Results
-See: `docs/testing/UAT-CRITERIA.md`
+See: `docs/testing/uat-criteria.md`
 
 ### C. Smoke Test Results
-See: `docs/testing/DEPLOYMENT-SMOKE-TESTS.md`
+See: `docs/testing/deployment-smoke-tests.md`
 
 ### D. Security Audit Report
 See: `apps/api/tests/security/`
