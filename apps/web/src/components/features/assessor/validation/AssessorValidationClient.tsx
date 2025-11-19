@@ -181,6 +181,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         Object.keys(checklistData).forEach(key => {
           if (key.startsWith(`checklist_${responseId}_`)) {
             // Remove the checklist_${responseId}_ prefix to get the field name
+            // For assessment_field items, keep the _yes/_no suffix
             const fieldName = key.replace(`checklist_${responseId}_`, '');
             responseChecklistData[fieldName] = checklistData[key];
           }
