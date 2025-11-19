@@ -2,7 +2,7 @@
 
 import { TreeNavigator } from '@/components/features/assessments/tree-navigation';
 import { useGetAssessorAssessmentsAssessmentId } from '@vantage/shared';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { RightAssessorPanel } from './RightAssessorPanel';
 import { MiddleMovFilesPanel } from './MiddleMovFilesPanel';
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   const [form, setForm] = useState<Record<number, { status?: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string }>>({});
   const [checklistData, setChecklistData] = useState<Record<string, any>>({});  // Store checklist checkbox/input data
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false); // Local loading state instead of relying on mutation
+  const isSavingRef = useRef(false); // Prevent multiple concurrent saves
 
   // Set initial expandedId when data loads
   useEffect(() => {
@@ -207,7 +209,35 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   };
 
   const total = responses.length;
-  const reviewed = responses.filter((r) => !!form[r.id]?.status).length;
+
+  // For validators: Check if they've set a status (Pass/Fail/Conditional)
+  const reviewedWithStatus = responses.filter((r) => !!form[r.id]?.status).length;
+
+  // For assessors: Check if they've filled out checklist data or comments
+  const reviewedByAssessor = responses.filter(r => {
+    // Check for TRUTHY checklist values
+    const hasChecklistData = Object.keys(checklistData).some(key => {
+      if (!key.startsWith(`checklist_${r.id}_`)) return false;
+      const value = checklistData[key];
+      return value === true || (typeof value === 'string' && value.trim().length > 0);
+    });
+
+    // Check for comments (both local and persisted)
+    const hasLocalComments = form[r.id]?.publicComment && form[r.id]!.publicComment!.trim().length > 0;
+    const feedbackComments = (r as AnyRecord).feedback_comments || [];
+    const hasPersistedComments = feedbackComments.some((fc: any) =>
+      fc.comment_type === 'validation' && !fc.is_internal_note && fc.comment && fc.comment.trim().length > 0
+    );
+
+    // Check for persisted checklist data
+    const responseData = (r as AnyRecord).response_data || {};
+    const hasPersistedChecklistData = Object.keys(responseData).some(key => key.startsWith('assessor_val_'));
+
+    return hasChecklistData || hasLocalComments || hasPersistedComments || hasPersistedChecklistData;
+  }).length;
+
+  // Use assessor review count OR validator review count
+  const reviewed = Math.max(reviewedWithStatus, reviewedByAssessor);
   const allReviewed = total > 0 && reviewed === total;
   const anyFail = responses.some((r) => form[r.id]?.status === 'Fail');
   const progressPct = total > 0 ? Math.round((reviewed / total) * 100) : 0;
@@ -222,6 +252,12 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   }).length;
 
   const onSaveDraft = async () => {
+    // Prevent concurrent saves
+    if (isSavingRef.current) {
+      console.log('[onSaveDraft] Save already in progress, ignoring duplicate call');
+      return;
+    }
+
     // Get responses with validation status (validators)
     const responsesWithStatus = responses
       .map((r) => ({ id: r.id as number, v: form[r.id] }))
@@ -250,9 +286,13 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       return;
     }
 
-    // Save all responses sequentially to avoid React Query mutation state conflicts
+    // Set both state and ref to prevent race conditions
+    isSavingRef.current = true;
+    setIsSaving(true);
+
     try {
-      for (const responseId of Array.from(allResponseIds)) {
+      // Save all responses in parallel for faster performance
+      const savePromises = Array.from(allResponseIds).map(async (responseId) => {
         const formData = form[responseId];
 
         // Extract checklist data for this response
@@ -269,7 +309,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
           }
         });
 
-        await validateMut.mutateAsync({
+        return validateMut.mutateAsync({
           responseId: responseId,
           data: {
             validation_status: formData?.status ?? undefined,  // Optional - only validators set this
@@ -277,12 +317,16 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             response_data: Object.keys(responseChecklistData).length > 0 ? responseChecklistData : undefined,
           },
         });
-      }
+      });
 
-      // Show success toast
+      await Promise.all(savePromises);
+
+      // Show success toast with better styling
       toast({
-        title: "Saved successfully",
-        description: "Your validation progress has been saved.",
+        title: "Saved",
+        description: "Validation progress saved successfully",
+        duration: 2000,
+        className: "bg-green-600 text-white border-none",
       });
 
       // Don't invalidate queries here - it causes the button to stay stuck
@@ -298,7 +342,10 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         description: "Failed to save validation progress. Please try again.",
         variant: "destructive",
       });
-      throw error;
+    } finally {
+      // CRITICAL: Always reset loading state, whether success or error
+      isSavingRef.current = false;
+      setIsSaving(false);
     }
   };
 
@@ -349,9 +396,9 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               size="sm"
               type="button"
               onClick={onSaveDraft}
-              disabled={validateMut.isPending}
+              disabled={isSaving}
             >
-              {validateMut.isPending ? 'Saving...' : 'Save as Draft'}
+              {isSaving ? 'Saving...' : 'Save as Draft'}
             </Button>
           </div>
         </div>
@@ -430,10 +477,10 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               size="default"
               type="button"
               onClick={onSaveDraft}
-              disabled={validateMut.isPending}
+              disabled={isSaving}
               className="w-full sm:w-auto"
             >
-              {validateMut.isPending ? 'Saving...' : 'Save as Draft'}
+              {isSaving ? 'Saving...' : 'Save as Draft'}
             </Button>
             <Button
               variant="secondary"
