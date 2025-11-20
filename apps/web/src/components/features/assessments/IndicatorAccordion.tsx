@@ -169,13 +169,6 @@ export function IndicatorAccordion({
     const schema = indicator.formSchema as any;
     const data = indicator.responseData || {};
 
-      indicatorCode: indicator.code,
-      hasSchema: !!schema,
-      hasData: !!data,
-      isReworkStatus,
-      reworkRequestedAt,
-    });
-
     if (!schema || typeof schema !== 'object') {
       return { completedFields: 0, totalFields: 0, percentage: 0 };
     }
