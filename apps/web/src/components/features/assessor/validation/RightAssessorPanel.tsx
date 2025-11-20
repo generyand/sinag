@@ -69,45 +69,68 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
     for (const r of responses) {
       const key = String(r.id);
 
-      // Load public comment from feedback_comments array (get LATEST comment, not first)
-      const feedbackComments = (r as AnyRecord).feedback_comments || [];
-      const validationComments = feedbackComments.filter((fc: any) => fc.comment_type === 'validation' && !fc.is_internal_note);
-      // Sort by created_at DESC to get the latest comment
-      validationComments.sort((a: any, b: any) => {
-        const dateA = new Date(a.created_at || 0).getTime();
-        const dateB = new Date(b.created_at || 0).getTime();
-        return dateB - dateA; // DESC order
-      });
-      const publicFeedback = validationComments[0];
+      // CRITICAL: For indicators requiring rework, do NOT load old comments from first review cycle
+      // Only load comments if NOT requiring rework
+      let publicComment = '';
+      if (!(r as AnyRecord).requires_rework) {
+        // Load public comment from feedback_comments array (get LATEST comment, not first)
+        const feedbackComments = (r as AnyRecord).feedback_comments || [];
+        const validationComments = feedbackComments.filter((fc: any) => fc.comment_type === 'validation' && !fc.is_internal_note);
+        // Sort by created_at DESC to get the latest comment
+        validationComments.sort((a: any, b: any) => {
+          const dateA = new Date(a.created_at || 0).getTime();
+          const dateB = new Date(b.created_at || 0).getTime();
+          return dateB - dateA; // DESC order
+        });
+        const publicFeedback = validationComments[0];
+        publicComment = publicFeedback?.comment || form[r.id]?.publicComment || '';
+      }
 
       obj[key] = {
         status: form[r.id]?.status,
-        publicComment: publicFeedback?.comment || form[r.id]?.publicComment || '',
+        publicComment,
       };
 
       // Initialize checklist data from response_data
+      // CRITICAL: Only load old checklist data if NOT requiring rework
       const responseData = (r as AnyRecord).response_data || {};
       const indicator = (r.indicator as AnyRecord) ?? {};
       const checklistItems = (indicator?.checklist_items as any[]) || [];
 
-      // Load existing checklist values from response_data (with "assessor_val_" prefix)
-      checklistItems.forEach((item: any) => {
-        const itemKey = `checklist_${r.id}_${item.item_id}`;
+      if (!(r as AnyRecord).requires_rework) {
+        // Load existing checklist values from response_data (with "assessor_val_" prefix)
+        checklistItems.forEach((item: any) => {
+          const itemKey = `checklist_${r.id}_${item.item_id}`;
 
-        if (item.item_type === 'assessment_field') {
-          // YES/NO checkboxes
-          const yesKey = `assessor_val_${item.item_id}_yes`;
-          const noKey = `assessor_val_${item.item_id}_no`;
-          obj[`${itemKey}_yes`] = responseData[yesKey] ?? false;
-          obj[`${itemKey}_no`] = responseData[noKey] ?? false;
-        } else if (item.item_type === 'document_count' || item.requires_document_count) {
-          // Input fields
-          obj[itemKey] = responseData[`assessor_val_${item.item_id}`] ?? '';
-        } else if (item.item_type !== 'info_text') {
-          // Regular checkboxes
-          obj[itemKey] = responseData[`assessor_val_${item.item_id}`] ?? false;
-        }
-      });
+          if (item.item_type === 'assessment_field') {
+            // YES/NO checkboxes
+            const yesKey = `assessor_val_${item.item_id}_yes`;
+            const noKey = `assessor_val_${item.item_id}_no`;
+            obj[`${itemKey}_yes`] = responseData[yesKey] ?? false;
+            obj[`${itemKey}_no`] = responseData[noKey] ?? false;
+          } else if (item.item_type === 'document_count' || item.requires_document_count) {
+            // Input fields
+            obj[itemKey] = responseData[`assessor_val_${item.item_id}`] ?? '';
+          } else if (item.item_type !== 'info_text') {
+            // Regular checkboxes
+            obj[itemKey] = responseData[`assessor_val_${item.item_id}`] ?? false;
+          }
+        });
+      } else {
+        // For requires_rework indicators, initialize with empty/default values
+        checklistItems.forEach((item: any) => {
+          const itemKey = `checklist_${r.id}_${item.item_id}`;
+
+          if (item.item_type === 'assessment_field') {
+            obj[`${itemKey}_yes`] = false;
+            obj[`${itemKey}_no`] = false;
+          } else if (item.item_type === 'document_count' || item.requires_document_count) {
+            obj[itemKey] = '';
+          } else if (item.item_type !== 'info_text') {
+            obj[itemKey] = false;
+          }
+        });
+      }
     }
 
     return obj as ResponsesForm;
