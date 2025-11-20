@@ -340,7 +340,7 @@ export function FileFieldComponent({
             <p className="font-medium mb-1">Assessor feedback on your files</p>
             <p className="text-sm">
               The assessor has left {fieldAnnotations.length} comment{fieldAnnotations.length !== 1 ? 's' : ''} on your uploaded files.
-              Please review the feedback by clicking the eye icon on each file, then delete and re-upload corrected files.
+              Please review the feedback by clicking the eye icon on each file. You can upload new corrected files and delete old ones as needed.
             </p>
           </AlertDescription>
         </Alert>
@@ -432,7 +432,7 @@ export function FileFieldComponent({
               movAnnotations={movAnnotations}
             />
             <p className="text-xs text-orange-600 mt-2 italic">
-              These files have been replaced by your new upload. They are shown here so you can review the assessor's feedback.
+              These are files from your previous submission. They are shown here so you can review the assessor's feedback. You can upload multiple new files and manually delete any you don't need.
             </p>
           </div>
         </div>

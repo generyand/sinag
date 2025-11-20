@@ -293,41 +293,8 @@ class StorageService:
                 pass  # Ignore cleanup errors
             raise Exception(f"Failed to get file URL: {str(e)}")
 
-        # Auto-delete old files for the same field (if field_id is provided)
-        # This implements the rework workflow where uploading a new file replaces the old one
-        if field_id:
-            try:
-                old_files = (
-                    db.query(MOVFile)
-                    .filter(
-                        MOVFile.assessment_id == assessment_id,
-                        MOVFile.indicator_id == indicator_id,
-                        MOVFile.field_id == field_id,
-                        MOVFile.deleted_at.is_(None),  # Only active files
-                        MOVFile.uploaded_by == user_id,  # Only files uploaded by this user
-                    )
-                    .all()
-                )
-
-                if old_files:
-                    for old_file in old_files:
-                        # Soft delete the old file
-                        old_file.deleted_at = datetime.utcnow()
-                        logger.info(
-                            f"Auto-deleted old MOV file {old_file.id} (field: {field_id}) "
-                            f"to be replaced by new upload"
-                        )
-                    db.commit()
-                    logger.info(
-                        f"Auto-replaced {len(old_files)} old file(s) for field {field_id}"
-                    )
-            except Exception as e:
-                logger.warning(
-                    f"Failed to auto-delete old files for field {field_id}: {str(e)}. "
-                    f"Continuing with upload..."
-                )
-                # Don't fail the upload if auto-delete fails
-                db.rollback()
+        # Note: Multiple files are allowed per field. Users can manually delete files if needed.
+        # Old files from before rework are kept for history and shown with annotations.
 
         # Create database record
         try:
