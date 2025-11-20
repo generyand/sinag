@@ -266,16 +266,39 @@ export function FileFieldComponent({
   // Filter files by field_id to show only files uploaded to this specific field
   const allFiles = filesResponse?.files || [];
 
-  // Separate active files and deleted files (for reference in rework)
+  // Get rework timestamp from assessment data
+  const reworkRequestedAt = (assessmentData as any)?.assessment?.rework_requested_at;
+
+  // Separate files based on status and upload time
   const activeFiles = allFiles.filter((f: any) => f.field_id === field.field_id && !f.deleted_at);
   const deletedFiles = allFiles.filter((f: any) => f.field_id === field.field_id && f.deleted_at);
 
-  // Show active files by default, but also show deleted files with annotations in REWORK status
-  const showDeletedFilesAsReference =
-    (normalizedStatus === 'REWORK' || normalizedStatus === 'NEEDS_REWORK') &&
-    deletedFiles.some((f: any) => movAnnotations.some((ann: any) => ann.mov_file_id === f.id));
+  // During REWORK status, separate old files (pre-rework) from new files (during rework)
+  const isReworkStatus = normalizedStatus === 'REWORK' || normalizedStatus === 'NEEDS_REWORK';
 
-  const files = activeFiles;
+  let oldFiles: any[] = [];
+  let newFiles: any[] = [];
+
+  if (isReworkStatus && reworkRequestedAt) {
+    const reworkDate = new Date(reworkRequestedAt);
+    // Files uploaded before rework was requested are "old" (pre-rework)
+    oldFiles = activeFiles.filter((f: any) => new Date(f.uploaded_at) < reworkDate);
+    // Files uploaded after rework was requested are "new" (during rework)
+    newFiles = activeFiles.filter((f: any) => new Date(f.uploaded_at) >= reworkDate);
+  } else {
+    // Not in rework status, show all active files
+    newFiles = activeFiles;
+  }
+
+  // Show old files (from before rework) with deleted files in the "Previous Files" section
+  const previousFiles = [...deletedFiles, ...oldFiles];
+  const showPreviousFilesAsReference =
+    isReworkStatus &&
+    previousFiles.length > 0 &&
+    previousFiles.some((f: any) => movAnnotations.some((ann: any) => ann.mov_file_id === f.id));
+
+  // Only show new files in the main upload section during rework
+  const files = newFiles;
 
   // Permission checks
   const isBLGU = user?.role === "BLGU_USER";
@@ -414,16 +437,16 @@ export function FileFieldComponent({
         </Alert>
       )}
 
-      {/* Replaced Files (Old files with annotations - shown as reference during rework) */}
-      {showDeletedFilesAsReference && deletedFiles.length > 0 && (
+      {/* Previous Files (Old files from before rework + deleted files - shown as reference during rework) */}
+      {showPreviousFilesAsReference && previousFiles.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm text-orange-600 font-medium">
             <AlertCircle className="h-4 w-4" />
-            <span>Previous Files (Replaced - For Reference Only)</span>
+            <span>Previous Files (From Before Rework - For Reference Only)</span>
           </div>
           <div className="border-2 border-orange-200 rounded-md bg-orange-50/30 p-3">
             <FileList
-              files={deletedFiles}
+              files={previousFiles}
               onPreview={handlePreview}
               onDownload={handleDownload}
               canDelete={false}
@@ -438,13 +461,13 @@ export function FileFieldComponent({
         </div>
       )}
 
-      {/* Uploaded Files List (Active files) */}
+      {/* Uploaded Files List (New files during rework, or all files in other statuses) */}
       {files.length > 0 && (
         <div className="space-y-2">
-          {showDeletedFilesAsReference && (
+          {showPreviousFilesAsReference && (
             <div className="flex items-center gap-2 text-sm text-green-600 font-medium mt-4">
               <CheckCircle2 className="h-4 w-4" />
-              <span>New Uploaded Files</span>
+              <span>New Uploaded Files (During Rework)</span>
             </div>
           )}
           <FileListWithDelete
