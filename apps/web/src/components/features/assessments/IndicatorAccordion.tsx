@@ -178,14 +178,6 @@ export function IndicatorAccordion({
       // Get all files for this indicator
       const indicatorFiles = indicator.movFiles || [];
 
-        fieldId: field.field_id,
-        fieldLabel: field.label,
-        isReworkStatus,
-        reworkRequestedAt,
-        totalIndicatorFiles: indicatorFiles.length,
-        indicatorId: indicator.id,
-      });
-
       // Only apply special logic during rework status
       if (!isReworkStatus || !reworkRequestedAt) {
         // Not in rework, check if this field has any files
@@ -197,9 +189,6 @@ export function IndicatorAccordion({
 
       // During rework, check if there are files for this field uploaded AFTER rework was requested
       const reworkDate = new Date(reworkRequestedAt);
-      const allFieldFiles = indicatorFiles.filter((f: any) =>
-        f.field_id === field.field_id
-      );
       const newFieldFiles = indicatorFiles.filter((f: any) => {
         // Must match this field and not be deleted
         if (f.field_id !== field.field_id || f.deleted_at) return false;
@@ -208,17 +197,6 @@ export function IndicatorAccordion({
         if (!f.uploaded_at) return false;
         const uploadDate = new Date(f.uploaded_at);
         return uploadDate >= reworkDate;
-      });
-
-        reworkDate: reworkDate.toISOString(),
-        allFieldFiles: allFieldFiles.length,
-        allFieldFilesData: allFieldFiles.map((f: any) => ({
-          id: f.id,
-          field_id: f.field_id,
-          uploaded_at: f.uploaded_at,
-          deleted_at: f.deleted_at,
-        })),
-        newFieldFiles: newFieldFiles.length,
       });
 
       return newFieldFiles.length > 0;
@@ -263,11 +241,6 @@ export function IndicatorAccordion({
                                field.component === 'file_upload' ||
                                field.type === 'file_upload';
 
-              fieldId: field.field_id,
-              isFileField,
-              hasData: !!data[field.field_id],
-            });
-
             // For file upload fields during rework, check if they have new files
             if (isFileField) {
               if (hasNewFiles(field)) completedFields++;
@@ -278,11 +251,6 @@ export function IndicatorAccordion({
           }
         });
       }
-
-        totalFields,
-        completedFields,
-        percentage: totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0,
-      });
 
       const percentage = totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
       return { completedFields, totalFields, percentage };
