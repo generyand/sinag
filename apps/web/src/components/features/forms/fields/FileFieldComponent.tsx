@@ -34,6 +34,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useUploadStore } from "@/store/useUploadStore";
 import { FileUpload } from "@/components/features/movs/FileUpload";
 import { FileListWithDelete } from "@/components/features/movs/FileListWithDelete";
+import { FileList } from "@/components/features/movs/FileList";
 import toast from "react-hot-toast";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -264,7 +265,17 @@ export function FileFieldComponent({
 
   // Filter files by field_id to show only files uploaded to this specific field
   const allFiles = filesResponse?.files || [];
-  const files = allFiles.filter((f: any) => f.field_id === field.field_id);
+
+  // Separate active files and deleted files (for reference in rework)
+  const activeFiles = allFiles.filter((f: any) => f.field_id === field.field_id && !f.deleted_at);
+  const deletedFiles = allFiles.filter((f: any) => f.field_id === field.field_id && f.deleted_at);
+
+  // Show active files by default, but also show deleted files with annotations in REWORK status
+  const showDeletedFilesAsReference =
+    (normalizedStatus === 'REWORK' || normalizedStatus === 'NEEDS_REWORK') &&
+    deletedFiles.some((f: any) => movAnnotations.some((ann: any) => ann.mov_file_id === f.id));
+
+  const files = activeFiles;
 
   // Permission checks
   const isBLGU = user?.role === "BLGU_USER";
@@ -403,17 +414,49 @@ export function FileFieldComponent({
         </Alert>
       )}
 
-      {/* Uploaded Files List */}
+      {/* Replaced Files (Old files with annotations - shown as reference during rework) */}
+      {showDeletedFilesAsReference && deletedFiles.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm text-orange-600 font-medium">
+            <AlertCircle className="h-4 w-4" />
+            <span>Previous Files (Replaced - For Reference Only)</span>
+          </div>
+          <div className="border-2 border-orange-200 rounded-md bg-orange-50/30 p-3">
+            <FileList
+              files={deletedFiles}
+              onPreview={handlePreview}
+              onDownload={handleDownload}
+              canDelete={false}
+              loading={isLoadingFiles}
+              emptyMessage=""
+              movAnnotations={movAnnotations}
+            />
+            <p className="text-xs text-orange-600 mt-2 italic">
+              These files have been replaced by your new upload. They are shown here so you can review the assessor's feedback.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Uploaded Files List (Active files) */}
       {files.length > 0 && (
-        <FileListWithDelete
-          files={files}
-          onPreview={handlePreview}
-          onDownload={handleDownload}
-          canDelete={canDelete}
-          loading={isLoadingFiles}
-          onDeleteSuccess={handleDeleteSuccess}
-          movAnnotations={movAnnotations}
-        />
+        <div className="space-y-2">
+          {showDeletedFilesAsReference && (
+            <div className="flex items-center gap-2 text-sm text-green-600 font-medium mt-4">
+              <CheckCircle2 className="h-4 w-4" />
+              <span>New Uploaded Files</span>
+            </div>
+          )}
+          <FileListWithDelete
+            files={files}
+            onPreview={handlePreview}
+            onDownload={handleDownload}
+            canDelete={canDelete}
+            loading={isLoadingFiles}
+            onDeleteSuccess={handleDeleteSuccess}
+            movAnnotations={movAnnotations}
+          />
+        </div>
       )}
 
       {/* Show message if delete is disabled for submitted/validated assessments */}
