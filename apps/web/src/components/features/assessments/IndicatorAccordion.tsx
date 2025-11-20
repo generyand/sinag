@@ -51,6 +51,12 @@ export function IndicatorAccordion({
   movAnnotations = [],
 }: IndicatorAccordionProps) {
   const { data: assessment } = useCurrentAssessment();
+
+  // Get assessment data for rework status checking
+  const assessmentData = assessment as any;
+  const normalizedStatus = (assessmentData?.assessment?.status || '').toUpperCase();
+  const isReworkStatus = normalizedStatus === 'REWORK' || normalizedStatus === 'NEEDS_REWORK';
+  const reworkRequestedAt = assessmentData?.assessment?.rework_requested_at;
   const [isOpen, setIsOpen] = useState(false);
   const { updateResponse } = useUpdateResponse();
   const { mutate: uploadMOV, isPending: isUploading } = useUploadMOV();
@@ -157,6 +163,35 @@ export function IndicatorAccordion({
       return { completedFields: 0, totalFields: 0, percentage: 0 };
     }
 
+    // Helper function to check if a file field has new files (during rework)
+    const hasNewFiles = (field: any): boolean => {
+      // Get all files for this indicator
+      const indicatorFiles = indicator.movFiles || [];
+
+      // Only apply special logic during rework status
+      if (!isReworkStatus || !reworkRequestedAt) {
+        // Not in rework, check if this field has any files
+        const fieldFiles = indicatorFiles.filter((f: any) =>
+          f.field_id === field.field_id && !f.deleted_at
+        );
+        return fieldFiles.length > 0;
+      }
+
+      // During rework, check if there are files for this field uploaded AFTER rework was requested
+      const reworkDate = new Date(reworkRequestedAt);
+      const newFieldFiles = indicatorFiles.filter((f: any) => {
+        // Must match this field and not be deleted
+        if (f.field_id !== field.field_id || f.deleted_at) return false;
+
+        // Must be uploaded after rework was requested
+        if (!f.uploaded_at) return false;
+        const uploadDate = new Date(f.uploaded_at);
+        return uploadDate >= reworkDate;
+      });
+
+      return newFieldFiles.length > 0;
+    };
+
     // For Epic 3/4 format
     if (isEpic3Format()) {
       let totalFields = 0;
@@ -167,8 +202,16 @@ export function IndicatorAccordion({
         schema.sections.forEach((section: any) => {
           if (Array.isArray(section.fields)) {
             section.fields.forEach((field: any) => {
-              if (field.required) totalFields++;
-              if (field.required && data[field.field_id]) completedFields++;
+              if (field.required) {
+                totalFields++;
+                // For file upload fields during rework, check if they have new files
+                if (field.type === 'file_upload') {
+                  if (hasNewFiles(field)) completedFields++;
+                } else {
+                  // For non-file fields, check normally
+                  if (data[field.field_id]) completedFields++;
+                }
+              }
             });
           }
         });
@@ -176,8 +219,16 @@ export function IndicatorAccordion({
       // Count fields from root-level fields array
       else if ('fields' in schema && Array.isArray(schema.fields)) {
         schema.fields.forEach((field: any) => {
-          if (field.required) totalFields++;
-          if (field.required && data[field.field_id]) completedFields++;
+          if (field.required) {
+            totalFields++;
+            // For file upload fields during rework, check if they have new files
+            if (field.type === 'file_upload') {
+              if (hasNewFiles(field)) completedFields++;
+            } else {
+              // For non-file fields, check normally
+              if (data[field.field_id]) completedFields++;
+            }
+          }
         });
       }
 
