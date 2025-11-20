@@ -463,10 +463,15 @@ export function FileFieldComponent({
       {/* Uploaded Files List (New files during rework, or all files in other statuses) */}
       {files.length > 0 && (
         <div className="space-y-2">
-          {showPreviousFilesAsReference && (
+          {isReworkStatus && (
             <div className="flex items-center gap-2 text-sm text-green-600 font-medium mt-4">
               <CheckCircle2 className="h-4 w-4" />
               <span>New Uploaded Files (During Rework)</span>
+            </div>
+          )}
+          {!isReworkStatus && (
+            <div className="flex items-center gap-2 text-sm font-medium mt-2">
+              <span>Uploaded Files</span>
             </div>
           )}
           <FileListWithDelete
