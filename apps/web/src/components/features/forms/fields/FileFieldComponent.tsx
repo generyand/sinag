@@ -294,8 +294,7 @@ export function FileFieldComponent({
   const previousFiles = [...deletedFiles, ...oldFiles];
   const showPreviousFilesAsReference =
     isReworkStatus &&
-    previousFiles.length > 0 &&
-    previousFiles.some((f: any) => movAnnotations.some((ann: any) => ann.mov_file_id === f.id));
+    previousFiles.length > 0;
 
   // Only show new files in the main upload section during rework
   const files = newFiles;
