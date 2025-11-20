@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle2, AlertCircle } from "lucide-react";
 import type { FormSchema, FormSchemaFieldsItem, MOVFileResponse } from "@vantage/shared";
 import { isFieldRequired } from "@/lib/forms/formSchemaParser";
-import { useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles } from "@vantage/shared";
+import { useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles, useGetAssessmentsMyAssessment } from "@vantage/shared";
 
 interface CompletionFeedbackPanelProps {
   /** Current form values */
@@ -41,7 +41,21 @@ export function CompletionFeedbackPanel({
     } as any
   );
 
+  // Fetch assessment details to get status and rework timestamp
+  const { data: myAssessmentData } = useGetAssessmentsMyAssessment({
+    query: {
+      cacheTime: 0,
+      staleTime: 0,
+    } as any,
+  } as any);
+
   const uploadedFiles = filesResponse?.files || [];
+
+  // Get rework status and timestamp
+  const assessmentData = myAssessmentData as any;
+  const normalizedStatus = (assessmentData?.assessment?.status || '').toUpperCase();
+  const isReworkStatus = normalizedStatus === 'REWORK' || normalizedStatus === 'NEEDS_REWORK';
+  const reworkRequestedAt = assessmentData?.assessment?.rework_requested_at;
 
   // Calculate completion metrics
   const completionMetrics = useMemo(() => {
@@ -65,9 +79,20 @@ export function CompletionFeedbackPanel({
       const isFileField = field.field_type === "file_upload";
 
       if (isFileField) {
-        const fieldFiles = uploadedFiles.filter(
-          (file: MOVFileResponse) => file.field_id === field.field_id
+        let fieldFiles = uploadedFiles.filter(
+          (file: MOVFileResponse) => file.field_id === field.field_id && !file.deleted_at
         );
+
+        // During rework status, only count files uploaded AFTER rework was requested
+        if (isReworkStatus && reworkRequestedAt) {
+          const reworkDate = new Date(reworkRequestedAt);
+          fieldFiles = fieldFiles.filter((file: MOVFileResponse) => {
+            if (!file.uploaded_at) return false;
+            const uploadDate = new Date(file.uploaded_at);
+            return uploadDate >= reworkDate;
+          });
+        }
+
         return fieldFiles.length > 0;
       }
 
@@ -162,7 +187,7 @@ export function CompletionFeedbackPanel({
       percentage,
       incompleteFields,
     };
-  }, [formValues, formSchema, uploadedFiles]);
+  }, [formValues, formSchema, uploadedFiles, isReworkStatus, reworkRequestedAt]);
 
   const { totalRequired, completed, percentage, incompleteFields } = completionMetrics;
 

@@ -13,6 +13,7 @@ import {
   useUpdateResponse,
   useUploadMOV,
 } from "@/hooks/useAssessment";
+import { useGetAssessmentsMyAssessment } from "@vantage/shared";
 import { uploadMovFile } from "@/lib/uploadMov";
 import { Assessment, ComplianceAnswer, Indicator } from "@/types/assessment";
 import { postAssessmentsResponses } from "@vantage/shared";
@@ -52,11 +53,20 @@ export function IndicatorAccordion({
 }: IndicatorAccordionProps) {
   const { data: assessment } = useCurrentAssessment();
 
+  // Fetch assessment details directly to get status and rework timestamp
+  const { data: myAssessmentData } = useGetAssessmentsMyAssessment({
+    query: {
+      cacheTime: 0,
+      staleTime: 0,
+    } as any,
+  } as any);
+
   // Get assessment data for rework status checking
-  const assessmentData = assessment as any;
+  const assessmentData = (myAssessmentData || assessment) as any;
   const normalizedStatus = (assessmentData?.assessment?.status || '').toUpperCase();
   const isReworkStatus = normalizedStatus === 'REWORK' || normalizedStatus === 'NEEDS_REWORK';
   const reworkRequestedAt = assessmentData?.assessment?.rework_requested_at;
+
   const [isOpen, setIsOpen] = useState(false);
   const { updateResponse } = useUpdateResponse();
   const { mutate: uploadMOV, isPending: isUploading } = useUploadMOV();
@@ -159,6 +169,13 @@ export function IndicatorAccordion({
     const schema = indicator.formSchema as any;
     const data = indicator.responseData || {};
 
+      indicatorCode: indicator.code,
+      hasSchema: !!schema,
+      hasData: !!data,
+      isReworkStatus,
+      reworkRequestedAt,
+    });
+
     if (!schema || typeof schema !== 'object') {
       return { completedFields: 0, totalFields: 0, percentage: 0 };
     }
@@ -167,6 +184,14 @@ export function IndicatorAccordion({
     const hasNewFiles = (field: any): boolean => {
       // Get all files for this indicator
       const indicatorFiles = indicator.movFiles || [];
+
+        fieldId: field.field_id,
+        fieldLabel: field.label,
+        isReworkStatus,
+        reworkRequestedAt,
+        totalIndicatorFiles: indicatorFiles.length,
+        indicatorId: indicator.id,
+      });
 
       // Only apply special logic during rework status
       if (!isReworkStatus || !reworkRequestedAt) {
@@ -179,6 +204,9 @@ export function IndicatorAccordion({
 
       // During rework, check if there are files for this field uploaded AFTER rework was requested
       const reworkDate = new Date(reworkRequestedAt);
+      const allFieldFiles = indicatorFiles.filter((f: any) =>
+        f.field_id === field.field_id
+      );
       const newFieldFiles = indicatorFiles.filter((f: any) => {
         // Must match this field and not be deleted
         if (f.field_id !== field.field_id || f.deleted_at) return false;
@@ -187,6 +215,17 @@ export function IndicatorAccordion({
         if (!f.uploaded_at) return false;
         const uploadDate = new Date(f.uploaded_at);
         return uploadDate >= reworkDate;
+      });
+
+        reworkDate: reworkDate.toISOString(),
+        allFieldFiles: allFieldFiles.length,
+        allFieldFilesData: allFieldFiles.map((f: any) => ({
+          id: f.id,
+          field_id: f.field_id,
+          uploaded_at: f.uploaded_at,
+          deleted_at: f.deleted_at,
+        })),
+        newFieldFiles: newFieldFiles.length,
       });
 
       return newFieldFiles.length > 0;
@@ -204,8 +243,13 @@ export function IndicatorAccordion({
             section.fields.forEach((field: any) => {
               if (field.required) {
                 totalFields++;
+                // Check if this is a file upload field by field_id pattern or component property
+                const isFileField = field.field_id?.includes('upload') ||
+                                   field.component === 'file_upload' ||
+                                   field.type === 'file_upload';
+
                 // For file upload fields during rework, check if they have new files
-                if (field.type === 'file_upload') {
+                if (isFileField) {
                   if (hasNewFiles(field)) completedFields++;
                 } else {
                   // For non-file fields, check normally
@@ -221,8 +265,18 @@ export function IndicatorAccordion({
         schema.fields.forEach((field: any) => {
           if (field.required) {
             totalFields++;
+            // Check if this is a file upload field by field_id pattern or component property
+            const isFileField = field.field_id?.includes('upload') ||
+                               field.component === 'file_upload' ||
+                               field.type === 'file_upload';
+
+              fieldId: field.field_id,
+              isFileField,
+              hasData: !!data[field.field_id],
+            });
+
             // For file upload fields during rework, check if they have new files
-            if (field.type === 'file_upload') {
+            if (isFileField) {
               if (hasNewFiles(field)) completedFields++;
             } else {
               // For non-file fields, check normally
@@ -232,9 +286,15 @@ export function IndicatorAccordion({
         });
       }
 
+        totalFields,
+        completedFields,
+        percentage: totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0,
+      });
+
       const percentage = totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
       return { completedFields, totalFields, percentage };
     }
+
 
     // For legacy format
     const required = schema.required || [];
