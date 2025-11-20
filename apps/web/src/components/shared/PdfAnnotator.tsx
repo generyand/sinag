@@ -221,7 +221,7 @@ export default function PdfAnnotator({ url, annotateEnabled, annotations, onAdd,
       return (
         <>
           {pageAnns.map((a, idx) => (
-            <div key={a.id} data-ann-id={a.id} className="group" style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, pointerEvents: a.comment ? 'auto' : 'none', zIndex: 100 }}>
+            <div key={a.id || `temp-${idx}`} data-ann-id={a.id} className="group" style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, pointerEvents: a.comment ? 'auto' : 'none', zIndex: 100 }}>
               {(() => {
                 const sourceRects = Array.isArray(a.rects) && a.rects.length > 0 ? a.rects : [a.rect];
                 const first = sourceRects[0];

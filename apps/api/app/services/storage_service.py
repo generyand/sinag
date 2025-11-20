@@ -457,7 +457,8 @@ class StorageService:
                 .all()
             )
 
-            # Filter MOVs during rework status - only count files uploaded AFTER rework was requested
+            # Filter MOVs during rework status - BUT only for indicators with assessor feedback
+            # Indicators without feedback keep their old files (no rework needed)
             if assessment:
                 assessment_status = assessment.status.value if hasattr(assessment.status, 'value') else str(assessment.status)
                 rework_requested_at = assessment.rework_requested_at
@@ -468,15 +469,45 @@ class StorageService:
                 )
 
                 if assessment_status and assessment_status.upper() in ('REWORK', 'NEEDS_REWORK') and rework_requested_at:
-                    original_count = len(uploaded_movs)
-                    uploaded_movs = [
-                        mov for mov in uploaded_movs
-                        if mov.uploaded_at and mov.uploaded_at >= rework_requested_at
-                    ]
+                    # Check if this indicator has assessor feedback
+                    from app.db.models.assessment import FeedbackComment, MOVAnnotation
+
+                    # Check for feedback comments (non-internal)
+                    feedback_count = db.query(FeedbackComment).filter(
+                        FeedbackComment.response_id == response.id,
+                        FeedbackComment.is_internal_note == False
+                    ).count()
+
+                    # Check for MOV annotations
+                    annotation_count = db.query(MOVAnnotation).join(MOVFile).filter(
+                        MOVFile.assessment_id == assessment_id,
+                        MOVFile.indicator_id == indicator_id
+                    ).count()
+
+                    has_feedback = (feedback_count > 0 or annotation_count > 0)
+
                     logger.info(
-                        f"[REWORK FILTER] Filtered {original_count} MOVs to {len(uploaded_movs)} "
-                        f"(uploaded after {rework_requested_at}) for assessment {assessment_id}, indicator {indicator_id}"
+                        f"[REWORK CHECK] Indicator {indicator_id}: has_feedback={has_feedback} "
+                        f"(comments={feedback_count}, annotations={annotation_count})"
                     )
+
+                    # Only filter MOVs if indicator has assessor feedback
+                    if has_feedback:
+                        original_count = len(uploaded_movs)
+                        uploaded_movs = [
+                            mov for mov in uploaded_movs
+                            if mov.uploaded_at and mov.uploaded_at >= rework_requested_at
+                        ]
+                        logger.info(
+                            f"[REWORK FILTER] Indicator {indicator_id} has feedback - "
+                            f"Filtered {original_count} MOVs to {len(uploaded_movs)} "
+                            f"(uploaded after {rework_requested_at})"
+                        )
+                    else:
+                        logger.info(
+                            f"[REWORK FILTER] Indicator {indicator_id} has NO feedback - "
+                            f"Keeping all {len(uploaded_movs)} MOVs (old files still valid)"
+                        )
 
             # Validate completeness using the completeness validation service
             validation_result = completeness_validation_service.validate_completeness(

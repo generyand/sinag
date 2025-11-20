@@ -3,6 +3,7 @@
 
 from datetime import datetime, timedelta
 from typing import Any, Dict, List
+import logging
 
 from app.db.enums import AssessmentStatus, ComplianceStatus, ValidationStatus
 from app.db.models.assessment import (
@@ -20,6 +21,10 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 
 class AssessorService:
+    def __init__(self):
+        """Initialize the assessor service"""
+        self.logger = logging.getLogger(__name__)
+
     def get_assessor_queue(self, db: Session, assessor: User) -> List[dict]:
         """
         Return submissions filtered by user role and governance area.
@@ -532,7 +537,7 @@ class AssessorService:
 
         # Log rework filtering info for debugging
         if assessment.rework_requested_at:
-            logger.info(
+            self.logger.info(
                 f"[ASSESSOR REWORK FILTER] Assessment {assessment_id} has rework_requested_at: {assessment.rework_requested_at}. "
                 f"Assessor will only see files uploaded AFTER this timestamp."
             )
@@ -561,7 +566,7 @@ class AssessorService:
 
             # Log filtering results for debugging
             if assessment.rework_requested_at and len(all_movs_for_indicator) != len(filtered_movs):
-                logger.info(
+                self.logger.info(
                     f"[ASSESSOR REWORK FILTER] Indicator {response.indicator_id}: "
                     f"Filtered {len(all_movs_for_indicator)} total MOVs to {len(filtered_movs)} new MOVs "
                     f"(uploaded after {assessment.rework_requested_at})"
@@ -644,6 +649,11 @@ class AssessorService:
                     for comment in response.feedback_comments
                 ],
             }
+            # DEBUG: Log requires_rework status
+            self.logger.info(
+                f"[ASSESSOR VIEW] Response {response.id} (Indicator {response.indicator.name}): "
+                f"requires_rework={response.requires_rework}, is_completed={response.is_completed}"
+            )
             assessment_data["assessment"]["responses"].append(response_data)
 
         return assessment_data

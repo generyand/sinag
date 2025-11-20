@@ -71,10 +71,12 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
   const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
 
   // Transform API response data to match BLGU Assessment tree structure
-  const governanceAreas: GovernanceArea[] = React.useMemo(() => {
-    const areaMap: Record<string, GovernanceArea> = {};
+  // NOTE: Removed useMemo to ensure fresh calculation on every render
+  // This is necessary because requires_rework flag changes don't trigger dependency updates
+  console.log('[LeftSubmissionView] Starting to process responses, count:', responses.length);
+  const areaMap: Record<string, GovernanceArea> = {};
 
-    responses.forEach((r) => {
+  responses.forEach((r) => {
       const indicator = (r.indicator as AnyRecord) ?? {};
       const govArea = (indicator.governance_area as AnyRecord) ?? {};
       const areaId = String(govArea.id || 0);
@@ -94,11 +96,25 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
       }
 
       // Create indicator in BLGU tree format
+      // Status logic for assessor view:
+      // - 'needs_rework': Indicator requires re-validation after rework (requires_rework = true)
+      //   Shows orange alert icon to indicate assessor needs to re-review
+      // - 'completed': Indicator was already validated in first review (requires_rework = false)
+      //   Shows green checkmark - assessor doesn't need to re-review
+      const requiresRework = Boolean(r.requires_rework);
+      const computedStatus = requiresRework ? 'needs_rework' : 'completed';
+
+      console.log(`[LeftSubmissionView] Response ${r.id}:`, {
+        requires_rework: r.requires_rework,
+        requiresRework,
+        computedStatus
+      });
+
       const treeIndicator: Indicator = {
         id: String(r.id), // Use response ID as indicator ID for selection
         name: indicator.name || `Indicator ${r.indicator_id}`,
         code: indicator.code || '',
-        status: 'completed', // All submitted indicators are considered completed
+        status: computedStatus,
         description: indicator.description || '',
         technicalNotes: indicator.technical_notes || '',
         governanceAreaId: areaId,
@@ -109,8 +125,7 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
       areaMap[areaId].indicators.push(treeIndicator);
     });
 
-    return Object.values(areaMap).sort((a, b) => Number(a.id) - Number(b.id));
-  }, [responses]);
+  const governanceAreas: GovernanceArea[] = Object.values(areaMap).sort((a, b) => Number(a.id) - Number(b.id));
 
   const resolveMov = async (mov: AnyRecord): Promise<string> => {
     const key: string | null = mov?.storage_path || mov?.url || null;

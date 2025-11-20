@@ -2,7 +2,7 @@
 
 import { TreeNavigator } from '@/components/features/assessments/tree-navigation';
 import { useGetAssessorAssessmentsAssessmentId } from '@vantage/shared';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { RightAssessorPanel } from './RightAssessorPanel';
 import { MiddleMovFilesPanel } from './MiddleMovFilesPanel';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,7 @@ interface AssessorValidationClientProps {
 type AnyRecord = Record<string, any>;
 
 export function AssessorValidationClient({ assessmentId }: AssessorValidationClientProps) {
-  const { data, isLoading, isError, error } = useGetAssessorAssessmentsAssessmentId(assessmentId);
+  const { data, isLoading, isError, error, dataUpdatedAt } = useGetAssessorAssessmentsAssessmentId(assessmentId);
   const qc = useQueryClient();
   const validateMut = usePostAssessorAssessmentResponsesResponseIdValidate();
   const reworkMut = usePostAssessorAssessmentsAssessmentIdRework();
@@ -58,38 +58,73 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     }
   }, [data, expandedId]);
 
-  if (isLoading) {
-    return (
-      <div className="mx-auto max-w-7xl px-6 py-10 text-sm text-muted-foreground">Loading assessment…</div>
-    );
-  }
+  // Load saved checklist data from response_data when component mounts or data changes
+  // Using dataUpdatedAt to detect when data has been refetched (even if reference is same)
+  useEffect(() => {
+    if (data) {
+      const assessment: AnyRecord = (data as unknown as AnyRecord) ?? {};
+      const core = (assessment.assessment as AnyRecord) ?? assessment;
+      const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
 
-  if (isError || !data) {
-    return (
-      <div className="mx-auto max-w-7xl px-6 py-10 text-sm">
-        <div className="rounded-md border p-4">
-          <div className="font-medium mb-1">Unable to load assessment</div>
-          <div className="text-muted-foreground break-words">
-            {String((error as any)?.message || 'Please verify access and try again.')}
-          </div>
-        </div>
-      </div>
-    );
-  }
+      const initialChecklistData: Record<string, any> = {};
 
+      // Extract saved checklist data from each response's response_data
+      responses.forEach((resp: AnyRecord) => {
+        const responseId = resp.id;
+
+        console.log(`[useEffect] Processing response ${responseId}:`, {
+          requires_rework: resp.requires_rework,
+          validation_status: resp.validation_status,
+          has_response_data: !!resp.response_data
+        });
+
+        // SKIP loading old data for indicators that require rework
+        // (we want them to start fresh in the new review cycle)
+        if (resp.requires_rework) {
+          console.log(`[useEffect] ⚠️ SKIPPING old data for response ${responseId} (requires_rework=true)`);
+          return;
+        }
+
+        const responseData = resp.response_data || {};
+
+        // Find all assessor_val_ prefixed fields and convert them to checklist format
+        Object.keys(responseData).forEach(key => {
+          if (key.startsWith('assessor_val_')) {
+            // Remove the assessor_val_ prefix
+            const fieldName = key.replace('assessor_val_', '');
+            // Convert to checklist format: checklist_{responseId}_{fieldName}
+            const checklistKey = `checklist_${responseId}_${fieldName}`;
+            initialChecklistData[checklistKey] = responseData[key];
+            console.log(`[useEffect] ✓ Loading data for response ${responseId}: ${checklistKey} = ${responseData[key]}`);
+          }
+        });
+      });
+
+      console.log('[useEffect] Final checklist data to load (dataUpdatedAt=' + dataUpdatedAt + '):', initialChecklistData);
+
+      // IMPORTANT: Replace the entire checklistData state (don't merge with old data)
+      // This ensures old data for requires_rework indicators is completely cleared
+      setChecklistData(initialChecklistData);
+    }
+  }, [data, dataUpdatedAt]);
+
+  // Extract and prepare data (BEFORE conditional returns to maintain hook order)
   const assessment: AnyRecord = (data as unknown as AnyRecord) ?? {};
   const core = (assessment.assessment as AnyRecord) ?? assessment;
-  const responses: AnyRecord[] = ((core.responses as AnyRecord[]) ?? []).sort((a: any, b: any) => {
-    // Sort by governance_area.id first, then by indicator.id
-    const areaA = a.indicator?.governance_area?.id || 999;
-    const areaB = b.indicator?.governance_area?.id || 999;
-    if (areaA !== areaB) return areaA - areaB;
+  const responses: AnyRecord[] = useMemo(() =>
+    ((core.responses as AnyRecord[]) ?? []).sort((a: any, b: any) => {
+      // Sort by governance_area.id first, then by indicator.id
+      const areaA = a.indicator?.governance_area?.id || 999;
+      const areaB = b.indicator?.governance_area?.id || 999;
+      if (areaA !== areaB) return areaA - areaB;
 
-    // Within same area, sort by indicator.id
-    const indA = a.indicator?.id || 999;
-    const indB = b.indicator?.id || 999;
-    return indA - indB;
-  });
+      // Within same area, sort by indicator.id
+      const indA = a.indicator?.id || 999;
+      const indB = b.indicator?.id || 999;
+      return indA - indB;
+    })
+  , [core.responses]);
+
   const reworkCount: number = core.rework_count ?? 0;
   const barangayName: string = (core?.blgu_user?.barangay?.name
     ?? core?.barangay?.name
@@ -103,10 +138,16 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   const statusText: string = core?.status ?? core?.assessment_status ?? '';
 
   // Transform to match BLGU assessment structure for TreeNavigator
-  const transformedAssessment = {
+  // Memoize this so it recalculates when checklistData or form changes
+  const transformedAssessment = useMemo(() => ({
     id: assessmentId,
     completedIndicators: responses.filter((r: any) => {
       const localStatus = form[r.id]?.status;
+
+      // Exclude indicators that require rework (assessor sent back for fixes)
+      if (r.requires_rework) {
+        return false;
+      }
 
       // For validators: Check if status is Pass
       if (localStatus) {
@@ -117,24 +158,37 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       }
 
       // For assessors: Check if they've worked on checklist or comments
-      // Check for LOCAL checklist data that has TRUTHY values (not just keys)
-      const hasChecklistData = Object.keys(checklistData).some(key => {
-        if (!key.startsWith(`checklist_${r.id}_`)) return false;
-        const value = checklistData[key];
-        // For checkboxes, check if true; for inputs, check if non-empty string
-        return value === true || (typeof value === 'string' && value.trim().length > 0);
-      });
+      // CRITICAL: If requires_rework is true, ignore OLD data from previous review cycle
+      let hasChecklistData = false;
+      let hasPersistedChecklistData = false;
+      let hasPersistedComments = false;
+      let hasLocalComments = false;
 
-      // Check for comments (both local and persisted)
-      const hasLocalComments = form[r.id]?.publicComment && form[r.id]!.publicComment!.trim().length > 0;
-      const feedbackComments = (r as AnyRecord).feedback_comments || [];
-      const hasPersistedComments = feedbackComments.some((fc: any) =>
-        fc.comment_type === 'validation' && !fc.is_internal_note && fc.comment && fc.comment.trim().length > 0
-      );
+      if (!r.requires_rework) {
+        // Only check for old saved data if NOT requiring rework
+        hasChecklistData = Object.keys(checklistData).some(key => {
+          if (!key.startsWith(`checklist_${r.id}_`)) return false;
+          const value = checklistData[key];
+          return value === true || (typeof value === 'string' && value.trim().length > 0);
+        });
 
-      const responseData = (r as AnyRecord).response_data || {};
-      // Only check for ASSESSOR validation data (prefixed with "assessor_val_")
-      const hasPersistedChecklistData = Object.keys(responseData).some(key => key.startsWith('assessor_val_'));
+        // Check backend response_data for persisted ASSESSOR checklist data
+        const responseData = (r as AnyRecord).response_data || {};
+        hasPersistedChecklistData = Object.keys(responseData).some(key => {
+          if (!key.startsWith('assessor_val_')) return false;
+          const value = responseData[key];
+          return value === true || (typeof value === 'string' && value.trim().length > 0);
+        });
+
+        // Check for persisted comments (from first review cycle)
+        const feedbackComments = (r as AnyRecord).feedback_comments || [];
+        hasPersistedComments = feedbackComments.some((fc: any) =>
+          fc.comment_type === 'validation' && !fc.is_internal_note && fc.comment && fc.comment.trim().length > 0
+        );
+
+        // Check for local comments (from form state) - only if NOT requiring rework
+        hasLocalComments = form[r.id]?.publicComment && form[r.id]!.publicComment!.trim().length > 0;
+      }
 
       const isCompleted = hasChecklistData || hasLocalComments || hasPersistedComments || hasPersistedChecklistData;
 
@@ -157,7 +211,11 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         acc.push(existingArea);
       }
 
-      // Determine status from local form state first, then backend validation_status
+      // Determine status - priority order:
+      // 1. Validators' status (Pass/Fail/Conditional)
+      // 2. Assessor completed work (checklist/comments) → 'completed'
+      // 3. Requires rework but no work done yet → 'needs_rework'
+      // 4. Otherwise → 'not_started'
       let status = 'not_started';
       const localStatus = form[resp.id]?.status;
 
@@ -167,29 +225,58 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       } else if (resp.validation_status) {
         status = resp.validation_status === 'PASS' ? 'completed' : (resp.validation_status === 'FAIL' ? 'needs_rework' : 'not_started');
       }
-      // For assessors: Check if they've worked on checklist or comments
+      // For assessors: Check if they've completed their work
       else {
-        // Check for LOCAL checklist data that has TRUTHY values (not just keys)
-        const hasChecklistData = Object.keys(checklistData).some(key => {
-          if (!key.startsWith(`checklist_${resp.id}_`)) return false;
-          const value = checklistData[key];
-          // For checkboxes, check if true; for inputs, check if non-empty string
-          return value === true || (typeof value === 'string' && value.trim().length > 0);
+        // CRITICAL: If requires_rework is true, ignore OLD data from previous review cycle
+        let hasChecklistData = false;
+        let hasPersistedChecklistData = false;
+        let hasPersistedComments = false;
+        let hasLocalComments = false;
+
+        if (!resp.requires_rework) {
+          // Only check for old saved data if NOT requiring rework
+          hasChecklistData = Object.keys(checklistData).some(key => {
+            if (!key.startsWith(`checklist_${resp.id}_`)) return false;
+            const value = checklistData[key];
+            return value === true || (typeof value === 'string' && value.trim().length > 0);
+          });
+
+          // Check backend response_data for persisted ASSESSOR checklist data
+          const responseData = (resp as AnyRecord).response_data || {};
+          hasPersistedChecklistData = Object.keys(responseData).some(key => {
+            if (!key.startsWith('assessor_val_')) return false;
+            const value = responseData[key];
+            return value === true || (typeof value === 'string' && value.trim().length > 0);
+          });
+
+          // Check for persisted comments (from first review cycle)
+          const feedbackComments = (resp as AnyRecord).feedback_comments || [];
+          hasPersistedComments = feedbackComments.some((fc: any) =>
+            fc.comment_type === 'validation' && !fc.is_internal_note && fc.comment && fc.comment.trim().length > 0
+          );
+
+          // Check for local comments (from form state) - only if NOT requiring rework
+          hasLocalComments = form[resp.id]?.publicComment && form[resp.id]!.publicComment!.trim().length > 0;
+        }
+
+        console.log(`[Status Calc] Response ${resp.id}:`, {
+          requires_rework: resp.requires_rework,
+          hasChecklistData,
+          hasLocalComments,
+          hasPersistedComments,
+          hasPersistedChecklistData,
+          willSetCompleted: hasChecklistData || hasLocalComments || hasPersistedComments || hasPersistedChecklistData
         });
 
-        // Check for comments (both local and persisted)
-        const hasLocalComments = form[resp.id]?.publicComment && form[resp.id]!.publicComment!.trim().length > 0;
-        const feedbackComments = (resp as AnyRecord).feedback_comments || [];
-        const hasPersistedComments = feedbackComments.some((fc: any) =>
-          fc.comment_type === 'validation' && !fc.is_internal_note && fc.comment && fc.comment.trim().length > 0
-        );
-
-        // Also check backend response_data for persisted ASSESSOR checklist data (prefixed with "assessor_val_")
-        const responseData = (resp as AnyRecord).response_data || {};
-        const hasPersistedChecklistData = Object.keys(responseData).some(key => key.startsWith('assessor_val_'));
-
+        // If assessor has done work → mark as completed (green checkmark)
         if (hasChecklistData || hasLocalComments || hasPersistedComments || hasPersistedChecklistData) {
           status = 'completed';
+          console.log(`[Status Calc] Response ${resp.id} → 'completed' (green checkmark)`);
+        }
+        // Only show needs_rework (orange alert) if NO work done yet AND requires_rework is true
+        else if (resp.requires_rework) {
+          status = 'needs_rework';
+          console.log(`[Status Calc] Response ${resp.id} → 'needs_rework' (orange alert)`);
         }
       }
 
@@ -213,7 +300,27 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       area.indicators.sort((a: any, b: any) => a.indicator_id - b.indicator_id);
       return area;
     }),
-  };
+  }), [responses, checklistData, form, dataUpdatedAt]); // Add dataUpdatedAt to force recalc when data refetches
+
+  // Conditional returns AFTER all hooks to maintain hook order
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-7xl px-6 py-10 text-sm text-muted-foreground">Loading assessment…</div>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <div className="mx-auto max-w-7xl px-6 py-10 text-sm">
+        <div className="rounded-md border p-4">
+          <div className="font-medium mb-1">Unable to load assessment</div>
+          <div className="text-muted-foreground break-words">
+            {String((error as any)?.message || 'Please verify access and try again.')}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const total = responses.length;
 
@@ -283,6 +390,13 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   }).length : 0;
 
   const onSaveDraft = async () => {
+    console.log('========================================');
+    console.log('[onSaveDraft] SAVE DRAFT CLICKED');
+    console.log('[onSaveDraft] Current checklistData state:', checklistData);
+    console.log('[onSaveDraft] Current form state:', form);
+    console.log('[onSaveDraft] Total responses:', responses.length);
+    console.log('========================================');
+
     // Prevent concurrent saves
     if (isSavingRef.current) {
       console.log('[onSaveDraft] Save already in progress, ignoring duplicate call');
@@ -306,12 +420,18 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       // Has comments
       const hasComments = formData?.publicComment && formData.publicComment.trim().length > 0;
 
+      console.log(`[onSaveDraft] Response ${r.id}: hasStatus=${hasStatus}, hasChecklistData=${hasChecklistData}, hasComments=${hasComments}`);
+
       return hasStatus || hasChecklistData || hasComments;
     });
 
     const allResponseIds = new Set(responsesToSave.map(r => r.id));
 
+    console.log('[onSaveDraft] Responses to save:', allResponseIds.size);
+    console.log('[onSaveDraft] Response IDs:', Array.from(allResponseIds));
+
     if (allResponseIds.size === 0) {
+      console.log('[onSaveDraft] No data to save, exiting');
       return;
     }
 
@@ -324,6 +444,9 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       const savePromises = Array.from(allResponseIds).map(async (responseId) => {
         const formData = form[responseId];
 
+        console.log(`[onSaveDraft] Processing response ${responseId}`);
+        console.log(`[onSaveDraft] Form data for ${responseId}:`, formData);
+
         // Extract checklist data for this response
         const responseChecklistData: Record<string, any> = {};
         Object.keys(checklistData).forEach(key => {
@@ -335,20 +458,27 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             // PREFIX with "assessor_val_" to avoid conflicts with BLGU assessment data
             const prefixedFieldName = `assessor_val_${fieldName}`;
             responseChecklistData[prefixedFieldName] = checklistData[key];
+            console.log(`[onSaveDraft] Extracted checklist: ${key} -> ${prefixedFieldName} = ${checklistData[key]}`);
           }
         });
 
+        const payloadData = {
+          validation_status: isValidator ? (formData?.status ?? undefined) : undefined,  // ONLY validators set status
+          public_comment: formData?.publicComment ?? null,
+          response_data: Object.keys(responseChecklistData).length > 0 ? responseChecklistData : undefined,
+        };
+
+        console.log(`[onSaveDraft] Payload for response ${responseId}:`, payloadData);
+
         return validateMut.mutateAsync({
           responseId: responseId,
-          data: {
-            validation_status: isValidator ? (formData?.status ?? undefined) : undefined,  // ONLY validators set status
-            public_comment: formData?.publicComment ?? null,
-            response_data: Object.keys(responseChecklistData).length > 0 ? responseChecklistData : undefined,
-          },
+          data: payloadData,
         });
       });
 
+      console.log('[onSaveDraft] Waiting for all save promises to complete...');
       await Promise.all(savePromises);
+      console.log('[onSaveDraft] All saves completed successfully');
 
       // Show success toast with better styling
       toast({
@@ -358,8 +488,9 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         className: "bg-green-600 text-white border-none",
       });
 
-      // Don't invalidate queries here - it causes the button to stay stuck
-      // Data will be fresh on next page load or when navigating indicators
+      // Invalidate queries to refresh data with saved changes
+      console.log('[onSaveDraft] Invalidating queries to refresh UI...');
+      await qc.invalidateQueries({ queryKey: ['assessor', 'assessments', assessmentId] });
     } catch (error) {
       console.error('Error saving validation data:', error);
       // Reset mutation state to allow retry
@@ -536,10 +667,15 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                     }));
                   }}
                   onChecklistChange={(key, value) => {
-                    setChecklistData((prev) => ({
-                      ...prev,
-                      [key]: value,
-                    }));
+                    console.log('[onChecklistChange] Checkbox changed:', { key, value });
+                    setChecklistData((prev) => {
+                      const newData = {
+                        ...prev,
+                        [key]: value,
+                      };
+                      console.log('[onChecklistChange] Updated checklistData:', newData);
+                      return newData;
+                    });
                   }}
                 />
               </div>

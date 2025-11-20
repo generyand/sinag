@@ -121,12 +121,24 @@ export function AssessmentTreeNode({
 
     // Indicator status icons
     const indicator = item as Indicator;
+
+    // Debug logging to see what status is being rendered
+    if (indicator.id) {
+      console.log(`[AssessmentTreeNode] Rendering indicator ${indicator.id}:`, {
+        status: indicator.status,
+        name: indicator.name?.substring(0, 30)
+      });
+    }
+
     switch (indicator.status) {
       case "completed":
+        console.log(`[AssessmentTreeNode] MATCHED 'completed' for ${indicator.id}`);
         return <CheckCircle className="h-3.5 w-3.5 text-green-500" />;
       case "needs_rework":
+        console.log(`[AssessmentTreeNode] MATCHED 'needs_rework' for ${indicator.id} - returning AlertCircle`);
         return <AlertCircle className="h-3.5 w-3.5 text-orange-500" />;
       default:
+        console.log(`[AssessmentTreeNode] MATCHED default case for ${indicator.id}, status="${indicator.status}"`);
         return <Circle className="h-3.5 w-3.5 text-gray-400" />;
     }
   };
