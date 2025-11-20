@@ -11,6 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, ArrowLeft, RefreshCw } from "lucide-react";
 import { DynamicFormRenderer } from "@/components/features/forms/DynamicFormRenderer";
 import { LockedStateBanner } from "@/components/features/assessments";
+import { ReworkAlertBanner, ReworkProgressTracker } from "@/components/features/rework";
+import { useReworkContext } from "@/hooks/useReworkContext";
 import {
   useGetIndicatorsIndicatorIdFormSchema,
   useGetIndicatorsIndicatorId,
@@ -61,6 +63,16 @@ export default function IndicatorFormPage() {
   // Determine if assessment is locked (SUBMITTED, IN_REVIEW, COMPLETED)
   const isLocked = dashboardData?.status &&
     ["SUBMITTED", "IN_REVIEW", "COMPLETED"].includes(dashboardData.status);
+
+  // Epic 5.0: Rework workflow context
+  const reworkContext = useReworkContext(
+    dashboardData as any,
+    indicatorId,
+    assessmentId
+  );
+
+  // Epic 5.0: Get MOV annotations for this indicator (if in rework status)
+  const movAnnotations = dashboardData?.mov_annotations_by_indicator?.[indicatorId] || [];
 
   // Handle save success - could redirect or show confirmation
   const handleSaveSuccess = () => {
@@ -210,6 +222,14 @@ export default function IndicatorFormPage() {
         </div>
       </div>
 
+      {/* Epic 5.0: Rework Alert Banner - Shows assessor feedback during rework workflow */}
+      {reworkContext?.from_rework && reworkContext.current_indicator && (
+        <ReworkAlertBanner
+          indicator={reworkContext.current_indicator}
+          assessmentId={assessmentId}
+        />
+      )}
+
       {/* Dynamic Form */}
       {formSchema ? (
         <DynamicFormRenderer
@@ -218,6 +238,7 @@ export default function IndicatorFormPage() {
           indicatorId={indicatorId}
           onSaveSuccess={handleSaveSuccess}
           isLocked={isLocked || false}
+          movAnnotations={movAnnotations}
         />
       ) : (
         <Alert>
@@ -226,6 +247,14 @@ export default function IndicatorFormPage() {
             No form schema available for this indicator. Please contact support.
           </AlertDescription>
         </Alert>
+      )}
+
+      {/* Epic 5.0: Rework Progress Tracker - Navigation bar for rework workflow */}
+      {reworkContext?.from_rework && (
+        <ReworkProgressTracker
+          progress={reworkContext.progress}
+          assessmentId={assessmentId}
+        />
       )}
     </div>
   );

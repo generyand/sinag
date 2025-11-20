@@ -28,7 +28,15 @@ const nextConfig: NextConfig = {
       ...config.resolve.alias,
       "@vantage/shared": require("path").resolve(__dirname, "../../packages/shared/src/generated"),
     };
-    
+
+    // Ignore canvas module on client side (it's a server-only native module)
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        canvas: false,
+      };
+    }
+
     return config;
   },
   

@@ -4,8 +4,9 @@ import { Assessment, Indicator } from "@/types/assessment";
 import { FileText } from "lucide-react";
 import { RecursiveIndicator } from "./IndicatorAccordion";
 import { ReworkCommentsPanel } from "./rework/ReworkCommentsPanel";
-import { IndicatorNavigationFooter } from "./IndicatorNavigationFooter";
+import { ReworkAlertBanner } from "../rework";
 import { useIndicatorNavigation } from "@/hooks/useIndicatorNavigation";
+import { useReworkContext } from "@/hooks/useReworkContext";
 import { useRef } from "react";
 
 interface AssessmentContentPanelProps {
@@ -14,6 +15,8 @@ interface AssessmentContentPanelProps {
   isLocked: boolean;
   updateAssessmentData?: (updater: (data: Assessment) => Assessment) => void;
   onIndicatorSelect?: (indicatorId: string) => void;
+  movAnnotations?: Record<number, any[]>;
+  dashboardData?: any; // BLGUDashboardResponse for rework context
 }
 
 export function AssessmentContentPanel({
@@ -22,6 +25,8 @@ export function AssessmentContentPanel({
   isLocked,
   updateAssessmentData,
   onIndicatorSelect,
+  movAnnotations = {},
+  dashboardData,
 }: AssessmentContentPanelProps) {
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -33,6 +38,13 @@ export function AssessmentContentPanel({
   );
 
   const resolvedAssessmentId = Number(assessment.id);
+
+  // Rework context - for showing assessor feedback
+  const reworkContext = useReworkContext(
+    dashboardData,
+    selectedIndicator ? parseInt(selectedIndicator.id) : undefined,
+    resolvedAssessmentId
+  );
 
   // Show empty state if no indicator selected
   if (!selectedIndicator) {
@@ -58,18 +70,16 @@ export function AssessmentContentPanel({
     isLocked ||
     (assessment.status === "Needs Rework" && !selectedIndicator.requiresRework);
 
+  // Get MOV annotations for the selected indicator
+  const indicatorAnnotations = selectedIndicator
+    ? movAnnotations[parseInt(selectedIndicator.id)] || []
+    : [];
+
   return (
     <div className="h-full flex flex-col bg-[var(--background)]">
       {/* Scrollable Content */}
       <div ref={contentRef} className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-          {/* Rework Comments (if applicable) */}
-          {selectedIndicator.status === "needs_rework" &&
-            selectedIndicator.assessorComment &&
-            Number.isFinite(resolvedAssessmentId) && (
-              <ReworkCommentsPanel assessmentId={resolvedAssessmentId} />
-            )}
-
           {/* Form Content */}
           <div className="pb-8">
             <RecursiveIndicator
@@ -84,22 +94,19 @@ export function AssessmentContentPanel({
               onPrevious={navigation.navigatePrevious}
               onNext={navigation.navigateNext}
               level={0}
+              movAnnotations={indicatorAnnotations}
             />
           </div>
+
+          {/* Rework Alert Banner - Shows indicator-specific assessor feedback at the bottom */}
+          {reworkContext?.current_indicator && (
+            <ReworkAlertBanner
+              indicator={reworkContext.current_indicator}
+              assessmentId={resolvedAssessmentId}
+            />
+          )}
         </div>
       </div>
-
-      {/* Navigation Footer */}
-      <IndicatorNavigationFooter
-        currentCode={navigation.current?.indicator.code}
-        currentPosition={navigation.position}
-        totalIndicators={navigation.total}
-        hasPrevious={navigation.hasPrevious}
-        hasNext={navigation.hasNext}
-        onPrevious={navigation.navigatePrevious}
-        onNext={navigation.navigateNext}
-        isLocked={isLocked}
-      />
     </div>
   );
 }

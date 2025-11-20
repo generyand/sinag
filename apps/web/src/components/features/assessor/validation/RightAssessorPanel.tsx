@@ -465,7 +465,7 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                     );
                   })()}
 
-                  {/* VALIDATOR ONLY: Processing of Results Section */}
+                  {/* Processing of Results Section (Validators Only) */}
                   {isValidator && (() => {
                     // Check if indicator has consideration condition
                     const indicator = (r as AnyRecord).indicator as AnyRecord | undefined;
@@ -481,21 +481,21 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                     const isManualOverride = manualOverrides[r.id] || false;
                     const currentStatus = form[r.id]?.status;
 
-                    // Validator uses Met/Unmet/Considered instead of Pass/Fail/Conditional
-                    const validatorStatuses: Array<{value: LocalStatus; label: string}> = [
+                    // Validators use Met/Unmet/Considered
+                    const statuses: Array<{value: LocalStatus; label: string}> = [
                       { value: 'Pass', label: 'Met' },
                       { value: 'Fail', label: 'Unmet' },
                     ];
 
                     // Only add "Considered" if indicator has consideration condition
                     if (hasConsideration) {
-                      validatorStatuses.push({ value: 'Conditional', label: 'Considered' });
+                      statuses.push({ value: 'Conditional', label: 'Considered' });
                     }
 
                     return (
                       <div className="border border-black/10 rounded-sm bg-muted/10 p-3 space-y-3">
-                        <div className="text-xs font-semibold uppercase tracking-wide bg-yellow-100 dark:bg-yellow-950/30 text-yellow-900 dark:text-yellow-200 px-3 py-2 rounded border border-yellow-200 dark:border-yellow-800">
-                          PROCESSING OF RESULTS
+                        <div className="text-xs font-semibold uppercase tracking-wide bg-purple-100 dark:bg-purple-950/30 text-purple-900 dark:text-purple-200 px-3 py-2 rounded border border-purple-200 dark:border-purple-800">
+                          PHASE 2: FINAL VALIDATION
                         </div>
 
                         {/* Automatic Result Display */}
@@ -527,7 +527,7 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                             Met all the minimum requirements on {indicatorLabel}?
                           </div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            {validatorStatuses.map(({ value, label }) => {
+                            {statuses.map(({ value, label }) => {
                               const active = currentStatus === value;
                               const isAutoRecommended = autoStatus === value && !isManualOverride;
                               const cls = active
@@ -592,12 +592,19 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                     );
                   })()}
 
-                  {/* ASSESSOR ONLY: Information Message */}
-                  {isAssessor && (
+                  {/* Role-Specific Information Message */}
+                  {isAssessor ? (
                     <div className="border border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800 rounded-sm p-3">
                       <div className="text-xs text-blue-800 dark:text-blue-300">
-                        <div className="font-semibold mb-1">ℹ️ Assessor Note</div>
-                        <div>As an assessor, you can review submissions and provide feedback. Only validators can mark indicators as Pass/Fail/Conditional.</div>
+                        <div className="font-semibold mb-1">ℹ️ Phase 1: Table Assessment</div>
+                        <div>Review checklists and provide feedback comments on areas needing improvement. If deficiencies are found, document them and send for Rework (one-time only). If everything is acceptable, proceed to finalize.</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="border border-purple-200 bg-purple-50 dark:bg-purple-950/20 dark:border-purple-800 rounded-sm p-3">
+                      <div className="text-xs text-purple-800 dark:text-purple-300">
+                        <div className="font-semibold mb-1">ℹ️ Phase 2: Table Validation</div>
+                        <div>Review checklists and assessor notes, then set final Met/Unmet/Considered status. This is the authoritative validation result that determines compliance.</div>
                       </div>
                     </div>
                   )}

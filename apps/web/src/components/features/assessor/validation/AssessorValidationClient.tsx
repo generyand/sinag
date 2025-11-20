@@ -16,6 +16,7 @@ import {
   usePostAssessorAssessmentsAssessmentIdRework,
 } from '@vantage/shared';
 import { useToast } from '@/hooks/use-toast';
+import { useAuthStore } from '@/store/useAuthStore';
 
 interface AssessorValidationClientProps {
   assessmentId: number;
@@ -30,6 +31,12 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   const reworkMut = usePostAssessorAssessmentsAssessmentIdRework();
   const finalizeMut = usePostAssessorAssessmentsAssessmentIdFinalize();
   const { toast } = useToast();
+
+  // Get user role to determine workflow behavior
+  const { user } = useAuthStore();
+  const userRole = user?.role || '';
+  const isValidator = userRole === 'VALIDATOR';
+  const isAssessor = userRole === 'ASSESSOR';
 
   // All hooks must be called before any conditional returns
   const [selectedIndicatorId, setSelectedIndicatorId] = useState<string | null>(null);
@@ -210,46 +217,70 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
   const total = responses.length;
 
-  // For validators: Check if they've set a status (Pass/Fail/Conditional)
-  const reviewedWithStatus = responses.filter((r) => !!form[r.id]?.status).length;
+  // Progress tracking differs by role:
+  // - Validators: Must set Pass/Fail/Conditional status for all indicators
+  // - Assessors: Progress tracked by checklist review (has any checklist data or comments)
+  let reviewed = 0;
+  let allReviewed = false;
 
-  // For assessors: Check if they've filled out checklist data or comments
-  const reviewedByAssessor = responses.filter(r => {
-    // Check for TRUTHY checklist values
-    const hasChecklistData = Object.keys(checklistData).some(key => {
-      if (!key.startsWith(`checklist_${r.id}_`)) return false;
-      const value = checklistData[key];
-      return value === true || (typeof value === 'string' && value.trim().length > 0);
-    });
+  if (isValidator) {
+    // Validators must set status for all indicators
+    const reviewedWithStatus = responses.filter((r) => {
+      // Check local form state
+      const hasLocalStatus = !!form[r.id]?.status;
 
-    // Check for comments (both local and persisted)
-    const hasLocalComments = form[r.id]?.publicComment && form[r.id]!.publicComment!.trim().length > 0;
-    const feedbackComments = (r as AnyRecord).feedback_comments || [];
-    const hasPersistedComments = feedbackComments.some((fc: any) =>
-      fc.comment_type === 'validation' && !fc.is_internal_note && fc.comment && fc.comment.trim().length > 0
-    );
+      // Check persisted validation_status
+      const responseRecord = r as AnyRecord;
+      const hasPersistedStatus = !!responseRecord.validation_status;
 
-    // Check for persisted checklist data
-    const responseData = (r as AnyRecord).response_data || {};
-    const hasPersistedChecklistData = Object.keys(responseData).some(key => key.startsWith('assessor_val_'));
+      return hasLocalStatus || hasPersistedStatus;
+    }).length;
 
-    return hasChecklistData || hasLocalComments || hasPersistedComments || hasPersistedChecklistData;
-  }).length;
+    reviewed = reviewedWithStatus;
+    allReviewed = total > 0 && reviewed === total;
+  } else {
+    // Assessors: check if they've reviewed checklists or added comments
+    const reviewedByAssessor = responses.filter((r) => {
+      // Has comments
+      const hasComments = form[r.id]?.publicComment && form[r.id]?.publicComment.trim().length > 0;
 
-  // Use assessor review count OR validator review count
-  const reviewed = Math.max(reviewedWithStatus, reviewedByAssessor);
-  const allReviewed = total > 0 && reviewed === total;
-  const anyFail = responses.some((r) => form[r.id]?.status === 'Fail');
+      // Has checklist data
+      const hasChecklistData = Object.keys(checklistData).some(key => {
+        if (!key.startsWith(`checklist_${r.id}_`)) return false;
+        const value = checklistData[key];
+        return value === true || (typeof value === 'string' && value.trim().length > 0);
+      });
+
+      return hasComments || hasChecklistData;
+    }).length;
+
+    reviewed = reviewedByAssessor;
+    allReviewed = total > 0 && reviewed === total;
+  }
+
+  // Check if any indicator is marked as Fail (only relevant for validators)
+  const anyFail = isValidator && responses.some((r) => {
+    const localFail = form[r.id]?.status === 'Fail';
+    const persistedFail = (r as AnyRecord).validation_status === 'FAIL';
+    return localFail || persistedFail;
+  });
+
+  // Check if assessor has any indicators with comments (for rework button)
+  const hasCommentsForRework = isAssessor && responses.some((r) => {
+    return form[r.id]?.publicComment && form[r.id]?.publicComment.trim().length > 0;
+  });
+
   const progressPct = total > 0 ? Math.round((reviewed / total) * 100) : 0;
 
-  const missingRequiredComments = responses.filter((r) => {
+  // Validators must provide comments for Fail/Conditional status
+  const missingRequiredComments = isValidator ? responses.filter((r) => {
     const v = form[r.id];
     if (!v?.status) return false;
     if (v.status === 'Fail' || v.status === 'Conditional') {
       return !(v.publicComment && v.publicComment.trim().length > 0);
     }
     return false;
-  }).length;
+  }).length : 0;
 
   const onSaveDraft = async () => {
     // Prevent concurrent saves
@@ -258,29 +289,27 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       return;
     }
 
-    // Get responses with validation status (validators)
-    const responsesWithStatus = responses
-      .map((r) => ({ id: r.id as number, v: form[r.id] }))
-      .filter((x) => x.v && x.v.status);
+    // Get all responses that have ANY data to save (status for validators, checklist/comments for all)
+    const responsesToSave = responses.filter(r => {
+      const formData = form[r.id];
 
-    // Get responses with checklist data or comments (assessors)
-    const responsesWithData = responses.filter(r => {
-      // Check for TRUTHY values, not just key existence
+      // Has validation status (Pass/Fail/Conditional) - ONLY for validators
+      const hasStatus = isValidator && !!formData?.status;
+
+      // Has checklist data
       const hasChecklistData = Object.keys(checklistData).some(key => {
         if (!key.startsWith(`checklist_${r.id}_`)) return false;
         const value = checklistData[key];
-        // For checkboxes, check if true; for inputs, check if non-empty string
         return value === true || (typeof value === 'string' && value.trim().length > 0);
       });
-      const hasComments = form[r.id]?.publicComment && form[r.id]!.publicComment!.trim().length > 0;
-      return hasChecklistData || hasComments;
+
+      // Has comments
+      const hasComments = formData?.publicComment && formData.publicComment.trim().length > 0;
+
+      return hasStatus || hasChecklistData || hasComments;
     });
 
-    // Combine unique response IDs
-    const allResponseIds = new Set([
-      ...responsesWithStatus.map(p => p.id),
-      ...responsesWithData.map(r => r.id)
-    ]);
+    const allResponseIds = new Set(responsesToSave.map(r => r.id));
 
     if (allResponseIds.size === 0) {
       return;
@@ -312,7 +341,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         return validateMut.mutateAsync({
           responseId: responseId,
           data: {
-            validation_status: formData?.status ?? undefined,  // Optional - only validators set this
+            validation_status: isValidator ? (formData?.status ?? undefined) : undefined,  // ONLY validators set status
             public_comment: formData?.publicComment ?? null,
             response_data: Object.keys(responseChecklistData).length > 0 ? responseChecklistData : undefined,
           },
@@ -350,15 +379,76 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   };
 
   const onSendRework = async () => {
-    await onSaveDraft();
-    await reworkMut.mutateAsync({ assessmentId });
-    await qc.invalidateQueries();
+    try {
+      await onSaveDraft();
+      await reworkMut.mutateAsync({ assessmentId });
+
+      // Show success toast
+      toast({
+        title: "Sent for Rework",
+        description: "Assessment has been sent back to BLGU for rework with your feedback comments.",
+        duration: 3000,
+        className: "bg-orange-600 text-white border-none",
+      });
+
+      // Invalidate queries and redirect back to queue
+      await qc.invalidateQueries();
+
+      // Redirect to submissions queue after short delay
+      setTimeout(() => {
+        window.location.href = '/assessor/submissions';
+      }, 1500);
+    } catch (error) {
+      console.error('Error sending for rework:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send for rework. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const onFinalize = async () => {
-    await onSaveDraft();
-    await finalizeMut.mutateAsync({ assessmentId });
-    await qc.invalidateQueries();
+    try {
+      await onSaveDraft();
+      await finalizeMut.mutateAsync({ assessmentId });
+
+      // Show success toast with different message based on role
+      if (isAssessor) {
+        toast({
+          title: "Sent to Validator",
+          description: "Assessment has been finalized and sent to the validator for final review.",
+          duration: 3000,
+          className: "bg-green-600 text-white border-none",
+        });
+      } else {
+        toast({
+          title: "Validation Complete",
+          description: "Assessment validation has been finalized. This is now the authoritative result.",
+          duration: 3000,
+          className: "bg-green-600 text-white border-none",
+        });
+      }
+
+      // Invalidate queries and redirect back to queue
+      await qc.invalidateQueries();
+
+      // Redirect to submissions queue after short delay
+      setTimeout(() => {
+        if (isAssessor) {
+          window.location.href = '/assessor/submissions';
+        } else {
+          window.location.href = '/validator/submissions';
+        }
+      }, 1500);
+    } catch (error) {
+      console.error('Error finalizing assessment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to finalize assessment. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleIndicatorSelect = (indicatorId: string) => {
@@ -482,38 +572,83 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             >
               {isSaving ? 'Saving...' : 'Save as Draft'}
             </Button>
-            <Button
-              variant="secondary"
-              size="default"
-              type="button"
-              onClick={onSendRework}
-              disabled={
-                !allReviewed ||
-                reworkCount !== 0 ||
-                !anyFail ||
-                missingRequiredComments > 0 ||
-                reworkMut.isPending
-              }
-              className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90"
-              style={{ background: 'var(--cityscape-yellow)' }}
-            >
-              Compile and Send for Rework
-            </Button>
-            <Button
-              size="default"
-              type="button"
-              onClick={onFinalize}
-              disabled={
-                !allReviewed ||
-                missingRequiredComments > 0 ||
-                finalizeMut.isPending ||
-                (reworkCount === 0 && anyFail)
-              }
-              className="w-full sm:w-auto text-white hover:opacity-90"
-              style={{ background: 'var(--success)' }}
-            >
-              Finalize Validation
-            </Button>
+            {/* Send for Rework - Assessors only, requires comments */}
+            {isAssessor && (
+              <Button
+                variant="secondary"
+                size="default"
+                type="button"
+                onClick={onSendRework}
+                disabled={
+                  !hasCommentsForRework ||
+                  reworkCount !== 0 ||
+                  reworkMut.isPending
+                }
+                className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90"
+                style={{ background: 'var(--cityscape-yellow)' }}
+                title={!hasCommentsForRework ? "Add feedback comments on at least one indicator to send for rework" : undefined}
+              >
+                Compile and Send for Rework
+              </Button>
+            )}
+
+            {/* Send for Rework - Validators, requires at least one FAIL */}
+            {isValidator && (
+              <Button
+                variant="secondary"
+                size="default"
+                type="button"
+                onClick={onSendRework}
+                disabled={
+                  !allReviewed ||
+                  !anyFail ||
+                  reworkCount !== 0 ||
+                  reworkMut.isPending
+                }
+                className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90"
+                style={{ background: 'var(--cityscape-yellow)' }}
+                title={!anyFail && allReviewed ? "At least one indicator must be marked as 'Unmet' to send for rework" : undefined}
+              >
+                Compile and Send for Rework
+              </Button>
+            )}
+
+            {/* Finalize - Assessors, just needs review */}
+            {isAssessor && (
+              <Button
+                size="default"
+                type="button"
+                onClick={onFinalize}
+                disabled={
+                  !allReviewed ||
+                  finalizeMut.isPending
+                }
+                className="w-full sm:w-auto text-white hover:opacity-90"
+                style={{ background: 'var(--success)' }}
+                title={!allReviewed ? "Review all indicators before finalizing" : undefined}
+              >
+                Finalize and Send to Validator
+              </Button>
+            )}
+
+            {/* Finalize - Validators, cannot have FAILs on first submission */}
+            {isValidator && (
+              <Button
+                size="default"
+                type="button"
+                onClick={onFinalize}
+                disabled={
+                  !allReviewed ||
+                  (anyFail && reworkCount === 0) ||
+                  finalizeMut.isPending
+                }
+                className="w-full sm:w-auto text-white hover:opacity-90"
+                style={{ background: 'var(--success)' }}
+                title={anyFail && reworkCount === 0 ? "Cannot finalize with 'Unmet' indicators. Send for Rework first." : undefined}
+              >
+                Finalize Validation
+              </Button>
+            )}
           </div>
         </div>
       </div>

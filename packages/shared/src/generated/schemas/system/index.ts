@@ -7,6 +7,7 @@ import type { PdfRect } from '../common';
 import type { AuditLogResponseUserEmail } from '../users';
 import type { AuditLogResponseUserName } from '../users';
 import type { GovernanceAreaGroup } from '../common';
+import type { BLGUDashboardResponseMovAnnotationsByIndicator } from '../indicators';
 import type { ReworkComment } from '../common';
 import type { ChecklistItemResponseMovDescription } from '../movs';
 import type { IncompleteIndicatorDetail } from '../indicators';
@@ -152,6 +153,8 @@ export interface BLGUDashboardResponse {
   governance_areas: GovernanceAreaGroup[];
   /** Assessor feedback comments if assessment needs rework (null otherwise) */
   rework_comments?: BLGUDashboardResponseReworkComments;
+  /** MOV annotations grouped by indicator ID - shows which MOVs assessor highlighted/commented on (null if no annotations) */
+  mov_annotations_by_indicator?: BLGUDashboardResponseMovAnnotationsByIndicator;
 }
 
 

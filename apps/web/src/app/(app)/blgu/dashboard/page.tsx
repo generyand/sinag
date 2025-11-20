@@ -22,14 +22,13 @@
 import {
   CompletionMetricsCard,
   IndicatorNavigationList,
-  AssessorCommentsPanel,
 } from "@/components/features/dashboard";
 import {
   LockedStateBanner,
-  ReworkCommentsPanel,
   SubmitAssessmentButton,
   ResubmitAssessmentButton,
 } from "@/components/features/assessments";
+import { ReworkIndicatorsPanel } from "@/components/features/rework";
 import { useGetBlguDashboardAssessmentId, useGetAssessmentsMyAssessment } from "@vantage/shared";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Loader2, AlertCircle } from "lucide-react";
@@ -120,12 +119,16 @@ export default function BLGUDashboardPage() {
           />
         </div>
 
-        {/* Epic 5.0: Rework Comments Panel (REWORK/NEEDS_REWORK status only) */}
-        {/* Note: Uses Epic 2.0 AssessorCommentsPanel for now since rework_comments is an array */}
+        {/* Epic 5.0: Rework Indicators Panel (shows failed indicators grouped by area) */}
+        {/* Shows when status is REWORK/NEEDS_REWORK AND there are comments or annotations */}
+        {/* This replaces the old AssessorCommentsPanel with better UX */}
         {(dashboardData.status === "REWORK" || dashboardData.status === "NEEDS_REWORK") &&
-         dashboardData.rework_comments && (
+         (dashboardData.rework_comments || dashboardData.mov_annotations_by_indicator) && (
           <div className="mb-6">
-            <AssessorCommentsPanel comments={dashboardData.rework_comments as any} />
+            <ReworkIndicatorsPanel
+              dashboardData={dashboardData as any}
+              assessmentId={assessmentId}
+            />
           </div>
         )}
 
@@ -160,14 +163,7 @@ export default function BLGUDashboardPage() {
           )}
         </div>
 
-        {/* Assessor Comments Section (fallback for other statuses with rework comments) */}
-        {dashboardData.rework_comments &&
-         dashboardData.status !== "REWORK" &&
-         dashboardData.status !== "NEEDS_REWORK" && (
-          <div className="mb-8">
-            <AssessorCommentsPanel comments={dashboardData.rework_comments} />
-          </div>
-        )}
+        {/* Assessor Comments Section - removed in favor of ReworkIndicatorsPanel */}
 
         {/* Indicator Navigation Section */}
         <div>
@@ -182,7 +178,7 @@ export default function BLGUDashboardPage() {
                 completion_status: indicator.is_complete
                   ? ("complete" as const)
                   : ("incomplete" as const),
-                route_path: `/blgu/assessment/${assessmentId}/indicator/${indicator.indicator_id}`,
+                route_path: `/blgu/assessments?indicator=${indicator.indicator_id}`,
                 governance_area_name: area.governance_area_name,
                 governance_area_id: area.governance_area_id,
               }))

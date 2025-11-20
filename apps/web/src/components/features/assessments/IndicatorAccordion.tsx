@@ -33,6 +33,8 @@ interface IndicatorAccordionProps {
   hasNext?: boolean;
   onPrevious?: () => void;
   onNext?: () => void;
+  /** MOV annotations for rework workflow */
+  movAnnotations?: any[];
 }
 
 export function IndicatorAccordion({
@@ -46,6 +48,7 @@ export function IndicatorAccordion({
   hasNext,
   onPrevious,
   onNext,
+  movAnnotations = [],
 }: IndicatorAccordionProps) {
   const { data: assessment } = useCurrentAssessment();
   const [isOpen, setIsOpen] = useState(false);
@@ -375,6 +378,7 @@ export function IndicatorAccordion({
                   onPrevious={onPrevious}
                   onNext={onNext}
                   level={1}
+                  movAnnotations={movAnnotations}
                 />
               ))}
             </div>
@@ -393,6 +397,7 @@ export function IndicatorAccordion({
                   assessmentId={parseInt(assessment.id)}
                   indicatorId={parseInt(indicator.id)}
                   isLocked={isLocked}
+                  movAnnotations={movAnnotations}
                   currentCode={currentCode}
                   currentPosition={currentPosition}
                   totalIndicators={totalIndicators}
@@ -755,6 +760,7 @@ export function RecursiveIndicator({
   onPrevious,
   onNext,
   level = 0,
+  movAnnotations = [],
 }: RecursiveIndicatorProps) {
   return (
     <div style={{ paddingLeft: level * 16 }}>
@@ -769,6 +775,7 @@ export function RecursiveIndicator({
         hasNext={hasNext}
         onPrevious={onPrevious}
         onNext={onNext}
+        movAnnotations={movAnnotations}
       />
     </div>
   );

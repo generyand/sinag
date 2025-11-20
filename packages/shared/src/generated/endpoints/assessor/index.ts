@@ -118,6 +118,9 @@ Accepts validation status (Pass/Fail/Conditional), public comment, assessor rema
 Saves public comment to the feedback_comments table.
 Assessor remarks are saved to the assessment_response for validators to review.
 Response data (checklist) is saved to assessment_response.response_data if provided.
+
+Validation Rules:
+- If validation_status is FAIL or CONDITIONAL, a non-empty public_comment is required
  * @summary Validate Assessment Response
  */
 export const postAssessorAssessmentResponses$ResponseIdValidate = (

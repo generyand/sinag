@@ -620,19 +620,22 @@ class AssessorService:
         self, db: Session, assessment_id: int, assessor: User
     ) -> dict:
         """
-        Send assessment back to BLGU user for rework.
+        Phase 1 (Table Assessment): Send assessment back to BLGU user for rework.
+
+        This is ONLY used by Assessors in Phase 1 (Table Assessment).
+        Validators in Phase 2 use "Calibration" instead, not Rework.
 
         Args:
             db: Database session
             assessment_id: ID of the assessment to send for rework
-            assessor: The assessor performing the action (currently unused but kept for future audit logging)
+            assessor: The assessor performing the action (Phase 1)
 
         Returns:
             dict: Result of the rework operation
 
         Raises:
             ValueError: If assessment not found or rework not allowed
-            PermissionError: If assessor doesn't have permission
+            PermissionError: If assessor doesn't have permission (validators cannot use this)
         """
         # Get the assessment
         assessment = (
@@ -645,7 +648,14 @@ class AssessorService:
         if not assessment:
             raise ValueError(f"Assessment {assessment_id} not found")
 
-        # Check if rework is allowed (rework_count must be 0)
+        # CRITICAL: Validators (Phase 2) should NOT use this endpoint - they use Calibration
+        is_validator = assessor.validator_area_id is not None
+        if is_validator:
+            raise ValueError(
+                "Validators cannot send for Rework. Use Calibration for minor corrections in Phase 2."
+            )
+
+        # Check if rework is allowed (rework_count must be 0 - only ONE rework cycle)
         if assessment.rework_count != 0:
             raise ValueError(
                 "Assessment has already been sent for rework. Cannot send again."
@@ -655,27 +665,74 @@ class AssessorService:
         if assessment.status != AssessmentStatus.SUBMITTED_FOR_REVIEW:
             raise ValueError("Rework is only allowed when assessment is Submitted for Review")
 
-        # Enforce PRD: All responses must be reviewed before sending rework
-        if any(r.validation_status is None for r in assessment.responses):
-            raise ValueError("All indicators must be reviewed before sending for rework")
+        # Phase 1 Assessors: Must have at least one indicator with public comments OR MOV annotations to send for rework
+        # (Assessors don't set validation_status, only validators do)
+        has_comments = any(
+            any(
+                fc.comment_type == 'validation' and not fc.is_internal_note and fc.comment
+                for fc in response.feedback_comments
+            )
+            for response in assessment.responses
+        )
 
-        # Enforce PRD: At least one indicator must be marked as Fail to send rework
-        has_fail = any(r.validation_status == ValidationStatus.FAIL for r in assessment.responses)
-        if not has_fail:
-            raise ValueError("At least one indicator must be marked as Fail to send for rework")
+        # Check for MOV annotations
+        from app.db.models.assessment import MOVAnnotation
 
-        # Check assessor permission (assessor must be assigned to the governance area)
-        # For now, we'll allow any assessor to send for rework
-        # In a more sophisticated system, we'd check specific permissions
+        mov_file_ids = [mf.id for mf in assessment.mov_files]
+        has_annotations = False
+        if mov_file_ids:
+            annotation_count = db.query(MOVAnnotation).filter(
+                MOVAnnotation.mov_file_id.in_(mov_file_ids)
+            ).count()
+            has_annotations = annotation_count > 0
+
+        if not has_comments and not has_annotations:
+            raise ValueError(
+                "At least one indicator must have feedback (comments or MOV annotations) to send for rework. "
+                "Add comments or annotate MOV files explaining what needs improvement."
+            )
 
         # Update assessment status and rework count
         assessment.status = AssessmentStatus.REWORK
         assessment.rework_count = 1
         # Note: updated_at is automatically handled by SQLAlchemy's onupdate
 
-        # Mark all responses as requiring rework
+        # Get all MOV annotations for this assessment to check for indicator-level feedback
+        from app.db.models.assessment import MOVAnnotation, MOVFile
+
+        mov_file_ids = [mf.id for mf in assessment.mov_files]
+        annotations_by_indicator = {}
+
+        if mov_file_ids:
+            all_annotations = db.query(MOVAnnotation).filter(
+                MOVAnnotation.mov_file_id.in_(mov_file_ids)
+            ).all()
+
+            # Group annotations by indicator_id
+            for annotation in all_annotations:
+                # Get the MOV file to find its indicator_id
+                mov_file = next((mf for mf in assessment.mov_files if mf.id == annotation.mov_file_id), None)
+                if mov_file:
+                    indicator_id = mov_file.indicator_id
+                    if indicator_id not in annotations_by_indicator:
+                        annotations_by_indicator[indicator_id] = []
+                    annotations_by_indicator[indicator_id].append(annotation)
+
+        # Mark responses requiring rework if they have public comments OR MOV annotations
+        # (Assessors don't set validation_status, only validators do in Phase 2)
         for response in assessment.responses:
-            response.requires_rework = True
+            has_public_comments = any(
+                fc.comment_type == 'validation' and not fc.is_internal_note and fc.comment
+                for fc in response.feedback_comments
+            )
+
+            has_mov_annotations = response.indicator_id in annotations_by_indicator and len(annotations_by_indicator[response.indicator_id]) > 0
+
+            # Mark for rework if assessor provided feedback (comments OR annotations)
+            # CRITICAL: Also reset is_completed to False so BLGU must re-complete the indicator
+            if has_public_comments or has_mov_annotations:
+                response.requires_rework = True
+                response.is_completed = False
 
         db.commit()
         db.refresh(assessment)
@@ -709,22 +766,22 @@ class AssessorService:
         self, db: Session, assessment_id: int, assessor: User
     ) -> dict:
         """
-        Finalize assessor review and send to validator for final validation.
+        Phase 1 (Assessors): Pass assessment to Phase 2 (Table Validation).
+        Phase 2 (Validators): Finalize assessment with final P/F/C statuses.
 
-        Changes assessment status to AWAITING_FINAL_VALIDATION, which makes it
-        visible to validators assigned to the governance area.
+        - Assessors (Phase 1): If all Pass/Conditional, move to AWAITING_FINAL_VALIDATION
+        - Validators (Phase 2): Set final P/F/C statuses, then move to COMPLETED
 
         Args:
             db: Database session
             assessment_id: ID of the assessment to finalize
-            assessor: The assessor performing the action
+            assessor: The user performing the action (assessor or validator)
 
         Returns:
             dict: Result of the finalization operation
 
         Raises:
             ValueError: If assessment not found or cannot be finalized
-            PermissionError: If assessor doesn't have permission
         """
         # Get the assessment
         assessment = (
@@ -738,36 +795,73 @@ class AssessorService:
             raise ValueError(f"Assessment {assessment_id} not found")
 
         # Check if assessment can be finalized
-        if assessment.status in (AssessmentStatus.AWAITING_FINAL_VALIDATION, AssessmentStatus.COMPLETED):
-            raise ValueError("Assessment has already been finalized by assessor")
+        if assessment.status == AssessmentStatus.COMPLETED:
+            raise ValueError("Assessment has already been completed")
 
         if assessment.status == AssessmentStatus.DRAFT:
             raise ValueError("Cannot finalize a draft assessment")
 
-        # Only allow finalize from SUBMITTED, IN_REVIEW, or REWORK statuses
-        if assessment.status not in (AssessmentStatus.SUBMITTED, AssessmentStatus.IN_REVIEW, AssessmentStatus.REWORK):
-            raise ValueError("Cannot finalize assessment in its current status")
+        # Determine if this is Phase 1 (Assessor) or Phase 2 (Validator)
+        is_validator = assessor.validator_area_id is not None
 
-        # Check that all responses have been reviewed (have validation status)
-        unreviewed_responses = [
-            response
-            for response in assessment.responses
-            if response.validation_status is None
-        ]
+        if is_validator:
+            # ===== PHASE 2: VALIDATORS (Table Validation) =====
+            # Must be in AWAITING_FINAL_VALIDATION status
+            if assessment.status != AssessmentStatus.AWAITING_FINAL_VALIDATION:
+                raise ValueError("Validators can only finalize assessments in AWAITING_FINAL_VALIDATION status")
 
-        if unreviewed_responses:
-            raise ValueError(
-                f"Cannot finalize assessment. {len(unreviewed_responses)} responses have not been reviewed."
+            # Must set Pass/Fail/Conditional status for ALL responses
+            unreviewed_responses = [
+                response.id
+                for response in assessment.responses
+                if response.validation_status is None
+            ]
+
+            if unreviewed_responses:
+                raise ValueError(
+                    f"Cannot finalize assessment. Unreviewed response IDs: {unreviewed_responses}"
+                )
+
+            # Validators CAN finalize even with FAIL indicators (that's the final result)
+            # MLGOO Chairman will approve this final result
+            assessment.status = AssessmentStatus.COMPLETED
+
+        else:
+            # ===== PHASE 1: ASSESSORS (Table Assessment) =====
+            # Can finalize from SUBMITTED_FOR_REVIEW, IN_REVIEW, or REWORK statuses
+            if assessment.status not in (
+                AssessmentStatus.SUBMITTED_FOR_REVIEW,
+                AssessmentStatus.IN_REVIEW,
+                AssessmentStatus.REWORK
+            ):
+                raise ValueError("Cannot finalize assessment in its current status")
+
+            # Must set Pass/Fail/Conditional status for ALL responses
+            unreviewed_responses = [
+                response.id
+                for response in assessment.responses
+                if response.validation_status is None
+            ]
+
+            if unreviewed_responses:
+                raise ValueError(
+                    f"Cannot finalize assessment. Unreviewed response IDs: {unreviewed_responses}"
+                )
+
+            # If any FAIL indicators, must send for Rework instead (one-time only)
+            has_fail = any(
+                r.validation_status == ValidationStatus.FAIL
+                for r in assessment.responses
             )
+            if has_fail and assessment.rework_count == 0:
+                raise ValueError(
+                    "Cannot finalize with Fail indicators. Send for Rework instead."
+                )
 
-        # If first submission: do not allow finalize if there are Fail indicators (must use rework)
-        if assessment.status == AssessmentStatus.SUBMITTED:
-            has_fail = any(r.validation_status == ValidationStatus.FAIL for r in assessment.responses)
-            if has_fail:
-                raise ValueError("Cannot finalize with Fail indicators on first submission; send for rework")
+            # If all Pass/Conditional, move to Phase 2 (Table Validation)
+            assessment.status = AssessmentStatus.AWAITING_FINAL_VALIDATION
 
-        # Update assessment status to await validator final validation
-        assessment.status = AssessmentStatus.AWAITING_FINAL_VALIDATION
+        # Set validated_at timestamp
         assessment.validated_at = (
             db.query(Assessment)
             .filter(Assessment.id == assessment_id)

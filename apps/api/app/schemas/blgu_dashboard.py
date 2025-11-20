@@ -7,7 +7,7 @@ IMPORTANT: These schemas show COMPLETION status only (complete/incomplete).
 Compliance status (PASS/FAIL/CONDITIONAL) is NEVER exposed to BLGU users.
 """
 
-from typing import List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field
 
 
@@ -110,6 +110,9 @@ class BLGUDashboardResponse(BaseModel):
     )
     rework_comments: Optional[List[ReworkComment]] = Field(
         None, description="Assessor feedback comments if assessment needs rework (null otherwise)"
+    )
+    mov_annotations_by_indicator: Optional[Dict[int, List[Dict[str, Any]]]] = Field(
+        None, description="MOV annotations grouped by indicator ID - shows which MOVs assessor highlighted/commented on (null if no annotations)"
     )
 
     class Config:

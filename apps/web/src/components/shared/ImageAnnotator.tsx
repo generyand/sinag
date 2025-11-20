@@ -152,9 +152,9 @@ export default function ImageAnnotator({
     setShowCommentInput(false);
   }, []);
 
-  // Render a rectangle overlay
+  // Render a rectangle overlay with optional comment tooltip
   const renderRect = useCallback(
-    (rect: Rect, color: string, opacity: number) => {
+    (rect: Rect, color: string, opacity: number, comment?: string) => {
       if (!imageRef.current || !containerRef.current) return null;
 
       const imageRect = imageRef.current.getBoundingClientRect();
@@ -169,6 +169,7 @@ export default function ImageAnnotator({
 
       return (
         <div
+          className="group"
           style={{
             position: 'absolute',
             left: `${imageOffsetX + pixel.x}px`,
@@ -178,9 +179,15 @@ export default function ImageAnnotator({
             border: `2px solid ${color}`,
             backgroundColor: `${color}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`,
             borderRadius: '0.125rem', // rounded-sm (2px)
-            pointerEvents: 'none',
+            pointerEvents: comment ? 'auto' : 'none',
           }}
-        />
+        >
+          {comment && (
+            <div className="invisible group-hover:visible absolute left-0 top-full mt-1 bg-white border border-gray-300 rounded-sm shadow-lg p-2 text-sm text-gray-800 max-w-xs z-50 whitespace-pre-wrap">
+              {comment}
+            </div>
+          )}
+        </div>
       );
     },
     [percentToPixel]
@@ -217,7 +224,7 @@ export default function ImageAnnotator({
         {imageLoaded &&
           annotations.map((ann) => (
             <React.Fragment key={ann.id}>
-              {renderRect(ann.rect, '#fbbf24', 0.2)}
+              {renderRect(ann.rect, '#fbbf24', 0.2, ann.comment)}
             </React.Fragment>
           ))}
 

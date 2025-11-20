@@ -54,18 +54,9 @@ def get_blgu_dashboard(
             detail="Only BLGU users can access the dashboard",
         )
 
-    # Retrieve assessment with eager loading of responses and indicators
-    assessment = (
-        db.query(Assessment)
-        .filter(Assessment.id == assessment_id)
-        .options(
-            joinedload(Assessment.responses)
-            .joinedload(AssessmentResponse.indicator)
-            .joinedload(Indicator.governance_area),
-            joinedload(Assessment.responses).joinedload(AssessmentResponse.feedback_comments),
-        )
-        .first()
-    )
+    # Retrieve assessment - PERFORMANCE: Simplified query to avoid timeout
+    # We'll fetch related data separately with targeted queries
+    assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
 
     if not assessment:
         raise HTTPException(
@@ -160,11 +151,26 @@ def get_blgu_dashboard(
             governance_area_groups[area_id]["governance_area_name"] = governance_area.name
 
         # Add indicator data to the group
+        # Calculate feedback counts for this indicator
+        text_comment_count = 0
+        if response:
+            text_comment_count = len([
+                c for c in response.feedback_comments
+                if not c.is_internal_note
+            ])
+
+        # MOV annotation count will be calculated after we load all annotations
+        # We'll update this in a second pass below
+
         governance_area_groups[area_id]["indicators"].append({
             "indicator_id": indicator.id,
             "indicator_name": indicator.name,
             "is_complete": is_complete,
             "response_id": response.id if response else None,
+            # NEW: Add validation status and feedback counts for rework workflow
+            "validation_status": response.validation_status.value if response and response.validation_status else None,
+            "text_comment_count": text_comment_count,
+            "mov_annotation_count": 0,  # Will be updated in second pass
         })
 
     # Get all governance areas
@@ -213,9 +219,10 @@ def get_blgu_dashboard(
     # Convert governance area groups to list
     governance_areas_list = list(governance_area_groups.values())
 
-    # Epic 5.0: Include assessor comments if assessment status is REWORK
+    # Epic 5.0: Include assessor comments AND MOV annotations if assessment status is REWORK
     # Note: Also check legacy NEEDS_REWORK for backward compatibility
     rework_comments = None
+    mov_annotations_by_indicator = None
     if assessment.status in [AssessmentStatus.REWORK, AssessmentStatus.NEEDS_REWORK]:
         # Collect all feedback comments from all responses (excluding internal notes)
         comments_list = []
@@ -233,6 +240,64 @@ def get_blgu_dashboard(
 
         rework_comments = comments_list if comments_list else None
 
+        # Collect MOV annotations grouped by indicator
+        # This shows BLGU users which MOVs the assessor highlighted/commented on
+        # PERFORMANCE FIX: Fetch all annotations upfront with a single query to avoid N+1
+        from app.db.models.assessment import MOVAnnotation, MOVFile
+
+        # Get all MOV file IDs for this assessment
+        mov_file_ids = [mf.id for mf in assessment.mov_files]
+
+        # Fetch ALL annotations for this assessment's MOV files in ONE query
+        all_annotations = []
+        if mov_file_ids:
+            all_annotations = db.query(MOVAnnotation).filter(
+                MOVAnnotation.mov_file_id.in_(mov_file_ids)
+            ).all()
+
+        # Build lookup dict: mov_file_id -> list of annotations
+        annotations_by_mov_file: Dict[int, List[MOVAnnotation]] = defaultdict(list)
+        for annotation in all_annotations:
+            annotations_by_mov_file[annotation.mov_file_id].append(annotation)
+
+        # Now process indicators and group annotations by indicator_id
+        annotations_by_indicator_dict: Dict[int, List[Dict[str, Any]]] = defaultdict(list)
+
+        for response in assessment.responses:
+            # Get all MOV files for this indicator (MOV files are linked to assessment+indicator, not response)
+            mov_files_for_indicator = [
+                mf for mf in assessment.mov_files
+                if mf.indicator_id == response.indicator_id
+            ]
+
+            for mov_file in mov_files_for_indicator:
+                # Use preloaded annotations from lookup dict (NO database query!)
+                for annotation in annotations_by_mov_file.get(mov_file.id, []):
+                    annotations_by_indicator_dict[response.indicator_id].append({
+                        "annotation_id": annotation.id,
+                        "mov_file_id": mov_file.id,
+                        "mov_filename": mov_file.file_name,  # Use file_name attribute
+                        "mov_file_type": mov_file.file_type,
+                        "annotation_type": annotation.annotation_type,
+                        "page": annotation.page,
+                        "rect": annotation.rect,
+                        "rects": annotation.rects,
+                        "comment": annotation.comment,
+                        "created_at": annotation.created_at.isoformat() if annotation.created_at else None,
+                        "indicator_id": response.indicator_id,
+                        "indicator_name": response.indicator.name,
+                    })
+
+        mov_annotations_by_indicator = dict(annotations_by_indicator_dict) if annotations_by_indicator_dict else None
+
+        # SECOND PASS: Update mov_annotation_count in governance_area_groups
+        # Now that we have annotations_by_indicator_dict, update the counts
+        for area_id, area_data in governance_area_groups.items():
+            for indicator_data in area_data["indicators"]:
+                indicator_id = indicator_data["indicator_id"]
+                annotation_count = len(annotations_by_indicator_dict.get(indicator_id, []))
+                indicator_data["mov_annotation_count"] = annotation_count
+
     # Epic 5.0: Return status and rework tracking fields
     return {
         "assessment_id": assessment_id,
@@ -246,6 +311,7 @@ def get_blgu_dashboard(
         "completion_percentage": round(completion_percentage, 2),
         "governance_areas": governance_areas_list,
         "rework_comments": rework_comments,
+        "mov_annotations_by_indicator": mov_annotations_by_indicator,  # MOV annotations grouped by indicator
     }
 
 

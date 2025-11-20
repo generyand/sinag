@@ -49,6 +49,8 @@ interface DynamicFormRendererProps {
   isLoading?: boolean;
   /** Epic 5.0: Locked state - disables form editing when assessment is submitted */
   isLocked?: boolean;
+  /** Epic 5.0: MOV annotations for this indicator (for rework workflow) */
+  movAnnotations?: any[];
   /** Navigation: Current indicator code */
   currentCode?: string;
   /** Navigation: Current position in the assessment */
@@ -72,6 +74,7 @@ export function DynamicFormRenderer({
   onSaveSuccess,
   isLoading = false,
   isLocked = false,
+  movAnnotations = [],
   currentCode,
   currentPosition,
   totalIndicators,
@@ -195,7 +198,7 @@ export function DynamicFormRenderer({
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Navigation Header - Only show if navigation props are provided */}
         {showNavigation && (
-          <div className="sticky top-0 z-10 bg-[var(--card)] border border-[var(--border)] rounded-lg px-4 py-3 shadow-sm">
+          <div className="sticky top-0 z-10 bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-300 rounded-lg px-4 py-3 shadow-md">
             <div className="flex items-center justify-between gap-4">
               {/* Left: Previous Button */}
               <Button
@@ -204,19 +207,19 @@ export function DynamicFormRenderer({
                 size="sm"
                 onClick={onPrevious}
                 disabled={!hasPrevious || isLocked}
-                className="flex items-center gap-2 border-[var(--border)] hover:bg-[var(--hover)]"
+                className="flex items-center gap-2 bg-white border-yellow-400 hover:bg-yellow-50 hover:border-yellow-500 text-yellow-700 font-medium disabled:opacity-50"
               >
                 <ChevronLeft className="h-4 w-4" />
                 <span className="hidden sm:inline">Previous</span>
               </Button>
 
               {/* Center: Position Indicator */}
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-[var(--text-secondary)]">Indicator</span>
-                <span className="font-semibold text-[var(--foreground)]">
+              <div className="flex items-center gap-2 text-sm bg-white px-3 py-1.5 rounded-md border border-yellow-300">
+                <span className="text-yellow-700 font-medium">Indicator</span>
+                <span className="font-bold text-yellow-800">
                   {currentCode || `${currentPosition} of ${totalIndicators}`}
                 </span>
-                <span className="text-[var(--text-secondary)]">
+                <span className="text-yellow-700">
                   ({currentPosition} / {totalIndicators})
                 </span>
               </div>
@@ -224,11 +227,10 @@ export function DynamicFormRenderer({
               {/* Right: Next Button */}
               <Button
                 type="button"
-                variant="outline"
                 size="sm"
                 onClick={onNext}
                 disabled={!hasNext || isLocked}
-                className="flex items-center gap-2 border-[var(--border)] hover:bg-[var(--hover)]"
+                className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white font-medium disabled:opacity-50"
               >
                 <span className="hidden sm:inline">Next</span>
                 <ChevronRight className="h-4 w-4" />
@@ -257,6 +259,7 @@ export function DynamicFormRenderer({
             assessmentId={assessmentId}
             indicatorId={indicatorId}
             isLocked={isLocked}
+            movAnnotations={movAnnotations}
           />
         ))}
       </form>
@@ -277,6 +280,7 @@ interface SectionRendererProps {
   assessmentId: number;
   indicatorId: number;
   isLocked: boolean;
+  movAnnotations: any[];
 }
 
 function SectionRenderer({
@@ -288,6 +292,7 @@ function SectionRenderer({
   assessmentId,
   indicatorId,
   isLocked,
+  movAnnotations,
 }: SectionRendererProps) {
   // Get visible fields for this section based on conditional logic
   const visibleFields = useMemo(() => {
@@ -317,6 +322,7 @@ function SectionRenderer({
             assessmentId={assessmentId}
             indicatorId={indicatorId}
             isLocked={isLocked}
+            movAnnotations={movAnnotations}
           />
         ))}
       </CardContent>
@@ -335,9 +341,10 @@ interface FieldRendererProps {
   assessmentId: number;
   indicatorId: number;
   isLocked: boolean;
+  movAnnotations: any[];
 }
 
-function FieldRenderer({ field, control, error, assessmentId, indicatorId, isLocked }: FieldRendererProps) {
+function FieldRenderer({ field, control, error, assessmentId, indicatorId, isLocked, movAnnotations }: FieldRendererProps) {
   // Render appropriate field component based on field type
   switch (field.field_type) {
     case "section_header":
@@ -454,6 +461,7 @@ function FieldRenderer({ field, control, error, assessmentId, indicatorId, isLoc
           assessmentId={assessmentId}
           indicatorId={indicatorId}
           disabled={isLocked}
+          movAnnotations={movAnnotations}
         />
       );
 

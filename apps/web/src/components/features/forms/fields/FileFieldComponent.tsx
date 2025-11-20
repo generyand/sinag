@@ -7,7 +7,20 @@ import { useState, useRef, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle2, Loader2, Info } from "lucide-react";
+import { CheckCircle2, Loader2, Info, X, FileIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import dynamic from "next/dynamic";
+
+// Dynamically import annotators to avoid SSR issues
+const PdfAnnotator = dynamic(() => import('@/components/shared/PdfAnnotator'), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-[70vh]">Loading PDF viewer...</div>,
+});
+
+const ImageAnnotator = dynamic(() => import('@/components/shared/ImageAnnotator'), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-[70vh]">Loading image viewer...</div>,
+});
 import type { FileUploadField } from "@vantage/shared";
 import {
   useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles,
@@ -29,6 +42,7 @@ interface FileFieldComponentProps {
   assessmentId: number;
   indicatorId: number;
   disabled?: boolean;
+  movAnnotations?: any[];
 }
 
 /**
@@ -48,6 +62,7 @@ export function FileFieldComponent({
   assessmentId,
   indicatorId,
   disabled = false,
+  movAnnotations = [],
 }: FileFieldComponentProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -205,9 +220,18 @@ export function FileFieldComponent({
     refetchFiles();
   };
 
+  // State for preview modal (same as assessor view)
+  const [selectedFileForPreview, setSelectedFileForPreview] = useState<MOVFileResponse | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
   const handlePreview = (file: MOVFileResponse) => {
-    // Open file in new tab
-    window.open(file.file_url, "_blank");
+    setSelectedFileForPreview(file);
+    setIsPreviewOpen(true);
+  };
+
+  const closePreview = () => {
+    setIsPreviewOpen(false);
+    setSelectedFileForPreview(null);
   };
 
   const handleDownload = async (file: MOVFileResponse) => {
@@ -362,6 +386,7 @@ export function FileFieldComponent({
           canDelete={canDelete}
           loading={isLoadingFiles}
           onDeleteSuccess={handleDeleteSuccess}
+          movAnnotations={movAnnotations}
         />
       )}
 
@@ -379,6 +404,119 @@ export function FileFieldComponent({
             </AlertDescription>
           </Alert>
         )}
+
+      {/* File Preview Modal (same as assessor view) */}
+      {isPreviewOpen && selectedFileForPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-lg shadow-xl w-[70vw] h-[90vh] flex flex-row gap-4 p-4">
+            {/* Left: File Viewer */}
+            <div className="flex-1 flex flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-gray-200 mb-3">
+                <div className="flex-1">
+                  <h2 className="text-base font-semibold">{selectedFileForPreview.file_name}</h2>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedFileForPreview.file_type === 'application/pdf'
+                      ? 'PDF preview with assessor comments'
+                      : 'Image preview with assessor comments'}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={closePreview}
+                  className="shrink-0"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+
+              {/* File Content */}
+              <div className="flex-1" style={{ minHeight: 0 }}>
+                {selectedFileForPreview.file_type === 'application/pdf' ? (
+                  // PDF Viewer
+                  <PdfAnnotator
+                    url={selectedFileForPreview.file_url}
+                    annotateEnabled={false}
+                    annotations={movAnnotations
+                      .filter((ann: any) => ann.mov_file_id === selectedFileForPreview.id)
+                      .map((ann: any) => ({
+                        id: String(ann.id),
+                        type: 'pdfRect' as const,
+                        page: ann.page_number || 0,
+                        rect: ann.rect || { x: 0, y: 0, w: 10, h: 10 },
+                        rects: ann.rects,
+                        comment: ann.comment || '',
+                        createdAt: ann.created_at || new Date().toISOString(),
+                      }))}
+                    onAdd={() => {}}
+                  />
+                ) : selectedFileForPreview.file_type?.startsWith('image/') ? (
+                  // Image Viewer
+                  <ImageAnnotator
+                    url={selectedFileForPreview.file_url}
+                    annotateEnabled={false}
+                    annotations={movAnnotations
+                      .filter((ann: any) => ann.mov_file_id === selectedFileForPreview.id)
+                      .map((ann: any) => ({
+                        id: String(ann.id),
+                        rect: ann.rect || { x: 0, y: 0, w: 10, h: 10 },
+                        comment: ann.comment || '',
+                        createdAt: ann.created_at || new Date().toISOString(),
+                      }))}
+                    onAdd={() => {}}
+                  />
+                ) : (
+                  // Unsupported file type
+                  <div className="flex flex-col items-center justify-center h-full text-center p-6">
+                    <FileIcon className="h-16 w-16 text-muted-foreground/50 mb-4" />
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Preview not available for this file type
+                    </p>
+                    <Button
+                      onClick={() => window.open(selectedFileForPreview.file_url, "_blank")}
+                      variant="outline"
+                    >
+                      Open in New Tab
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right: Comments Sidebar */}
+            {(selectedFileForPreview.file_type === 'application/pdf' ||
+              selectedFileForPreview.file_type?.startsWith('image/')) && (
+              <div className="w-80 flex flex-col border-l border-gray-200 pl-4">
+                <h3 className="font-semibold text-sm mb-3 pb-2 border-b border-gray-200">
+                  Assessor Comments ({movAnnotations.filter((ann: any) => ann.mov_file_id === selectedFileForPreview.id).length})
+                </h3>
+                <div className="flex-1 overflow-y-auto space-y-3">
+                  {movAnnotations.filter((ann: any) => ann.mov_file_id === selectedFileForPreview.id).length === 0 ? (
+                    <div className="text-center py-8 text-sm text-muted-foreground">
+                      No comments from assessor yet.
+                    </div>
+                  ) : (
+                    movAnnotations
+                      .filter((ann: any) => ann.mov_file_id === selectedFileForPreview.id)
+                      .map((ann: any, idx: number) => (
+                        <div key={ann.id} className="p-3 rounded-sm bg-gray-50 border border-gray-200">
+                          <div className="flex items-start gap-2 mb-2">
+                            <span className="shrink-0 font-bold text-yellow-600 text-sm">#{idx + 1}</span>
+                          </div>
+                          <p className="text-sm text-gray-800 leading-relaxed mb-2">{ann.comment || '(No comment)'}</p>
+                          {ann.page_number !== undefined && (
+                            <p className="text-xs text-gray-500">Page {ann.page_number + 1}</p>
+                          )}
+                        </div>
+                      ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

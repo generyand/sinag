@@ -15,6 +15,24 @@ import type { ValidationError } from '../error';
 import type { ChecklistItemResponse } from '../system';
 
 /**
+ * BLGUDashboardResponseMovAnnotationsByIndicator
+ */
+export type BLGUDashboardResponseMovAnnotationsByIndicator = BLGUDashboardResponseMovAnnotationsByIndicatorAnyOf | null;
+
+
+/**
+ * BLGUDashboardResponseMovAnnotationsByIndicatorAnyOf
+ */
+export type BLGUDashboardResponseMovAnnotationsByIndicatorAnyOf = {[key: string]: BLGUDashboardResponseMovAnnotationsByIndicatorAnyOfItem[]};
+
+
+/**
+ * BLGUDashboardResponseMovAnnotationsByIndicatorAnyOfItem
+ */
+export type BLGUDashboardResponseMovAnnotationsByIndicatorAnyOfItem = { [key: string]: unknown };
+
+
+/**
  * BodyTestCalculationApiV1IndicatorsTestCalculationPost
  */
 export interface BodyTestCalculationApiV1IndicatorsTestCalculationPost {

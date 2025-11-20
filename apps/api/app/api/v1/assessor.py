@@ -55,7 +55,21 @@ async def validate_assessment_response(
     Saves public comment to the feedback_comments table.
     Assessor remarks are saved to the assessment_response for validators to review.
     Response data (checklist) is saved to assessment_response.response_data if provided.
+
+    Validation Rules:
+    - If validation_status is FAIL or CONDITIONAL, a non-empty public_comment is required
     """
+    # Backend validation: FAIL/CONDITIONAL status requires public comment
+    from app.db.enums import ValidationStatus
+
+    if validation_data.validation_status in [ValidationStatus.FAIL, ValidationStatus.CONDITIONAL]:
+        if not validation_data.public_comment or not validation_data.public_comment.strip():
+            raise HTTPException(
+                status_code=400,
+                detail=f"A public comment is required when setting status to {validation_data.validation_status.value}. "
+                       "This ensures BLGUs receive clear, actionable feedback for improvement."
+            )
+
     result = assessor_service.validate_assessment_response(
         db=db,
         response_id=response_id,

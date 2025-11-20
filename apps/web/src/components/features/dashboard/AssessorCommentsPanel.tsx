@@ -1,40 +1,76 @@
 /**
  * Assessor Comments Panel Component
  *
- * Displays assessor feedback comments when assessment needs rework.
+ * Displays assessor feedback comments and MOV annotations when assessment needs rework.
  * Only shows public comments (excludes internal assessor notes).
  *
  * IMPORTANT: This component shows feedback for completion purposes only.
  * Comments are about missing/incomplete fields, NOT compliance status.
  */
 
-import { MessageSquare, AlertCircle } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { MessageSquare, AlertCircle, ChevronDown, ChevronRight, FileText, Image as ImageIcon } from "lucide-react";
 import type { ReworkComment } from "@vantage/shared";
+
+interface MOVAnnotation {
+  annotation_id: number;
+  mov_file_id: number;
+  mov_filename: string;
+  mov_file_type: string;
+  annotation_type: string;
+  page: number;
+  comment: string;
+  created_at: string | null;
+}
 
 interface AssessorCommentsPanelProps {
   comments: ReworkComment[] | null;
+  movAnnotationsByIndicator?: Record<number, MOVAnnotation[]> | null;
 }
 
 export function AssessorCommentsPanel({
   comments,
+  movAnnotationsByIndicator,
 }: AssessorCommentsPanelProps) {
-  // Don't render if no comments
-  if (!comments || comments.length === 0) {
+  const [expandedIndicators, setExpandedIndicators] = useState<Set<number>>(new Set());
+
+  // Don't render if no comments AND no MOV annotations
+  if ((!comments || comments.length === 0) && (!movAnnotationsByIndicator || Object.keys(movAnnotationsByIndicator).length === 0)) {
     return null;
   }
 
-  // Group comments by indicator
-  const groupedComments = comments.reduce((acc, comment) => {
+  // Group and deduplicate comments by indicator
+  const groupedComments = comments?.reduce((acc, comment) => {
     const indicatorId = comment.indicator_id;
     if (!acc[indicatorId]) {
       acc[indicatorId] = {
         indicator_name: comment.indicator_name,
-        comments: [],
+        uniqueComments: new Map<string, ReworkComment>(), // Use Map to deduplicate by comment text
       };
     }
-    acc[indicatorId].comments.push(comment);
+
+    // Deduplicate: only keep the first occurrence of each unique comment text
+    const commentText = comment.comment.trim();
+    if (!acc[indicatorId].uniqueComments.has(commentText)) {
+      acc[indicatorId].uniqueComments.set(commentText, comment);
+    }
+
     return acc;
-  }, {} as Record<number, { indicator_name: string; comments: ReworkComment[] }>);
+  }, {} as Record<number, { indicator_name: string; uniqueComments: Map<string, ReworkComment> }>) || {};
+
+  const toggleIndicator = (indicatorId: number) => {
+    setExpandedIndicators(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(indicatorId)) {
+        newSet.delete(indicatorId);
+      } else {
+        newSet.add(indicatorId);
+      }
+      return newSet;
+    });
+  };
 
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return "Recently";
@@ -52,88 +88,162 @@ export function AssessorCommentsPanel({
     }
   };
 
-  const getCommentTypeColor = (commentType: string) => {
-    switch (commentType.toLowerCase()) {
-      case "specific issue":
-        return "text-orange-600 bg-orange-50 border-orange-200";
-      case "general":
-        return "text-blue-600 bg-blue-50 border-blue-200";
-      default:
-        return "text-[var(--text-muted)] bg-[var(--hover)] border-[var(--border)]";
-    }
-  };
+  // Merge indicator IDs from both comments and MOV annotations
+  const allIndicatorIds = new Set<number>([
+    ...Object.keys(groupedComments).map(Number),
+    ...Object.keys(movAnnotationsByIndicator || {}).map(Number),
+  ]);
+
+  const totalIndicators = allIndicatorIds.size;
+  const totalUniqueComments = Object.values(groupedComments).reduce(
+    (sum, group) => sum + group.uniqueComments.size,
+    0
+  );
+  const totalMovAnnotations = Object.values(movAnnotationsByIndicator || {}).reduce(
+    (sum, annotations) => sum + annotations.length,
+    0
+  );
 
   return (
-    <div className="bg-[var(--card)] rounded-lg border border-[var(--border)] p-6 shadow-sm">
-      {/* Header */}
-      <div className="flex items-start gap-3 mb-6 pb-4 border-b border-[var(--border)]">
-        <div className="flex-shrink-0 mt-1">
-          <AlertCircle className="w-6 h-6 text-amber-600" />
-        </div>
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-[var(--foreground)] mb-1">
-            Action Required: Assessor Feedback
+    <div className="bg-[var(--card)] rounded-sm border border-[var(--border)] shadow-sm">
+      {/* Compact Header */}
+      <div className="flex items-center gap-3 p-4 border-b border-[var(--border)] bg-amber-50 dark:bg-amber-950/20">
+        <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-semibold text-[var(--foreground)]">
+            Assessor Feedback ({totalIndicators} {totalIndicators === 1 ? 'Indicator' : 'Indicators'})
           </h3>
-          <p className="text-sm text-[var(--text-secondary)]">
-            Please review and address the following comments from the assessor before resubmitting your assessment.
+          <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+            {totalUniqueComments > 0 && `${totalUniqueComments} text ${totalUniqueComments === 1 ? 'comment' : 'comments'}`}
+            {totalUniqueComments > 0 && totalMovAnnotations > 0 && ' • '}
+            {totalMovAnnotations > 0 && `${totalMovAnnotations} MOV ${totalMovAnnotations === 1 ? 'annotation' : 'annotations'}`}
           </p>
         </div>
       </div>
 
-      {/* Comments grouped by indicator */}
-      <div className="space-y-6">
-        {Object.entries(groupedComments).map(([indicatorIdStr, group]) => (
-          <div
-            key={indicatorIdStr}
-            className="bg-[var(--hover)] rounded-lg p-4 border border-[var(--border)]"
-          >
-            {/* Indicator Name */}
-            <div className="flex items-center gap-2 mb-3">
-              <MessageSquare className="w-4 h-4 text-[var(--text-secondary)]" />
-              <h4 className="font-semibold text-[var(--foreground)]">
-                {group.indicator_name}
-              </h4>
-            </div>
+      {/* Accordion-style feedback (comments + MOV annotations) */}
+      <div className="divide-y divide-[var(--border)]">
+        {Array.from(allIndicatorIds).sort((a, b) => a - b).map((indicatorId) => {
+          const commentGroup = groupedComments[indicatorId];
+          const movAnnotations = movAnnotationsByIndicator?.[indicatorId] || [];
+          const commentsArray = commentGroup ? Array.from(commentGroup.uniqueComments.values()) : [];
+          const isExpanded = expandedIndicators.has(indicatorId);
 
-            {/* Comments for this indicator */}
-            <div className="space-y-3">
-              {group.comments.map((comment, index) => (
-                <div
-                  key={index}
-                  className="bg-[var(--card)] rounded-md p-3 border-l-4 border-amber-500"
-                >
-                  {/* Comment metadata */}
-                  <div className="flex items-center gap-2 mb-2">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${getCommentTypeColor(
-                        comment.comment_type
-                      )}`}
-                    >
-                      {comment.comment_type}
-                    </span>
-                    <span className="text-xs text-[var(--text-secondary)]">
-                      {formatDate(comment.created_at)}
-                    </span>
-                  </div>
+          // Get indicator name from either comments or MOV annotations
+          const indicatorName = commentGroup?.indicator_name || movAnnotations[0]?.indicator_name || `Indicator ${indicatorId}`;
 
-                  {/* Comment text */}
-                  <p className="text-sm text-[var(--foreground)]">
-                    {comment.comment}
-                  </p>
+          const totalFeedbackItems = commentsArray.length + movAnnotations.length;
+
+          return (
+            <div key={indicatorId}>
+              {/* Indicator Header (Clickable) */}
+              <button
+                onClick={() => toggleIndicator(indicatorId)}
+                className="w-full flex items-center gap-3 p-3 hover:bg-[var(--hover)] transition-colors text-left"
+              >
+                <div className="flex-shrink-0">
+                  {isExpanded ? (
+                    <ChevronDown className="w-4 h-4 text-[var(--text-secondary)]" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-[var(--text-secondary)]" />
+                  )}
                 </div>
-              ))}
+                <MessageSquare className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-medium text-sm text-[var(--foreground)] truncate">
+                    {indicatorName}
+                  </h4>
+                </div>
+                <div className="flex-shrink-0 flex items-center gap-2">
+                  {commentsArray.length > 0 && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-800">
+                      {commentsArray.length} {commentsArray.length === 1 ? 'comment' : 'comments'}
+                    </span>
+                  )}
+                  {movAnnotations.length > 0 && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 border border-purple-200 dark:border-purple-800">
+                      {movAnnotations.length} MOV {movAnnotations.length === 1 ? 'annotation' : 'annotations'}
+                    </span>
+                  )}
+                </div>
+              </button>
+
+              {/* Feedback (Collapsible) */}
+              {isExpanded && (
+                <div className="px-3 pb-3 space-y-3">
+                  {/* Text Comments */}
+                  {commentsArray.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-xs font-semibold text-blue-700 dark:text-blue-300 ml-7 uppercase tracking-wide">
+                        Text Comments
+                      </div>
+                      {commentsArray.map((comment, index) => (
+                        <div
+                          key={`comment-${index}`}
+                          className="bg-blue-50 dark:bg-blue-950/20 rounded-sm p-3 border-l-2 border-blue-500 ml-7"
+                        >
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <MessageSquare className="w-3 h-3 text-blue-600" />
+                            <span className="text-xs text-[var(--text-secondary)]">
+                              {formatDate(comment.created_at)}
+                            </span>
+                          </div>
+                          <p className="text-sm text-[var(--foreground)] leading-relaxed">
+                            {comment.comment}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* MOV Annotations */}
+                  {movAnnotations.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-xs font-semibold text-purple-700 dark:text-purple-300 ml-7 uppercase tracking-wide">
+                        MOV Annotations
+                      </div>
+                      {movAnnotations.map((annotation, index) => (
+                        <div
+                          key={`mov-${index}`}
+                          className="bg-purple-50 dark:bg-purple-950/20 rounded-sm p-3 border-l-2 border-purple-500 ml-7"
+                        >
+                          <div className="flex items-center gap-2 mb-1.5">
+                            {annotation.mov_file_type === 'application/pdf' ? (
+                              <FileText className="w-3 h-3 text-purple-600" />
+                            ) : (
+                              <ImageIcon className="w-3 h-3 text-purple-600" />
+                            )}
+                            <span className="text-xs font-medium text-purple-700 dark:text-purple-300">
+                              {annotation.mov_filename}
+                            </span>
+                            {annotation.annotation_type === 'pdfRect' && annotation.page !== undefined && (
+                              <span className="text-xs text-[var(--text-secondary)]">
+                                (Page {annotation.page + 1})
+                              </span>
+                            )}
+                            <span className="text-xs text-[var(--text-secondary)] ml-auto">
+                              {formatDate(annotation.created_at)}
+                            </span>
+                          </div>
+                          <p className="text-sm text-[var(--foreground)] leading-relaxed">
+                            {annotation.comment}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* Footer with action prompt */}
-      <div className="mt-6 pt-4 border-t border-[var(--border)]">
-        <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-          <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
-            💡 Tip: Click on an indicator in the navigation above to review and update your responses.
-          </p>
-        </div>
+      {/* Compact Footer */}
+      <div className="p-3 border-t border-[var(--border)] bg-blue-50 dark:bg-blue-950/20">
+        <p className="text-xs text-blue-700 dark:text-blue-300">
+          💡 Tip: Click an indicator above to expand/collapse its comments. Navigate to each indicator to update your responses.
+        </p>
       </div>
     </div>
   );

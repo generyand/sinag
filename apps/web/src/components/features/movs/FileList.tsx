@@ -1,7 +1,9 @@
 "use client";
 
-import { File, Trash2, Download, Eye, FileText, Image, FileIcon } from "lucide-react";
+import { useState } from "react";
+import { File, Trash2, Download, Eye, FileText, Image, FileIcon, MessageSquare, Highlighter } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -9,8 +11,26 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { formatDistanceToNow } from "date-fns";
 import { MOVFileResponse } from "@vantage/shared";
+import dynamic from "next/dynamic";
+
+// Dynamically import annotators to avoid SSR issues
+const PdfAnnotator = dynamic(() => import("@/components/shared/PdfAnnotator"), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading PDF viewer...</div>,
+});
+
+const ImageAnnotator = dynamic(() => import("@/components/shared/ImageAnnotator"), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading image viewer...</div>,
+});
 
 interface FileListProps {
   files: MOVFileResponse[];
@@ -20,6 +40,7 @@ interface FileListProps {
   canDelete?: boolean;
   loading?: boolean;
   emptyMessage?: string;
+  movAnnotations?: any[];
 }
 
 function getFileIcon(fileType: string) {
@@ -55,7 +76,61 @@ export function FileList({
   canDelete = false,
   loading = false,
   emptyMessage = "No files uploaded yet",
+  movAnnotations = [],
 }: FileListProps) {
+  const [viewAnnotationsDialog, setViewAnnotationsDialog] = useState<{
+    open: boolean;
+    file: MOVFileResponse | null;
+    annotations: any[];
+  }>({
+    open: false,
+    file: null,
+    annotations: [],
+  });
+
+  // Helper function to get annotations for a specific file
+  const getAnnotationsForFile = (fileId: number) => {
+    return movAnnotations.filter((ann: any) => ann.mov_file_id === fileId);
+  };
+
+  // Handler to open annotation viewer
+  const handleViewAnnotations = (file: MOVFileResponse) => {
+    const annotations = getAnnotationsForFile(file.id);
+    setViewAnnotationsDialog({
+      open: true,
+      file,
+      annotations,
+    });
+  };
+
+  // Handler to close annotation viewer
+  const handleCloseAnnotations = () => {
+    setViewAnnotationsDialog({
+      open: false,
+      file: null,
+      annotations: [],
+    });
+  };
+
+  // Override the preview handler to show annotations in modal instead
+  const handlePreviewClick = (file: MOVFileResponse) => {
+    const annotations = getAnnotationsForFile(file.id);
+
+    // If onPreview callback is provided (like in assessor view), always use it
+    if (onPreview) {
+      onPreview(file);
+      return;
+    }
+
+    // Otherwise, if file has annotations OR is PDF/image, show in modal with annotator
+    if (annotations.length > 0 || file.file_type.includes('pdf') || file.file_type.startsWith('image/')) {
+      setViewAnnotationsDialog({
+        open: true,
+        file,
+        annotations,
+      });
+    }
+  };
   if (loading) {
     return (
       <Card className="border-none shadow-none bg-transparent">
@@ -87,82 +162,156 @@ export function FileList({
   }
 
   return (
-    <Card className="border-none shadow-none bg-transparent">
-      <CardHeader className="px-0 pb-3">
-        <CardTitle className="text-base font-semibold">Uploaded Files</CardTitle>
-        <CardDescription>
-          {files.length} file{files.length !== 1 ? "s" : ""} uploaded
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="p-0">
-        <div className="space-y-2">
-          {files.map((file) => (
-            <div
-              key={file.id}
-              className="p-3 rounded-lg border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--hover)] transition-colors"
-            >
-              {/* File Info Header */}
-              <div className="flex items-start gap-3 mb-3">
-                <div className="flex-shrink-0 mt-0.5">
-                  {getFileIcon(file.file_type)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 break-words">
-                    {file.file_name}
-                  </p>
-                  <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
-                    <span>{formatFileSize(file.file_size)}</span>
-                    <span>•</span>
-                    <span>
-                      {formatDistanceToNow(new Date(file.uploaded_at), {
-                        addSuffix: true,
-                      })}
-                    </span>
+    <>
+      <Card className="border-none shadow-none bg-transparent">
+        <CardHeader className="px-0 pb-3">
+          <CardTitle className="text-base font-semibold">Uploaded Files</CardTitle>
+          <CardDescription>
+            {files.length} file{files.length !== 1 ? "s" : ""} uploaded
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="space-y-2">
+            {files.map((file) => {
+              const fileAnnotations = getAnnotationsForFile(file.id);
+              const hasAnnotations = fileAnnotations.length > 0;
+
+              return (
+                <div
+                  key={file.id}
+                  className="p-3 rounded-lg border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--hover)] transition-colors"
+                >
+                  {/* File Info Header */}
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="flex-shrink-0 mt-0.5">
+                      {getFileIcon(file.file_type)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-gray-900 break-words">
+                          {file.file_name}
+                        </p>
+                        {hasAnnotations && (
+                          <Badge variant="destructive" className="text-xs">
+                            <MessageSquare className="h-3 w-3 mr-1" />
+                            {fileAnnotations.length} {fileAnnotations.length === 1 ? "note" : "notes"}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                        <span>{formatFileSize(file.file_size)}</span>
+                        <span>•</span>
+                        <span>
+                          {formatDistanceToNow(new Date(file.uploaded_at), {
+                            addSuffix: true,
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons Row */}
+                  <div className="flex items-center gap-1 pt-2 border-t border-[var(--border)]">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handlePreviewClick(file)}
+                      title="Preview file"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    {onDownload && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onDownload(file)}
+                        title="Download file"
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {canDelete && onDelete && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onDelete(file.id)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        title="Delete file"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
-              </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
-              {/* Action Buttons Row */}
-              <div className="flex items-center gap-1 pt-2 border-t border-[var(--border)]">
-                {onPreview && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onPreview(file)}
-                    title="Preview file"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
+      {/* Annotation Viewer Dialog */}
+      <Dialog open={viewAnnotationsDialog.open} onOpenChange={handleCloseAnnotations}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col bg-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5 text-blue-600" />
+              {viewAnnotationsDialog.file?.file_name}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-auto bg-white">
+            {viewAnnotationsDialog.file && (
+              <>
+                {/* PDF Annotator for PDF files */}
+                {viewAnnotationsDialog.file.file_type.includes('pdf') && (
+                  <PdfAnnotator
+                    url={viewAnnotationsDialog.file.file_url}
+                    annotateEnabled={false}
+                    annotations={viewAnnotationsDialog.annotations.map((ann: any) => ({
+                      id: String(ann.id),
+                      type: 'pdfRect' as const,
+                      page: ann.page_number || 0,
+                      rect: ann.rect || { x: 0, y: 0, w: 10, h: 10 },
+                      rects: ann.rects,
+                      comment: ann.comment || '',
+                      createdAt: ann.created_at || new Date().toISOString(),
+                    }))}
+                    onAdd={() => {}}
+                  />
                 )}
-                {onDownload && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onDownload(file)}
-                    title="Download file"
-                  >
-                    <Download className="h-4 w-4" />
-                  </Button>
+
+                {/* Image Annotator for image files */}
+                {viewAnnotationsDialog.file.file_type.startsWith('image/') && (
+                  <ImageAnnotator
+                    url={viewAnnotationsDialog.file.file_url}
+                    annotateEnabled={false}
+                    annotations={viewAnnotationsDialog.annotations.map((ann: any) => ({
+                      id: String(ann.id),
+                      rect: ann.rect || { x: 0, y: 0, w: 10, h: 10 },
+                      comment: ann.comment || '',
+                      createdAt: ann.created_at || new Date().toISOString(),
+                    }))}
+                    onAdd={() => {}}
+                  />
                 )}
-                {canDelete && onDelete && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onDelete(file.id)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    title="Delete file"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+
+                {/* Message for other file types */}
+                {!viewAnnotationsDialog.file.file_type.includes('pdf') &&
+                 !viewAnnotationsDialog.file.file_type.startsWith('image/') && (
+                  <div className="p-8 text-center text-gray-500">
+                    <FileIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Preview is only available for PDF and image files.</p>
+                    <p className="text-sm mt-2">Please download the file to view it.</p>
+                  </div>
                 )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

@@ -25,6 +25,7 @@ interface FileListWithDeleteProps {
   loading?: boolean;
   emptyMessage?: string;
   onDeleteSuccess?: (fileId: number) => void;
+  movAnnotations?: any[];
 }
 
 /**
@@ -45,6 +46,7 @@ export function FileListWithDelete({
   loading = false,
   emptyMessage = "No files uploaded yet",
   onDeleteSuccess,
+  movAnnotations = [],
 }: FileListWithDeleteProps) {
   const [fileToDelete, setFileToDelete] = useState<number | null>(null);
   const [deletingFileId, setDeletingFileId] = useState<number | null>(null);
@@ -127,6 +129,7 @@ export function FileListWithDelete({
         canDelete={canDelete}
         loading={loading}
         emptyMessage={emptyMessage}
+        movAnnotations={movAnnotations}
       />
 
       {/* Confirmation Dialog */}

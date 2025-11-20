@@ -213,6 +213,7 @@ export function MiddleMovFilesPanel({ assessment, expandedId }: MiddleMovFilesPa
             canDelete={false}
             loading={false}
             emptyMessage="No files uploaded yet"
+            movAnnotations={annotations as any[]}
           />
         )}
       </div>

@@ -19,6 +19,7 @@ import {
 import { useAuthStore } from "@/store/useAuthStore";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useGetBlguDashboardAssessmentId } from "@vantage/shared";
 
 export default function BLGUAssessmentsPage() {
   const { isAuthenticated, user, token } = useAuthStore();
@@ -31,6 +32,16 @@ export default function BLGUAssessmentsPage() {
   const validation = useAssessmentValidation(assessment);
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  // Fetch MOV annotations for rework workflow
+  const { data: dashboardData } = useGetBlguDashboardAssessmentId(
+    assessment ? parseInt(assessment.id) : 0,
+    {
+      query: {
+        enabled: !!assessment?.id,
+      } as any,
+    }
+  );
 
   // Selected indicator state
   const [selectedIndicatorId, setSelectedIndicatorId] = useState<string | null>(
@@ -212,6 +223,8 @@ export default function BLGUAssessmentsPage() {
             isLocked={isLocked}
             updateAssessmentData={updateAssessmentData}
             onIndicatorSelect={handleIndicatorSelect}
+            movAnnotations={dashboardData?.mov_annotations_by_indicator || {}}
+            dashboardData={dashboardData}
           />
         </main>
       </div>

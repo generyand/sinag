@@ -221,7 +221,7 @@ export default function PdfAnnotator({ url, annotateEnabled, annotations, onAdd,
       return (
         <>
           {pageAnns.map((a, idx) => (
-            <div key={a.id} data-ann-id={a.id} style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, pointerEvents: 'none', zIndex: 100 }}>
+            <div key={a.id} data-ann-id={a.id} className="group" style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, pointerEvents: a.comment ? 'auto' : 'none', zIndex: 100 }}>
               {(() => {
                 const sourceRects = Array.isArray(a.rects) && a.rects.length > 0 ? a.rects : [a.rect];
                 const first = sourceRects[0];
@@ -244,6 +244,7 @@ export default function PdfAnnotator({ url, annotateEnabled, annotations, onAdd,
                           ...rectCssFrom(r),
                           backgroundColor: 'rgba(250, 204, 21, 0.35)',
                           border: '2px solid rgb(250, 204, 21)',
+                          borderRadius: '0.125rem',
                           pointerEvents: 'none',
                           zIndex: 110,
                         }}
@@ -266,6 +267,31 @@ export default function PdfAnnotator({ url, annotateEnabled, annotations, onAdd,
                     >
                 {idx + 1}
                     </div>
+                    {/* Comment tooltip */}
+                    {a.comment && (
+                      <div
+                        className="invisible group-hover:visible"
+                        style={{
+                          position: 'absolute',
+                          ...badgeCss,
+                          transform: 'translateY(100%)',
+                          marginTop: '4px',
+                          background: '#fff',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '0.125rem',
+                          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                          padding: '8px',
+                          fontSize: 14,
+                          color: '#1f2937',
+                          maxWidth: '300px',
+                          whiteSpace: 'pre-wrap',
+                          zIndex: 120,
+                          pointerEvents: 'none',
+                        }}
+                      >
+                        {a.comment}
+                      </div>
+                    )}
                   </>
                 );
               })()}
@@ -309,7 +335,7 @@ export default function PdfAnnotator({ url, annotateEnabled, annotations, onAdd,
   }, [focusAnnotationId, annotations]);
 
   return (
-    <div ref={containerRef} className="h-full w-full border border-gray-200 rounded bg-white overflow-auto relative">
+    <div ref={containerRef} className="h-full w-full bg-white overflow-auto relative">
       <Worker workerUrl="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
         <Viewer
           fileUrl={url}
