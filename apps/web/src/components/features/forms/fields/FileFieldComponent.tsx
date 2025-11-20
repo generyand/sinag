@@ -7,7 +7,7 @@ import { useState, useRef, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle2, Loader2, Info, X, FileIcon } from "lucide-react";
+import { CheckCircle2, Loader2, Info, X, FileIcon, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
 
@@ -99,6 +99,9 @@ export function FileFieldComponent({
       } as any,
     } as any
   );
+
+  // Normalize status for case-insensitive comparison
+  const normalizedStatus = ((assessmentData as any)?.assessment?.status || '').toUpperCase();
 
   // Upload mutation
   const uploadMutation =
@@ -264,36 +267,45 @@ export function FileFieldComponent({
   const files = allFiles.filter((f: any) => f.field_id === field.field_id);
 
   // Permission checks
-  const assessmentStatus = (assessmentData as any)?.assessment?.status;
   const isBLGU = user?.role === "BLGU_USER";
   const isAssessorOrValidator =
     user?.role === "ASSESSOR" ||
     user?.role === "VALIDATOR" ||
     user?.role === "MLGOO_DILG";
 
-  // Can upload: Only BLGU users, only for DRAFT or NEEDS_REWORK status, and not disabled
+  // Can upload: Only BLGU users, only for DRAFT or REWORK/NEEDS_REWORK status, and not disabled
   const canUpload =
     !disabled &&
     isBLGU &&
-    (assessmentStatus === AssessmentStatus.DRAFT ||
-      assessmentStatus === AssessmentStatus.NEEDS_REWORK);
+    (normalizedStatus === 'DRAFT' ||
+      normalizedStatus === 'REWORK' ||
+      normalizedStatus === 'NEEDS_REWORK');
 
-  // Can delete: Only BLGU users, only for DRAFT or NEEDS_REWORK status, and not disabled
+  // Can delete: Only BLGU users, only for DRAFT or REWORK/NEEDS_REWORK status, and not disabled
   const canDelete =
     !disabled &&
     isBLGU &&
-    (assessmentStatus === AssessmentStatus.DRAFT ||
-      assessmentStatus === AssessmentStatus.NEEDS_REWORK);
+    (normalizedStatus === 'DRAFT' ||
+      normalizedStatus === 'REWORK' ||
+      normalizedStatus === 'NEEDS_REWORK');
 
   // Reason why upload is disabled
   const uploadDisabledReason = !canUpload
-    ? assessmentStatus === AssessmentStatus.SUBMITTED_FOR_REVIEW ||
-      assessmentStatus === AssessmentStatus.VALIDATED
+    ? normalizedStatus === 'SUBMITTED_FOR_REVIEW' ||
+      normalizedStatus === 'VALIDATED' ||
+      normalizedStatus === 'SUBMITTED' ||
+      normalizedStatus === 'COMPLETED'
       ? "File uploads are disabled for submitted or validated assessments"
       : !isBLGU
       ? "Only BLGU users can upload files"
       : null
     : null;
+
+  // Count annotations for this field
+  const fieldAnnotations = movAnnotations.filter((ann: any) =>
+    files.some(f => f.id === ann.mov_file_id)
+  );
+  const hasAnnotations = fieldAnnotations.length > 0;
 
   return (
     <div className="space-y-4">
@@ -308,6 +320,20 @@ export function FileFieldComponent({
           <p className="text-sm text-[var(--text-secondary)] whitespace-pre-line">{field.help_text}</p>
         )}
       </div>
+
+      {/* Rework Alert (show if there are annotations on uploaded files) */}
+      {hasAnnotations && (normalizedStatus === 'REWORK' || normalizedStatus === 'NEEDS_REWORK') && (
+        <Alert className="border-orange-200 bg-orange-50">
+          <AlertCircle className="h-4 w-4 text-orange-600" />
+          <AlertDescription className="text-orange-900">
+            <p className="font-medium mb-1">Assessor feedback on your files</p>
+            <p className="text-sm">
+              The assessor has left {fieldAnnotations.length} comment{fieldAnnotations.length !== 1 ? 's' : ''} on your uploaded files.
+              Please review the feedback by clicking the eye icon on each file, then delete and re-upload corrected files.
+            </p>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Upload Instructions (show what documents are needed) */}
       {(field as any).instructions && (
@@ -394,8 +420,10 @@ export function FileFieldComponent({
       {files.length > 0 &&
         !canDelete &&
         isBLGU &&
-        (assessmentStatus === AssessmentStatus.SUBMITTED_FOR_REVIEW ||
-          assessmentStatus === AssessmentStatus.VALIDATED) && (
+        (normalizedStatus === 'SUBMITTED_FOR_REVIEW' ||
+          normalizedStatus === 'VALIDATED' ||
+          normalizedStatus === 'SUBMITTED' ||
+          normalizedStatus === 'COMPLETED') && (
           <Alert className="border-blue-200 bg-blue-50">
             <Info className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-blue-900">

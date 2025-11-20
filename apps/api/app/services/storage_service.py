@@ -559,13 +559,13 @@ class StorageService:
         if not assessment:
             return False, "Assessment not found"
 
-        # Check assessment status - only allow deletion for DRAFT or NEEDS_REWORK
-        allowed_statuses = [AssessmentStatus.DRAFT, AssessmentStatus.NEEDS_REWORK]
+        # Check assessment status - only allow deletion for DRAFT, REWORK, or NEEDS_REWORK
+        allowed_statuses = [AssessmentStatus.DRAFT, AssessmentStatus.REWORK, AssessmentStatus.NEEDS_REWORK]
         if assessment.status not in allowed_statuses:
             return (
                 False,
                 f"Cannot delete files from {assessment.status} assessments. "
-                f"Deletion is only allowed for Draft or Needs Rework assessments.",
+                f"Deletion is only allowed for Draft or Rework assessments.",
             )
 
         return True, None
@@ -609,10 +609,29 @@ class StorageService:
         if not mov_file:
             raise HTTPException(status_code=404, detail=f"File with ID {file_id} not found")
 
-        # Construct storage path
-        storage_path = self._get_storage_path(
-            mov_file.assessment_id, mov_file.indicator_id, mov_file.file_name
-        )
+        # Extract storage path from file_url
+        # file_url format: https://[project].supabase.co/storage/v1/object/public/mov-files/{storage_path}
+        # We need to extract the path after 'mov-files/'
+        storage_path = None
+        try:
+            url_parts = mov_file.file_url.split(f"/{self.MOV_FILES_BUCKET}/")
+            if len(url_parts) == 2:
+                storage_path = url_parts[1]
+            else:
+                # Fallback to old method if URL format is unexpected
+                logger.warning(
+                    f"Could not extract storage path from URL {mov_file.file_url}, "
+                    f"using fallback method"
+                )
+                storage_path = self._get_storage_path(
+                    mov_file.assessment_id, mov_file.indicator_id, mov_file.file_name
+                )
+        except Exception as e:
+            logger.error(f"Error extracting storage path from URL: {str(e)}")
+            # Fallback to old method
+            storage_path = self._get_storage_path(
+                mov_file.assessment_id, mov_file.indicator_id, mov_file.file_name
+            )
 
         # Delete from Supabase Storage
         # Note: We don't fail if storage deletion fails - file might not exist
