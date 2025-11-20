@@ -83,6 +83,8 @@ export function FileFieldComponent({
   const { data: assessmentData } = useGetAssessmentsMyAssessment({
     query: {
       enabled: !!assessmentId,
+      cacheTime: 0,
+      staleTime: 0,
     } as any,
   } as any);
 
@@ -269,63 +271,39 @@ export function FileFieldComponent({
   // Get rework timestamp from assessment data
   const reworkRequestedAt = (assessmentData as any)?.assessment?.rework_requested_at;
 
-  // Separate files based on status and upload time
+  // Separate files based on rework timestamp
   const activeFiles = allFiles.filter((f: any) => f.field_id === field.field_id && !f.deleted_at);
   const deletedFiles = allFiles.filter((f: any) => f.field_id === field.field_id && f.deleted_at);
 
-  // During REWORK status, separate old files (pre-rework) from new files (during rework)
+  // During REWORK status, separate old files from new files
   const isReworkStatus = normalizedStatus === 'REWORK' || normalizedStatus === 'NEEDS_REWORK';
 
-  // Debug logging
-  console.log('[FileFieldComponent] Debug info:', {
-    fieldId: field.field_id,
-    isReworkStatus,
-    reworkRequestedAt,
-    normalizedStatus,
-    activeFilesCount: activeFiles.length,
-    activeFiles: activeFiles.map((f: any) => ({
-      id: f.id,
-      name: f.file_name,
-      uploadedAt: f.uploaded_at,
-    })),
-  });
-
-  let oldFiles: any[] = [];
+  let previousFiles: any[] = [];
   let newFiles: any[] = [];
 
   if (isReworkStatus && reworkRequestedAt) {
     const reworkDate = new Date(reworkRequestedAt);
-    console.log('[FileFieldComponent] Rework date:', reworkDate.toISOString());
 
-    // Files uploaded before rework was requested are "old" (pre-rework)
-    oldFiles = activeFiles.filter((f: any) => {
-      const fileDate = new Date(f.uploaded_at);
-      const isOld = fileDate < reworkDate;
-      console.log('[FileFieldComponent] File', f.id, ':', {
-        uploadedAt: fileDate.toISOString(),
-        isOld,
-      });
-      return isOld;
+    // Files uploaded BEFORE rework was requested are "old" (from before rework)
+    const oldFiles = activeFiles.filter((f: any) => {
+      const uploadDate = new Date(f.uploaded_at);
+      return uploadDate < reworkDate;
     });
 
-    // Files uploaded after rework was requested are "new" (during rework)
-    newFiles = activeFiles.filter((f: any) => new Date(f.uploaded_at) >= reworkDate);
-
-    console.log('[FileFieldComponent] After filtering:', {
-      oldFilesCount: oldFiles.length,
-      newFilesCount: newFiles.length,
+    // Files uploaded AFTER rework was requested are "new" (during rework)
+    const recentFiles = activeFiles.filter((f: any) => {
+      const uploadDate = new Date(f.uploaded_at);
+      return uploadDate >= reworkDate;
     });
+
+    previousFiles = [...deletedFiles, ...oldFiles];
+    newFiles = recentFiles;
   } else {
-    console.log('[FileFieldComponent] Not in rework or no rework timestamp, showing all files as new');
-    // Not in rework status, show all active files
+    // Not in rework status, show all active files as new
     newFiles = activeFiles;
   }
 
-  // Show old files (from before rework) with deleted files in the "Previous Files" section
-  const previousFiles = [...deletedFiles, ...oldFiles];
-  const showPreviousFilesAsReference =
-    isReworkStatus &&
-    previousFiles.length > 0;
+  const showPreviousFilesAsReference = isReworkStatus && previousFiles.length > 0;
 
   // Only show new files in the main upload section during rework
   const files = newFiles;
@@ -467,41 +445,17 @@ export function FileFieldComponent({
         </Alert>
       )}
 
-      {/* Previous Files (Old files from before rework + deleted files - shown as reference during rework) */}
-      {showPreviousFilesAsReference && previousFiles.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm text-orange-600 font-medium">
-            <AlertCircle className="h-4 w-4" />
-            <span>Previous Files (From Before Rework - For Reference Only)</span>
-          </div>
-          <div className="border-2 border-orange-200 rounded-md bg-orange-50/30 p-3">
-            <FileList
-              files={previousFiles}
-              onPreview={handlePreview}
-              onDownload={handleDownload}
-              canDelete={false}
-              loading={isLoadingFiles}
-              emptyMessage=""
-              movAnnotations={movAnnotations}
-            />
-            <p className="text-xs text-orange-600 mt-2 italic">
-              These are files from your previous submission. They are shown here so you can review the assessor's feedback. You can upload multiple new files and manually delete any you don't need.
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Uploaded Files List (New files during rework, or all files in other statuses) */}
       {files.length > 0 && (
         <div className="space-y-2">
           {isReworkStatus && (
-            <div className="flex items-center gap-2 text-sm text-green-600 font-medium mt-4">
+            <div className="flex items-center gap-2 text-sm text-green-600 font-medium">
               <CheckCircle2 className="h-4 w-4" />
-              <span>New Uploaded Files (During Rework)</span>
+              <span>Uploaded Files</span>
             </div>
           )}
           {!isReworkStatus && (
-            <div className="flex items-center gap-2 text-sm font-medium mt-2">
+            <div className="flex items-center gap-2 text-sm font-medium">
               <span>Uploaded Files</span>
             </div>
           )}
@@ -514,6 +468,31 @@ export function FileFieldComponent({
             onDeleteSuccess={handleDeleteSuccess}
             movAnnotations={movAnnotations}
           />
+        </div>
+      )}
+
+      {/* Previous Files (Old files from before rework + deleted files - shown as reference during rework) */}
+      {showPreviousFilesAsReference && previousFiles.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm text-orange-600 font-medium">
+            <AlertCircle className="h-4 w-4" />
+            <span>Previous Files</span>
+          </div>
+          <div className="border-2 border-orange-200 rounded-md bg-orange-50/30 p-3">
+            <FileList
+              files={previousFiles}
+              onPreview={handlePreview}
+              onDownload={handleDownload}
+              canDelete={false}
+              loading={isLoadingFiles}
+              emptyMessage=""
+              movAnnotations={movAnnotations}
+              hideHeader={true}
+            />
+            <p className="text-xs text-orange-600 mt-2 italic">
+              These are files from your previous submission. They are shown here so you can review the assessor's feedback.
+            </p>
+          </div>
         </div>
       )}
 

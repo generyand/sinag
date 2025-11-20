@@ -307,6 +307,9 @@ class AssessmentService:
             "validated_at": assessment.validated_at.isoformat()
             if assessment.validated_at
             else None,
+            "rework_requested_at": assessment.rework_requested_at.isoformat()
+            if assessment.rework_requested_at
+            else None,
         }
 
         return {

@@ -41,6 +41,7 @@ interface FileListProps {
   loading?: boolean;
   emptyMessage?: string;
   movAnnotations?: any[];
+  hideHeader?: boolean;
 }
 
 function getFileIcon(fileType: string) {
@@ -77,6 +78,7 @@ export function FileList({
   loading = false,
   emptyMessage = "No files uploaded yet",
   movAnnotations = [],
+  hideHeader = false,
 }: FileListProps) {
   const [viewAnnotationsDialog, setViewAnnotationsDialog] = useState<{
     open: boolean;
@@ -164,12 +166,14 @@ export function FileList({
   return (
     <>
       <Card className="border-none shadow-none bg-transparent">
-        <CardHeader className="px-0 pb-3">
-          <CardTitle className="text-base font-semibold">Uploaded Files</CardTitle>
-          <CardDescription>
-            {files.length} file{files.length !== 1 ? "s" : ""} uploaded
-          </CardDescription>
-        </CardHeader>
+        {!hideHeader && (
+          <CardHeader className="px-0 pb-3">
+            <CardTitle className="text-base font-semibold">Uploaded Files</CardTitle>
+            <CardDescription>
+              {files.length} file{files.length !== 1 ? "s" : ""} uploaded
+            </CardDescription>
+          </CardHeader>
+        )}
         <CardContent className="p-0">
           <div className="space-y-2">
             {files.map((file) => {
