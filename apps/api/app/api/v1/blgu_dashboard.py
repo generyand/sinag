@@ -235,7 +235,7 @@ def get_blgu_dashboard(
                         "comment_type": feedback.comment_type,
                         "indicator_id": response.indicator_id,
                         "indicator_name": response.indicator.name,
-                        "created_at": feedback.created_at.isoformat() if feedback.created_at else None,
+                        "created_at": feedback.created_at.isoformat() + 'Z' if feedback.created_at else None,
                     })
 
         rework_comments = comments_list if comments_list else None
@@ -283,7 +283,7 @@ def get_blgu_dashboard(
                         "rect": annotation.rect,
                         "rects": annotation.rects,
                         "comment": annotation.comment,
-                        "created_at": annotation.created_at.isoformat() if annotation.created_at else None,
+                        "created_at": annotation.created_at.isoformat() + 'Z' if annotation.created_at else None,
                         "indicator_id": response.indicator_id,
                         "indicator_name": response.indicator.name,
                     })
@@ -303,7 +303,7 @@ def get_blgu_dashboard(
         "assessment_id": assessment_id,
         "status": assessment.status.value,  # Epic 5.0: Assessment workflow status
         "rework_count": assessment.rework_count,  # Epic 5.0: Rework cycle count (0 or 1)
-        "rework_requested_at": assessment.rework_requested_at.isoformat() if assessment.rework_requested_at else None,  # Epic 5.0
+        "rework_requested_at": assessment.rework_requested_at.isoformat() + 'Z' if assessment.rework_requested_at else None,  # Epic 5.0
         "rework_requested_by": assessment.rework_requested_by,  # Epic 5.0: Assessor who requested rework
         "total_indicators": total_indicators,
         "completed_indicators": completed_indicators,

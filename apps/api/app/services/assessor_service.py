@@ -410,7 +410,7 @@ class AssessorService:
             "storage_path": db_mov.storage_path,
             "status": db_mov.status.value if hasattr(db_mov.status, "value") else str(db_mov.status),
             "response_id": db_mov.response_id,
-            "uploaded_at": db_mov.uploaded_at.isoformat(),
+            "uploaded_at": db_mov.uploaded_at.isoformat() + 'Z',
         }
 
         return {
@@ -503,14 +503,18 @@ class AssessorService:
             "assessment": {
                 "id": assessment.id,
                 "status": assessment.status.value,
-                "created_at": assessment.created_at.isoformat(),
-                "updated_at": assessment.updated_at.isoformat(),
-                "submitted_at": assessment.submitted_at.isoformat()
+                "created_at": assessment.created_at.isoformat() + 'Z',
+                "updated_at": assessment.updated_at.isoformat() + 'Z',
+                "submitted_at": assessment.submitted_at.isoformat() + 'Z'
                 if assessment.submitted_at
                 else None,
-                "validated_at": assessment.validated_at.isoformat()
+                "validated_at": assessment.validated_at.isoformat() + 'Z'
                 if assessment.validated_at
                 else None,
+                "rework_requested_at": assessment.rework_requested_at.isoformat() + 'Z'
+                if assessment.rework_requested_at
+                else None,
+                "rework_count": assessment.rework_count,
                 "blgu_user": {
                     "id": assessment.blgu_user.id,
                     "name": assessment.blgu_user.name,
@@ -526,6 +530,13 @@ class AssessorService:
             },
         }
 
+        # Log rework filtering info for debugging
+        if assessment.rework_requested_at:
+            logger.info(
+                f"[ASSESSOR REWORK FILTER] Assessment {assessment_id} has rework_requested_at: {assessment.rework_requested_at}. "
+                f"Assessor will only see files uploaded AFTER this timestamp."
+            )
+
         # Process responses based on assessor's governance area assignment
         for response in assessment.responses:
             # If assessor has validator_area_id, only show responses in that area
@@ -533,6 +544,29 @@ class AssessorService:
             if assessor.validator_area_id is not None:
                 if response.indicator.governance_area_id != assessor.validator_area_id:
                     continue
+            # Get all MOV files for this indicator (before filtering)
+            all_movs_for_indicator = [
+                mov for mov in assessment.mov_files
+                if mov.indicator_id == response.indicator_id and mov.deleted_at is None
+            ]
+
+            # Apply rework filtering
+            filtered_movs = [
+                mov for mov in all_movs_for_indicator
+                if (
+                    assessment.rework_requested_at is None
+                    or mov.uploaded_at >= assessment.rework_requested_at
+                )
+            ]
+
+            # Log filtering results for debugging
+            if assessment.rework_requested_at and len(all_movs_for_indicator) != len(filtered_movs):
+                logger.info(
+                    f"[ASSESSOR REWORK FILTER] Indicator {response.indicator_id}: "
+                    f"Filtered {len(all_movs_for_indicator)} total MOVs to {len(filtered_movs)} new MOVs "
+                    f"(uploaded after {assessment.rework_requested_at})"
+                )
+
             response_data = {
                 "id": response.id,
                 "is_completed": response.is_completed,
@@ -541,8 +575,8 @@ class AssessorService:
                 if response.validation_status
                 else None,
                 "response_data": response.response_data,
-                "created_at": response.created_at.isoformat(),
-                "updated_at": response.updated_at.isoformat(),
+                "created_at": response.created_at.isoformat() + 'Z',
+                "updated_at": response.updated_at.isoformat() + 'Z',
                 "indicator": {
                     "id": response.indicator.id,
                     "name": response.indicator.name,
@@ -586,13 +620,11 @@ class AssessorService:
                         "content_type": mov_file.file_type,
                         "storage_path": mov_file.file_url,
                         "status": "uploaded",  # MOVFile doesn't have status field
-                        "uploaded_at": mov_file.uploaded_at.isoformat(),
+                        "uploaded_at": mov_file.uploaded_at.isoformat() + 'Z' if mov_file.uploaded_at else None,
                         "field_id": mov_file.field_id,
                     }
-                    # Epic 4.0: Get MOV files from assessment.mov_files filtered by indicator_id
-                    # Filter out soft-deleted files (deleted_at is not None)
-                    for mov_file in assessment.mov_files
-                    if mov_file.indicator_id == response.indicator_id and mov_file.deleted_at is None
+                    # Use the filtered_movs list created above (already filtered by rework timestamp)
+                    for mov_file in filtered_movs
                 ],
                 "feedback_comments": [
                     {
@@ -600,7 +632,7 @@ class AssessorService:
                         "comment": comment.comment,
                         "comment_type": comment.comment_type,
                         "is_internal_note": comment.is_internal_note,
-                        "created_at": comment.created_at.isoformat(),
+                        "created_at": comment.created_at.isoformat() + 'Z',
                         "assessor": {
                             "id": comment.assessor.id,
                             "name": comment.assessor.name,
@@ -924,7 +956,7 @@ class AssessorService:
             "message": "Assessment review completed and sent to validator for final validation",
             "assessment_id": assessment_id,
             "new_status": assessment.status.value,
-            "validated_at": assessment.validated_at.isoformat()
+            "validated_at": assessment.validated_at.isoformat() + 'Z'
             if assessment.validated_at
             else None,
             "classification_result": classification_result,

@@ -8,6 +8,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useSubmitAssessment } from "@/hooks/useAssessment";
+import { usePostAssessmentsAssessmentIdResubmit } from "@vantage/shared";
 import { Assessment, AssessmentValidation } from "@/types/assessment";
 import {
   AlertCircle,
@@ -30,14 +31,32 @@ export function AssessmentHeader({
 }: AssessmentHeaderProps) {
   const submitMutation = useSubmitAssessment();
 
+  // Use different endpoint for resubmit during REWORK status
+  const resubmitMutation = usePostAssessmentsAssessmentIdResubmit({
+    mutation: {
+      onSuccess: () => {
+        window.alert("Assessment resubmitted successfully. Redirecting to dashboard.");
+        window.location.href = "/blgu/dashboard";
+      },
+      onError: (error: any) => {
+        const errorMessage = error?.response?.data?.detail || error?.message || "Failed to resubmit";
+        window.alert(`Resubmission failed: ${errorMessage}`);
+      },
+    },
+  });
+
+  const isReworkStatus = assessment.status.toLowerCase() === "rework" ||
+                         assessment.status.toLowerCase() === "needs-rework";
+
   const getStatusIcon = () => {
-    switch (assessment.status) {
-      case "Draft":
+    switch (assessment.status.toLowerCase()) {
+      case "draft":
         return <Clock className="h-5 w-5 text-blue-600" />;
-      case "Needs Rework":
+      case "rework":
+      case "needs-rework":
         return <AlertCircle className="h-5 w-5 text-orange-600" />;
-      case "Submitted for Review":
-      case "Validated":
+      case "submitted-for-review":
+      case "validated":
         return <CheckCircle className="h-5 w-5 text-green-600" />;
       default:
         return null;
@@ -45,14 +64,15 @@ export function AssessmentHeader({
   };
 
   const getStatusText = () => {
-    switch (assessment.status) {
-      case "Draft":
+    switch (assessment.status.toLowerCase()) {
+      case "draft":
         return "In Progress";
-      case "Needs Rework":
-        return "Needs Rework";
-      case "Submitted for Review":
+      case "rework":
+      case "needs-rework":
+        return "Rework in Progress";
+      case "submitted-for-review":
         return "Submitted for Review";
-      case "Validated":
+      case "validated":
         return "Validated";
       default:
         return "Unknown";
@@ -102,26 +122,27 @@ export function AssessmentHeader({
   );
 
   const getStatusConfig = () => {
-    switch (assessment.status) {
-      case "Draft":
+    switch (assessment.status.toLowerCase()) {
+      case "draft":
         return {
           bgGradient: "bg-[var(--card)]",
           accentColor: "text-blue-600",
           badgeClass: "bg-blue-100 text-blue-800 border-blue-200",
         };
-      case "Needs Rework":
+      case "rework":
+      case "needs-rework":
         return {
           bgGradient: "bg-[var(--card)]",
           accentColor: "text-amber-600",
           badgeClass: "bg-amber-100 text-amber-800 border-amber-200",
         };
-      case "Submitted for Review":
+      case "submitted-for-review":
         return {
           bgGradient: "bg-[var(--card)]",
           accentColor: "text-purple-600",
           badgeClass: "bg-purple-100 text-purple-800 border-purple-200",
         };
-      case "Validated":
+      case "validated":
         return {
           bgGradient: "bg-[var(--card)]",
           accentColor: "text-emerald-600",
@@ -214,43 +235,53 @@ export function AssessmentHeader({
                 <TooltipTrigger asChild>
                   <div>
                     <Button
-                      onClick={() =>
-                        submitMutation.mutate(undefined, {
-                          onSuccess: (result: any) => {
-                            if (result?.is_valid) {
-                              window.alert(
-                                "Assessment submitted successfully. Redirecting to dashboard."
-                              );
-                              window.location.href = "/blgu/dashboard";
-                            } else if (Array.isArray(result?.errors)) {
-                              const details = result.errors
-                                .map((e: any) =>
-                                  [e.indicator_name, e.error]
-                                    .filter(Boolean)
-                                    .join(": ")
-                                )
-                                .join("\n");
-                              window.alert(
-                                `Submission failed due to the following issues:\n${details}`
-                              );
-                            }
-                          },
-                        })
-                      }
+                      onClick={() => {
+                        if (isReworkStatus) {
+                          // Use resubmit endpoint for REWORK status
+                          resubmitMutation.mutate({
+                            assessmentId: parseInt(assessment.id),
+                          });
+                        } else {
+                          // Use regular submit endpoint for DRAFT
+                          submitMutation.mutate(undefined, {
+                            onSuccess: (result: any) => {
+                              if (result?.is_valid) {
+                                window.alert(
+                                  "Assessment submitted successfully. Redirecting to dashboard."
+                                );
+                                window.location.href = "/blgu/dashboard";
+                              } else if (Array.isArray(result?.errors)) {
+                                const details = result.errors
+                                  .map((e: any) =>
+                                    [e.indicator_name, e.error]
+                                      .filter(Boolean)
+                                      .join(": ")
+                                  )
+                                  .join("\n");
+                                window.alert(
+                                  `Submission failed due to the following issues:\n${details}`
+                                );
+                              }
+                            },
+                          });
+                        }
+                      }}
                       disabled={
-                        !validation.canSubmit || submitMutation.isPending
+                        !validation.canSubmit ||
+                        submitMutation.isPending ||
+                        resubmitMutation.isPending
                       }
                       className="h-12 px-8 text-sm font-semibold bg-[var(--cityscape-yellow)] hover:bg-[var(--cityscape-yellow-dark)] text-[var(--cityscape-accent-foreground)] rounded-sm shadow-lg hover:shadow-xl transition-all duration-200"
                     >
-                      {submitMutation.isPending ? (
+                      {submitMutation.isPending || resubmitMutation.isPending ? (
                         <>
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                          Submitting...
+                          {isReworkStatus ? "Resubmitting..." : "Submitting..."}
                         </>
                       ) : (
                         <>
                           <Send className="h-4 w-4 mr-2" />
-                          Submit for Review
+                          {isReworkStatus ? "Resubmit for Review" : "Submit for Review"}
                         </>
                       )}
                     </Button>

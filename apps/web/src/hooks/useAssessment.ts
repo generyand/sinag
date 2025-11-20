@@ -644,7 +644,9 @@ export function useAssessmentValidation(assessment: Assessment | null) {
     const normalizedStatus = (assessment.status || '').toLowerCase();
     const canSubmit =
       isComplete &&
-      (normalizedStatus === "draft" || normalizedStatus === "needs rework");
+      (normalizedStatus === "draft" ||
+       normalizedStatus === "rework" ||
+       normalizedStatus === "needs-rework");
 
     console.log('[VALIDATION] Trusting backend is_completed flags:', {
       isComplete,

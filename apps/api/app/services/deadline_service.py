@@ -369,26 +369,26 @@ class DeadlineService:
             if submitted_at <= deadline:
                 return {
                     "status": DeadlineStatusType.SUBMITTED_ON_TIME.value,
-                    "submitted_at": submitted_at.isoformat(),
-                    "deadline": deadline.isoformat(),
+                    "submitted_at": submitted_at.isoformat() + 'Z',
+                    "deadline": deadline.isoformat() + 'Z',
                 }
             else:
                 return {
                     "status": DeadlineStatusType.SUBMITTED_LATE.value,
-                    "submitted_at": submitted_at.isoformat(),
-                    "deadline": deadline.isoformat(),
+                    "submitted_at": submitted_at.isoformat() + 'Z',
+                    "deadline": deadline.isoformat() + 'Z',
                 }
         else:
             # No submission yet
             if now < deadline:
                 return {
                     "status": DeadlineStatusType.PENDING.value,
-                    "deadline": deadline.isoformat(),
+                    "deadline": deadline.isoformat() + 'Z',
                 }
             else:
                 return {
                     "status": DeadlineStatusType.OVERDUE.value,
-                    "deadline": deadline.isoformat(),
+                    "deadline": deadline.isoformat() + 'Z',
                 }
 
     def apply_deadline_override(
@@ -450,7 +450,7 @@ class DeadlineService:
         if new_deadline <= now:
             raise ValueError(
                 f"New deadline must be in the future. "
-                f"Provided: {new_deadline.isoformat()}, Current time: {now.isoformat()}"
+                f"Provided: {new_deadline.isoformat() + 'Z'}, Current time: {now.isoformat() + 'Z'}"
             )
 
         # Determine original deadline based on current phase
@@ -481,7 +481,7 @@ class DeadlineService:
             send_deadline_extension_notification.delay(
                 barangay_id=barangay_id,
                 indicator_ids=[indicator_id],
-                new_deadline=new_deadline.isoformat(),
+                new_deadline=new_deadline.isoformat() + 'Z',
                 reason=reason,
                 created_by_user_id=created_by_user_id,
             )

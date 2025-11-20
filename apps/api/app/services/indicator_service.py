@@ -891,8 +891,8 @@ class IndicatorService:
                 "remark_schema": indicator.remark_schema,
                 "mov_checklist_items": indicator.mov_checklist_items,
                 "version": indicator.version,
-                "created_at": indicator.created_at.isoformat() if indicator.created_at else None,
-                "updated_at": indicator.updated_at.isoformat() if indicator.updated_at else None,
+                "created_at": indicator.created_at.isoformat() + 'Z' if indicator.created_at else None,
+                "updated_at": indicator.updated_at.isoformat() + 'Z' if indicator.updated_at else None,
                 "children": []
             }
 

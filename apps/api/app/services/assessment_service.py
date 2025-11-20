@@ -80,8 +80,8 @@ class AssessmentService:
             "requires_rework": response.requires_rework,
             "assessment_id": response.assessment_id,
             "indicator_id": response.indicator_id,
-            "created_at": response.created_at.isoformat() if response.created_at else None,
-            "updated_at": response.updated_at.isoformat() if response.updated_at else None,
+            "created_at": response.created_at.isoformat() + 'Z' if response.created_at else None,
+            "updated_at": response.updated_at.isoformat() + 'Z' if response.updated_at else None,
         }
 
     def _serialize_mov_list(self, movs: Optional[List[MOV]]) -> List[Dict[str, Any]]:
@@ -105,7 +105,7 @@ class AssessmentService:
                 "storage_path": mov.storage_path,
                 "status": mov.status.value if hasattr(mov.status, "value") else mov.status,
                 "response_id": mov.response_id,
-                "uploaded_at": mov.uploaded_at.isoformat() if mov.uploaded_at else None,
+                "uploaded_at": (mov.uploaded_at.isoformat() + 'Z') if mov.uploaded_at else None,
             }
             for mov in movs
         ]
@@ -251,7 +251,7 @@ class AssessmentService:
                         "is_internal_note": c.is_internal_note,
                         "response_id": c.response_id,
                         "assessor_id": c.assessor_id,
-                        "created_at": c.created_at.isoformat() if c.created_at else None,
+                        "created_at": c.created_at.isoformat() + 'Z' if c.created_at else None,
                     }
                     for c in (response.feedback_comments if response else [])
                     if not getattr(c, "is_internal_note", False)
@@ -299,15 +299,15 @@ class AssessmentService:
             "id": assessment.id,
             "status": assessment.status.value,
             "blgu_user_id": assessment.blgu_user_id,
-            "created_at": assessment.created_at.isoformat(),
-            "updated_at": assessment.updated_at.isoformat(),
-            "submitted_at": assessment.submitted_at.isoformat()
+            "created_at": assessment.created_at.isoformat() + 'Z',
+            "updated_at": assessment.updated_at.isoformat() + 'Z',
+            "submitted_at": assessment.submitted_at.isoformat() + 'Z'
             if assessment.submitted_at
             else None,
-            "validated_at": assessment.validated_at.isoformat()
+            "validated_at": assessment.validated_at.isoformat() + 'Z'
             if assessment.validated_at
             else None,
-            "rework_requested_at": assessment.rework_requested_at.isoformat()
+            "rework_requested_at": assessment.rework_requested_at.isoformat() + 'Z'
             if assessment.rework_requested_at
             else None,
         }
@@ -1516,12 +1516,12 @@ class AssessmentService:
                 "status": assessment.status.value
                 if hasattr(assessment.status, "value")
                 else str(assessment.status),
-                "created_at": assessment.created_at.isoformat(),
-                "updated_at": assessment.updated_at.isoformat(),
-                "submitted_at": assessment.submitted_at.isoformat()
+                "created_at": assessment.created_at.isoformat() + 'Z',
+                "updated_at": assessment.updated_at.isoformat() + 'Z',
+                "submitted_at": assessment.submitted_at.isoformat() + 'Z'
                 if assessment.submitted_at
                 else None,
-                "rework_requested_at": assessment.rework_requested_at.isoformat()
+                "rework_requested_at": assessment.rework_requested_at.isoformat() + 'Z'
                 if assessment.rework_requested_at
                 else None,
             },
@@ -1827,9 +1827,9 @@ class AssessmentService:
                 "status": assessment.status.value
                 if hasattr(assessment.status, "value")
                 else str(assessment.status),
-                "created_at": assessment.created_at.isoformat(),
-                "updated_at": assessment.updated_at.isoformat(),
-                "submitted_at": assessment.submitted_at.isoformat()
+                "created_at": assessment.created_at.isoformat() + 'Z',
+                "updated_at": assessment.updated_at.isoformat() + 'Z',
+                "submitted_at": assessment.submitted_at.isoformat() + 'Z'
                 if assessment.submitted_at
                 else None,
             }
@@ -1845,8 +1845,8 @@ class AssessmentService:
                 "is_active": getattr(user, "is_active", True),
                 "is_superuser": getattr(user, "is_superuser", False),
                 "must_change_password": getattr(user, "must_change_password", True),
-                "created_at": user.created_at.isoformat(),
-                "updated_at": user.updated_at.isoformat(),
+                "created_at": user.created_at.isoformat() + 'Z',
+                "updated_at": user.updated_at.isoformat() + 'Z',
             },
             "barangay": barangay_info,
             "assessment": assessment_info,
@@ -1879,8 +1879,8 @@ class AssessmentService:
             "assessment_year": current_year,
             "fiscal_year_start": 1,  # January
             "fiscal_year_end": 12,  # December
-            "assessment_period_start": datetime(current_year, 1, 1).isoformat(),
-            "assessment_period_end": datetime(current_year, 12, 31).isoformat(),
+            "assessment_period_start": datetime(current_year, 1, 1).isoformat() + 'Z',
+            "assessment_period_end": datetime(current_year, 12, 31).isoformat() + 'Z',
             "deadline_extensions": [],  # TODO: Implement deadline extension system
             "configuration_source": "default",  # Could be "database" or "config_file"
         }
@@ -1922,8 +1922,8 @@ class AssessmentService:
                     "id": comment.id,
                     "comment": comment.comment,
                     "comment_type": comment.comment_type,
-                    "created_at": comment.created_at.isoformat(),
-                    "updated_at": comment.created_at.isoformat(),  # Using created_at as updated_at for now
+                    "created_at": comment.created_at.isoformat() + 'Z',
+                    "updated_at": comment.created_at.isoformat() + 'Z',  # Using created_at as updated_at for now
                     "assessor": {
                         "id": getattr(comment.assessor, "id"),
                         "name": f"{getattr(comment.assessor, 'first_name', '')} {getattr(comment.assessor, 'last_name', '')}".strip(),
@@ -2029,7 +2029,7 @@ class AssessmentService:
                     "comment": comment.comment,
                     "comment_type": comment.comment_type,
                     "timestamps": {
-                        "created_at": created_at.isoformat(),
+                        "created_at": created_at.isoformat() + 'Z',
                         "created_at_human": self._format_human_timestamp(created_at),
                         "created_at_relative": self._format_relative_timestamp(
                             created_at
@@ -2410,10 +2410,10 @@ class AssessmentService:
                     "blgu_user_name": assessment.blgu_user.name
                     if assessment.blgu_user
                     else "Unknown",
-                    "validated_at": assessment.validated_at.isoformat()
+                    "validated_at": assessment.validated_at.isoformat() + 'Z'
                     if assessment.validated_at
                     else None,
-                    "updated_at": assessment.updated_at.isoformat()
+                    "updated_at": assessment.updated_at.isoformat() + 'Z'
                     if assessment.updated_at
                     else None,
                 }

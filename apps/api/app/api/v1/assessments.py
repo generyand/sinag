@@ -898,8 +898,8 @@ async def get_assessment_answers(
         assessment_id=assessment_id,
         indicator_id=indicator_id,
         responses=field_responses,
-        created_at=assessment_response.created_at.isoformat(),
-        updated_at=assessment_response.updated_at.isoformat()
+        created_at=assessment_response.created_at.isoformat() + 'Z',
+        updated_at=assessment_response.updated_at.isoformat() + 'Z'
     )
 
 

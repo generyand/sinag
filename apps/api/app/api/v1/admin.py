@@ -266,7 +266,7 @@ async def export_audit_logs_csv(
         writer.writerow(
             [
                 log.id,
-                log.created_at.isoformat(),
+                log.created_at.isoformat() + 'Z',
                 log.user_id,
                 log.user.email if log.user else "",
                 log.user.name if log.user else "",
@@ -678,6 +678,6 @@ async def get_admin_system_status(
         data={
             "admin_user": current_user.email,
             "role": current_user.role.value,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.utcnow().isoformat() + 'Z',
         },
     )
