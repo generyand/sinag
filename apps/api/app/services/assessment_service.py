@@ -1482,6 +1482,9 @@ class AssessmentService:
                 "submitted_at": assessment.submitted_at.isoformat()
                 if assessment.submitted_at
                 else None,
+                "rework_requested_at": assessment.rework_requested_at.isoformat()
+                if assessment.rework_requested_at
+                else None,
             },
             "years": {
                 "current_year": current_year,

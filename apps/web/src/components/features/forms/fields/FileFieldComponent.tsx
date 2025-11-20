@@ -276,16 +276,47 @@ export function FileFieldComponent({
   // During REWORK status, separate old files (pre-rework) from new files (during rework)
   const isReworkStatus = normalizedStatus === 'REWORK' || normalizedStatus === 'NEEDS_REWORK';
 
+  // Debug logging
+  console.log('[FileFieldComponent] Debug info:', {
+    fieldId: field.field_id,
+    isReworkStatus,
+    reworkRequestedAt,
+    normalizedStatus,
+    activeFilesCount: activeFiles.length,
+    activeFiles: activeFiles.map((f: any) => ({
+      id: f.id,
+      name: f.file_name,
+      uploadedAt: f.uploaded_at,
+    })),
+  });
+
   let oldFiles: any[] = [];
   let newFiles: any[] = [];
 
   if (isReworkStatus && reworkRequestedAt) {
     const reworkDate = new Date(reworkRequestedAt);
+    console.log('[FileFieldComponent] Rework date:', reworkDate.toISOString());
+
     // Files uploaded before rework was requested are "old" (pre-rework)
-    oldFiles = activeFiles.filter((f: any) => new Date(f.uploaded_at) < reworkDate);
+    oldFiles = activeFiles.filter((f: any) => {
+      const fileDate = new Date(f.uploaded_at);
+      const isOld = fileDate < reworkDate;
+      console.log('[FileFieldComponent] File', f.id, ':', {
+        uploadedAt: fileDate.toISOString(),
+        isOld,
+      });
+      return isOld;
+    });
+
     // Files uploaded after rework was requested are "new" (during rework)
     newFiles = activeFiles.filter((f: any) => new Date(f.uploaded_at) >= reworkDate);
+
+    console.log('[FileFieldComponent] After filtering:', {
+      oldFilesCount: oldFiles.length,
+      newFilesCount: newFiles.length,
+    });
   } else {
+    console.log('[FileFieldComponent] Not in rework or no rework timestamp, showing all files as new');
     // Not in rework status, show all active files
     newFiles = activeFiles;
   }
