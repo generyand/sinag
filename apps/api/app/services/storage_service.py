@@ -442,6 +442,10 @@ class StorageService:
                 logger.warning(f"Indicator {indicator_id} not found")
                 return
 
+            # Get assessment to check status and rework timestamp
+            from app.db.models.assessment import Assessment
+            assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+
             # Get all uploaded MOVs for this response (exclude soft-deleted files)
             uploaded_movs = (
                 db.query(MOVFile)
@@ -452,6 +456,22 @@ class StorageService:
                 )
                 .all()
             )
+
+            # Filter MOVs during rework status - only count files uploaded AFTER rework was requested
+            if assessment:
+                assessment_status = assessment.status.value if hasattr(assessment.status, 'value') else str(assessment.status)
+                rework_requested_at = assessment.rework_requested_at
+
+                if assessment_status.upper() in ('REWORK', 'NEEDS_REWORK') and rework_requested_at:
+                    original_count = len(uploaded_movs)
+                    uploaded_movs = [
+                        mov for mov in uploaded_movs
+                        if mov.uploaded_at and mov.uploaded_at >= rework_requested_at
+                    ]
+                    logger.info(
+                        f"REWORK mode - filtered {original_count} MOVs to {len(uploaded_movs)} "
+                        f"(uploaded after {rework_requested_at})"
+                    )
 
             # Validate completeness using the completeness validation service
             validation_result = completeness_validation_service.validate_completeness(

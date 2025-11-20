@@ -789,6 +789,9 @@ class AssessmentService:
             # Idempotent behavior: return the existing response instead of erroring
             return existing
 
+        # Get assessment to check status and rework timestamp
+        assessment = db.query(Assessment).filter(Assessment.id == response_create.assessment_id).first()
+
         initial_data = response_create.response_data or {}
         db_response = AssessmentResponse(
             response_data=initial_data,
@@ -800,7 +803,11 @@ class AssessmentService:
         try:
             if db_response.indicator and db_response.indicator.form_schema:
                 db_response.is_completed = self._check_response_completion(
-                    db_response.indicator.form_schema, initial_data, []
+                    form_schema=db_response.indicator.form_schema,
+                    response_data=initial_data,
+                    movs=[],
+                    assessment_status=assessment.status.value if assessment else None,
+                    rework_requested_at=assessment.rework_requested_at if assessment else None
                 )
             else:
                 db_response.is_completed = bool(initial_data)
@@ -846,10 +853,17 @@ class AssessmentService:
         for field, value in update_data.items():
             setattr(db_response, field, value)
 
+        # Get assessment to check status and rework timestamp
+        assessment = db.query(Assessment).filter(Assessment.id == db_response.assessment_id).first()
+
         # Auto-set completion status based on response_data
         if response_update.response_data is not None:
             db_response.is_completed = self._check_response_completion(
-                db_response.indicator.form_schema, response_update.response_data, db_response.movs
+                form_schema=db_response.indicator.form_schema,
+                response_data=response_update.response_data,
+                movs=db_response.movs,
+                assessment_status=assessment.status.value if assessment else None,
+                rework_requested_at=assessment.rework_requested_at if assessment else None
             )
 
         # Generate remark if response is completed and indicator has calculation_schema
@@ -929,23 +943,45 @@ class AssessmentService:
         )
 
     def _check_response_completion(
-        self, form_schema: Dict[str, Any], response_data: Dict[str, Any], movs: Optional[List[MOV]] = None
+        self,
+        form_schema: Dict[str, Any],
+        response_data: Dict[str, Any],
+        movs: Optional[List[MOV]] = None,
+        assessment_status: Optional[str] = None,
+        rework_requested_at: Optional[datetime] = None
     ) -> bool:
         """
         Check if a response is completed based on form schema requirements.
-        
+
         For indicators with multiple requirements (like 1.1.1), all required fields
         must have valid compliance values (yes/no/na) for the response to be considered complete.
-        
+
+        During REWORK status, only MOV files uploaded AFTER rework_requested_at are counted.
+
         Args:
             form_schema: JSON schema defining the expected form structure
             response_data: User's response data to check (may be nested for areas 2-6, or flat for child indicators)
-            
+            movs: List of MOV files for this response
+            assessment_status: Current assessment status (e.g., REWORK, DRAFT)
+            rework_requested_at: Timestamp when rework was requested (for filtering files)
+
         Returns:
             True if response is completed, False otherwise
         """
         if not response_data or not isinstance(response_data, dict):
             return False
+
+        # Filter MOVs during rework status - only count files uploaded AFTER rework was requested
+        filtered_movs = movs or []
+        if assessment_status and assessment_status.upper() in ('REWORK', 'NEEDS_REWORK') and rework_requested_at and movs:
+            filtered_movs = [
+                mov for mov in movs
+                if mov.uploaded_at and mov.uploaded_at >= rework_requested_at
+            ]
+            print(f"[DEBUG] _check_response_completion: REWORK mode - filtered {len(movs)} MOVs to {len(filtered_movs)} (uploaded after {rework_requested_at})")
+
+        # Use filtered_movs instead of movs for all MOV checks below
+        movs = filtered_movs
         
         def extract_compliance_values(data: Dict[str, Any]) -> list:
             """Recursively extract compliance values (yes/no/na) from nested structures."""

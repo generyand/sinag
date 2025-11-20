@@ -2,16 +2,16 @@
 // 🔄 Do not edit manually - regenerate with: pnpm generate-types
 // 📁 Barrel file for all endpoint modules.
 
-export * from './admin/index';
-export * from './analytics/index';
-export * from './assessments/index';
-export * from './assessor/index';
-export * from './auth/index';
-export * from './bbis/index';
-export * from './blgu-dashboard/index';
-export * from './default/index';
-export * from './indicators/index';
-export * from './lookups/index';
-export * from './movs/index';
-export * from './system/index';
-export * from './users/index';
+export * from './admin';
+export * from './analytics';
+export * from './assessments';
+export * from './assessor';
+export * from './auth';
+export * from './bbis';
+export * from './blgu-dashboard';
+export * from './default';
+export * from './indicators';
+export * from './lookups';
+export * from './movs';
+export * from './system';
+export * from './users';
