@@ -695,6 +695,8 @@ class AssessorService:
         # Update assessment status and rework count
         assessment.status = AssessmentStatus.REWORK
         assessment.rework_count = 1
+        assessment.rework_requested_at = datetime.utcnow()
+        assessment.rework_requested_by = assessor.id
         # Note: updated_at is automatically handled by SQLAlchemy's onupdate
 
         # Get all MOV annotations for this assessment to check for indicator-level feedback
