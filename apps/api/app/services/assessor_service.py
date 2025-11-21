@@ -880,29 +880,31 @@ class AssessorService:
             ):
                 raise ValueError("Cannot finalize assessment in its current status")
 
-            # Must set Pass/Fail/Conditional status for ALL responses
-            unreviewed_responses = [
-                response.id
-                for response in assessment.responses
-                if response.validation_status is None
-            ]
+            # For assessors: Check if ALL responses have checklist data or comments
+            # (Assessors fill checklists/comments, not validation_status)
+            unreviewed_responses = []
+            for response in assessment.responses:
+                response_data = response.response_data or {}
+
+                # Check for assessor validation data (assessor_val_ prefix)
+                has_assessor_checklist = any(
+                    key.startswith('assessor_val_')
+                    for key in response_data.keys()
+                )
+
+                # Check for public comments
+                has_public_comment = bool(response_data.get('public_comment', '').strip())
+
+                # Response must have either checklist data or comments
+                if not (has_assessor_checklist or has_public_comment):
+                    unreviewed_responses.append(response.id)
 
             if unreviewed_responses:
                 raise ValueError(
                     f"Cannot finalize assessment. Unreviewed response IDs: {unreviewed_responses}"
                 )
 
-            # If any FAIL indicators, must send for Rework instead (one-time only)
-            has_fail = any(
-                r.validation_status == ValidationStatus.FAIL
-                for r in assessment.responses
-            )
-            if has_fail and assessment.rework_count == 0:
-                raise ValueError(
-                    "Cannot finalize with Fail indicators. Send for Rework instead."
-                )
-
-            # If all Pass/Conditional, move to Phase 2 (Table Validation)
+            # All assessor reviews complete - move to Phase 2 (Table Validation)
             assessment.status = AssessmentStatus.AWAITING_FINAL_VALIDATION
 
         # Set validated_at timestamp
