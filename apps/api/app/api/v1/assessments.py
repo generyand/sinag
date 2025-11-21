@@ -467,7 +467,7 @@ async def get_current_admin_user(
 
 @router.get("/list", response_model=List[Dict[str, Any]], tags=["assessments"])
 async def get_all_validated_assessments(
-    status: AssessmentStatus | None = Query(
+    assessment_status: AssessmentStatus | None = Query(
         None, description="Filter by assessment status (returns all if not specified)"
     ),
     db: Session = Depends(deps.get_db),
@@ -480,7 +480,7 @@ async def get_all_validated_assessments(
     area results, and barangay information. Used for MLGOO reports dashboard.
 
     Args:
-        status: Optional filter by assessment status (shows all if not provided)
+        assessment_status: Optional filter by assessment status (shows all if not provided)
         db: Database session
         current_user: Current admin/MLGOO user
 
@@ -489,7 +489,7 @@ async def get_all_validated_assessments(
     """
     try:
         assessments = assessment_service.get_all_validated_assessments(
-            db, status=status
+            db, status=assessment_status
         )
         return assessments
     except Exception as e:

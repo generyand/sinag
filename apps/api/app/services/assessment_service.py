@@ -12,6 +12,7 @@ from app.db.models import (
     FeedbackComment,
     GovernanceArea,
     Indicator,
+    User,
 )
 from app.schemas.assessment import (
     AssessmentCreate,
@@ -2367,8 +2368,6 @@ class AssessmentService:
         Returns:
             List of dictionaries with assessment details including compliance status
         """
-        from app.db.models.user import User
-
         # Query assessments with related user and barangay data
         query = (
             db.query(Assessment)
@@ -2397,6 +2396,35 @@ class AssessmentService:
                 ):
                     barangay_name = assessment.blgu_user.barangay.name
 
+            # Get validators who worked on this assessment
+            try:
+                validators_query = (
+                    db.query(User.id, User.name, User.email)
+                    .join(FeedbackComment, FeedbackComment.assessor_id == User.id)
+                    .join(AssessmentResponse, AssessmentResponse.id == FeedbackComment.response_id)
+                    .filter(
+                        AssessmentResponse.assessment_id == assessment.id
+                    )
+                    .distinct()
+                    .all()
+                )
+
+                # Format validators list
+                validators = [
+                    {
+                        "id": v.id,
+                        "name": v.name,
+                        "email": v.email,
+                        "initials": "".join([word[0].upper() for word in v.name.split()[:2]]) if v.name else "?"
+                    }
+                    for v in validators_query
+                ]
+            except Exception as e:
+                print(f"ERROR getting validators for assessment {assessment.id}: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                validators = []
+
             assessment_list.append(
                 {
                     "id": assessment.id,
@@ -2416,6 +2444,7 @@ class AssessmentService:
                     "updated_at": assessment.updated_at.isoformat() + 'Z'
                     if assessment.updated_at
                     else None,
+                    "validators": validators,
                 }
             )
 
