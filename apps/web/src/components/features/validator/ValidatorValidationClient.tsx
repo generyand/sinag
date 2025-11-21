@@ -80,7 +80,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   // Transform to match BLGU assessment structure for TreeNavigator
   const transformedAssessment = {
     id: assessmentId,
-    completedIndicators: responses.filter((r: any) => r.validation_status === 'PASS').length,
+    completedIndicators: responses.filter((r: any) => !!form[r.id]?.status).length,
     totalIndicators: responses.length,
     governanceAreas: responses.reduce((acc: any[], resp: any) => {
       const indicator = resp.indicator || {};
@@ -102,7 +102,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
         id: String(resp.id),
         code: indicator.indicator_code || indicator.code || String(resp.id),
         name: indicator.name || 'Unnamed Indicator',
-        status: resp.validation_status === 'PASS' ? 'completed' : (resp.validation_status === 'FAIL' ? 'needs_rework' : 'not_started'),
+        status: form[resp.id]?.status ? 'completed' : (resp.validation_status === 'PASS' ? 'completed' : (resp.validation_status === 'FAIL' ? 'needs_rework' : 'not_started')),
       });
 
       return acc;
