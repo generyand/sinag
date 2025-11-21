@@ -1,7 +1,7 @@
 'use client';
 
 import { KPICards, SubmissionsFilters, SubmissionsTable } from '@/components/features/submissions';
-import { useAssessorQueue } from '@/hooks/useAssessor';
+import { useAssessorQueue, useAssessorAnalytics } from '@/hooks/useAssessor';
 import { useAssessorGovernanceArea } from '@/hooks/useAssessorGovernanceArea';
 import { BarangaySubmission, SubmissionsData, SubmissionsFilter, SubmissionsKPI } from '@/types/submissions';
 import { useRouter } from 'next/navigation';
@@ -44,7 +44,8 @@ export default function AssessorSubmissionsPage() {
   const router = useRouter();
   const { governanceAreaName, isLoading: governanceAreaLoading } = useAssessorGovernanceArea();
   const { data: queueData, isLoading: queueLoading, error: queueError } = useAssessorQueue();
-  
+  const { data: analyticsData, isLoading: analyticsLoading } = useAssessorAnalytics();
+
   const [filters, setFilters] = useState<SubmissionsFilter>({
     search: '',
     status: []
@@ -64,12 +65,17 @@ export default function AssessorSubmissionsPage() {
       lastUpdated: item.updated_at,
     }));
 
-    // Calculate KPIs from queue data
+    // Calculate KPIs from queue data + analytics data
     const kpi: SubmissionsKPI = {
       awaitingReview: submissions.filter(s => s.areaStatus === 'awaiting_review').length,
       inRework: submissions.filter(s => s.areaStatus === 'needs_rework').length,
-      validated: submissions.filter(s => s.areaStatus === 'validated').length,
-      avgReviewTime: 0, // Not provided by API, default to 0
+      // Use analytics data for validated count (historical count of finalized/validated assessments)
+      validated: analyticsData?.workflow?.counts_by_status?.VALIDATED ||
+                 analyticsData?.workflow?.counts_by_status?.AWAITING_FINAL_VALIDATION || 0,
+      // Use analytics data for average review time (convert days to integer)
+      avgReviewTime: analyticsData?.workflow?.avg_time_to_first_review
+        ? Math.round(analyticsData.workflow.avg_time_to_first_review)
+        : 0,
     };
 
     return {
@@ -77,7 +83,7 @@ export default function AssessorSubmissionsPage() {
       submissions,
       governanceArea: governanceAreaName || 'Unknown',
     };
-  }, [queueData, queueLoading, governanceAreaName]);
+  }, [queueData, queueLoading, governanceAreaName, analyticsData]);
 
   // Filter submissions based on search and status
   const filteredSubmissions = useMemo(() => {
@@ -111,8 +117,8 @@ export default function AssessorSubmissionsPage() {
     setFilters(newFilters);
   };
 
-  // Show loading if governance area or queue is loading
-  if (governanceAreaLoading || queueLoading) {
+  // Show loading if governance area, queue, or analytics is loading
+  if (governanceAreaLoading || queueLoading || analyticsLoading) {
     return (
       <div className="space-y-8">
         <div className="animate-pulse">

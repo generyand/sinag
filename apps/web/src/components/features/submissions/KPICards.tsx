@@ -98,9 +98,9 @@ export function KPICards({ kpi }: KPICardsProps) {
       >
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <CardTitle className="text-sm font-semibold" style={{ color: 'var(--kpi-green-text)' }}>
-            Validated by You
+            Reviewed by You
           </CardTitle>
-          <div 
+          <div
             className="p-2 rounded-full group-hover:scale-110 transition-transform duration-200"
             style={{ backgroundColor: 'var(--kpi-green-bg)' }}
           >
@@ -112,7 +112,7 @@ export function KPICards({ kpi }: KPICardsProps) {
             {kpi.validated}
           </div>
           <p className="text-xs font-medium opacity-70" style={{ color: 'var(--kpi-green-text)' }}>
-            Successfully completed
+            Completed and sent to validator
           </p>
           {kpi.validated > 0 && (
             <div className="mt-2 w-full rounded-full h-1" style={{ backgroundColor: 'var(--kpi-green-bg)' }}>

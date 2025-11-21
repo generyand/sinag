@@ -48,6 +48,11 @@ class Assessment(Base):
     # Foreign key to BLGU user
     blgu_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
 
+    # Assessor tracking - which assessor completed the review
+    reviewed_by: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=datetime.utcnow
@@ -62,6 +67,9 @@ class Assessment(Base):
     blgu_user = relationship("User", foreign_keys=[blgu_user_id], back_populates="assessments")
     rework_requester = relationship(
         "User", foreign_keys=[rework_requested_by], post_update=True
+    )
+    reviewer = relationship(
+        "User", foreign_keys=[reviewed_by], post_update=True
     )
     responses = relationship(
         "AssessmentResponse", back_populates="assessment", cascade="all, delete-orphan"

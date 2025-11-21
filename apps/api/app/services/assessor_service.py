@@ -906,6 +906,8 @@ class AssessorService:
 
             # All assessor reviews complete - move to Phase 2 (Table Validation)
             assessment.status = AssessmentStatus.AWAITING_FINAL_VALIDATION
+            # Track which assessor completed the review
+            assessment.reviewed_by = assessor.id
 
         # Set validated_at timestamp
         assessment.validated_at = (
@@ -1021,6 +1023,7 @@ class AssessorService:
         if assessor.validator_area_id is not None:
             query = query.filter(Indicator.governance_area_id == assessor.validator_area_id)
 
+        # Filter assessments by the current assessor (those reviewed by them)
         assessments = (
             query.filter(
                 Assessment.status.in_(
@@ -1028,8 +1031,10 @@ class AssessorService:
                         AssessmentStatus.SUBMITTED_FOR_REVIEW,
                         AssessmentStatus.NEEDS_REWORK,
                         AssessmentStatus.VALIDATED,
+                        AssessmentStatus.AWAITING_FINAL_VALIDATION,  # Include assessor-completed assessments
                     ]
-                )
+                ),
+                Assessment.reviewed_by == assessor.id  # Only count assessments reviewed by THIS assessor
             )
             .distinct(Assessment.id)
             .all()

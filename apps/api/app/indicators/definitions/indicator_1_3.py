@@ -1,4 +1,4 @@
-        """
+"""
 Indicator 1.3: Approval of the Barangay Budget on the Specified Timeframe
 
 Governance Area: 1 (Financial Administration and Sustainability)
