@@ -144,11 +144,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     completedIndicators: responses.filter((r: any) => {
       const localStatus = form[r.id]?.status;
 
-      // Exclude indicators that require rework (assessor sent back for fixes)
-      if (r.requires_rework) {
-        return false;
-      }
-
       // For validators: Check if status is Pass
       if (localStatus) {
         return localStatus === 'Pass';
@@ -158,40 +153,26 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       }
 
       // For assessors: Check if they've worked on checklist or comments
-      // CRITICAL: Always check for NEW local data (current session work)
-      // But skip OLD persisted data if requires_rework is true
+      // NOTE: checklistData state is loaded from response_data on mount, so it includes
+      // persisted assessor validation work for ALL indicators (including rework ones)
 
-      // Check NEW local checklist data (always, regardless of requires_rework)
+      // Check checklist data (includes both new changes AND persisted data loaded from backend)
       const hasChecklistData = Object.keys(checklistData).some(key => {
         if (!key.startsWith(`checklist_${r.id}_`)) return false;
         const value = checklistData[key];
         return value === true || (typeof value === 'string' && value.trim().length > 0);
       });
 
-      // Check NEW local comments (always, regardless of requires_rework)
+      // Check local comments
       const hasLocalComments = form[r.id]?.publicComment && form[r.id]!.publicComment!.trim().length > 0;
 
-      // Only check OLD persisted data if NOT requiring rework
-      let hasPersistedChecklistData = false;
-      let hasPersistedComments = false;
+      // Check for persisted comments (from feedback_comments table)
+      const feedbackComments = (r as AnyRecord).feedback_comments || [];
+      const hasPersistedComments = feedbackComments.some((fc: any) =>
+        fc.comment_type === 'validation' && !fc.is_internal_note && fc.comment && fc.comment.trim().length > 0
+      );
 
-      if (!r.requires_rework) {
-        // Check backend response_data for persisted ASSESSOR checklist data
-        const responseData = (r as AnyRecord).response_data || {};
-        hasPersistedChecklistData = Object.keys(responseData).some(key => {
-          if (!key.startsWith('assessor_val_')) return false;
-          const value = responseData[key];
-          return value === true || (typeof value === 'string' && value.trim().length > 0);
-        });
-
-        // Check for persisted comments (from first review cycle)
-        const feedbackComments = (r as AnyRecord).feedback_comments || [];
-        hasPersistedComments = feedbackComments.some((fc: any) =>
-          fc.comment_type === 'validation' && !fc.is_internal_note && fc.comment && fc.comment.trim().length > 0
-        );
-      }
-
-      const isCompleted = hasChecklistData || hasLocalComments || hasPersistedComments || hasPersistedChecklistData;
+      const isCompleted = hasChecklistData || hasLocalComments || hasPersistedComments;
 
       return isCompleted;
     }).length,
