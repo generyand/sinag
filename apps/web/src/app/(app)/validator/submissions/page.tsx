@@ -7,18 +7,24 @@ import { BarangaySubmission, SubmissionsData, SubmissionsFilter, SubmissionsKPI 
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 
-// Map API status to UI areaStatus
+// Map API status to UI areaStatus for VALIDATORS
 function mapStatusToAreaStatus(status: string): BarangaySubmission['areaStatus'] {
   const normalizedStatus = status.toLowerCase();
-  if (normalizedStatus.includes('submitted') || normalizedStatus.includes('review')) {
+
+  // For validators, AWAITING_FINAL_VALIDATION means awaiting their review
+  if (normalizedStatus === 'awaiting_final_validation') {
     return 'awaiting_review';
   }
+
   if (normalizedStatus.includes('rework')) {
     return 'needs_rework';
   }
-  if (normalizedStatus.includes('validated')) {
+
+  // VALIDATED or COMPLETED means validator finished
+  if (normalizedStatus === 'validated' || normalizedStatus === 'completed') {
     return 'validated';
   }
+
   return 'in_progress';
 }
 
