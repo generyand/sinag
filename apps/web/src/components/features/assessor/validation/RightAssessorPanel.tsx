@@ -548,7 +548,7 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
 
                         <div className="space-y-2">
                           <div className="text-xs font-medium">
-                            {isManualOverride && (
+                            {isManualOverride && !isValidator && (
                               <span className="text-orange-600 dark:text-orange-400 mr-1">⚠️ Manual Override: </span>
                             )}
                             Met all the minimum requirements on {indicatorLabel}?
@@ -595,7 +595,7 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                               );
                             })}
                           </div>
-                          {isManualOverride && (
+                          {isManualOverride && !isValidator && (
                             <div className="text-[11px] text-orange-600 dark:text-orange-400 flex items-center gap-1">
                               <span>You have manually overridden the automatic result.</span>
                               <Button
