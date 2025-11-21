@@ -102,7 +102,9 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
         id: String(resp.id),
         code: indicator.indicator_code || indicator.code || String(resp.id),
         name: indicator.name || 'Unnamed Indicator',
-        status: form[resp.id]?.status ? 'completed' : (resp.validation_status === 'PASS' ? 'completed' : (resp.validation_status === 'FAIL' ? 'needs_rework' : 'not_started')),
+        // For validators: ONLY show completed if validator has made a decision in form state
+        // Don't use database validation_status because that's the assessor's decision, not the validator's
+        status: form[resp.id]?.status ? 'completed' : 'not_started',
       });
 
       return acc;
@@ -127,19 +129,31 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     const payloads = responses
       .map((r) => ({ id: r.id as number, v: form[r.id] }))
       .filter((x) => x.v && x.v.status) as { id: number; v: { status: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string } }[];
-    if (payloads.length === 0) return;
-    await Promise.all(
-      payloads.map((p) =>
-        validateMut.mutateAsync({
-          responseId: p.id,
-          data: {
-            validation_status: p.v.status!,
-            public_comment: p.v.publicComment ?? null,
-          },
-        })
-      )
-    );
-    await qc.invalidateQueries();
+
+    if (payloads.length === 0) {
+      console.warn('No validation decisions to save');
+      return;
+    }
+
+    try {
+      console.log('Saving validation decisions:', payloads);
+      await Promise.all(
+        payloads.map((p) =>
+          validateMut.mutateAsync({
+            responseId: p.id,
+            data: {
+              validation_status: p.v.status!,
+              public_comment: p.v.publicComment ?? null,
+            },
+          })
+        )
+      );
+      await qc.invalidateQueries();
+      console.log('Validation saved successfully');
+    } catch (error) {
+      console.error('Error saving validation:', error);
+      throw error;
+    }
   };
 
   const onFinalize = async () => {

@@ -86,8 +86,18 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
         publicComment = publicFeedback?.comment || form[r.id]?.publicComment || '';
       }
 
+      // Load validation status from database
+      // For validators: load validation_status (Pass/Fail/Conditional)
+      // For assessors: form state only (no validation_status field)
+      let status: LocalStatus = form[r.id]?.status;
+      if (isValidator && (r as AnyRecord).validation_status) {
+        const dbStatus = String((r as AnyRecord).validation_status);
+        // Database stores capitalized values: 'Pass', 'Fail', 'Conditional'
+        status = (dbStatus === 'Pass' ? 'Pass' : dbStatus === 'Fail' ? 'Fail' : dbStatus === 'Conditional' ? 'Conditional' : undefined) as LocalStatus;
+      }
+
       obj[key] = {
-        status: form[r.id]?.status,
+        status,
         publicComment,
       };
 
@@ -223,21 +233,20 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watched]);
 
-  // Auto-calculate status based on checklist for validators (only if not manually overridden)
-  React.useEffect(() => {
-    if (!isValidator || !expandedId) return;
-
-    // Don't auto-update if this indicator has been manually overridden
-    if (manualOverrides[expandedId]) return;
-
-    const checklistData = watched || {};
-    const autoStatus = calculateAutomaticStatus(expandedId, checklistData);
-
-    if (autoStatus && form[expandedId]?.status !== autoStatus) {
-      setField(expandedId, 'status', autoStatus);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watched, expandedId, isValidator, manualOverrides]);
+  // DISABLED: Auto-calculation for validators
+  // Validators should manually decide Met/Unmet based on assessor's work, not auto-calculate from checklist
+  // Only assessors need auto-calculation since they're the ones filling the checklist
+  // React.useEffect(() => {
+  //   if (!isValidator || !expandedId) return;
+  //   // Don't auto-update if this indicator has been manually overridden
+  //   if (manualOverrides[expandedId]) return;
+  //   const checklistData = watched || {};
+  //   const autoStatus = calculateAutomaticStatus(expandedId, checklistData);
+  //   if (autoStatus && form[expandedId]?.status !== autoStatus) {
+  //     setField(expandedId, 'status', autoStatus);
+  //   }
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [watched, expandedId, isValidator, manualOverrides]);
 
   return (
     <div className="p-4">

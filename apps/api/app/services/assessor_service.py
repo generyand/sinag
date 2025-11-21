@@ -909,6 +909,12 @@ class AssessorService:
             # Track which assessor completed the review
             assessment.reviewed_by = assessor.id
 
+            # Clear validation_status on all responses so validators start fresh
+            # The assessor's checklist work is preserved in response_data (assessor_val_ prefix)
+            # But validators make their own Met/Unmet decisions from scratch
+            for response in assessment.responses:
+                response.validation_status = None
+
         # Set validated_at timestamp
         assessment.validated_at = (
             db.query(Assessment)
