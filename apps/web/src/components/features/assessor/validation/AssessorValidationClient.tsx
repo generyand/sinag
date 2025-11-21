@@ -152,29 +152,18 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         return true;
       }
 
-      // For assessors: Check if they've worked on checklist or comments
-      // NOTE: checklistData state is loaded from response_data on mount, so it includes
-      // persisted assessor validation work for ALL indicators (including rework ones)
+      // For assessors: Use EXACT same logic as bottom counter (line 333-345)
+      // Has comments in form state
+      const hasComments = form[r.id]?.publicComment && form[r.id]?.publicComment.trim().length > 0;
 
-      // Check checklist data (includes both new changes AND persisted data loaded from backend)
+      // Has checklist data in checklistData state
       const hasChecklistData = Object.keys(checklistData).some(key => {
         if (!key.startsWith(`checklist_${r.id}_`)) return false;
         const value = checklistData[key];
         return value === true || (typeof value === 'string' && value.trim().length > 0);
       });
 
-      // Check local comments
-      const hasLocalComments = form[r.id]?.publicComment && form[r.id]!.publicComment!.trim().length > 0;
-
-      // Check for persisted comments (from feedback_comments table)
-      const feedbackComments = (r as AnyRecord).feedback_comments || [];
-      const hasPersistedComments = feedbackComments.some((fc: any) =>
-        fc.comment_type === 'validation' && !fc.is_internal_note && fc.comment && fc.comment.trim().length > 0
-      );
-
-      const isCompleted = hasChecklistData || hasLocalComments || hasPersistedComments;
-
-      return isCompleted;
+      return hasComments || hasChecklistData;
     }).length,
     totalIndicators: responses.length,
     governanceAreas: responses.reduce((acc: any[], resp: any) => {
