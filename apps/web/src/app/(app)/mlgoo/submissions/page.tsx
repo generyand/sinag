@@ -127,13 +127,22 @@ export default function AdminSubmissionsPage() {
         ? new Date(assessment.updated_at).toLocaleDateString()
         : "N/A";
 
+      // Map validators from API
+      const assignedAssessors = assessment.validators && Array.isArray(assessment.validators)
+        ? assessment.validators.map((v: any) => ({
+            id: v.id,
+            name: v.name,
+            avatar: v.initials || "?",
+          }))
+        : [];
+
       return {
         id: assessment.id,
         barangayName: assessment.barangay_name || "Unknown",
         overallProgress,
         currentStatus,
         statusColor: "green", // Will be determined by getStatusConfig
-        assignedAssessors: [], // TODO: Add assessor info when available in API
+        assignedAssessors,
         lastUpdated,
       };
     });
@@ -503,7 +512,7 @@ export default function AdminSubmissionsPage() {
                     </th>
                     <th className="px-6 py-4 text-left">
                       <div className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                        Assigned Assessors
+                        Validators
                       </div>
                     </th>
                     <th className="px-6 py-4 text-left">
@@ -567,18 +576,17 @@ export default function AdminSubmissionsPage() {
                           <div className="flex items-center gap-2">
                             {submission.assignedAssessors.length > 0 ? (
                               submission.assignedAssessors.map((assessor) => (
-                                                            <div
-                              key={assessor.id}
-                              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                              style={{ backgroundColor: 'var(--analytics-danger)' }}
-                              title={assessor.name}
-                            >
-                              {assessor.avatar}
-                            </div>
+                                <div
+                                  key={assessor.id}
+                                  className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold bg-gradient-to-br from-blue-500 to-blue-600 shadow-sm"
+                                  title={assessor.name}
+                                >
+                                  {assessor.avatar}
+                                </div>
                               ))
                             ) : (
                               <span className="text-sm text-[var(--muted-foreground)] italic">
-                                No assessors assigned
+                                No validators yet
                               </span>
                             )}
                           </div>
