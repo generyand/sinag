@@ -78,13 +78,13 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
           has_response_data: !!resp.response_data
         });
 
-        // SKIP loading old data for indicators that require rework
-        // (we want them to start fresh in the new review cycle)
-        if (resp.requires_rework) {
-          console.log(`[useEffect] ⚠️ SKIPPING old data for response ${responseId} (requires_rework=true)`);
-          return;
-        }
-
+        // ALWAYS load assessor validation data (assessor_val_ prefix)
+        // This includes:
+        // 1. Old validation data from first review (for indicators NOT requiring rework)
+        // 2. NEW validation work during rework cycle (for indicators requiring rework)
+        //
+        // We should NOT skip loading for requires_rework indicators because the assessor
+        // needs to see their progress during the rework review cycle.
         const responseData = resp.response_data || {};
 
         // Find all assessor_val_ prefixed fields and convert them to checklist format

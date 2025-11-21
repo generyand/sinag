@@ -92,45 +92,33 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
       };
 
       // Initialize checklist data from response_data
-      // CRITICAL: Only load old checklist data if NOT requiring rework
+      // IMPORTANT: ALWAYS load assessor validation data (assessor_val_ prefix), regardless of requires_rework status
+      // This allows the assessor to see their progress during rework review cycle
       const responseData = (r as AnyRecord).response_data || {};
       const indicator = (r.indicator as AnyRecord) ?? {};
       const checklistItems = (indicator?.checklist_items as any[]) || [];
 
-      if (!(r as AnyRecord).requires_rework) {
-        // Load existing checklist values from response_data (with "assessor_val_" prefix)
-        checklistItems.forEach((item: any) => {
-          const itemKey = `checklist_${r.id}_${item.item_id}`;
+      // Load existing checklist values from response_data (with "assessor_val_" prefix)
+      // This applies to BOTH:
+      // 1. Indicators from first review (requires_rework=false) - load old validation data
+      // 2. Indicators during rework (requires_rework=true) - load NEW validation work
+      checklistItems.forEach((item: any) => {
+        const itemKey = `checklist_${r.id}_${item.item_id}`;
 
-          if (item.item_type === 'assessment_field') {
-            // YES/NO checkboxes
-            const yesKey = `assessor_val_${item.item_id}_yes`;
-            const noKey = `assessor_val_${item.item_id}_no`;
-            obj[`${itemKey}_yes`] = responseData[yesKey] ?? false;
-            obj[`${itemKey}_no`] = responseData[noKey] ?? false;
-          } else if (item.item_type === 'document_count' || item.requires_document_count) {
-            // Input fields
-            obj[itemKey] = responseData[`assessor_val_${item.item_id}`] ?? '';
-          } else if (item.item_type !== 'info_text') {
-            // Regular checkboxes
-            obj[itemKey] = responseData[`assessor_val_${item.item_id}`] ?? false;
-          }
-        });
-      } else {
-        // For requires_rework indicators, initialize with empty/default values
-        checklistItems.forEach((item: any) => {
-          const itemKey = `checklist_${r.id}_${item.item_id}`;
-
-          if (item.item_type === 'assessment_field') {
-            obj[`${itemKey}_yes`] = false;
-            obj[`${itemKey}_no`] = false;
-          } else if (item.item_type === 'document_count' || item.requires_document_count) {
-            obj[itemKey] = '';
-          } else if (item.item_type !== 'info_text') {
-            obj[itemKey] = false;
-          }
-        });
-      }
+        if (item.item_type === 'assessment_field') {
+          // YES/NO checkboxes
+          const yesKey = `assessor_val_${item.item_id}_yes`;
+          const noKey = `assessor_val_${item.item_id}_no`;
+          obj[`${itemKey}_yes`] = responseData[yesKey] ?? false;
+          obj[`${itemKey}_no`] = responseData[noKey] ?? false;
+        } else if (item.item_type === 'document_count' || item.requires_document_count) {
+          // Input fields
+          obj[itemKey] = responseData[`assessor_val_${item.item_id}`] ?? '';
+        } else if (item.item_type !== 'info_text') {
+          // Regular checkboxes
+          obj[itemKey] = responseData[`assessor_val_${item.item_id}`] ?? false;
+        }
+      });
     }
 
     return obj as ResponsesForm;

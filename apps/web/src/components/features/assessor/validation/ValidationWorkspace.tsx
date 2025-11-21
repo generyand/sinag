@@ -50,6 +50,9 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
 
   const [form, setForm] = React.useState<Record<number, { status?: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string }>>({});
 
+  // Track checklist data separately for each response
+  const [checklistData, setChecklistData] = React.useState<Record<string, any>>({});
+
   // Initialize form with existing validation data from responses
   React.useEffect(() => {
     const initialForm: typeof form = {};
@@ -129,16 +132,36 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
       .map((r) => ({ id: r.id as number, v: form[r.id] }))
       .filter((x) => x.v && x.v.status) as { id: number; v: { status: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string } }[];
     if (payloads.length === 0) return;
+
     await Promise.all(
-      payloads.map((p) =>
-        validateMut.mutateAsync({
+      payloads.map((p) => {
+        // Extract checklist data for this specific response
+        const responseChecklistData: Record<string, any> = {};
+
+        // Find all checklist keys for this response
+        Object.entries(checklistData).forEach(([key, value]) => {
+          // Match pattern: checklist_{responseId}_{itemId}[_yes|_no]
+          const match = key.match(/^checklist_(\d+)_(.+)$/);
+          if (match && Number(match[1]) === p.id) {
+            const itemKey = match[2]; // e.g., "item_123_yes" or "item_123"
+
+            // Convert to assessor_val_ prefix for backend storage
+            // Handle YES/NO checkboxes: checklist_123_item_456_yes → assessor_val_item_456_yes
+            // Handle regular items: checklist_123_item_456 → assessor_val_item_456
+            const backendKey = `assessor_val_${itemKey}`;
+            responseChecklistData[backendKey] = value;
+          }
+        });
+
+        return validateMut.mutateAsync({
           responseId: p.id,
           data: {
             validation_status: p.v.status!,
             public_comment: p.v.publicComment ?? null,
+            response_data: Object.keys(responseChecklistData).length > 0 ? responseChecklistData : null,
           },
-        })
-      )
+        });
+      })
     );
     await qc.invalidateQueries();
   };
@@ -251,15 +274,28 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
 
             {/* Right Panel - MOV Checklist/Validation */}
             <div className="rounded-sm shadow-md border border-black/5 overflow-hidden min-w-0 w-full min-h-[600px] bg-white">
-              <RightAssessorPanel assessment={assessment} form={form} expandedId={expandedId ?? undefined} onToggle={(id) => setExpandedId((curr) => (curr === id ? null : id))} setField={(id, field, value) => {
-                setForm((prev) => ({
-                  ...prev,
-                  [id]: {
-                    ...prev[id],
-                    [field]: value,
-                  },
-                }));
-              }} />
+              <RightAssessorPanel
+                assessment={assessment}
+                form={form}
+                expandedId={expandedId ?? undefined}
+                onToggle={(id) => setExpandedId((curr) => (curr === id ? null : id))}
+                setField={(id, field, value) => {
+                  setForm((prev) => ({
+                    ...prev,
+                    [id]: {
+                      ...prev[id],
+                      [field]: value,
+                    },
+                  }));
+                }}
+                onChecklistChange={(key, value) => {
+                  // Track checklist changes
+                  setChecklistData((prev) => ({
+                    ...prev,
+                    [key]: value,
+                  }));
+                }}
+              />
             </div>
           </div>
         </div>
