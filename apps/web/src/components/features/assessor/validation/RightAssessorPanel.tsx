@@ -87,13 +87,20 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
       }
 
       // Load validation status from database
-      // For validators: load validation_status (Pass/Fail/Conditional)
-      // For assessors: form state only (no validation_status field)
-      let status: LocalStatus = form[r.id]?.status;
-      if (isValidator && (r as AnyRecord).validation_status) {
-        const dbStatus = String((r as AnyRecord).validation_status);
-        // Database stores capitalized values: 'Pass', 'Fail', 'Conditional'
-        status = (dbStatus === 'Pass' ? 'Pass' : dbStatus === 'Fail' ? 'Fail' : dbStatus === 'Conditional' ? 'Conditional' : undefined) as LocalStatus;
+      // For validators: ONLY load from validation_status (database), ignore form state
+      // For assessors: use form state only (no validation_status field)
+      let status: LocalStatus = undefined;
+      if (isValidator) {
+        // Validators: load ONLY from database validation_status
+        if ((r as AnyRecord).validation_status) {
+          const dbStatus = String((r as AnyRecord).validation_status);
+          // Database stores capitalized values: 'Pass', 'Fail', 'Conditional'
+          status = (dbStatus === 'Pass' ? 'Pass' : dbStatus === 'Fail' ? 'Fail' : dbStatus === 'Conditional' ? 'Conditional' : undefined) as LocalStatus;
+        }
+        // If validation_status is null, status remains undefined (not reviewed)
+      } else {
+        // Assessors: use form state
+        status = form[r.id]?.status;
       }
 
       obj[key] = {
