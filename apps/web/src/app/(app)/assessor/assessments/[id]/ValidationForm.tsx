@@ -74,7 +74,7 @@ export function ValidationForm({
         data: {
           validation_status: validationStatus as ValidationStatus,
           public_comment: comment.trim() || null,
-          internal_note: isInternalNote ? comment.trim() || null : null,
+          assessor_remarks: isInternalNote ? comment.trim() || null : null,
         },
       });
       

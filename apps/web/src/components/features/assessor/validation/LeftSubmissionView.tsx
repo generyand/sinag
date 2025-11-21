@@ -396,12 +396,6 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
 
       {/* MOV Previewer Modal */}
       <Dialog open={modalOpen} onOpenChange={(open) => {
-        if (!open) {
-          // Persist any pending annotations on close
-          try {
-            saveAnnotations();
-          } catch {}
-        }
         setModalOpen(open);
       }}>
         <DialogContent className="max-w-5xl h-[90vh] bg-white border-0 outline-none focus:outline-none focus-visible:ring-0 overflow-hidden flex flex-col">

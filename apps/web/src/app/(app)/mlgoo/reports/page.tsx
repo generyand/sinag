@@ -20,7 +20,7 @@ export default function ReportsPage() {
   
   // Fetch validated assessments with compliance data
   const { data: assessments, isLoading } = useGetAssessmentsList<GetAssessmentsListQueryResult>({
-    status: AssessmentStatus.VALIDATED,
+    assessment_status: AssessmentStatus.VALIDATED,
   });
 
   // Ensure we only render arrays in JSX to avoid unknown -> ReactNode errors

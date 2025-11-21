@@ -66,7 +66,7 @@ export function ValidationControls({
         data: {
           validation_status: validationStatus as ValidationStatus,
           public_comment: publicComment.trim() || null,
-          internal_note: isInternalNote ? internalNote.trim() || null : null,
+          assessor_remarks: isInternalNote ? internalNote.trim() || null : null,
         },
       });
 
@@ -94,7 +94,7 @@ export function ValidationControls({
         data: {
           validation_status: validationStatus as ValidationStatus,
           public_comment: publicComment.trim() || null,
-          internal_note: isInternalNote ? internalNote.trim() || null : null,
+          assessor_remarks: isInternalNote ? internalNote.trim() || null : null,
         },
       });
 

@@ -441,7 +441,7 @@ export type GetAssessmentsListParams = {
 /**
  * Filter by assessment status (returns all if not specified)
  */
-status?: AssessmentStatus | null;
+assessment_status?: AssessmentStatus | null;
 };
 
 

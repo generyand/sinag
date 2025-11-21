@@ -630,7 +630,7 @@ Returns a list of assessments with their compliance status,
 area results, and barangay information. Used for MLGOO reports dashboard.
 
 Args:
-    status: Optional filter by assessment status (shows all if not provided)
+    assessment_status: Optional filter by assessment status (shows all if not provided)
     db: Database session
     current_user: Current admin/MLGOO user
 

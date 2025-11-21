@@ -71,13 +71,7 @@ export default function AdminSubmissionsPage() {
 
   // Fetch assessments from API
   const { data: apiData, isLoading, error } = useGetAssessmentsList(
-    { status: apiStatusFilter },
-    {
-      query: {
-        // Refetch when filter changes
-        keepPreviousData: true,
-      },
-    }
+    { assessment_status: apiStatusFilter }
   );
 
   // Transform API data to UI structure

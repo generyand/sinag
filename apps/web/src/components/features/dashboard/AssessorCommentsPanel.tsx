@@ -129,8 +129,8 @@ export function AssessorCommentsPanel({
           const commentsArray = commentGroup ? Array.from(commentGroup.uniqueComments.values()) : [];
           const isExpanded = expandedIndicators.has(indicatorId);
 
-          // Get indicator name from either comments or MOV annotations
-          const indicatorName = commentGroup?.indicator_name || movAnnotations[0]?.indicator_name || `Indicator ${indicatorId}`;
+          // Get indicator name from comments or use fallback
+          const indicatorName = commentGroup?.indicator_name || `Indicator ${indicatorId}`;
 
           const totalFeedbackItems = commentsArray.length + movAnnotations.length;
 

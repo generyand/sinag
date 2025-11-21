@@ -76,7 +76,7 @@ export default function ValidatorSubmissionsPage() {
     const kpi: SubmissionsKPI = {
       awaitingReview: submissions.filter(s => s.areaStatus === 'awaiting_review').length,
       inRework: submissions.filter(s => s.areaStatus === 'needs_rework').length,
-      validated: statsData?.validated_count ?? 0, // Use stats endpoint for accurate count
+      validated: (statsData as { validated_count?: number })?.validated_count ?? 0, // Use stats endpoint for accurate count
       avgReviewTime: 0, // Not provided by API, default to 0
     };
 

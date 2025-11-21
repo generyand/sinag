@@ -180,7 +180,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
 
       // Then finalize
       console.log('Finalizing assessment...');
-      const result = await finalizeMut.mutateAsync({ assessmentId });
+      const result = await finalizeMut.mutateAsync({ assessmentId }) as { new_status?: string };
       await qc.invalidateQueries();
 
       // Check if assessment is fully complete or partially validated

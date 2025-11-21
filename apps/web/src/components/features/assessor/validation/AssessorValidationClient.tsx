@@ -154,7 +154,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
       // For assessors: Use EXACT same logic as bottom counter (line 333-345)
       // Has comments in form state
-      const hasComments = form[r.id]?.publicComment && form[r.id]?.publicComment.trim().length > 0;
+      const publicComment = form[r.id]?.publicComment;
+      const hasComments = publicComment ? publicComment.trim().length > 0 : false;
 
       // Has checklist data in checklistData state
       const hasChecklistData = Object.keys(checklistData).some(key => {
@@ -321,7 +322,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     // Assessors: check if they've reviewed checklists or added comments
     const reviewedByAssessor = responses.filter((r) => {
       // Has comments
-      const hasComments = form[r.id]?.publicComment && form[r.id]?.publicComment.trim().length > 0;
+      const publicComment = form[r.id]?.publicComment;
+      const hasComments = publicComment ? publicComment.trim().length > 0 : false;
 
       // Has checklist data
       const hasChecklistData = Object.keys(checklistData).some(key => {
@@ -346,7 +348,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
   // Check if assessor has any indicators with comments (for rework button)
   const hasCommentsForRework = isAssessor && responses.some((r) => {
-    return form[r.id]?.publicComment && form[r.id]?.publicComment.trim().length > 0;
+    const publicComment = form[r.id]?.publicComment;
+    return publicComment ? publicComment.trim().length > 0 : false;
   });
 
   const progressPct = total > 0 ? Math.round((reviewed / total) * 100) : 0;

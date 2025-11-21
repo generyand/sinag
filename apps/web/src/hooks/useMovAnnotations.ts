@@ -23,7 +23,7 @@ export function useMovAnnotations(movFileId: number | null) {
       query: {
         enabled: movFileId != null && movFileId > 0,
       },
-    }
+    } as any
   );
 
   // Create annotation mutation
