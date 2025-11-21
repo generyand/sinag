@@ -502,9 +502,9 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                       (cr) => cr.condition?.toLowerCase() === 'considered' || cr.condition?.toLowerCase() === 'conditional'
                     );
 
-                    // Calculate automatic status
+                    // Calculate automatic status (DISABLED for validators - they make manual decisions)
                     const checklistData = watched || {};
-                    const autoStatus = calculateAutomaticStatus(r.id, checklistData);
+                    const autoStatus = isValidator ? null : calculateAutomaticStatus(r.id, checklistData);
                     const isManualOverride = manualOverrides[r.id] || false;
                     const currentStatus = form[r.id]?.status;
 
