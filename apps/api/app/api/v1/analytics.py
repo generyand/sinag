@@ -171,8 +171,9 @@ async def get_dashboard(
         "- `status`: Filter by assessment status (Pass/Fail/In Progress)\n"
         "- `page`, `page_size`: Pagination controls for table data\n\n"
         "**RBAC:**\n"
-        "- MLGOO_DILG/SUPERADMIN: See all data\n"
-        "- AREA_ASSESSOR: See only assigned governance area\n"
+        "- MLGOO_DILG: See all data\n"
+        "- ASSESSOR: See only assigned governance area\n"
+        "- VALIDATOR: See only assigned governance area\n"
         "- BLGU_USER: See only own barangay\n\n"
         "**Access:** Requires authentication."
     ),

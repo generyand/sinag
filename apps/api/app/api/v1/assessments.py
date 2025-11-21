@@ -446,7 +446,7 @@ async def get_current_admin_user(
     """
     Get the current authenticated admin/MLGOO user.
 
-    Restricts access to users with SUPERADMIN or MLGOO_DILG role.
+    Restricts access to users with MLGOO_DILG role.
 
     Args:
         current_user: Current active user from get_current_active_user dependency
@@ -457,10 +457,7 @@ async def get_current_admin_user(
     Raises:
         HTTPException: If user doesn't have admin privileges
     """
-    if current_user.role.value not in [
-        UserRole.SUPERADMIN.value,
-        UserRole.MLGOO_DILG.value,
-    ]:
+    if current_user.role.value != UserRole.MLGOO_DILG.value:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions. Admin/MLGOO access required.",
@@ -470,20 +467,20 @@ async def get_current_admin_user(
 
 @router.get("/list", response_model=List[Dict[str, Any]], tags=["assessments"])
 async def get_all_validated_assessments(
-    status: AssessmentStatus = Query(
-        AssessmentStatus.VALIDATED, description="Filter by assessment status"
+    status: AssessmentStatus | None = Query(
+        None, description="Filter by assessment status (returns all if not specified)"
     ),
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(get_current_admin_user),
 ):
     """
-    Get all validated assessments with compliance status.
+    Get all assessments with compliance status (optionally filtered by status).
 
-    Returns a list of all validated assessments with their compliance status,
+    Returns a list of assessments with their compliance status,
     area results, and barangay information. Used for MLGOO reports dashboard.
 
     Args:
-        status: Filter by assessment status (defaults to VALIDATED)
+        status: Optional filter by assessment status (shows all if not provided)
         db: Database session
         current_user: Current admin/MLGOO user
 

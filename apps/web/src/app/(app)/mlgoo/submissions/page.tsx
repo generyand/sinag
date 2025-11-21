@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { SubmissionsSkeleton } from "@/components/features/submissions";
+import { useGetAssessmentsList, AssessmentStatus } from "@vantage/shared";
 
 interface Submission {
   id: number;
@@ -44,96 +45,112 @@ export default function AdminSubmissionsPage() {
   const { isAuthenticated } = useAuthStore();
   const router = useRouter();
 
-  // Mock loading state - in real app this would come from API
-  const [isLoading] = useState(false);
-
   // State for filters and search
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [areaFilter, setAreaFilter] = useState("all");
   const [assessorFilter, setAssessorFilter] = useState("all");
 
-  // Mock data matching the design from the image
-  const submissionsData = useMemo(
-    (): Submission[] => [
-      {
-        id: 1,
-        barangayName: "Barangay Balasinon",
-        overallProgress: 85,
-        currentStatus: "Submitted for Review",
-        statusColor: "yellow",
-        assignedAssessors: [
-          { id: 1, name: "John Doe", avatar: "JD" },
-          { id: 2, name: "Jane Smith", avatar: "JS" },
-        ],
-        lastUpdated: "1/15/2024",
+  // Build API status filter
+  const apiStatusFilter = useMemo(() => {
+    if (statusFilter === "all") {
+      return undefined; // Don't filter by status
+    }
+    // Map UI filter values to API status enums
+    const statusMap: Record<string, AssessmentStatus> = {
+      "completed": AssessmentStatus.COMPLETED,
+      "validated": AssessmentStatus.VALIDATED,
+      "awaiting_final": AssessmentStatus.AWAITING_FINAL_VALIDATION,
+      "in_review": AssessmentStatus.IN_REVIEW,
+      "rework": AssessmentStatus.REWORK,
+      "submitted": AssessmentStatus.SUBMITTED,
+      "draft": AssessmentStatus.DRAFT,
+    };
+    return statusMap[statusFilter];
+  }, [statusFilter]);
+
+  // Fetch assessments from API
+  const { data: apiData, isLoading, error } = useGetAssessmentsList(
+    { status: apiStatusFilter },
+    {
+      query: {
+        // Refetch when filter changes
+        keepPreviousData: true,
       },
-      {
-        id: 2,
-        barangayName: "Barangay Buguis",
-        overallProgress: 45,
-        currentStatus: "In Progress",
-        statusColor: "blue",
-        assignedAssessors: [{ id: 1, name: "John Doe", avatar: "JD" }],
-        lastUpdated: "1/14/2024",
-      },
-      {
-        id: 3,
-        barangayName: "Barangay Carre",
-        overallProgress: 100,
-        currentStatus: "Finalized",
-        statusColor: "purple",
-        assignedAssessors: [{ id: 1, name: "John Doe", avatar: "JD" }],
-        lastUpdated: "1/13/2024",
-      },
-      {
-        id: 4,
-        barangayName: "Barangay Clib",
-        overallProgress: 0,
-        currentStatus: "Not Started",
-        statusColor: "gray",
-        assignedAssessors: [],
-        lastUpdated: "1/12/2024",
-      },
-      {
-        id: 5,
-        barangayName: "Barangay Harada Butai",
-        overallProgress: 70,
-        currentStatus: "Needs Rework",
-        statusColor: "orange",
-        assignedAssessors: [{ id: 1, name: "John Doe", avatar: "JD" }],
-        lastUpdated: "1/11/2024",
-      },
-      {
-        id: 6,
-        barangayName: "Barangay Katipunan",
-        overallProgress: 95,
-        currentStatus: "Validated",
-        statusColor: "green",
-        assignedAssessors: [{ id: 1, name: "John Doe", avatar: "JD" }],
-        lastUpdated: "1/11/2024",
-      },
-    ],
-    []
+    }
   );
 
-  // Filter submissions based on search and filters
+  // Transform API data to UI structure
+  const submissionsData = useMemo((): Submission[] => {
+    if (!apiData) return [];
+
+    return (apiData as any[]).map((assessment: any) => {
+      // Map API status to UI display status
+      const statusMap: Record<string, string> = {
+        [AssessmentStatus.COMPLETED]: "Completed",
+        [AssessmentStatus.VALIDATED]: "Validated",
+        [AssessmentStatus.AWAITING_FINAL_VALIDATION]: "Awaiting Final Validation",
+        [AssessmentStatus.IN_REVIEW]: "In Review",
+        [AssessmentStatus.REWORK]: "Needs Rework",
+        [AssessmentStatus.SUBMITTED]: "Submitted for Review",
+        [AssessmentStatus.DRAFT]: "Draft",
+        [AssessmentStatus.SUBMITTED_FOR_REVIEW]: "Submitted for Review",
+        [AssessmentStatus.NEEDS_REWORK]: "Needs Rework",
+      };
+
+      const currentStatus = statusMap[assessment.status] || assessment.status;
+
+      // Calculate progress based on area_results if available
+      let overallProgress = 0;
+      if (assessment.area_results && typeof assessment.area_results === 'object') {
+        const results = Object.values(assessment.area_results);
+        if (results.length > 0) {
+          const totalCompliance = results.reduce((sum: number, result: any) => {
+            return sum + (result?.compliance_rate || 0);
+          }, 0);
+          overallProgress = Math.round(totalCompliance / results.length);
+        }
+      } else if (assessment.final_compliance_status === "COMPLIANT") {
+        overallProgress = 100;
+      } else if (assessment.status === AssessmentStatus.COMPLETED || assessment.status === AssessmentStatus.VALIDATED) {
+        overallProgress = 100;
+      } else if (assessment.status === AssessmentStatus.AWAITING_FINAL_VALIDATION) {
+        overallProgress = 95;
+      } else if (assessment.status === AssessmentStatus.IN_REVIEW) {
+        overallProgress = 75;
+      } else if (assessment.status === AssessmentStatus.SUBMITTED) {
+        overallProgress = 50;
+      }
+
+      // Format date
+      const lastUpdated = assessment.updated_at
+        ? new Date(assessment.updated_at).toLocaleDateString()
+        : "N/A";
+
+      return {
+        id: assessment.id,
+        barangayName: assessment.barangay_name || "Unknown",
+        overallProgress,
+        currentStatus,
+        statusColor: "green", // Will be determined by getStatusConfig
+        assignedAssessors: [], // TODO: Add assessor info when available in API
+        lastUpdated,
+      };
+    });
+  }, [apiData]);
+
+  // Filter submissions based on search (status filtering is done via API)
   const filteredSubmissions = useMemo(() => {
     return submissionsData.filter((submission) => {
       const matchesSearch = submission.barangayName
         .toLowerCase()
         .includes(searchQuery.toLowerCase());
-      const matchesStatus =
-        statusFilter === "all" ||
-        submission.currentStatus
-          .toLowerCase()
-          .includes(statusFilter.toLowerCase());
       const matchesArea = areaFilter === "all"; // For now, all areas match
       const matchesAssessor = assessorFilter === "all"; // For now, all assessors match
 
-      return matchesSearch && matchesStatus && matchesArea && matchesAssessor;
+      return matchesSearch && matchesArea && matchesAssessor;
     });
-  }, [searchQuery, statusFilter, areaFilter, assessorFilter, submissionsData]);
+  }, [searchQuery, areaFilter, assessorFilter, submissionsData]);
 
   // Show loading if not authenticated
   if (!isAuthenticated) {
@@ -147,6 +164,31 @@ export default function AdminSubmissionsPage() {
     );
   }
 
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+        <div className="max-w-md w-full bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg p-8">
+          <div className="text-center">
+            <XCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-[var(--foreground)] mb-2">
+              Failed to Load Assessments
+            </h2>
+            <p className="text-[var(--muted-foreground)] mb-4">
+              {(error as any)?.message || "An unexpected error occurred"}
+            </p>
+            <Button
+              onClick={() => window.location.reload()}
+              className="bg-[var(--cityscape-yellow)] hover:bg-[var(--cityscape-yellow-dark)] text-white"
+            >
+              Retry
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const getStatusConfig = (status: string) => {
     const configs = {
       "Submitted for Review": {
@@ -154,17 +196,22 @@ export default function AdminSubmissionsPage() {
         textColor: 'var(--analytics-warning-text)',
         icon: Clock,
       },
-      "In Progress": {
+      "In Review": {
         bgColor: 'var(--kpi-blue-from)',
         textColor: 'var(--kpi-blue-text)',
         icon: Clock,
       },
-      Finalized: {
+      "Awaiting Final Validation": {
         bgColor: 'var(--kpi-purple-from)',
         textColor: 'var(--kpi-purple-text)',
+        icon: Clock,
+      },
+      "Completed": {
+        bgColor: 'var(--analytics-success-bg)',
+        textColor: 'var(--analytics-success-text)',
         icon: CheckCircle,
       },
-      "Not Started": {
+      "Draft": {
         bgColor: 'var(--analytics-neutral-bg)',
         textColor: 'var(--analytics-neutral-text)',
         icon: XCircle,
@@ -174,13 +221,13 @@ export default function AdminSubmissionsPage() {
         textColor: 'var(--analytics-warning-text)',
         icon: AlertTriangle,
       },
-      Validated: {
+      "Validated": {
         bgColor: 'var(--analytics-success-bg)',
         textColor: 'var(--analytics-success-text)',
         icon: CheckCircle,
       },
     };
-    return configs[status as keyof typeof configs] || configs["Not Started"];
+    return configs[status as keyof typeof configs] || configs["Draft"];
   };
 
   const getProgressBarColor = (progress: number) => {
@@ -236,10 +283,10 @@ export default function AdminSubmissionsPage() {
                   </div>
                   <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)]">
                     <div className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                      {submissionsData.filter(s => s.currentStatus === "Validated").length}
+                      {submissionsData.filter(s => s.currentStatus === "Validated" || s.currentStatus === "Completed").length}
                     </div>
                     <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
-                      Validated
+                      Completed
                     </div>
                   </div>
                 </div>
@@ -301,22 +348,34 @@ export default function AdminSubmissionsPage() {
                           All Statuses
                         </SelectItem>
                         <SelectItem
+                          value="completed"
+                          className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
+                        >
+                          Completed
+                        </SelectItem>
+                        <SelectItem
+                          value="validated"
+                          className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
+                        >
+                          Validated
+                        </SelectItem>
+                        <SelectItem
+                          value="awaiting_final"
+                          className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
+                        >
+                          Awaiting Final Validation
+                        </SelectItem>
+                        <SelectItem
+                          value="in_review"
+                          className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
+                        >
+                          In Review
+                        </SelectItem>
+                        <SelectItem
                           value="submitted"
                           className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
                         >
-                          Submitted for Review
-                        </SelectItem>
-                        <SelectItem
-                          value="progress"
-                          className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
-                        >
-                          In Progress
-                        </SelectItem>
-                        <SelectItem
-                          value="finalized"
-                          className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
-                        >
-                          Finalized
+                          Submitted
                         </SelectItem>
                         <SelectItem
                           value="rework"
@@ -325,10 +384,10 @@ export default function AdminSubmissionsPage() {
                           Needs Rework
                         </SelectItem>
                         <SelectItem
-                          value="validated"
+                          value="draft"
                           className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
                         >
-                          Validated
+                          Draft
                         </SelectItem>
                       </SelectContent>
                     </Select>

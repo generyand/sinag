@@ -2356,13 +2356,13 @@ class AssessmentService:
         self, db: Session, status: Optional[AssessmentStatus] = None
     ) -> List[Dict[str, Any]]:
         """
-        Get all validated assessments with compliance status and area results.
+        Get all assessments with compliance status and area results (optionally filtered by status).
 
         Used for MLGOO reports page to display all barangay compliance statuses.
 
         Args:
             db: Database session
-            status: Optional filter by assessment status (defaults to VALIDATED)
+            status: Optional filter by assessment status (shows all if not provided)
 
         Returns:
             List of dictionaries with assessment details including compliance status
@@ -2376,9 +2376,9 @@ class AssessmentService:
             .options(joinedload(Assessment.blgu_user).joinedload(User.barangay))
         )
 
-        # Filter by status if provided
-        filter_status = status or AssessmentStatus.VALIDATED
-        query = query.filter(Assessment.status == filter_status)
+        # Filter by status if provided (otherwise return all assessments)
+        if status is not None:
+            query = query.filter(Assessment.status == status)
 
         # Order by updated_at descending
         query = query.order_by(Assessment.updated_at.desc())

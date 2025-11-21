@@ -6,6 +6,7 @@ import { useAssessorGovernanceArea } from '@/hooks/useAssessorGovernanceArea';
 import { BarangaySubmission, SubmissionsData, SubmissionsFilter, SubmissionsKPI } from '@/types/submissions';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
+import { useGetAssessorStats } from '@vantage/shared';
 
 // Map API status to UI areaStatus for VALIDATORS
 function mapStatusToAreaStatus(status: string): BarangaySubmission['areaStatus'] {
@@ -50,6 +51,7 @@ export default function ValidatorSubmissionsPage() {
   const router = useRouter();
   const { governanceAreaName, isLoading: governanceAreaLoading } = useAssessorGovernanceArea();
   const { data: queueData, isLoading: queueLoading, error: queueError } = useAssessorQueue();
+  const { data: statsData } = useGetAssessorStats();
 
   const [filters, setFilters] = useState<SubmissionsFilter>({
     search: '',
@@ -70,11 +72,11 @@ export default function ValidatorSubmissionsPage() {
       lastUpdated: item.updated_at,
     }));
 
-    // Calculate KPIs from queue data
+    // Calculate KPIs from queue data and stats
     const kpi: SubmissionsKPI = {
       awaitingReview: submissions.filter(s => s.areaStatus === 'awaiting_review').length,
       inRework: submissions.filter(s => s.areaStatus === 'needs_rework').length,
-      validated: submissions.filter(s => s.areaStatus === 'validated').length,
+      validated: statsData?.validated_count ?? 0, // Use stats endpoint for accurate count
       avgReviewTime: 0, // Not provided by API, default to 0
     };
 
@@ -83,7 +85,7 @@ export default function ValidatorSubmissionsPage() {
       submissions,
       governanceArea: governanceAreaName || 'Unknown',
     };
-  }, [queueData, queueLoading, governanceAreaName]);
+  }, [queueData, queueLoading, governanceAreaName, statsData]);
 
   // Filter submissions based on search and status
   const filteredSubmissions = useMemo(() => {

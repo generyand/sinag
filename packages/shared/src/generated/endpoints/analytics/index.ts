@@ -127,8 +127,9 @@ export function useGetAnalyticsDashboard<TData = Awaited<ReturnType<typeof getAn
 - `page`, `page_size`: Pagination controls for table data
 
 **RBAC:**
-- MLGOO_DILG/SUPERADMIN: See all data
-- AREA_ASSESSOR: See only assigned governance area
+- MLGOO_DILG: See all data
+- ASSESSOR: See only assigned governance area
+- VALIDATOR: See only assigned governance area
 - BLGU_USER: See only own barangay
 
 **Access:** Requires authentication.

@@ -37,6 +37,33 @@ async def get_assessor_queue(
     return assessor_service.get_assessor_queue(db=db, assessor=current_assessor)
 
 
+@router.get("/stats", tags=["assessor"])
+async def get_assessor_stats(
+    db: Session = Depends(deps.get_db),
+    current_assessor: User = Depends(deps.get_current_area_assessor_user),
+):
+    """
+    Get statistics for the assessor/validator.
+
+    For validators, returns:
+    - validated_count: Number of assessments where the validator has completed their governance area
+
+    For assessors, returns:
+    - validated_count: 0 (not applicable)
+    """
+    validated_count = 0
+
+    # For validators, count completed assessments
+    if current_assessor.validator_area_id is not None:
+        validated_count = assessor_service.get_validator_completed_count(
+            db=db, validator=current_assessor
+        )
+
+    return {
+        "validated_count": validated_count,
+    }
+
+
 @router.post(
     "/assessment-responses/{response_id}/validate",
     response_model=ValidationResponse,

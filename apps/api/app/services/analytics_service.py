@@ -867,10 +867,10 @@ class AnalyticsService:
         query = db.query(Assessment).join(User, Assessment.blgu_user_id == User.id)
 
         # Apply RBAC filtering based on user role
-        if current_user.role == UserRole.MLGOO_DILG or current_user.role == UserRole.SUPERADMIN:
-            # MLGOO_DILG and SUPERADMIN see all data - no additional filters
+        if current_user.role == UserRole.MLGOO_DILG:
+            # MLGOO_DILG sees all data - no additional filters
             pass
-        elif current_user.role == UserRole.AREA_ASSESSOR:
+        elif current_user.role == UserRole.ASSESSOR:
             # Area Assessor sees only assessments from their assigned governance area
             if current_user.governance_area_id is not None:
                 # Join with Barangay to filter by governance area

@@ -439,9 +439,9 @@ export type GetAssessmentsList200Item = { [key: string]: unknown };
  */
 export type GetAssessmentsListParams = {
 /**
- * Filter by assessment status
+ * Filter by assessment status (returns all if not specified)
  */
-status?: AssessmentStatus;
+status?: AssessmentStatus | null;
 };
 
 

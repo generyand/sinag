@@ -624,13 +624,13 @@ export const useDeleteAssessmentsMovsMovId = <TError = HTTPValidationError,
       return useMutation(mutationOptions );
     }
     /**
- * Get all validated assessments with compliance status.
+ * Get all assessments with compliance status (optionally filtered by status).
 
-Returns a list of all validated assessments with their compliance status,
+Returns a list of assessments with their compliance status,
 area results, and barangay information. Used for MLGOO reports dashboard.
 
 Args:
-    status: Filter by assessment status (defaults to VALIDATED)
+    status: Optional filter by assessment status (shows all if not provided)
     db: Database session
     current_user: Current admin/MLGOO user
 

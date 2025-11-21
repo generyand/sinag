@@ -14,6 +14,7 @@ import {
   usePostAssessorAssessmentResponsesResponseIdValidate,
   usePostAssessorAssessmentsAssessmentIdFinalize,
 } from '@vantage/shared';
+import { toast } from 'sonner';
 
 interface ValidatorValidationClientProps {
   assessmentId: number;
@@ -132,10 +133,14 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
 
     if (payloads.length === 0) {
       console.warn('No validation decisions to save');
+      toast.info('No changes to save', { duration: 2000 });
       return;
     }
 
     try {
+      // Show loading toast
+      toast.loading(`Saving ${payloads.length} validation decision${payloads.length > 1 ? 's' : ''}...`, { id: 'save-draft-toast' });
+
       console.log('Saving validation decisions:', payloads);
       await Promise.all(
         payloads.map((p) =>
@@ -150,16 +155,60 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       );
       await qc.invalidateQueries();
       console.log('Validation saved successfully');
+
+      // Dismiss loading and show success
+      toast.dismiss('save-draft-toast');
+      toast.success(`✅ Saved ${payloads.length} validation decision${payloads.length > 1 ? 's' : ''} as draft`, {
+        duration: 3000,
+      });
     } catch (error) {
       console.error('Error saving validation:', error);
+      toast.dismiss('save-draft-toast');
+      toast.error('Failed to save draft. Please try again.', { duration: 4000 });
       throw error;
     }
   };
 
   const onFinalize = async () => {
-    await onSaveDraft();
-    await finalizeMut.mutateAsync({ assessmentId });
-    await qc.invalidateQueries();
+    // Show immediate feedback that the process started
+    toast.loading('Finalizing validation...', { id: 'finalize-toast' });
+
+    try {
+      // Save any pending changes first
+      console.log('Saving draft before finalize...');
+      await onSaveDraft();
+
+      // Then finalize
+      console.log('Finalizing assessment...');
+      const result = await finalizeMut.mutateAsync({ assessmentId });
+      await qc.invalidateQueries();
+
+      // Check if assessment is fully complete or partially validated
+      const isFullyComplete = result?.new_status === 'COMPLETED';
+
+      // Dismiss loading toast and show success
+      toast.dismiss('finalize-toast');
+
+      if (isFullyComplete) {
+        toast.success('✅ Assessment fully validated! All governance areas are complete. The assessment is now ready for MLGOO review.', {
+          duration: 5000,
+        });
+      } else {
+        toast.success('✅ Your governance area validation is complete! Other governance areas are still pending validation.', {
+          duration: 5000,
+        });
+      }
+    } catch (error: any) {
+      console.error('Finalization error:', error);
+
+      // Dismiss loading toast and show error
+      toast.dismiss('finalize-toast');
+
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to finalize assessment';
+      toast.error(`Finalization failed: ${errorMessage}`, {
+        duration: 6000,
+      });
+    }
   };
 
   const handleIndicatorSelect = (indicatorId: string) => {
@@ -274,7 +323,17 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
               disabled={validateMut.isPending}
               className="w-full sm:w-auto"
             >
-              Save as Draft
+              {validateMut.isPending ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Saving...
+                </>
+              ) : (
+                'Save as Draft'
+              )}
             </Button>
             <Button
               size="default"
@@ -288,7 +347,17 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
               className="w-full sm:w-auto text-white hover:opacity-90"
               style={{ background: 'var(--success)' }}
             >
-              Finalize Validation
+              {finalizeMut.isPending ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Finalizing...
+                </>
+              ) : (
+                'Finalize Validation'
+              )}
             </Button>
           </div>
         </div>

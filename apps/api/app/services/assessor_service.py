@@ -46,10 +46,14 @@ class AssessorService:
             db.query(Assessment)
             .join(AssessmentResponse, AssessmentResponse.assessment_id == Assessment.id)
             .join(Indicator, Indicator.id == AssessmentResponse.indicator_id)
-            .options(joinedload(Assessment.blgu_user).joinedload(User.barangay))
+            .options(
+                joinedload(Assessment.blgu_user).joinedload(User.barangay),
+                selectinload(Assessment.responses).joinedload(AssessmentResponse.indicator)
+            )
         )
 
         # Validators: Filter by governance area AND only show finalized assessments
+        # Exclude assessments where the validator has already completed their governance area
         if assessor.validator_area_id is not None:
             query = query.filter(
                 Indicator.governance_area_id == assessor.validator_area_id,
@@ -80,6 +84,24 @@ class AssessorService:
 
         items = []
         for a in assessments:
+            # For validators: Skip assessments where they've already completed their governance area
+            if assessor.validator_area_id is not None:
+                # Get all responses in the validator's governance area for this assessment
+                validator_area_responses = [
+                    r for r in a.responses
+                    if r.indicator and r.indicator.governance_area_id == assessor.validator_area_id
+                ]
+
+                # If all responses in their area have validation_status, skip this assessment
+                # (the validator has already completed their work on this assessment)
+                if validator_area_responses:
+                    all_validated = all(
+                        r.validation_status is not None
+                        for r in validator_area_responses
+                    )
+                    if all_validated:
+                        continue  # Skip this assessment - validator already done
+
             barangay_name = getattr(getattr(a.blgu_user, "barangay", None), "name", "-")
             items.append(
                 {
@@ -93,7 +115,66 @@ class AssessorService:
                 }
             )
 
+        # For validators, add completed count as metadata
+        # This is used for the "Reviewed by You" KPI
+        if assessor.validator_area_id is not None and len(items) == 0:
+            # If queue is empty, check if there are completed assessments
+            # This helps show progress even when queue is empty
+            pass
+
         return items
+
+    def get_validator_completed_count(self, db: Session, validator: User) -> int:
+        """
+        Count assessments where the validator has completed their governance area validation.
+
+        This includes:
+        - Assessments still in AWAITING_FINAL_VALIDATION (waiting for other validators)
+        - Assessments in COMPLETED status
+
+        Returns the count of assessments where all indicators in the validator's
+        governance area have validation_status set.
+        """
+        if validator.validator_area_id is None:
+            return 0
+
+        # Query assessments that are either awaiting validation or completed
+        assessments = (
+            db.query(Assessment)
+            .join(AssessmentResponse, AssessmentResponse.assessment_id == Assessment.id)
+            .join(Indicator, Indicator.id == AssessmentResponse.indicator_id)
+            .options(
+                selectinload(Assessment.responses).joinedload(AssessmentResponse.indicator)
+            )
+            .filter(
+                Indicator.governance_area_id == validator.validator_area_id,
+                Assessment.status.in_([
+                    AssessmentStatus.AWAITING_FINAL_VALIDATION,
+                    AssessmentStatus.COMPLETED
+                ]),
+                Assessment.submitted_at.isnot(None)
+            )
+            .distinct(Assessment.id)
+            .all()
+        )
+
+        # Count assessments where all responses in validator's area are validated
+        completed_count = 0
+        for assessment in assessments:
+            validator_area_responses = [
+                r for r in assessment.responses
+                if r.indicator and r.indicator.governance_area_id == validator.validator_area_id
+            ]
+
+            if validator_area_responses:
+                all_validated = all(
+                    r.validation_status is not None
+                    for r in validator_area_responses
+                )
+                if all_validated:
+                    completed_count += 1
+
+        return completed_count
 
     def validate_assessment_response(
         self,
@@ -830,7 +911,10 @@ class AssessorService:
         # Get the assessment
         assessment = (
             db.query(Assessment)
-            .options(joinedload(Assessment.blgu_user).joinedload(User.barangay))
+            .options(
+                joinedload(Assessment.blgu_user).joinedload(User.barangay),
+                selectinload(Assessment.responses).joinedload(AssessmentResponse.indicator)
+            )
             .filter(Assessment.id == assessment_id)
             .first()
         )
@@ -854,21 +938,48 @@ class AssessorService:
             if assessment.status != AssessmentStatus.AWAITING_FINAL_VALIDATION:
                 raise ValueError("Validators can only finalize assessments in AWAITING_FINAL_VALIDATION status")
 
-            # Must set Pass/Fail/Conditional status for ALL responses
+            # Validators only review indicators in their assigned governance area
+            # Filter responses to only those in validator's governance area
+            validator_area_responses = [
+                response
+                for response in assessment.responses
+                if response.indicator and response.indicator.governance_area_id == assessor.validator_area_id
+            ]
+
+            if not validator_area_responses:
+                raise ValueError(
+                    f"No indicators found in validator's assigned governance area (ID: {assessor.validator_area_id})"
+                )
+
+            # Check if all responses in validator's area have validation_status set
             unreviewed_responses = [
                 response.id
-                for response in assessment.responses
+                for response in validator_area_responses
                 if response.validation_status is None
             ]
 
             if unreviewed_responses:
                 raise ValueError(
-                    f"Cannot finalize assessment. Unreviewed response IDs: {unreviewed_responses}"
+                    f"Cannot finalize. Unreviewed response IDs in your governance area: {unreviewed_responses}"
                 )
 
-            # Validators CAN finalize even with FAIL indicators (that's the final result)
-            # MLGOO Chairman will approve this final result
-            assessment.status = AssessmentStatus.COMPLETED
+            # Check if ALL governance areas have been validated
+            # (All responses across all areas should have validation_status)
+            all_responses_validated = all(
+                response.validation_status is not None
+                for response in assessment.responses
+            )
+
+            if all_responses_validated:
+                # All governance areas validated - move to COMPLETED
+                # Validators CAN finalize even with FAIL indicators (that's the final result)
+                # MLGOO Chairman will approve this final result
+                assessment.status = AssessmentStatus.COMPLETED
+            else:
+                # This validator's area is done, but other areas still pending
+                # Keep status as AWAITING_FINAL_VALIDATION
+                # Note: The validation_status is already saved per indicator
+                pass
 
         else:
             # ===== PHASE 1: ASSESSORS (Table Assessment) =====

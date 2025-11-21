@@ -112,6 +112,76 @@ export function useGetAssessorQueue<TData = Awaited<ReturnType<typeof getAssesso
 
 
 /**
+ * Get statistics for the assessor/validator.
+
+For validators, returns:
+- validated_count: Number of assessments where the validator has completed their governance area
+
+For assessors, returns:
+- validated_count: 0 (not applicable)
+ * @summary Get Assessor Stats
+ */
+export const getAssessorStats = (
+    
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<unknown>(
+      {url: `http://localhost:8000/api/v1/assessor/stats`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+export const getGetAssessorStatsQueryKey = () => {
+    return [`http://localhost:8000/api/v1/assessor/stats`] as const;
+    }
+
+    
+export const getGetAssessorStatsQueryOptions = <TData = Awaited<ReturnType<typeof getAssessorStats>>, TError = unknown>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorStats>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAssessorStatsQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessorStats>>> = ({ signal }) => getAssessorStats(requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessorStats>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAssessorStatsQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessorStats>>>
+export type GetAssessorStatsQueryError = unknown
+
+
+/**
+ * @summary Get Assessor Stats
+ */
+
+export function useGetAssessorStats<TData = Awaited<ReturnType<typeof getAssessorStats>>, TError = unknown>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorStats>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAssessorStatsQueryOptions(options)
+
+  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
  * Validate an assessment response.
 
 Accepts validation status (Pass/Fail/Conditional), public comment, assessor remarks, and optional response_data.
@@ -120,7 +190,8 @@ Assessor remarks are saved to the assessment_response for validators to review.
 Response data (checklist) is saved to assessment_response.response_data if provided.
 
 Validation Rules:
-- If validation_status is FAIL or CONDITIONAL, a non-empty public_comment is required
+- If validation_status is FAIL or CONDITIONAL, a non-empty public_comment is recommended
+- Comments are enforced at finalization, not on draft saves
  * @summary Validate Assessment Response
  */
 export const postAssessorAssessmentResponses$ResponseIdValidate = (
