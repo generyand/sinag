@@ -144,11 +144,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     completedIndicators: responses.filter((r: any) => {
       const localStatus = form[r.id]?.status;
 
-      // Exclude indicators that require rework (assessor sent back for fixes)
-      if (r.requires_rework) {
-        return false;
-      }
-
       // For validators: Check if status is Pass
       if (localStatus) {
         return localStatus === 'Pass';
@@ -158,8 +153,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       }
 
       // For assessors: Check if they've worked on checklist or comments
-      // CRITICAL: Always check for NEW local data (current session work)
-      // But skip OLD persisted data if requires_rework is true
+      // CRITICAL: Always check for NEW local data (current session work) regardless of requires_rework
+      // Also check OLD persisted data (it's now loaded for all indicators, including rework ones)
 
       // Check NEW local checklist data (always, regardless of requires_rework)
       const hasChecklistData = Object.keys(checklistData).some(key => {
@@ -171,25 +166,20 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       // Check NEW local comments (always, regardless of requires_rework)
       const hasLocalComments = form[r.id]?.publicComment && form[r.id]!.publicComment!.trim().length > 0;
 
-      // Only check OLD persisted data if NOT requiring rework
-      let hasPersistedChecklistData = false;
-      let hasPersistedComments = false;
+      // Check OLD persisted data (now loaded for ALL indicators, including rework ones)
+      // Check backend response_data for persisted ASSESSOR checklist data
+      const responseData = (r as AnyRecord).response_data || {};
+      const hasPersistedChecklistData = Object.keys(responseData).some(key => {
+        if (!key.startsWith('assessor_val_')) return false;
+        const value = responseData[key];
+        return value === true || (typeof value === 'string' && value.trim().length > 0);
+      });
 
-      if (!r.requires_rework) {
-        // Check backend response_data for persisted ASSESSOR checklist data
-        const responseData = (r as AnyRecord).response_data || {};
-        hasPersistedChecklistData = Object.keys(responseData).some(key => {
-          if (!key.startsWith('assessor_val_')) return false;
-          const value = responseData[key];
-          return value === true || (typeof value === 'string' && value.trim().length > 0);
-        });
-
-        // Check for persisted comments (from first review cycle)
-        const feedbackComments = (r as AnyRecord).feedback_comments || [];
-        hasPersistedComments = feedbackComments.some((fc: any) =>
-          fc.comment_type === 'validation' && !fc.is_internal_note && fc.comment && fc.comment.trim().length > 0
-        );
-      }
+      // Check for persisted comments
+      const feedbackComments = (r as AnyRecord).feedback_comments || [];
+      const hasPersistedComments = feedbackComments.some((fc: any) =>
+        fc.comment_type === 'validation' && !fc.is_internal_note && fc.comment && fc.comment.trim().length > 0
+      );
 
       const isCompleted = hasChecklistData || hasLocalComments || hasPersistedComments || hasPersistedChecklistData;
 
@@ -228,8 +218,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       }
       // For assessors: Check if they've completed their work
       else {
-        // CRITICAL: Always check for NEW local data (current session work)
-        // But skip OLD persisted data if requires_rework is true
+        // CRITICAL: Always check for NEW local data (current session work) regardless of requires_rework
+        // Also check OLD persisted data (it's now loaded for all indicators, including rework ones)
 
         // Check NEW local checklist data (always, regardless of requires_rework)
         const hasChecklistData = Object.keys(checklistData).some(key => {
@@ -241,25 +231,20 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         // Check NEW local comments (always, regardless of requires_rework)
         const hasLocalComments = form[resp.id]?.publicComment && form[resp.id]!.publicComment!.trim().length > 0;
 
-        // Only check OLD persisted data if NOT requiring rework
-        let hasPersistedChecklistData = false;
-        let hasPersistedComments = false;
+        // Check OLD persisted data (now loaded for ALL indicators, including rework ones)
+        // Check backend response_data for persisted ASSESSOR checklist data
+        const responseData = (resp as AnyRecord).response_data || {};
+        const hasPersistedChecklistData = Object.keys(responseData).some(key => {
+          if (!key.startsWith('assessor_val_')) return false;
+          const value = responseData[key];
+          return value === true || (typeof value === 'string' && value.trim().length > 0);
+        });
 
-        if (!resp.requires_rework) {
-          // Check backend response_data for persisted ASSESSOR checklist data
-          const responseData = (resp as AnyRecord).response_data || {};
-          hasPersistedChecklistData = Object.keys(responseData).some(key => {
-            if (!key.startsWith('assessor_val_')) return false;
-            const value = responseData[key];
-            return value === true || (typeof value === 'string' && value.trim().length > 0);
-          });
-
-          // Check for persisted comments (from first review cycle)
-          const feedbackComments = (resp as AnyRecord).feedback_comments || [];
-          hasPersistedComments = feedbackComments.some((fc: any) =>
-            fc.comment_type === 'validation' && !fc.is_internal_note && fc.comment && fc.comment.trim().length > 0
-          );
-        }
+        // Check for persisted comments
+        const feedbackComments = (resp as AnyRecord).feedback_comments || [];
+        const hasPersistedComments = feedbackComments.some((fc: any) =>
+          fc.comment_type === 'validation' && !fc.is_internal_note && fc.comment && fc.comment.trim().length > 0
+        );
 
         console.log(`[Status Calc] Response ${resp.id}:`, {
           requires_rework: resp.requires_rework,
