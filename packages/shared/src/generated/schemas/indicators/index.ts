@@ -735,6 +735,23 @@ export type IndicatorResponseTechnicalNotesText = string | null;
 
 
 /**
+ * IndicatorSummary
+ */
+export interface IndicatorSummary {
+  /** ID of the indicator requiring rework */
+  indicator_id: number;
+  /** Full name of the indicator (e.g., '1.1 Budget Ordinance') */
+  indicator_name: string;
+  /** List of specific issues identified by the assessor */
+  key_issues?: string[];
+  /** Actionable steps the BLGU should take to address the issues */
+  suggested_actions?: string[];
+  /** List of MOV filenames that have annotations or issues */
+  affected_movs?: string[];
+}
+
+
+/**
  * IndicatorTreeResponse
  */
 export interface IndicatorTreeResponse {

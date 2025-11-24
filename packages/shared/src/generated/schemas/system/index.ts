@@ -20,6 +20,7 @@ import type { DeadlineOverrideResponse } from '../deadlineoverride';
 import type { ChartData } from '../common';
 import type { MapData } from '../common';
 import type { TableData } from '../common';
+import type { IndicatorSummary } from '../indicators';
 import type { AssessmentStatus } from '../assessments';
 import type { SubmissionValidationResult } from '../error';
 import type { ValidationStatus } from '../error';
@@ -447,6 +448,32 @@ export interface ReportsDataResponse {
   /** Report generation metadata and applied filters */
   metadata: ReportMetadata;
 }
+
+
+/**
+ * ReworkSummaryResponse
+ */
+export interface ReworkSummaryResponse {
+  /** Brief 2-3 sentence overview of the main issues across all indicators */
+  overall_summary: string;
+  /** Detailed summaries for each indicator requiring rework */
+  indicator_summaries?: IndicatorSummary[];
+  /**
+   * Top 3-5 most critical actions the BLGU should prioritize
+   * @maxItems 5
+   */
+  priority_actions?: string[];
+  /** Estimated time to complete all rework (e.g., '30-45 minutes') */
+  estimated_time?: ReworkSummaryResponseEstimatedTime;
+  /** Timestamp when the summary was generated */
+  generated_at: string;
+}
+
+
+/**
+ * ReworkSummaryResponseEstimatedTime
+ */
+export type ReworkSummaryResponseEstimatedTime = string | null;
 
 
 /**

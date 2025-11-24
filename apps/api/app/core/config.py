@@ -99,6 +99,7 @@ class Settings(BaseSettings):
     # Background Tasks
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
+    REQUIRE_CELERY: bool = True  # If False, Redis failures only log warnings
 
     # Gemini AI Configuration
     GEMINI_API_KEY: Optional[str] = None
@@ -106,6 +107,9 @@ class Settings(BaseSettings):
     # Environment
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
+
+    # Startup Behavior
+    FAIL_FAST: bool = True  # If True, crash on startup errors. If False, log warnings and continue.
 
     # First Superuser
     FIRST_SUPERUSER: str = "admin@vantage.com"

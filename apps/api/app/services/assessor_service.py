@@ -14,7 +14,7 @@ from app.db.models.assessment import (
 )
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
-from app.schemas.assessment import MOV, MOVCreate  # Pydantic schema
+from app.schemas.assessment import MOVCreate  # Pydantic schema
 from app.services.storage_service import storage_service
 from fastapi import UploadFile
 from sqlalchemy.orm import Session, joinedload, selectinload
@@ -823,7 +823,7 @@ class AssessorService:
         # Note: updated_at is automatically handled by SQLAlchemy's onupdate
 
         # Get all MOV annotations for this assessment to check for indicator-level feedback
-        from app.db.models.assessment import MOVAnnotation, MOVFile
+        from app.db.models.assessment import MOVAnnotation
 
         mov_file_ids = [mf.id for mf in assessment.mov_files]
         annotations_by_indicator = {}
@@ -862,6 +862,23 @@ class AssessorService:
         db.commit()
         db.refresh(assessment)
 
+        # Trigger AI rework summary generation asynchronously using Celery
+        summary_result = {"success": False, "skipped": True}
+        try:
+            from app.workers.intelligence_worker import generate_rework_summary_task
+
+            # Queue the summary generation task to run in the background
+            summary_task = generate_rework_summary_task.delay(assessment_id)
+            summary_result = {
+                "success": True,
+                "message": "Rework summary generation queued successfully",
+                "task_id": summary_task.id,
+            }
+        except Exception as e:
+            # Log the error but don't fail the rework operation
+            print(f"Failed to queue rework summary generation: {e}")
+            summary_result = {"success": False, "error": str(e)}
+
         # Trigger notification asynchronously using Celery
         try:
             from app.workers.notifications import send_rework_notification
@@ -884,6 +901,7 @@ class AssessorService:
             "assessment_id": assessment_id,
             "new_status": assessment.status.value,
             "rework_count": assessment.rework_count,
+            "summary_generation_result": summary_result,
             "notification_result": notification_result,
         }
 

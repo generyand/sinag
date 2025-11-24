@@ -1036,5 +1036,337 @@ Focus on:
 
         return insights
 
+    # ========================================
+    # REWORK SUMMARY GENERATION (AI-POWERED)
+    # ========================================
+
+    def build_rework_summary_prompt(
+        self, db: Session, assessment_id: int
+    ) -> tuple[str, List[Dict[str, Any]]]:
+        """
+        Build a structured prompt for Gemini API from rework feedback.
+
+        Analyzes all feedback provided by assessors (comments and MOV annotations)
+        for indicators requiring rework and creates a comprehensive prompt for
+        AI-powered summary generation.
+
+        Args:
+            db: Database session
+            assessment_id: ID of the assessment in rework status
+
+        Returns:
+            Tuple of (prompt_string, indicator_data_list)
+            - prompt_string: Formatted prompt for Gemini API
+            - indicator_data_list: Raw data for each indicator (for reference)
+
+        Raises:
+            ValueError: If assessment not found or not in rework status
+        """
+        # Get assessment with all relationships
+        from app.db.models.assessment import MOVAnnotation
+        from app.db.models.user import User
+
+        assessment = (
+            db.query(Assessment)
+            .options(
+                joinedload(Assessment.blgu_user).joinedload(User.barangay),
+                joinedload(Assessment.responses)
+                .joinedload(AssessmentResponse.indicator)
+                .joinedload(Indicator.governance_area),
+                joinedload(Assessment.responses).joinedload(
+                    AssessmentResponse.feedback_comments
+                ),
+                joinedload(Assessment.responses).joinedload(AssessmentResponse.movs),
+            )
+            .filter(Assessment.id == assessment_id)
+            .first()
+        )
+
+        if not assessment:
+            raise ValueError(f"Assessment {assessment_id} not found")
+
+        # Get barangay name
+        barangay_name = "Unknown"
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+
+        # Get indicators requiring rework with all feedback
+        indicator_data = []
+        for response in assessment.responses:
+            if not response.requires_rework:
+                continue
+
+            indicator = response.indicator
+            governance_area = indicator.governance_area
+
+            # Get public comments (exclude internal notes)
+            public_comments = [
+                {
+                    "assessor": (
+                        comment.assessor.name if comment.assessor else "Assessor"
+                    ),
+                    "comment": comment.comment,
+                }
+                for comment in response.feedback_comments
+                if not comment.is_internal_note
+            ]
+
+            # Get MOV annotations for this response
+            mov_annotations = []
+            affected_mov_files = set()
+            for mov in response.movs:
+                # Query annotations for this MOV file
+                annotations = (
+                    db.query(MOVAnnotation)
+                    .filter(MOVAnnotation.mov_file_id == mov.id)
+                    .all()
+                )
+                for annotation in annotations:
+                    mov_annotations.append(
+                        {
+                            "filename": mov.original_filename,
+                            "comment": annotation.comment,
+                            "page": annotation.page,
+                        }
+                    )
+                    affected_mov_files.add(mov.original_filename)
+
+            indicator_data.append(
+                {
+                    "indicator_id": indicator.id,
+                    "indicator_name": indicator.name,
+                    "description": indicator.description,
+                    "governance_area": governance_area.name,
+                    "public_comments": public_comments,
+                    "mov_annotations": mov_annotations,
+                    "affected_movs": list(affected_mov_files),
+                }
+            )
+
+        if not indicator_data:
+            raise ValueError(
+                f"Assessment {assessment_id} has no indicators requiring rework"
+            )
+
+        # Build the prompt
+        prompt = f"""You are an expert consultant analyzing SGLGB (Seal of Good Local Governance - Barangay) assessment rework feedback.
+
+BARANGAY INFORMATION:
+- Name: {barangay_name}
+- Assessment ID: {assessment_id}
+- Status: Rework Requested
+
+CONTEXT:
+An assessor has reviewed this barangay's assessment submission and identified issues that need to be addressed. Your task is to generate a clear, comprehensive, and actionable summary that helps the BLGU (Barangay Local Government Unit) understand exactly what needs to be fixed.
+
+INDICATORS REQUIRING REWORK:
+"""
+
+        for idx, indicator in enumerate(indicator_data, 1):
+            prompt += f"""
+{idx}. {indicator["indicator_name"]}
+   - Governance Area: {indicator["governance_area"]}
+   - Description: {indicator["description"]}
+"""
+
+            if indicator["public_comments"]:
+                prompt += "   - Assessor Comments:\n"
+                for comment in indicator["public_comments"]:
+                    prompt += f"     • {comment['assessor']}: {comment['comment']}\n"
+
+            if indicator["mov_annotations"]:
+                prompt += "   - Document Issues (MOV Annotations):\n"
+                for annotation in indicator["mov_annotations"]:
+                    page_info = (
+                        f"(Page {annotation['page']})"
+                        if annotation["page"]
+                        else ""
+                    )
+                    prompt += f"     • {annotation['filename']} {page_info}: {annotation['comment']}\n"
+
+        prompt += """
+
+TASK:
+Based on the assessor feedback above, generate a comprehensive rework summary in the following JSON structure:
+
+{
+  "overall_summary": "A brief 2-3 sentence summary of the main issues across all indicators. Be specific and actionable.",
+  "indicator_summaries": [
+    {
+      "indicator_id": 1,
+      "indicator_name": "Full indicator name",
+      "key_issues": [
+        "Specific issue 1 identified by assessor",
+        "Specific issue 2 identified by assessor"
+      ],
+      "suggested_actions": [
+        "Actionable step 1 the BLGU should take",
+        "Actionable step 2 the BLGU should take"
+      ],
+      "affected_movs": ["filename1.pdf", "filename2.jpg"]
+    }
+  ],
+  "priority_actions": [
+    "Most critical action 1",
+    "Most critical action 2",
+    "Most critical action 3"
+  ],
+  "estimated_time": "Estimated time to complete all rework (e.g., '30-45 minutes', '1-2 hours')"
+}
+
+GUIDELINES:
+1. Be clear and specific - avoid vague language
+2. Focus on actionable steps the BLGU can take immediately
+3. Prioritize issues that will have the biggest impact on compliance
+4. Use simple language that BLGU staff can easily understand
+5. For each indicator, extract the key issues from both comments and MOV annotations
+6. Suggest concrete actions (e.g., "Reupload budget ordinance with clearer dates" not "Fix budget document")
+7. List only the top 3-5 priority actions that address the most critical issues
+8. Estimate time realistically based on the complexity and number of issues
+"""
+
+        return prompt, indicator_data
+
+    def generate_rework_summary(
+        self, db: Session, assessment_id: int
+    ) -> Dict[str, Any]:
+        """
+        Generate AI-powered rework summary from assessor feedback.
+
+        Builds a comprehensive prompt from all rework feedback (comments and
+        annotations), calls Gemini API, and returns a structured summary that
+        helps BLGU users understand what needs to be fixed.
+
+        This method does NOT cache results - it generates a fresh summary each time.
+        Caching is handled by the background worker that stores results in
+        assessment.rework_summary.
+
+        Args:
+            db: Database session
+            assessment_id: ID of the assessment in rework status
+
+        Returns:
+            Dictionary with rework summary structure matching ReworkSummaryResponse schema
+
+        Raises:
+            ValueError: If assessment not found, API key not configured, or no rework data
+            Exception: If API call fails or response parsing fails
+        """
+        # Check if API key is configured
+        if not settings.GEMINI_API_KEY:
+            raise ValueError("GEMINI_API_KEY not configured in environment")
+
+        # Build the prompt
+        prompt, indicator_data = self.build_rework_summary_prompt(db, assessment_id)
+
+        # Configure Gemini
+        genai.configure(api_key=settings.GEMINI_API_KEY)  # type: ignore
+
+        # Initialize the model
+        model = genai.GenerativeModel("gemini-2.5-flash")  # type: ignore
+
+        try:
+            # Call the API with generation configuration
+            generation_config = {
+                "temperature": 0.7,  # Slightly creative but still factual
+                "max_output_tokens": 8192,
+            }
+
+            response = model.generate_content(
+                prompt,
+                generation_config=generation_config,  # type: ignore
+            )
+
+            # Parse the response text
+            if not response or not hasattr(response, "text") or not response.text:
+                raise Exception("Gemini API returned empty or invalid response")
+
+            response_text = response.text
+
+            # Extract JSON from the response (handle markdown code blocks)
+            if "```json" in response_text:
+                start = response_text.find("```json") + 7
+                end = response_text.find("```", start)
+                json_str = response_text[start:end].strip()
+            elif "```" in response_text:
+                start = response_text.find("```") + 3
+                end = response_text.find("```", start)
+                json_str = response_text[start:end].strip()
+            else:
+                json_str = response_text.strip()
+
+            # Parse the JSON
+            parsed_response = json.loads(json_str)
+
+            # Validate the response structure
+            required_keys = [
+                "overall_summary",
+                "indicator_summaries",
+                "priority_actions",
+            ]
+            if not all(key in parsed_response for key in required_keys):
+                raise ValueError(
+                    f"Gemini API response missing required keys. Got: {list(parsed_response.keys())}"
+                )
+
+            # Add generation timestamp
+            parsed_response["generated_at"] = datetime.now(UTC).isoformat()
+
+            # Ensure estimated_time exists (set default if not provided)
+            if "estimated_time" not in parsed_response:
+                # Estimate based on number of indicators
+                num_indicators = len(parsed_response["indicator_summaries"])
+                if num_indicators <= 2:
+                    parsed_response["estimated_time"] = "30-45 minutes"
+                elif num_indicators <= 4:
+                    parsed_response["estimated_time"] = "1-2 hours"
+                else:
+                    parsed_response["estimated_time"] = "2-3 hours"
+
+            logger.info(
+                f"Successfully generated rework summary for assessment {assessment_id}"
+            )
+
+            return parsed_response
+
+        except json.JSONDecodeError as e:
+            logger.error(
+                f"Failed to parse Gemini API response as JSON for assessment {assessment_id}: {response_text}"
+            )
+            raise Exception(
+                f"Failed to parse Gemini API response as JSON: {response_text}"
+            ) from e
+        except TimeoutError as e:
+            logger.error(
+                f"Gemini API request timed out for assessment {assessment_id}"
+            )
+            raise Exception(
+                "Gemini API request timed out after waiting for response"
+            ) from e
+        except ValueError:
+            # Re-raise ValueError as-is
+            raise
+        except Exception as e:
+            # Handle various API errors with specific messages
+            error_message = str(e).lower()
+            if "quota" in error_message or "rate limit" in error_message:
+                logger.error(f"Gemini API quota/rate limit hit: {str(e)}")
+                raise Exception(
+                    "Gemini API quota exceeded or rate limit hit. Please try again later."
+                ) from e
+            elif "network" in error_message or "connection" in error_message:
+                logger.error(f"Network error calling Gemini API: {str(e)}")
+                raise Exception(
+                    "Network error connecting to Gemini API. Please check your internet connection."
+                ) from e
+            elif "permission" in error_message or "unauthorized" in error_message:
+                logger.error(f"Gemini API authentication failed: {str(e)}")
+                raise Exception(
+                    "Gemini API authentication failed. Please check your API key."
+                ) from e
+            else:
+                logger.error(f"Gemini API call failed: {str(e)}")
+                raise Exception(f"Gemini API call failed: {str(e)}") from e
+
 
 intelligence_service = IntelligenceService()

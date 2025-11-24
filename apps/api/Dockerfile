@@ -3,7 +3,7 @@
 # Build context is root of monorepo, so we copy from apps/api/
 
 # Stage 1: Base image with uv
-FROM python:3.13-slim as base
+FROM python:3.13-slim AS base
 
 # Install uv
 RUN pip install uv
@@ -12,7 +12,7 @@ RUN pip install uv
 WORKDIR /app
 
 # Stage 2: Dependencies
-FROM base as dependencies
+FROM base AS dependencies
 
 # Copy dependency files
 COPY pyproject.toml uv.lock ./
@@ -21,7 +21,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv pip install --system --no-cache -r pyproject.toml
 
 # Stage 3: Development (includes dev dependencies)
-FROM dependencies as development
+FROM dependencies AS development
 
 # Install dev dependencies
 RUN uv pip install --system --no-cache -e ".[dev]"

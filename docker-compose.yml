@@ -1,50 +1,93 @@
+# VANTAGE Docker Compose Configuration
 # Environment variables loaded from .env files in respective directories
 # Make sure you have apps/api/.env and apps/web/.env.local configured
 
 services:
-  # Redis for Celery
+  # ============================================================================
+  # Redis - Message Broker for Celery
+  # ============================================================================
   redis:
     image: redis:7-alpine
     container_name: vantage-redis
+    restart: unless-stopped
+
     ports:
       - "6379:6379"
+
     volumes:
       - redis-data:/data
-    networks:
-      vantage-network:
-        ipv4_address: 172.25.0.10
-    command: redis-server --appendonly yes --save 20 1
+
+    # Use default Redis configuration (no custom config needed for dev)
+    command: redis-server --appendonly yes
+
+    # Health check
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 5s
 
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    # Security: Run as non-root user
+    user: "999:999"
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    networks:
+      vantage-network:
+        ipv4_address: 172.25.0.10
+
+  # ============================================================================
   # FastAPI Backend
+  # ============================================================================
   api:
     build:
       context: apps/api
       dockerfile: Dockerfile
       target: development
+
     container_name: vantage-api
+    restart: unless-stopped
+
     ports:
       - "8000:8000"
+
     volumes:
       - ./apps/api:/app
       - ./packages/shared:/packages/shared
+
     env_file:
       - apps/api/.env
+
     environment:
       # Override Redis URLs for Docker network
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - REDIS_URL=redis://redis:6379/0
+      # Fail fast in Docker
+      - FAIL_FAST=true
+      - REQUIRE_CELERY=true
+
     depends_on:
       redis:
         condition: service_healthy
-    networks:
-      vantage-network:
-        ipv4_address: 172.25.0.20
+
+    # Health check
     healthcheck:
       test:
         [
@@ -58,42 +101,159 @@ services:
       retries: 3
       start_period: 40s
 
-  # Celery Worker
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+    networks:
+      vantage-network:
+        ipv4_address: 172.25.0.20
+
+  # ============================================================================
+  # Celery Worker - Background Task Processor
+  # ============================================================================
   celery-worker:
     build:
       context: apps/api
       dockerfile: Dockerfile
       target: development
+
     container_name: vantage-celery-worker
-    command: celery -A app.core.celery_app worker --loglevel=info --queues=notifications,classification
+    restart: unless-stopped
+
+    # Optimized Celery configuration
+    command: >
+      celery -A app.core.celery_app worker
+      --loglevel=info
+      --queues=notifications,classification
+      --concurrency=4
+      --max-tasks-per-child=1000
+      --task-events
+      --without-gossip
+      --without-mingle
+      --without-heartbeat
+
     volumes:
       - ./apps/api:/app
       - ./packages/shared:/packages/shared
+
     env_file:
       - apps/api/.env
+
     environment:
       # Override Redis URLs for Docker network
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - REDIS_URL=redis://redis:6379/0
+      # Celery optimizations
+      - CELERY_WORKER_PREFETCH_MULTIPLIER=4
+      - CELERY_WORKER_MAX_TASKS_PER_CHILD=1000
+      - CELERY_TASK_TIME_LIMIT=1800
+      - CELERY_TASK_SOFT_TIME_LIMIT=1500
+
     depends_on:
       api:
         condition: service_healthy
       redis:
         condition: service_healthy
+
+    # Health check - verify worker is responsive
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.core.celery_app inspect ping -d celery@$$HOSTNAME"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
     networks:
       vantage-network:
         ipv4_address: 172.25.0.30
 
+  # ============================================================================
+  # Celery Beat - Periodic Task Scheduler (Optional)
+  # ============================================================================
+  # Uncomment if you need scheduled periodic tasks
+  # celery-beat:
+  #   build:
+  #     context: apps/api
+  #     dockerfile: Dockerfile
+  #     target: development
+  #
+  #   container_name: vantage-celery-beat
+  #   restart: unless-stopped
+  #
+  #   command: celery -A app.core.celery_app beat --loglevel=info
+  #
+  #   volumes:
+  #     - ./apps/api:/app
+  #     - celery-beat-schedule:/app/celerybeat-schedule
+  #
+  #   env_file:
+  #     - apps/api/.env
+  #
+  #   environment:
+  #     - CELERY_BROKER_URL=redis://redis:6379/0
+  #     - CELERY_RESULT_BACKEND=redis://redis:6379/0
+  #
+  #   depends_on:
+  #     redis:
+  #       condition: service_healthy
+  #
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '0.25'
+  #         memory: 256M
+  #
+  #   networks:
+  #     vantage-network:
+  #       ipv4_address: 172.25.0.31
+
+  # ============================================================================
   # Next.js Frontend
+  # ============================================================================
   web:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
       target: development
+
     container_name: vantage-web
+    restart: unless-stopped
+
     ports:
       - "3000:3000"
+
     volumes:
       - ./apps/web:/app/apps/web
       - ./packages/shared:/app/packages/shared
@@ -101,21 +261,46 @@ services:
       - /app/apps/web/node_modules
       - web-next-cache:/app/apps/web/.next
       - web-turbo-cache:/app/apps/web/.turbo
+
     env_file:
       - apps/web/.env.local
+
     environment:
       # Development polling for better file watching in Docker
       - WATCHPACK_POLLING=true
       # Server-side API URL (for SSR in Docker, uses internal network)
       - API_BASE_URL=http://api:8000
+
     command: sh -lc "pnpm install --frozen-lockfile && pnpm --filter web dev"
+
     depends_on:
       api:
         condition: service_healthy
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
     networks:
       vantage-network:
         ipv4_address: 172.25.0.40
 
+# ==============================================================================
+# Networks
+# ==============================================================================
 networks:
   vantage-network:
     driver: bridge
@@ -126,7 +311,15 @@ networks:
         - subnet: 172.25.0.0/16
           gateway: 172.25.0.1
 
+# ==============================================================================
+# Volumes
+# ==============================================================================
 volumes:
   redis-data:
+    driver: local
   web-next-cache:
+    driver: local
   web-turbo-cache:
+    driver: local
+  # celery-beat-schedule:
+  #   driver: local

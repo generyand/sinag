@@ -18,13 +18,75 @@ VANTAGE is a governance assessment platform for the DILG's Seal of Good Local Go
 ### Starting Development
 
 ```bash
-# Start both frontend and backend
+# Start everything in ONE command (recommended)
 pnpm dev
-
-# Start individually
-pnpm dev:web    # Frontend only (http://localhost:3000)
-pnpm dev:api    # Backend only (http://localhost:8000)
 ```
+
+This automatically starts:
+- ✅ Redis in Docker (background)
+- ✅ FastAPI backend (http://localhost:8000)
+- ✅ Next.js frontend (http://localhost:3000)
+- ✅ Celery worker (background tasks)
+
+All processes run in one terminal with color-coded output:
+- 🔵 **API** - Backend logs
+- 🟢 **WEB** - Frontend logs
+- 🟡 **CELERY** - Background task logs
+
+**Alternative commands:**
+```bash
+pnpm dev:web        # Frontend only (http://localhost:3000)
+pnpm dev:api        # Backend only (http://localhost:8000) - auto-starts Redis
+pnpm dev:no-celery  # API + Web without Celery (faster startup)
+```
+
+### Redis Management
+
+Redis is required for Celery background tasks (classification, AI insights). Run Redis in Docker:
+
+```bash
+# Start Redis (runs in background)
+pnpm redis:start
+
+# Check Redis status
+pnpm redis:status
+
+# View Redis logs
+pnpm redis:logs
+
+# Restart Redis
+pnpm redis:restart
+
+# Stop Redis
+pnpm redis:stop
+
+# Access Redis CLI
+pnpm redis:cli
+```
+
+**Redis runs on**: `localhost:6379` (Docker port forwarded to your machine)
+
+### Celery Worker (Background Tasks)
+
+Celery handles background tasks like classification and AI-powered insights:
+
+```bash
+# Start Celery worker (in separate terminal)
+pnpm celery
+
+# View Celery logs if running in Docker
+pnpm celery:logs
+```
+
+**What Celery Does:**
+- SGLGB classification algorithm
+- AI-powered insights via Gemini
+- Gap analysis between assessments
+- Background notifications
+
+**When to run it:**
+- Development: Run `pnpm celery` when testing background tasks
+- Production: Celery runs automatically in Docker
 
 ### Type Generation (Critical!)
 

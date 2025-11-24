@@ -28,15 +28,24 @@ async def lifespan(app: FastAPI):
     Application lifespan context manager.
 
     Handles startup and shutdown events using the startup service.
+
+    FAIL-FAST BEHAVIOR:
+    - If FAIL_FAST=True (default): Application crashes on startup errors with clear error messages
+    - If FAIL_FAST=False: Application logs warnings and continues (useful for local dev)
+
+    Set FAIL_FAST=False in .env only if you need to bypass startup checks temporarily.
     """
-    # Startup
-    try:
+    # Startup checks
+    if settings.FAIL_FAST:
+        # Strict mode: Let exceptions crash the app
         await startup_service.perform_startup_checks()
-    except Exception as e:
-        # Log error but allow server to start anyway
-        # This is important for development where connections might not be fully configured
-        logger.warning(f"⚠️ Startup checks failed but continuing: {str(e)}")
-        logger.warning("⚠️ Some features may be unavailable")
+    else:
+        # Lenient mode: Log errors but continue
+        try:
+            await startup_service.perform_startup_checks()
+        except Exception as e:
+            logger.warning(f"⚠️  Startup checks failed but continuing (FAIL_FAST=False): {str(e)}")
+            logger.warning("⚠️  Some features may be unavailable")
 
     # Application is running
     yield

@@ -40,6 +40,7 @@ import type {
   RequestReworkRequest,
   RequestReworkResponse,
   ResubmitAssessmentResponse,
+  ReworkSummaryResponse,
   SaveAnswersRequest,
   SaveAnswersResponse,
   SubmissionStatusResponse,
@@ -1455,6 +1456,97 @@ export function useGetAssessmentsAssessmentIdSubmissionStatus<TData = Awaited<Re
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetAssessmentsAssessmentIdSubmissionStatusQueryOptions(assessmentId,options)
+
+  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
+ * Get AI-generated rework summary for an assessment.
+
+This endpoint retrieves the comprehensive AI-generated summary of rework
+requirements for a BLGU user's assessment. The summary includes:
+- Overall summary of main issues
+- Per-indicator breakdowns with key issues and suggested actions
+- Priority actions to address first
+- Estimated time to complete all rework
+
+The summary is generated asynchronously when the assessor requests rework.
+If the summary is still being generated, this endpoint may return 404 or
+the summary will be null (check the assessment status).
+
+Authorization:
+    - BLGU users can only access summaries for their own assessments
+
+Args:
+    assessment_id: ID of the assessment
+    db: Database session
+    current_user: Current authenticated BLGU user
+
+Returns:
+    ReworkSummaryResponse with comprehensive rework guidance
+
+Raises:
+    HTTPException 404: Assessment not found or no rework summary available
+    HTTPException 403: BLGU user trying to access another barangay's assessment
+    HTTPException 400: Assessment is not in rework status
+ * @summary Get Rework Summary
+ */
+export const getAssessments$AssessmentIdReworkSummary = (
+    assessmentId: number,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<ReworkSummaryResponse>(
+      {url: `http://localhost:8000/api/v1/assessments/${assessmentId}/rework-summary`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+export const getGetAssessmentsAssessmentIdReworkSummaryQueryKey = (assessmentId: number,) => {
+    return [`http://localhost:8000/api/v1/assessments/${assessmentId}/rework-summary`] as const;
+    }
+
+    
+export const getGetAssessmentsAssessmentIdReworkSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getAssessments$AssessmentIdReworkSummary>>, TError = HTTPValidationError>(assessmentId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessments$AssessmentIdReworkSummary>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAssessmentsAssessmentIdReworkSummaryQueryKey(assessmentId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessments$AssessmentIdReworkSummary>>> = ({ signal }) => getAssessments$AssessmentIdReworkSummary(assessmentId, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessments$AssessmentIdReworkSummary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAssessmentsAssessmentIdReworkSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessments$AssessmentIdReworkSummary>>>
+export type GetAssessmentsAssessmentIdReworkSummaryQueryError = HTTPValidationError
+
+
+/**
+ * @summary Get Rework Summary
+ */
+
+export function useGetAssessmentsAssessmentIdReworkSummary<TData = Awaited<ReturnType<typeof getAssessments$AssessmentIdReworkSummary>>, TError = HTTPValidationError>(
+ assessmentId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessments$AssessmentIdReworkSummary>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAssessmentsAssessmentIdReworkSummaryQueryOptions(assessmentId,options)
 
   const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

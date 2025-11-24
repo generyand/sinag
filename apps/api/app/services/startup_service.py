@@ -4,8 +4,9 @@ Handles application startup checks and initialization
 """
 
 import logging
+import redis
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple
 
 from app.core.config import settings
 from app.core.security import get_password_hash
@@ -58,10 +59,11 @@ class StartupService:
     Service responsible for handling application startup procedures.
 
     This service encapsulates all startup-related logic including:
+    - Environment variable validation
     - Database connection validation
+    - Redis/Celery connectivity checks
     - Health checks
     - Startup logging
-    - Environment validation
     """
 
     def __init__(self):
@@ -79,8 +81,14 @@ class StartupService:
         # Log startup initiation
         self._log_startup_info()
 
+        # CRITICAL: Validate environment variables first
+        self._validate_environment_variables()
+
         # Validate database connections
         await self._validate_database_connections()
+
+        # Validate Redis connection (for Celery)
+        self._validate_redis_connection()
 
         # Seed initial data
         self._seed_initial_data()
@@ -93,6 +101,121 @@ class StartupService:
 
         # Log successful startup
         self._log_startup_success()
+
+    def _validate_environment_variables(self) -> None:
+        """
+        Validate that all critical environment variables are set.
+
+        Raises:
+            RuntimeError: If required environment variables are missing or invalid
+        """
+        logger.info("🔐 Validating environment variables...")
+
+        errors: List[str] = []
+        warnings: List[str] = []
+
+        # Critical variables (must be set)
+        critical_vars = [
+            ("DATABASE_URL", settings.DATABASE_URL),
+            ("SECRET_KEY", settings.SECRET_KEY),
+            ("SUPABASE_URL", settings.SUPABASE_URL),
+            ("SUPABASE_ANON_KEY", settings.SUPABASE_ANON_KEY),
+            ("SUPABASE_SERVICE_ROLE_KEY", settings.SUPABASE_SERVICE_ROLE_KEY),
+        ]
+
+        # Important but optional variables
+        optional_vars = [
+            ("GEMINI_API_KEY", settings.GEMINI_API_KEY, "AI features will be disabled"),
+            ("CELERY_BROKER_URL", settings.CELERY_BROKER_URL, "Background tasks may not work"),
+        ]
+
+        # Check critical variables
+        for var_name, var_value in critical_vars:
+            if not var_value or (isinstance(var_value, str) and var_value.strip() == ""):
+                errors.append(f"  ❌ {var_name} is not set or empty")
+
+        # Check optional variables
+        for var_name, var_value, impact in optional_vars:
+            if not var_value or (isinstance(var_value, str) and var_value.strip() == ""):
+                warnings.append(f"  ⚠️  {var_name} is not set - {impact}")
+
+        # Validate SECRET_KEY is not the default
+        if settings.SECRET_KEY and len(settings.SECRET_KEY) < 32:
+            errors.append(f"  ❌ SECRET_KEY is too short (minimum 32 characters)")
+
+        # Validate DATABASE_URL format
+        if settings.DATABASE_URL:
+            if not settings.DATABASE_URL.startswith("postgresql://"):
+                errors.append(f"  ❌ DATABASE_URL must start with 'postgresql://'")
+
+        # Validate SUPABASE_URL format
+        if settings.SUPABASE_URL:
+            if not settings.SUPABASE_URL.startswith("https://"):
+                errors.append(f"  ❌ SUPABASE_URL must start with 'https://'")
+
+        # Log warnings
+        if warnings:
+            logger.warning("⚠️  Optional environment variables missing:")
+            for warning in warnings:
+                logger.warning(warning)
+
+        # Raise error if critical variables are missing
+        if errors:
+            error_message = "🚨 Critical environment variables are missing or invalid:\n\n"
+            error_message += "\n".join(errors)
+            error_message += "\n\n"
+            error_message += "Please check your .env file and ensure all required variables are set.\n"
+            error_message += "See apps/api/.env.example for reference."
+
+            logger.critical(error_message)
+            raise RuntimeError(error_message)
+
+        logger.info("✅ All critical environment variables are valid!")
+
+    def _validate_redis_connection(self) -> None:
+        """
+        Validate Redis connection for Celery.
+
+        Raises:
+            RuntimeError: If Redis connection fails and both FAIL_FAST=true and REQUIRE_CELERY=true
+        """
+        logger.info("🔍 Checking Redis connection for Celery...")
+
+        try:
+            # Parse Redis URL
+            redis_client = redis.from_url(settings.CELERY_BROKER_URL)
+
+            # Test connection with ping
+            response = redis_client.ping()
+
+            if response:
+                logger.info("✅ Redis connection: healthy")
+            else:
+                raise ConnectionError("Redis ping returned False")
+
+        except Exception as e:
+            error_message = f"Redis connection failed: {str(e)}"
+
+            # Determine if we should fail based on FAIL_FAST and REQUIRE_CELERY
+            should_fail = settings.FAIL_FAST and settings.REQUIRE_CELERY
+
+            if should_fail:
+                logger.critical(f"❌ {error_message}")
+                logger.critical("Background tasks (Celery) will not work!")
+                logger.critical("To bypass: Set FAIL_FAST=false OR REQUIRE_CELERY=false in .env (NOT RECOMMENDED)")
+                raise RuntimeError(error_message)
+            else:
+                logger.warning(f"⚠️  {error_message}")
+                logger.warning("Background tasks (Celery) may not work")
+                if not settings.REQUIRE_CELERY:
+                    logger.warning("Continuing because REQUIRE_CELERY=false")
+                if not settings.FAIL_FAST:
+                    logger.warning("Continuing because FAIL_FAST=false")
+        finally:
+            try:
+                redis_client.close()
+            except:
+                pass
 
     def _log_startup_info(self) -> None:
         """Log basic startup information"""

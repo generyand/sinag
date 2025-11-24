@@ -25,8 +25,8 @@ from app.schemas.assessment import (
     RequestReworkRequest,
     RequestReworkResponse,
     ResubmitAssessmentResponse,
-    SubmissionValidationResult,
     SubmissionStatusResponse,
+    ReworkSummaryResponse,
 )
 from app.db.models.assessment import MOV as MOVModel, Assessment
 from app.services.assessment_service import assessment_service
@@ -1435,3 +1435,76 @@ def get_submission_status(
         rework_requested_by=assessment.rework_requested_by,
         validation_result=validation_result
     )
+
+
+@router.get(
+    "/{assessment_id}/rework-summary",
+    response_model=ReworkSummaryResponse,
+    tags=["assessments"]
+)
+async def get_rework_summary(
+    assessment_id: int,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(get_current_blgu_user),
+) -> ReworkSummaryResponse:
+    """
+    Get AI-generated rework summary for an assessment.
+
+    This endpoint retrieves the comprehensive AI-generated summary of rework
+    requirements for a BLGU user's assessment. The summary includes:
+    - Overall summary of main issues
+    - Per-indicator breakdowns with key issues and suggested actions
+    - Priority actions to address first
+    - Estimated time to complete all rework
+
+    The summary is generated asynchronously when the assessor requests rework.
+    If the summary is still being generated, this endpoint may return 404 or
+    the summary will be null (check the assessment status).
+
+    Authorization:
+        - BLGU users can only access summaries for their own assessments
+
+    Args:
+        assessment_id: ID of the assessment
+        db: Database session
+        current_user: Current authenticated BLGU user
+
+    Returns:
+        ReworkSummaryResponse with comprehensive rework guidance
+
+    Raises:
+        HTTPException 404: Assessment not found or no rework summary available
+        HTTPException 403: BLGU user trying to access another barangay's assessment
+        HTTPException 400: Assessment is not in rework status
+    """
+    # Load the assessment
+    assessment = db.query(Assessment).filter_by(id=assessment_id).first()
+    if not assessment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Assessment {assessment_id} not found"
+        )
+
+    # Authorization check: BLGU users can only access their own assessments
+    if assessment.blgu_user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only access rework summaries for your own assessments"
+        )
+
+    # Check if assessment is in rework status
+    if assessment.status != AssessmentStatus.REWORK:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Assessment is not in rework status. Current status: {assessment.status.value}"
+        )
+
+    # Check if rework summary exists
+    if not assessment.rework_summary:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Rework summary is still being generated. Please try again in a few moments."
+        )
+
+    # Return the rework summary
+    return ReworkSummaryResponse(**assessment.rework_summary)
