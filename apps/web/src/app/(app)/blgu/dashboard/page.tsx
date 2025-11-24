@@ -147,14 +147,20 @@ export default function BLGUDashboardPage() {
         )}
 
         {/* Completion Metrics Section */}
-        <div className="mb-8">
-          <CompletionMetricsCard
-            totalIndicators={dashboardData.total_indicators}
-            completedIndicators={dashboardData.completed_indicators}
-            incompleteIndicators={dashboardData.incomplete_indicators}
-            completionPercentage={dashboardData.completion_percentage}
-          />
-        </div>
+        {/* Only show completion metrics when BLGU can edit (DRAFT, REWORK, NEEDS_REWORK) */}
+        {/* Hide when assessment is under review (SUBMITTED, IN_REVIEW, AWAITING_FINAL_VALIDATION, COMPLETED) */}
+        {(dashboardData.status === "DRAFT" ||
+          dashboardData.status === "REWORK" ||
+          dashboardData.status === "NEEDS_REWORK") && (
+          <div className="mb-8">
+            <CompletionMetricsCard
+              totalIndicators={dashboardData.total_indicators}
+              completedIndicators={dashboardData.completed_indicators}
+              incompleteIndicators={dashboardData.incomplete_indicators}
+              completionPercentage={dashboardData.completion_percentage}
+            />
+          </div>
+        )}
 
         {/* Epic 5.0: Submission Button */}
         <div className="mb-8 flex gap-4">

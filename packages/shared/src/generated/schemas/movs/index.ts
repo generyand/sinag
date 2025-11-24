@@ -81,7 +81,7 @@ export interface MOVFileResponse {
   file_type: string;
   file_size: number;
   uploaded_by: number;
-  uploaded_at: string;
+  uploaded_at: MOVFileResponseUploadedAt;
   deleted_at?: MOVFileResponseDeletedAt;
   field_id?: MOVFileResponseFieldId;
 }
@@ -97,6 +97,12 @@ export type MOVFileResponseDeletedAt = string | null;
  * MOVFileResponseFieldId
  */
 export type MOVFileResponseFieldId = string | null;
+
+
+/**
+ * MOVFileResponseUploadedAt
+ */
+export type MOVFileResponseUploadedAt = string | null;
 
 
 /**

@@ -643,22 +643,65 @@ class AssessorService:
                 if mov.indicator_id == response.indicator_id and mov.deleted_at is None
             ]
 
-            # Apply rework filtering
-            filtered_movs = [
-                mov for mov in all_movs_for_indicator
-                if (
-                    assessment.rework_requested_at is None
-                    or mov.uploaded_at >= assessment.rework_requested_at
-                )
-            ]
+            # ALWAYS LOG: Debug filtering logic
+            self.logger.info(
+                f"[MOV FILTER DEBUG] Indicator {response.indicator_id}: "
+                f"requires_rework={response.requires_rework}, "
+                f"assessment_status={assessment.status}, "
+                f"rework_requested_at={assessment.rework_requested_at}, "
+                f"total_movs={len(all_movs_for_indicator)}"
+            )
 
-            # Log filtering results for debugging
-            if assessment.rework_requested_at and len(all_movs_for_indicator) != len(filtered_movs):
+            # Apply rework filtering based on assessment status:
+            # - If status is AWAITING_FINAL_VALIDATION: Rework cycle is COMPLETE - show all files for validators
+            # - If status is REWORK or SUBMITTED_FOR_REVIEW and requires_rework = True: Show only new files for assessor review
+            # - Otherwise: Show all files
+
+            from app.db.enums import AssessmentStatus
+
+            if assessment.status == AssessmentStatus.AWAITING_FINAL_VALIDATION:
+                # Rework cycle is complete - validators see all files that exist
+                filtered_movs = all_movs_for_indicator
+
+                if response.requires_rework:
+                    self.logger.info(
+                        f"[VALIDATOR FILTER] Indicator {response.indicator_id} (requires_rework=True, status=AWAITING_FINAL_VALIDATION): "
+                        f"Showing all {len(filtered_movs)} MOVs (rework cycle complete)"
+                    )
+            elif response.requires_rework and assessment.rework_requested_at and assessment.status in [AssessmentStatus.REWORK, AssessmentStatus.SUBMITTED_FOR_REVIEW, AssessmentStatus.SUBMITTED]:
+                # Assessor reviewing reworked indicator - show only new files uploaded after rework
+                self.logger.info(
+                    f"[ASSESSOR REWORK FILTER] Assessment {assessment.id}, Indicator {response.indicator_id}: "
+                    f"rework_requested_at={assessment.rework_requested_at}, status={assessment.status}"
+                )
+
+                # Log each file with its timestamp
+                for mov in all_movs_for_indicator:
+                    self.logger.info(
+                        f"  - File: {mov.file_name}, "
+                        f"uploaded_at={mov.uploaded_at}, "
+                        f"passes_filter={mov.uploaded_at >= assessment.rework_requested_at}"
+                    )
+
+                filtered_movs = [
+                    mov for mov in all_movs_for_indicator
+                    if mov.uploaded_at >= assessment.rework_requested_at
+                ]
+
+                # Log filtering results for debugging
                 self.logger.info(
                     f"[ASSESSOR REWORK FILTER] Indicator {response.indicator_id}: "
-                    f"Filtered {len(all_movs_for_indicator)} total MOVs to {len(filtered_movs)} new MOVs "
-                    f"(uploaded after {assessment.rework_requested_at})"
+                    f"Filtered {len(all_movs_for_indicator)} total MOVs to {len(filtered_movs)} new MOVs"
                 )
+            else:
+                # Show all files for other cases
+                filtered_movs = all_movs_for_indicator
+
+                if assessment.rework_requested_at and response.requires_rework is False:
+                    self.logger.info(
+                        f"[FILTER] Indicator {response.indicator_id} (requires_rework=False): "
+                        f"Showing all {len(filtered_movs)} MOVs (indicator already passed)"
+                    )
 
             response_data = {
                 "id": response.id,
@@ -866,6 +909,22 @@ class AssessorService:
                 response.requires_rework = True
                 response.is_completed = False
 
+                # CRITICAL: Clear validation_status and checklist data immediately
+                # This ensures assessors start with clean checklists when BLGU resubmits
+                response.validation_status = None
+
+                # Clear assessor checklist data (assessor_val_ prefix)
+                if response.response_data:
+                    response.response_data = {
+                        k: v
+                        for k, v in response.response_data.items()
+                        if not k.startswith('assessor_val_')
+                    }
+
+                self.logger.info(
+                    f"[SEND REWORK] Cleared checklist data for response {response.id} (indicator {response.indicator_id})"
+                )
+
         db.commit()
         db.refresh(assessment)
 
@@ -990,11 +1049,13 @@ class AssessorService:
 
         else:
             # ===== PHASE 1: ASSESSORS (Table Assessment) =====
-            # Can finalize from SUBMITTED_FOR_REVIEW, IN_REVIEW, or REWORK statuses
+            # Can finalize from SUBMITTED_FOR_REVIEW, IN_REVIEW, REWORK, or SUBMITTED statuses
+            # SUBMITTED status occurs when BLGU resubmits after rework
             if assessment.status not in (
                 AssessmentStatus.SUBMITTED_FOR_REVIEW,
                 AssessmentStatus.IN_REVIEW,
-                AssessmentStatus.REWORK
+                AssessmentStatus.REWORK,
+                AssessmentStatus.SUBMITTED
             ):
                 raise ValueError("Cannot finalize assessment in its current status")
 
@@ -1010,14 +1071,26 @@ class AssessorService:
                     for key in response_data.keys()
                 )
 
-                # Check for public comments
-                has_public_comment = bool(response_data.get('public_comment', '').strip())
+                # Check for feedback comments in the feedback_comments relationship
+                has_feedback_comments = len(response.feedback_comments) > 0
 
-                # Response must have either checklist data or comments
-                if not (has_assessor_checklist or has_public_comment):
+                # Debug logging for each response
+                self.logger.info(
+                    f"[FINALIZE CHECK] Response {response.id}: "
+                    f"has_assessor_checklist={has_assessor_checklist}, "
+                    f"has_feedback_comments={has_feedback_comments}, "
+                    f"response_data_keys={list(response_data.keys())}"
+                )
+
+                # Response must have either checklist data or feedback comments
+                if not (has_assessor_checklist or has_feedback_comments):
                     unreviewed_responses.append(response.id)
 
             if unreviewed_responses:
+                self.logger.error(
+                    f"[FINALIZE FAILED] Cannot finalize assessment {assessment_id}. "
+                    f"Unreviewed response IDs: {unreviewed_responses}"
+                )
                 raise ValueError(
                     f"Cannot finalize assessment. Unreviewed response IDs: {unreviewed_responses}"
                 )
@@ -1027,11 +1100,10 @@ class AssessorService:
             # Track which assessor completed the review
             assessment.reviewed_by = assessor.id
 
-            # Clear validation_status on all responses so validators start fresh
-            # The assessor's checklist work is preserved in response_data (assessor_val_ prefix)
-            # But validators make their own Met/Unmet decisions from scratch
-            for response in assessment.responses:
-                response.validation_status = None
+            # IMPORTANT: Keep ALL assessor checklist data for validators to review
+            # Validators need to see what the assessor marked, even for reworked indicators
+            # They can override the assessor's decisions if needed
+            # DO NOT clear validation_status or checklist data here
 
         # Set validated_at timestamp
         assessment.validated_at = (

@@ -1237,9 +1237,35 @@ class AssessmentService:
         validation_result = self._run_preliminary_compliance_check(assessment)
 
         if validation_result.is_valid:
+            # Check if this is a resubmission after rework
+            is_resubmission = assessment.rework_requested_at is not None
+
             # Update assessment status
             assessment.status = AssessmentStatus.SUBMITTED_FOR_REVIEW
             assessment.submitted_at = datetime.utcnow()
+
+            # CRITICAL: If resubmitting after rework, clear checklist data for reworked indicators
+            # This ensures assessors review them with clean checklists
+            if is_resubmission:
+                for response in assessment.responses:
+                    if response.requires_rework:
+                        # Clear validation_status for fresh review
+                        response.validation_status = None
+
+                        # Mark as incomplete so assessor needs to review
+                        response.is_completed = False
+
+                        # Clear assessor checklist data (assessor_val_ prefix)
+                        if response.response_data:
+                            response.response_data = {
+                                k: v
+                                for k, v in response.response_data.items()
+                                if not k.startswith('assessor_val_')
+                            }
+                        self.logger.info(
+                            f"[RESUBMISSION] Cleared checklist & marked incomplete for response {response.id} (requires_rework=True)"
+                        )
+
             db.commit()
             db.refresh(assessment)
 

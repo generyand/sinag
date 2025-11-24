@@ -99,6 +99,7 @@ export function TreeNavigator({
       <TreeHeader
         completedIndicators={assessment.completedIndicators}
         totalIndicators={assessment.totalIndicators}
+        assessmentStatus={assessment.status}
       />
 
       {/* Scrollable Tree Content */}

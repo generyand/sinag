@@ -21,7 +21,7 @@ import { Lock, Eye, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 
-type AssessmentStatus = "DRAFT" | "SUBMITTED" | "IN_REVIEW" | "REWORK" | "COMPLETED";
+type AssessmentStatus = "DRAFT" | "SUBMITTED" | "IN_REVIEW" | "REWORK" | "COMPLETED" | "AWAITING_FINAL_VALIDATION" | "SUBMITTED_FOR_REVIEW";
 
 interface LockedStateBannerProps {
   status: AssessmentStatus;
@@ -51,11 +51,21 @@ export function LockedStateBanner({
         };
 
       case "IN_REVIEW":
+      case "SUBMITTED_FOR_REVIEW":
         return {
           variant: "default" as const,
           icon: Eye,
           title: "Assessment In Review",
           description: "An assessor is currently reviewing your submission.",
+          showReworkWarning: false,
+        };
+
+      case "AWAITING_FINAL_VALIDATION":
+        return {
+          variant: "default" as const,
+          icon: Eye,
+          title: "Under Validator Review",
+          description: "Your assessment is being reviewed by validators. No edits allowed at this time.",
           showReworkWarning: false,
         };
 

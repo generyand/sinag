@@ -70,14 +70,34 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
     }
   }, [responses]);
 
-  const total = responses.length;
-  const reviewed = responses.filter((r) => !!form[r.id]?.status).length;
-  const allReviewed = total > 0 && reviewed === total;
+  // Count ALL indicators (always 86 total)
+  // - Indicators with requires_rework=false are already "completed"
+  // - Indicators with requires_rework=true need assessor review
+  const hasReworkIndicators = responses.some((r) => (r as AnyRecord).requires_rework === true);
+  const reworkMode = hasReworkIndicators || normalizedStatus === 'rework';
+
+  // For bottom counter: Only count indicators requiring review
+  const responsesToReview = reworkMode
+    ? responses.filter((r) => (r as AnyRecord).requires_rework === true)
+    : responses;
+
+  const total = responses.length; // ALWAYS show total (86)
+
+  // Count completed: passed indicators (81) + reviewed reworked indicators (0-5)
+  const completed = responses.filter((r) => {
+    const resp = r as AnyRecord;
+    // Already passed indicators count as completed
+    if (!resp.requires_rework) return true;
+    // Reworked indicators - check if assessor has reviewed them
+    return !!form[r.id]?.status;
+  }).length;
+
+  const allReviewed = responsesToReview.length > 0 && responsesToReview.every((r) => !!form[r.id]?.status);
   const anyFail = responses.some((r) => form[r.id]?.status === 'Fail');
   const dirty = Object.keys(form).length > 0;
-  const progressPct = total > 0 ? Math.round((reviewed / total) * 100) : 0;
+  const progressPct = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-  const missingRequiredComments = responses.filter((r) => {
+  const missingRequiredComments = responsesToReview.filter((r) => {
     const v = form[r.id];
     if (!v?.status) return false;
     if (v.status === 'Fail' || v.status === 'Conditional') {
@@ -309,7 +329,7 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
               style={{ width: `${progressPct}%` }}
             />
           </div>
-          <div className="text-xs text-muted-foreground">Indicators Reviewed: {reviewed}/{total} {missingRequiredComments > 0 ? `• Missing required comments: ${missingRequiredComments}` : ''}</div>
+          <div className="text-xs text-muted-foreground">Indicators Completed: {completed}/{total} {missingRequiredComments > 0 ? `• Missing required comments: ${missingRequiredComments}` : ''}</div>
           <div className="flex flex-col sm:flex-row w-full sm:w-auto items-stretch sm:items-center gap-2 sm:gap-3">
             <Button
               variant="ghost"
@@ -377,9 +397,10 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
           </DialogHeader>
           <ul className="mt-2 text-sm space-y-1">
             <li>Total indicators: {total}</li>
-            <li>Reviewed: {reviewed}</li>
-            <li>Unreviewed: {Math.max(0, total - reviewed)}</li>
-            <li>Marked Fail: {responses.filter((r) => form[r.id]?.status === 'Fail').length}</li>
+            <li>Completed: {completed}</li>
+            <li>Incomplete: {Math.max(0, total - completed)}</li>
+            {reworkMode && <li>Requiring review: {responsesToReview.length}</li>}
+            <li>Marked Fail: {responsesToReview.filter((r) => form[r.id]?.status === 'Fail').length}</li>
             <li>Missing required comments: {missingRequiredComments}</li>
           </ul>
         </DialogContent>
