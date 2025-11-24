@@ -284,6 +284,27 @@ export function FileFieldComponent({
   if (isReworkStatus && reworkRequestedAt) {
     const reworkDate = new Date(reworkRequestedAt);
 
+    console.log('[FileFieldComponent] Rework filtering debug:', {
+      field_id: field.field_id,
+      reworkRequestedAt,
+      reworkDate: reworkDate.toISOString(),
+      reworkDateTime: reworkDate.getTime(),
+      activeFilesCount: activeFiles.length,
+      activeFiles: activeFiles.map((f: any) => {
+        const uploadDate = new Date(f.uploaded_at);
+        return {
+          id: f.id,
+          name: f.file_name,
+          uploaded_at: f.uploaded_at,
+          uploadDate: uploadDate.toISOString(),
+          uploadDateTime: uploadDate.getTime(),
+          timeDiff: uploadDate.getTime() - reworkDate.getTime(),
+          isAfterRework: uploadDate >= reworkDate,
+          comparison: `${uploadDate.getTime()} >= ${reworkDate.getTime()}`
+        };
+      })
+    });
+
     // Files uploaded BEFORE rework was requested are "old" (from before rework)
     const oldFiles = activeFiles.filter((f: any) => {
       const uploadDate = new Date(f.uploaded_at);
@@ -294,6 +315,12 @@ export function FileFieldComponent({
     const recentFiles = activeFiles.filter((f: any) => {
       const uploadDate = new Date(f.uploaded_at);
       return uploadDate >= reworkDate;
+    });
+
+    console.log('[FileFieldComponent] Filtered results:', {
+      field_id: field.field_id,
+      oldFilesCount: oldFiles.length,
+      recentFilesCount: recentFiles.length
     });
 
     previousFiles = [...deletedFiles, ...oldFiles];

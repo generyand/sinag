@@ -540,6 +540,9 @@ class AssessorService:
                 joinedload(Assessment.responses)
                 .joinedload(AssessmentResponse.indicator)
                 .joinedload(Indicator.checklist_items),
+                joinedload(Assessment.responses)
+                .joinedload(AssessmentResponse.indicator)
+                .joinedload(Indicator.children),
                 # Epic 4.0: Load MOV files from the new mov_files table (removed old movs table loading)
                 # Use selectinload for better performance with many files
                 joinedload(Assessment.responses).joinedload(
@@ -625,6 +628,10 @@ class AssessorService:
 
         # Process responses based on assessor's governance area assignment
         for response in assessment.responses:
+            # Skip parent indicators that have children (only show leaf indicators)
+            if response.indicator.children and len(response.indicator.children) > 0:
+                continue
+
             # If assessor has validator_area_id, only show responses in that area
             # If assessor has no validator_area_id, show all responses (system-wide)
             if assessor.validator_area_id is not None:

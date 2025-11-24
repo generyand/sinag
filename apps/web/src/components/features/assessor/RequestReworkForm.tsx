@@ -35,6 +35,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { usePostAssessmentsAssessmentIdRequestRework } from "@vantage/shared";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface RequestReworkFormProps {
   assessmentId: number;
@@ -52,6 +53,7 @@ export function RequestReworkForm({
   const [comments, setComments] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Epic 5.0 mutation hook for requesting rework
   const { mutate: requestRework, isPending } = usePostAssessmentsAssessmentIdRequestRework({
@@ -62,6 +64,12 @@ export function RequestReworkForm({
           description: "The BLGU has been notified and can now make revisions to their assessment.",
           variant: "default",
         });
+
+        // Invalidate all assessment-related queries to ensure fresh data
+        // This will update the assessor's submissions queue and any cached assessment data
+        queryClient.invalidateQueries({ queryKey: ["assessments"] });
+        queryClient.invalidateQueries({ queryKey: ["assessor"] });
+        queryClient.invalidateQueries({ queryKey: ["blgu-dashboard"] });
 
         // Clear form and close dialog
         setComments("");
