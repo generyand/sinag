@@ -18,7 +18,9 @@
 
 ## **1. Introduction & Overview**
 
-This document outlines the requirements for the **Core User Authentication & Management** feature for the VANTAGE web application. This is the foundational security and access control layer, enabling secure user login and providing administrators with the tools to manage user accounts, roles, and permissions. As the primary gateway to the application, its successful implementation is a prerequisite for all other features.
+**Project Title:** SGLGB Analytics System: Strategic Insights Nurturing Assessments and Governance (SINAG) To Assess And Assist Barangays utilizing a Large Language Model and Classification Algorithm
+
+This document outlines the requirements for the **Core User Authentication & Management** feature for the SINAG platform (VANTAGE codebase). This is the foundational security and access control layer, enabling secure user login and providing administrators with the tools to manage user accounts, roles, and permissions. As the primary gateway to the application, its successful implementation is a prerequisite for all other features.
 
 The goal is to create a secure, closed authentication system where users are managed internally by a designated administrator, the **Municipal Local Government Operations Officer - Department of the Interior and Local Government (MLGOO-DILG)**.
 
@@ -156,7 +158,7 @@ This PRD reflects the updated role structure and workflow terminology from the N
 ## **6. Design & UX Considerations**
 
 *   All UI elements will be built using `shadcn/ui` components for a consistent and professional look.
-*   The login page should be minimal, clean, and clearly branded for VANTAGE.
+*   The login page should be minimal, clean, and clearly branded for SINAG.
 *   The User Management table should be clear and easy to read, with intuitive controls for creating and editing users.
 *   The flow for forcing a new user to change their temporary password must be clear and non-skippable.
 *   The user creation/editing form must provide clear visual feedback when role-specific fields appear or disappear based on role selection.

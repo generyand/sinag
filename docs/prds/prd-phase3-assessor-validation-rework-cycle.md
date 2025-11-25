@@ -11,11 +11,13 @@
 
 ### 1. Introduction & Overview
 
-This document outlines the product requirements for **Epic 3: The Assessor Validation & Rework Cycle**. This feature set builds the complete toolkit for the DILG Area Assessors, who are the primary validators within the VANTAGE ecosystem.
+**Project Title:** SGLGB Analytics System: Strategic Insights Nurturing Assessments and Governance (SINAG) To Assess And Assist Barangays utilizing a Large Language Model and Classification Algorithm
+
+This document outlines the product requirements for **Epic 3: The Assessor Validation & Rework Cycle**. This feature set builds the complete toolkit for the DILG Area Assessors, who are the primary validators within the SINAG platform (VANTAGE codebase).
 
 This epic covers two critical phases of the assessor's workflow:
 1.  **The Pre-Assessment Review:** The initial digital review of a BLGU's submission, culminating in a single, consolidated rework request if deficiencies are found.
-2.  **The Final Table Validation:** The use of the VANTAGE application as a "live checklist" during the formal, in-person meeting to record the final, authoritative compliance data.
+2.  **The Final Table Validation:** The use of the SINAG platform as a "live checklist" during the formal, in-person meeting to record the final, authoritative compliance data.
 
 The goal is to provide assessors with a focused, efficient, and powerful interface to ensure the integrity of the SGLGB assessment data.
 

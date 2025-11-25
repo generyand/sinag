@@ -13,7 +13,9 @@
 
 ### **1. Introduction & Overview**
 
-This document outlines the product requirements for **Phase 2: The BLGU Table Assessment Workflow**. This feature is the core "data input" component of the VANTAGE web application, focusing entirely on the experience of the Barangay Local Government Unit (BLGU) user.
+**Project Title:** SGLGB Analytics System: Strategic Insights Nurturing Assessments and Governance (SINAG) To Assess And Assist Barangays utilizing a Large Language Model and Classification Algorithm
+
+This document outlines the product requirements for **Phase 2: The BLGU Table Assessment Workflow**. This feature is the core "data input" component of the SINAG platform (VANTAGE codebase), focusing entirely on the experience of the Barangay Local Government Unit (BLGU) user.
 
 **Terminology Update (Nov 2025):** This phase was previously called "Pre-Assessment" but is now formally renamed to **"Table Assessment"** to accurately reflect that this represents the initial in-person assessment with the Assessor, not a preliminary or "pre" phase.
 
@@ -266,7 +268,7 @@ This specification document defines:
 
 #### **9.1. Two-Tier Validation System**
 
-The VANTAGE system implements a two-tier validation approach:
+The SINAG system implements a two-tier validation approach:
 
 1. **Completeness Validation (shown to BLGU)**:
    - **Purpose**: Ensure the BLGU has provided all required information
@@ -295,7 +297,7 @@ While this PRD focuses on the BLGU experience (Phase 2), it's important to note:
 
 #### **9.3. MOV Checklist Validation System**
 
-The VANTAGE system implements a comprehensive **MOV (Means of Verification) checklist validation system** used by Assessors and Validators during the review process. This system is distinct from the BLGU submission interface and represents the professional validation layer.
+The SINAG system implements a comprehensive **MOV (Means of Verification) checklist validation system** used by Assessors and Validators during the review process. This system is distinct from the BLGU submission interface and represents the professional validation layer.
 
 **Key Characteristics:**
 

@@ -11,7 +11,9 @@
 
 ## 1. Introduction/Overview
 
-The High-Level Analytics & Reporting feature transforms VANTAGE from a workflow management tool into a comprehensive strategic decision-support platform for DILG stakeholders. This feature provides the MLGOO-DILG and other authorized users with data visualizations, performance insights, and AI-generated recommendations that enable data-driven governance improvements across the municipality.
+**Project Title:** SGLGB Analytics System: Strategic Insights Nurturing Assessments and Governance (SINAG) To Assess And Assist Barangays utilizing a Large Language Model and Classification Algorithm
+
+The High-Level Analytics & Reporting feature transforms SINAG from a workflow management tool into a comprehensive strategic decision-support platform for DILG stakeholders. This feature provides the MLGOO-DILG and other authorized users with data visualizations, performance insights, and AI-generated recommendations that enable data-driven governance improvements across the municipality.
 
 **Problem Statement:** Currently, DILG personnel must manually compile and analyze barangay assessment data to identify performance trends, common failure points, and capacity development needs. This manual process is time-consuming, error-prone, and limits the ability to make timely, evidence-based decisions for improving barangay governance.
 
@@ -211,7 +213,7 @@ When calculating pass rates and compliance metrics, **Passed, Considered, and Co
 
 ### 6.1 User Interface
 
-- Follow the existing VANTAGE design system using shadcn/ui components and Tailwind CSS
+- Follow the existing SINAG design system using shadcn/ui components and Tailwind CSS
 - Use consistent color coding across all visualizations:
   - Green for "Pass" or positive indicators
   - Red for "Fail" or negative indicators

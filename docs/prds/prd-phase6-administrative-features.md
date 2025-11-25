@@ -20,9 +20,11 @@
 
 ## 1. Introduction/Overview
 
+**Project Title:** SGLGB Analytics System: Strategic Insights Nurturing Assessments and Governance (SINAG) To Assess And Assist Barangays utilizing a Large Language Model and Classification Algorithm
+
 ### Problem Statement
 
-The MLGOO-DILG currently lacks the administrative tools needed to independently manage the VANTAGE system as SGLGB standards evolve. Changes to indicators, assessment rules, deadlines, and BBI (Barangay-based Institutions) configuration currently require developer intervention, creating bottlenecks and reducing system adaptability.
+The MLGOO-DILG currently lacks the administrative tools needed to independently manage the SINAG system as SGLGB standards evolve. Changes to indicators, assessment rules, deadlines, and BBI (Barangay-based Institutions) configuration currently require developer intervention, creating bottlenecks and reducing system adaptability.
 
 ### Solution Overview
 
@@ -32,7 +34,7 @@ Phase 6 introduces a comprehensive administrative interface that empowers the ML
 2. **Configure BBI Functionality Logic** - Define which indicators determine whether BBIs (e.g., Lupon, BAC, BCPC) are "Functional" or "Non-Functional"
 3. **Control Assessment Cycles & Deadlines** - Set phase-specific deadlines and provide granular deadline extensions for specific barangays
 
-This phase transforms VANTAGE from a developer-dependent system into a flexible, MLGOO-controlled platform that adapts to changing SGLGB requirements without code changes.
+This phase transforms SINAG from a developer-dependent system into a flexible, MLGOO-controlled platform that adapts to changing SGLGB requirements without code changes.
 
 ### Goal
 
@@ -753,7 +755,7 @@ For complete BBI system specifications, relationship diagrams, and database sche
 
 ### 6.1 User Interface Design
 
-**DC-6.1.1:** The administrative interface should follow the existing VANTAGE design system (Tailwind CSS, shadcn/ui components).
+**DC-6.1.1:** The administrative interface should follow the existing SINAG design system (Tailwind CSS, shadcn/ui components).
 
 **DC-6.1.2:** The Form Builder and Calculation Rule Builder should use a clean, modern interface similar to tools like Google Forms (for form building) and Zapier/Make.com (for rule building).
 
@@ -1112,7 +1114,7 @@ apps/web/src/app/(app)/mlgoo/indicators/builder/page.tsx
 
 **SM-6.3:** **Developer Ticket Reduction** - Number of developer tickets for "change indicator logic," "update calculation rules," or "extend deadline for barangay X" is reduced to zero.
 
-**SM-6.4:** **System Adaptability** - VANTAGE adapts to updated DILG SGLGB Technical Notes within 1 business day of release, without requiring code deployments.
+**SM-6.4:** **System Adaptability** - SINAG adapts to updated DILG SGLGB Technical Notes within 1 business day of release, without requiring code deployments.
 
 ### 8.2 Secondary Metrics
 
@@ -1161,16 +1163,16 @@ apps/web/src/app/(app)/mlgoo/indicators/builder/page.tsx
 ## Appendix A: Related Documents
 
 - **`docs/indicator-builder-specification.md`** - **Indicator Builder Specification v1.4** (CRITICAL: Source of truth for indicator structure, MOV checklist items, validation patterns, and BBI functionality system)
-- `docs/project-roadmap.md` - VANTAGE Feature Roadmap
+- `docs/project-roadmap.md` - SINAG Feature Roadmap
 - `tasks/tasks-prd-blgu-preassessmet-workflow/README.md` - Metadata-Driven Indicator Management Approach
-- `CLAUDE.md` - VANTAGE Architecture & Development Guidelines
+- `CLAUDE.md` - SINAG Architecture & Development Guidelines
 - `.cursor/rules/create-prd.mdc` - PRD Creation Guidelines
 
 ---
 
 ## Appendix B: Glossary
 
-- **MLGOO-DILG**: Municipal Local Government Operations Officer - DILG, the primary administrator of the VANTAGE system
+- **MLGOO-DILG**: Municipal Local Government Operations Officer - DILG, the primary administrator of the SINAG system
 - **BBI**: Barangay-based Institutions (e.g., Lupon, BAC, BCPC, BHW)
 - **SGLGB**: Seal of Good Local Governance for Barangays
 - **MOV**: Means of Verification (documentary evidence)

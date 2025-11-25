@@ -11,6 +11,8 @@
 
 ### 1. Introduction & Overview
 
+**Project Title:** SGLGB Analytics System: Strategic Insights Nurturing Assessments and Governance (SINAG) To Assess And Assist Barangays utilizing a Large Language Model and Classification Algorithm
+
 This document outlines the product requirements for **Phase 4: The Core Intelligence Layer**. This phase implements the "smart" features that automate scoring and generate AI-powered insights based on the final, validated assessment data.
 
 This phase consists of two integrated features:
