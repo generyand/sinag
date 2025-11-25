@@ -452,6 +452,12 @@ export type GetAssessmentsMyAssessment200 = { [key: string]: unknown };
 
 
 /**
+ * OverallComplianceResponseAssessmentCycle
+ */
+export type OverallComplianceResponseAssessmentCycle = string | null;
+
+
+/**
  * PostAssessmentsAssessmentIdAnswersParams
  */
 export type PostAssessmentsAssessmentIdAnswersParams = {

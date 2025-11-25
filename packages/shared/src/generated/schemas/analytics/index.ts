@@ -3,6 +3,24 @@
 // 📁 Analytics-related types
 // 🏷️  Based on FastAPI tag: "analytics"
 
+import type { OverallComplianceResponse } from '../system';
+import type { GovernanceAreaPerformanceResponse } from '../governanceareaperformance';
+import type { TopFailingIndicatorsResponse } from '../indicators';
+import type { AnonymizedAIInsightsResponse } from '../system';
+
+/**
+ * ExternalAnalyticsDashboardResponse
+ */
+export interface ExternalAnalyticsDashboardResponse {
+  overall_compliance: OverallComplianceResponse;
+  governance_area_performance: GovernanceAreaPerformanceResponse;
+  top_failing_indicators: TopFailingIndicatorsResponse;
+  ai_insights: AnonymizedAIInsightsResponse;
+  /** Privacy disclaimer */
+  data_disclaimer?: string;
+}
+
+
 /**
  * GetAnalyticsDashboardParams
  */
@@ -53,4 +71,87 @@ page?: number;
  * @maximum 100
  */
 page_size?: number;
+};
+
+
+/**
+ * GetExternalAnalyticsAiInsightsSummaryParams
+ */
+export type GetExternalAnalyticsAiInsightsSummaryParams = {
+/**
+ * Assessment cycle filter
+ */
+assessment_cycle?: string | null;
+};
+
+
+/**
+ * GetExternalAnalyticsDashboardParams
+ */
+export type GetExternalAnalyticsDashboardParams = {
+/**
+ * Assessment cycle filter
+ */
+assessment_cycle?: string | null;
+};
+
+
+/**
+ * GetExternalAnalyticsExportCsvParams
+ */
+export type GetExternalAnalyticsExportCsvParams = {
+/**
+ * Assessment cycle filter
+ */
+assessment_cycle?: string | null;
+};
+
+
+/**
+ * GetExternalAnalyticsExportPdfParams
+ */
+export type GetExternalAnalyticsExportPdfParams = {
+/**
+ * Assessment cycle filter
+ */
+assessment_cycle?: string | null;
+};
+
+
+/**
+ * GetExternalAnalyticsGovernanceAreasParams
+ */
+export type GetExternalAnalyticsGovernanceAreasParams = {
+/**
+ * Assessment cycle filter
+ */
+assessment_cycle?: string | null;
+};
+
+
+/**
+ * GetExternalAnalyticsOverallParams
+ */
+export type GetExternalAnalyticsOverallParams = {
+/**
+ * Assessment cycle filter (defaults to most recent)
+ */
+assessment_cycle?: string | null;
+};
+
+
+/**
+ * GetExternalAnalyticsTopFailingIndicatorsParams
+ */
+export type GetExternalAnalyticsTopFailingIndicatorsParams = {
+/**
+ * Assessment cycle filter
+ */
+assessment_cycle?: string | null;
+/**
+ * Number of top failing indicators to return
+ * @minimum 1
+ * @maximum 10
+ */
+limit?: number;
 };

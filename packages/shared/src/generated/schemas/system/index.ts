@@ -4,6 +4,7 @@
 // 🏷️  Based on FastAPI tag: "system"
 
 import type { PdfRect } from '../common';
+import type { AnonymizedInsight } from '../common';
 import type { AuditLogResponseUserEmail } from '../users';
 import type { AuditLogResponseUserName } from '../users';
 import type { GovernanceAreaGroup } from '../common';
@@ -17,6 +18,7 @@ import type { FailedIndicator } from '../indicators';
 import type { BarangayRanking } from '../common';
 import type { TrendData } from '../common';
 import type { DeadlineOverrideResponse } from '../deadlineoverride';
+import type { OverallComplianceResponseAssessmentCycle } from '../assessments';
 import type { ChartData } from '../common';
 import type { MapData } from '../common';
 import type { TableData } from '../common';
@@ -53,6 +55,19 @@ export type SystemicWeaknessReason = string | null;
  * AnnotationResponseRects
  */
 export type AnnotationResponseRects = PdfRect[] | null;
+
+
+/**
+ * AnonymizedAIInsightsResponse
+ */
+export interface AnonymizedAIInsightsResponse {
+  /** Aggregated AI-generated insights */
+  insights: AnonymizedInsight[];
+  /** True if insights are filtered for UMDC Peace Center focus areas */
+  filtered_for_umdc?: boolean;
+  /** Total number of assessments used to generate these insights */
+  total_assessments_analyzed: number;
+}
 
 
 /**
@@ -357,6 +372,23 @@ export type HealthCheckChecks = { [key: string]: unknown };
  * HealthCheckConnections
  */
 export type HealthCheckConnections = { [key: string]: unknown };
+
+
+/**
+ * OverallComplianceResponse
+ */
+export interface OverallComplianceResponse {
+  /** Total number of barangays assessed */
+  total_barangays: number;
+  /** Number of barangays that passed SGLGB */
+  passed_count: number;
+  /** Number of barangays that failed SGLGB */
+  failed_count: number;
+  /** Percentage of barangays that passed (0-100) */
+  pass_percentage: number;
+  /** Assessment cycle identifier */
+  assessment_cycle?: OverallComplianceResponseAssessmentCycle;
+}
 
 
 /**

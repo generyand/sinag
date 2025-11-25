@@ -96,6 +96,9 @@ class StartupService:
         # Create first superuser if needed
         self._create_first_superuser()
 
+        # Create external stakeholder users if needed
+        self._create_external_users()
+
         # Log detailed connection status
         await self._log_connection_details()
 
@@ -311,6 +314,67 @@ class StartupService:
 
         except Exception as e:
             logger.warning(f"⚠️  Could not create first admin user: {str(e)}")
+            db.rollback()
+        finally:
+            db.close()
+
+    def _create_external_users(self) -> None:
+        """Create external stakeholder users (Katuparan Center, UMDC Peace Center) if they don't exist."""
+        logger.info("🏛️  Checking for external stakeholder users...")
+        db: Session = SessionLocal()
+        try:
+            # External users configuration
+            external_users = [
+                {
+                    "email": "katuparan@sulop.gov.ph",
+                    "name": "Katuparan Center",
+                    "role": UserRole.KATUPARAN_CENTER_USER,
+                    "password": "katuparan2025",  # Default password - should be changed
+                    "description": "Katuparan Center - Research and CapDev",
+                },
+                {
+                    "email": "umdc@sulop.gov.ph",
+                    "name": "UMDC Peace Center",
+                    "role": UserRole.UMDC_PEACE_CENTER_USER,
+                    "password": "umdc2025",  # Default password - should be changed
+                    "description": "UMDC Peace Center - Peace and Order Analytics",
+                },
+            ]
+
+            created_count = 0
+            for user_config in external_users:
+                # Check if user already exists
+                existing_user = (
+                    db.query(User).filter(User.email == user_config["email"]).first()
+                )
+
+                if existing_user:
+                    logger.info(f"  - {user_config['description']} already exists. Skipping.")
+                    continue
+
+                # Create external user
+                logger.info(f"  - Creating {user_config['description']} ({user_config['email']})")
+                user = User(
+                    email=user_config["email"],
+                    name=user_config["name"],
+                    hashed_password=get_password_hash(user_config["password"]),
+                    role=user_config["role"],
+                    is_active=True,
+                    is_superuser=False,
+                    must_change_password=True,  # Force password change on first login
+                )
+                db.add(user)
+                created_count += 1
+
+            if created_count > 0:
+                db.commit()
+                logger.info(f"  - Created {created_count} external stakeholder user(s) successfully.")
+                logger.info("  ⚠️  Default passwords: katuparan2025, umdc2025 (must be changed on first login)")
+            else:
+                logger.info("  - All external users already exist. Skipping.")
+
+        except Exception as e:
+            logger.warning(f"⚠️  Could not create external users: {str(e)}")
             db.rollback()
         finally:
             db.close()

@@ -144,6 +144,18 @@ export type GetIndicatorsTreeGovernanceAreaId200Item = { [key: string]: unknown 
 
 
 /**
+ * GovernanceAreaPerformanceIndicatorsBreakdown
+ */
+export type GovernanceAreaPerformanceIndicatorsBreakdown = GovernanceAreaPerformanceIndicatorsBreakdownAnyOfItem[] | null;
+
+
+/**
+ * GovernanceAreaPerformanceIndicatorsBreakdownAnyOfItem
+ */
+export type GovernanceAreaPerformanceIndicatorsBreakdownAnyOfItem = { [key: string]: unknown };
+
+
+/**
  * IncompleteIndicatorDetail
  */
 export interface IncompleteIndicatorDetail {
@@ -965,3 +977,33 @@ export type SimplifiedIndicatorResponseParentId = number | null;
  * TestBBICalculationRequestIndicatorStatuses
  */
 export type TestBBICalculationRequestIndicatorStatuses = {[key: string]: string};
+
+
+/**
+ * TopFailingIndicator
+ */
+export interface TopFailingIndicator {
+  /** Indicator ID */
+  indicator_id: number;
+  /** Indicator code (e.g., '1.1', '3.2') */
+  indicator_code: string;
+  /** Full indicator name */
+  indicator_name: string;
+  /** Associated governance area */
+  governance_area_code: string;
+  /** Number of barangays that failed this indicator */
+  failure_count: number;
+  /** Total barangays assessed on this indicator */
+  total_assessed: number;
+  /** Percentage of barangays that failed (0-100) */
+  failure_percentage: number;
+}
+
+
+/**
+ * TopFailingIndicatorsResponse
+ */
+export interface TopFailingIndicatorsResponse {
+  /** Top 5 indicators with highest failure rates */
+  top_failing_indicators: TopFailingIndicator[];
+}

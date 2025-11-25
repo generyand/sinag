@@ -15,13 +15,14 @@ from sqlalchemy.orm import Session
 class UserService:
     """Service class for user management operations.
 
-    This service handles all user-related business logic following the VANTAGE
-    RBAC model with four distinct roles: MLGOO_DILG, VALIDATOR, ASSESSOR, and BLGU_USER.
+    This service handles all user-related business logic following the SINAG
+    RBAC model with six distinct roles: MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER,
+    KATUPARAN_CENTER_USER, and UMDC_PEACE_CENTER_USER.
 
     **Role-Based Field Requirements**:
     - VALIDATOR: Requires validator_area_id (governance area assignment)
     - BLGU_USER: Requires barangay_id (barangay assignment)
-    - ASSESSOR/MLGOO_DILG: No assignments required (system-wide access)
+    - ASSESSOR/MLGOO_DILG/KATUPARAN_CENTER_USER/UMDC_PEACE_CENTER_USER: No assignments required (system-wide or aggregated access)
 
     **Business Rules**:
     - Email addresses must be unique across all users
@@ -92,7 +93,7 @@ class UserService:
             skip: Number of records to skip for pagination (default: 0)
             limit: Maximum number of records to return (default: 100)
             search: Optional search term to filter by name or email (case-insensitive)
-            role: Optional role filter (MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER)
+            role: Optional role filter (MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER, KATUPARAN_CENTER_USER, UMDC_PEACE_CENTER_USER)
             is_active: Optional active status filter (True/False/None for all)
 
         Returns:
@@ -189,7 +190,7 @@ class UserService:
         **Role-Based Field Logic** (auto-enforced):
         - **VALIDATOR**: Requires validator_area_id, clears barangay_id
         - **BLGU_USER**: Requires barangay_id, clears validator_area_id
-        - **ASSESSOR/MLGOO_DILG**: Clears both validator_area_id and barangay_id
+        - **ASSESSOR/MLGOO_DILG/KATUPARAN_CENTER_USER/UMDC_PEACE_CENTER_USER**: Clears both validator_area_id and barangay_id
 
         **Business Rules**:
         - Email must be unique across all users
@@ -254,8 +255,13 @@ class UserService:
                 )
             # Ensure validator_area_id is null for BLGU users
             user_create.validator_area_id = None
-        elif user_create.role in (UserRole.ASSESSOR, UserRole.MLGOO_DILG):
-            # ASSESSOR and MLGOO_DILG roles should not have any assignments
+        elif user_create.role in (
+            UserRole.ASSESSOR,
+            UserRole.MLGOO_DILG,
+            UserRole.KATUPARAN_CENTER_USER,
+            UserRole.UMDC_PEACE_CENTER_USER,
+        ):
+            # ASSESSOR, MLGOO_DILG, and external user roles should not have any assignments
             user_create.validator_area_id = None
             user_create.barangay_id = None
 
@@ -328,8 +334,13 @@ class UserService:
                 )
             # Ensure validator_area_id is set to null for BLGU users
             update_data["validator_area_id"] = None
-        elif role in (UserRole.ASSESSOR, UserRole.MLGOO_DILG):
-            # ASSESSOR and MLGOO_DILG roles should not have any assignments
+        elif role in (
+            UserRole.ASSESSOR,
+            UserRole.MLGOO_DILG,
+            UserRole.KATUPARAN_CENTER_USER,
+            UserRole.UMDC_PEACE_CENTER_USER,
+        ):
+            # ASSESSOR, MLGOO_DILG, and external user roles should not have any assignments
             update_data["validator_area_id"] = None
             update_data["barangay_id"] = None
 

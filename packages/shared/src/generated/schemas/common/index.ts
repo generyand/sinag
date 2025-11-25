@@ -36,6 +36,31 @@ export type AnnotationUpdateComment = string | null;
 
 
 /**
+ * AnonymizedInsight
+ */
+export interface AnonymizedInsight {
+  /** Associated governance area */
+  governance_area_code: string;
+  /** Full governance area name */
+  governance_area_name: string;
+  /** Common theme (e.g., 'Budget Transparency', 'Disaster Preparedness') */
+  theme: string;
+  /** Aggregated insight text */
+  insight_summary: string;
+  /** Number of assessments this theme appeared in */
+  frequency: number;
+  /** Priority level: High, Medium, Low */
+  priority?: AnonymizedInsightPriority;
+}
+
+
+/**
+ * AnonymizedInsightPriority
+ */
+export type AnonymizedInsightPriority = string | null;
+
+
+/**
  * AreaBreakdown
  */
 export interface AreaBreakdown {
