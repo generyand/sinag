@@ -29,7 +29,16 @@
     "redis:cli": "docker exec -it vantage-redis redis-cli",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
-    "docker:logs": "docker compose logs -f"
+    "docker:logs": "docker compose logs -f",
+    "worktree": "./scripts/worktree.sh",
+    "worktree:create": "./scripts/worktree.sh create",
+    "worktree:list": "./scripts/worktree.sh list",
+    "worktree:remove": "./scripts/worktree.sh remove",
+    "worktree:status": "./scripts/worktree.sh status",
+    "worktree:ports": "./scripts/worktree.sh ports",
+    "worktree:env": "./scripts/worktree.sh env",
+    "worktree:env:all": "./scripts/worktree.sh env --all",
+    "worktree:finish": "./scripts/worktree.sh finish"
   },
   "keywords": [
     "monorepo",

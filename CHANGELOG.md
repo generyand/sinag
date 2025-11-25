@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+#### Documentation Cleanup (2025-11-25)
+
+**Summary:** Cleaned up temporary documentation files from root directory to improve project organization. Temporary implementation summaries are now consolidated into CLAUDE.md and the docs/ folder structure.
+
+**Deleted Files (9 temporary documentation files):**
+- `CELERY-SETUP.md` - Content consolidated into CLAUDE.md and `apps/api/CELERY.md`
+- `DEV-WORKFLOW.md` - Content consolidated into CLAUDE.md Development Commands section
+- `DOCKER-OPTIMIZATION-SUMMARY.md` - Implementation summary (Nov 2024), content in `docs/docker-best-practices.md`
+- `IMPLEMENTATION-SUMMARY-FAIL-FAST.md` - Implementation summary, content in `docs/guides/fail-fast-startup-checks.md`
+- `QUICK-START.md` - Redundant with CLAUDE.md quick start section
+- `REDIS-FAIL-FAST-FIX.md` - Issue resolution document (Nov 2024)
+- `REDIS-SETUP.md` - Content consolidated into CLAUDE.md Redis section
+- `SINGLE-COMMAND-DEV.md` - Feature documentation now in CLAUDE.md
+- `TESTING-REWORK-SUMMARY.md` - Testing guide for specific feature
+
+**Reorganized Files:**
+- `generate_indicator_specs.py` - Moved from root to `scripts/` folder
+
+**Removed Artifacts:**
+- `turbo` - Empty file (build artifact)
+- `vantage@1.0.0` - Empty file (build artifact)
+
+**Root Directory Now Contains Only Essential Files:**
+- `CHANGELOG.md` - Project changelog
+- `CLAUDE.md` - Development instructions (source of truth)
+- `README.md` - Project overview
+
+**Rationale:** Temporary documentation files documenting completed work were cluttering the root directory. All essential content has been consolidated into CLAUDE.md (the canonical source for development instructions) or the organized `docs/` folder structure.
+
 ### Added
 
 #### Phase 6: Administrative Features - Hierarchical Indicator Builder (COMPLETE) ✅
