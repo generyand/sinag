@@ -26,6 +26,7 @@ import {
 import {
   LockedStateBanner,
   SubmitAssessmentButton,
+  ResubmitAssessmentButton,
 } from "@/components/features/assessments";
 import { ReworkIndicatorsPanel } from "@/components/features/rework";
 import { useGetBlguDashboardAssessmentId, useGetAssessmentsMyAssessment } from "@vantage/shared";
@@ -165,11 +166,21 @@ export default function BLGUDashboardPage() {
         {/* Epic 5.0: Submission Button */}
         <div className="mb-8 flex gap-4">
           {/* Show SubmitAssessmentButton if DRAFT status */}
-          {/* Note: For REWORK status, use "Resubmit for Review" button in /blgu/assessments instead */}
           {dashboardData.status === "DRAFT" && (
             <SubmitAssessmentButton
               assessmentId={assessmentId}
               isComplete={dashboardData.completion_percentage === 100}
+              onSuccess={() => refetch()}
+            />
+          )}
+
+          {/* Show ResubmitAssessmentButton if REWORK status */}
+          {/* The button automatically shows "Submit for Calibration" if is_calibration_rework is true */}
+          {(dashboardData.status === "REWORK" || dashboardData.status === "NEEDS_REWORK") && (
+            <ResubmitAssessmentButton
+              assessmentId={assessmentId}
+              isComplete={dashboardData.completion_percentage === 100}
+              isCalibrationRework={dashboardData.is_calibration_rework || false}
               onSuccess={() => refetch()}
             />
           )}

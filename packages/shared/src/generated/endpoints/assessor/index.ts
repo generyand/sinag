@@ -564,6 +564,80 @@ export const usePostAssessorAssessmentsAssessmentIdRework = <TError = HTTPValida
       return useMutation(mutationOptions );
     }
     /**
+ * Submit assessment for calibration (Validators only).
+
+Calibration sends ONLY the validator's governance area indicators back to
+BLGU for corrections. Unlike Rework (which affects all indicators),
+Calibration only affects indicators in the validator's assigned governance area.
+
+Requirements:
+- User must be a Validator (have validator_area_id assigned)
+- Assessment must be in AWAITING_FINAL_VALIDATION status
+- At least one indicator in the validator's area must have feedback (comments or MOV annotations)
+
+The validator must have permission to review assessments in their governance area.
+ * @summary Submit For Calibration
+ */
+export const postAssessorAssessments$AssessmentIdCalibrate = (
+    assessmentId: number,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<unknown>(
+      {url: `http://localhost:8000/api/v1/assessor/assessments/${assessmentId}/calibrate`, method: 'POST', signal
+    },
+      options);
+    }
+  
+
+
+export const getPostAssessorAssessmentsAssessmentIdCalibrateMutationOptions = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessorAssessments$AssessmentIdCalibrate>>, TError,{assessmentId: number}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postAssessorAssessments$AssessmentIdCalibrate>>, TError,{assessmentId: number}, TContext> => {
+
+const mutationKey = ['postAssessorAssessmentsAssessmentIdCalibrate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAssessorAssessments$AssessmentIdCalibrate>>, {assessmentId: number}> = (props) => {
+          const {assessmentId} = props ?? {};
+
+          return  postAssessorAssessments$AssessmentIdCalibrate(assessmentId,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostAssessorAssessmentsAssessmentIdCalibrateMutationResult = NonNullable<Awaited<ReturnType<typeof postAssessorAssessments$AssessmentIdCalibrate>>>
+    
+    export type PostAssessorAssessmentsAssessmentIdCalibrateMutationError = HTTPValidationError
+
+    /**
+ * @summary Submit For Calibration
+ */
+export const usePostAssessorAssessmentsAssessmentIdCalibrate = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessorAssessments$AssessmentIdCalibrate>>, TError,{assessmentId: number}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postAssessorAssessments$AssessmentIdCalibrate>>,
+        TError,
+        {assessmentId: number},
+        TContext
+      > => {
+
+      const mutationOptions = getPostAssessorAssessmentsAssessmentIdCalibrateMutationOptions(options);
+
+      return useMutation(mutationOptions );
+    }
+    /**
  * Finalize assessment validation, permanently locking it.
 
 Changes the assessment status to 'Validated', permanently locking the assessment

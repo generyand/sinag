@@ -260,6 +260,40 @@ async def send_assessment_for_rework(
 
 
 @router.post(
+    "/assessments/{assessment_id}/calibrate",
+    tags=["assessor"],
+)
+async def submit_for_calibration(
+    assessment_id: int,
+    db: Session = Depends(deps.get_db),
+    current_validator: User = Depends(deps.get_current_area_assessor_user_http),
+):
+    """
+    Submit assessment for calibration (Validators only).
+
+    Calibration sends ONLY the validator's governance area indicators back to
+    BLGU for corrections. Unlike Rework (which affects all indicators),
+    Calibration only affects indicators in the validator's assigned governance area.
+
+    Requirements:
+    - User must be a Validator (have validator_area_id assigned)
+    - Assessment must be in AWAITING_FINAL_VALIDATION status
+    - At least one indicator in the validator's area must have feedback (comments or MOV annotations)
+
+    The validator must have permission to review assessments in their governance area.
+    """
+    try:
+        result = assessor_service.submit_for_calibration(
+            db=db, assessment_id=assessment_id, validator=current_validator
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+
+
+@router.post(
     "/assessments/{assessment_id}/finalize",
     tags=["assessor"],
 )

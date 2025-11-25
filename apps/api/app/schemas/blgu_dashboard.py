@@ -95,6 +95,25 @@ class BLGUDashboardResponse(BaseModel):
     rework_requested_at: Optional[str] = Field(None, description="Timestamp when rework was requested (ISO format)")
     rework_requested_by: Optional[int] = Field(None, description="User ID of assessor who requested rework")
 
+    # Calibration tracking (Phase 2 Validator workflow)
+    is_calibration_rework: bool = Field(
+        default=False,
+        description="If True, BLGU should submit back to Validator (not Assessor). "
+        "Set when Validator calibrates the assessment."
+    )
+    calibration_validator_id: Optional[int] = Field(
+        None,
+        description="ID of the Validator who requested calibration (null if regular rework)"
+    )
+    calibration_governance_area_id: Optional[int] = Field(
+        None,
+        description="ID of the governance area that was calibrated (null if regular rework)"
+    )
+    calibration_governance_area_name: Optional[str] = Field(
+        None,
+        description="Name of the governance area that was calibrated (null if regular rework)"
+    )
+
     total_indicators: int = Field(..., description="Total number of indicators in the assessment")
     completed_indicators: int = Field(
         ..., description="Number of indicators with all required fields filled"

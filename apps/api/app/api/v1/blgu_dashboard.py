@@ -298,6 +298,20 @@ def get_blgu_dashboard(
                 annotation_count = len(annotations_by_indicator_dict.get(indicator_id, []))
                 indicator_data["mov_annotation_count"] = annotation_count
 
+    # Get calibration governance area info if this is a calibration rework
+    calibration_governance_area_id = None
+    calibration_governance_area_name = None
+    if assessment.is_calibration_rework and assessment.calibration_validator_id:
+        # Get the validator's governance area
+        calibration_validator = db.query(User).filter(User.id == assessment.calibration_validator_id).first()
+        if calibration_validator and calibration_validator.validator_area_id:
+            cal_area = db.query(GovernanceArea).filter(
+                GovernanceArea.id == calibration_validator.validator_area_id
+            ).first()
+            if cal_area:
+                calibration_governance_area_id = cal_area.id
+                calibration_governance_area_name = cal_area.name
+
     # Epic 5.0: Return status and rework tracking fields
     return {
         "assessment_id": assessment_id,
@@ -305,6 +319,11 @@ def get_blgu_dashboard(
         "rework_count": assessment.rework_count,  # Epic 5.0: Rework cycle count (0 or 1)
         "rework_requested_at": assessment.rework_requested_at.isoformat() + 'Z' if assessment.rework_requested_at else None,  # Epic 5.0
         "rework_requested_by": assessment.rework_requested_by,  # Epic 5.0: Assessor who requested rework
+        # Calibration tracking (Phase 2 Validator workflow)
+        "is_calibration_rework": assessment.is_calibration_rework,  # True if Validator calibrated (BLGU should submit back to Validator)
+        "calibration_validator_id": assessment.calibration_validator_id,  # Validator who requested calibration
+        "calibration_governance_area_id": calibration_governance_area_id,  # Governance area that was calibrated
+        "calibration_governance_area_name": calibration_governance_area_name,  # Name of calibrated area
         "total_indicators": total_indicators,
         "completed_indicators": completed_indicators,
         "incomplete_indicators": incomplete_indicators,

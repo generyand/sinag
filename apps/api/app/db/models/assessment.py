@@ -36,6 +36,15 @@ class Assessment(Base):
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     rework_comments: Mapped[str | None] = mapped_column(Text, nullable=True)
+    rework_summary: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
+    # Calibration tracking (Phase 2 Validator workflow)
+    # When True, BLGU should submit back to Validator, not Assessor
+    is_calibration_rework: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    calibration_validator_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )  # The validator who requested calibration
+    calibration_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)  # Max 1 calibration allowed
 
     # Intelligence layer fields
     final_compliance_status: Mapped[ComplianceStatus | None] = mapped_column(
@@ -70,6 +79,9 @@ class Assessment(Base):
     )
     reviewer = relationship(
         "User", foreign_keys=[reviewed_by], post_update=True
+    )
+    calibration_validator = relationship(
+        "User", foreign_keys=[calibration_validator_id], post_update=True
     )
     responses = relationship(
         "AssessmentResponse", back_populates="assessment", cascade="all, delete-orphan"

@@ -1353,6 +1353,166 @@ def resubmit_assessment(
     )
 
 
+@router.post(
+    "/{assessment_id}/submit-for-calibration",
+    response_model=ResubmitAssessmentResponse,
+    tags=["assessments"],
+    status_code=status.HTTP_200_OK
+)
+def submit_for_calibration_review(
+    assessment_id: int,
+    current_user: User = Depends(deps.get_current_active_user),
+    db: Session = Depends(deps.get_db),
+) -> ResubmitAssessmentResponse:
+    """
+    Submit assessment for calibration review (Phase 2 Validator workflow).
+
+    This endpoint is used when a Validator has sent the assessment back for
+    calibration (is_calibration_rework=True). Instead of going to SUBMITTED
+    (which routes to Assessor), it goes directly to AWAITING_FINAL_VALIDATION
+    (which routes back to the Validator).
+
+    The key difference from regular resubmit:
+    - Regular resubmit: REWORK -> SUBMITTED -> goes to Assessor
+    - Calibration submit: REWORK -> AWAITING_FINAL_VALIDATION -> goes to Validator
+
+    Authorization:
+        - BLGU_USER role required
+        - User must own the assessment
+        - Assessment must have is_calibration_rework=True
+
+    Business Rules:
+        - Assessment must be in REWORK status
+        - Assessment must have is_calibration_rework=True (set by Validator)
+        - Only indicators marked requires_rework need to be re-uploaded
+        - After submission, is_calibration_rework is cleared
+
+    Args:
+        assessment_id: ID of the assessment to submit for calibration review
+        current_user: Current authenticated user
+        db: Database session
+
+    Returns:
+        ResubmitAssessmentResponse with success status
+
+    Raises:
+        HTTPException 403: User not authorized or not calibration mode
+        HTTPException 400: Invalid status or validation failed
+        HTTPException 404: Assessment not found
+    """
+    # Authorization check: must be BLGU_USER
+    if current_user.role != UserRole.BLGU_USER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only BLGU users can submit for calibration review"
+        )
+
+    # Load the assessment
+    assessment = db.query(Assessment).filter_by(id=assessment_id).first()
+    if not assessment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Assessment {assessment_id} not found"
+        )
+
+    # Check ownership
+    if assessment.blgu_user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only submit your own assessments"
+        )
+
+    # Check assessment status is REWORK
+    if assessment.status != AssessmentStatus.REWORK:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Assessment must be in REWORK status. Current status: {assessment.status.value}"
+        )
+
+    # CRITICAL: Check that this is a calibration rework (from Validator)
+    if not assessment.is_calibration_rework:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This assessment was not sent for calibration. Use the regular 'resubmit' endpoint instead."
+        )
+
+    # Validate only the indicators that were marked for calibration
+    # Get all responses that have requires_rework=True
+    rework_responses = [r for r in assessment.responses if r.requires_rework]
+
+    if not rework_responses:
+        # No indicators need rework - this shouldn't happen normally
+        # but just in case, allow the submission
+        pass
+    else:
+        # Validate only the rework indicators using completeness check
+        from app.services.completeness_validation_service import completeness_validation_service
+
+        incomplete_indicators = []
+        for response in rework_responses:
+            # Get indicator's form schema
+            indicator = response.indicator
+            if not indicator:
+                continue
+
+            form_schema = indicator.form_schema
+
+            # Get MOVs for this indicator
+            indicator_movs = [
+                mf for mf in assessment.mov_files
+                if mf.indicator_id == response.indicator_id
+            ]
+
+            # Validate using the completeness service
+            validation = completeness_validation_service.validate_completeness(
+                form_schema=form_schema,
+                response_data=response.response_data,
+                uploaded_movs=indicator_movs
+            )
+
+            if not validation.get("is_complete", False):
+                incomplete_indicators.append({
+                    "indicator_id": response.indicator_id,
+                    "indicator_name": indicator.name,
+                    "missing_fields": validation.get("missing_fields", [])
+                })
+
+        if incomplete_indicators:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "message": f"{len(incomplete_indicators)} indicator(s) still incomplete",
+                    "incomplete_indicators": incomplete_indicators
+                }
+            )
+
+    # Update assessment status to AWAITING_FINAL_VALIDATION (goes to Validator, not Assessor)
+    assessment.status = AssessmentStatus.AWAITING_FINAL_VALIDATION
+    assessment.submitted_at = datetime.utcnow()
+
+    # Clear calibration flags after successful submission
+    assessment.is_calibration_rework = False
+    # Keep calibration_validator_id so we know who requested calibration
+
+    # Clear requires_rework AND validation_status on the indicators that were calibrated
+    # IMPORTANT: Clear validation_status so the Validator can re-review these indicators
+    # Without this, the queue logic will skip the assessment (thinking validator already completed)
+    for response in rework_responses:
+        response.requires_rework = False
+        response.validation_status = None  # Reset so Validator can re-validate
+
+    db.commit()
+    db.refresh(assessment)
+
+    return ResubmitAssessmentResponse(
+        success=True,
+        message="Assessment submitted for calibration review. It will be reviewed by the Validator.",
+        assessment_id=assessment.id,
+        resubmitted_at=assessment.submitted_at,
+        rework_count=assessment.rework_count
+    )
+
+
 @router.get(
     "/{assessment_id}/submission-status",
     response_model=SubmissionStatusResponse,

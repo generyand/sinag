@@ -604,6 +604,7 @@ class AssessorService:
                 if assessment.rework_requested_at
                 else None,
                 "rework_count": assessment.rework_count,
+                "calibration_count": assessment.calibration_count,
                 "blgu_user": {
                     "id": assessment.blgu_user.id,
                     "name": assessment.blgu_user.name,
@@ -968,6 +969,173 @@ class AssessorService:
             "new_status": assessment.status.value,
             "rework_count": assessment.rework_count,
             "summary_generation_result": summary_result,
+            "notification_result": notification_result,
+        }
+
+    def submit_for_calibration(
+        self, db: Session, assessment_id: int, validator: User
+    ) -> dict:
+        """
+        Phase 2 (Table Validation): Submit assessment for calibration.
+
+        Calibration is used by Validators to send ONLY their governance area
+        indicators back to BLGU for corrections. Unlike Rework (which affects
+        all indicators), Calibration only affects indicators in the validator's
+        assigned governance area.
+
+        Args:
+            db: Database session
+            assessment_id: ID of the assessment to calibrate
+            validator: The validator performing the action (must have validator_area_id)
+
+        Returns:
+            dict: Result of the calibration operation
+
+        Raises:
+            ValueError: If assessment not found or calibration not allowed
+            PermissionError: If user is not a validator
+        """
+        # Get the assessment
+        assessment = (
+            db.query(Assessment)
+            .options(
+                joinedload(Assessment.blgu_user).joinedload(User.barangay),
+                selectinload(Assessment.responses).joinedload(AssessmentResponse.indicator)
+            )
+            .filter(Assessment.id == assessment_id)
+            .first()
+        )
+
+        if not assessment:
+            raise ValueError(f"Assessment {assessment_id} not found")
+
+        # CRITICAL: Only Validators can submit for calibration
+        is_validator = validator.validator_area_id is not None
+        if not is_validator:
+            raise PermissionError(
+                "Only Validators can submit for calibration. Assessors should use 'Send for Rework' instead."
+            )
+
+        # Must be in AWAITING_FINAL_VALIDATION status
+        if assessment.status != AssessmentStatus.AWAITING_FINAL_VALIDATION:
+            raise ValueError(
+                "Calibration is only allowed when assessment is in AWAITING_FINAL_VALIDATION status"
+            )
+
+        # Get responses in validator's governance area
+        validator_area_responses = [
+            response
+            for response in assessment.responses
+            if response.indicator and response.indicator.governance_area_id == validator.validator_area_id
+        ]
+
+        if not validator_area_responses:
+            raise ValueError(
+                f"No indicators found in your assigned governance area (ID: {validator.validator_area_id})"
+            )
+
+        # Check calibration count - only 1 calibration allowed (similar to rework limit)
+        if assessment.calibration_count >= 1:
+            raise ValueError(
+                "Calibration has already been used for this assessment. "
+                "Only one calibration is allowed per assessment (similar to the rework limit)."
+            )
+
+        # Validator must have at least one indicator marked as FAIL (Unmet) to submit for calibration
+        # Check for FAIL indicators in validator's area responses
+        failed_responses = [
+            r for r in validator_area_responses
+            if r.validation_status == ValidationStatus.FAIL
+        ]
+
+        if not failed_responses:
+            raise ValueError(
+                "At least one indicator in your governance area must be marked as 'Unmet' "
+                "to submit for calibration. Mark indicators that need corrections as 'Unmet' before calibrating."
+            )
+
+        # Get MOV annotations for reference (these will be shown to BLGU for context)
+        from app.db.models.assessment import MOVAnnotation
+
+        validator_indicator_ids = [r.indicator_id for r in validator_area_responses]
+        validator_mov_file_ids = [
+            mf.id for mf in assessment.mov_files
+            if mf.indicator_id in validator_indicator_ids
+        ]
+
+        # Update assessment status to REWORK (same status, different scope)
+        assessment.status = AssessmentStatus.REWORK
+        assessment.rework_requested_at = datetime.utcnow()
+        assessment.rework_requested_by = validator.id
+        # Note: Do NOT increment rework_count for calibration - it's a separate mechanism
+
+        # Set calibration flags so BLGU knows to submit back to Validator (not Assessor)
+        assessment.is_calibration_rework = True
+        assessment.calibration_validator_id = validator.id
+        assessment.calibration_count += 1  # Increment calibration count (max 1 allowed)
+
+        # Mark ONLY indicators with "Unmet" (FAIL) validation status for rework
+        # These are the indicators the BLGU needs to correct and re-upload
+        calibrated_count = 0
+        for response in validator_area_responses:
+            # Only mark indicators that have FAIL (Unmet) status
+            # Indicators with PASS (Met), CONDITIONAL, or NOT_APPLICABLE status should NOT be calibrated
+            is_unmet = response.validation_status == ValidationStatus.FAIL
+
+            if is_unmet:
+                response.requires_rework = True
+                response.is_completed = False
+
+                # Clear validation_status for this indicator so validator can re-validate after BLGU fixes it
+                response.validation_status = None
+
+                # Clear validator checklist data (assessor_val_ prefix)
+                if response.response_data:
+                    response.response_data = {
+                        k: v
+                        for k, v in response.response_data.items()
+                        if not k.startswith('assessor_val_')
+                    }
+
+                calibrated_count += 1
+                self.logger.info(
+                    f"[CALIBRATION] Marked response {response.id} (indicator {response.indicator_id}) for calibration - was Unmet (FAIL)"
+                )
+
+        db.commit()
+        db.refresh(assessment)
+
+        # Get governance area name for the response
+        governance_area = (
+            db.query(GovernanceArea)
+            .filter(GovernanceArea.id == validator.validator_area_id)
+            .first()
+        )
+        governance_area_name = governance_area.name if governance_area else "Unknown"
+
+        # Trigger notification asynchronously using Celery
+        notification_result = {"success": False, "skipped": True}
+        try:
+            from app.workers.notifications import send_rework_notification
+
+            # Queue the notification task (reuse rework notification)
+            task = send_rework_notification.delay(assessment_id)
+            notification_result = {
+                "success": True,
+                "message": "Calibration notification queued successfully",
+                "task_id": task.id,
+            }
+        except Exception as e:
+            print(f"Failed to queue calibration notification: {e}")
+            notification_result = {"success": False, "error": str(e)}
+
+        return {
+            "success": True,
+            "message": f"Assessment submitted for calibration. {calibrated_count} indicator(s) in {governance_area_name} marked for correction.",
+            "assessment_id": assessment_id,
+            "new_status": assessment.status.value,
+            "governance_area": governance_area_name,
+            "calibrated_indicators_count": calibrated_count,
             "notification_result": notification_result,
         }
 

@@ -20,6 +20,8 @@ interface RightAssessorPanelProps {
   expandedId?: number | null;
   onToggle?: (responseId: number) => void;
   onIndicatorSelect?: (indicatorId: string) => void;
+  // Optional: External checklist state for persistence (if parent wants to track it)
+  checklistState?: Record<string, any>;
   onChecklistChange?: (key: string, value: any) => void;
 }
 
@@ -27,7 +29,7 @@ type AnyRecord = Record<string, any>;
 
 type LocalStatus = 'Pass' | 'Fail' | 'Conditional' | undefined;
 
-export function RightAssessorPanel({ assessment, form, setField, expandedId, onToggle, onIndicatorSelect, onChecklistChange }: RightAssessorPanelProps) {
+export function RightAssessorPanel({ assessment, form, setField, expandedId, onToggle, onIndicatorSelect, checklistState, onChecklistChange }: RightAssessorPanelProps) {
   const data: AnyRecord = (assessment as unknown as AnyRecord) ?? {};
   const core = (data.assessment as AnyRecord) ?? data;
   const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
@@ -119,6 +121,8 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
       // This applies to BOTH:
       // 1. Indicators from first review (requires_rework=false) - load old validation data
       // 2. Indicators during rework (requires_rework=true) - load NEW validation work
+      // NOTE: Form state (useForm) is the source of truth for checklist data during the session
+      // defaultValues only initialize once on mount, subsequent changes are tracked in form state
       checklistItems.forEach((item: any) => {
         const itemKey = `checklist_${r.id}_${item.item_id}`;
 
@@ -234,8 +238,16 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
       }
       const val = v as { status?: LocalStatus; publicComment?: string };
 
-      if (val.status !== form[id]?.status) setField(id, 'status', String(val.status || ''));
-      if (val.publicComment !== form[id]?.publicComment) setField(id, 'publicComment', val.publicComment || '');
+      // IMPORTANT: Only sync status if it's a truthy value to avoid clearing existing state
+      // When val.status is undefined (from form defaultValues), we should NOT overwrite
+      // the parent's form state which may already have a value from user interaction
+      if (val.status && val.status !== form[id]?.status) {
+        setField(id, 'status', val.status);
+      }
+      // For comments, also check for actual value to avoid unnecessary clears
+      if (val.publicComment !== undefined && val.publicComment !== form[id]?.publicComment) {
+        setField(id, 'publicComment', val.publicComment || '');
+      }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watched]);

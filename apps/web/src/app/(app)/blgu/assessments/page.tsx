@@ -200,7 +200,12 @@ export default function BLGUAssessmentsPage() {
       {/* Header (Full Width) */}
       <div className="border-b border-[var(--border)] bg-[var(--card)]">
         <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <AssessmentHeader assessment={assessment} validation={validation} />
+          <AssessmentHeader
+            assessment={assessment}
+            validation={validation}
+            isCalibrationRework={dashboardData?.is_calibration_rework === true}
+            calibrationGovernanceAreaName={(dashboardData as any)?.calibration_governance_area_name}
+          />
         </div>
       </div>
 

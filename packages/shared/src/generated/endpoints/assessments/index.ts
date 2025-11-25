@@ -1371,6 +1371,102 @@ export const usePostAssessmentsAssessmentIdResubmit = <TError = HTTPValidationEr
       return useMutation(mutationOptions );
     }
     /**
+ * Submit assessment for calibration review (Phase 2 Validator workflow).
+
+This endpoint is used when a Validator has sent the assessment back for
+calibration (is_calibration_rework=True). Instead of going to SUBMITTED
+(which routes to Assessor), it goes directly to AWAITING_FINAL_VALIDATION
+(which routes back to the Validator).
+
+The key difference from regular resubmit:
+- Regular resubmit: REWORK -> SUBMITTED -> goes to Assessor
+- Calibration submit: REWORK -> AWAITING_FINAL_VALIDATION -> goes to Validator
+
+Authorization:
+    - BLGU_USER role required
+    - User must own the assessment
+    - Assessment must have is_calibration_rework=True
+
+Business Rules:
+    - Assessment must be in REWORK status
+    - Assessment must have is_calibration_rework=True (set by Validator)
+    - Only indicators marked requires_rework need to be re-uploaded
+    - After submission, is_calibration_rework is cleared
+
+Args:
+    assessment_id: ID of the assessment to submit for calibration review
+    current_user: Current authenticated user
+    db: Database session
+
+Returns:
+    ResubmitAssessmentResponse with success status
+
+Raises:
+    HTTPException 403: User not authorized or not calibration mode
+    HTTPException 400: Invalid status or validation failed
+    HTTPException 404: Assessment not found
+ * @summary Submit For Calibration Review
+ */
+export const postAssessments$AssessmentIdSubmitForCalibration = (
+    assessmentId: number,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<ResubmitAssessmentResponse>(
+      {url: `http://localhost:8000/api/v1/assessments/${assessmentId}/submit-for-calibration`, method: 'POST', signal
+    },
+      options);
+    }
+  
+
+
+export const getPostAssessmentsAssessmentIdSubmitForCalibrationMutationOptions = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessments$AssessmentIdSubmitForCalibration>>, TError,{assessmentId: number}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postAssessments$AssessmentIdSubmitForCalibration>>, TError,{assessmentId: number}, TContext> => {
+
+const mutationKey = ['postAssessmentsAssessmentIdSubmitForCalibration'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAssessments$AssessmentIdSubmitForCalibration>>, {assessmentId: number}> = (props) => {
+          const {assessmentId} = props ?? {};
+
+          return  postAssessments$AssessmentIdSubmitForCalibration(assessmentId,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostAssessmentsAssessmentIdSubmitForCalibrationMutationResult = NonNullable<Awaited<ReturnType<typeof postAssessments$AssessmentIdSubmitForCalibration>>>
+    
+    export type PostAssessmentsAssessmentIdSubmitForCalibrationMutationError = HTTPValidationError
+
+    /**
+ * @summary Submit For Calibration Review
+ */
+export const usePostAssessmentsAssessmentIdSubmitForCalibration = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessments$AssessmentIdSubmitForCalibration>>, TError,{assessmentId: number}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postAssessments$AssessmentIdSubmitForCalibration>>,
+        TError,
+        {assessmentId: number},
+        TContext
+      > => {
+
+      const mutationOptions = getPostAssessmentsAssessmentIdSubmitForCalibrationMutationOptions(options);
+
+      return useMutation(mutationOptions );
+    }
+    /**
  * Get the submission status of an assessment (Story 5.8).
 
 This endpoint provides comprehensive information about an assessment's submission state,

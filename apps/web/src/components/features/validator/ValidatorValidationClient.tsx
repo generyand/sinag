@@ -13,6 +13,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   usePostAssessorAssessmentResponsesResponseIdValidate,
   usePostAssessorAssessmentsAssessmentIdFinalize,
+  usePostAssessorAssessmentsAssessmentIdCalibrate,
 } from '@vantage/shared';
 import { toast } from 'sonner';
 
@@ -27,11 +28,14 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const qc = useQueryClient();
   const validateMut = usePostAssessorAssessmentResponsesResponseIdValidate();
   const finalizeMut = usePostAssessorAssessmentsAssessmentIdFinalize();
+  const calibrateMut = usePostAssessorAssessmentsAssessmentIdCalibrate();
 
   // All hooks must be called before any conditional returns
   const [selectedIndicatorId, setSelectedIndicatorId] = useState<string | null>(null);
   const [form, setForm] = useState<Record<number, { status?: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string }>>({});
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  // Store checklist state externally to persist across indicator navigation
+  const [checklistState, setChecklistState] = useState<Record<string, any>>({});
 
   // Set initial expandedId when data loads
   useEffect(() => {
@@ -77,6 +81,8 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     ?? '') as string;
   const cycleYear: string = String(core?.cycle_year ?? core?.year ?? '');
   const statusText: string = core?.status ?? core?.assessment_status ?? '';
+  const calibrationCount: number = (core?.calibration_count ?? 0) as number;
+  const calibrationAlreadyUsed = calibrationCount >= 1;
 
   // Transform to match BLGU assessment structure for TreeNavigator
   const transformedAssessment = {
@@ -211,6 +217,46 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     }
   };
 
+  const onCalibrate = async () => {
+    // Show immediate feedback that the process started
+    toast.loading('Submitting for calibration...', { id: 'calibrate-toast' });
+
+    try {
+      // Save any pending changes first
+      console.log('Saving draft before calibration...');
+      await onSaveDraft();
+
+      // Then submit for calibration
+      console.log('Submitting for calibration...');
+      const result = await calibrateMut.mutateAsync({ assessmentId }) as {
+        message?: string;
+        governance_area?: string;
+        calibrated_indicators_count?: number;
+      };
+      await qc.invalidateQueries();
+
+      // Dismiss loading toast and show success
+      toast.dismiss('calibrate-toast');
+
+      const message = result?.message ||
+        `Assessment submitted for calibration. ${result?.calibrated_indicators_count || 0} indicator(s) in ${result?.governance_area || 'your area'} marked for correction.`;
+
+      toast.success(`✅ ${message}`, {
+        duration: 5000,
+      });
+    } catch (error: any) {
+      console.error('Calibration error:', error);
+
+      // Dismiss loading toast and show error
+      toast.dismiss('calibrate-toast');
+
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to submit for calibration';
+      toast.error(`Calibration failed: ${errorMessage}`, {
+        duration: 6000,
+      });
+    }
+  };
+
   const handleIndicatorSelect = (indicatorId: string) => {
     const responseId = parseInt(indicatorId, 10);
     setExpandedId(responseId);
@@ -294,6 +340,17 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                       },
                     }));
                   }}
+                  onIndicatorSelect={(indicatorId) => {
+                    // Sync the tree navigator selection when navigating via Previous/Next buttons
+                    setSelectedIndicatorId(indicatorId);
+                  }}
+                  checklistState={checklistState}
+                  onChecklistChange={(key, value) => {
+                    setChecklistState((prev) => ({
+                      ...prev,
+                      [key]: value,
+                    }));
+                  }}
                 />
               </div>
             </div>
@@ -333,6 +390,29 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                 </>
               ) : (
                 'Save as Draft'
+              )}
+            </Button>
+            <Button
+              size="default"
+              type="button"
+              onClick={onCalibrate}
+              disabled={calibrateMut.isPending || calibrationAlreadyUsed}
+              className="w-full sm:w-auto text-white hover:opacity-90"
+              style={{ background: calibrationAlreadyUsed ? 'var(--muted)' : 'var(--cityscape-yellow)' }}
+              title={calibrationAlreadyUsed ? 'Calibration has already been used for this assessment (max 1 allowed)' : undefined}
+            >
+              {calibrateMut.isPending ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Submitting...
+                </>
+              ) : calibrationAlreadyUsed ? (
+                'Calibration Used'
+              ) : (
+                'Submit for Calibration'
               )}
             </Button>
             <Button

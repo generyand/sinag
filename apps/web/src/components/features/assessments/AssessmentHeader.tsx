@@ -8,7 +8,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useSubmitAssessment } from "@/hooks/useAssessment";
-import { usePostAssessmentsAssessmentIdResubmit } from "@vantage/shared";
+import {
+  usePostAssessmentsAssessmentIdResubmit,
+  usePostAssessmentsAssessmentIdSubmitForCalibration,
+} from "@vantage/shared";
 import { Assessment, AssessmentValidation } from "@/types/assessment";
 import {
   AlertCircle,
@@ -23,11 +26,15 @@ import {
 interface AssessmentHeaderProps {
   assessment: Assessment;
   validation: AssessmentValidation;
+  isCalibrationRework?: boolean;
+  calibrationGovernanceAreaName?: string;
 }
 
 export function AssessmentHeader({
   assessment,
   validation,
+  isCalibrationRework = false,
+  calibrationGovernanceAreaName,
 }: AssessmentHeaderProps) {
   const submitMutation = useSubmitAssessment();
 
@@ -41,6 +48,20 @@ export function AssessmentHeader({
       onError: (error: any) => {
         const errorMessage = error?.response?.data?.detail || error?.message || "Failed to resubmit";
         window.alert(`Resubmission failed: ${errorMessage}`);
+      },
+    },
+  });
+
+  // Use calibration-specific endpoint when submitting after Validator calibration
+  const calibrationMutation = usePostAssessmentsAssessmentIdSubmitForCalibration({
+    mutation: {
+      onSuccess: () => {
+        window.alert("Calibration submitted successfully. Redirecting to dashboard.");
+        window.location.href = "/blgu/dashboard";
+      },
+      onError: (error: any) => {
+        const errorMessage = error?.response?.data?.detail || error?.message || "Failed to submit calibration";
+        window.alert(`Calibration submission failed: ${errorMessage}`);
       },
     },
   });
@@ -69,7 +90,7 @@ export function AssessmentHeader({
         return "In Progress";
       case "rework":
       case "needs-rework":
-        return "Rework in Progress";
+        return isCalibrationRework ? "Calibration in Progress" : "Rework in Progress";
       case "submitted-for-review":
         return "Submitted for Review";
       case "validated":
@@ -168,6 +189,24 @@ export function AssessmentHeader({
       <div className="absolute bottom-0 left-0 w-32 h-32 bg-[var(--cityscape-yellow)]/3 rounded-full translate-y-16 -translate-x-16"></div>
 
       <div className="relative z-10">
+        {/* Calibration Notice Banner */}
+        {isCalibrationRework && calibrationGovernanceAreaName && (
+          <div className="mb-6 p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-sm">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-orange-800 dark:text-orange-300">
+                  Calibration Required - {calibrationGovernanceAreaName}
+                </h3>
+                <p className="text-sm text-orange-700 dark:text-orange-400 mt-1">
+                  The Validator has requested calibration for indicators in <strong>{calibrationGovernanceAreaName}</strong>.
+                  Please review and update the affected indicators, then submit for calibration review.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header Section */}
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-8">
           {/* Left side - Title and Status */}
@@ -237,10 +276,17 @@ export function AssessmentHeader({
                     <Button
                       onClick={() => {
                         if (isReworkStatus) {
-                          // Use resubmit endpoint for REWORK status
-                          resubmitMutation.mutate({
-                            assessmentId: parseInt(assessment.id),
-                          });
+                          if (isCalibrationRework) {
+                            // Use calibration endpoint for Validator calibration
+                            calibrationMutation.mutate({
+                              assessmentId: parseInt(assessment.id),
+                            });
+                          } else {
+                            // Use resubmit endpoint for regular REWORK status
+                            resubmitMutation.mutate({
+                              assessmentId: parseInt(assessment.id),
+                            });
+                          }
                         } else {
                           // Use regular submit endpoint for DRAFT
                           submitMutation.mutate(undefined, {
@@ -269,19 +315,24 @@ export function AssessmentHeader({
                       disabled={
                         !validation.canSubmit ||
                         submitMutation.isPending ||
-                        resubmitMutation.isPending
+                        resubmitMutation.isPending ||
+                        calibrationMutation.isPending
                       }
                       className="h-12 px-8 text-sm font-semibold bg-[var(--cityscape-yellow)] hover:bg-[var(--cityscape-yellow-dark)] text-[var(--cityscape-accent-foreground)] rounded-sm shadow-lg hover:shadow-xl transition-all duration-200"
                     >
-                      {submitMutation.isPending || resubmitMutation.isPending ? (
+                      {submitMutation.isPending || resubmitMutation.isPending || calibrationMutation.isPending ? (
                         <>
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                          {isReworkStatus ? "Resubmitting..." : "Submitting..."}
+                          {isReworkStatus
+                            ? (isCalibrationRework ? "Submitting for Calibration..." : "Resubmitting...")
+                            : "Submitting..."}
                         </>
                       ) : (
                         <>
                           <Send className="h-4 w-4 mr-2" />
-                          {isReworkStatus ? "Resubmit for Review" : "Submit for Review"}
+                          {isReworkStatus
+                            ? (isCalibrationRework ? "Submit for Calibration" : "Resubmit for Review")
+                            : "Submit for Review"}
                         </>
                       )}
                     </Button>

@@ -157,6 +157,14 @@ export interface BLGUDashboardResponse {
   rework_requested_at?: BLGUDashboardResponseReworkRequestedAt;
   /** User ID of assessor who requested rework */
   rework_requested_by?: BLGUDashboardResponseReworkRequestedBy;
+  /** If True, BLGU should submit back to Validator (not Assessor). Set when Validator calibrates the assessment. */
+  is_calibration_rework?: boolean;
+  /** ID of the Validator who requested calibration (null if regular rework) */
+  calibration_validator_id?: BLGUDashboardResponseCalibrationValidatorId;
+  /** ID of the governance area that was calibrated (null if regular rework) */
+  calibration_governance_area_id?: BLGUDashboardResponseCalibrationGovernanceAreaId;
+  /** Name of the governance area that was calibrated (null if regular rework) */
+  calibration_governance_area_name?: BLGUDashboardResponseCalibrationGovernanceAreaName;
   /** Total number of indicators in the assessment */
   total_indicators: number;
   /** Number of indicators with all required fields filled */
@@ -172,6 +180,24 @@ export interface BLGUDashboardResponse {
   /** MOV annotations grouped by indicator ID - shows which MOVs assessor highlighted/commented on (null if no annotations) */
   mov_annotations_by_indicator?: BLGUDashboardResponseMovAnnotationsByIndicator;
 }
+
+
+/**
+ * BLGUDashboardResponseCalibrationGovernanceAreaId
+ */
+export type BLGUDashboardResponseCalibrationGovernanceAreaId = number | null;
+
+
+/**
+ * BLGUDashboardResponseCalibrationGovernanceAreaName
+ */
+export type BLGUDashboardResponseCalibrationGovernanceAreaName = string | null;
+
+
+/**
+ * BLGUDashboardResponseCalibrationValidatorId
+ */
+export type BLGUDashboardResponseCalibrationValidatorId = number | null;
 
 
 /**

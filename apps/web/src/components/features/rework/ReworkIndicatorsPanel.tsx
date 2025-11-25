@@ -31,9 +31,14 @@ export function ReworkIndicatorsPanel({
   const router = useRouter();
   const [expandedAreas, setExpandedAreas] = useState<Set<number>>(new Set());
 
-  // Compute failed indicators based on presence of assessor feedback (comments OR annotations)
-  // CORRECT LOGIC: If assessor left feedback, indicator needs rework
-  // If no feedback, indicator is good (MOV checklist automatically determines pass/fail)
+  // Check if this is a calibration rework (from Validator, not Assessor)
+  const isCalibration = dashboardData.is_calibration_rework === true;
+  const calibrationAreaId = (dashboardData as any).calibration_governance_area_id;
+  const calibrationAreaName = (dashboardData as any).calibration_governance_area_name;
+
+  // Compute failed indicators based on calibration mode or assessor feedback
+  // For CALIBRATION: Show incomplete indicators in the calibrated governance area
+  // For REWORK: Show indicators with assessor feedback (comments OR annotations)
   const failedIndicators = useMemo<FailedIndicator[]>(() => {
     const indicatorMap = new Map<number, FailedIndicator>();
 
@@ -52,42 +57,76 @@ export function ReworkIndicatorsPanel({
       return null;
     };
 
-    // Add indicators from rework comments
-    dashboardData.rework_comments?.forEach((comment: any) => {
-      if (!indicatorMap.has(comment.indicator_id)) {
-        const indicator = findIndicator(comment.indicator_id);
+    // For CALIBRATION: Get all incomplete indicators in the calibrated governance area
+    if (isCalibration && calibrationAreaId) {
+      // Find the calibrated governance area
+      const calibratedArea = dashboardData.governance_areas.find(
+        (area) => area.governance_area_id === calibrationAreaId
+      );
 
-        if (indicator) {
-          indicatorMap.set(comment.indicator_id, {
-            indicator_id: comment.indicator_id,
-            indicator_name: comment.indicator_name,
-            governance_area_id: indicator.governance_area_id,
-            governance_area_name: indicator.governance_area_name,
-            is_complete: indicator.is_complete,
-            comments: [],
-            annotations: [],
-            total_feedback_items: 0,
-            has_mov_issues: false,
-            has_field_issues: false,
-            route_path: `/blgu/assessments?indicator=${comment.indicator_id}`,
-          });
-        }
+      if (calibratedArea) {
+        // Add all INCOMPLETE indicators from this area
+        calibratedArea.indicators.forEach((indicator: any) => {
+          // Only show indicators that are NOT complete (need to be fixed)
+          if (!indicator.is_complete) {
+            indicatorMap.set(indicator.indicator_id, {
+              indicator_id: indicator.indicator_id,
+              indicator_name: indicator.indicator_name,
+              governance_area_id: calibratedArea.governance_area_id,
+              governance_area_name: calibratedArea.governance_area_name,
+              is_complete: indicator.is_complete,
+              comments: [],
+              annotations: [],
+              total_feedback_items: 0,
+              has_mov_issues: false,
+              has_field_issues: false,
+              route_path: `/blgu/assessments?indicator=${indicator.indicator_id}`,
+            });
+          }
+        });
       }
-      indicatorMap.get(comment.indicator_id)?.comments.push(comment);
-    });
 
-    // Add indicators from MOV annotations
-    Object.entries(dashboardData.mov_annotations_by_indicator || {}).forEach(
-      ([indicatorIdStr, annotations]: [string, any]) => {
-        const indicatorId = Number(indicatorIdStr);
-
-        if (!indicatorMap.has(indicatorId) && annotations.length > 0) {
+      // Also add any annotations that are in the calibrated area
+      Object.entries(dashboardData.mov_annotations_by_indicator || {}).forEach(
+        ([indicatorIdStr, annotations]: [string, any]) => {
+          const indicatorId = Number(indicatorIdStr);
           const indicator = findIndicator(indicatorId);
 
+          // Only include if it's in the calibrated area
+          if (indicator && indicator.governance_area_id === calibrationAreaId) {
+            if (!indicatorMap.has(indicatorId)) {
+              indicatorMap.set(indicatorId, {
+                indicator_id: indicatorId,
+                indicator_name: annotations[0]?.indicator_name || indicator.indicator_name,
+                governance_area_id: indicator.governance_area_id,
+                governance_area_name: indicator.governance_area_name,
+                is_complete: indicator.is_complete,
+                comments: [],
+                annotations: [],
+                total_feedback_items: 0,
+                has_mov_issues: false,
+                has_field_issues: false,
+                route_path: `/blgu/assessments?indicator=${indicatorId}`,
+              });
+            }
+            const failed = indicatorMap.get(indicatorId);
+            if (failed) {
+              failed.annotations.push(...annotations);
+            }
+          }
+        }
+      );
+    } else {
+      // For REWORK: Use the original logic (feedback-based)
+      // Add indicators from rework comments
+      dashboardData.rework_comments?.forEach((comment: any) => {
+        if (!indicatorMap.has(comment.indicator_id)) {
+          const indicator = findIndicator(comment.indicator_id);
+
           if (indicator) {
-            indicatorMap.set(indicatorId, {
-              indicator_id: indicatorId,
-              indicator_name: annotations[0].indicator_name,
+            indicatorMap.set(comment.indicator_id, {
+              indicator_id: comment.indicator_id,
+              indicator_name: comment.indicator_name,
               governance_area_id: indicator.governance_area_id,
               governance_area_name: indicator.governance_area_name,
               is_complete: indicator.is_complete,
@@ -96,17 +135,45 @@ export function ReworkIndicatorsPanel({
               total_feedback_items: 0,
               has_mov_issues: false,
               has_field_issues: false,
-              route_path: `/blgu/assessments?indicator=${indicatorId}`,
+              route_path: `/blgu/assessments?indicator=${comment.indicator_id}`,
             });
           }
         }
+        indicatorMap.get(comment.indicator_id)?.comments.push(comment);
+      });
 
-        const failed = indicatorMap.get(indicatorId);
-        if (failed) {
-          failed.annotations.push(...annotations);
+      // Add indicators from MOV annotations
+      Object.entries(dashboardData.mov_annotations_by_indicator || {}).forEach(
+        ([indicatorIdStr, annotations]: [string, any]) => {
+          const indicatorId = Number(indicatorIdStr);
+
+          if (!indicatorMap.has(indicatorId) && annotations.length > 0) {
+            const indicator = findIndicator(indicatorId);
+
+            if (indicator) {
+              indicatorMap.set(indicatorId, {
+                indicator_id: indicatorId,
+                indicator_name: annotations[0].indicator_name,
+                governance_area_id: indicator.governance_area_id,
+                governance_area_name: indicator.governance_area_name,
+                is_complete: indicator.is_complete,
+                comments: [],
+                annotations: [],
+                total_feedback_items: 0,
+                has_mov_issues: false,
+                has_field_issues: false,
+                route_path: `/blgu/assessments?indicator=${indicatorId}`,
+              });
+            }
+          }
+
+          const failed = indicatorMap.get(indicatorId);
+          if (failed) {
+            failed.annotations.push(...annotations);
+          }
         }
-      }
-    );
+      );
+    }
 
     // Compute derived metadata
     return Array.from(indicatorMap.values()).map((failed) => ({
@@ -115,7 +182,7 @@ export function ReworkIndicatorsPanel({
       has_mov_issues: failed.annotations.length > 0,
       has_field_issues: failed.comments.length > 0,
     }));
-  }, [dashboardData, assessmentId]);
+  }, [dashboardData, assessmentId, isCalibration, calibrationAreaId]);
 
   // Compute progress
   const progress = useMemo(() => {
@@ -166,10 +233,17 @@ export function ReworkIndicatorsPanel({
             <AlertCircle className="w-6 h-6 text-orange-600 flex-shrink-0" />
             <div>
               <h2 className="text-xl font-semibold text-[var(--foreground)]">
-                Indicators Requiring Rework
+                {isCalibration ? "Indicators Requiring Calibration" : "Indicators Requiring Rework"}
               </h2>
               <p className="text-sm text-[var(--text-secondary)] mt-1">
-                {progress.remaining} of {progress.total} indicators still need attention
+                {isCalibration && calibrationAreaName ? (
+                  <>
+                    <span className="font-medium text-orange-700 dark:text-orange-400">{calibrationAreaName}</span>
+                    {" - "}{progress.remaining} of {progress.total} indicators still need attention
+                  </>
+                ) : (
+                  <>{progress.remaining} of {progress.total} indicators still need attention</>
+                )}
               </p>
             </div>
           </div>
