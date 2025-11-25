@@ -36,21 +36,36 @@ export default function BLGUDashboardPage() {
   const { user } = useAuthStore();
 
   // First, fetch the user's assessment to get the correct assessment ID
+  // Enable refetchOnWindowFocus to ensure fresh data when user returns to tab
   const {
     data: myAssessment,
     isLoading: isLoadingAssessment,
     error: assessmentError,
-  } = useGetAssessmentsMyAssessment();
+  } = useGetAssessmentsMyAssessment({
+    query: {
+      refetchOnWindowFocus: true,
+      refetchOnMount: true,
+      staleTime: 0, // Always treat as stale to ensure fresh data
+    },
+  });
 
   const assessmentId = (myAssessment?.assessment as any)?.id;
 
   // Fetch dashboard data using generated hook (only if we have an assessment ID)
+  // Enable refetchOnWindowFocus to automatically fetch updated status when BLGU returns to dashboard
   const {
     data: dashboardData,
     isLoading: isLoadingDashboard,
     error: dashboardError,
     refetch,
-  } = useGetBlguDashboardAssessmentId(assessmentId!);
+  } = useGetBlguDashboardAssessmentId(assessmentId!, {
+    query: {
+      enabled: !!assessmentId,
+      refetchOnWindowFocus: true,
+      refetchOnMount: true,
+      staleTime: 0, // Always treat as stale to ensure fresh data (important for rework status updates)
+    },
+  });
 
   const isLoading = isLoadingAssessment || isLoadingDashboard;
   const error = assessmentError || dashboardError;
@@ -132,14 +147,20 @@ export default function BLGUDashboardPage() {
         )}
 
         {/* Completion Metrics Section */}
-        <div className="mb-8">
-          <CompletionMetricsCard
-            totalIndicators={dashboardData.total_indicators}
-            completedIndicators={dashboardData.completed_indicators}
-            incompleteIndicators={dashboardData.incomplete_indicators}
-            completionPercentage={dashboardData.completion_percentage}
-          />
-        </div>
+        {/* Only show completion metrics when BLGU can edit (DRAFT, REWORK, NEEDS_REWORK) */}
+        {/* Hide when assessment is under review (SUBMITTED, IN_REVIEW, AWAITING_FINAL_VALIDATION, COMPLETED) */}
+        {(dashboardData.status === "DRAFT" ||
+          dashboardData.status === "REWORK" ||
+          dashboardData.status === "NEEDS_REWORK") && (
+          <div className="mb-8">
+            <CompletionMetricsCard
+              totalIndicators={dashboardData.total_indicators}
+              completedIndicators={dashboardData.completed_indicators}
+              incompleteIndicators={dashboardData.incomplete_indicators}
+              completionPercentage={dashboardData.completion_percentage}
+            />
+          </div>
+        )}
 
         {/* Epic 5.0: Submission Button */}
         <div className="mb-8 flex gap-4">

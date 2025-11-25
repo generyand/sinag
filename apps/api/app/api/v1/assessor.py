@@ -277,19 +277,27 @@ async def finalize_assessment(
 
     The assessor must have permission to review assessments in their governance area.
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"[FINALIZE ROUTE] Starting finalize for assessment {assessment_id}, assessor {current_assessor.id}")
+
     try:
         result = assessor_service.finalize_assessment(
             db=db, assessment_id=assessment_id, assessor=current_assessor
         )
+        logger.info(f"[FINALIZE ROUTE] Success for assessment {assessment_id}")
         return result
     except ValueError as e:
         from fastapi import HTTPException
-
+        logger.error(f"[FINALIZE ROUTE] ValueError for assessment {assessment_id}: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
     except PermissionError as e:
         from fastapi import HTTPException
-
+        logger.error(f"[FINALIZE ROUTE] PermissionError for assessment {assessment_id}: {str(e)}")
         raise HTTPException(status_code=403, detail=str(e))
+    except Exception as e:
+        logger.error(f"[FINALIZE ROUTE] Unexpected error for assessment {assessment_id}: {type(e).__name__}: {str(e)}", exc_info=True)
+        raise
 
 
 @router.post(

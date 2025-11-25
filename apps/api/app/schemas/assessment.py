@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from app.db.enums import AssessmentStatus, ComplianceStatus, MOVStatus
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 # ============================================================================
 # Indicator Schemas
@@ -480,6 +480,13 @@ class MOVFileResponse(BaseModel):
     uploaded_at: datetime
     deleted_at: Optional[datetime] = None
     field_id: Optional[str] = None
+
+    @field_serializer('uploaded_at', 'deleted_at')
+    def serialize_datetime(self, dt: Optional[datetime], _info) -> Optional[str]:
+        """Serialize datetime to ISO format with Z suffix for UTC."""
+        if dt is None:
+            return None
+        return dt.isoformat() + 'Z'
 
 
 

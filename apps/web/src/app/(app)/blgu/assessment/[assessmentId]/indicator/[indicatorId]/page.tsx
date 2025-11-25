@@ -60,9 +60,9 @@ export default function IndicatorFormPage() {
     } as any,
   });
 
-  // Determine if assessment is locked (SUBMITTED, IN_REVIEW, COMPLETED)
+  // Determine if assessment is locked (SUBMITTED, IN_REVIEW, AWAITING_FINAL_VALIDATION, COMPLETED)
   const isLocked = dashboardData?.status &&
-    ["SUBMITTED", "IN_REVIEW", "COMPLETED"].includes(dashboardData.status);
+    ["SUBMITTED", "IN_REVIEW", "AWAITING_FINAL_VALIDATION", "COMPLETED", "SUBMITTED_FOR_REVIEW"].includes(dashboardData.status);
 
   // Epic 5.0: Rework workflow context
   const reworkContext = useReworkContext(

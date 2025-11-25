@@ -75,16 +75,23 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         console.log(`[useEffect] Processing response ${responseId}:`, {
           requires_rework: resp.requires_rework,
           validation_status: resp.validation_status,
-          has_response_data: !!resp.response_data
+          has_response_data: !!resp.response_data,
+          user_role: userRole
         });
 
-        // ALWAYS load assessor validation data (assessor_val_ prefix)
-        // This includes:
-        // 1. Old validation data from first review (for indicators NOT requiring rework)
-        // 2. NEW validation work during rework cycle (for indicators requiring rework)
-        //
-        // We should NOT skip loading for requires_rework indicators because the assessor
-        // needs to see their progress during the rework review cycle.
+        // CRITICAL: Skip loading checklist data for indicators requiring rework (ASSESSOR only)
+        // - ASSESSOR: These indicators need fresh/clean checklists for assessor to review
+        // - VALIDATOR: Validators need to see the assessor's checklist work (don't skip)
+        if (resp.requires_rework && !isValidator) {
+          console.log(`[useEffect] ⚠️  Skipping checklist data load for response ${responseId} (requires_rework=true, user is ASSESSOR)`);
+          return; // Don't load any checklist data for this indicator
+        }
+
+        if (resp.requires_rework && isValidator) {
+          console.log(`[useEffect] ✓ Loading checklist data for response ${responseId} (requires_rework=true, user is VALIDATOR)`);
+        }
+
+        // For indicators that passed (requires_rework=false), load their old checklist data
         const responseData = resp.response_data || {};
 
         // Find all assessor_val_ prefixed fields and convert them to checklist format
@@ -139,9 +146,13 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
   // Transform to match BLGU assessment structure for TreeNavigator
   // Memoize this so it recalculates when checklistData or form changes
-  const transformedAssessment = useMemo(() => ({
-    id: assessmentId,
-    completedIndicators: responses.filter((r: any) => {
+  const transformedAssessment = useMemo(() => {
+    // Check if this is a rework scenario
+    const hasReworkCycle = responses.some((r: any) => r.requires_rework === true);
+
+    return {
+      id: assessmentId,
+      completedIndicators: responses.filter((r: any) => {
       const localStatus = form[r.id]?.status;
 
       // For validators: Check if status is Pass
@@ -152,21 +163,30 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         return true;
       }
 
-      // For assessors: Use EXACT same logic as bottom counter (line 333-345)
-      // Has comments in form state
+      // Check if assessor has done work on this indicator
       const publicComment = form[r.id]?.publicComment;
       const hasComments = publicComment ? publicComment.trim().length > 0 : false;
 
-      // Has checklist data in checklistData state
       const hasChecklistData = Object.keys(checklistData).some(key => {
         if (!key.startsWith(`checklist_${r.id}_`)) return false;
         const value = checklistData[key];
         return value === true || (typeof value === 'string' && value.trim().length > 0);
       });
 
+      // REWORK SCENARIO: If this assessment has rework indicators
+      if (hasReworkCycle) {
+        // Indicators with requires_rework=false are already completed (passed in first review)
+        if (!r.requires_rework) {
+          return true;
+        }
+        // Indicators with requires_rework=true need assessor work
+        return hasComments || hasChecklistData;
+      }
+
+      // FRESH ASSESSMENT: Count as completed only if assessor has done work
       return hasComments || hasChecklistData;
     }).length,
-    totalIndicators: responses.length,
+    totalIndicators: responses.length, // ALWAYS 86 total indicators
     governanceAreas: responses.reduce((acc: any[], resp: any) => {
       const indicator = resp.indicator || {};
       const area = indicator.governance_area || {};
@@ -273,7 +293,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       area.indicators.sort((a: any, b: any) => a.indicator_id - b.indicator_id);
       return area;
     }),
-  }), [responses, checklistData, form, dataUpdatedAt]); // Add dataUpdatedAt to force recalc when data refetches
+    };
+  }, [responses, checklistData, form, dataUpdatedAt]); // Add dataUpdatedAt to force recalc when data refetches
 
   // Conditional returns AFTER all hooks to maintain hook order
   if (isLoading) {
