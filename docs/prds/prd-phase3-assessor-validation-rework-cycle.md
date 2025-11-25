@@ -4,7 +4,7 @@
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 1.1 | November 12, 2025 | VANTAGE Development Team | **Phase 2 PRD Alignment**: Aligned with Indicator Builder Specification v1.4<br/>- Enhanced [Section 4.2 (Validation Module)](#42-validation-module) requirement 2.4 with grace period validation and "Considered" status reference<br/>- Added [Section 4.2 (Validation Module)](#42-validation-module) requirement 2.10: Comprehensive MOV Checklist Validation Interface documentation with 9 checklist item types, validation status table, BBI functionality determination, and UI/UX requirements<br/>- Added Indicator Builder Specification v1.4 reference to [Section 7 (Technical Considerations)](#7-technical-considerations) |
+| 1.1 | November 12, 2025 | SINAG Development Team | **Phase 2 PRD Alignment**: Aligned with Indicator Builder Specification v1.4<br/>- Enhanced [Section 4.2 (Validation Module)](#42-validation-module) requirement 2.4 with grace period validation and "Considered" status reference<br/>- Added [Section 4.2 (Validation Module)](#42-validation-module) requirement 2.10: Comprehensive MOV Checklist Validation Interface documentation with 9 checklist item types, validation status table, BBI functionality determination, and UI/UX requirements<br/>- Added Indicator Builder Specification v1.4 reference to [Section 7 (Technical Considerations)](#7-technical-considerations) |
 | 1.0 | Initial | - | Original PRD for Assessor Validation & Rework Cycle |
 
 ---
@@ -13,7 +13,7 @@
 
 **Project Title:** SGLGB Analytics System: Strategic Insights Nurturing Assessments and Governance (SINAG) To Assess And Assist Barangays utilizing a Large Language Model and Classification Algorithm
 
-This document outlines the product requirements for **Epic 3: The Assessor Validation & Rework Cycle**. This feature set builds the complete toolkit for the DILG Area Assessors, who are the primary validators within the SINAG platform (VANTAGE codebase).
+This document outlines the product requirements for **Epic 3: The Assessor Validation & Rework Cycle**. This feature set builds the complete toolkit for the DILG Area Assessors, who are the primary validators within the SINAG platform.
 
 This epic covers two critical phases of the assessor's workflow:
 1.  **The Pre-Assessment Review:** The initial digital review of a BLGU's submission, culminating in a single, consolidated rework request if deficiencies are found.
@@ -26,7 +26,7 @@ The goal is to provide assessors with a focused, efficient, and powerful interfa
 *   **Focused Workspace:** To provide each Area Assessor with a dashboard that is strictly firewalled to their specific governance area, preventing information overload and unauthorized access.
 *   **Efficient Validation:** To create a UI that allows for rapid review of BLGU submissions and their corresponding MOVs against the official Technical Notes, supported by in-app document previews.
 *   **Structured Feedback:** To formalize the "one-time, big-time" rework process by enabling assessors to compile a single, comprehensive list of all findings.
-*   **Support for Hybrid Workflow:** To equip the assessor with the tools needed to use VANTAGE as the official system of record during the in-person Table Validation, including the ability to upload last-minute documents.
+*   **Support for Hybrid Workflow:** To equip the assessor with the tools needed to use SINAG as the official system of record during the in-person Table Validation, including the ability to upload last-minute documents.
 
 ### 3. User Stories
 

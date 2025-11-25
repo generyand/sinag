@@ -4,7 +4,7 @@
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 1.1 | November 12, 2025 | VANTAGE Development Team | **Phase 5 PRD Alignment**: Aligned with Indicator Builder Specification v1.4<br/>- Enhanced analytics requirements to include "Considered" validation status reporting<br/>- Updated compliance status filtering to recognize Passed/Considered/Conditional as successful<br/>- Added BBI functionality tracking to [Section 4.1 (MLGOO-DILG Dashboard)](#41-mlgoo-dilg-dashboard) KPIs<br/>- Added Indicator Builder Specification v1.4 reference to [Section 7 (Technical Considerations)](#7-technical-considerations)<br/>- Clarified validation status types for reporting and aggregation purposes |
+| 1.1 | November 12, 2025 | SINAG Development Team | **Phase 5 PRD Alignment**: Aligned with Indicator Builder Specification v1.4<br/>- Enhanced analytics requirements to include "Considered" validation status reporting<br/>- Updated compliance status filtering to recognize Passed/Considered/Conditional as successful<br/>- Added BBI functionality tracking to [Section 4.1 (MLGOO-DILG Dashboard)](#41-mlgoo-dilg-dashboard) KPIs<br/>- Added Indicator Builder Specification v1.4 reference to [Section 7 (Technical Considerations)](#7-technical-considerations)<br/>- Clarified validation status types for reporting and aggregation purposes |
 | 1.0 | Initial | - | Original PRD for High-Level Analytics & Reporting |
 
 ---

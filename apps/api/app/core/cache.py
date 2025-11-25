@@ -21,7 +21,7 @@ CACHE_TTL_DASHBOARD = 1800           # 30 minutes for dashboard data
 
 class RedisCache:
     """
-    Redis cache manager for VANTAGE application.
+    Redis cache manager for SINAG application.
 
     Provides caching functionality with automatic serialization/deserialization,
     TTL management, and error handling.

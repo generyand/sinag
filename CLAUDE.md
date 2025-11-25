@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-VANTAGE is a governance assessment platform for the DILG's Seal of Good Local Governance for Barangays (SGLGB). It's a monorepo built with Turborepo, featuring a FastAPI backend and Next.js frontend with end-to-end type safety.
+SINAG is a governance assessment platform for the DILG's Seal of Good Local Governance for Barangays (SGLGB). It's a monorepo built with Turborepo, featuring a FastAPI backend and Next.js frontend with end-to-end type safety.
 
 ### Key Architecture Principles
 
@@ -186,45 +186,77 @@ vantage/
 │   │   │   └── versions/         # Migration files
 │   │   ├── app/
 │   │   │   ├── api/v1/           # API endpoints (routers)
-│   │   │   │   ├── analytics.py
-│   │   │   │   ├── assessments.py
-│   │   │   │   ├── assessor.py
-│   │   │   │   ├── auth.py
-│   │   │   │   ├── lookups.py
-│   │   │   │   ├── system.py
-│   │   │   │   └── users.py
+│   │   │   │   ├── admin.py              # Admin features (audit logs, cycles)
+│   │   │   │   ├── analytics.py          # Internal analytics
+│   │   │   │   ├── assessments.py        # Assessment CRUD
+│   │   │   │   ├── assessor.py           # Assessor validation workflow
+│   │   │   │   ├── auth.py               # Authentication
+│   │   │   │   ├── bbis.py               # BBI management
+│   │   │   │   ├── blgu_dashboard.py     # BLGU dashboard
+│   │   │   │   ├── external_analytics.py # External stakeholder analytics
+│   │   │   │   ├── indicators.py         # Indicator management
+│   │   │   │   ├── lookups.py            # Lookup data
+│   │   │   │   ├── movs.py               # MOV file management
+│   │   │   │   ├── system.py             # System health
+│   │   │   │   └── users.py              # User management
 │   │   │   ├── core/             # Config & security
 │   │   │   │   ├── celery_app.py
 │   │   │   │   ├── config.py
 │   │   │   │   └── security.py
 │   │   │   ├── db/
 │   │   │   │   ├── models/       # SQLAlchemy ORM models
-│   │   │   │   │   ├── assessment.py
-│   │   │   │   │   ├── auth.py
-│   │   │   │   │   ├── barangay.py
-│   │   │   │   │   ├── governance_area.py
-│   │   │   │   │   ├── system.py
-│   │   │   │   │   └── user.py
+│   │   │   │   │   ├── admin.py          # AuditLog, AssessmentCycle, DeadlineOverride
+│   │   │   │   │   ├── assessment.py     # Assessment, AssessmentResponse, MOV, MOVFile, FeedbackComment, MOVAnnotation
+│   │   │   │   │   ├── auth.py           # Auth-related models
+│   │   │   │   │   ├── barangay.py       # Barangay
+│   │   │   │   │   ├── bbi.py            # BBI, BBIResult
+│   │   │   │   │   ├── governance_area.py # GovernanceArea, Indicator, IndicatorHistory, IndicatorDraft, ChecklistItem
+│   │   │   │   │   ├── system.py         # Reserved for future system tables
+│   │   │   │   │   └── user.py           # User
 │   │   │   │   ├── base.py
-│   │   │   │   └── enums.py
+│   │   │   │   └── enums.py              # UserRole, AssessmentStatus, ValidationStatus, etc.
 │   │   │   ├── schemas/          # Pydantic models
-│   │   │   │   ├── analytics.py
-│   │   │   │   ├── assessment.py
-│   │   │   │   ├── assessor.py
-│   │   │   │   ├── lookups.py
-│   │   │   │   ├── system.py
-│   │   │   │   ├── token.py
-│   │   │   │   └── user.py
+│   │   │   │   ├── admin.py              # Admin schemas
+│   │   │   │   ├── analytics.py          # Analytics schemas
+│   │   │   │   ├── assessment.py         # Assessment schemas
+│   │   │   │   ├── assessor.py           # Assessor schemas
+│   │   │   │   ├── bbi.py                # BBI schemas
+│   │   │   │   ├── blgu_dashboard.py     # BLGU dashboard schemas
+│   │   │   │   ├── calculation_schema.py # Calculation rule schemas
+│   │   │   │   ├── external_analytics.py # External analytics schemas
+│   │   │   │   ├── form_schema.py        # Dynamic form schemas
+│   │   │   │   ├── indicator.py          # Indicator schemas
+│   │   │   │   ├── lookups.py            # Lookup schemas
+│   │   │   │   ├── mov_checklist.py      # MOV checklist schemas
+│   │   │   │   ├── remark_schema.py      # Remark template schemas
+│   │   │   │   ├── system.py             # System schemas
+│   │   │   │   ├── token.py              # Token schemas
+│   │   │   │   └── user.py               # User schemas
 │   │   │   ├── services/         # Business logic layer
 │   │   │   │   ├── analytics_service.py
+│   │   │   │   ├── annotation_service.py         # MOV annotation management
 │   │   │   │   ├── assessment_service.py
 │   │   │   │   ├── assessor_service.py
+│   │   │   │   ├── audit_service.py              # Audit logging
 │   │   │   │   ├── barangay_service.py
+│   │   │   │   ├── bbi_service.py                # BBI functionality
+│   │   │   │   ├── calculation_engine_service.py # Auto Pass/Fail calculation
+│   │   │   │   ├── completeness_validation_service.py
+│   │   │   │   ├── compliance_validation_service.py
+│   │   │   │   ├── deadline_service.py           # Deadline management
+│   │   │   │   ├── external_analytics_service.py # External stakeholder analytics
+│   │   │   │   ├── file_validation_service.py    # File upload validation
+│   │   │   │   ├── form_schema_validator.py      # Dynamic form validation
 │   │   │   │   ├── governance_area_service.py
+│   │   │   │   ├── indicator_draft_service.py    # Draft indicator wizard
 │   │   │   │   ├── indicator_service.py
-│   │   │   │   ├── intelligence_service.py
+│   │   │   │   ├── indicator_validation_service.py
+│   │   │   │   ├── intelligence_service.py       # AI/Gemini integration
+│   │   │   │   ├── mov_validation_service.py     # MOV validation
+│   │   │   │   ├── remark_template_service.py    # Generated remarks
 │   │   │   │   ├── startup_service.py
-│   │   │   │   ├── storage_service.py
+│   │   │   │   ├── storage_service.py            # Supabase storage
+│   │   │   │   ├── submission_validation_service.py
 │   │   │   │   └── user_service.py
 │   │   │   └── workers/          # Celery background tasks
 │   │   │       ├── intelligence_worker.py
@@ -337,19 +369,26 @@ vantage/
 **Core Pattern: Model → Schema → Service → Router**
 
 1. **Models** (`app/db/models/`): SQLAlchemy ORM models define database schema
-   - `assessment.py`: Assessment submissions and data
-   - `user.py`: User accounts with role-based access control
+   - `assessment.py`: Assessment, AssessmentResponse, MOV, MOVFile, FeedbackComment, MOVAnnotation
+   - `user.py`: User accounts with role-based access control (6 roles)
    - `barangay.py`: Barangay/LGU information
-   - `governance_area.py`: Assessment area definitions (used for Validator assignments)
+   - `governance_area.py`: GovernanceArea, Indicator, IndicatorHistory, IndicatorDraft, ChecklistItem
+   - `bbi.py`: BBI (Barangay-based Institutions), BBIResult
+   - `admin.py`: AuditLog, AssessmentCycle, DeadlineOverride
 
 2. **Schemas** (`app/schemas/`): Pydantic models for validation and serialization
    - Define request/response shapes
    - Auto-generate TypeScript types via Orval
+   - Key schemas: `external_analytics.py` for external stakeholder data
 
 3. **Services** (`app/services/`): Business logic layer (the "fat" layer)
    - `assessment_service.py`: Core assessment operations
    - `assessor_service.py`: Assessor validation workflow
    - `intelligence_service.py`: AI-powered insights via Gemini
+   - `external_analytics_service.py`: Aggregated analytics for external stakeholders
+   - `bbi_service.py`: BBI functionality calculations
+   - `calculation_engine_service.py`: Automatic Pass/Fail determination
+   - `annotation_service.py`: MOV file annotations
    - `user_service.py`: User management
 
 4. **Routers** (`app/api/v1/`): API endpoints (the "thin" layer)
@@ -358,6 +397,12 @@ vantage/
    - `assessor.py`: Assessor-specific operations
    - `users.py`: User management endpoints
    - `auth.py`: Authentication/authorization
+   - `external_analytics.py`: External stakeholder read-only analytics
+   - `admin.py`: Administrative features (audit logs, cycles)
+   - `bbis.py`: BBI management
+   - `indicators.py`: Indicator CRUD
+   - `blgu_dashboard.py`: BLGU-specific dashboard data
+   - `movs.py`: MOV file operations
 
 5. **Workers** (`app/workers/`): Background task processing with Celery
 
@@ -393,7 +438,7 @@ packages/shared/src/generated/
   ├── endpoints/[tag]/  ← React Query hooks (by FastAPI tag)
   └── schemas/[tag]/    ← TypeScript types (by FastAPI tag)
   ↓
-Frontend imports from @vantage/shared
+Frontend imports from @sinag/shared
 ```
 
 **Critical**: The frontend depends entirely on generated types. Always run `pnpm generate-types` after backend changes.
@@ -445,7 +490,7 @@ Follow this exact sequence:
 
 3. **Use Generated API Client**
    ```typescript
-   import { useGetDomain } from '@vantage/shared';
+   import { useGetDomain } from '@sinag/shared';
 
    const { data, isLoading } = useGetDomain();
    ```
@@ -561,6 +606,9 @@ DATABASE_URL=postgresql://postgres.[project-ref]:[password]@[region].pooler.supa
 # Celery/Redis
 CELERY_BROKER_URL=redis://localhost:6379/0
 CELERY_RESULT_BACKEND=redis://localhost:6379/0
+
+# AI/Gemini (for CapDev recommendations)
+GEMINI_API_KEY=your-gemini-api-key
 ```
 
 ### Frontend (`apps/web/.env.local`)
@@ -580,6 +628,37 @@ This application implements a structured workflow:
 4. **Classification**: Automated "3+1" SGLGB scoring logic
 5. **Intelligence**: Gemini API generates CapDev recommendations
 6. **Gap Analysis**: Compare initial vs. final results for insights
+
+## External Stakeholder Analytics (Epic 5)
+
+The platform provides read-only analytics access for external stakeholders from Katuparan Center and UMDC Peace Center. All data is aggregated and anonymized to protect individual barangay privacy.
+
+### External Analytics Endpoints
+
+Available at `/api/v1/external/analytics/`:
+
+- `GET /overall` - Municipal-wide SGLGB compliance statistics
+- `GET /governance-areas` - Aggregated pass/fail rates for all 6 governance areas
+- `GET /top-failing-indicators` - Top 5 most frequently failed indicators
+- `GET /ai-insights/summary` - Anonymized AI-generated recommendations
+- `GET /dashboard` - Complete dashboard data in single request
+- `GET /export/csv` - Download aggregated analytics as CSV
+- `GET /export/pdf` - Download aggregated analytics as PDF
+
+### Privacy Protections
+
+1. **Minimum Threshold**: Data only shown if ≥5 barangays assessed (prevents identification)
+2. **Aggregation**: All metrics are aggregated across all barangays
+3. **No Individual Data**: Individual barangay performance cannot be identified
+4. **UMDC Filtering**: UMDC Peace Center users see insights filtered to Security, Social Protection, and Disaster Preparedness areas
+
+### Access Control
+
+Only users with these roles can access external analytics:
+- `KATUPARAN_CENTER_USER`
+- `UMDC_PEACE_CENTER_USER`
+
+Uses the `get_current_external_user` dependency for authentication.
 
 ## Recent Feature Implementations
 
@@ -653,7 +732,7 @@ See `apps/api/app/api/v1/assessor.py` for complete endpoint documentation.
 
 ## User Roles and Permissions
 
-The system implements role-based access control (RBAC) with four distinct user roles:
+The system implements role-based access control (RBAC) with six distinct user roles:
 
 ### Role Definitions
 
@@ -680,6 +759,18 @@ The system implements role-based access control (RBAC) with four distinct user r
    - **Required field**: `barangay_id` (barangay assignment)
    - Limited to their assigned barangay's data
 
+5. **KATUPARAN_CENTER_USER** (External Stakeholder)
+   - External user from Katuparan Center with read-only analytics access
+   - Can view aggregated, anonymized SGLGB data
+   - No access to individual barangay data (privacy protection)
+   - Uses `/api/v1/external/analytics/*` endpoints
+
+6. **UMDC_PEACE_CENTER_USER** (External Stakeholder)
+   - External user from UMDC Peace Center with read-only analytics access
+   - Can view aggregated, anonymized SGLGB data
+   - AI insights automatically filtered for Security, Social Protection, and Disaster Preparedness areas
+   - Uses `/api/v1/external/analytics/*` endpoints
+
 ### Role-Based Field Requirements
 
 The system enforces strict role-based field validation:
@@ -697,13 +788,19 @@ ASSESSOR role  → No assignments required
 
 MLGOO_DILG role → No assignments required
                   Clears both validator_area_id and barangay_id
+
+KATUPARAN_CENTER_USER role → No assignments required (external read-only)
+                             Clears both validator_area_id and barangay_id
+
+UMDC_PEACE_CENTER_USER role → No assignments required (external read-only)
+                              Clears both validator_area_id and barangay_id
 ```
 
 ### Database Schema
 
 The User model includes these role-related fields:
 
-- `role`: String enum (MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER)
+- `role`: String enum (MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER, KATUPARAN_CENTER_USER, UMDC_PEACE_CENTER_USER)
 - `validator_area_id`: Integer (nullable) - FK to governance_areas table
 - `barangay_id`: Integer (nullable) - FK to barangays table
 

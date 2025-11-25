@@ -1,5 +1,5 @@
 # 🚀 API v1 Package
-# Version 1 of the VANTAGE API endpoints
+# Version 1 of the SINAG API endpoints
 
 # 📋 API V1 Router
 # Combines all individual routers into a single V1 API router

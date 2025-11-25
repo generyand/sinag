@@ -15,9 +15,9 @@ class Settings(BaseSettings):
     """
 
     # Project Information
-    PROJECT_NAME: str = "VANTAGE API"
+    PROJECT_NAME: str = "SINAG API"
     VERSION: str = "1.0.0"
-    DESCRIPTION: str = "Leadership Assessment and Development Platform"
+    DESCRIPTION: str = "SGLGB Governance Assessment Platform"
 
     # API Configuration
     API_V1_STR: str = "/api/v1"
@@ -35,11 +35,11 @@ class Settings(BaseSettings):
         "https://localhost:3000",
         "https://localhost:3001",
         # Docker internal network access
-        "http://vantage-web:3000",
+        "http://sinag-web:3000",
         "http://172.25.0.40:3000",
         # Production (add your production domain here)
-        # "https://vantage.dilg.gov.ph",
-        # "https://www.vantage.dilg.gov.ph",
+        # "https://sinag.dilg.gov.ph",
+        # "https://www.sinag.dilg.gov.ph",
     ]
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
@@ -112,7 +112,7 @@ class Settings(BaseSettings):
     FAIL_FAST: bool = True  # If True, crash on startup errors. If False, log warnings and continue.
 
     # First Superuser
-    FIRST_SUPERUSER: str = "admin@vantage.com"
+    FIRST_SUPERUSER: str = "admin@sinag.dilg.gov.ph"
     FIRST_SUPERUSER_PASSWORD: str = "changethis"
 
     model_config = ConfigDict(env_file=".env", case_sensitive=True, extra="ignore")

@@ -2,7 +2,7 @@
 description: Manage git worktrees for parallel development
 ---
 
-You are helping the user manage git worktrees for parallel development in the VANTAGE project. Git worktrees allow multiple branches to be checked out simultaneously in different directories, enabling true parallel development with separate Claude Code instances.
+You are helping the user manage git worktrees for parallel development in the SINAG project. Git worktrees allow multiple branches to be checked out simultaneously in different directories, enabling true parallel development with separate Claude Code instances.
 
 ## Understanding the Request
 
@@ -24,7 +24,7 @@ Parse the user's command to determine which action to take:
 If the user runs `/worktree` without arguments or `/worktree help`, show this guide:
 
 ```
-Git Worktree Manager for VANTAGE
+Git Worktree Manager for SINAG
 
 Commands:
   /worktree create <type> <name>  Create a new worktree
@@ -233,7 +233,7 @@ If the user runs `/worktree create` without type and name, guide them interactiv
 
 ## Important Notes
 
-- Worktrees are organized in `/home/kiedajhinn/Projects/vantage-worktrees/`
+- Worktrees are organized in `/home/kiedajhinn/Projects/sinag-worktrees/`
 - The main worktree at `/home/kiedajhinn/Projects/vantage` cannot be removed
 - Each worktree gets unique ports to avoid conflicts when running multiple dev servers
 - Dependencies must be installed separately in each worktree (`pnpm install`)
@@ -248,7 +248,7 @@ If the user runs `/worktree create` without type and name, guide them interactiv
 ```
 Projects/
 ├── vantage/                      (main worktree)
-└── vantage-worktrees/            (worktree container)
+└── sinag-worktrees/            (worktree container)
     ├── feature-analytics/        (feature/analytics branch)
     ├── fix-pagination/           (fix/pagination branch)
     └── perf-database/            (perf/database branch)

@@ -1,4 +1,4 @@
-# VANTAGE Docker Compose Configuration
+# SINAG Docker Compose Configuration
 # Environment variables loaded from .env files in respective directories
 # Make sure you have apps/api/.env and apps/web/.env.local configured
 
@@ -8,7 +8,7 @@ services:
   # ============================================================================
   redis:
     image: redis:7-alpine
-    container_name: vantage-redis
+    container_name: sinag-redis
     restart: unless-stopped
 
     ports:
@@ -49,7 +49,7 @@ services:
         max-file: "3"
 
     networks:
-      vantage-network:
+      sinag-network:
         ipv4_address: 172.25.0.10
 
   # ============================================================================
@@ -61,7 +61,7 @@ services:
       dockerfile: Dockerfile
       target: development
 
-    container_name: vantage-api
+    container_name: sinag-api
     restart: unless-stopped
 
     ports:
@@ -119,7 +119,7 @@ services:
         max-file: "5"
 
     networks:
-      vantage-network:
+      sinag-network:
         ipv4_address: 172.25.0.20
 
   # ============================================================================
@@ -131,7 +131,7 @@ services:
       dockerfile: Dockerfile
       target: development
 
-    container_name: vantage-celery-worker
+    container_name: sinag-celery-worker
     restart: unless-stopped
 
     # Optimized Celery configuration
@@ -196,7 +196,7 @@ services:
         max-file: "5"
 
     networks:
-      vantage-network:
+      sinag-network:
         ipv4_address: 172.25.0.30
 
   # ============================================================================
@@ -209,7 +209,7 @@ services:
   #     dockerfile: Dockerfile
   #     target: development
   #
-  #   container_name: vantage-celery-beat
+  #   container_name: sinag-celery-beat
   #   restart: unless-stopped
   #
   #   command: celery -A app.core.celery_app beat --loglevel=info
@@ -236,7 +236,7 @@ services:
   #         memory: 256M
   #
   #   networks:
-  #     vantage-network:
+  #     sinag-network:
   #       ipv4_address: 172.25.0.31
 
   # ============================================================================
@@ -248,7 +248,7 @@ services:
       dockerfile: apps/web/Dockerfile
       target: development
 
-    container_name: vantage-web
+    container_name: sinag-web
     restart: unless-stopped
 
     ports:
@@ -295,14 +295,14 @@ services:
         max-file: "5"
 
     networks:
-      vantage-network:
+      sinag-network:
         ipv4_address: 172.25.0.40
 
 # ==============================================================================
 # Networks
 # ==============================================================================
 networks:
-  vantage-network:
+  sinag-network:
     driver: bridge
     enable_ipv6: false
     ipam:

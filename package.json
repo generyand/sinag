@@ -1,7 +1,7 @@
 {
-  "name": "vantage",
+  "name": "sinag",
   "version": "1.0.0",
-  "description": "Vantage monorepo with NextJS frontend and FastAPI backend",
+  "description": "SINAG monorepo with NextJS frontend and FastAPI backend",
   "type": "module",
   "private": true,
   "scripts": {
@@ -26,7 +26,7 @@
     "redis:restart": "docker compose restart redis && echo '🔄 Redis restarted'",
     "redis:logs": "docker compose logs -f redis",
     "redis:status": "docker compose ps redis",
-    "redis:cli": "docker exec -it vantage-redis redis-cli",
+    "redis:cli": "docker exec -it sinag-redis redis-cli",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",

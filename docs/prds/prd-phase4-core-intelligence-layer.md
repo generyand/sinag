@@ -4,7 +4,7 @@
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 1.1 | November 12, 2025 | VANTAGE Development Team | **Phase 4 PRD Alignment**: Aligned with Indicator Builder Specification v1.4<br/>- Enhanced [Section 4.2 (Classification Algorithm)](#42-the-classification-algorithm) to handle "Considered" validation status (equivalent to "Passed" for compliance determination)<br/>- Updated algorithm logic to treat both "Passed" and "Considered" statuses as successful for 3+1 rule<br/>- Added Indicator Builder Specification v1.4 reference to [Section 7 (Technical Considerations)](#7-technical-considerations)<br/>- Clarified validation status types including grace period compliance |
+| 1.1 | November 12, 2025 | SINAG Development Team | **Phase 4 PRD Alignment**: Aligned with Indicator Builder Specification v1.4<br/>- Enhanced [Section 4.2 (Classification Algorithm)](#42-the-classification-algorithm) to handle "Considered" validation status (equivalent to "Passed" for compliance determination)<br/>- Updated algorithm logic to treat both "Passed" and "Considered" statuses as successful for 3+1 rule<br/>- Added Indicator Builder Specification v1.4 reference to [Section 7 (Technical Considerations)](#7-technical-considerations)<br/>- Clarified validation status types including grace period compliance |
 | 1.0 | Initial | - | Original PRD for Core Intelligence Layer |
 
 ---

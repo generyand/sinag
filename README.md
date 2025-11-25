@@ -1,4 +1,4 @@
-# VANTAGE
+# SINAG
 
 A modern monorepo setup using **Turborepo** with **NextJS** frontend and **FastAPI** backend for governance assessment and management.
 
@@ -21,7 +21,7 @@ A modern monorepo setup using **Turborepo** with **NextJS** frontend and **FastA
 
 ## Introduction
 
-VANTAGE is a comprehensive pre-assessment, preparation, and decision-support tool designed for the DILG's Seal of Good Local Governance for Barangays (SGLGB) process. It facilitates a digital workflow where Barangay Local Government Units (BLGUs) submit their self-assessment and Means of Verification (MOVs), which are then reviewed by DILG Area Assessors through a structured, one-time rework cycle. The application supports formal, in-person Table Validation by functioning as a live checklist where assessors record final compliance data, features a classification algorithm that automatically applies the official "3+1" SGLGB scoring logic, and integrates with Google's Gemini API to generate actionable CapDev recommendations. VANTAGE serves as a strategic gap analysis tool, comparing initial submissions against final validated results to provide insights for improving the governance assessment cycle.
+SINAG is a comprehensive pre-assessment, preparation, and decision-support tool designed for the DILG's Seal of Good Local Governance for Barangays (SGLGB) process. It facilitates a digital workflow where Barangay Local Government Units (BLGUs) submit their self-assessment and Means of Verification (MOVs), which are then reviewed by DILG Area Assessors through a structured, one-time rework cycle. The application supports formal, in-person Table Validation by functioning as a live checklist where assessors record final compliance data, features a classification algorithm that automatically applies the official "3+1" SGLGB scoring logic, and integrates with Google's Gemini API to generate actionable CapDev recommendations. SINAG serves as a strategic gap analysis tool, comparing initial submissions against final validated results to provide insights for improving the governance assessment cycle.
 
 ### Key Capabilities
 
@@ -30,7 +30,10 @@ VANTAGE is a comprehensive pre-assessment, preparation, and decision-support too
 - **Automated Scoring**: "3+1" SGLGB scoring logic with classification algorithm
 - **AI-Powered Recommendations**: Gemini API integration for CapDev suggestions
 - **Gap Analysis**: Strategic comparison of initial vs. final assessment results
-- **Multi-role Support**: Admin, BLGU, and Assessor user management
+- **Multi-role Support**: 6 distinct user roles including external stakeholders
+- **External Stakeholder Analytics**: Aggregated, anonymized data for Katuparan Center and UMDC Peace Center
+- **MOV Annotation System**: Assessors can annotate PDFs and images with feedback
+- **BBI Functionality Tracking**: Barangay-based Institutions status calculation
 - **Type-safe Architecture**: End-to-end type safety between frontend and backend
 
 ## Installation
@@ -119,7 +122,10 @@ turbo build --filter=api
 
 ### Available Scripts
 
-- `pnpm dev` - Start all applications in development mode
+- `pnpm dev` - Start all applications (API, Web, Redis, Celery) in development mode
+- `pnpm dev:api` - Start backend only (auto-starts Redis)
+- `pnpm dev:web` - Start frontend only
+- `pnpm dev:no-celery` - Start API + Web without Celery (faster startup)
 - `pnpm build` - Build all applications for production
 - `pnpm test` - Run tests across all applications
 - `pnpm lint` - Run linting across all applications
@@ -127,6 +133,9 @@ turbo build --filter=api
 - `pnpm clean` - Clean build artifacts
 - `pnpm generate-types` - Generate TypeScript types from OpenAPI spec
 - `pnpm watch-types` - Watch for API changes and regenerate types
+- `pnpm redis:start` - Start Redis in Docker
+- `pnpm redis:stop` - Stop Redis
+- `pnpm celery` - Start Celery worker for background tasks
 
 ## Features
 
@@ -146,9 +155,14 @@ turbo build --filter=api
 
 ### User Roles
 
-- **Admin**: Full system access, user management, system settings
-- **BLGU**: Assessment submission, progress tracking, report viewing
-- **Assessor**: Assessment evaluation and validation
+The system supports six distinct user roles:
+
+- **MLGOO_DILG (Admin)**: Full system access, user management, system settings
+- **VALIDATOR**: DILG validators assigned to specific governance areas
+- **ASSESSOR**: DILG assessors who can work with any barangay
+- **BLGU_USER**: Barangay-level users for assessment submission
+- **KATUPARAN_CENTER_USER**: External stakeholder with read-only analytics access
+- **UMDC_PEACE_CENTER_USER**: External stakeholder with filtered analytics access
 
 ## Configuration
 
@@ -157,7 +171,7 @@ turbo build --filter=api
 #### Backend (`apps/api/.env`)
 
 ```env
-#  VANTAGE API Environment Variables
+#  SINAG API Environment Variables
 # Copy this file to .env and fill in your actual values
 
 # =============================================================================
@@ -176,10 +190,21 @@ ACCESS_TOKEN_EXPIRE_MINUTES=10080
 # =============================================================================
 #  SUPABASE CONFIGURATION
 # =============================================================================
-SUPABASE_URL=
-SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-DATABASE_URL=
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+DATABASE_URL=postgresql://postgres.[project-ref]:[password]@[region].pooler.supabase.com:6543/postgres
+
+# =============================================================================
+#  CELERY/REDIS CONFIGURATION
+# =============================================================================
+CELERY_BROKER_URL=redis://localhost:6379/0
+CELERY_RESULT_BACKEND=redis://localhost:6379/0
+
+# =============================================================================
+#  AI CONFIGURATION (Optional - for CapDev recommendations)
+# =============================================================================
+GEMINI_API_KEY=your-gemini-api-key
 ```
 
 #### Frontend (`apps/web/.env.local`)
@@ -192,13 +217,21 @@ NEXT_PUBLIC_API_V1_URL=http://localhost:8000/api/v1
 
 ### Database Configuration
 
-The application uses PostgreSQL with the following key tables:
+The application uses PostgreSQL (via Supabase) with the following key tables:
 
-- `users` - User accounts and authentication
+- `users` - User accounts and authentication (6 roles)
 - `barangays` - Barangay/LGU information
 - `governance_areas` - Assessment area definitions
-- `assessments` - Assessment submissions and data
-- `reports` - Generated reports and analytics
+- `indicators` - Assessment indicators with dynamic form schemas
+- `assessments` - Assessment submissions and status tracking
+- `assessment_responses` - Individual indicator responses
+- `mov_files` - Means of Verification file uploads
+- `mov_annotations` - Assessor annotations on MOV files
+- `bbis` - Barangay-based Institutions configuration
+- `bbi_results` - BBI functionality results per assessment
+- `audit_logs` - Administrative action audit trail
+- `assessment_cycles` - Assessment period management
+- `deadline_overrides` - Deadline extensions for specific barangays
 
 ### Monorepo Structure
 
@@ -331,7 +364,7 @@ turbo build --dry-run
 
 ### Docker Development
 
-VANTAGE includes comprehensive Docker support for local development with dual-stack IPv4/IPv6 networking.
+SINAG includes comprehensive Docker support for local development with dual-stack IPv4/IPv6 networking.
 
 #### Prerequisites
 
@@ -507,13 +540,13 @@ This project is licensed under the ISC License - see the [LICENSE](LICENSE) file
 
 ## Author/Contact
 
-- **Project**: VANTAGE Governance Assessment Platform
-- **Repository**: [Vantage](https://github.com/generyand/vantage)
-- **Issues**: [Issues](https://github.com/generyand/vantage/issues)
+- **Project**: SINAG Governance Assessment Platform
+- **Repository**: [SINAG](https://github.com/generyand/sinag)
+- **Issues**: [Issues](https://github.com/generyand/sinag/issues)
 
 For questions, suggestions, or contributions, please:
 
-1. Check existing [Issues](https://github.com/generyand/vantage/issues)
+1. Check existing [Issues](https://github.com/generyand/sinag/issues)
 2. Create a new issue with detailed description
 3. Follow the contributing guidelines
 

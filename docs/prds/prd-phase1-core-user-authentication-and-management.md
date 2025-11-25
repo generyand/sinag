@@ -20,7 +20,7 @@
 
 **Project Title:** SGLGB Analytics System: Strategic Insights Nurturing Assessments and Governance (SINAG) To Assess And Assist Barangays utilizing a Large Language Model and Classification Algorithm
 
-This document outlines the requirements for the **Core User Authentication & Management** feature for the SINAG platform (VANTAGE codebase). This is the foundational security and access control layer, enabling secure user login and providing administrators with the tools to manage user accounts, roles, and permissions. As the primary gateway to the application, its successful implementation is a prerequisite for all other features.
+This document outlines the requirements for the **Core User Authentication & Management** feature for the SINAG platform. This is the foundational security and access control layer, enabling secure user login and providing administrators with the tools to manage user accounts, roles, and permissions. As the primary gateway to the application, its successful implementation is a prerequisite for all other features.
 
 The goal is to create a secure, closed authentication system where users are managed internally by a designated administrator, the **Municipal Local Government Operations Officer - Department of the Interior and Local Government (MLGOO-DILG)**.
 

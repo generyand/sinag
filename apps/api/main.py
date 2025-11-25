@@ -1,4 +1,4 @@
-# 🚀 VANTAGE API Main Application
+# 🚀 SINAG API Main Application
 # FastAPI application entry point with configuration and middleware setup
 
 import logging
