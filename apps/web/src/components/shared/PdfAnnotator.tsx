@@ -35,6 +35,8 @@ export default function PdfAnnotator({ url, annotateEnabled, annotations, onAdd,
   const highlightPluginInstance = highlightPlugin({
     renderHighlightTarget: (props: RenderHighlightTargetProps) => {
       const anyProps: any = props as any;
+
+
       const cssProps = anyProps?.getCssProperties;
       const baseStyle = cssProps ? cssProps(props.selectionRegion) : {
         left: `${props.selectionRegion.left}%`,
@@ -60,30 +62,98 @@ export default function PdfAnnotator({ url, annotateEnabled, annotations, onAdd,
             onClick={() => {
             const comment = window.prompt('Add a comment for this highlight (optional):', '') || '';
             const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+            // Try to get page index from highlightAreas first (most reliable)
+            let pageFromHighlightAreas: number | undefined;
+            if (Array.isArray(anyProps?.highlightAreas) && anyProps.highlightAreas.length > 0) {
+              pageFromHighlightAreas = anyProps.highlightAreas[0]?.pageIndex;
+            }
+
             // Prefer page index from selectedText.position.pageIndex, then other fallbacks
             const resolvedPageIndex =
-              (anyProps?.selectedText?.position?.pageIndex)
+              pageFromHighlightAreas
+              ?? (anyProps?.selectedText?.position?.pageIndex)
               ?? (typeof anyProps?.pageIndex === 'number' ? anyProps.pageIndex : undefined)
               ?? anyProps?.selectedText?.pageIndex
               ?? anyProps?.selectionRegion?.pageIndex
               ?? anyProps?.page?.index
               ?? 0;
+
             // Try to derive rects from DOM selection client rects (covers multi-line reliably)
             const collectRectsFromSelection = (): { rects: PdfRect[]; pageIndexOverride?: number } => {
               try {
                 const sel = window.getSelection();
                 if (!sel || sel.rangeCount === 0) return { rects: [] };
+
+                // Find the page element containing the selection
                 const findPageEl = (node: Node | null): HTMLElement | null => {
                   let el: HTMLElement | null = (node as HTMLElement) && (node as HTMLElement).nodeType === 1 ? (node as HTMLElement) : (node?.parentElement ?? null);
                   while (el) {
-                    if (el.getAttribute && el.getAttribute('data-page-number')) return el;
-                    if (el.classList && el.classList.contains('rpv-core__page-layer')) return el;
+                    // Check for data-page-number attribute (pdf.js uses this)
+                    if (el.getAttribute && el.getAttribute('data-page-number')) {
+                      return el;
+                    }
+                    // Check for rpv-core__inner-page class (react-pdf-viewer page container)
+                    if (el.classList && el.classList.contains('rpv-core__inner-page')) {
+                      return el;
+                    }
+                    // Also check for rpv-core__page-layer class
+                    if (el.classList && el.classList.contains('rpv-core__page-layer')) {
+                      return el;
+                    }
                     el = el.parentElement;
                   }
                   return null;
                 };
-                const pageEl = findPageEl(sel.anchorNode) || findPageEl(sel.focusNode);
+
+                // Try to find page from both anchor and focus nodes
+                let pageEl = findPageEl(sel.anchorNode) || findPageEl(sel.focusNode);
+
+                // If still no page found, try finding from the first range's common ancestor
+                if (!pageEl && sel.rangeCount > 0) {
+                  const range = sel.getRangeAt(0);
+                  pageEl = findPageEl(range.commonAncestorContainer);
+                }
+
+                // Last resort: find page element by checking which page contains the selection rect
+                if (!pageEl) {
+                  const range = sel.getRangeAt(0);
+                  const selRect = range.getBoundingClientRect();
+                  const container = containerRef.current;
+                  if (container) {
+                    // Try multiple selectors that pdf.js/react-pdf-viewer might use
+                    // The react-pdf-viewer uses .rpv-core__inner-page for each page
+                    const pageSelectors = [
+                      '[data-page-number]',
+                      '.rpv-core__inner-page',
+                      '.rpv-core__page-layer',
+                      '[data-testid="core__page-layer"]',
+                      '.react-pdf__Page',
+                    ];
+                    for (const selector of pageSelectors) {
+                      const pages = container.querySelectorAll(selector);
+                      for (let i = 0; i < pages.length; i++) {
+                        const p = pages[i];
+                        const pageRect = p.getBoundingClientRect();
+                        // Check if selection overlaps with this page's bounds
+                        if (selRect.top >= pageRect.top - 10 && selRect.top <= pageRect.bottom + 10) {
+                          pageEl = p as HTMLElement;
+                          // Store the page index (0-based) on the element for later use
+                          const existingPageNum = pageEl.getAttribute('data-page-number');
+                          if (!existingPageNum) {
+                            // Set data-page-number as 1-based (i + 1)
+                            pageEl.setAttribute('data-page-number', String(i + 1));
+                          }
+                          break;
+                        }
+                      }
+                      if (pageEl) break;
+                    }
+                  }
+                }
+
                 if (!pageEl) return { rects: [] };
+
                 const pageBox = pageEl.getBoundingClientRect();
                 const toPct = (r: DOMRect): PdfRect => ({
                   x: ((r.left - pageBox.left) / pageBox.width) * 100,
@@ -126,10 +196,41 @@ export default function PdfAnnotator({ url, annotateEnabled, annotations, onAdd,
                   if (sameLine) lineGroup.push(r); else { flushLine(); lineGroup.push(r); }
                 }
                 flushLine();
-                const pn = pageEl.getAttribute('data-page-number');
-                const pageIndexOverride = pn ? Math.max(0, parseInt(pn, 10) - 1) : undefined;
+
+                // Get page number from the found page element
+                let pn = pageEl.getAttribute('data-page-number');
+                let pageIndexOverride: number | undefined;
+
+                if (pn) {
+                  pageIndexOverride = Math.max(0, parseInt(pn, 10) - 1);
+                } else {
+                  // No data-page-number attribute - determine page index from sibling position
+                  const container = containerRef.current;
+                  if (container) {
+                    // Find all page elements and determine which one this is
+                    const allPages = container.querySelectorAll('.rpv-core__inner-page');
+                    for (let i = 0; i < allPages.length; i++) {
+                      if (allPages[i] === pageEl || allPages[i].contains(pageEl)) {
+                        pageIndexOverride = i;
+                        break;
+                      }
+                    }
+                    // Also try with page-layer
+                    if (pageIndexOverride === undefined) {
+                      const allPageLayers = container.querySelectorAll('.rpv-core__page-layer');
+                      for (let i = 0; i < allPageLayers.length; i++) {
+                        if (allPageLayers[i] === pageEl || allPageLayers[i].contains(pageEl)) {
+                          pageIndexOverride = i;
+                          break;
+                        }
+                      }
+                    }
+                  }
+                }
+
                 return { rects: merged, pageIndexOverride };
-              } catch {
+              } catch (err) {
+                console.error('[PdfAnnotator] Error in collectRectsFromSelection:', err);
                 return { rects: [] };
               }
             };
@@ -194,6 +295,7 @@ export default function PdfAnnotator({ url, annotateEnabled, annotations, onAdd,
               } catch {}
             }
             const pageIndexFinal = (selInfo.pageIndexOverride ?? resolvedPageIndex);
+
             const primaryRect: PdfRect = rects.length > 0
               ? rects[0]
               : { x: props.selectionRegion.left, y: props.selectionRegion.top, w: props.selectionRegion.width, h: props.selectionRegion.height };

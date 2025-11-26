@@ -138,7 +138,7 @@ export function MiddleMovFilesPanel({ assessment, expandedId }: MiddleMovFilesPa
     return (annotations as any[])?.map((ann: any) => ({
       id: String(ann.id),
       type: 'pdfRect' as const,
-      page: ann.page_number || 0,
+      page: ann.page ?? ann.page_number ?? 0,  // Backend returns 'page', not 'page_number'
       rect: ann.rect || { x: 0, y: 0, w: 10, h: 10 },
       rects: ann.rects,
       comment: ann.comment || '',
