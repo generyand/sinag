@@ -862,15 +862,6 @@ See `apps/api/app/api/v1/users.py` for complete documentation.
 
 ## Documentation
 
-### Core Technical Specifications
-
-- **Indicator Builder Specification v1.4**: `docs/indicator-builder-specification.md` - **SOURCE OF TRUTH** for indicator structure, MOV checklist validation, BBI functionality system, and grace period handling
-  - Validated against 29 real SGLGB indicators (1.1-6.3)
-  - Defines 9 MOV checklist item types
-  - Documents 9 mandatory BBIs with governance area mappings
-  - Specifies validation statuses: Passed, Considered, Failed, Not Applicable, Pending
-  - Referenced by all 5 PRDs for consistent implementation
-
 ### Product Requirements
 
 - **PRDs**: `docs/prds/` - Product requirements documents (sequential by phase)
