@@ -475,17 +475,11 @@ export function FileFieldComponent({
       {/* Uploaded Files List (New files during rework, or all files in other statuses) */}
       {files.length > 0 && (
         <div className="space-y-2">
-          {isReworkStatus && (
-            <div className="flex items-center gap-2 text-sm text-green-600 font-medium">
-              <CheckCircle2 className="h-4 w-4" />
-              <span>Uploaded Files</span>
-            </div>
-          )}
-          {!isReworkStatus && (
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <span>Uploaded Files</span>
-            </div>
-          )}
+          <div className="flex items-center gap-2 text-sm font-medium">
+            {isReworkStatus && <CheckCircle2 className="h-4 w-4 text-green-600" />}
+            <span className={isReworkStatus ? 'text-green-600' : ''}>Uploaded Files</span>
+            <span className="text-muted-foreground font-normal">({files.length} file{files.length !== 1 ? 's' : ''} uploaded)</span>
+          </div>
           <FileListWithDelete
             files={files}
             onPreview={handlePreview}
@@ -494,6 +488,7 @@ export function FileFieldComponent({
             loading={isLoadingFiles}
             onDeleteSuccess={handleDeleteSuccess}
             movAnnotations={movAnnotations}
+            hideHeader={true}
           />
         </div>
       )}
