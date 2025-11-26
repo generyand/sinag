@@ -115,7 +115,7 @@ start_all() {
         -n "API,WEB,CELERY" \
         -c "blue,green,yellow" \
         "cd apps/api && uv run uvicorn main:app --reload --host 0.0.0.0 --port ${API_PORT}" \
-        "cd apps/web && PORT=${WEB_PORT} next dev --turbopack" \
+        "cd apps/web && PORT=${WEB_PORT} pnpm exec next dev --turbopack" \
         "cd apps/api && uv run celery -A app.core.celery_app worker --loglevel=info --queues=notifications,classification"
 }
 
@@ -138,7 +138,7 @@ start_web() {
 
     echo -e "${BLUE}Starting Web on port ${WEB_PORT}...${NC}"
     cd "${PROJECT_ROOT}/apps/web"
-    PORT="${WEB_PORT}" next dev --turbopack
+    PORT="${WEB_PORT}" pnpm exec next dev --turbopack
 }
 
 # Start without Celery
@@ -157,7 +157,7 @@ start_no_celery() {
         -n "API,WEB" \
         -c "blue,green" \
         "cd apps/api && uv run uvicorn main:app --reload --host 0.0.0.0 --port ${API_PORT}" \
-        "cd apps/web && PORT=${WEB_PORT} next dev --turbopack"
+        "cd apps/web && PORT=${WEB_PORT} pnpm exec next dev --turbopack"
 }
 
 # Show current port configuration
