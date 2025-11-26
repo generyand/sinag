@@ -5,6 +5,16 @@
 import { FormSchema } from "./form-schema";
 
 export type AssessmentStatus =
+  | "draft"
+  | "submitted"
+  | "submitted-for-review"
+  | "in-review"
+  | "rework"
+  | "needs-rework"
+  | "awaiting-final-validation"
+  | "completed"
+  | "validated"
+  // Legacy values (kept for backward compatibility)
   | "Draft"
   | "Submitted for Review"
   | "Validated"

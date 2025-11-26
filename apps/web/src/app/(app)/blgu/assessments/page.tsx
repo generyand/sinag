@@ -174,9 +174,15 @@ export default function BLGUAssessmentsPage() {
   }
 
   // Show locked banner if assessment is not editable
+  // Status values are now lowercase with hyphens (e.g., "submitted-for-review", "validated")
+  const normalizedStatus = (assessment.status || "").toLowerCase();
   const isLocked =
-    assessment.status === "Submitted for Review" ||
-    assessment.status === "Validated";
+    normalizedStatus === "submitted" ||
+    normalizedStatus === "submitted-for-review" ||
+    normalizedStatus === "in-review" ||
+    normalizedStatus === "awaiting-final-validation" ||
+    normalizedStatus === "validated" ||
+    normalizedStatus === "completed";
 
   // Get selected indicator
   const selectedIndicatorData = selectedIndicatorId
