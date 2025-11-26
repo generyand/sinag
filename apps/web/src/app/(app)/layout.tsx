@@ -230,6 +230,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
   const [isUserDataLoaded, setIsUserDataLoaded] = useState(false);
 
   // Get assessor's governance area
@@ -652,15 +653,56 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </div>
               <div className="flex items-center space-x-4">
                 {/* Notifications */}
-                <button className="p-2 rounded-full text-[var(--icon-default)] hover:text-[var(--cityscape-yellow)] hover:bg-[var(--hover)] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--cityscape-yellow)] focus:ring-offset-2">
-                  <Bell className="h-5 w-5" />
-                </button>
+                <div className="relative">
+                  <button
+                    className="p-2 rounded-full text-[var(--icon-default)] hover:text-[var(--cityscape-yellow)] hover:bg-[var(--hover)] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--cityscape-yellow)] focus:ring-offset-2"
+                    onClick={() => {
+                      setNotificationOpen(!notificationOpen);
+                      setProfileDropdownOpen(false);
+                    }}
+                  >
+                    <Bell className="h-5 w-5" />
+                  </button>
+
+                  {/* Notification dropdown */}
+                  {notificationOpen && (
+                    <div className="absolute right-0 mt-2 w-80 bg-[var(--card)] rounded-sm shadow-xl border border-[var(--border)] z-50 transition-colors duration-300">
+                      {/* Header */}
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
+                        <div className="flex items-center gap-2">
+                          <Bell className="h-4 w-4 text-[var(--icon-default)]" />
+                          <span className="text-sm font-semibold text-[var(--foreground)]">Notifications</span>
+                        </div>
+                        <button
+                          className="p-1 rounded-full hover:bg-[var(--hover)] transition-colors"
+                          onClick={() => setNotificationOpen(false)}
+                        >
+                          <svg className="h-4 w-4 text-[var(--icon-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                        </button>
+                      </div>
+
+                      {/* Content */}
+                      <div className="px-4 py-8 flex flex-col items-center justify-center">
+                        <Bell className="h-10 w-10 text-[var(--icon-muted)] mb-3" />
+                        <p className="text-sm font-medium text-[var(--foreground)]">No notifications yet</p>
+                        <p className="text-xs text-[var(--text-secondary)] text-center mt-1">
+                          You&apos;ll see notifications here when there&apos;s activity on your assessments.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 {/* Profile dropdown */}
                 <div className="relative">
                   <button
                     className="flex items-center space-x-2 p-2 rounded-full text-[var(--icon-default)] hover:text-[var(--cityscape-yellow)] hover:bg-[var(--hover)] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--cityscape-yellow)] focus:ring-offset-2"
-                    onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                    onClick={() => {
+                      setProfileDropdownOpen(!profileDropdownOpen);
+                      setNotificationOpen(false);
+                    }}
                   >
                     <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] flex items-center justify-center text-[var(--cityscape-accent-foreground)] font-semibold text-sm">
                       {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
@@ -694,11 +736,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      {/* Click outside to close dropdown */}
-      {profileDropdownOpen && (
+      {/* Click outside to close dropdowns */}
+      {(profileDropdownOpen || notificationOpen) && (
         <div
           className="fixed inset-0 z-40"
-          onClick={() => setProfileDropdownOpen(false)}
+          onClick={() => {
+            setProfileDropdownOpen(false);
+            setNotificationOpen(false);
+          }}
         />
       )}
     </div>
