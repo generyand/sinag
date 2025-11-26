@@ -23,6 +23,23 @@ interface ValidatorValidationClientProps {
 
 type AnyRecord = Record<string, any>;
 
+/**
+ * Sort indicator codes numerically (e.g., 1.1.1, 1.1.2, 1.2.1, etc.)
+ */
+function sortIndicatorCode(a: string, b: string): number {
+  const partsA = a.split('.').map(Number);
+  const partsB = b.split('.').map(Number);
+
+  for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+    const numA = partsA[i] ?? 0;
+    const numB = partsB[i] ?? 0;
+    if (numA !== numB) {
+      return numA - numB;
+    }
+  }
+  return 0;
+}
+
 export function ValidatorValidationClient({ assessmentId }: ValidatorValidationClientProps) {
   const { data, isLoading, isError, error } = useGetAssessorAssessmentsAssessmentId(assessmentId);
   const qc = useQueryClient();
@@ -113,6 +130,9 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
         // Don't use database validation_status because that's the assessor's decision, not the validator's
         status: form[resp.id]?.status ? 'completed' : 'not_started',
       });
+
+      // Sort indicators by code after adding
+      existingArea.indicators.sort((a: any, b: any) => sortIndicatorCode(a.code, b.code));
 
       return acc;
     }, []),
