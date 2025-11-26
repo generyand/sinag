@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from 'react';
-import type { AssessmentDetailsResponse } from '@vantage/shared';
+import type { AssessmentDetailsResponse } from '@sinag/shared';
 import { FileList } from '@/components/features/movs/FileList';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileIcon, X } from 'lucide-react';

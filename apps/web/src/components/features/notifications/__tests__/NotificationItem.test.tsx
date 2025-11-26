@@ -5,7 +5,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { NotificationItem } from '../NotificationItem';
-import type { NotificationResponse, NotificationType } from '@vantage/shared';
+import type { NotificationResponse, NotificationType } from '@sinag/shared';
 
 // Mock next/navigation
 vi.mock('next/navigation', () => ({

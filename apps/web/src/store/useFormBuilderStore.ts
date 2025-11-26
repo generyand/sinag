@@ -7,7 +7,7 @@ import type {
   RadioButtonField,
   TextAreaField,
   TextInputField,
-} from '@vantage/shared';
+} from '@sinag/shared';
 import { create } from 'zustand';
 
 /**

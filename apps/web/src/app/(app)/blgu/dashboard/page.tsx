@@ -29,7 +29,7 @@ import {
   ResubmitAssessmentButton,
 } from "@/components/features/assessments";
 import { ReworkIndicatorsPanel } from "@/components/features/rework";
-import { useGetBlguDashboardAssessmentId, useGetAssessmentsMyAssessment } from "@vantage/shared";
+import { useGetBlguDashboardAssessmentId, useGetAssessmentsMyAssessment } from "@sinag/shared";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Loader2, AlertCircle } from "lucide-react";
 

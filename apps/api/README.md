@@ -1,6 +1,6 @@
-# Vantage API (FastAPI Backend)
+# SINAG API (FastAPI Backend)
 
-Backend API service for the Vantage application built with **FastAPI** and **Python 3.13**.
+Backend API service for the SINAG application built with **FastAPI** and **Python 3.13**.
 
 ## 🚀 **Quick Start**
 
@@ -311,7 +311,7 @@ This project uses **Supabase** as the backend database service. Follow these ste
 1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
 2. Click "New Project"
 3. Choose your organization and fill in project details:
-   - **Name**: `vantage-api` (or your preferred name)
+   - **Name**: `sinag-api` (or your preferred name)
    - **Database Password**: Use a strong password
    - **Region**: Choose closest to your users
 4. Wait for the project to be created (~2 minutes)
@@ -578,13 +578,13 @@ def upgrade() -> None:
     connection = op.get_bind()
     connection.execute(text("""
         INSERT INTO users (id, email, name, hashed_password, is_superuser)
-        VALUES ('admin-001', 'admin@vantage.com', 'Admin', 'hashed_password', true)
+        VALUES ('admin-001', 'admin@sinag.dilg.gov.ph', 'Admin', 'hashed_password', true)
     """))
 
 def downgrade() -> None:
     """Remove default admin user."""
     connection = op.get_bind()
-    connection.execute(text("DELETE FROM users WHERE email = 'admin@vantage.com'"))
+    connection.execute(text("DELETE FROM users WHERE email = 'admin@sinag.dilg.gov.ph'"))
 ```
 
 ### **Troubleshooting**

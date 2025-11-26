@@ -4,12 +4,12 @@ import { StatusBadge } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useQueryClient } from '@tanstack/react-query';
-import type { AssessmentDetailsResponse } from '@vantage/shared';
+import type { AssessmentDetailsResponse } from '@sinag/shared';
 import {
   usePostAssessorAssessmentResponsesResponseIdValidate,
   usePostAssessorAssessmentsAssessmentIdFinalize,
   usePostAssessorAssessmentsAssessmentIdRework,
-} from '@vantage/shared';
+} from '@sinag/shared';
 import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';

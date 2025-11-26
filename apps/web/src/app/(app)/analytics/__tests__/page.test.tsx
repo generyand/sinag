@@ -7,7 +7,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import AnalyticsPage from '../page';
-import type { DashboardKPIResponse } from '@vantage/shared';
+import type { DashboardKPIResponse } from '@sinag/shared';
 
 // Mock the dashboard analytics hook
 vi.mock('@/hooks/useDashboardAnalytics', () => ({
@@ -15,8 +15,8 @@ vi.mock('@/hooks/useDashboardAnalytics', () => ({
 }));
 
 // Mock the auto-generated user query hook
-vi.mock('@vantage/shared', async () => {
-  const actual = await vi.importActual('@vantage/shared');
+vi.mock('@sinag/shared', async () => {
+  const actual = await vi.importActual('@sinag/shared');
   return {
     ...actual,
     useGetUsersMe: vi.fn(),
@@ -30,7 +30,7 @@ vi.mock('@/store/useAuthStore', () => ({
 
 // Import the mocked hooks after mocking
 import { useDashboardAnalytics } from '@/hooks/useDashboardAnalytics';
-import { useGetUsersMe } from '@vantage/shared';
+import { useGetUsersMe } from '@sinag/shared';
 import { useAuthStore } from '@/store/useAuthStore';
 
 const mockDashboardData: DashboardKPIResponse = {

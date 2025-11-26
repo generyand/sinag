@@ -1,7 +1,7 @@
 "use client";
 
 import { TreeNavigator } from '@/components/features/assessments/tree-navigation';
-import { useGetAssessorAssessmentsAssessmentId } from '@vantage/shared';
+import { useGetAssessorAssessmentsAssessmentId } from '@sinag/shared';
 import { useState, useEffect } from 'react';
 import { RightAssessorPanel } from '../assessor/validation/RightAssessorPanel';
 import { MiddleMovFilesPanel } from '../assessor/validation/MiddleMovFilesPanel';
@@ -14,7 +14,7 @@ import {
   usePostAssessorAssessmentResponsesResponseIdValidate,
   usePostAssessorAssessmentsAssessmentIdFinalize,
   usePostAssessorAssessmentsAssessmentIdCalibrate,
-} from '@vantage/shared';
+} from '@sinag/shared';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
 

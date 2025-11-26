@@ -47,7 +47,7 @@ Help the user write a concise changelog entry following these guidelines:
 
 ## Step 4: Read the Current CHANGELOG.md
 
-Use the Read tool to read `/home/kiedajhinn/Projects/vantage/CHANGELOG.md`.
+Use the Read tool to read `/home/kiedajhinn/Projects/sinag/CHANGELOG.md`.
 
 Find the `## [Unreleased]` section.
 

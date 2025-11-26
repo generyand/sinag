@@ -182,7 +182,7 @@
       - **Dependencies:** 1.3.1 (types generated)
       - **Acceptance:**
         - Create file with `'use client'` directive (needs client-side data fetching)
-        - Import `useGetAnalyticsDashboard` from `@vantage/shared`
+        - Import `useGetAnalyticsDashboard` from `@sinag/shared`
         - Component checks user role, redirects if not MLGOO_DILG
         - Implements loading state with shadcn/ui Skeleton components
         - Implements error state with Alert component
@@ -227,7 +227,7 @@
       - **Files:** `apps/web/src/hooks/useAnalytics.ts`
       - **Dependencies:** 1.3.1 (Orval hooks generated)
       - **Acceptance:**
-        - Import `useGetAnalyticsDashboard` from `@vantage/shared`
+        - Import `useGetAnalyticsDashboard` from `@sinag/shared`
         - Create wrapper hook `useAnalytics(cycleId?: number)` that:
           - Calls Orval hook with proper error handling
           - Formats error messages for user display

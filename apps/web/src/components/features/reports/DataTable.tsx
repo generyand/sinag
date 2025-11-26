@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { TableData, AssessmentRow } from "@vantage/shared";
+import { TableData, AssessmentRow } from "@sinag/shared";
 import { ChevronUp, ChevronDown, ChevronsUpDown, Search } from "lucide-react";
 
 interface AssessmentDataTableProps {

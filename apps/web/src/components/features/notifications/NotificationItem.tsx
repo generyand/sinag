@@ -2,7 +2,7 @@
 
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import { NotificationResponse, NotificationType } from '@vantage/shared';
+import { NotificationResponse, NotificationType } from '@sinag/shared';
 import { cn } from '@/lib/utils';
 import {
   FileCheck,

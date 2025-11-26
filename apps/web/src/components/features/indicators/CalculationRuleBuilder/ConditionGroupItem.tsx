@@ -1,7 +1,7 @@
 'use client';
 
 import { useCalculationRuleStore } from '@/store/useCalculationRuleStore';
-import type { ConditionGroup, FormSchema } from '@vantage/shared';
+import type { ConditionGroup, FormSchema } from '@sinag/shared';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {

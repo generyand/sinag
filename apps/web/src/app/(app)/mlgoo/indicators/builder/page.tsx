@@ -11,7 +11,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
-import { useGetLookupsGovernanceAreas } from '@vantage/shared';
+import { useGetLookupsGovernanceAreas } from '@sinag/shared';
 
 /**
  * Hierarchical Indicator Builder Page

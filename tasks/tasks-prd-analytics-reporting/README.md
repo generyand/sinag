@@ -140,7 +140,7 @@ Tech-stack specific file structure for the Analytics & Reporting feature:
 
 ## Quality Gates - Story Review Checklist
 
-- [x] Stories align with VANTAGE full-stack architecture (Frontend, Backend, Database)
+- [x] Stories align with SINAG full-stack architecture (Frontend, Backend, Database)
 - [x] Each story represents a cohesive implementation domain (1-3 days)
 - [x] Dependencies between stories are clearly identified
 - [x] Stories can be worked on sequentially to build each epic

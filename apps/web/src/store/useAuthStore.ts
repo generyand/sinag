@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { User } from '@vantage/shared';
+import { User } from '@sinag/shared';
 
 /**
  * Authentication state interface for the global auth store

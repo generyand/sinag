@@ -373,7 +373,7 @@ Tech-stack specific file structure for the Analytics & Reporting feature:
       - **Dependencies:** 1.3.1 (types generated)
       - **Acceptance:**
         - Create file with `'use client'` directive (needs client-side data fetching)
-        - Import `useGetAnalyticsDashboard` from `@vantage/shared`
+        - Import `useGetAnalyticsDashboard` from `@sinag/shared`
         - Component checks user role, redirects if not MLGOO_DILG
         - Implements loading state with shadcn/ui Skeleton components
         - Implements error state with Alert component
@@ -418,7 +418,7 @@ Tech-stack specific file structure for the Analytics & Reporting feature:
       - **Files:** `apps/web/src/hooks/useAnalytics.ts`
       - **Dependencies:** 1.3.1 (Orval hooks generated)
       - **Acceptance:**
-        - Import `useGetAnalyticsDashboard` from `@vantage/shared`
+        - Import `useGetAnalyticsDashboard` from `@sinag/shared`
         - Create wrapper hook `useAnalytics(cycleId?: number)` that:
           - Calls Orval hook with proper error handling
           - Formats error messages for user display
@@ -702,7 +702,7 @@ Tech-stack specific file structure for the Analytics & Reporting feature:
         - Verify `useGetAnalyticsReports` hook generated
         - Verify TypeScript types for `ReportsDataResponse`, `ChartData`, `MapData`, `TableData` exist
         - No TypeScript compilation errors
-        - Test import in frontend: `import { useGetAnalyticsReports } from '@vantage/shared'`
+        - Test import in frontend: `import { useGetAnalyticsReports } from '@sinag/shared'`
       - **Tech:** Orval, OpenAPI, TypeScript
 
   - [x] **2.5 Story: Frontend Reports Page Layout**
@@ -728,7 +728,7 @@ Tech-stack specific file structure for the Analytics & Reporting feature:
       - **Dependencies:** 2.4.1 (types generated)
       - **Acceptance:**
         - Create page with `'use client'` directive
-        - Import `useGetAnalyticsReports` from `@vantage/shared`
+        - Import `useGetAnalyticsReports` from `@sinag/shared`
         - State management for filters: `cycle`, `startDate`, `endDate`, `governanceAreas`, `barangayIds`, `status`, `page`
         - Call hook with filter state: `const { data, isLoading, error } = useGetAnalyticsReports({ ...filters })`
         - RBAC check for current user role
@@ -1245,7 +1245,7 @@ Tech-stack specific file structure for the Analytics & Reporting feature:
         - Verify `useGetAnalyticsGapAnalysis` hook generated
         - Verify types for `GapAnalysisResponse`, `AreaGap`, `IndicatorGap`, `CommonPattern` exist
         - No TypeScript errors
-        - Import test: `import { useGetAnalyticsGapAnalysis } from '@vantage/shared'`
+        - Import test: `import { useGetAnalyticsGapAnalysis } from '@sinag/shared'`
       - **Tech:** Orval, TypeScript
 
   - [ ] **3.4 Story: Frontend Gap Analysis Page**
@@ -1271,7 +1271,7 @@ Tech-stack specific file structure for the Analytics & Reporting feature:
       - **Dependencies:** 3.3.1 (types generated)
       - **Acceptance:**
         - Create page with `'use client'` directive
-        - Import `useGetAnalyticsGapAnalysis` from `@vantage/shared`
+        - Import `useGetAnalyticsGapAnalysis` from `@sinag/shared`
         - State for filters: cycle, barangay, governance area
         - Call hook: `const { data, isLoading, error } = useGetAnalyticsGapAnalysis({ ...filters })`
         - RBAC check: accessible to MLGOO_DILG, Assessor, BLGU with appropriate filtering
@@ -1864,7 +1864,7 @@ Tech-stack specific file structure for the Analytics & Reporting feature:
 
 ## Quality Gates - Story Review Checklist
 
-- [x] Stories align with VANTAGE full-stack architecture (Frontend, Backend, Database)
+- [x] Stories align with SINAG full-stack architecture (Frontend, Backend, Database)
 - [x] Each story represents a cohesive implementation domain (1-3 days)
 - [x] Dependencies between stories are clearly identified
 - [x] Stories can be worked on sequentially to build each epic

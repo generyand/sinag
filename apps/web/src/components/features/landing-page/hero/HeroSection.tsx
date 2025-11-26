@@ -158,7 +158,7 @@ export function HeroSection() {
         <Link href="/login">
           <button
             className="bg-transparent border-2 border-[#fbbf24] text-white px-6 py-2 rounded-lg hover:bg-[#fbbf24] hover:text-black transition-all duration-300 font-semibold text-sm transform hover:scale-105 active:scale-95 hover:shadow-lg active:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#fbbf24] focus:ring-offset-2 focus:ring-offset-transparent backdrop-blur-sm"
-            aria-label="Login to VANTAGE platform"
+            aria-label="Login to SINAG platform"
             type="button"
           >
             <span className="flex items-center gap-2">

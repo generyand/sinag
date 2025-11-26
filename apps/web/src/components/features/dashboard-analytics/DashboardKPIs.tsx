@@ -3,7 +3,7 @@ import type {
   AreaBreakdown,
   FailedIndicator,
   BarangayRanking,
-} from '@vantage/shared';
+} from '@sinag/shared';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';

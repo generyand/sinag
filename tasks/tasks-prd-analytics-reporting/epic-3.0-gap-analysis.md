@@ -133,7 +133,7 @@
         - Verify `useGetAnalyticsGapAnalysis` hook generated
         - Verify types for `GapAnalysisResponse`, `AreaGap`, `IndicatorGap`, `CommonPattern` exist
         - No TypeScript errors
-        - Import test: `import { useGetAnalyticsGapAnalysis } from '@vantage/shared'`
+        - Import test: `import { useGetAnalyticsGapAnalysis } from '@sinag/shared'`
       - **Tech:** Orval, TypeScript
 
   - [ ] **3.4 Story: Frontend Gap Analysis Page**
@@ -159,7 +159,7 @@
       - **Dependencies:** 3.3.1 (types generated)
       - **Acceptance:**
         - Create page with `'use client'` directive
-        - Import `useGetAnalyticsGapAnalysis` from `@vantage/shared`
+        - Import `useGetAnalyticsGapAnalysis` from `@sinag/shared`
         - State for filters: cycle, barangay, governance area
         - Call hook: `const { data, isLoading, error } = useGetAnalyticsGapAnalysis({ ...filters })`
         - RBAC check: accessible to MLGOO_DILG, Assessor, BLGU with appropriate filtering

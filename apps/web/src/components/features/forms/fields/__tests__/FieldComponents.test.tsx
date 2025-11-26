@@ -21,7 +21,7 @@ import type {
   RadioButtonField,
   CheckboxGroupField,
   SelectField,
-} from "@vantage/shared";
+} from "@sinag/shared";
 
 // ============================================================================
 // Test Wrapper Component

@@ -1,6 +1,6 @@
-# E2E Tests for VANTAGE Platform
+# E2E Tests for SINAG Platform
 
-This directory contains Playwright E2E tests for the VANTAGE governance assessment platform.
+This directory contains Playwright E2E tests for the SINAG governance assessment platform.
 
 ## Overview
 

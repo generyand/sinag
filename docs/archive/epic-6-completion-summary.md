@@ -315,7 +315,7 @@ async def create_indicator(
 
 ```typescript
 import { showSuccess, showError, showApiError } from '@/lib/toast';
-import { useCreateIndicator } from '@vantage/shared';
+import { useCreateIndicator } from '@sinag/shared';
 
 function MyComponent() {
   const createIndicator = useCreateIndicator();

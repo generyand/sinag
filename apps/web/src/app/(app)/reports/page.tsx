@@ -7,7 +7,7 @@ import {
   VisualizationGrid,
   ExportControls,
 } from "@/components/features/reports";
-import { useGetAnalyticsReports } from "@vantage/shared";
+import { useGetAnalyticsReports } from "@sinag/shared";
 import { BarChart3, FileText } from "lucide-react";
 
 export default function ReportsPage() {

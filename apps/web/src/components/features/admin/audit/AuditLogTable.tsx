@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
-import type { AuditLogResponse } from '@vantage/shared';
+import type { AuditLogResponse } from '@sinag/shared';
 import {
   Activity,
   Calendar,

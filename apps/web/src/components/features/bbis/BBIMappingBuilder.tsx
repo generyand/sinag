@@ -16,7 +16,7 @@ import { useIndicators } from "@/hooks/useIndicators";
 import { useTestBBICalculationMutation } from "@/hooks/useBBIs";
 import { Plus, Trash2, PlayCircle, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import type { IndicatorResponse } from "@vantage/shared";
+import type { IndicatorResponse } from "@sinag/shared";
 
 interface MappingCondition {
   indicator_id: number;

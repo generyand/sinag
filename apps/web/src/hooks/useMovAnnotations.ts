@@ -8,7 +8,7 @@ import {
   useDeleteAssessorAnnotationsAnnotationId,
   type AnnotationCreate,
   type AnnotationUpdate
-} from "@vantage/shared";
+} from "@sinag/shared";
 
 /**
  * Hook for managing MOV file annotations with database persistence

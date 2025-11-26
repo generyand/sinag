@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // Monorepo configuration for Vercel deployment
-  transpilePackages: ["@vantage/shared"],
+  transpilePackages: ["@sinag/shared"],
 
   // Ensure proper output configuration
   output: "standalone",
@@ -26,7 +26,7 @@ const nextConfig: NextConfig = {
     // Handle shared package resolution
     config.resolve.alias = {
       ...config.resolve.alias,
-      "@vantage/shared": require("path").resolve(__dirname, "../../packages/shared/src/generated"),
+      "@sinag/shared": require("path").resolve(__dirname, "../../packages/shared/src/generated"),
     };
 
     // Ignore canvas module on client side (it's a server-only native module)

@@ -13,12 +13,12 @@ import type {
   DeadlineOverrideCreate,
   DeadlineOverrideListResponse,
   DeadlineStatusListResponse
-} from '@vantage/shared';
+} from '@sinag/shared';
 import {
   useGetAdminDeadlinesOverrides,
   useGetAdminDeadlinesStatus,
   usePostAdminDeadlinesOverride
-} from '@vantage/shared';
+} from '@sinag/shared';
 
 /**
  * Hook for managing deadline status and overrides.

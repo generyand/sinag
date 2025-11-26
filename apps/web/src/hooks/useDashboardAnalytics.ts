@@ -1,5 +1,5 @@
-import { useGetAnalyticsDashboard } from '@vantage/shared';
-import type { DashboardKPIResponse } from '@vantage/shared';
+import { useGetAnalyticsDashboard } from '@sinag/shared';
+import type { DashboardKPIResponse } from '@sinag/shared';
 import type { BBIFunctionalityData } from '@/components/features/dashboard-analytics/BBIFunctionalityWidget';
 
 export interface DashboardAnalyticsResponse extends DashboardKPIResponse {

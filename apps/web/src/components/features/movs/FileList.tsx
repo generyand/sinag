@@ -18,7 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatDistanceToNow } from "date-fns";
-import { MOVFileResponse } from "@vantage/shared";
+import { MOVFileResponse } from "@sinag/shared";
 import dynamic from "next/dynamic";
 
 // Dynamically import annotators to avoid SSR issues

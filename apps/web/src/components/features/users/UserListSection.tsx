@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { useUsers } from "@/hooks/useUsers";
-import type { UserListResponse, User } from "@vantage/shared";
+import type { UserListResponse, User } from "@sinag/shared";
 import UserManagementTable from "./UserManagementTable";
 import { UserForm } from "./UserForm";
 import { Button } from "@/components/ui/button";

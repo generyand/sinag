@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { NotificationResponse } from '@vantage/shared';
+import { NotificationResponse } from '@sinag/shared';
 import { Bell, CheckCheck, RefreshCw } from 'lucide-react';
 import { NotificationItem } from './NotificationItem';
 

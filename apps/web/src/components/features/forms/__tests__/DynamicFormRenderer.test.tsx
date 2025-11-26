@@ -6,11 +6,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DynamicFormRenderer } from "../DynamicFormRenderer";
-import type { FormSchema } from "@vantage/shared";
+import type { FormSchema } from "@sinag/shared";
 
 // Mock the API hooks
-vi.mock("@vantage/shared", async () => {
-  const actual = await vi.importActual("@vantage/shared");
+vi.mock("@sinag/shared", async () => {
+  const actual = await vi.importActual("@sinag/shared");
   return {
     ...actual,
     useGetIndicatorsIndicatorIdFormSchema: vi.fn(),
@@ -23,7 +23,7 @@ import {
   useGetIndicatorsIndicatorIdFormSchema,
   usePostAssessmentsAssessmentIdAnswers,
   useGetAssessmentsAssessmentIdAnswers,
-} from "@vantage/shared";
+} from "@sinag/shared";
 
 // ============================================================================
 // Test Setup

@@ -1,5 +1,5 @@
-import type { AuditLogListResponse, GetAdminAuditLogsParams } from '@vantage/shared';
-import { useGetAdminAuditLogs } from '@vantage/shared';
+import type { AuditLogListResponse, GetAdminAuditLogsParams } from '@sinag/shared';
+import { useGetAdminAuditLogs } from '@sinag/shared';
 
 /**
  * Custom hook for fetching audit logs with filtering

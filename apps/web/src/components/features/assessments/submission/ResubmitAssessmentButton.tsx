@@ -42,7 +42,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   usePostAssessmentsAssessmentIdResubmit,
   usePostAssessmentsAssessmentIdSubmitForCalibration,
-} from "@vantage/shared";
+} from "@sinag/shared";
 
 interface ResubmitAssessmentButtonProps {
   assessmentId: number;

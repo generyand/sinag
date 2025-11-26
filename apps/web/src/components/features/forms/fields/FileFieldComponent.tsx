@@ -21,15 +21,15 @@ const ImageAnnotator = dynamic(() => import('@/components/shared/ImageAnnotator'
   ssr: false,
   loading: () => <div className="flex items-center justify-center h-[70vh]">Loading image viewer...</div>,
 });
-import type { FileUploadField } from "@vantage/shared";
+import type { FileUploadField } from "@sinag/shared";
 import {
   useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles,
   usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload,
   useGetAssessmentsMyAssessment,
   MOVFileResponse,
   AssessmentStatus,
-} from "@vantage/shared";
-import { getGetAssessmentsMyAssessmentQueryKey } from "@vantage/shared/src/generated/endpoints/assessments";
+} from "@sinag/shared";
+import { getGetAssessmentsMyAssessmentQueryKey } from "@sinag/shared/src/generated/endpoints/assessments";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useUploadStore } from "@/store/useUploadStore";
 import { FileUpload } from "@/components/features/movs/FileUpload";

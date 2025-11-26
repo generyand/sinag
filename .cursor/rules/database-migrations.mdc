@@ -9,7 +9,7 @@ alwaysApply: true
 
 # Database Migrations with Alembic
 
-This guide covers how to create and apply database migrations using Alembic in the Vantage project. Alembic is used to manage changes to our PostgreSQL database schema in a structured and version-controlled way.
+This guide covers how to create and apply database migrations using Alembic in the SINAG project. Alembic is used to manage changes to our PostgreSQL database schema in a structured and version-controlled way.
 
 All Alembic commands should be run from the `apps/api` directory.
 

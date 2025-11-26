@@ -5,7 +5,7 @@ alwaysApply: true
 ---
 # Frontend Hooks Guidelines
 
-This document outlines the best practices for creating and using custom React hooks within the VANTAGE frontend application. Adhering to these guidelines ensures consistency, maintainability, and optimal performance.
+This document outlines the best practices for creating and using custom React hooks within the SINAG frontend application. Adhering to these guidelines ensures consistency, maintainability, and optimal performance.
 
 ## Core Principles
 
@@ -32,14 +32,14 @@ For all server-state management, use `@tanstack/react-query`.
 
 -   **Query Keys:** Use a structured, serializable array for query keys. The first element should be the domain, followed by any parameters.
 
--   **Query Functions:** The query function should use the shared API client from `@vantage/shared`.
+-   **Query Functions:** The query function should use the shared API client from `@sinag/shared`.
 
 ### Example: Fetching a User
 
 ```typescript
 // apps/web/src/hooks/useUser.ts
 import { useQuery } from '@tanstack/react-query';
-import { users } from '@vantage/shared';
+import { users } from '@sinag/shared';
 
 const userKeys = {
   all: ['users'] as const,
@@ -66,7 +66,7 @@ For creating, updating, or deleting data, use `useMutation`.
 ```typescript
 // apps/web/src/hooks/useUser.ts
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { users, UserUpdate } from '@vantage/shared';
+import { users, UserUpdate } from '@sinag/shared';
 import { userKeys } from './useUser'; // Assuming keys are in the same file or exported
 
 export function useUpdateUser() {
@@ -99,7 +99,7 @@ For managing global client-side state, use `Zustand`. The PRD specifies `useAuth
 ```typescript
 // apps/web/src/store/useAuthStore.ts
 import { create } from 'zustand';
-import { User } from '@vantage/shared';
+import { User } from '@sinag/shared';
 
 interface AuthState {
   user: User | null;

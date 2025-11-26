@@ -35,7 +35,7 @@ function useScrollAnimation() {
   return { elementRef, isVisible };
 }
 
-import { useGetLookupsBarangays } from "@vantage/shared";
+import { useGetLookupsBarangays } from "@sinag/shared";
 
 export function BarangaysSection() {
   const barangaysAnimation = useScrollAnimation();

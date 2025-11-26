@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ValidationWorkspace } from '../ValidationWorkspace';
 
-vi.mock('@vantage/shared', () => ({
+vi.mock('@sinag/shared', () => ({
   usePostAssessorAssessmentResponsesResponseIdValidate: () => ({ mutateAsync: vi.fn(), isPending: false }),
   usePostAssessorAssessmentsAssessmentIdRework: () => ({ mutateAsync: vi.fn(), isPending: false }),
   usePostAssessorAssessmentsAssessmentIdFinalize: () => ({ mutateAsync: vi.fn(), isPending: false }),

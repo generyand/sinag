@@ -734,7 +734,7 @@ pnpm generate-types
 
 **Usage in Frontend:**
 ```typescript
-import { useGetIndicatorByCode } from '@vantage/shared';
+import { useGetIndicatorByCode } from '@sinag/shared';
 
 const { data: indicator } = useGetIndicatorByCode('1.1.1');
 ```
@@ -2274,7 +2274,7 @@ export const useGetIndicatorTree = (indicatorCode: string) => {
 #### BLGU Submission Form
 
 ```tsx
-import { useGetIndicatorByCode } from '@vantage/shared';
+import { useGetIndicatorByCode } from '@sinag/shared';
 
 export function BLGUSubmissionForm({ indicatorCode }: { indicatorCode: string }) {
   const { data: indicator, isLoading } = useGetIndicatorByCode(indicatorCode);
@@ -2317,7 +2317,7 @@ export function BLGUSubmissionForm({ indicatorCode }: { indicatorCode: string })
 #### Validator Review Interface
 
 ```tsx
-import { useGetIndicatorByCode } from '@vantage/shared';
+import { useGetIndicatorByCode } from '@sinag/shared';
 import { useState } from 'react';
 
 export function ValidatorReview({ indicatorCode }: { indicatorCode: string }) {
@@ -2397,7 +2397,7 @@ export function ValidatorReview({ indicatorCode }: { indicatorCode: string }) {
 #### GAR Display
 
 ```tsx
-import { useGetIndicatorTree } from '@vantage/shared';
+import { useGetIndicatorTree } from '@sinag/shared';
 
 export function GARIndicatorDisplay({ indicatorCode }: { indicatorCode: string }) {
   const { data: tree } = useGetIndicatorTree(indicatorCode);

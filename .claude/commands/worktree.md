@@ -181,7 +181,7 @@ This syncs .env files from the main worktree to other worktrees. This is useful 
 
 **For a specific worktree:**
 ```bash
-./scripts/worktree.sh env ../vantage-feature-analytics
+./scripts/worktree.sh env ../sinag-feature-analytics
 ```
 
 **For all worktrees:**
@@ -254,7 +254,7 @@ If the user runs `/worktree create` without a name, guide them interactively:
 
 ### Directory Structure
 - Worktrees are organized in `/home/kiedajhinn/Projects/sinag-worktrees/`
-- The main worktree at `/home/kiedajhinn/Projects/vantage` cannot be removed
+- The main worktree at `/home/kiedajhinn/Projects/sinag` cannot be removed
 
 ### Environment Files
 - `.env` files are automatically copied from main worktree during creation

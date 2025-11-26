@@ -14,7 +14,7 @@ function useLoginTheme() {
     // Function to determine theme using the app's theme system
     const getTheme = () => {
       // Check for saved theme preference in localStorage using the app's key
-      const savedTheme = localStorage.getItem("vantage-theme") as
+      const savedTheme = localStorage.getItem("sinag-theme") as
         | "light"
         | "dark"
         | "system";
@@ -50,14 +50,14 @@ function useLoginTheme() {
     const lightMediaQuery = window.matchMedia("(prefers-color-scheme: light)");
 
     const handleDarkChange = (e: MediaQueryListEvent) => {
-      const savedTheme = localStorage.getItem("vantage-theme");
+      const savedTheme = localStorage.getItem("sinag-theme");
       if (e.matches && (savedTheme === "system" || !savedTheme)) {
         setIsDarkMode(true);
       }
     };
 
     const handleLightChange = (e: MediaQueryListEvent) => {
-      const savedTheme = localStorage.getItem("vantage-theme");
+      const savedTheme = localStorage.getItem("sinag-theme");
       if (e.matches && (savedTheme === "system" || !savedTheme)) {
         setIsDarkMode(false);
       }
@@ -65,7 +65,7 @@ function useLoginTheme() {
 
     // Listen for storage changes (if user changes theme in another tab)
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "vantage-theme") {
+      if (e.key === "sinag-theme") {
         const newTheme = e.newValue as "light" | "dark" | "system";
         if (newTheme === "dark") {
           setIsDarkMode(true);
@@ -297,7 +297,7 @@ export default function LoginPage() {
                   isDarkMode ? "text-gray-300" : "text-gray-600"
                 }`}
               >
-                Sign in to the VANTAGE Platform.
+                Sign in to the SINAG Platform.
               </p>
             </div>
             <div className="flex-1 flex flex-col justify-center">
@@ -351,7 +351,7 @@ export default function LoginPage() {
               isDarkMode ? "text-gray-400" : "text-gray-500"
             }`}
           >
-            <div>Support: (02) 1234-5678 | support.vantage@mlgrc.gov.ph</div>
+            <div>Support: (02) 1234-5678 | support.sinag@mlgrc.gov.ph</div>
             <div className="text-xs opacity-75">
               Version 1.0.0 | Build 2024.01.15
             </div>

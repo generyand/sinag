@@ -128,7 +128,7 @@ Map each functional requirement from the updated PRD to specific tasks:
 - [x] **4.0 Frontend Foundation & Login Flow**
 
   - [x] 4.1 Create `apps/web/src/store/useAuthStore.ts` using Zustand to hold `user`, `token`, and `isAuthenticated` state.
-  - [x] 4.2 In the `LoginForm` component, use the auto-generated `usePostAuthLogin` mutation hook from `@vantage/shared`. On success, save the returned token and user state to the Zustand store and redirect to the dashboard.
+  - [x] 4.2 In the `LoginForm` component, use the auto-generated `usePostAuthLogin` mutation hook from `@sinag/shared`. On success, save the returned token and user state to the Zustand store and redirect to the dashboard.
   - [x] 4.3 Create `apps/web/middleware.ts` to protect all routes inside the `(app)` group. Unauthenticated users should be redirected to `/login`.
   - [x] 4.4 In the `UserNav` component, use the auto-generated `usePostAuthLogout` mutation hook. On success, clear the auth store and redirect to the login page.
 
@@ -294,7 +294,7 @@ Map each functional requirement from the updated PRD to specific tasks:
       - **Files:** `apps/web/src/store/useAuthStore.ts`
       - **Dependencies:** Task 8.4.1
       - **Acceptance Criteria:**
-        - Update user type import to use newly generated types from `@vantage/shared`
+        - Update user type import to use newly generated types from `@sinag/shared`
         - Ensure role field uses new enum values (MLGOO_DILG, ASSESSOR, VALIDATOR, BLGU_USER)
         - Update any role-checking helper functions (e.g., `isMlgooDilg()`, `isAssessor()`, `isValidator()`, `isBlguUser()`)
         - Remove any SUPERADMIN-related logic

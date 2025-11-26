@@ -1,7 +1,7 @@
 import { defineConfig } from 'orval';
 
 export default defineConfig({
-  vantage: {
+  sinag: {
     input: {
       target: 'http://localhost:8000/openapi.json',
     },

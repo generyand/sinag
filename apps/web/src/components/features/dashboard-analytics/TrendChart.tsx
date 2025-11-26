@@ -7,7 +7,7 @@
  * If not installed, run: pnpm add recharts
  */
 
-import type { TrendData } from '@vantage/shared';
+import type { TrendData } from '@sinag/shared';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp } from 'lucide-react';
 

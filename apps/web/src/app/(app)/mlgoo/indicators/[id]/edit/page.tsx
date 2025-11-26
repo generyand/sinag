@@ -22,7 +22,7 @@ import {
   useGetIndicatorsIndicatorId,
   usePutIndicatorsIndicatorId,
   useGetLookupsGovernanceAreas,
-} from '@vantage/shared';
+} from '@sinag/shared';
 import { useToast } from '@/hooks/use-toast';
 
 interface IndicatorFormData {

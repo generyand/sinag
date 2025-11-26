@@ -7,7 +7,7 @@ alwaysApply: false
 
 ## Purpose
 
-Establish a professional, consistent, and accessible styling system for the Vantage project. This rule defines the theme palette, typography, spacing, and best practices for applying styles to Shadcn UI components using `class-variance-authority (cva)`. All contributions must follow these guidelines to ensure a cohesive user experience.
+Establish a professional, consistent, and accessible styling system for the SINAG project. This rule defines the theme palette, typography, spacing, and best practices for applying styles to Shadcn UI components using `class-variance-authority (cva)`. All contributions must follow these guidelines to ensure a cohesive user experience.
 
 ---
 

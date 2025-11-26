@@ -29,7 +29,7 @@ Root endpoint - welcome message for the API.
 **Response** (200 OK):
 ```json
 {
-  "message": "Welcome to Vantage API"
+  "message": "Welcome to SINAG API"
 }
 ```
 

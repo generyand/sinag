@@ -8,9 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle2, AlertCircle } from "lucide-react";
-import type { FormSchema, FormSchemaFieldsItem, MOVFileResponse } from "@vantage/shared";
+import type { FormSchema, FormSchemaFieldsItem, MOVFileResponse } from "@sinag/shared";
 import { isFieldRequired } from "@/lib/forms/formSchemaParser";
-import { useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles, useGetAssessmentsMyAssessment } from "@vantage/shared";
+import { useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles, useGetAssessmentsMyAssessment } from "@sinag/shared";
 
 interface CompletionFeedbackPanelProps {
   /** Current form values */

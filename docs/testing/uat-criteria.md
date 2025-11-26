@@ -9,7 +9,7 @@
 
 ## Overview
 
-This document defines the User Acceptance Testing criteria for the VANTAGE BLGU Table Assessment Workflow system. UAT validates that the system meets business requirements and is ready for production deployment.
+This document defines the User Acceptance Testing criteria for the SINAG BLGU Table Assessment Workflow system. UAT validates that the system meets business requirements and is ready for production deployment.
 
 ## UAT Objectives
 

@@ -6,7 +6,7 @@ import { BBIForm } from "@/components/features/bbis";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import type { BBICreate } from "@vantage/shared";
+import type { BBICreate } from "@sinag/shared";
 
 export default function NewBBIPage() {
   const router = useRouter();

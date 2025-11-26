@@ -15,7 +15,7 @@ import { render, screen } from "@testing-library/react";
 import { ReworkCommentsPanel } from "../ReworkCommentsPanel";
 
 // Mock the generated hook
-vi.mock("@vantage/shared", () => ({
+vi.mock("@sinag/shared", () => ({
   useGetAssessmentsAssessmentIdSubmissionStatus: vi.fn(),
 }));
 
@@ -24,7 +24,7 @@ vi.mock("date-fns", () => ({
   formatDistanceToNow: vi.fn(() => "2 days ago"),
 }));
 
-import { useGetAssessmentsAssessmentIdSubmissionStatus } from "@vantage/shared";
+import { useGetAssessmentsAssessmentIdSubmissionStatus } from "@sinag/shared";
 
 const mockUseGetSubmissionStatus = useGetAssessmentsAssessmentIdSubmissionStatus as ReturnType<
   typeof vi.fn

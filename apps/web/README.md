@@ -1,6 +1,6 @@
-# Vantage Web (NextJS Frontend)
+# SINAG Web (NextJS Frontend)
 
-Frontend application for the Vantage system built with **NextJS 15**, **TypeScript**, and **Tailwind CSS**.
+Frontend application for the SINAG system built with **NextJS 15**, **TypeScript**, and **Tailwind CSS**.
 
 ## 🚀 **Quick Start**
 
@@ -69,10 +69,10 @@ pnpm generate-types
 
 ## 🔗 **Type-Safe API Integration**
 
-This frontend uses the auto-generated API client from `@vantage/shared`:
+This frontend uses the auto-generated API client from `@sinag/shared`:
 
 ```typescript
-import { ApiClient, type User, type LoginRequest } from '@vantage/shared';
+import { ApiClient, type User, type LoginRequest } from '@sinag/shared';
 
 // Create API client
 const api = new ApiClient({ BASE: process.env.NEXT_PUBLIC_API_URL });
@@ -139,7 +139,7 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 NODE_ENV=development
 
 # Database URL (if connecting directly)
-# DATABASE_URL=postgresql://user:password@localhost/vantage
+# DATABASE_URL=postgresql://user:password@localhost/sinag
 
 # Authentication (when implemented)
 # NEXT_PUBLIC_AUTH_URL=http://localhost:8000/auth
@@ -214,7 +214,7 @@ Recommended setup:
 - `lucide-react` - Icon library
 
 ### **Type Safety**
-- `@vantage/shared` - Auto-generated API types and client
+- `@sinag/shared` - Auto-generated API types and client
 
 ## 🚀 **Deployment Notes**
 

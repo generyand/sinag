@@ -7,7 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQueryClient } from "@tanstack/react-query";
-import type { BBIUpdate } from "@vantage/shared";
+import type { BBIUpdate } from "@sinag/shared";
 
 export default function EditBBIPage() {
   const router = useRouter();

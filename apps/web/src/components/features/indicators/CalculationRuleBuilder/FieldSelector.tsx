@@ -1,6 +1,6 @@
 'use client';
 
-import type { FormSchema } from '@vantage/shared';
+import type { FormSchema } from '@sinag/shared';
 import { Label } from '@/components/ui/label';
 import {
   Select,

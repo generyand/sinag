@@ -18,7 +18,7 @@ import userEvent from "@testing-library/user-event";
 import { ResubmitAssessmentButton } from "../ResubmitAssessmentButton";
 
 // Mock the generated hook
-vi.mock("@vantage/shared", () => ({
+vi.mock("@sinag/shared", () => ({
   usePostAssessmentsAssessmentIdResubmit: vi.fn(),
 }));
 
@@ -29,7 +29,7 @@ vi.mock("@/hooks/use-toast", () => ({
   }),
 }));
 
-import { usePostAssessmentsAssessmentIdResubmit } from "@vantage/shared";
+import { usePostAssessmentsAssessmentIdResubmit } from "@sinag/shared";
 
 const mockUseResubmit = usePostAssessmentsAssessmentIdResubmit as ReturnType<typeof vi.fn>;
 

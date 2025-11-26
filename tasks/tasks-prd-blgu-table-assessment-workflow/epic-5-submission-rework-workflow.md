@@ -814,7 +814,7 @@
   - [x] **5.11.2 Atomic: Integrate useGetSubmissionStatus query hook**
     - **Files:** `apps/web/src/components/features/assessments/submission/SubmissionValidation.tsx`
     - **Dependencies:** Task 5.11.1, Story 5.10 must be complete
-    - **Acceptance:** Import useGetSubmissionStatus from @vantage/shared. Call hook with assessmentId. Extract validation_result from response. Handle loading and error states.
+    - **Acceptance:** Import useGetSubmissionStatus from @sinag/shared. Call hook with assessmentId. Extract validation_result from response. Handle loading and error states.
     - **Tech:** React, TanStack Query, generated hooks
     - **Time Estimate:** 3 hours
 
@@ -874,7 +874,7 @@
   - [x] **5.12.2 Atomic: Integrate useSubmitAssessment mutation hook**
     - **Files:** `apps/web/src/components/features/assessments/submission/SubmitAssessmentButton.tsx`
     - **Dependencies:** Task 5.12.1, Story 5.10 must be complete
-    - **Acceptance:** Import useSubmitAssessment from @vantage/shared. Call hook in component. Store mutation function. Configure onSuccess callback to call props.onSuccess.
+    - **Acceptance:** Import useSubmitAssessment from @sinag/shared. Call hook in component. Store mutation function. Configure onSuccess callback to call props.onSuccess.
     - **Tech:** React, TanStack Query, generated hooks
     - **Time Estimate:** 3 hours
 
@@ -1001,7 +1001,7 @@
   - [x] **5.14.2 Atomic: Integrate useGetSubmissionStatus query hook**
     - **Files:** `apps/web/src/components/features/assessments/rework/ReworkCommentsPanel.tsx`
     - **Dependencies:** Task 5.14.1, Story 5.10 must be complete
-    - **Acceptance:** Import useGetAssessmentsAssessmentIdSubmissionStatus from @vantage/shared. Call hook with assessmentId. Extract rework_comments, rework_requested_at, rework_requested_by, status. Only render component if status === "REWORK".
+    - **Acceptance:** Import useGetAssessmentsAssessmentIdSubmissionStatus from @sinag/shared. Call hook with assessmentId. Extract rework_comments, rework_requested_at, rework_requested_by, status. Only render component if status === "REWORK".
     - **Tech:** React, TanStack Query, conditional rendering
     - **Time Estimate:** 3 hours
     - **Completed:** 2025-11-09
@@ -1061,7 +1061,7 @@
   - [x] **5.15.2 Atomic: Integrate useRequestRework mutation hook**
     - **Files:** `apps/web/src/components/features/assessor/RequestReworkForm.tsx`
     - **Dependencies:** Task 5.15.1, Story 5.10 must be complete
-    - **Acceptance:** Import usePostAssessmentsAssessmentIdRequestRework from @vantage/shared. Call hook in component. Store mutation function. Configure onSuccess and onError callbacks.
+    - **Acceptance:** Import usePostAssessmentsAssessmentIdRequestRework from @sinag/shared. Call hook in component. Store mutation function. Configure onSuccess and onError callbacks.
     - **Tech:** React, TanStack Query, generated hooks
     - **Time Estimate:** 3 hours
     - **Completed:** 2025-11-09
@@ -1145,7 +1145,7 @@
   - [x] **5.16.2 Atomic: Integrate useResubmitAssessment mutation hook**
     - **Files:** `apps/web/src/components/features/assessments/submission/ResubmitAssessmentButton.tsx`
     - **Dependencies:** Task 5.16.1, Story 5.10 must be complete
-    - **Acceptance:** Import usePostAssessmentsAssessmentIdResubmit from @vantage/shared. Call hook in component. Store mutation function. Configure onSuccess and onError callbacks.
+    - **Acceptance:** Import usePostAssessmentsAssessmentIdResubmit from @sinag/shared. Call hook in component. Store mutation function. Configure onSuccess and onError callbacks.
     - **Tech:** React, TanStack Query, generated hooks
     - **Time Estimate:** 3 hours
     - **Completed:** 2025-11-09

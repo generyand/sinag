@@ -9,7 +9,7 @@ alwaysApply: true
 
 # Configuration and Environment Variables
 
-This document explains how to manage configuration for the Vantage backend API. We use a combination of Pydantic's `BaseSettings`, a `.env` file for local development, and environment variables for production.
+This document explains how to manage configuration for the SINAG backend API. We use a combination of Pydantic's `BaseSettings`, a `.env` file for local development, and environment variables for production.
 
 The main configuration logic is located in `apps/api/app/core/config.py`.
 
@@ -27,9 +27,9 @@ SECRET_KEY="a-very-secret-key-that-should-be-changed"
 
 # Database settings
 POSTGRES_SERVER="localhost"
-POSTGRES_USER="vantage_user"
-POSTGRES_PASSWORD="vantage_password"
-POSTGRES_DB="vantage_dev_db"
+POSTGRES_USER="sinag_user"
+POSTGRES_PASSWORD="sinag_password"
+POSTGRES_DB="sinag_dev_db"
 
 # First superuser
 FIRST_SUPERUSER_EMAIL="admin@example.com"

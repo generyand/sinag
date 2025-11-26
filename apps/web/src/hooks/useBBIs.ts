@@ -12,7 +12,7 @@ import {
   type BBICreate,
   type BBIUpdate,
   type TestBBICalculationRequest,
-} from '@vantage/shared';
+} from '@sinag/shared';
 import { useQuery } from '@tanstack/react-query';
 
 /**

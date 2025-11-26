@@ -1491,7 +1491,7 @@
   - Dependencies: All epics 1-5 must be complete
 
   - [ ] **6.20.1 Atomic: Update CLAUDE.md with workflow documentation**
-    - **Files:** `/home/kiedajhinn/Projects/vantage/CLAUDE.md`
+    - **Files:** `/home/kiedajhinn/Projects/sinag/CLAUDE.md`
     - **Dependencies:** All epics 1-5 complete
     - **Acceptance:** Add section to CLAUDE.md documenting BLGU Table Assessment Workflow: submission flow, rework cycle, MOV uploads, locked states. Developer reference complete.
     - **Tech:** Markdown documentation

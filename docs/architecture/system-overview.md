@@ -15,7 +15,7 @@ This document provides a comprehensive visual overview of the SINAG governance a
 
 ## C4 Context Diagram
 
-The following diagram shows how VANTAGE interacts with external systems and users in the DILG SGLGB assessment workflow:
+The following diagram shows how SINAG interacts with external systems and users in the DILG SGLGB assessment workflow:
 
 ```mermaid
 graph TB
@@ -26,8 +26,8 @@ graph TB
         MLGOO[MLGOO-DILG Admins<br/>Manage System]
     end
 
-    subgraph "VANTAGE Platform"
-        VANTAGE[VANTAGE<br/>Governance Assessment System<br/><br/>- Assessment Submission<br/>- Validation Workflow<br/>- Intelligence Layer<br/>- Analytics & Reporting]
+    subgraph "SINAG Platform"
+        SINAG[SINAG<br/>Governance Assessment System<br/><br/>- Assessment Submission<br/>- Validation Workflow<br/>- Intelligence Layer<br/>- Analytics & Reporting]
     end
 
     subgraph "External Systems"
@@ -36,20 +36,20 @@ graph TB
         GEMINI[Google Gemini API<br/><br/>- AI Recommendations<br/>- CapDev Suggestions<br/>- Gap Analysis]
     end
 
-    BLGU -->|Submit Self-Assessment<br/>Upload MOVs| VANTAGE
-    VALIDATOR -->|Validate Area Assessments<br/>Review MOV Checklist| VANTAGE
-    ASSESSOR -->|Validate Any Barangay<br/>Request Rework| VANTAGE
-    MLGOO -->|Manage Indicators<br/>Create BBIs<br/>View Analytics| VANTAGE
+    BLGU -->|Submit Self-Assessment<br/>Upload MOVs| SINAG
+    VALIDATOR -->|Validate Area Assessments<br/>Review MOV Checklist| SINAG
+    ASSESSOR -->|Validate Any Barangay<br/>Request Rework| SINAG
+    MLGOO -->|Manage Indicators<br/>Create BBIs<br/>View Analytics| SINAG
 
-    VANTAGE -->|Store Assessment Data<br/>Upload Files| SUPABASE
-    VANTAGE -->|Queue Background Jobs<br/>Classification Tasks| REDIS
-    VANTAGE -->|Generate AI Insights<br/>CapDev Plans| GEMINI
+    SINAG -->|Store Assessment Data<br/>Upload Files| SUPABASE
+    SINAG -->|Queue Background Jobs<br/>Classification Tasks| REDIS
+    SINAG -->|Generate AI Insights<br/>CapDev Plans| GEMINI
 
-    SUPABASE -.->|Notify Real-time Events| VANTAGE
-    REDIS -.->|Process Tasks| VANTAGE
-    GEMINI -.->|Return Recommendations| VANTAGE
+    SUPABASE -.->|Notify Real-time Events| SINAG
+    REDIS -.->|Process Tasks| SINAG
+    GEMINI -.->|Return Recommendations| SINAG
 
-    style VANTAGE fill:#4A90E2,stroke:#2E5C8A,stroke-width:3px,color:#fff
+    style SINAG fill:#4A90E2,stroke:#2E5C8A,stroke-width:3px,color:#fff
     style SUPABASE fill:#3ECF8E,stroke:#2A9D6A,stroke-width:2px,color:#fff
     style REDIS fill:#DC382D,stroke:#A02820,stroke-width:2px,color:#fff
     style GEMINI fill:#4285F4,stroke:#2A5FCF,stroke-width:2px,color:#fff
@@ -65,7 +65,7 @@ graph TB
 
 ## High-Level System Architecture
 
-This diagram shows the three-tier architecture of VANTAGE with clear separation between frontend, backend, and data layers:
+This diagram shows the three-tier architecture of SINAG with clear separation between frontend, backend, and data layers:
 
 ```mermaid
 graph TB
@@ -125,21 +125,21 @@ This diagram illustrates the Docker-based development environment with service o
 
 ```mermaid
 graph TB
-    subgraph "Docker Network: vantage-network (172.25.0.0/16)"
+    subgraph "Docker Network: sinag-network (172.25.0.0/16)"
         subgraph "Frontend Container (172.25.0.40)"
-            WEB_CONTAINER[vantage-web<br/>Port 3000<br/><br/>Next.js Dev Server<br/>Turbopack<br/>Hot Module Reload]
+            WEB_CONTAINER[sinag-web<br/>Port 3000<br/><br/>Next.js Dev Server<br/>Turbopack<br/>Hot Module Reload]
         end
 
         subgraph "Backend Container (172.25.0.20)"
-            API_CONTAINER[vantage-api<br/>Port 8000<br/><br/>FastAPI with Uvicorn<br/>Auto-reload Enabled<br/>OpenAPI Docs]
+            API_CONTAINER[sinag-api<br/>Port 8000<br/><br/>FastAPI with Uvicorn<br/>Auto-reload Enabled<br/>OpenAPI Docs]
         end
 
         subgraph "Worker Container (172.25.0.30)"
-            WORKER_CONTAINER[vantage-celery-worker<br/><br/>Celery Worker<br/>Queues: notifications, classification<br/>Auto-reload on Code Change]
+            WORKER_CONTAINER[sinag-celery-worker<br/><br/>Celery Worker<br/>Queues: notifications, classification<br/>Auto-reload on Code Change]
         end
 
         subgraph "Cache Container (172.25.0.10)"
-            REDIS_CONTAINER[vantage-redis<br/>Port 6379<br/><br/>Redis 7 Alpine<br/>Persistent Volume<br/>AOF Enabled]
+            REDIS_CONTAINER[sinag-redis<br/>Port 6379<br/><br/>Redis 7 Alpine<br/>Persistent Volume<br/>AOF Enabled]
         end
     end
 
@@ -353,7 +353,7 @@ graph TB
 4. **Orval reads** OpenAPI spec and generates:
    - **TypeScript types** in `packages/shared/src/generated/schemas/[tag]/`
    - **React Query hooks** in `packages/shared/src/generated/endpoints/[tag]/`
-5. **Frontend Developer** imports generated hooks and types from `@vantage/shared`
+5. **Frontend Developer** imports generated hooks and types from `@sinag/shared`
 6. **Type Safety Enforced** at compile-time: API contract changes immediately surface as TypeScript errors
 
 **Tag-Based Organization:**
@@ -382,7 +382,7 @@ Visual representation of the Turborepo workspace organization:
 
 ```mermaid
 graph TB
-    ROOT[vantage/ - Root]
+    ROOT[sinag/ - Root]
 
     ROOT --> APPS[apps/]
     ROOT --> PACKAGES[packages/]

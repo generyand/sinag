@@ -1,7 +1,7 @@
 
 # Creating a New API Endpoint
 
-This guide outlines the complete process for adding a new API endpoint to the Vantage backend. Following these steps ensures that all parts of the application (database, schemas, services, and API layer) are correctly implemented.
+This guide outlines the complete process for adding a new API endpoint to the SINAG backend. Following these steps ensures that all parts of the application (database, schemas, services, and API layer) are correctly implemented.
 
 ## The Core Pattern
 

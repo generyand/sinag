@@ -234,7 +234,7 @@
       - **Dependencies:** 4.4.1 (types generated)
       - **Acceptance:**
         - Create file with `'use client'` directive (needs client-side data fetching)
-        - Import `useGetRecommendations` from `@vantage/shared`
+        - Import `useGetRecommendations` from `@sinag/shared`
         - Component checks user role, allows MLGOO_DILG and BLGU
         - Implements loading state with shadcn/ui Skeleton components
         - Implements error state with Alert component
@@ -292,7 +292,7 @@
       - **Files:** `apps/web/src/hooks/useRecommendations.ts`
       - **Dependencies:** 4.4.1 (Orval hooks generated)
       - **Acceptance:**
-        - Import `useGetRecommendations` and `usePatchRecommendationsStatus` from `@vantage/shared`
+        - Import `useGetRecommendations` and `usePatchRecommendationsStatus` from `@sinag/shared`
         - Create wrapper hook `useRecommendations(assessmentId?: number)` that:
           - Calls Orval hooks with proper error handling
           - Formats error messages for user display

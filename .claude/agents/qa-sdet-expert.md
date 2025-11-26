@@ -36,7 +36,7 @@ You will:
    - Test both positive and negative cases
 
 3. **Follow Project-Specific Standards**
-   - For the VANTAGE project, align with the existing patterns in `apps/api/tests/`
+   - For the SINAG project, align with the existing patterns in `apps/api/tests/`
    - Use pytest fixtures from `conftest.py` for database sessions, test users, and common setup
    - Follow the service layer pattern: test services thoroughly, test routers lightly
    - Ensure tests work with the project's authentication and RBAC system

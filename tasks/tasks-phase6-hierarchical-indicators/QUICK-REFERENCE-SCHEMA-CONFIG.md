@@ -508,12 +508,12 @@ pnpm test src/hooks/__tests__/useSchemaEditor.test.tsx
 ## Contact
 
 **Questions or Feedback?**
-- Slack: `#vantage-phase6`
-- Email: vantage-dev@dilg.gov.ph
-- GitHub Issues: [VANTAGE Repo Issues](https://github.com/vantage/issues)
+- Slack: `#sinag-phase6`
+- Email: sinag-dev@dilg.gov.ph
+- GitHub Issues: [SINAG Repo Issues](https://github.com/sinag/issues)
 
 ---
 
 **Document Status:** Ready for Implementation
 **Next Step:** Begin Phase 1 (Week 1-2)
-**Maintainers:** VANTAGE Development Team
+**Maintainers:** SINAG Development Team

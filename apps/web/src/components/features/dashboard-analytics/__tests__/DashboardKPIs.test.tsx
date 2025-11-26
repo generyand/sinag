@@ -10,7 +10,7 @@ import type {
   AreaBreakdown,
   FailedIndicator,
   BarangayRanking,
-} from '@vantage/shared';
+} from '@sinag/shared';
 import {
   ComplianceRateCard,
   CompletionStatusCard,

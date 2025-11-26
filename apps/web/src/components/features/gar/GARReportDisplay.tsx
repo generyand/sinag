@@ -1,6 +1,6 @@
 'use client';
 
-import { GARResponse } from '@vantage/shared';
+import { GARResponse } from '@sinag/shared';
 
 interface GARReportDisplayProps {
   data: GARResponse;

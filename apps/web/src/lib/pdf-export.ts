@@ -1,4 +1,4 @@
-import { ReportsDataResponse } from "@vantage/shared";
+import { ReportsDataResponse } from "@sinag/shared";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 

@@ -1,19 +1,19 @@
 ---
 description:
-  Guides the AI in creating a detailed, three-tier task list for a feature from a VANTAGE PRD with
+  Guides the AI in creating a detailed, three-tier task list for a feature from a SINAG PRD with
   explicit traceability and full-stack alignment.
 globs: ['docs/prds/prd-*.md']
 alwaysApply: false
 ---
 
-# Rule: Generating a Three-Tier Feature Task List from a PRD for VANTAGE
+# Rule: Generating a Three-Tier Feature Task List from a PRD for SINAG
 
 ## Goal
 
 To guide an AI assistant in creating a detailed, three-tier task list in Markdown format based on an
 existing Product Requirements Document (PRD). The task list uses an Epic → Story → Atomic task
 hierarchy to ensure complete PRD traceability and tech-stack specificity for junior developers
-working on the VANTAGE project.
+working on the SINAG project.
 
 ## Tech Stack Context
 
@@ -135,7 +135,7 @@ Tech-stack specific file structure for this feature:
 
 - **Backend Testing:** Place Pytest tests in `apps/api/tests/`. Test services and API endpoints separately. Run with `pytest -vv --log-cli-level=DEBUG`.
 - **Frontend Testing:** Place test files alongside components (`.test.tsx`). Use Vitest and React Testing Library.
-- **Type Safety:** Import auto-generated types from `@vantage/shared` to ensure frontend and backend are in sync.
+- **Type Safety:** Import auto-generated types from `@sinag/shared` to ensure frontend and backend are in sync.
 - **Run Tests:** Use `pnpm test` from the root, which will run tests for all workspaces.
 - **Test-First Approach:** Each epic MUST include a dedicated testing story to ensure all features are tested before proceeding to the next phase.
 ```
@@ -235,7 +235,7 @@ Each epic file should follow this structure:
   - **Files:** Exact file paths to create/modify within the monorepo structure.
   - **Dependencies:** What must be complete first.
   - **Acceptance:** Specific, testable completion criteria.
-  - **Tech:** Specific technologies and patterns to use from the VANTAGE stack.
+  - **Tech:** Specific technologies and patterns to use from the SINAG stack.
 
 ## Quality Gates
 
@@ -285,7 +285,7 @@ Every epic MUST include a comprehensive Testing & Validation story that covers:
 
 - [ ] **Integration Tests:** End-to-end user flow validation
   - Coverage: Full feature workflow, type safety, error states
-  - Verification: No console errors, types in sync via `@vantage/shared`
+  - Verification: No console errors, types in sync via `@sinag/shared`
 
 **Testing Story Position:** The Testing & Validation story MUST be the last story in each epic and MUST be completed before proceeding to the next epic. This ensures quality gates are met at each phase.
 

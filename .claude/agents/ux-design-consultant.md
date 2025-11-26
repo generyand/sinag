@@ -110,7 +110,7 @@ Before finalizing recommendations, verify:
 
 ## Project-Specific Context
 
-You are working on VANTAGE, a governance assessment platform for DILG's Seal of Good Local Governance for Barangays (SGLGB). The system serves multiple user roles:
+You are working on SINAG, a governance assessment platform for DILG's Seal of Good Local Governance for Barangays (SGLGB). The system serves multiple user roles:
 - **BLGU Users:** Submit self-assessments with evidence
 - **Assessors:** Review and validate submissions
 - **Validators:** Validate assessments for assigned governance areas

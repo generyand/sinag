@@ -5,7 +5,7 @@ import type {
   FormSchema,
   FormSchemaResponse,
   FormSchemaFieldsItem,
-} from "@vantage/shared";
+} from "@sinag/shared";
 
 // Re-export types for convenience
 export type {

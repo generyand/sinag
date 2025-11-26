@@ -13,10 +13,10 @@ import {
   useUpdateResponse,
   useUploadMOV,
 } from "@/hooks/useAssessment";
-import { useGetAssessmentsMyAssessment } from "@vantage/shared";
+import { useGetAssessmentsMyAssessment } from "@sinag/shared";
 import { uploadMovFile } from "@/lib/uploadMov";
 import { Assessment, ComplianceAnswer, Indicator } from "@/types/assessment";
-import { postAssessmentsResponses } from "@vantage/shared";
+import { postAssessmentsResponses } from "@sinag/shared";
 import { AlertCircle, CheckCircle, Circle } from "lucide-react";
 import { useState } from "react";
 import { DynamicIndicatorForm } from "./DynamicIndicatorForm";

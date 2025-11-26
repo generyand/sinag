@@ -160,7 +160,7 @@ persist(
 1. **Backup database before migration**
    ```bash
    # Example for PostgreSQL
-   pg_dump -h localhost -U postgres -d vantage > backup_$(date +%Y%m%d).sql
+   pg_dump -h localhost -U postgres -d sinag > backup_$(date +%Y%m%d).sql
    ```
 
 2. **Run migration during maintenance window**
@@ -172,10 +172,10 @@ persist(
 3. **Verify migration success**
    ```bash
    # Check that role enum is updated
-   psql -d vantage -c "SELECT DISTINCT role FROM users;"
+   psql -d sinag -c "SELECT DISTINCT role FROM users;"
 
    # Check that field is renamed
-   psql -d vantage -c "\\d users" | grep validator_area_id
+   psql -d sinag -c "\\d users" | grep validator_area_id
    ```
 
 4. **Deploy new backend code**

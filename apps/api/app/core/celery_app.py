@@ -6,7 +6,7 @@ from celery import Celery  # type: ignore
 
 # Create Celery app instance
 celery_app = Celery(
-    "vantage",
+    "sinag",
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
     include=[

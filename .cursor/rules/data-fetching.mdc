@@ -1,20 +1,20 @@
 # Data Fetching Architecture
 
-This document outlines the standard process for fetching and updating data in the VANTAGE frontend application. Our architecture is designed to be robust, type-safe, and maintainable, leveraging code generation and modern state management tools.
+This document outlines the standard process for fetching and updating data in the SINAG frontend application. Our architecture is designed to be robust, type-safe, and maintainable, leveraging code generation and modern state management tools.
 
 ## Core Technologies
 
 -   **TanStack Query (`@tanstack/react-query`):** The primary tool for managing server state, including caching, refetching, and mutations.
 -   **Orval:** A tool that generates a type-safe API client and TypeScript schemas directly from our FastAPI backend's OpenAPI specification.
--   **`@vantage/shared` Package:** A local workspace package that contains the Orval-generated client. This is the **only** way the frontend should interact with the API.
+-   **`@sinag/shared` Package:** A local workspace package that contains the Orval-generated client. This is the **only** way the frontend should interact with the API.
 -   **Axios:** The underlying HTTP client used by the generated API client. It is configured with interceptors to automatically handle authentication tokens.
 
 ## State Management Philosophy: Axios vs. TanStack Query vs. Zustand
 
-In the VANTAGE web application, Axios, TanStack Query, and Zustand are used together to form a modern and robust state management stack. Each tool has a distinct and non-overlapping responsibility, creating a clear separation of concerns between transporting data, managing server state, and handling client state.
+In the SINAG web application, Axios, TanStack Query, and Zustand are used together to form a modern and robust state management stack. Each tool has a distinct and non-overlapping responsibility, creating a clear separation of concerns between transporting data, managing server state, and handling client state.
 
 #### **1. Axios: The Transporter**
-Axios's sole responsibility is to **make and receive HTTP requests**. It is the low-level "delivery truck" that communicates with our Python API. In VANTAGE, its most critical function is its **interceptor system**, which we use to automatically attach the user's JWT authentication token to every outgoing request and to globally handle API errors, such as redirecting to the login page on a `401 Unauthorized` response. It knows how to talk to the server, but it is completely unaware of React, component state, or caching.
+Axios's sole responsibility is to **make and receive HTTP requests**. It is the low-level "delivery truck" that communicates with our Python API. In SINAG, its most critical function is its **interceptor system**, which we use to automatically attach the user's JWT authentication token to every outgoing request and to globally handle API errors, such as redirecting to the login page on a `401 Unauthorized` response. It knows how to talk to the server, but it is completely unaware of React, component state, or caching.
 
 #### **2. TanStack Query: The Server State Manager**
 TanStack Query's responsibility is to **manage the lifecycle of server data** within the application. It acts as the intelligent "warehouse manager" for the data that Axios delivers. It decides when to fetch data, keeps it **cached** to make the UI feel instant, and automatically handles all the UI states associated with that data (e.g., `isLoading`, `isError`, `isSuccess`). Crucially, TanStack Query **uses** our configured Axios instance to perform the actual network request, but its primary job is managing the cache, not making the call itself.
@@ -24,7 +24,7 @@ Zustand's responsibility is to manage **global state that is created and lives o
 
 ### **Summary of Differences**
 
-| Tool | Primary Role | VANTAGE Use Case |
+| Tool | Primary Role | SINAG Use Case |
 | :--- | :--- | :--- |
 | **Axios** | API Communication Layer | Making the actual HTTP calls and attaching auth tokens. |
 | **TanStack Query** | Server State Cache | Managing caching, loading, and error states for data from the API. |
@@ -36,16 +36,16 @@ The standard data fetching flow follows these steps:
 
 1.  **API Endpoint (Backend):** An endpoint is defined or updated in the FastAPI application (`apps/api`).
 2.  **Code Generation (CLI):** The developer runs `pnpm generate` in the project root.
-3.  **Client Update (`@vantage/shared`):** Orval introspects the new OpenAPI spec and updates the TypeScript functions and schemas in the `packages/shared/src/generated` directory.
+3.  **Client Update (`@sinag/shared`):** Orval introspects the new OpenAPI spec and updates the TypeScript functions and schemas in the `packages/shared/src/generated` directory.
 4.  **Data Hook (`apps/web`):** A custom hook using `useQuery` or `useMutation` is created in `apps/web/src/hooks/`.
-5.  **Hook Logic:** The hook's `queryFn` or `mutationFn` calls the relevant, type-safe function from the `@vantage/shared` package.
+5.  **Hook Logic:** The hook's `queryFn` or `mutationFn` calls the relevant, type-safe function from the `@sinag/shared` package.
 6.  **Component (`apps/web`):** A React component consumes the hook to access data, loading states, and error states.
 
-**Under no circumstances should you use `axios` directly from a component or hook.** Always use the generated client from `@vantage/shared`.
+**Under no circumstances should you use `axios` directly from a component or hook.** Always use the generated client from `@sinag/shared`.
 
 ## Using Generated Hooks (Recommended)
 
-Thanks to Orval's `react-query` client generation, the most direct and recommended way to interact with the API is to use the hooks generated in the `@vantage/shared` package. This significantly reduces boilerplate code.
+Thanks to Orval's `react-query` client generation, the most direct and recommended way to interact with the API is to use the hooks generated in the `@sinag/shared` package. This significantly reduces boilerplate code.
 
 ### Example: Fetching and Updating the Current User
 
@@ -58,8 +58,8 @@ Here’s how you would fetch the current user's data and provide a form to updat
 import { 
   useGetCurrentUserApiV1UsersMeGet, 
   useUpdateCurrentUserApiV1UsersMePut 
-} from '@vantage/shared/generated/endpoints/users/users';
-import { UserUpdate } from '@vantage/shared/generated/schemas';
+} from '@sinag/shared/generated/endpoints/users/users';
+import { UserUpdate } from '@sinag/shared/generated/schemas';
 
 export function ProfileCard() {
   // 1. Fetch data using the auto-generated query hook
@@ -115,7 +115,7 @@ Create a hook that encapsulates the query logic, including the query key and the
 ```typescript
 // apps/web/src/hooks/useProjects.ts
 import { useQuery } from '@tanstack/react-query';
-import { projects } from '@vantage/shared'; // 1. Import from the generated client
+import { projects } from '@sinag/shared'; // 1. Import from the generated client
 
 // 2. Define a structured query key
 const projectKeys = {
@@ -177,7 +177,7 @@ Mutations (Create, Update, Delete) follow a similar pattern, using `useMutation`
 ```typescript
 // apps/web/src/hooks/useProjects.ts
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { projects, ProjectCreate } from '@vantage/shared';
+import { projects, ProjectCreate } from '@sinag/shared';
 import { projectKeys } from './useProjects';
 
 export function useCreateProject() {

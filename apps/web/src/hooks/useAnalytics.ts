@@ -38,13 +38,13 @@ const mockAnalyticsData = {
     discrepancies: [
       {
         barangay: 'Barangay Luparan',
-        vantagePrediction: 'Pass' as const,
+        sinagPrediction: 'Pass' as const,
         officialResult: 'Fail' as const,
         supervisorRemarks: 'Documentation issues discovered during final validation that were not captured in pre-assessment'
       },
       {
         barangay: 'Barangay Mckinley',
-        vantagePrediction: 'Fail' as const,
+        sinagPrediction: 'Fail' as const,
         officialResult: 'Pass' as const,
         supervisorRemarks: 'Barangay made significant improvements between pre-assessment and final validation'
       }

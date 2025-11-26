@@ -9,7 +9,7 @@ import type {
   MatchValueRule,
   BBIFunctionalityCheckRule,
   ConditionGroupRulesItem,
-} from '@vantage/shared';
+} from '@sinag/shared';
 
 /**
  * Type alias for all calculation rule types

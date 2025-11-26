@@ -1,5 +1,5 @@
 import type { FormField } from '@/store/useFormBuilderStore';
-import type { FieldOption } from '@vantage/shared';
+import type { FieldOption } from '@sinag/shared';
 
 /**
  * Client-side validation for form schema before save

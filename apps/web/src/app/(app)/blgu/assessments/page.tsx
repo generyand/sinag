@@ -19,7 +19,7 @@ import {
 import { useAuthStore } from "@/store/useAuthStore";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useGetBlguDashboardAssessmentId } from "@vantage/shared";
+import { useGetBlguDashboardAssessmentId } from "@sinag/shared";
 
 export default function BLGUAssessmentsPage() {
   const { isAuthenticated, user, token } = useAuthStore();

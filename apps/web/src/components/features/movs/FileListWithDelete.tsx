@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useDeleteMovsFilesFileId, MOVFileResponse } from "@vantage/shared";
-import { getGetAssessmentsMyAssessmentQueryKey } from "@vantage/shared/src/generated/endpoints/assessments";
+import { useDeleteMovsFilesFileId, MOVFileResponse } from "@sinag/shared";
+import { getGetAssessmentsMyAssessmentQueryKey } from "@sinag/shared/src/generated/endpoints/assessments";
 import { useQueryClient } from "@tanstack/react-query";
 import { FileList } from "./FileList";
 import {

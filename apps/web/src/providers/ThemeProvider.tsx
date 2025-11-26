@@ -29,7 +29,7 @@ interface ThemeProviderProps {
 export function ThemeProvider({
   children,
   defaultTheme = 'system',
-  storageKey = 'vantage-theme',
+  storageKey = 'sinag-theme',
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(defaultTheme);
   const [actualTheme, setActualTheme] = useState<'light' | 'dark'>('light');

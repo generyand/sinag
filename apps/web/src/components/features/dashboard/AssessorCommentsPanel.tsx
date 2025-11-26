@@ -12,7 +12,7 @@
 
 import { useState } from "react";
 import { MessageSquare, AlertCircle, ChevronDown, ChevronRight, FileText, Image as ImageIcon } from "lucide-react";
-import type { ReworkComment } from "@vantage/shared";
+import type { ReworkComment } from "@sinag/shared";
 
 interface MOVAnnotation {
   annotation_id: number;

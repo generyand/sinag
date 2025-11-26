@@ -113,6 +113,9 @@ importers:
       '@react-pdf-viewer/highlight':
         specifier: ^3.12.0
         version: 3.12.0(pdfjs-dist@3.11.174)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@sinag/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@supabase/supabase-js':
         specifier: ^2.76.1
         version: 2.76.1
@@ -140,9 +143,6 @@ importers:
       '@types/uuid':
         specifier: ^11.0.0
         version: 11.0.0
-      '@vantage/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       axios:
         specifier: ^1.10.0
         version: 1.10.0

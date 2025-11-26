@@ -12,11 +12,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
-import type { FormSchema } from "@vantage/shared";
+import type { FormSchema } from "@sinag/shared";
 import {
   useGetAssessmentsAssessmentIdAnswers,
   usePostAssessmentsAssessmentIdAnswers,
-} from "@vantage/shared";
+} from "@sinag/shared";
 import {
   getSections,
   getVisibleFields,
@@ -34,7 +34,7 @@ import {
   FileFieldComponent,
 } from "./fields";
 import { CompletionFeedbackPanel } from "./CompletionFeedbackPanel";
-import type { FormSchemaFieldsItem } from "@vantage/shared";
+import type { FormSchemaFieldsItem } from "@sinag/shared";
 
 interface DynamicFormRendererProps {
   /** Form schema defining the structure and fields */

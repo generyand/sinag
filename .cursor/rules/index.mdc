@@ -1,4 +1,4 @@
-# Vantage Rule Index
+# SINAG Rule Index
 
 This document serves as the central index for all active Cursor rules within this repository, organized by category. These rules define processes, structures, and guidelines for development.
 
@@ -53,4 +53,4 @@ General guidelines for application testing.
 
 | Rule File      | Description                                                                              |
 | :------------- | :--------------------------------------------------------------------------------------- |
-| @testing.mdc   | Provides guidelines for writing effective and maintainable tests for the VANTAGE monorepo. |
+| @testing.mdc   | Provides guidelines for writing effective and maintainable tests for the SINAG monorepo. |

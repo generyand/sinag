@@ -1,10 +1,10 @@
 # Type Generation Guide
 
-This guide explains the automatic TypeScript type generation system in the VANTAGE project.
+This guide explains the automatic TypeScript type generation system in the SINAG project.
 
 ## Overview
 
-VANTAGE uses [Orval](https://orval.dev/) to automatically generate TypeScript types and React Query hooks from the FastAPI backend's OpenAPI specification. This ensures end-to-end type safety between the backend (Python/Pydantic) and frontend (TypeScript/React).
+SINAG uses [Orval](https://orval.dev/) to automatically generate TypeScript types and React Query hooks from the FastAPI backend's OpenAPI specification. This ensures end-to-end type safety between the backend (Python/Pydantic) and frontend (TypeScript/React).
 
 ## Architecture
 
@@ -23,7 +23,7 @@ packages/shared/src/generated/
   ├── schemas/{tag}/       ← TypeScript type definitions
   └── endpoints/{tag}/     ← React Query hooks
   ↓
-Frontend imports from @vantage/shared
+Frontend imports from @sinag/shared
 ```
 
 ## When to Run Type Generation
@@ -150,7 +150,7 @@ Type generation is configured in [`orval.config.ts`](../../orval.config.ts):
 
 ```typescript
 export default {
-  vantage: {
+  sinag: {
     input: {
       target: 'http://localhost:8000/openapi.json',
     },
@@ -183,16 +183,16 @@ export default {
 
 ```typescript
 // Import specific types
-import { SubmitAssessmentResponse } from '@vantage/shared';
+import { SubmitAssessmentResponse } from '@sinag/shared';
 
 // Import from specific tag
-import type { User, UserCreate } from '@vantage/shared/schemas/users';
+import type { User, UserCreate } from '@sinag/shared/schemas/users';
 ```
 
 ### Using Generated Hooks
 
 ```typescript
-import { usePostAssessmentsAssessmentIdSubmit } from '@vantage/shared';
+import { usePostAssessmentsAssessmentIdSubmit } from '@sinag/shared';
 
 function SubmitButton({ assessmentId }: { assessmentId: number }) {
   const submitMutation = usePostAssessmentsAssessmentIdSubmit();
@@ -301,10 +301,10 @@ pnpm generate-types
 **Solution:** Orval handles this automatically by namespacing. Import from the correct tag:
 ```typescript
 // ✅ Good - specific import
-import { User } from '@vantage/shared/schemas/users';
+import { User } from '@sinag/shared/schemas/users';
 
 // ⚠️ Might work but less clear
-import { User } from '@vantage/shared';
+import { User } from '@sinag/shared';
 ```
 
 ### Generated hooks not working
@@ -333,7 +333,7 @@ export const customInstance = axios.create({
 
 2. **Use generated types everywhere**
    ```typescript
-   import { SubmitAssessmentResponse } from '@vantage/shared';
+   import { SubmitAssessmentResponse } from '@sinag/shared';
 
    function handleSubmit(data: SubmitAssessmentResponse) {
      // TypeScript knows all fields!
@@ -365,7 +365,7 @@ export const customInstance = axios.create({
    }
 
    // ✅ Good - use generated type
-   import { SubmitAssessmentResponse } from '@vantage/shared';
+   import { SubmitAssessmentResponse } from '@sinag/shared';
    ```
 
 3. **Don't skip type generation**
@@ -422,7 +422,7 @@ If you have manual type definitions that should be replaced with generated types
 3. **Replace with import**
    ```typescript
    // New generated import
-   import { AssessmentResponse } from '@vantage/shared';
+   import { AssessmentResponse } from '@sinag/shared';
    ```
 
 4. **Fix any type mismatches**

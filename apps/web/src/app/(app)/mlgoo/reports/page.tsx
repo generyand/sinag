@@ -4,7 +4,7 @@ import { ComplianceBadge } from '@/components/features/reports';
 import { ReportsSkeleton } from '@/components/features/reports/ReportsSkeleton';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AssessmentStatus, useGetAssessmentsList, type GetAssessmentsListQueryResult } from '@vantage/shared';
+import { AssessmentStatus, useGetAssessmentsList, type GetAssessmentsListQueryResult } from '@sinag/shared';
 import {
   Activity,
   Brain,

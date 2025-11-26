@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useForm, Controller, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { AssessmentDetailsResponse } from '@vantage/shared';
+import type { AssessmentDetailsResponse } from '@sinag/shared';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';

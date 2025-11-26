@@ -4,7 +4,7 @@
 import { Controller, Control, FieldValues, Path } from "react-hook-form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import type { RadioButtonField } from "@vantage/shared";
+import type { RadioButtonField } from "@sinag/shared";
 
 interface RadioFieldComponentProps<TFieldValues extends FieldValues> {
   field: RadioButtonField;

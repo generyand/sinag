@@ -5,8 +5,8 @@
  * Wraps TanStack Query hooks for querying and exporting override history.
  */
 
-import type { DeadlineOverrideListResponse } from '@vantage/shared';
-import { useGetAdminDeadlinesOverrides } from '@vantage/shared';
+import type { DeadlineOverrideListResponse } from '@sinag/shared';
+import { useGetAdminDeadlinesOverrides } from '@sinag/shared';
 
 interface UseDeadlineAuditLogOptions {
   cycleId?: number;

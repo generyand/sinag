@@ -11,7 +11,7 @@
 
 ## Import Errors
 
-### "Cannot find module '@vantage/shared'"
+### "Cannot find module '@sinag/shared'"
 
 > **TODO**: Document shared package resolution
 

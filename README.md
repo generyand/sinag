@@ -51,7 +51,7 @@ SINAG is a comprehensive pre-assessment, preparation, and decision-support tool 
 
    ```bash
    git clone <repository-url>
-   cd vantage
+   cd sinag
    ```
 
 2. **Install dependencies**
@@ -236,7 +236,7 @@ The application uses PostgreSQL (via Supabase) with the following key tables:
 ### Monorepo Structure
 
 ```
-vantage/
+sinag/
 ├── apps/
 │   ├── web/              # NextJS frontend (TypeScript)
 │   │   ├── src/
@@ -476,10 +476,10 @@ To verify IPv6 is working:
 
 ```bash
 # Check network configuration
-docker network inspect vantage_vantage-network
+docker network inspect sinag-network
 
 # Test IPv6 connectivity from container
-docker exec vantage-api ping6 google.com
+docker exec sinag-api ping6 google.com
 ```
 
 #### Production Build (Optional)
@@ -488,8 +488,8 @@ For production deployment:
 
 ```bash
 # Build production images
-docker build -t vantage-web:latest apps/web
-docker build -t vantage-api:latest apps/api
+docker build -t sinag-web:latest apps/web
+docker build -t sinag-api:latest apps/api
 
 # Run with docker-compose (production config)
 docker-compose up -d

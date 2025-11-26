@@ -11,7 +11,7 @@ import { useSubmitAssessment } from "@/hooks/useAssessment";
 import {
   usePostAssessmentsAssessmentIdResubmit,
   usePostAssessmentsAssessmentIdSubmitForCalibration,
-} from "@vantage/shared";
+} from "@sinag/shared";
 import { Assessment, AssessmentValidation } from "@/types/assessment";
 import {
   AlertCircle,

@@ -19,7 +19,7 @@ Before you begin, ensure you have the following installed:
 
 ```bash
 git clone <repository-url>
-cd vantage
+cd sinag
 ```
 
 ### 2. Install Dependencies

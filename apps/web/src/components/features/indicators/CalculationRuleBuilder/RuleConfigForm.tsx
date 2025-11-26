@@ -1,7 +1,7 @@
 'use client';
 
 import { type CalculationRule } from '@/store/useCalculationRuleStore';
-import type { FormSchema } from '@vantage/shared';
+import type { FormSchema } from '@sinag/shared';
 import { FieldSelector } from './FieldSelector';
 import { OperatorSelector } from './OperatorSelector';
 import { ValueInput } from './ValueInput';

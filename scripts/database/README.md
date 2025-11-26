@@ -84,7 +84,7 @@ uv run ../../scripts/database/seed-assessment-data.py
 
 Creates a complete test dataset including users, assessments, and responses.
 
-**Purpose**: Set up a comprehensive test environment in one command, ideal for QA testing or demonstrating the full VANTAGE workflow.
+**Purpose**: Set up a comprehensive test environment in one command, ideal for QA testing or demonstrating the full SINAG workflow.
 
 **Usage:**
 ```bash

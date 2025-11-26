@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import type { RadioButtonField } from "@vantage/shared";
+import type { RadioButtonField } from "@sinag/shared";
 
 interface SelectFieldComponentProps<TFieldValues extends FieldValues> {
   field: RadioButtonField; // Using RadioButtonField type as it has options structure

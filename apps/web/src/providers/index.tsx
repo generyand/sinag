@@ -27,7 +27,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <ThemeProvider defaultTheme="system" storageKey="vantage-theme">
+    <ThemeProvider defaultTheme="system" storageKey="sinag-theme">
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <LanguageProvider>

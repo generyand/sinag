@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { usePostAuthChangePassword, ValidationError } from "@vantage/shared";
+import { usePostAuthChangePassword, ValidationError } from "@sinag/shared";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

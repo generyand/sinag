@@ -2,7 +2,7 @@
 
 ## Overview
 
-This task list implements **Phase 2: The BLGU Table Assessment Workflow** - the core data input component of the VANTAGE governance assessment platform. This feature provides BLGU (Barangay Local Government Unit) users with a comprehensive, metadata-driven interface to conduct their SGLGB (Seal of Good Local Governance for Barangays) self-assessment, upload evidence (Means of Verification - MOVs), and submit their completed assessment for review.
+This task list implements **Phase 2: The BLGU Table Assessment Workflow** - the core data input component of the SINAG governance assessment platform. This feature provides BLGU (Barangay Local Government Unit) users with a comprehensive, metadata-driven interface to conduct their SGLGB (Seal of Good Local Governance for Barangays) self-assessment, upload evidence (Means of Verification - MOVs), and submit their completed assessment for review.
 
 **Important Version History Context:**
 
@@ -209,14 +209,14 @@ This section provides a tech-stack specific file structure for reference.
 
 - **Integration Tests:**
   - Test full BLGU workflow: dashboard → assessment form → submission
-  - Verify type safety with Orval-generated types from `@vantage/shared`
+  - Verify type safety with Orval-generated types from `@sinag/shared`
   - Test error handling and loading states
   - Verify no P/F/C status is displayed to BLGUs
 
 ### Type Safety Validation
 
 - **Critical Step:** After any backend schema changes, run `pnpm generate-types` from the root
-- Verify that `@vantage/shared` types match backend Pydantic schemas
+- Verify that `@sinag/shared` types match backend Pydantic schemas
 - Ensure frontend imports use generated types exclusively
 
 ### Quality Gates

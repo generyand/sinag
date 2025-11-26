@@ -14,7 +14,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useFormBuilderStore } from '@/store/useFormBuilderStore';
-import { useGetLookupsGovernanceAreas, usePostIndicators } from '@vantage/shared';
+import { useGetLookupsGovernanceAreas, usePostIndicators } from '@sinag/shared';
 import { ChevronRight, FileText, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';

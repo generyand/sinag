@@ -9,7 +9,7 @@ const validateSpy = vi.fn();
 const reworkSpy = vi.fn();
 const finalizeSpy = vi.fn();
 
-vi.mock('@vantage/shared', () => ({
+vi.mock('@sinag/shared', () => ({
   usePostAssessorAssessmentResponsesResponseIdValidate: () => ({ mutateAsync: validateSpy, isPending: false }),
   usePostAssessorAssessmentsAssessmentIdRework: () => ({ mutateAsync: reworkSpy, isPending: false }),
   usePostAssessorAssessmentsAssessmentIdFinalize: () => ({ mutateAsync: finalizeSpy, isPending: false }),

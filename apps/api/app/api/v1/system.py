@@ -17,7 +17,7 @@ router = APIRouter()
 @router.get("/", response_model=ApiResponse, tags=["system"])
 async def root():
     """Root endpoint - welcome message for the API."""
-    return ApiResponse(message="Welcome to Vantage API")
+    return ApiResponse(message="Welcome to SINAG API")
 
 
 @router.get("/health", response_model=HealthCheck, tags=["system"])

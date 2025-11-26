@@ -14,7 +14,7 @@ import {
   type IndicatorDraftCreate,
   type IndicatorDraftUpdate,
   type IndicatorDraftResponse,
-} from '@vantage/shared';
+} from '@sinag/shared';
 
 /**
  * Indicator Builder React Query Hooks

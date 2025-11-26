@@ -4,7 +4,7 @@
  * These types mirror the Pydantic schemas defined in:
  * apps/api/app/schemas/assessment.py (IndicatorSummary, ReworkSummaryResponse)
  *
- * TODO: Replace with auto-generated types from @vantage/shared after running pnpm generate-types
+ * TODO: Replace with auto-generated types from @sinag/shared after running pnpm generate-types
  */
 
 export interface IndicatorSummary {

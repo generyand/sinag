@@ -641,7 +641,7 @@
   - [x] **4.12.4 Atomic: Integrate useUploadMOVFile mutation hook**
     - **Files:** `apps/web/src/components/features/assessments/mov/MOVFileUpload.tsx`
     - **Dependencies:** Task 4.12.1, Story 4.11 must be complete
-    - **Acceptance:** Import useUploadMOVFile from @vantage/shared. Call hook in component. Store mutation function. Hook configured with assessmentId, indicatorId from props.
+    - **Acceptance:** Import useUploadMOVFile from @sinag/shared. Call hook in component. Store mutation function. Hook configured with assessmentId, indicatorId from props.
     - **Tech:** React, TanStack Query, generated hooks
     - **Time Estimate:** 3 hours
 
@@ -706,7 +706,7 @@
   - [x] **4.13.2 Atomic: Integrate useGetMOVFiles query hook**
     - **Files:** `apps/web/src/components/features/assessments/mov/MOVFileList.tsx`
     - **Dependencies:** Task 4.13.1, Story 4.11 must be complete
-    - **Acceptance:** Import useGetMOVFiles from @vantage/shared. Call hook with assessmentId, indicatorId. Extract data, isLoading, error. Handle loading and error states.
+    - **Acceptance:** Import useGetMOVFiles from @sinag/shared. Call hook with assessmentId, indicatorId. Extract data, isLoading, error. Handle loading and error states.
     - **Tech:** React, TanStack Query, generated hooks
     - **Time Estimate:** 3 hours
 
@@ -784,7 +784,7 @@
   - [x] **4.14.2 Atomic: Integrate useDeleteMOVFile mutation hook**
     - **Files:** `apps/web/src/components/features/assessments/mov/MOVFileList.tsx`
     - **Dependencies:** Task 4.14.1, Story 4.11 must be complete
-    - **Acceptance:** Import useDeleteMOVFile from @vantage/shared. Call hook in component. Store mutation function. Hook configured with onSuccess callback to refetch file list.
+    - **Acceptance:** Import useDeleteMOVFile from @sinag/shared. Call hook in component. Store mutation function. Hook configured with onSuccess callback to refetch file list.
     - **Tech:** React, TanStack Query, generated hooks
     - **Time Estimate:** 3 hours
 

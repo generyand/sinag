@@ -179,7 +179,7 @@ Redis must be running for Celery to work.
 ### Monorepo Structure
 
 ```
-vantage/
+sinag/
 ├── apps/
 │   ├── api/                      # FastAPI backend (Python 3.13+)
 │   │   ├── alembic/              # Database migrations

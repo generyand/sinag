@@ -1,5 +1,5 @@
 import { useAuthStore } from '@/store/useAuthStore';
-import { GovernanceArea } from '@vantage/shared';
+import { GovernanceArea } from '@sinag/shared';
 import { useGovernanceAreas } from './useGovernanceAreas';
 
 /**

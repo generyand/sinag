@@ -9,7 +9,7 @@ alwaysApply: true
 
 # UI Component Guidelines
 
-This document provides rules and best practices for working with UI components in the VANTAGE frontend. Our component library is built upon `shadcn/ui`, and consistency is key to a maintainable and visually coherent application.
+This document provides rules and best practices for working with UI components in the SINAG frontend. Our component library is built upon `shadcn/ui`, and consistency is key to a maintainable and visually coherent application.
 
 ## 1. Core Principles
 

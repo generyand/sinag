@@ -13,7 +13,7 @@
 
 import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import type { BLGUDashboardResponse } from "@vantage/shared";
+import type { BLGUDashboardResponse } from "@sinag/shared";
 import type { FailedIndicator, ReworkContext, ReworkProgress } from "@/types/rework";
 
 /**

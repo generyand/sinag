@@ -3,7 +3,7 @@
 import React from 'react';
 import { useIndicatorBuilderStore } from '@/store/useIndicatorBuilderStore';
 import { Button } from '@/components/ui/button';
-import type { GovernanceArea } from '@vantage/shared';
+import type { GovernanceArea } from '@sinag/shared';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';

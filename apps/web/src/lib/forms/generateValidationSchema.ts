@@ -2,7 +2,7 @@
 // Dynamically generate Zod validation schemas from form schema
 
 import { z } from "zod";
-import type { FormSchema, FormSchemaFieldsItem } from "@vantage/shared";
+import type { FormSchema, FormSchemaFieldsItem } from "@sinag/shared";
 
 /**
  * Generate a Zod validation schema from a form schema

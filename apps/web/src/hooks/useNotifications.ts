@@ -7,7 +7,7 @@ import {
   usePostNotificationsMarkAllRead,
   getGetNotificationsQueryKey,
   getGetNotificationsCountQueryKey,
-} from '@vantage/shared';
+} from '@sinag/shared';
 import { useNotificationStore } from '@/store/useNotificationStore';
 import { useAuthStore } from '@/store/useAuthStore';
 

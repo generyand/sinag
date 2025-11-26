@@ -15,7 +15,7 @@ interface PredictionAccuracyData {
 
 interface DiscrepancyData {
   barangay: string;
-  vantagePrediction: 'Pass' | 'Fail';
+  sinagPrediction: 'Pass' | 'Fail';
   officialResult: 'Pass' | 'Fail';
   supervisorRemarks: string;
 }
@@ -135,15 +135,15 @@ export function CrossMatchingWidget({ data }: CrossMatchingWidgetProps) {
                         </TableCell>
                         <TableCell>
                           <Badge 
-                            variant={discrepancy.vantagePrediction === 'Pass' ? 'default' : 'destructive'}
+                            variant={discrepancy.sinagPrediction === 'Pass' ? 'default' : 'destructive'}
                             className="border-0 text-white"
                             style={{ 
-                              backgroundColor: discrepancy.vantagePrediction === 'Pass' 
+                              backgroundColor: discrepancy.sinagPrediction === 'Pass' 
                                 ? 'var(--analytics-success)' 
                                 : 'var(--analytics-danger)' 
                             }}
                           >
-                            {discrepancy.vantagePrediction}
+                            {discrepancy.sinagPrediction}
                           </Badge>
                         </TableCell>
                         <TableCell>

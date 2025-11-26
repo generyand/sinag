@@ -98,7 +98,7 @@ pnpm build
 docker-compose up -d api
 
 # Verify API health
-curl https://api.vantage.gov.ph/health
+curl https://api.sinag.gov.ph/health
 ```
 
 ### 4. Frontend Deployment
@@ -112,7 +112,7 @@ pnpm build
 vercel deploy --prod
 
 # Verify deployment
-curl https://vantage.gov.ph
+curl https://sinag.dilg.gov.ph
 ```
 
 ### 5. Worker Deployment
@@ -129,11 +129,11 @@ celery -A app.core.celery_app inspect active
 
 ```bash
 # Health checks
-curl https://api.vantage.gov.ph/health
-curl https://api.vantage.gov.ph/api/v1/system/status
+curl https://api.sinag.gov.ph/health
+curl https://api.sinag.gov.ph/api/v1/system/status
 
 # Database connectivity
-curl https://api.vantage.gov.ph/api/v1/system/db-status
+curl https://api.sinag.gov.ph/api/v1/system/db-status
 ```
 
 ---
@@ -146,15 +146,15 @@ curl https://api.vantage.gov.ph/api/v1/system/db-status
 
 ```bash
 # Frontend accessible
-curl -I https://vantage.gov.ph
+curl -I https://sinag.dilg.gov.ph
 # Expected: HTTP 200 OK
 
 # API accessible
-curl -I https://api.vantage.gov.ph
+curl -I https://api.sinag.gov.ph
 # Expected: HTTP 200 OK
 
 # API docs accessible
-curl -I https://api.vantage.gov.ph/docs
+curl -I https://api.sinag.gov.ph/docs
 # Expected: HTTP 200 OK
 ```
 
@@ -169,7 +169,7 @@ curl -I https://api.vantage.gov.ph/docs
 
 ```bash
 # Check database connection
-curl https://api.vantage.gov.ph/api/v1/system/db-status
+curl https://api.sinag.gov.ph/api/v1/system/db-status
 
 # Expected Response:
 {
@@ -189,7 +189,7 @@ curl https://api.vantage.gov.ph/api/v1/system/db-status
 **Objective:** Verify users can log in
 
 **Manual Steps:**
-1. Navigate to https://vantage.gov.ph/login
+1. Navigate to https://sinag.dilg.gov.ph/login
 2. Enter valid test user credentials
 3. Click "Login"
 
@@ -504,7 +504,7 @@ docker-compose up -d
 psql $DATABASE_URL < backup_YYYYMMDD_HHMMSS.sql
 
 # 5. Verify previous version working
-curl https://api.vantage.gov.ph/health
+curl https://api.sinag.gov.ph/health
 ```
 
 ### Post-Rollback Actions
@@ -527,7 +527,7 @@ curl https://api.vantage.gov.ph/health
 export SENTRY_DSN="<production_dsn>"
 
 # Application logs
-tail -f /var/log/vantage/app.log
+tail -f /var/log/sinag/app.log
 
 # Nginx access logs
 tail -f /var/log/nginx/access.log
@@ -580,9 +580,9 @@ tail -f /var/log/postgresql/postgresql.log
 
 **Deployment Date/Time:** ________________
 
-**Production URL:** https://vantage.gov.ph
+**Production URL:** https://sinag.dilg.gov.ph
 
-**API URL:** https://api.vantage.gov.ph
+**API URL:** https://api.sinag.gov.ph
 
 ---
 

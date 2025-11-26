@@ -5,7 +5,7 @@ alwaysApply: false
 ---
 # Dependency Injection in FastAPI
 
-This guide explains how to use FastAPI's dependency injection system, focusing on the patterns used within the Vantage project. The core of our dependency injection system is located in `apps/api/app/api/deps.py`.
+This guide explains how to use FastAPI's dependency injection system, focusing on the patterns used within the SINAG project. The core of our dependency injection system is located in `apps/api/app/api/deps.py`.
 
 ## What is Dependency Injection?
 

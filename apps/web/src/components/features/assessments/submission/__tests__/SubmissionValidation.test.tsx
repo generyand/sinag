@@ -16,11 +16,11 @@ import userEvent from "@testing-library/user-event";
 import { SubmissionValidation } from "../SubmissionValidation";
 
 // Mock the generated hook
-vi.mock("@vantage/shared", () => ({
+vi.mock("@sinag/shared", () => ({
   useGetAssessmentsAssessmentIdSubmissionStatus: vi.fn(),
 }));
 
-import { useGetAssessmentsAssessmentIdSubmissionStatus } from "@vantage/shared";
+import { useGetAssessmentsAssessmentIdSubmissionStatus } from "@sinag/shared";
 
 const mockUseGetSubmissionStatus = useGetAssessmentsAssessmentIdSubmissionStatus as ReturnType<
   typeof vi.fn

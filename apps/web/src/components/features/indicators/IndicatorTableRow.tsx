@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { IndicatorResponse } from '@vantage/shared';
+import type { IndicatorResponse } from '@sinag/shared';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,

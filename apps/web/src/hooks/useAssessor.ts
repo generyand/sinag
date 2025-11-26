@@ -9,7 +9,7 @@ import {
     usePostAssessorAssessmentResponsesResponseIdValidate,
     usePostAssessorAssessmentsAssessmentIdFinalize,
     usePostAssessorAssessmentsAssessmentIdRework
-} from "@vantage/shared";
+} from "@sinag/shared";
 
 const assessorKeys = {
   all: ["assessor"] as const,

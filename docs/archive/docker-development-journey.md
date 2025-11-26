@@ -1,6 +1,6 @@
 # Docker Development Journey
 
-This document chronicles the Docker-related issues encountered during VANTAGE development and how they were resolved. These are preserved for historical reference and learning purposes.
+This document chronicles the Docker-related issues encountered during SINAG development and how they were resolved. These are preserved for historical reference and learning purposes.
 
 ## October 27, 2024: API Connection Reset Issues
 

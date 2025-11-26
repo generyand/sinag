@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useGetGarAssessments, useGetGarAssessmentId } from '@vantage/shared';
+import { useGetGarAssessments, useGetGarAssessmentId } from '@sinag/shared';
 import { FileSpreadsheet, FileText, Download, ChevronDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import type { CheckboxGroupField } from '@vantage/shared';
+import type { CheckboxGroupField } from '@sinag/shared';
 
 interface CheckboxGroupPropertiesProps {
   fieldId: string;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { IndicatorResponse } from "@vantage/shared";
+import type { IndicatorResponse } from "@sinag/shared";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";

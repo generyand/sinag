@@ -629,7 +629,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   {isAdmin && (
                     <p className="mt-1 text-sm text-[var(--text-secondary)]">
                       {pathname === "/mlgoo/dashboard" &&
-                        "Welcome to your Vantage dashboard"}
+                        "Welcome to your SINAG dashboard"}
                       {pathname === "/mlgoo/submissions" &&
                         "Review and manage submitted assessments from barangays"}
                       {pathname === "/mlgoo/reports" &&

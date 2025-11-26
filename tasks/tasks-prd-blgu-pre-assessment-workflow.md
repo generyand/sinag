@@ -61,7 +61,7 @@
 
 - **Backend Testing:** Place Pytest tests in `apps/api/tests/`. Test the new `assessment_service` and API endpoints in `assessments.py`. Focus on validating the dynamic `response_data` against the `form_schema`.
 - **Frontend Testing:** Place component tests alongside the new components (e.g., `DynamicForm.test.tsx`). Use Vitest and React Testing Library to test form rendering logic and submission workflows.
-- **Type Safety:** Ensure the auto-generated types from `@vantage/shared` are used for all data exchange between the frontend and backend.
+- **Type Safety:** Ensure the auto-generated types from `@sinag/shared` are used for all data exchange between the frontend and backend.
 
 ## Tasks
 

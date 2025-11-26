@@ -1,6 +1,6 @@
 # Docker Troubleshooting
 
-Comprehensive troubleshooting guide for Docker development in VANTAGE.
+Comprehensive troubleshooting guide for Docker development in SINAG.
 
 ## Quick Fixes
 
@@ -28,7 +28,7 @@ The network configuration uses `172.25.0.0/16`. If conflicts persist, modify `do
 
 ```yaml
 networks:
-  vantage-network:
+  sinag-network:
     driver: bridge
     enable_ipv6: false
     ipam:
@@ -124,7 +124,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 **Diagnosis**:
 ```bash
 # Check API logs
-docker logs vantage-api
+docker logs sinag-api
 
 # Common causes:
 # - Database connection failed (check DATABASE_URL)
@@ -136,7 +136,7 @@ docker logs vantage-api
 1. Verify `apps/api/.env` has correct Supabase credentials
 2. Test database connection manually:
    ```bash
-   docker exec vantage-api python -c "from app.db.session import SessionLocal; db = SessionLocal(); print('Connected!')"
+   docker exec sinag-api python -c "from app.db.session import SessionLocal; db = SessionLocal(); print('Connected!')"
    ```
 
 #### Celery Worker Not Starting
@@ -147,10 +147,10 @@ docker logs vantage-api
 docker ps | grep redis
 
 # Check Celery logs
-docker logs vantage-celery-worker
+docker logs sinag-celery-worker
 
 # Verify Celery configuration
-docker exec vantage-api python -c "from app.core.celery_app import celery_app; print(celery_app.conf.broker_url)"
+docker exec sinag-api python -c "from app.core.celery_app import celery_app; print(celery_app.conf.broker_url)"
 ```
 
 **Solution**:
@@ -284,7 +284,7 @@ docker ps -a
 docker-compose ps
 
 # Specific service health
-docker inspect --format='{{.State.Health.Status}}' vantage-api
+docker inspect --format='{{.State.Health.Status}}' sinag-api
 ```
 
 ### View Logs
@@ -306,34 +306,34 @@ docker-compose logs --tail=100 api
 
 ```bash
 # Shell into API container
-docker exec -it vantage-api bash
+docker exec -it sinag-api bash
 
 # Shell into web container
-docker exec -it vantage-web sh
+docker exec -it sinag-web sh
 
 # Run Python command in API
-docker exec vantage-api python -c "from app.core.config import settings; print(settings.SUPABASE_URL)"
+docker exec sinag-api python -c "from app.core.config import settings; print(settings.SUPABASE_URL)"
 
 # Run Node command in web
-docker exec vantage-web node --version
+docker exec sinag-web node --version
 ```
 
 ### Network Debugging
 
 ```bash
 # Test connectivity between containers
-docker exec vantage-api ping redis
-docker exec vantage-web ping api
+docker exec sinag-api ping redis
+docker exec sinag-web ping api
 
 # Check DNS resolution
-docker exec vantage-api nslookup redis
+docker exec sinag-api nslookup redis
 
 # List Docker networks
 docker network ls
-docker network inspect vantage_vantage-network
+docker network inspect sinag-network
 
 # Check what ports are exposed
-docker port vantage-api
+docker port sinag-api
 ```
 
 ### Cleanup Commands
@@ -409,8 +409,8 @@ After fixing issues, verify everything works:
 - [ ] API docs accessible: `http://localhost:8000/docs`
 - [ ] Frontend loads: `http://localhost:3000`
 - [ ] Frontend can reach API: Check browser console Network tab
-- [ ] Celery worker connected: `docker logs vantage-celery-worker | grep "Connected"`
-- [ ] Redis responding: `docker exec vantage-api redis-cli -h redis ping`
+- [ ] Celery worker connected: `docker logs sinag-celery-worker | grep "Connected"`
+- [ ] Redis responding: `docker exec sinag-api redis-cli -h redis ping`
 
 ## Getting Help
 

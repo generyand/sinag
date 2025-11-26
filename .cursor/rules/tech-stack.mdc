@@ -1,12 +1,12 @@
 ---
-description: "A comprehensive list of the core technologies, frameworks, and libraries used across the Vantage monorepo."
+description: "A comprehensive list of the core technologies, frameworks, and libraries used across the SINAG monorepo."
 globs: ["**/*"]
 alwaysApply: true
 ---
 
-# Vantage Tech Stack
+# SINAG Tech Stack
 
-This document outlines the core technologies and libraries used in the Vantage project.
+This document outlines the core technologies and libraries used in the SINAG project.
 
 ## Monorepo & Tooling
 

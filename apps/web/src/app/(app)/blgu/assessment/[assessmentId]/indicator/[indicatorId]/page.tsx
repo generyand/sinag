@@ -17,7 +17,7 @@ import {
   useGetIndicatorsIndicatorIdFormSchema,
   useGetIndicatorsIndicatorId,
   useGetBlguDashboardAssessmentId,
-} from "@vantage/shared";
+} from "@sinag/shared";
 
 export default function IndicatorFormPage() {
   const params = useParams();

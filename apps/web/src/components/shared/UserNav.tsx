@@ -1,7 +1,7 @@
 // 🚀 Modern component using auto-generated React Query hooks
 "use client";
 
-import { usePostAuthLogout } from "@vantage/shared";
+import { usePostAuthLogout } from "@sinag/shared";
 import { useAuthStore } from "@/store/useAuthStore";
 import { User, LogOut, Loader2 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";

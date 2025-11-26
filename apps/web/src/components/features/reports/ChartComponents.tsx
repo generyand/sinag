@@ -1,4 +1,4 @@
-import { BarChartData, PieChartData, TrendData } from "@vantage/shared";
+import { BarChartData, PieChartData, TrendData } from "@sinag/shared";
 import {
   Bar,
   BarChart,

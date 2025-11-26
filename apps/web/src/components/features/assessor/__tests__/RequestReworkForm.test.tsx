@@ -17,7 +17,7 @@ import userEvent from "@testing-library/user-event";
 import { RequestReworkForm } from "../RequestReworkForm";
 
 // Mock the generated hook
-vi.mock("@vantage/shared", () => ({
+vi.mock("@sinag/shared", () => ({
   usePostAssessmentsAssessmentIdRequestRework: vi.fn(),
 }));
 
@@ -28,7 +28,7 @@ vi.mock("@/hooks/use-toast", () => ({
   }),
 }));
 
-import { usePostAssessmentsAssessmentIdRequestRework } from "@vantage/shared";
+import { usePostAssessmentsAssessmentIdRequestRework } from "@sinag/shared";
 import { useToast } from "@/hooks/use-toast";
 
 const mockUseRequestRework = usePostAssessmentsAssessmentIdRequestRework as ReturnType<

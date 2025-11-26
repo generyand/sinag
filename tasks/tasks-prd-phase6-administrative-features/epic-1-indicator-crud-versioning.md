@@ -381,7 +381,7 @@
     - `apps/web/src/hooks/useIndicators.ts`
   - **Dependencies:** 1.4.1
   - **Acceptance Criteria:**
-    - Import generated hooks from @vantage/shared
+    - Import generated hooks from @sinag/shared
     - Wrap useGetIndicators with custom logic (if needed)
     - Export `useIndicators()` hook for list with filters
     - Export `useIndicator(id)` hook for single indicator

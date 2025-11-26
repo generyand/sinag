@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { FileUploadField } from '@vantage/shared';
+import type { FileUploadField } from '@sinag/shared';
 
 interface FileUploadPropertiesProps {
   fieldId: string;

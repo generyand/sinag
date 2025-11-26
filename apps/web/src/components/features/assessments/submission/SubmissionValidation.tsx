@@ -15,7 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useGetAssessmentsAssessmentIdSubmissionStatus } from "@vantage/shared";
+import { useGetAssessmentsAssessmentIdSubmissionStatus } from "@sinag/shared";
 import { AlertCircle, CheckCircle2, XCircle } from "lucide-react";
 
 interface SubmissionValidationProps {

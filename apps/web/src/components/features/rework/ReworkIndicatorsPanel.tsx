@@ -35,7 +35,7 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { FailedIndicatorCard } from "./FailedIndicatorCard";
-import type { BLGUDashboardResponse } from "@vantage/shared";
+import type { BLGUDashboardResponse } from "@sinag/shared";
 import type { FailedIndicator } from "@/types/rework";
 
 interface ReworkIndicatorsPanelProps {

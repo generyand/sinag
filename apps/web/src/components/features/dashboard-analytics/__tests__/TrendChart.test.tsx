@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import type { TrendData } from '@vantage/shared';
+import type { TrendData } from '@sinag/shared';
 import { TrendChart } from '../TrendChart';
 
 describe('TrendChart', () => {

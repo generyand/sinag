@@ -5,7 +5,7 @@
  * navigation helpers, and progress metrics.
  */
 
-import type { ReworkComment } from '@vantage/shared';
+import type { ReworkComment } from '@sinag/shared';
 
 /**
  * MOV annotation with file metadata

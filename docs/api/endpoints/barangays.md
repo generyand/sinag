@@ -1,6 +1,6 @@
 # Barangays API
 
-**Note**: There is no dedicated `/api/v1/barangays` router in the VANTAGE API.
+**Note**: There is no dedicated `/api/v1/barangays` router in the SINAG API.
 
 Barangay management functionality is handled through the **Lookups API** instead.
 
@@ -53,7 +53,7 @@ Filter reports and analytics data by barangay using the `barangay_id` query para
 
 ## Why No Dedicated Barangays Router?
 
-VANTAGE follows a domain-driven design where:
+SINAG follows a domain-driven design where:
 
 1. **Reference Data**: Barangays are static reference data served by the Lookups API
 2. **User Assignment**: Barangay-user relationships are managed through the Users API

@@ -1,4 +1,4 @@
-import { useGetAssessmentsDashboard } from "@vantage/shared";
+import { useGetAssessmentsDashboard } from "@sinag/shared";
 
 // No need to map status anymore since we're using the API status directly
 

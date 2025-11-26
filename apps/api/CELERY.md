@@ -1,6 +1,6 @@
 # 🔄 Celery Background Tasks
 
-This document explains how to set up and run Celery workers for background task processing in the VANTAGE API.
+This document explains how to set up and run Celery workers for background task processing in the SINAG API.
 
 ## 📋 Overview
 

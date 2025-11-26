@@ -1,6 +1,6 @@
 "use client";
 
-import type { IndicatorHistoryResponse } from "@vantage/shared";
+import type { IndicatorHistoryResponse } from "@sinag/shared";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

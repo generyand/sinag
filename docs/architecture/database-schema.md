@@ -1032,7 +1032,7 @@ alembic downgrade -1
 
 ## Notes
 
-- All diagrams reflect the actual VANTAGE database schema as of November 2025
+- All diagrams reflect the actual SINAG database schema as of November 2025
 - Schema supports multi-tenancy through `barangay_id` and `validator_area_id` isolation
 - JSONB fields (`form_schema`, `mapping_rules`) enable dynamic, schema-less data storage
 - Soft deletes used for `indicators` (`is_active`), `mov_files` (`deleted_at`), and `bbis` (`is_active`)

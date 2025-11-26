@@ -1,7 +1,7 @@
 import { useBarangays } from './useBarangays';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useEffect } from 'react';
-import { Barangay } from '@vantage/shared';
+import { Barangay } from '@sinag/shared';
 
 // TODO: Consider creating a dedicated hook for user's barangay data
 // Expected endpoint: GET /api/v1/users/me/barangay

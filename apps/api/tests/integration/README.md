@@ -2,7 +2,7 @@
 
 ## Overview
 
-This directory contains comprehensive integration tests for the VANTAGE backend API, covering end-to-end workflows across Epics 1-5.
+This directory contains comprehensive integration tests for the SINAG backend API, covering end-to-end workflows across Epics 1-5.
 
 ## Test Structure
 

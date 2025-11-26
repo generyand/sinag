@@ -9,7 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { useAssessorMOVUploadMutation, useAssessorValidationMutation } from "@/hooks/useAssessor";
 import { useQueryClient } from "@tanstack/react-query";
-import { ValidationStatus } from "@vantage/shared";
+import { ValidationStatus } from "@sinag/shared";
 import { AlertTriangle, CheckCircle, FileText, MessageSquare, Save, Upload, X, XCircle } from "lucide-react";
 import { useRef, useState } from "react";
 

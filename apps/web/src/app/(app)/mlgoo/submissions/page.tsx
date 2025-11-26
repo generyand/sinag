@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { SubmissionsSkeleton } from "@/components/features/submissions";
-import { useGetAssessmentsList, AssessmentStatus } from "@vantage/shared";
+import { useGetAssessmentsList, AssessmentStatus } from "@sinag/shared";
 
 interface Submission {
   id: number;

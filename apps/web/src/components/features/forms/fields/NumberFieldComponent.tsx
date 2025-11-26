@@ -4,7 +4,7 @@
 import { Controller, Control, FieldValues, Path } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { NumberInputField } from "@vantage/shared";
+import type { NumberInputField } from "@sinag/shared";
 
 interface NumberFieldComponentProps<TFieldValues extends FieldValues> {
   field: NumberInputField;

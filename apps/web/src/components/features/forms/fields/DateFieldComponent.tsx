@@ -4,7 +4,7 @@
 import { Controller, Control, FieldValues, Path } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { DatePickerField } from "@vantage/shared";
+import type { DatePickerField } from "@sinag/shared";
 
 interface DateFieldComponentProps<TFieldValues extends FieldValues> {
   field: DatePickerField;

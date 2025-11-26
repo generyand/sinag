@@ -2,14 +2,14 @@ import { SulopBarangayMapIntegrated } from "@/components/features/analytics";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ReportsDataResponse } from "@vantage/shared";
+import { ReportsDataResponse } from "@sinag/shared";
 import {
   AreaBreakdownBarChart,
   ComplianceStatusPieChart,
   TrendLineChart,
 } from "./ChartComponents";
 import { AssessmentDataTable } from "./DataTable";
-import type { BarangayMapPoint } from "@vantage/shared";
+import type { BarangayMapPoint } from "@sinag/shared";
 
 interface VisualizationGridProps {
   data?: ReportsDataResponse;

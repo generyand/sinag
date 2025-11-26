@@ -1,4 +1,4 @@
-import { useGetAssessorAssessmentsAssessmentId } from '@vantage/shared';
+import { useGetAssessorAssessmentsAssessmentId } from '@sinag/shared';
 
 type AnyRecord = Record<string, any>;
 

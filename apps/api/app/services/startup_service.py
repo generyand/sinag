@@ -222,7 +222,7 @@ class StartupService:
 
     def _log_startup_info(self) -> None:
         """Log basic startup information"""
-        logger.info("🚀 Starting VANTAGE API server...")
+        logger.info("🚀 Starting SINAG API server...")
         logger.info(f"📊 Environment: {settings.ENVIRONMENT}")
         logger.info(f"🔧 Debug mode: {settings.DEBUG}")
         logger.info(f"📝 Project: {settings.PROJECT_NAME} v{settings.VERSION}")
@@ -437,14 +437,14 @@ class StartupService:
         if self.startup_time:
             startup_duration = (datetime.now() - self.startup_time).total_seconds()
             logger.info(
-                f"🎯 VANTAGE API server startup complete! ({startup_duration:.2f}s)"
+                f"🎯 SINAG API server startup complete! ({startup_duration:.2f}s)"
             )
         else:
-            logger.info("🎯 VANTAGE API server startup complete!")
+            logger.info("🎯 SINAG API server startup complete!")
 
     def log_shutdown(self) -> None:
         """Log application shutdown"""
-        logger.info("🛑 Shutting down VANTAGE API server...")
+        logger.info("🛑 Shutting down SINAG API server...")
         logger.info("👋 Goodbye!")
 
     async def get_health_status(self) -> Dict[str, Any]:

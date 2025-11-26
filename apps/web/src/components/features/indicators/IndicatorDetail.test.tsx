@@ -9,7 +9,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import IndicatorDetail from './IndicatorDetail';
-import type { IndicatorResponse } from '@vantage/shared';
+import type { IndicatorResponse } from '@sinag/shared';
 
 // Mock the custom hooks
 vi.mock('@/hooks/useIndicators', () => ({

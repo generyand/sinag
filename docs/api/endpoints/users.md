@@ -16,7 +16,7 @@ The Users API provides endpoints for user management, profile updates, and user 
 
 ## Role-Based Assignment System
 
-VANTAGE implements four distinct user roles with specific field requirements:
+SINAG implements four distinct user roles with specific field requirements:
 
 ### User Roles
 

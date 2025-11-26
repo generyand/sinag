@@ -1,8 +1,8 @@
 import { draftStorage } from '@/lib/draft-storage';
 import type { IndicatorNode, IndicatorTreeState } from '@/store/useIndicatorBuilderStore';
 import { useMutation } from '@tanstack/react-query';
-import type { IndicatorDraftDeltaUpdateChangedIndicatorsItem } from '@vantage/shared';
-import { postIndicatorsDrafts$DraftIdDelta } from '@vantage/shared';
+import type { IndicatorDraftDeltaUpdateChangedIndicatorsItem } from '@sinag/shared';
+import { postIndicatorsDrafts$DraftIdDelta } from '@sinag/shared';
 import { useCallback, useEffect, useRef } from 'react';
 
 /**

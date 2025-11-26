@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { NotificationResponse } from '@vantage/shared';
+import { NotificationResponse } from '@sinag/shared';
 
 /**
  * Notification state interface for the global notification store

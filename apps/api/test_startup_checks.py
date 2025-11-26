@@ -89,7 +89,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Test VANTAGE API startup checks with different failure scenarios"
+        description="Test SINAG API startup checks with different failure scenarios"
     )
     parser.add_argument(
         "--scenario",

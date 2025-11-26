@@ -273,7 +273,7 @@ The `users` table will be structured for performance and clarity with integer-ba
 3. Create reusable form components in `apps/web/src/components/features/users/` for user creation and editing with conditional field rendering.
 4. Implement role-based routing logic in `apps/web/middleware.ts` to redirect users to appropriate dashboards.
 5. Configure the `useAuthStore` Zustand store to manage authentication state globally.
-6. Use generated React Query hooks from `@vantage/shared` for all API interactions.
+6. Use generated React Query hooks from `@sinag/shared` for all API interactions.
 
 ### **Testing Checklist:**
 

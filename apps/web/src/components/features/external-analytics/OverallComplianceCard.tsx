@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Database } from 'lucide-react';
-import type { OverallComplianceResponse } from '@vantage/shared';
+import type { OverallComplianceResponse } from '@sinag/shared';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 

@@ -349,7 +349,7 @@ All implementation and testing complete. The dynamic form rendering engine is fu
   - [x] **3.7.1 Atomic: Create formSchemaParser.ts file with type definitions**
     - **Files:** `apps/web/src/lib/forms/formSchemaParser.ts` (NEW)
     - **Dependencies:** Story 3.6 must be complete
-    - **Acceptance:** File created with TypeScript interfaces for FormSchema, Section, Field, ConditionalRule. Import FormSchemaResponse type from @vantage/shared.
+    - **Acceptance:** File created with TypeScript interfaces for FormSchema, Section, Field, ConditionalRule. Import FormSchemaResponse type from @sinag/shared.
     - **Tech:** TypeScript interfaces, type definitions
     - **Time Estimate:** 3 hours
 
@@ -756,7 +756,7 @@ All implementation and testing complete. The dynamic form rendering engine is fu
   - [x] **3.13.1 Atomic: Integrate useSaveAnswers mutation hook in DynamicFormRenderer**
     - **Files:** `apps/web/src/components/features/forms/DynamicFormRenderer.tsx`
     - **Dependencies:** Stories 3.6, 3.9 must be complete
-    - **Acceptance:** Import useSaveAssessmentAnswers from @vantage/shared. Initialize mutation hook in component. Hook accepts assessment_id parameter.
+    - **Acceptance:** Import useSaveAssessmentAnswers from @sinag/shared. Initialize mutation hook in component. Hook accepts assessment_id parameter.
     - **Tech:** React Query useMutation, hook integration
     - **Time Estimate:** 2 hours
 
@@ -812,7 +812,7 @@ All implementation and testing complete. The dynamic form rendering engine is fu
   - [x] **3.14.1 Atomic: Integrate useGetAnswers query hook in DynamicFormRenderer**
     - **Files:** `apps/web/src/components/features/forms/DynamicFormRenderer.tsx`
     - **Dependencies:** Stories 3.6, 3.10 must be complete
-    - **Acceptance:** Import useGetAssessmentAnswers from @vantage/shared. Initialize query hook with assessment_id and indicator_id parameters. Hook returns saved responses array and loading state.
+    - **Acceptance:** Import useGetAssessmentAnswers from @sinag/shared. Initialize query hook with assessment_id and indicator_id parameters. Hook returns saved responses array and loading state.
     - **Tech:** React Query useQuery, hook integration
     - **Time Estimate:** 2 hours
 
@@ -877,7 +877,7 @@ All implementation and testing complete. The dynamic form rendering engine is fu
   - [x] **3.15.2 Atomic: Fetch form schema using useGetFormSchema hook**
     - **Files:** `apps/web/src/app/(app)/blgu/assessment/[assessmentId]/indicator/[indicatorId]/page.tsx`
     - **Dependencies:** Task 3.15.1 must be complete, Story 3.6 must be complete
-    - **Acceptance:** Import useGetIndicatorFormSchema from @vantage/shared. Call hook with indicatorId parameter. Destructure data, isLoading, isError.
+    - **Acceptance:** Import useGetIndicatorFormSchema from @sinag/shared. Call hook with indicatorId parameter. Destructure data, isLoading, isError.
     - **Tech:** React Query useQuery, hook integration
     - **Time Estimate:** 2 hours
 

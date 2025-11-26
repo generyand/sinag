@@ -159,7 +159,7 @@
         - Verify `useGetAnalyticsReports` hook generated
         - Verify TypeScript types for `ReportsDataResponse`, `ChartData`, `MapData`, `TableData` exist
         - No TypeScript compilation errors
-        - Test import in frontend: `import { useGetAnalyticsReports } from '@vantage/shared'`
+        - Test import in frontend: `import { useGetAnalyticsReports } from '@sinag/shared'`
       - **Tech:** Orval, OpenAPI, TypeScript
 
   - [x] **2.5 Story: Frontend Reports Page Layout**
@@ -186,7 +186,7 @@
       - **Dependencies:** 2.4.1 (types generated)
       - **Acceptance:**
         - Create page with `'use client'` directive
-        - Import `useGetAnalyticsReports` from `@vantage/shared`
+        - Import `useGetAnalyticsReports` from `@sinag/shared`
         - State management for filters: `cycle`, `startDate`, `endDate`, `governanceAreas`, `barangayIds`, `status`, `page`
         - Call hook with filter state: `const { data, isLoading, error } = useGetAnalyticsReports({ ...filters })`
         - RBAC check for current user role

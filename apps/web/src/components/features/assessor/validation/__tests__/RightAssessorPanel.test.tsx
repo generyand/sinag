@@ -4,7 +4,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { RightAssessorPanel } from '../RightAssessorPanel';
 
-vi.mock('@vantage/shared', () => ({
+vi.mock('@sinag/shared', () => ({
   usePostAssessorAssessmentResponsesResponseIdMovsUpload: () => ({ mutateAsync: vi.fn() }),
 }));
 

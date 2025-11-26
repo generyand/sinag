@@ -1094,4 +1094,4 @@ All three experts agreed on these design decisions:
 
 **Document Status:** Expert Consultation Complete
 **Next Step:** Begin Phase 1 Implementation (Week 1-2)
-**Maintainers:** VANTAGE Development Team
+**Maintainers:** SINAG Development Team

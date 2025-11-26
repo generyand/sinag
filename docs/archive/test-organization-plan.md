@@ -41,7 +41,7 @@
 
 ## Overview
 
-This document tracks the comprehensive test reorganization and coverage improvement initiative for the VANTAGE project. The goal is to ensure all tests follow best practices for organization and placement while filling critical coverage gaps.
+This document tracks the comprehensive test reorganization and coverage improvement initiative for the SINAG project. The goal is to ensure all tests follow best practices for organization and placement while filling critical coverage gaps.
 
 ---
 

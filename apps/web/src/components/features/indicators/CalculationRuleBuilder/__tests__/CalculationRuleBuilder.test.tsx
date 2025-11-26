@@ -15,7 +15,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CalculationRuleBuilder } from '../CalculationRuleBuilder';
-import type { CalculationSchema, FormSchema } from '@vantage/shared';
+import type { CalculationSchema, FormSchema } from '@sinag/shared';
 import { useCalculationRuleStore } from '@/store/useCalculationRuleStore';
 
 // Mock the Zustand store

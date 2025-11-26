@@ -205,6 +205,12 @@ export function decodeJwtPayload(
   }
 }
 
+/**
+ * Axios instance configured with auth interceptors.
+ * Use for direct API calls when generated hooks are not suitable.
+ */
+export const api = axiosInstance;
+
 // Additional API utilities can be added here
 export const apiClient = {
   uploadWithProgress,

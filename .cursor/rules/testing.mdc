@@ -1,11 +1,11 @@
 ---
-description: Provides guidelines for writing effective and maintainable tests for the VANTAGE monorepo.
+description: Provides guidelines for writing effective and maintainable tests for the SINAG monorepo.
 globs: ["**/*.test.py", "**/*.test.tsx"]
 alwaysApply: false
 ---
 # Testing Guidelines
 
-This document provides guidelines for writing effective and maintainable tests for both the backend (Python/FastAPI) and frontend (Next.js/React) applications within the VANTAGE monorepo.
+This document provides guidelines for writing effective and maintainable tests for both the backend (Python/FastAPI) and frontend (Next.js/React) applications within the SINAG monorepo.
 
 ## Core Principles
 

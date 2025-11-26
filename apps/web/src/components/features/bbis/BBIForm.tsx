@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useGovernanceAreas } from "@/hooks/useGovernanceAreas";
-import { BBICreate, BBIUpdate, GovernanceArea } from "@vantage/shared";
+import { BBICreate, BBIUpdate, GovernanceArea } from "@sinag/shared";
 import { Save, ArrowLeft } from "lucide-react";
 
 interface BBIFormProps {

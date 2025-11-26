@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useNotificationStore } from '../useNotificationStore';
-import { NotificationResponse, NotificationType } from '@vantage/shared';
+import { NotificationResponse, NotificationType } from '@sinag/shared';
 
 // Helper to create mock notifications
 function createMockNotification(

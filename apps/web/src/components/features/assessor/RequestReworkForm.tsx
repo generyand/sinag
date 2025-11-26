@@ -34,7 +34,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { usePostAssessmentsAssessmentIdRequestRework } from "@vantage/shared";
+import { usePostAssessmentsAssessmentIdRequestRework } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface RequestReworkFormProps {

@@ -684,7 +684,7 @@ Cross-Origin Resource Sharing (CORS) is configured to allow frontend access from
 - `http://localhost:3001`
 - `https://localhost:3000`
 - `https://localhost:3001`
-- `http://vantage-web:3000` (Docker internal)
+- `http://sinag-web:3000` (Docker internal)
 - `http://172.25.0.40:3000` (Docker network)
 
 **Production:**
@@ -794,7 +794,7 @@ This command:
 
 ```typescript
 // Auto-generated hook from GET /api/v1/users/
-import { useGetUsers } from '@vantage/shared';
+import { useGetUsers } from '@sinag/shared';
 
 function UserList() {
   const { data, isLoading, error } = useGetUsers({
@@ -1020,11 +1020,11 @@ const { data } = useGetJobStatus(jobId, {
 
 ## Further Reading
 
-- **[CLAUDE.md](/home/kiedajhinn/Projects/vantage/CLAUDE.md)** - Development guidelines and patterns
-- **[Architecture Documentation](/home/kiedajhinn/Projects/vantage/docs/architecture.md)** - System architecture overview
-- **[PRD Phase 1: Authentication](/home/kiedajhinn/Projects/vantage/docs/prds/prd-phase1-core-user-authentication-and-management.md)** - Authentication requirements
-- **[PRD Phase 3: Assessor Validation](/home/kiedajhinn/Projects/vantage/docs/prds/prd-phase3-assessor-validation-rework-cycle.md)** - Validator workflow details
-- **[Indicator Builder Specification](/home/kiedajhinn/Projects/vantage/docs/indicator-builder-specification.md)** - SGLGB indicator structure
+- **[CLAUDE.md](/home/kiedajhinn/Projects/sinag/CLAUDE.md)** - Development guidelines and patterns
+- **[Architecture Documentation](/home/kiedajhinn/Projects/sinag/docs/architecture.md)** - System architecture overview
+- **[PRD Phase 1: Authentication](/home/kiedajhinn/Projects/sinag/docs/prds/prd-phase1-core-user-authentication-and-management.md)** - Authentication requirements
+- **[PRD Phase 3: Assessor Validation](/home/kiedajhinn/Projects/sinag/docs/prds/prd-phase3-assessor-validation-rework-cycle.md)** - Validator workflow details
+- **[Indicator Builder Specification](/home/kiedajhinn/Projects/sinag/docs/indicator-builder-specification.md)** - SGLGB indicator structure
 
 ## Support and Contribution
 

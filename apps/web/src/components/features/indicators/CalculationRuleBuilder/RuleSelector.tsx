@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { createDefaultRule, type CalculationRule } from '@/store/useCalculationRuleStore';
-import type { FormSchema } from '@vantage/shared';
+import type { FormSchema } from '@sinag/shared';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,

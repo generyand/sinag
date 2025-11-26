@@ -9,8 +9,8 @@ import {
   postAssessmentsSubmit,
   putAssessmentsResponses$ResponseId,
   useGetAssessmentsMyAssessment,
-} from "@vantage/shared";
-import { getGetAssessmentsMyAssessmentQueryKey } from "@vantage/shared/src/generated/endpoints/assessments";
+} from "@sinag/shared";
+import { getGetAssessmentsMyAssessmentQueryKey } from "@sinag/shared/src/generated/endpoints/assessments";
 import { useEffect, useMemo, useState } from "react";
 // Custom debounce implementation
 function debounce<TArgs extends unknown[], TReturn>(

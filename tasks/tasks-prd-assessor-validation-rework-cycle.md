@@ -82,7 +82,7 @@ This section adds a new integration-focused epic to wire existing assessor UI to
 
   - [x] 4.4.1 Atomic: Ensure routes are in main router and regenerate clients
     - Files: `apps/api/app/api/v1/assessor.py`, root `orval.config.ts`
-    - Acceptance: New endpoints appear in OpenAPI; run `pnpm generate-types` at repo root to refresh `@vantage/shared` client types and functions.
+    - Acceptance: New endpoints appear in OpenAPI; run `pnpm generate-types` at repo root to refresh `@sinag/shared` client types and functions.
     - Note: Routes verified in main router (`apps/api/app/api/v1/__init__.py`). Type regeneration requires API server running on `http://localhost:8000`. Run `pnpm generate-types` after starting the API.
 
 - [x] 4.5 Story: Frontend — Wire Submissions and Dashboard
@@ -113,14 +113,14 @@ This section adds a new integration-focused epic to wire existing assessor UI to
 
 - Backend tests: add unit tests for `storage_service` and endpoint tests for upload and analytics. Use `pytest -vv --log-cli-level=DEBUG` under `apps/api/tests/`.
 - Frontend tests: component-level tests for analytics widgets mapping and upload action wiring.
-- Types regeneration: after backend routes exist, run `pnpm generate` to refresh `@vantage/shared`.
+- Types regeneration: after backend routes exist, run `pnpm generate` to refresh `@sinag/shared`.
 - Migrations: none expected for this epic; if DB schema changes become necessary, follow Alembic guidelines and never modify old migrations. Always test `upgrade` and `downgrade` locally.
 
 ### Testing Notes
 
 - **Backend Testing:** Place Pytest tests in `apps/api/tests/`. Test services and API endpoints separately. Run with `pytest -vv --log-cli-level=DEBUG`.
 - **Frontend Testing:** Place test files alongside components (`.test.tsx`). Use Vitest and React Testing Library.
-- **Type Safety:** Import auto-generated types from `@vantage/shared` to ensure frontend and backend are in sync.
+- **Type Safety:** Import auto-generated types from `@sinag/shared` to ensure frontend and backend are in sync.
 - **Run Tests:** Use `pnpm test` from the root, which will run tests for all workspaces.
 
 ## Tasks

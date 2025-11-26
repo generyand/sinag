@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { useQueryClient } from "@tanstack/react-query";
-import { ValidationStatus, usePostAssessorAssessmentResponsesResponseIdValidate } from "@vantage/shared";
+import { ValidationStatus, usePostAssessorAssessmentResponsesResponseIdValidate } from "@sinag/shared";
 import { AlertTriangle, CheckCircle, MessageSquare, XCircle } from "lucide-react";
 import { useState } from "react";
 

@@ -1,6 +1,6 @@
 # Frontend Form Handling
 
-This document outlines the standard architecture for creating, validating, and submitting forms in the VANTAGE frontend. A consistent approach is essential for a robust and user-friendly experience.
+This document outlines the standard architecture for creating, validating, and submitting forms in the SINAG frontend. A consistent approach is essential for a robust and user-friendly experience.
 
 ## Core Technologies
 
@@ -13,7 +13,7 @@ This document outlines the standard architecture for creating, validating, and s
 
 Creating a form generally follows these steps:
 
-1.  **Define a Schema:** Create a Zod schema to define the shape and validation rules for your form data. This schema should align with the Pydantic schema on the backend and the generated Orval type from `@vantage/shared`.
+1.  **Define a Schema:** Create a Zod schema to define the shape and validation rules for your form data. This schema should align with the Pydantic schema on the backend and the generated Orval type from `@sinag/shared`.
 2.  **Create a Form Component:** Build a client component (`'use client'`) for the form.
 3.  **Instantiate the Hook:** Use the `useForm` hook from `react-hook-form`, passing the Zod schema to the `resolver`.
 4.  **Handle Submission:** Create a `useMutation` hook to handle the API call. The `onSubmit` function provided by `useForm` will call the mutation.
@@ -28,7 +28,7 @@ The schema ensures type safety and provides validation logic.
 ```typescript
 // apps/web/src/components/features/projects/ProjectCreateForm.tsx
 import { z } from 'zod';
-import { ProjectCreate } from '@vantage/shared'; // Orval-generated type
+import { ProjectCreate } from '@sinag/shared'; // Orval-generated type
 
 // Create a Zod schema that matches the backend's expected input.
 // This provides client-side validation before the API call.

@@ -937,7 +937,7 @@ class AIUsageTracker:
 
 ### Phase 1: Internal Testing (Week 4)
 - [ ] Deploy AI features to staging environment
-- [ ] VANTAGE dev team tests with real data
+- [ ] SINAG dev team tests with real data
 - [ ] Collect feedback on AI quality
 - [ ] Fix critical bugs
 

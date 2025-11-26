@@ -8,7 +8,7 @@
 
 ## Overview
 
-This task list implements the comprehensive MLGOO-DILG administrative interface that enables independent management of VANTAGE system configuration, including indicators, BBI mappings, and deadline control. The implementation follows a three-tier Epic → Story → Atomic task structure.
+This task list implements the comprehensive MLGOO-DILG administrative interface that enables independent management of SINAG system configuration, including indicators, BBI mappings, and deadline control. The implementation follows a three-tier Epic → Story → Atomic task structure.
 
 ---
 
@@ -150,7 +150,7 @@ This implementation will touch the following areas of the codebase:
 - Run with `pnpm test`
 
 ### Type Safety
-- Always import auto-generated types from `@vantage/shared`
+- Always import auto-generated types from `@sinag/shared`
 - Run `pnpm generate-types` after backend schema changes
 - Verify type consistency between frontend and backend
 

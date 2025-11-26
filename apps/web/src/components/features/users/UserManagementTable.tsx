@@ -1,10 +1,10 @@
-import type { User } from '@vantage/shared/src/generated/schemas/users';
+import type { User } from '@sinag/shared/src/generated/schemas/users';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Edit, Building, Users } from 'lucide-react';
 import { useBarangays } from '@/hooks/useBarangays';
 import { useGovernanceAreas } from '@/hooks/useGovernanceAreas';
-import type { Barangay, GovernanceArea } from '@vantage/shared';
+import type { Barangay, GovernanceArea } from '@sinag/shared';
 
 interface UserManagementTableProps {
   users: User[];

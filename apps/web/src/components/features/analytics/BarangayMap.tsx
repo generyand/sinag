@@ -3,7 +3,7 @@
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { BarangayMapPoint } from "@vantage/shared";
+import { BarangayMapPoint } from "@sinag/shared";
 
 // Fix Leaflet default marker icon issue in Next.js
 // This is needed because webpack doesn't properly bundle the default marker images

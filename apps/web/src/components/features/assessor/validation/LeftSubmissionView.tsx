@@ -5,7 +5,7 @@ import { resolveMovUrl } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { AssessmentTreeNode } from '@/components/features/assessments/tree-navigation/AssessmentTreeNode';
-import type { AssessmentDetailsResponse } from '@vantage/shared';
+import type { AssessmentDetailsResponse } from '@sinag/shared';
 import type { GovernanceArea, Indicator } from '@/types/assessment';
 import { useMovAnnotations } from '@/hooks/useMovAnnotations';
 import * as React from 'react';

@@ -23,7 +23,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      '@vantage/shared': path.resolve(__dirname, '../../packages/shared/src/generated/index.ts'),
+      '@sinag/shared': path.resolve(__dirname, '../../packages/shared/src/generated/index.ts'),
     },
     conditions: ['import', 'module', 'node', 'default'],
   },

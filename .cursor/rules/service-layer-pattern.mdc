@@ -9,7 +9,7 @@ alwaysApply: true
 
 # Service Layer Pattern
 
-This document explains the purpose and implementation of the service layer in the Vantage backend. The service layer is a crucial part of our architecture, designed to separate business logic from the API/presentation layer.
+This document explains the purpose and implementation of the service layer in the SINAG backend. The service layer is a crucial part of our architecture, designed to separate business logic from the API/presentation layer.
 
 ## Core Principle: Fat Services, Thin Routers
 

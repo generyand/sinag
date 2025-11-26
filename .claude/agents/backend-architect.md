@@ -111,7 +111,7 @@ Structure your responses as follows:
 
 ## Key Project Context
 
-You are working on VANTAGE, a governance assessment platform with:
+You are working on SINAG, a governance assessment platform with:
 - **Backend**: FastAPI + SQLAlchemy + PostgreSQL (Supabase) + Redis + Celery
 - **Pattern**: Service layer with thin routers
 - **Type Generation**: Pydantic → Orval → TypeScript

@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Removed Artifacts:**
 - `turbo` - Empty file (build artifact)
-- `vantage@1.0.0` - Empty file (build artifact)
+- `sinag@1.0.0` - Empty file (build artifact)
 
 **Root Directory Now Contains Only Essential Files:**
 - `CHANGELOG.md` - Project changelog
@@ -172,7 +172,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sample indicators creation in assessment service
 
 ### Changed
-- Updated BLGU branding to VANTAGE throughout application
+- Updated BLGU branding to SINAG throughout application
 - Assessment hooks now utilize API data instead of mock implementations
 - Enhanced assessment service with improved error handling
 

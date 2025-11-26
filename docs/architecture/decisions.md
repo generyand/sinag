@@ -1,6 +1,6 @@
 # Architectural Decision Records (ADR)
 
-This file tracks all major technical decisions made in the Vantage project. Each decision includes context, the choice made, and reasoning.
+This file tracks all major technical decisions made in the SINAG project. Each decision includes context, the choice made, and reasoning.
 
 ---
 

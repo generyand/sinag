@@ -8,7 +8,7 @@ alwaysApply: true
 ---
 # Frontend Page & Component Structure
 
-This document provides guidelines for creating and organizing pages and components in the VANTAGE Next.js frontend. A consistent structure is crucial for scalability and maintainability.
+This document provides guidelines for creating and organizing pages and components in the SINAG Next.js frontend. A consistent structure is crucial for scalability and maintainability.
 
 ## 1. Directory Structure (App Router)
 
@@ -90,7 +90,7 @@ import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useUpdateUser } from '@/hooks/useUser'; // From hooks guidelines
-import { User } from '@vantage/shared';
+import { User } from '@sinag/shared';
 
 interface ProfileFormProps {
   user: User;

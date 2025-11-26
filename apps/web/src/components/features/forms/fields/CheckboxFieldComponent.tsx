@@ -4,7 +4,7 @@
 import { Controller, Control, FieldValues, Path } from "react-hook-form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import type { CheckboxGroupField } from "@vantage/shared";
+import type { CheckboxGroupField } from "@sinag/shared";
 
 interface CheckboxFieldComponentProps<TFieldValues extends FieldValues> {
   field: CheckboxGroupField;

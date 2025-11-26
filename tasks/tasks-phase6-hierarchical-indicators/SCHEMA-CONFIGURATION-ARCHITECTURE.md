@@ -1588,4 +1588,4 @@ function migrateLegacyDraft(draft: IndicatorDraft): IndicatorDraft {
 
 **Document Status:** Approved for Implementation
 **Next Review:** After Phase 1 completion (Week 2)
-**Maintainers:** VANTAGE Development Team
+**Maintainers:** SINAG Development Team

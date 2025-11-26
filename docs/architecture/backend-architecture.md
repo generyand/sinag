@@ -114,7 +114,7 @@ graph TB
 
 ## Service Layer Pattern
 
-VANTAGE follows the "Fat Services, Thin Routers" pattern where business logic lives in service classes:
+SINAG follows the "Fat Services, Thin Routers" pattern where business logic lives in service classes:
 
 ```mermaid
 graph LR
@@ -623,7 +623,7 @@ graph TB
 from celery import Celery
 
 celery_app = Celery(
-    "vantage",
+    "sinag",
     broker=settings.CELERY_BROKER_URL,       # redis://localhost:6379/0
     backend=settings.CELERY_RESULT_BACKEND,  # redis://localhost:6379/0
 )
@@ -751,7 +751,7 @@ celery -A app.core.celery_app worker --loglevel=info --reload
 
 ## API Design Patterns
 
-VANTAGE follows consistent REST API patterns with FastAPI-specific conventions:
+SINAG follows consistent REST API patterns with FastAPI-specific conventions:
 
 ```mermaid
 graph TB
@@ -1075,7 +1075,7 @@ class AssessmentService:
 
 ## Notes
 
-- All diagrams reflect the actual VANTAGE implementation as of November 2025
+- All diagrams reflect the actual SINAG implementation as of November 2025
 - Service layer pattern enforces separation of concerns and testability
 - Dependency injection provides clean, reusable authentication and session management
 - Celery handles long-running AI operations without blocking HTTP requests

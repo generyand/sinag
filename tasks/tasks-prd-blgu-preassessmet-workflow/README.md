@@ -2,7 +2,7 @@
 
 **(Updated based on November 4, 2025 Consultation & Latest Clarifications)**
 
-The core strategy remains a **metadata-driven architecture**, providing the necessary flexibility for VANTAGE. We will enhance this by explicitly distinguishing between **system-automated** and **human-judged** indicators, and ensuring that human oversight always has the final say where appropriate.
+The core strategy remains a **metadata-driven architecture**, providing the necessary flexibility for SINAG. We will enhance this by explicitly distinguishing between **system-automated** and **human-judged** indicators, and ensuring that human oversight always has the final say where appropriate.
 
 #### **Phase 1: Defining Indicators (MLGOO-DILG Administration - Epic 6)**
 
@@ -54,10 +54,10 @@ This is where human override is explicitly handled.
 
 #### **Addressing Flexibility Concerns (Reconfirmed):**
 
-- **System Adaptability:** This approach ensures VANTAGE is highly adaptable. The MLGOO-DILG, through the administrative UI (Epic 6), will control _which_ indicators are automated and _how_ they are automated, as well as those requiring direct human judgment.
+- **System Adaptability:** This approach ensures SINAG is highly adaptable. The MLGOO-DILG, through the administrative UI (Epic 6), will control _which_ indicators are automated and _how_ they are automated, as well as those requiring direct human judgment.
 - **Human Oversight:** The design explicitly ensures that human Assessors and Validators always have the final say, even when the system provides automated suggestions, making the system a powerful assistant, not a rigid replacement.
 
-This refined approach ensures maximum flexibility, accuracy, and maintainability, allowing VANTAGE to truly handle the diverse nature of SGLGB indicators while maintaining human control.
+This refined approach ensures maximum flexibility, accuracy, and maintainability, allowing SINAG to truly handle the diverse nature of SGLGB indicators while maintaining human control.
 
 ---
 

@@ -2,7 +2,7 @@
 
 ## 1. Introduction/Overview
 
-The VANTAGE system currently requires developer intervention for critical system management tasks such as updating SGLGB indicators, managing assessment cycles, and reviewing Barangay-Based Institution (BBI) functionality audits. Phase 6 addresses this limitation by providing the MLGOO-DILG with a comprehensive administrative interface to independently manage the system's core operational parameters.
+The SINAG system currently requires developer intervention for critical system management tasks such as updating SGLGB indicators, managing assessment cycles, and reviewing Barangay-Based Institution (BBI) functionality audits. Phase 6 addresses this limitation by providing the MLGOO-DILG with a comprehensive administrative interface to independently manage the system's core operational parameters.
 
 This feature set empowers the MLGOO-DILG to:
 - Maintain SGLGB indicators in alignment with evolving national standards
@@ -11,7 +11,7 @@ This feature set empowers the MLGOO-DILG to:
 
 **Problem Statement:** The MLGOO-DILG currently cannot adapt the system to changes in DILG national policy, manage assessment timelines, or process BBI submissions without developer support, creating operational bottlenecks and reducing the system's responsiveness to policy updates.
 
-**Goal:** Enable the MLGOO-DILG to independently administer all aspects of the SGLGB assessment program within VANTAGE, eliminating developer dependencies for routine administrative tasks.
+**Goal:** Enable the MLGOO-DILG to independently administer all aspects of the SGLGB assessment program within SINAG, eliminating developer dependencies for routine administrative tasks.
 
 ## 2. Goals
 
@@ -196,7 +196,7 @@ This feature set empowers the MLGOO-DILG to:
 - System Settings
 - Audit Log
 
-**FR-6.37:** All administrative interfaces MUST follow the existing VANTAGE design system (Tailwind CSS, shadcn/ui components).
+**FR-6.37:** All administrative interfaces MUST follow the existing SINAG design system (Tailwind CSS, shadcn/ui components).
 
 **FR-6.38:** All administrative forms MUST include client-side validation with clear error messages for required fields and format validation.
 
@@ -372,7 +372,7 @@ This feature set empowers the MLGOO-DILG to:
 **Generated Types:**
 - After implementing backend endpoints, run `pnpm generate-types` to create TypeScript types and React Query hooks in `packages/shared/src/generated/`.
 - Frontend components will import from:
-  - `@vantage/shared` for generated hooks (e.g., `useGetAdminIndicators`, `useUpdateIndicator`)
+  - `@sinag/shared` for generated hooks (e.g., `useGetAdminIndicators`, `useUpdateIndicator`)
 
 **Authorization:**
 - Update `apps/web/src/middleware.ts` or create a layout-level auth check to ensure only MLGOO-DILG users can access `/admin/*` routes.

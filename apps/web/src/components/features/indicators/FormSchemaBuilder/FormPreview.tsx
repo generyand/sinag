@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { FormField } from '@/store/useFormBuilderStore';
 import { useFormBuilderStore } from '@/store/useFormBuilderStore';
-import type { FieldOption } from '@vantage/shared';
+import type { FieldOption } from '@sinag/shared';
 import { Eye } from 'lucide-react';
 
 /**

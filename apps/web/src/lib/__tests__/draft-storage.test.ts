@@ -135,7 +135,7 @@ describe('draft-storage', () => {
 
       it('should handle corrupted data gracefully', () => {
         // Manually corrupt data in localStorage
-        localStorage.setItem('vantage_indicator_draft_test', 'corrupted{json');
+        localStorage.setItem('sinag_indicator_draft_test', 'corrupted{json');
 
         const loaded = storage.loadDraft('test');
 
@@ -181,7 +181,7 @@ describe('draft-storage', () => {
 
       it('should handle corrupted index gracefully', () => {
         // Manually corrupt index
-        localStorage.setItem('vantage_draft_metadata_index', 'corrupted{json');
+        localStorage.setItem('sinag_draft_metadata_index', 'corrupted{json');
 
         const drafts = storage.listDrafts();
 
@@ -329,7 +329,7 @@ describe('draft-storage', () => {
 
         storage.clearAllDrafts();
 
-        expect(localStorage.getItem('vantage_draft_metadata_index')).toBeNull();
+        expect(localStorage.getItem('sinag_draft_metadata_index')).toBeNull();
       });
     });
 

@@ -14,7 +14,7 @@ import { FileFieldComponent } from '../FileFieldComponent';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Mock the API hooks
-vi.mock('@vantage/shared', () => ({
+vi.mock('@sinag/shared', () => ({
   useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles: vi.fn(() => ({
     data: { files: [] },
     isLoading: false,
@@ -123,7 +123,7 @@ describe('FileFieldComponent', () => {
   });
 
   it('should display uploaded files list', async () => {
-    const { useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles } = await import('@vantage/shared');
+    const { useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles } = await import('@sinag/shared');
 
     vi.mocked(useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles).mockReturnValue({
       data: {
@@ -149,7 +149,7 @@ describe('FileFieldComponent', () => {
   });
 
   it('should show loading state while fetching files', async () => {
-    const { useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles } = await import('@vantage/shared');
+    const { useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles } = await import('@sinag/shared');
 
     vi.mocked(useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles).mockReturnValue({
       data: undefined,
@@ -199,7 +199,7 @@ describe('FileFieldComponent', () => {
   });
 
   it('should show upload progress', async () => {
-    const { usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload } = await import('@vantage/shared');
+    const { usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload } = await import('@sinag/shared');
 
     vi.mocked(usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload).mockReturnValue({
       mutateAsync: vi.fn().mockImplementation(() => new Promise(resolve => setTimeout(resolve, 1000))),
@@ -219,7 +219,7 @@ describe('FileFieldComponent', () => {
   });
 
   it('should show delete button for uploaded files', async () => {
-    const { useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles } = await import('@vantage/shared');
+    const { useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles } = await import('@sinag/shared');
 
     vi.mocked(useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles).mockReturnValue({
       data: {
@@ -247,7 +247,7 @@ describe('FileFieldComponent', () => {
   });
 
   it('should disable delete button when assessment is submitted', async () => {
-    const { useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles } = await import('@vantage/shared');
+    const { useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles } = await import('@sinag/shared');
 
     vi.mocked(useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles).mockReturnValue({
       data: {
@@ -281,7 +281,7 @@ describe('FileFieldComponent', () => {
   });
 
   it('should show file preview button', async () => {
-    const { useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles } = await import('@vantage/shared');
+    const { useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles } = await import('@sinag/shared');
 
     vi.mocked(useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles).mockReturnValue({
       data: {
@@ -308,7 +308,7 @@ describe('FileFieldComponent', () => {
   });
 
   it('should display file size in human-readable format', async () => {
-    const { useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles } = await import('@vantage/shared');
+    const { useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles } = await import('@sinag/shared');
 
     vi.mocked(useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles).mockReturnValue({
       data: {

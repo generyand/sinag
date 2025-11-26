@@ -1,4 +1,4 @@
-import { useGetLookupsGovernanceAreas } from '@vantage/shared';
+import { useGetLookupsGovernanceAreas } from '@sinag/shared';
 
 /**
  * Custom hook to fetch governance areas for the user management interface.

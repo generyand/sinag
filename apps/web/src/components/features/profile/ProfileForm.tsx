@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
-import { usePostAuthChangePassword, usePostAuthLogout } from '@vantage/shared';
+import { usePostAuthChangePassword, usePostAuthLogout } from '@sinag/shared';
 import { useUserBarangay } from '@/hooks/useUserBarangay';
 import { useAssessorGovernanceArea } from '@/hooks/useAssessorGovernanceArea';
 import { 
@@ -39,7 +39,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { User, Mail, MapPin, Shield, Info, Lock, Key, CheckCircle, Save, Phone } from 'lucide-react';
-import { User as UserType } from '@vantage/shared';
+import { User as UserType } from '@sinag/shared';
 
 // Password change form schema
 const passwordChangeSchema = z.object({

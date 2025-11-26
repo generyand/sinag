@@ -1,7 +1,7 @@
 'use client';
 
 import { useCalculationRuleStore } from '@/store/useCalculationRuleStore';
-import type { FormSchema } from '@vantage/shared';
+import type { FormSchema } from '@sinag/shared';
 import { ConditionGroupItem } from './ConditionGroupItem';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';

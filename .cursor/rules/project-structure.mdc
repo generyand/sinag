@@ -15,7 +15,7 @@ alwaysApply: true
 - Documentation is in `docs/` folder
 
 ```tree
-vantage
+sinag
 ├── apps
 │   ├── api
 │   │   ├── alembic
@@ -255,8 +255,8 @@ vantage
 - Run `pnpm generate` to regenerate after API changes
 
 ### Type Safety
-- Import types from `@vantage/shared` package
-- API client functions are also imported from `@vantage/shared` (e.g., `import { users } from '@vantage/shared'`).
+- Import types from `@sinag/shared` package
+- API client functions are also imported from `@sinag/shared` (e.g., `import { users } from '@sinag/shared'`).
 - Use generated schemas for form validation
 - Leverage TypeScript for compile-time type checking
 

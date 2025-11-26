@@ -2,7 +2,7 @@
 
 ## Overview
 
-The VANTAGE API now implements a **fail-fast startup system** that validates critical configuration and connections before the application starts accepting requests. This prevents the server from running in a misconfigured state and provides clear error messages when something is wrong.
+The SINAG API now implements a **fail-fast startup system** that validates critical configuration and connections before the application starts accepting requests. This prevents the server from running in a misconfigured state and provides clear error messages when something is wrong.
 
 ## What Gets Validated
 

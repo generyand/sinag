@@ -28,7 +28,7 @@ def main():
         output = []
         output.append('# SGLGB Indicator Specifications')
         output.append('')
-        output.append('This document provides a complete specification of all indicators in the VANTAGE SGLGB assessment system.')
+        output.append('This document provides a complete specification of all indicators in the SINAG SGLGB assessment system.')
         output.append('')
         output.append(f'**Generated:** 2025-11-18')
         output.append('')
@@ -245,7 +245,7 @@ def main():
         output.append('')
         output.append('---')
         output.append('')
-        output.append('*This document is auto-generated from the VANTAGE database.*')
+        output.append('*This document is auto-generated from the SINAG database.*')
 
         # Write to file
         output_path = os.path.join(os.path.dirname(__file__), 'docs', 'INDICATOR_SPECIFICATIONS.md')

@@ -36,8 +36,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
-import { usePostAssessmentsAssessmentIdSubmit } from "@vantage/shared";
-import type { SubmissionValidationResult } from "@vantage/shared";
+import { usePostAssessmentsAssessmentIdSubmit } from "@sinag/shared";
+import type { SubmissionValidationResult } from "@sinag/shared";
 
 interface SubmitAssessmentButtonProps {
   assessmentId: number;

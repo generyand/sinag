@@ -74,8 +74,8 @@ export interface StorageStats {
 // Constants
 // ============================================================================
 
-const STORAGE_PREFIX = 'vantage_indicator_draft_';
-const METADATA_INDEX_KEY = 'vantage_draft_metadata_index';
+const STORAGE_PREFIX = 'sinag_indicator_draft_';
+const METADATA_INDEX_KEY = 'sinag_draft_metadata_index';
 const CURRENT_VERSION = 1; // Data version for migrations
 const MAX_DRAFT_SIZE = 5 * 1024 * 1024; // 5MB per draft
 const STORAGE_QUOTA = 10 * 1024 * 1024; // 10MB total for all drafts

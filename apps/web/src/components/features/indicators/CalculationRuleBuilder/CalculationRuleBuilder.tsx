@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useCalculationRuleStore } from '@/store/useCalculationRuleStore';
-import type { CalculationSchema, FormSchema } from '@vantage/shared';
+import type { CalculationSchema, FormSchema } from '@sinag/shared';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';

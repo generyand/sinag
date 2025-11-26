@@ -50,7 +50,7 @@
     "@tiptap/starter-kit": "^3.10.4",
     "@types/lodash": "^4.17.20",
     "@types/uuid": "^11.0.0",
-    "@vantage/shared": "workspace:*",
+    "@sinag/shared": "workspace:*",
     "axios": "^1.10.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

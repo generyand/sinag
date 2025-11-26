@@ -1,6 +1,6 @@
 # Testing Documentation
 
-Testing guides and criteria for the VANTAGE platform.
+Testing guides and criteria for the SINAG platform.
 
 ## Available Documents
 

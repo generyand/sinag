@@ -1125,4 +1125,4 @@ The Classification Algorithm Workflow automates the critical compliance determin
 5. **Strict "3+1" Rule Enforcement**: All 3 Core areas + at least 1 Essential area required for SGLGB pass
 6. **Historical Tracking**: Results stored in database for trend analysis and reporting
 
-This workflow ensures consistent, accurate, and transparent SGLGB compliance determination for all barangays in the VANTAGE system.
+This workflow ensures consistent, accurate, and transparent SGLGB compliance determination for all barangays in the SINAG system.

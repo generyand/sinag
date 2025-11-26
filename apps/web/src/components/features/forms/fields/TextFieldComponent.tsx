@@ -4,7 +4,7 @@
 import { Controller, Control, FieldValues, Path } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { TextInputField } from "@vantage/shared";
+import type { TextInputField } from "@sinag/shared";
 
 interface TextFieldComponentProps<TFieldValues extends FieldValues> {
   field: TextInputField;

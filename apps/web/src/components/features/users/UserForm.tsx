@@ -18,8 +18,8 @@ import {
 } from '@/components/ui/select';
 import { useGovernanceAreas } from '@/hooks/useGovernanceAreas';
 import { useBarangays } from '@/hooks/useBarangays';
-import { UserRole, UserAdminCreate, UserAdminUpdate, Barangay, GovernanceArea } from '@vantage/shared';
-import { usePostUsers, usePutUsersUserId, getGetUsersQueryKey } from '@vantage/shared/src/generated/endpoints/users';
+import { UserRole, UserAdminCreate, UserAdminUpdate, Barangay, GovernanceArea } from '@sinag/shared';
+import { usePostUsers, usePutUsersUserId, getGetUsersQueryKey } from '@sinag/shared/src/generated/endpoints/users';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface UserFormProps {

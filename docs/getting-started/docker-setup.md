@@ -2,12 +2,12 @@
 
 ## Environment Configuration
 
-Docker Compose for VANTAGE uses a decentralized environment variable approach where each service loads its environment from its respective `.env` files.
+Docker Compose for SINAG uses a decentralized environment variable approach where each service loads its environment from its respective `.env` files.
 
 ### Environment File Structure
 
 ```
-vantage/
+sinag/
 ├── apps/
 │   ├── api/
 │   │   ├── .env              # API & Celery environment (REQUIRED)
@@ -152,11 +152,11 @@ Check that environment variables are loaded correctly:
 
 ```bash
 # Check API service environment
-docker exec vantage-api env | grep SUPABASE
+docker exec sinag-api env | grep SUPABASE
 
 # Check web service environment
-docker exec vantage-web env | grep NEXT_PUBLIC
+docker exec sinag-web env | grep NEXT_PUBLIC
 
 # Check celery worker environment
-docker exec vantage-celery-worker env | grep CELERY
+docker exec sinag-celery-worker env | grep CELERY
 ```

@@ -1,6 +1,6 @@
 # Maintaining the Changelog
 
-This guide explains how to maintain the CHANGELOG.md file for the VANTAGE project.
+This guide explains how to maintain the CHANGELOG.md file for the SINAG project.
 
 ## Overview
 

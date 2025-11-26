@@ -184,7 +184,7 @@ Tech-stack specific file structure for the Hierarchical Indicator Creation featu
 
 - **Backend Testing:** Place Pytest tests in `apps/api/tests/`. Test services and API endpoints separately. Run with `pytest -vv --log-cli-level=DEBUG`.
 - **Frontend Testing:** Place test files alongside components (`.test.tsx`). Use Vitest and React Testing Library.
-- **Type Safety:** Import auto-generated types from `@vantage/shared` to ensure frontend and backend are in sync. Run `pnpm generate-types` after backend changes.
+- **Type Safety:** Import auto-generated types from `@sinag/shared` to ensure frontend and backend are in sync. Run `pnpm generate-types` after backend changes.
 - **Run Tests:** Use `pnpm test` from the root, which will run tests for all workspaces.
 - **Test-First Approach:** Each epic MUST include a dedicated Testing & Validation story as the final story to ensure all features are tested before proceeding to the next epic.
 - **Spec v1.4 Validation:** Test against all 29 validated indicator examples from `docs/indicator-builder-specification.md` (indicators 1.1 through 6.3).

@@ -1,4 +1,4 @@
-import { useGetLookupsBarangays } from '@vantage/shared';
+import { useGetLookupsBarangays } from '@sinag/shared';
 
 /**
  * Custom hook to fetch barangays for the user management interface.

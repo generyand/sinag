@@ -1,7 +1,7 @@
 {
-  "name": "@vantage/shared",
+  "name": "@sinag/shared",
   "version": "0.1.0",
-  "description": "Shared types and utilities for Vantage applications",
+  "description": "Shared types and utilities for SINAG applications",
   "private": true,
   "main": "./src/generated/index.ts",
   "types": "./src/generated/index.ts",

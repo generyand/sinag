@@ -12,7 +12,7 @@ import { Download, FileText, Image, Loader2, ChevronDown } from "lucide-react";
 import { exportToCSV } from "@/lib/csv-export";
 import { exportToPNG } from "@/lib/png-export";
 import { exportReportToPDF, FilterState } from "@/lib/pdf-export";
-import { AssessmentRow, ReportsDataResponse } from "@vantage/shared";
+import { AssessmentRow, ReportsDataResponse } from "@sinag/shared";
 
 interface ExportControlsProps {
   tableData: AssessmentRow[];

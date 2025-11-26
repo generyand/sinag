@@ -19,7 +19,7 @@ import userEvent from "@testing-library/user-event";
 import { SubmitAssessmentButton } from "../SubmitAssessmentButton";
 
 // Mock the generated hook
-vi.mock("@vantage/shared", () => ({
+vi.mock("@sinag/shared", () => ({
   usePostAssessmentsAssessmentIdSubmit: vi.fn(),
 }));
 
@@ -30,7 +30,7 @@ vi.mock("@/hooks/use-toast", () => ({
   })),
 }));
 
-import { usePostAssessmentsAssessmentIdSubmit } from "@vantage/shared";
+import { usePostAssessmentsAssessmentIdSubmit } from "@sinag/shared";
 import { useToast } from "@/hooks/use-toast";
 
 const mockUseSubmit = usePostAssessmentsAssessmentIdSubmit as ReturnType<typeof vi.fn>;

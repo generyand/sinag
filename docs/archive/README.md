@@ -1,12 +1,12 @@
 # Documentation Archive
 
-This directory contains historical documentation that chronicles the development journey of VANTAGE.
+This directory contains historical documentation that chronicles the development journey of SINAG.
 
 ## What's Archived Here
 
 Documentation in this directory represents:
 - **Resolved issues** - Problems that have been fixed in the codebase
-- **Development history** - The learning journey of building VANTAGE
+- **Development history** - The learning journey of building SINAG
 - **Context for decisions** - Why certain architectural choices were made
 - **Reference material** - Useful for understanding how issues were solved
 

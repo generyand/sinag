@@ -6,7 +6,7 @@ import { useAssessorGovernanceArea } from '@/hooks/useAssessorGovernanceArea';
 import { BarangaySubmission, SubmissionsData, SubmissionsFilter, SubmissionsKPI } from '@/types/submissions';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
-import { useGetAssessorStats } from '@vantage/shared';
+import { useGetAssessorStats } from '@sinag/shared';
 
 // Map API status to UI areaStatus for VALIDATORS
 function mapStatusToAreaStatus(status: string): BarangaySubmission['areaStatus'] {

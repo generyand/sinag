@@ -22,15 +22,15 @@ vi.mock('@/store/useCalculationRuleStore', () => ({
 }));
 
 // Mock the API hook
-vi.mock('@vantage/shared', async () => {
-  const actual = await vi.importActual('@vantage/shared');
+vi.mock('@sinag/shared', async () => {
+  const actual = await vi.importActual('@sinag/shared');
   return {
     ...actual,
     usePostIndicatorsTestCalculation: vi.fn(),
   };
 });
 
-import { usePostIndicatorsTestCalculation } from '@vantage/shared';
+import { usePostIndicatorsTestCalculation } from '@sinag/shared';
 
 const mockUseCalculationRuleStore = useCalculationRuleStore as ReturnType<typeof vi.fn>;
 const mockUsePostIndicatorsTestCalculation = usePostIndicatorsTestCalculation as ReturnType<typeof vi.fn>;

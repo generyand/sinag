@@ -285,9 +285,9 @@ graph LR
     end
 
     subgraph "Generated Package"
-        SCHEMAS[TypeScript Types<br/><br/>@vantage/shared<br/>schemas/assessments/]
+        SCHEMAS[TypeScript Types<br/><br/>@sinag/shared<br/>schemas/assessments/]
 
-        ENDPOINTS[React Query Hooks<br/><br/>@vantage/shared<br/>endpoints/assessments/]
+        ENDPOINTS[React Query Hooks<br/><br/>@sinag/shared<br/>endpoints/assessments/]
     end
 
     subgraph "Frontend - Custom Hooks"
@@ -321,8 +321,8 @@ graph LR
 ```typescript
 // apps/web/src/hooks/useAssessmentSubmit.ts
 
-import { usePostApiV1Assessments } from "@vantage/shared";
-import type { AssessmentCreate, AssessmentResponse } from "@vantage/shared";
+import { usePostApiV1Assessments } from "@sinag/shared";
+import type { AssessmentCreate, AssessmentResponse } from "@sinag/shared";
 
 export function useAssessmentSubmit(options?: {
   onSuccess?: (assessment: AssessmentResponse) => void;
@@ -379,7 +379,7 @@ export function AssessmentForm() {
 
 ## State Management
 
-VANTAGE uses Zustand for global state and TanStack Query for server state:
+SINAG uses Zustand for global state and TanStack Query for server state:
 
 ```mermaid
 graph TB
@@ -424,7 +424,7 @@ graph TB
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { User } from "@vantage/shared";
+import type { User } from "@sinag/shared";
 
 interface AuthState {
   token: string | null;
@@ -456,7 +456,7 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: "vantage-auth",
+      name: "sinag-auth",
       partialize: (state) => ({
         token: state.token,
         user: state.user,
@@ -471,7 +471,7 @@ export const useAuthStore = create<AuthState>()(
 ```typescript
 // apps/web/src/hooks/useAssessments.ts
 
-import { useGetApiV1Assessments } from "@vantage/shared";
+import { useGetApiV1Assessments } from "@sinag/shared";
 import { useAuthStore } from "@/store/authStore";
 
 export function useAssessments() {
@@ -552,7 +552,7 @@ sequenceDiagram
 ```typescript
 // apps/web/src/hooks/useAssessmentValidation.ts
 
-import { usePostApiV1AssessorValidate, useGetApiV1Assessor Assessments } from "@vantage/shared";
+import { usePostApiV1AssessorValidate, useGetApiV1Assessor Assessments } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
 
 export function useAssessmentValidation() {
@@ -657,7 +657,7 @@ sequenceDiagram
 
 "use client";
 
-import { usePostApiV1AuthLogin } from "@vantage/shared";
+import { usePostApiV1AuthLogin } from "@sinag/shared";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
 
@@ -804,7 +804,7 @@ import { BLGUDashboard } from "@/components/features/dashboard/BLGUDashboard";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "BLGU Dashboard - VANTAGE",
+  title: "BLGU Dashboard - SINAG",
   description: "Submit and track SGLGB assessments",
 };
 
@@ -869,7 +869,7 @@ export function BLGUDashboard() {
 
 ## Styling Architecture
 
-VANTAGE uses Tailwind CSS with shadcn/ui components for consistent design:
+SINAG uses Tailwind CSS with shadcn/ui components for consistent design:
 
 ```mermaid
 graph TB
@@ -915,8 +915,8 @@ export default {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
         },
-        // VANTAGE brand colors
-        vantage: {
+        // SINAG brand colors
+        sinag: {
           blue: "#4A90E2",
           green: "#51CF66",
           red: "#E74C3C",
@@ -974,7 +974,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
 ## Notes
 
-- All diagrams reflect the actual VANTAGE frontend implementation as of November 2025
+- All diagrams reflect the actual SINAG frontend implementation as of November 2025
 - App Router pattern provides file-system based routing with route groups for RBAC
 - Type generation from OpenAPI ensures compile-time type safety across frontend/backend
 - TanStack Query handles server state with automatic caching and invalidation
