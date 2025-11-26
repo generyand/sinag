@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 const mlgooNavigation = [
   { name: "Dashboard", href: "/mlgoo/dashboard", icon: "home" },
   { name: "Submission Queue", href: "/mlgoo/submissions", icon: "clipboard" },
+  { name: "GAR Reports", href: "/mlgoo/gar", icon: "clipboard" },
   { name: "Analytics Dashboard", href: "/analytics", icon: "chart" },
   { name: "Reports & Visualizations", href: "/reports", icon: "chart" },
   { name: "Analytics & Reports (Legacy)", href: "/mlgoo/reports", icon: "chart" },
