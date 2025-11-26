@@ -129,3 +129,24 @@ class BBIStatus(str, enum.Enum):
 
     FUNCTIONAL = "FUNCTIONAL"
     NON_FUNCTIONAL = "NON_FUNCTIONAL"
+
+
+class NotificationType(str, enum.Enum):
+    """
+    Enum for notification types in the assessment workflow.
+
+    Notification types:
+    - NEW_SUBMISSION: BLGU submits assessment -> All Assessors notified
+    - REWORK_REQUESTED: Assessor requests rework -> BLGU notified
+    - REWORK_RESUBMITTED: BLGU resubmits after rework -> All Assessors notified
+    - READY_FOR_VALIDATION: Assessor finalizes -> Validator(s) notified
+    - CALIBRATION_REQUESTED: Validator requests calibration -> BLGU notified
+    - CALIBRATION_RESUBMITTED: BLGU resubmits calibration -> Same Validator notified
+    """
+
+    NEW_SUBMISSION = "NEW_SUBMISSION"
+    REWORK_REQUESTED = "REWORK_REQUESTED"
+    REWORK_RESUBMITTED = "REWORK_RESUBMITTED"
+    READY_FOR_VALIDATION = "READY_FOR_VALIDATION"
+    CALIBRATION_REQUESTED = "CALIBRATION_REQUESTED"
+    CALIBRATION_RESUBMITTED = "CALIBRATION_RESUBMITTED"

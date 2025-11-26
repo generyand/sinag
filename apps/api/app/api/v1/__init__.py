@@ -7,7 +7,7 @@
 # 📦 Imports
 from fastapi import APIRouter
 
-from . import admin, analytics, assessments, assessor, auth, bbis, blgu_dashboard, external_analytics, indicators, lookups, movs, system, users
+from . import admin, analytics, assessments, assessor, auth, bbis, blgu_dashboard, external_analytics, indicators, lookups, movs, notifications, system, users
 
 # Create the main API router for V1
 api_router = APIRouter()
@@ -27,4 +27,5 @@ api_router.include_router(indicators.router, prefix="/indicators", tags=["indica
 api_router.include_router(bbis.router, prefix="/bbis", tags=["bbis"])
 api_router.include_router(blgu_dashboard.router, prefix="/blgu-dashboard", tags=["blgu-dashboard"])
 api_router.include_router(movs.router, prefix="/movs", tags=["movs"])
+api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
 api_router.include_router(external_analytics.router)  # Prefix already included in router definition

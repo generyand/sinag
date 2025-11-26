@@ -452,6 +452,18 @@ export type GetAssessmentsMyAssessment200 = { [key: string]: unknown };
 
 
 /**
+ * NotificationResponseAssessmentBarangayName
+ */
+export type NotificationResponseAssessmentBarangayName = string | null;
+
+
+/**
+ * NotificationResponseAssessmentId
+ */
+export type NotificationResponseAssessmentId = number | null;
+
+
+/**
  * OverallComplianceResponseAssessmentCycle
  */
 export type OverallComplianceResponseAssessmentCycle = string | null;

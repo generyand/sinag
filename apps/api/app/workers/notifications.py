@@ -1,29 +1,100 @@
-# 📧 Notification Worker
+# Notification Worker
 # Background tasks for handling notifications
 
 import logging
-from typing import Any, Dict, List
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from sqlalchemy.orm import Session
 
 from app.core.celery_app import celery_app
 from app.db.base import SessionLocal
+from app.db.enums import NotificationType
 from app.db.models import Assessment, User
-from app.db.models.admin import DeadlineOverride
 from app.db.models.barangay import Barangay
-from app.db.models.governance_area import Indicator
-from sqlalchemy.orm import Session
+from app.db.models.governance_area import GovernanceArea, Indicator
+from app.services.notification_service import notification_service
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
 
+# ==================== NEW SUBMISSION NOTIFICATION ====================
+
+
+@celery_app.task(bind=True, name="notifications.send_new_submission_notification")
+def send_new_submission_notification(self: Any, assessment_id: int) -> Dict[str, Any]:
+    """
+    Notification #1: BLGU submits assessment -> All active Assessors notified.
+
+    Args:
+        assessment_id: ID of the submitted assessment
+
+    Returns:
+        dict: Result of the notification process
+    """
+    db: Session = SessionLocal()
+
+    try:
+        # Get the assessment with BLGU user details
+        assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+
+        if not assessment:
+            logger.error("Assessment %s not found", assessment_id)
+            return {"success": False, "error": "Assessment not found"}
+
+        # Get barangay name
+        barangay_name = "Unknown Barangay"
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+
+        # Create notifications for all active assessors
+        notifications = notification_service.notify_all_active_assessors(
+            db=db,
+            notification_type=NotificationType.NEW_SUBMISSION,
+            title=f"New Submission: {barangay_name}",
+            message=f"Barangay {barangay_name} has submitted their SGLGB assessment for review.",
+            assessment_id=assessment_id,
+            exclude_user_id=assessment.blgu_user_id,  # Don't notify the submitter
+        )
+
+        db.commit()
+
+        logger.info(
+            "NEW_SUBMISSION notification: Assessment %s from %s - %d assessors notified",
+            assessment_id,
+            barangay_name,
+            len(notifications),
+        )
+
+        return {
+            "success": True,
+            "message": f"New submission notification sent to {len(notifications)} assessor(s)",
+            "assessment_id": assessment_id,
+            "barangay_name": barangay_name,
+            "notifications_created": len(notifications),
+        }
+
+    except Exception as e:
+        logger.error(
+            "Error sending new submission notification for assessment %s: %s",
+            assessment_id,
+            str(e),
+        )
+        db.rollback()
+        return {"success": False, "error": str(e)}
+
+    finally:
+        db.close()
+
+
+# ==================== REWORK NOTIFICATION ====================
+
+
 @celery_app.task(bind=True, name="notifications.send_rework_notification")
 def send_rework_notification(self: Any, assessment_id: int) -> Dict[str, Any]:
     """
-    Send notification to BLGU user when assessment needs rework.
-
-    This is a Celery task that runs in the background to handle
-    rework notifications without blocking the main API thread.
+    Notification #2: Assessor sends rework -> BLGU user notified.
 
     Args:
         assessment_id: ID of the assessment that needs rework
@@ -41,48 +112,39 @@ def send_rework_notification(self: Any, assessment_id: int) -> Dict[str, Any]:
             logger.error("Assessment %s not found", assessment_id)
             return {"success": False, "error": "Assessment not found"}
 
-        # Get BLGU user details
-        blgu_user = db.query(User).filter(User.id == assessment.blgu_user_id).first()
-
-        if not blgu_user:
-            logger.error(
-                "BLGU user %s not found for assessment %s",
-                assessment.blgu_user_id,
-                assessment_id,
-            )
+        if not assessment.blgu_user_id:
+            logger.error("Assessment %s has no BLGU user", assessment_id)
             return {"success": False, "error": "BLGU user not found"}
 
-        # Log the notification (for now, email integration will come later)
-        logger.info(
-            "REWORK NOTIFICATION: Assessment %s needs rework. BLGU User: %s (%s)",
-            assessment_id,
-            blgu_user.name,
-            blgu_user.email,
+        # Get barangay name
+        barangay_name = "Unknown Barangay"
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+
+        # Create notification for BLGU user
+        notification = notification_service.notify_blgu_user(
+            db=db,
+            notification_type=NotificationType.REWORK_REQUESTED,
+            title="Assessment Needs Revision",
+            message=f"Your SGLGB assessment for {barangay_name} requires revisions. Please review the assessor feedback and resubmit.",
+            blgu_user_id=assessment.blgu_user_id,
+            assessment_id=assessment_id,
         )
 
-        # TODO: In the future, this is where we would:
-        # 1. Send email notification to BLGU user
-        # 2. Send SMS notification if configured
-        # 3. Create in-app notification
-        # 4. Send webhook notification to external systems
+        db.commit()
 
-        # For now, we'll just log the notification details
-        notification_details = {
-            "assessment_id": assessment_id,
-            "blgu_user_name": blgu_user.name,
-            "blgu_user_email": blgu_user.email,
-            "barangay": blgu_user.barangay.name if blgu_user.barangay else "Unknown",
-            "assessment_status": assessment.status,
-            "rework_count": assessment.rework_count,
-            "message": f"Your assessment for {blgu_user.barangay.name if blgu_user.barangay else 'your barangay'} needs rework. Please review the assessor feedback and resubmit.",
-        }
-
-        logger.info("Notification details: %s", notification_details)
+        logger.info(
+            "REWORK_REQUESTED notification: Assessment %s for %s - BLGU user notified",
+            assessment_id,
+            barangay_name,
+        )
 
         return {
             "success": True,
             "message": "Rework notification sent successfully",
-            "notification_details": notification_details,
+            "assessment_id": assessment_id,
+            "barangay_name": barangay_name,
+            "notification_id": notification.id,
         }
 
     except Exception as e:
@@ -91,10 +153,335 @@ def send_rework_notification(self: Any, assessment_id: int) -> Dict[str, Any]:
             assessment_id,
             str(e),
         )
+        db.rollback()
         return {"success": False, "error": str(e)}
 
     finally:
         db.close()
+
+
+# ==================== REWORK RESUBMISSION NOTIFICATION ====================
+
+
+@celery_app.task(bind=True, name="notifications.send_rework_resubmission_notification")
+def send_rework_resubmission_notification(
+    self: Any, assessment_id: int
+) -> Dict[str, Any]:
+    """
+    Notification #3: BLGU resubmits after rework -> All active Assessors notified.
+
+    Args:
+        assessment_id: ID of the resubmitted assessment
+
+    Returns:
+        dict: Result of the notification process
+    """
+    db: Session = SessionLocal()
+
+    try:
+        # Get the assessment with BLGU user details
+        assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+
+        if not assessment:
+            logger.error("Assessment %s not found", assessment_id)
+            return {"success": False, "error": "Assessment not found"}
+
+        # Get barangay name
+        barangay_name = "Unknown Barangay"
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+
+        # Create notifications for all active assessors
+        notifications = notification_service.notify_all_active_assessors(
+            db=db,
+            notification_type=NotificationType.REWORK_RESUBMITTED,
+            title=f"Rework Resubmission: {barangay_name}",
+            message=f"Barangay {barangay_name} has resubmitted their assessment after addressing the requested revisions.",
+            assessment_id=assessment_id,
+            exclude_user_id=assessment.blgu_user_id,
+        )
+
+        db.commit()
+
+        logger.info(
+            "REWORK_RESUBMITTED notification: Assessment %s from %s - %d assessors notified",
+            assessment_id,
+            barangay_name,
+            len(notifications),
+        )
+
+        return {
+            "success": True,
+            "message": f"Rework resubmission notification sent to {len(notifications)} assessor(s)",
+            "assessment_id": assessment_id,
+            "barangay_name": barangay_name,
+            "notifications_created": len(notifications),
+        }
+
+    except Exception as e:
+        logger.error(
+            "Error sending rework resubmission notification for assessment %s: %s",
+            assessment_id,
+            str(e),
+        )
+        db.rollback()
+        return {"success": False, "error": str(e)}
+
+    finally:
+        db.close()
+
+
+# ==================== READY FOR VALIDATION NOTIFICATION ====================
+
+
+@celery_app.task(bind=True, name="notifications.send_ready_for_validation_notification")
+def send_ready_for_validation_notification(
+    self: Any, assessment_id: int, governance_area_id: int
+) -> Dict[str, Any]:
+    """
+    Notification #4: Assessor finalizes -> Validator(s) for governance area notified.
+
+    Args:
+        assessment_id: ID of the finalized assessment
+        governance_area_id: ID of the governance area to notify validators for
+
+    Returns:
+        dict: Result of the notification process
+    """
+    db: Session = SessionLocal()
+
+    try:
+        # Get the assessment
+        assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+
+        if not assessment:
+            logger.error("Assessment %s not found", assessment_id)
+            return {"success": False, "error": "Assessment not found"}
+
+        # Get governance area
+        governance_area = (
+            db.query(GovernanceArea)
+            .filter(GovernanceArea.id == governance_area_id)
+            .first()
+        )
+        governance_area_name = governance_area.name if governance_area else "Unknown Area"
+
+        # Get barangay name
+        barangay_name = "Unknown Barangay"
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+
+        # Create notifications for validators in this governance area
+        notifications = notification_service.notify_validators_for_governance_area(
+            db=db,
+            notification_type=NotificationType.READY_FOR_VALIDATION,
+            title=f"Ready for Validation: {governance_area_name}",
+            message=f"Assessment for Barangay {barangay_name} is ready for final validation in {governance_area_name}.",
+            governance_area_id=governance_area_id,
+            assessment_id=assessment_id,
+        )
+
+        db.commit()
+
+        logger.info(
+            "READY_FOR_VALIDATION notification: Assessment %s, Area %s - %d validators notified",
+            assessment_id,
+            governance_area_name,
+            len(notifications),
+        )
+
+        return {
+            "success": True,
+            "message": f"Ready for validation notification sent to {len(notifications)} validator(s)",
+            "assessment_id": assessment_id,
+            "governance_area_id": governance_area_id,
+            "governance_area_name": governance_area_name,
+            "barangay_name": barangay_name,
+            "notifications_created": len(notifications),
+        }
+
+    except Exception as e:
+        logger.error(
+            "Error sending ready for validation notification for assessment %s: %s",
+            assessment_id,
+            str(e),
+        )
+        db.rollback()
+        return {"success": False, "error": str(e)}
+
+    finally:
+        db.close()
+
+
+# ==================== CALIBRATION NOTIFICATION ====================
+
+
+@celery_app.task(bind=True, name="notifications.send_calibration_notification")
+def send_calibration_notification(self: Any, assessment_id: int) -> Dict[str, Any]:
+    """
+    Notification #5: Validator requests calibration -> BLGU user notified.
+
+    Args:
+        assessment_id: ID of the assessment requiring calibration
+
+    Returns:
+        dict: Result of the notification process
+    """
+    db: Session = SessionLocal()
+
+    try:
+        # Get the assessment
+        assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+
+        if not assessment:
+            logger.error("Assessment %s not found", assessment_id)
+            return {"success": False, "error": "Assessment not found"}
+
+        if not assessment.blgu_user_id:
+            logger.error("Assessment %s has no BLGU user", assessment_id)
+            return {"success": False, "error": "BLGU user not found"}
+
+        # Get barangay name
+        barangay_name = "Unknown Barangay"
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+
+        # Get governance area name if calibration_validator_id is set
+        governance_area_name = ""
+        if assessment.calibration_validator_id:
+            validator = db.query(User).filter(
+                User.id == assessment.calibration_validator_id
+            ).first()
+            if validator and validator.validator_area:
+                governance_area_name = f" for {validator.validator_area.name}"
+
+        # Create notification for BLGU user
+        notification = notification_service.notify_blgu_user(
+            db=db,
+            notification_type=NotificationType.CALIBRATION_REQUESTED,
+            title="Calibration Required",
+            message=f"The validator has requested calibration{governance_area_name} for your SGLGB assessment. Please review the feedback and make the necessary corrections.",
+            blgu_user_id=assessment.blgu_user_id,
+            assessment_id=assessment_id,
+        )
+
+        db.commit()
+
+        logger.info(
+            "CALIBRATION_REQUESTED notification: Assessment %s for %s - BLGU user notified",
+            assessment_id,
+            barangay_name,
+        )
+
+        return {
+            "success": True,
+            "message": "Calibration notification sent successfully",
+            "assessment_id": assessment_id,
+            "barangay_name": barangay_name,
+            "notification_id": notification.id,
+        }
+
+    except Exception as e:
+        logger.error(
+            "Error sending calibration notification for assessment %s: %s",
+            assessment_id,
+            str(e),
+        )
+        db.rollback()
+        return {"success": False, "error": str(e)}
+
+    finally:
+        db.close()
+
+
+# ==================== CALIBRATION RESUBMISSION NOTIFICATION ====================
+
+
+@celery_app.task(
+    bind=True, name="notifications.send_calibration_resubmission_notification"
+)
+def send_calibration_resubmission_notification(
+    self: Any, assessment_id: int, validator_id: int
+) -> Dict[str, Any]:
+    """
+    Notification #6: BLGU resubmits after calibration -> Same Validator notified.
+
+    Args:
+        assessment_id: ID of the resubmitted assessment
+        validator_id: ID of the validator who requested calibration
+
+    Returns:
+        dict: Result of the notification process
+    """
+    db: Session = SessionLocal()
+
+    try:
+        # Get the assessment
+        assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+
+        if not assessment:
+            logger.error("Assessment %s not found", assessment_id)
+            return {"success": False, "error": "Assessment not found"}
+
+        # Get validator
+        validator = db.query(User).filter(User.id == validator_id).first()
+
+        if not validator:
+            logger.error("Validator %s not found", validator_id)
+            return {"success": False, "error": "Validator not found"}
+
+        # Get barangay name
+        barangay_name = "Unknown Barangay"
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+
+        # Get governance area ID
+        governance_area_id = validator.validator_area_id
+
+        # Create notification for the specific validator
+        notification = notification_service.notify_specific_validator(
+            db=db,
+            notification_type=NotificationType.CALIBRATION_RESUBMITTED,
+            title=f"Calibration Resubmission: {barangay_name}",
+            message=f"Barangay {barangay_name} has resubmitted their assessment after calibration. Please review the updated indicators.",
+            validator_id=validator_id,
+            assessment_id=assessment_id,
+            governance_area_id=governance_area_id,
+        )
+
+        db.commit()
+
+        logger.info(
+            "CALIBRATION_RESUBMITTED notification: Assessment %s from %s - Validator %s notified",
+            assessment_id,
+            barangay_name,
+            validator.name,
+        )
+
+        return {
+            "success": True,
+            "message": "Calibration resubmission notification sent successfully",
+            "assessment_id": assessment_id,
+            "barangay_name": barangay_name,
+            "validator_id": validator_id,
+            "validator_name": validator.name,
+            "notification_id": notification.id,
+        }
+
+    except Exception as e:
+        logger.error(
+            "Error sending calibration resubmission notification for assessment %s: %s",
+            assessment_id,
+            str(e),
+        )
+        db.rollback()
+        return {"success": False, "error": str(e)}
+
+    finally:
+        db.close()
+
+
+# ==================== VALIDATION COMPLETE NOTIFICATION ====================
 
 
 @celery_app.task(bind=True, name="notifications.send_validation_complete_notification")
@@ -103,9 +490,6 @@ def send_validation_complete_notification(
 ) -> Dict[str, Any]:
     """
     Send notification to BLGU user when assessment validation is complete.
-
-    This is a Celery task that runs in the background to handle
-    validation complete notifications without blocking the main API thread.
 
     Args:
         assessment_id: ID of the validated assessment
@@ -123,49 +507,45 @@ def send_validation_complete_notification(
             logger.error("Assessment %s not found", assessment_id)
             return {"success": False, "error": "Assessment not found"}
 
-        # Get BLGU user details
-        blgu_user = db.query(User).filter(User.id == assessment.blgu_user_id).first()
-
-        if not blgu_user:
-            logger.error(
-                "BLGU user %s not found for assessment %s",
-                assessment.blgu_user_id,
-                assessment_id,
-            )
+        if not assessment.blgu_user_id:
+            logger.error("Assessment %s has no BLGU user", assessment_id)
             return {"success": False, "error": "BLGU user not found"}
 
-        # Log the notification
-        logger.info(
-            "VALIDATION COMPLETE NOTIFICATION: Assessment %s has been validated. BLGU User: %s (%s)",
-            assessment_id,
-            blgu_user.name,
-            blgu_user.email,
-        )
+        # Get barangay name
+        barangay_name = "Unknown Barangay"
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
 
-        # TODO: In the future, this is where we would send actual notifications
+        # Note: For validation complete, we log but don't create in-app notification
+        # since it would be redundant (they can see the status in their dashboard)
+        # The existing behavior is preserved for backward compatibility
+
+        logger.info(
+            "VALIDATION COMPLETE: Assessment %s for %s has been validated",
+            assessment_id,
+            barangay_name,
+        )
 
         notification_details = {
             "assessment_id": assessment_id,
-            "blgu_user_name": blgu_user.name,
-            "blgu_user_email": blgu_user.email,
-            "barangay": blgu_user.barangay.name if blgu_user.barangay else "Unknown",
-            "assessment_status": assessment.status,
-            "message": f"Congratulations! Your assessment for {blgu_user.barangay.name if blgu_user.barangay else 'your barangay'} has been validated and is now complete.",
+            "blgu_user_name": assessment.blgu_user.name if assessment.blgu_user else "Unknown",
+            "blgu_user_email": assessment.blgu_user.email if assessment.blgu_user else "Unknown",
+            "barangay": barangay_name,
+            "assessment_status": str(assessment.status),
+            "message": f"Congratulations! Your assessment for {barangay_name} has been validated and is now complete.",
         }
 
-        logger.info(
-            "Validation complete notification details: %s", notification_details
-        )
+        logger.info("Validation complete notification details: %s", notification_details)
 
         return {
             "success": True,
-            "message": "Validation complete notification sent successfully",
+            "message": "Validation complete notification processed",
             "notification_details": notification_details,
         }
 
     except Exception as e:
         logger.error(
-            "Error sending validation complete notification for assessment %s: %s",
+            "Error processing validation complete notification for assessment %s: %s",
             assessment_id,
             str(e),
         )
@@ -173,6 +553,9 @@ def send_validation_complete_notification(
 
     finally:
         db.close()
+
+
+# ==================== DEADLINE EXTENSION NOTIFICATION ====================
 
 
 @celery_app.task(bind=True, name="notifications.send_deadline_extension_notification")
@@ -183,13 +566,10 @@ def send_deadline_extension_notification(
     new_deadline: str,
     reason: str,
     created_by_user_id: int,
-    db: Session | None = None,
+    db: Optional[Session] = None,
 ) -> Dict[str, Any]:
     """
     Send notification to BLGU users when deadline is extended.
-
-    This is a Celery task that runs in the background to handle
-    deadline extension notifications without blocking the main API thread.
 
     Args:
         barangay_id: ID of the barangay receiving the extension
@@ -223,9 +603,15 @@ def send_deadline_extension_notification(
             return {"success": False, "error": "Indicators not found"}
 
         # Get BLGU users for this barangay
-        blgu_users = db.query(User).filter(
-            User.barangay_id == barangay_id, User.role == "BLGU_USER", User.is_active == True
-        ).all()
+        blgu_users = (
+            db.query(User)
+            .filter(
+                User.barangay_id == barangay_id,
+                User.role == "BLGU_USER",
+                User.is_active == True,
+            )
+            .all()
+        )
 
         if not blgu_users:
             logger.warning(
@@ -258,13 +644,6 @@ def send_deadline_extension_notification(
             formatted_deadline,
         )
 
-        # TODO: In the future, this is where we would:
-        # 1. Send email notification to BLGU users
-        # 2. Send SMS notification if configured
-        # 3. Create in-app notification
-        # 4. Send webhook notification to external systems
-
-        # For now, we'll just log the notification details
         notification_details = {
             "barangay_id": barangay_id,
             "barangay_name": barangay.name,

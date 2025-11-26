@@ -67,3 +67,4 @@ class User(Base):
     assessments = relationship("Assessment", foreign_keys="Assessment.blgu_user_id", back_populates="blgu_user")
     feedback_comments = relationship("FeedbackComment", back_populates="assessor")
     created_deadline_overrides = relationship("DeadlineOverride", back_populates="creator", foreign_keys="DeadlineOverride.created_by")
+    notifications = relationship("Notification", back_populates="recipient", cascade="all, delete-orphan")

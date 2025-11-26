@@ -36,3 +36,6 @@ export { useUserBarangay } from './useUserBarangay';
 
 // System settings hooks
 export { useSystemSettings } from './useSystemSettings';
+
+// Notification hooks
+export { useNotifications, useNotificationCount } from './useNotifications';

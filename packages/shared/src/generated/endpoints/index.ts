@@ -14,5 +14,6 @@ export * from './external-analytics';
 export * from './indicators';
 export * from './lookups';
 export * from './movs';
+export * from './notifications';
 export * from './system';
 export * from './users';

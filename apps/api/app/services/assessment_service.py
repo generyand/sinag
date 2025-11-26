@@ -1269,6 +1269,34 @@ class AssessmentService:
             db.commit()
             db.refresh(assessment)
 
+            # Trigger notification based on submission type
+            try:
+                if assessment.is_calibration_rework and assessment.calibration_validator_id:
+                    # Notification #6: BLGU resubmits after calibration -> Same Validator
+                    from app.workers.notifications import send_calibration_resubmission_notification
+                    send_calibration_resubmission_notification.delay(
+                        assessment_id, assessment.calibration_validator_id
+                    )
+                    self.logger.info(
+                        f"Triggered calibration resubmission notification for assessment {assessment_id}"
+                    )
+                elif is_resubmission:
+                    # Notification #3: BLGU resubmits after rework -> All Assessors
+                    from app.workers.notifications import send_rework_resubmission_notification
+                    send_rework_resubmission_notification.delay(assessment_id)
+                    self.logger.info(
+                        f"Triggered rework resubmission notification for assessment {assessment_id}"
+                    )
+                else:
+                    # Notification #1: New submission -> All Assessors
+                    from app.workers.notifications import send_new_submission_notification
+                    send_new_submission_notification.delay(assessment_id)
+                    self.logger.info(
+                        f"Triggered new submission notification for assessment {assessment_id}"
+                    )
+            except Exception as e:
+                self.logger.error(f"Failed to queue submission notification: {e}")
+
         return validation_result
 
     def _run_preliminary_compliance_check(

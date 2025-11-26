@@ -1116,10 +1116,10 @@ class AssessorService:
         # Trigger notification asynchronously using Celery
         notification_result = {"success": False, "skipped": True}
         try:
-            from app.workers.notifications import send_rework_notification
+            from app.workers.notifications import send_calibration_notification
 
-            # Queue the notification task (reuse rework notification)
-            task = send_rework_notification.delay(assessment_id)
+            # Queue the calibration notification task (Notification #5)
+            task = send_calibration_notification.delay(assessment_id, validator.validator_area_id)
             notification_result = {
                 "success": True,
                 "message": "Calibration notification queued successfully",
@@ -1302,6 +1302,29 @@ class AssessorService:
 
         db.commit()
         db.refresh(assessment)
+
+        # Notification #4: If assessor finalized (moved to AWAITING_FINAL_VALIDATION),
+        # notify validators for all governance areas in the assessment
+        if not is_validator and assessment.status == AssessmentStatus.AWAITING_FINAL_VALIDATION:
+            try:
+                from app.workers.notifications import send_ready_for_validation_notification
+
+                # Get unique governance areas from assessment responses
+                governance_area_ids = set(
+                    response.indicator.governance_area_id
+                    for response in assessment.responses
+                    if response.indicator and response.indicator.governance_area_id
+                )
+
+                for ga_id in governance_area_ids:
+                    send_ready_for_validation_notification.delay(assessment_id, ga_id)
+
+                self.logger.info(
+                    f"Triggered ready-for-validation notifications for assessment {assessment_id} "
+                    f"to {len(governance_area_ids)} governance area(s)"
+                )
+            except Exception as e:
+                self.logger.error(f"Failed to queue ready-for-validation notification: {e}")
 
         # Run classification algorithm synchronously
         # This must complete in <5 seconds to ensure real-time user experience

@@ -1,9 +1,10 @@
 "use client";
 
 import UserNav from "@/components/shared/UserNav";
+import { NotificationBell } from "@/components/features/notifications";
 import { useAssessorGovernanceArea } from "@/hooks/useAssessorGovernanceArea";
 import { useAuthStore } from "@/store/useAuthStore";
-import { Bell, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -652,9 +653,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </div>
               <div className="flex items-center space-x-4">
                 {/* Notifications */}
-                <button className="p-2 rounded-full text-[var(--icon-default)] hover:text-[var(--cityscape-yellow)] hover:bg-[var(--hover)] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--cityscape-yellow)] focus:ring-offset-2">
-                  <Bell className="h-5 w-5" />
-                </button>
+                <NotificationBell />
 
                 {/* Profile dropdown */}
                 <div className="relative">
