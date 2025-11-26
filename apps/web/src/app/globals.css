@@ -166,8 +166,8 @@
 
   /* shadcn/ui oklch variables (for compatibility) */
   --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
+  --popover: #ffffff; /* Solid white background matching --card */
+  --popover-foreground: #212529; /* Match --foreground for text */
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.97 0 0);
