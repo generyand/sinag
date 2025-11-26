@@ -3,9 +3,12 @@
 
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 
 from app.db.enums import UserRole
+
+# Language code type for AI summary preferences
+LanguageCode = Literal["ceb", "fil", "en"]
 
 
 class User(BaseModel):
@@ -23,6 +26,7 @@ class User(BaseModel):
     is_active: bool
     is_superuser: bool
     must_change_password: bool
+    preferred_language: LanguageCode = "ceb"
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -38,6 +42,7 @@ class UserCreate(BaseModel):
     barangay_id: Optional[int] = None
     is_active: bool = True
     must_change_password: bool = True
+    preferred_language: LanguageCode = "ceb"
 
 
 class UserUpdate(BaseModel):
@@ -50,6 +55,7 @@ class UserUpdate(BaseModel):
     validator_area_id: Optional[int] = None
     barangay_id: Optional[int] = None
     is_active: Optional[bool] = None
+    preferred_language: Optional[LanguageCode] = None
 
 
 class UserAdminCreate(BaseModel):
@@ -65,6 +71,7 @@ class UserAdminCreate(BaseModel):
     is_active: bool = True
     is_superuser: bool = False
     must_change_password: bool = True
+    preferred_language: LanguageCode = "ceb"
 
 
 class UserAdminUpdate(BaseModel):
@@ -79,6 +86,7 @@ class UserAdminUpdate(BaseModel):
     is_active: Optional[bool] = None
     is_superuser: Optional[bool] = None
     must_change_password: Optional[bool] = None
+    preferred_language: Optional[LanguageCode] = None
 
 
 class UserListResponse(BaseModel):

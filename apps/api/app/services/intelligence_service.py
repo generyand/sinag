@@ -39,6 +39,31 @@ ESSENTIAL_AREAS = [
     "Environmental Management",
 ]
 
+# Language instructions for AI-generated summaries
+LANGUAGE_INSTRUCTIONS = {
+    "ceb": """
+IMPORTANTE: Isulat ang TANAN nga output sa Binisaya (Cebuano). Gamita ang natural nga
+Binisaya nga dali masabtan sa mga opisyal sa barangay sa Sugbo. Ayaw gamita ang
+English gawas lang sa mga technical nga pulong nga walay direktang Binisaya nga
+katumbas (sama sa "MOV" o "SGLGB"). Ang JSON keys kinahanglan magpabilin sa English,
+pero ang mga values kinahanglan sa Binisaya.
+""",
+    "fil": """
+IMPORTANTE: Isulat ang LAHAT ng output sa Tagalog (Filipino). Gumamit ng natural na
+Filipino na madaling maintindihan ng mga opisyal ng barangay. Huwag gumamit ng English
+maliban sa mga technical na salita na walang direktang Filipino na katumbas
+(tulad ng "MOV" o "SGLGB"). Ang JSON keys ay dapat manatili sa English, pero ang mga
+values ay dapat nasa Tagalog.
+""",
+    "en": """
+IMPORTANT: Generate ALL text output in English. Use clear, simple English that
+barangay officials can easily understand. JSON keys should remain in English.
+""",
+}
+
+# Default languages to generate upfront (Bisaya + English)
+DEFAULT_LANGUAGES = ["ceb", "en"]
+
 
 class IntelligenceService:
     # ========================================
@@ -752,7 +777,9 @@ class IntelligenceService:
             "area_results": area_results,
         }
 
-    def build_gemini_prompt(self, db: Session, assessment_id: int) -> str:
+    def build_gemini_prompt(
+        self, db: Session, assessment_id: int, language: str = "ceb"
+    ) -> str:
         """
         Build a structured prompt for Gemini API from failed indicators.
 
@@ -765,6 +792,7 @@ class IntelligenceService:
         Args:
             db: Database session
             assessment_id: ID of the assessment
+            language: Language code for output (ceb=Bisaya, fil=Tagalog, en=English)
 
         Returns:
             Formatted prompt string for Gemini API
@@ -834,8 +862,15 @@ class IntelligenceService:
             else "Not yet classified"
         )
 
+        # Get language instruction
+        lang_instruction = LANGUAGE_INSTRUCTIONS.get(
+            language, LANGUAGE_INSTRUCTIONS["ceb"]
+        )
+
         # Build the prompt
-        prompt = f"""You are an expert consultant analyzing SGLGB (Seal of Good Local Governance - Barangay) compliance assessment results.
+        prompt = f"""{lang_instruction}
+
+You are an expert consultant analyzing SGLGB (Seal of Good Local Governance - Barangay) compliance assessment results.
 
 BARANGAY INFORMATION:
 - Name: {barangay_name}
@@ -884,7 +919,9 @@ Focus on:
 
         return prompt
 
-    def call_gemini_api(self, db: Session, assessment_id: int) -> dict[str, Any]:
+    def call_gemini_api(
+        self, db: Session, assessment_id: int, language: str = "ceb"
+    ) -> dict[str, Any]:
         """
         Call Gemini API with the prompt and parse the JSON response.
 
@@ -894,6 +931,7 @@ Focus on:
         Args:
             db: Database session
             assessment_id: ID of the assessment
+            language: Language code for output (ceb=Bisaya, fil=Tagalog, en=English)
 
         Returns:
             Dictionary with 'summary', 'recommendations', and 'capacity_development_needs' keys
@@ -906,8 +944,8 @@ Focus on:
         if not settings.GEMINI_API_KEY:
             raise ValueError("GEMINI_API_KEY not configured in environment")
 
-        # Build the prompt
-        prompt = self.build_gemini_prompt(db, assessment_id)
+        # Build the prompt with language instruction
+        prompt = self.build_gemini_prompt(db, assessment_id, language)
 
         # Configure Gemini
         genai.configure(api_key=settings.GEMINI_API_KEY)  # type: ignore
@@ -962,6 +1000,9 @@ Focus on:
                     f"Gemini API response missing required keys. Got: {list(parsed_response.keys())}"
                 )
 
+            # Add language to response
+            parsed_response["language"] = language
+
             return parsed_response
 
         except json.JSONDecodeError as e:
@@ -994,23 +1035,24 @@ Focus on:
                 raise Exception(f"Gemini API call failed: {str(e)}") from e
 
     def get_insights_with_caching(
-        self, db: Session, assessment_id: int
+        self, db: Session, assessment_id: int, language: str = "ceb"
     ) -> dict[str, Any]:
         """
-        Get AI-powered insights for an assessment with caching.
+        Get AI-powered insights for an assessment with language-aware caching.
 
-        First checks if ai_recommendations already exists in the database.
+        First checks if ai_recommendations already exists for the requested language.
         If cached data exists, returns it immediately without calling Gemini API.
-        If not, calls Gemini API, stores the result, and returns it.
+        If not, calls Gemini API, stores the result under the language key, and returns it.
 
         This method implements cost-saving logic by avoiding duplicate API calls.
 
         Args:
             db: Database session
             assessment_id: ID of the assessment
+            language: Language code for output (ceb=Bisaya, fil=Tagalog, en=English)
 
         Returns:
-            Dictionary with 'summary', 'recommendations', and 'capacity_development_needs' keys
+            Dictionary with 'summary', 'recommendations', 'capacity_development_needs', and 'language' keys
 
         Raises:
             ValueError: If assessment not found
@@ -1021,15 +1063,29 @@ Focus on:
         if not assessment:
             raise ValueError(f"Assessment {assessment_id} not found")
 
-        # Check if ai_recommendations already exists (caching)
+        # Check if ai_recommendations already exists for this language
         if assessment.ai_recommendations:
-            return assessment.ai_recommendations
+            # New format: keyed by language
+            if isinstance(assessment.ai_recommendations, dict):
+                if language in assessment.ai_recommendations:
+                    return assessment.ai_recommendations[language]
+                # Legacy format check: if 'summary' key exists, it's old single-language format
+                elif "summary" in assessment.ai_recommendations:
+                    # Return legacy format as-is (it's in English)
+                    if language == "en":
+                        return assessment.ai_recommendations
 
-        # No cached data, call Gemini API
-        insights = self.call_gemini_api(db, assessment_id)
+        # No cached data for this language, call Gemini API
+        insights = self.call_gemini_api(db, assessment_id, language)
 
-        # Store the recommendations in the database for future use
-        assessment.ai_recommendations = insights
+        # Store the recommendations in the database under the language key
+        if not assessment.ai_recommendations:
+            assessment.ai_recommendations = {}
+        elif "summary" in assessment.ai_recommendations:
+            # Migrate legacy format: wrap existing data under 'en' key
+            assessment.ai_recommendations = {"en": assessment.ai_recommendations}
+
+        assessment.ai_recommendations[language] = insights
         assessment.updated_at = datetime.now(UTC)
         db.commit()
         db.refresh(assessment)
@@ -1041,7 +1097,7 @@ Focus on:
     # ========================================
 
     def build_rework_summary_prompt(
-        self, db: Session, assessment_id: int
+        self, db: Session, assessment_id: int, language: str = "ceb"
     ) -> tuple[str, List[Dict[str, Any]]]:
         """
         Build a structured prompt for Gemini API from rework feedback.
@@ -1053,6 +1109,7 @@ Focus on:
         Args:
             db: Database session
             assessment_id: ID of the assessment in rework status
+            language: Language code for output (ceb=Bisaya, fil=Tagalog, en=English)
 
         Returns:
             Tuple of (prompt_string, indicator_data_list)
@@ -1148,8 +1205,15 @@ Focus on:
                 f"Assessment {assessment_id} has no indicators requiring rework"
             )
 
+        # Get language instruction
+        lang_instruction = LANGUAGE_INSTRUCTIONS.get(
+            language, LANGUAGE_INSTRUCTIONS["ceb"]
+        )
+
         # Build the prompt
-        prompt = f"""You are an expert consultant analyzing SGLGB (Seal of Good Local Governance - Barangay) assessment rework feedback.
+        prompt = f"""{lang_instruction}
+
+You are an expert consultant analyzing SGLGB (Seal of Good Local Governance - Barangay) assessment rework feedback.
 
 BARANGAY INFORMATION:
 - Name: {barangay_name}
@@ -1228,7 +1292,7 @@ GUIDELINES:
         return prompt, indicator_data
 
     def generate_rework_summary(
-        self, db: Session, assessment_id: int
+        self, db: Session, assessment_id: int, language: str = "ceb"
     ) -> Dict[str, Any]:
         """
         Generate AI-powered rework summary from assessor feedback.
@@ -1244,6 +1308,7 @@ GUIDELINES:
         Args:
             db: Database session
             assessment_id: ID of the assessment in rework status
+            language: Language code for output (ceb=Bisaya, fil=Tagalog, en=English)
 
         Returns:
             Dictionary with rework summary structure matching ReworkSummaryResponse schema
@@ -1256,8 +1321,10 @@ GUIDELINES:
         if not settings.GEMINI_API_KEY:
             raise ValueError("GEMINI_API_KEY not configured in environment")
 
-        # Build the prompt
-        prompt, indicator_data = self.build_rework_summary_prompt(db, assessment_id)
+        # Build the prompt with language instruction
+        prompt, indicator_data = self.build_rework_summary_prompt(
+            db, assessment_id, language
+        )
 
         # Configure Gemini
         genai.configure(api_key=settings.GEMINI_API_KEY)  # type: ignore
@@ -1309,8 +1376,9 @@ GUIDELINES:
                     f"Gemini API response missing required keys. Got: {list(parsed_response.keys())}"
                 )
 
-            # Add generation timestamp
+            # Add generation timestamp and language
             parsed_response["generated_at"] = datetime.now(UTC).isoformat()
+            parsed_response["language"] = language
 
             # Ensure estimated_time exists (set default if not provided)
             if "estimated_time" not in parsed_response:
@@ -1367,6 +1435,57 @@ GUIDELINES:
             else:
                 logger.error(f"Gemini API call failed: {str(e)}")
                 raise Exception(f"Gemini API call failed: {str(e)}") from e
+
+    def generate_default_language_summaries(
+        self, db: Session, assessment_id: int
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Generate rework summaries in default languages (Bisaya + English).
+
+        This is called by the Celery worker when an assessment enters rework status.
+        Generates summaries in both Bisaya (ceb) and English (en) upfront for instant
+        language switching. Tagalog is generated on-demand when requested.
+
+        Args:
+            db: Database session
+            assessment_id: ID of the assessment in rework status
+
+        Returns:
+            Dictionary keyed by language code with summary data:
+            {"ceb": {...}, "en": {...}}
+        """
+        summaries = {}
+        for lang in DEFAULT_LANGUAGES:
+            try:
+                logger.info(
+                    f"Generating {lang} rework summary for assessment {assessment_id}"
+                )
+                summaries[lang] = self.generate_rework_summary(db, assessment_id, lang)
+            except Exception as e:
+                logger.error(
+                    f"Failed to generate {lang} rework summary for assessment {assessment_id}: {e}"
+                )
+                # Continue with other languages even if one fails
+        return summaries
+
+    def generate_single_language_summary(
+        self, db: Session, assessment_id: int, language: str
+    ) -> Dict[str, Any]:
+        """
+        Generate rework summary for a specific language (on-demand).
+
+        Used when a user requests a language that wasn't pre-generated
+        (e.g., Tagalog which is generated on-demand).
+
+        Args:
+            db: Database session
+            assessment_id: ID of the assessment in rework status
+            language: Language code (ceb, fil, en)
+
+        Returns:
+            Dictionary with rework summary in the requested language
+        """
+        return self.generate_rework_summary(db, assessment_id, language)
 
 
 intelligence_service = IntelligenceService()

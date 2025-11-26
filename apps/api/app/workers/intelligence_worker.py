@@ -219,41 +219,52 @@ def _generate_rework_summary_logic(
                 "message": error_msg,
             }
 
-        # Check if summary already exists (avoid duplicate generation)
+        # Check if summaries already exist for default languages (avoid duplicate generation)
         if assessment.rework_summary:
-            logger.info(
-                "Rework summary already exists for assessment %s, skipping generation",
-                assessment_id,
-            )
-            return {
-                "success": True,
-                "assessment_id": assessment_id,
-                "skipped": True,
-                "message": "Rework summary already exists",
-                "rework_summary": assessment.rework_summary,
-            }
+            # Check if it's the new multi-language format with both ceb and en
+            if isinstance(assessment.rework_summary, dict) and "ceb" in assessment.rework_summary:
+                logger.info(
+                    "Rework summaries already exist for assessment %s, skipping generation",
+                    assessment_id,
+                )
+                return {
+                    "success": True,
+                    "assessment_id": assessment_id,
+                    "skipped": True,
+                    "message": "Rework summaries already exist",
+                    "rework_summary": assessment.rework_summary,
+                }
 
-        # Generate rework summary using intelligence service
-        summary = intelligence_service.generate_rework_summary(db, assessment_id)
+        # Generate rework summaries in default languages (Bisaya + English)
+        summaries = intelligence_service.generate_default_language_summaries(
+            db, assessment_id
+        )
 
-        # Store the summary in the database
+        if not summaries:
+            error_msg = f"Failed to generate any language summaries for assessment {assessment_id}"
+            logger.error(error_msg)
+            return {"success": False, "error": error_msg}
+
+        # Store the summaries in the database (keyed by language)
         from datetime import UTC, datetime
 
-        assessment.rework_summary = summary
+        assessment.rework_summary = summaries
         assessment.updated_at = datetime.now(UTC)
         db.commit()
         db.refresh(assessment)
 
         logger.info(
-            "Successfully generated rework summary for assessment %s",
+            "Successfully generated rework summaries for assessment %s in languages: %s",
             assessment_id,
+            list(summaries.keys()),
         )
 
         return {
             "success": True,
             "assessment_id": assessment_id,
-            "rework_summary": summary,
-            "message": "Rework summary generated successfully",
+            "rework_summary": summaries,
+            "languages_generated": list(summaries.keys()),
+            "message": "Rework summaries generated successfully",
         }
 
     except ValueError as e:

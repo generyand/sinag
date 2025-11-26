@@ -45,6 +45,14 @@ class User(Base):
     )  # Reference to governance_areas.id - Only used when role is VALIDATOR
     barangay_id = Column(Integer, ForeignKey("barangays.id"), nullable=True)
 
+    # User preferences
+    preferred_language = Column(
+        String(3),
+        nullable=False,
+        default="ceb",
+        comment="Preferred language for AI summaries: ceb (Bisaya), fil (Tagalog), en (English)",
+    )
+
     # Authentication
     hashed_password = Column(String, nullable=False)
     must_change_password = Column(Boolean, default=True, nullable=False)

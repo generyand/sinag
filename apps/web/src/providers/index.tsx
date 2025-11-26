@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider } from './AuthProvider';
 import { ThemeProvider } from './ThemeProvider';
+import { LanguageProvider } from './LanguageProvider';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   // Create a stable QueryClient instance
@@ -29,7 +30,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <ThemeProvider defaultTheme="system" storageKey="vantage-theme">
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          {children}
+          <LanguageProvider>
+            {children}
+          </LanguageProvider>
         </AuthProvider>
         {/* Toast notifications */}
         <Toaster />

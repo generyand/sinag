@@ -39,4 +39,7 @@ export interface ReworkSummaryResponse {
 
   /** Timestamp when the summary was generated */
   generated_at: string;
+
+  /** Language code of this summary (ceb=Bisaya, fil=Tagalog, en=English) */
+  language?: string;
 }

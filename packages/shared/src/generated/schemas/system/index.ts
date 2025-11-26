@@ -525,6 +525,8 @@ export interface ReworkSummaryResponse {
   estimated_time?: ReworkSummaryResponseEstimatedTime;
   /** Timestamp when the summary was generated */
   generated_at: string;
+  /** Language code of this summary (ceb=Bisaya, fil=Tagalog, en=English) */
+  language?: ReworkSummaryResponseLanguage;
 }
 
 
@@ -532,6 +534,12 @@ export interface ReworkSummaryResponse {
  * ReworkSummaryResponseEstimatedTime
  */
 export type ReworkSummaryResponseEstimatedTime = string | null;
+
+
+/**
+ * ReworkSummaryResponseLanguage
+ */
+export type ReworkSummaryResponseLanguage = string | null;
 
 
 /**

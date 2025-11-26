@@ -49,6 +49,39 @@ async def update_current_user(
     return updated_user
 
 
+@router.patch("/me/language", response_model=UserSchema, tags=["users"])
+async def update_language_preference(
+    language: str = Query(
+        ...,
+        pattern="^(ceb|fil|en)$",
+        description="Language code: ceb (Bisaya), fil (Tagalog), or en (English)"
+    ),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """
+    Update user's preferred language for AI-generated summaries.
+
+    Sets the default language for AI-generated content like rework summaries
+    and CapDev recommendations.
+
+    Supported languages:
+    - ceb: Bisaya (Cebuano) - Default for BLGU users
+    - fil: Tagalog (Filipino)
+    - en: English
+
+    Args:
+        language: Language code (ceb, fil, or en)
+
+    Returns:
+        Updated user profile with new language preference
+    """
+    current_user.preferred_language = language
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
 @router.get("/", response_model=UserListResponse, tags=["users"])
 async def get_users(
     db: Session = Depends(deps.get_db),

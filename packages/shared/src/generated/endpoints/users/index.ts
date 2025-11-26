@@ -23,6 +23,7 @@ import type {
   GetUsersParams,
   GetUsersStatsDashboard200,
   HTTPValidationError,
+  PatchUsersMeLanguageParams,
   PostUsersUserIdResetPassword200,
   PostUsersUserIdResetPasswordParams,
   User,
@@ -172,6 +173,83 @@ export const usePutUsersMe = <TError = HTTPValidationError,
       > => {
 
       const mutationOptions = getPutUsersMeMutationOptions(options);
+
+      return useMutation(mutationOptions );
+    }
+    /**
+ * Update user's preferred language for AI-generated summaries.
+
+Sets the default language for AI-generated content like rework summaries
+and CapDev recommendations.
+
+Supported languages:
+- ceb: Bisaya (Cebuano) - Default for BLGU users
+- fil: Tagalog (Filipino)
+- en: English
+
+Args:
+    language: Language code (ceb, fil, or en)
+
+Returns:
+    Updated user profile with new language preference
+ * @summary Update Language Preference
+ */
+export const patchUsersMeLanguage = (
+    params: PatchUsersMeLanguageParams,
+ options?: SecondParameter<typeof mutator>,) => {
+      
+      
+      return mutator<User>(
+      {url: `http://localhost:8000/api/v1/users/me/language`, method: 'PATCH',
+        params
+    },
+      options);
+    }
+  
+
+
+export const getPatchUsersMeLanguageMutationOptions = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchUsersMeLanguage>>, TError,{params: PatchUsersMeLanguageParams}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof patchUsersMeLanguage>>, TError,{params: PatchUsersMeLanguageParams}, TContext> => {
+
+const mutationKey = ['patchUsersMeLanguage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchUsersMeLanguage>>, {params: PatchUsersMeLanguageParams}> = (props) => {
+          const {params} = props ?? {};
+
+          return  patchUsersMeLanguage(params,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PatchUsersMeLanguageMutationResult = NonNullable<Awaited<ReturnType<typeof patchUsersMeLanguage>>>
+    
+    export type PatchUsersMeLanguageMutationError = HTTPValidationError
+
+    /**
+ * @summary Update Language Preference
+ */
+export const usePatchUsersMeLanguage = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchUsersMeLanguage>>, TError,{params: PatchUsersMeLanguageParams}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof patchUsersMeLanguage>>,
+        TError,
+        {params: PatchUsersMeLanguageParams},
+        TContext
+      > => {
+
+      const mutationOptions = getPatchUsersMeLanguageMutationOptions(options);
 
       return useMutation(mutationOptions );
     }

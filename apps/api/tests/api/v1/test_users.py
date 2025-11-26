@@ -161,6 +161,140 @@ def test_update_current_user_unauthorized(client: TestClient):
 
 
 # ====================================================================
+# PATCH /api/v1/users/me/language - Update Language Preference
+# ====================================================================
+
+
+def test_update_language_preference_success_ceb(
+    client: TestClient, blgu_user: User, db_session: Session
+):
+    """Test updating language preference to Bisaya (ceb)"""
+    _override_user_and_db(client, blgu_user, db_session)
+
+    response = client.patch("/api/v1/users/me/language?language=ceb")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["preferred_language"] == "ceb"
+
+    # Verify in database
+    db_session.refresh(blgu_user)
+    assert blgu_user.preferred_language == "ceb"
+
+
+def test_update_language_preference_success_fil(
+    client: TestClient, blgu_user: User, db_session: Session
+):
+    """Test updating language preference to Tagalog (fil)"""
+    _override_user_and_db(client, blgu_user, db_session)
+
+    response = client.patch("/api/v1/users/me/language?language=fil")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["preferred_language"] == "fil"
+
+    # Verify in database
+    db_session.refresh(blgu_user)
+    assert blgu_user.preferred_language == "fil"
+
+
+def test_update_language_preference_success_en(
+    client: TestClient, blgu_user: User, db_session: Session
+):
+    """Test updating language preference to English (en)"""
+    _override_user_and_db(client, blgu_user, db_session)
+
+    response = client.patch("/api/v1/users/me/language?language=en")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["preferred_language"] == "en"
+
+    # Verify in database
+    db_session.refresh(blgu_user)
+    assert blgu_user.preferred_language == "en"
+
+
+def test_update_language_preference_invalid_code(
+    client: TestClient, blgu_user: User, db_session: Session
+):
+    """Test that invalid language code is rejected"""
+    _override_user_and_db(client, blgu_user, db_session)
+
+    response = client.patch("/api/v1/users/me/language?language=invalid")
+
+    # FastAPI query validation should reject invalid pattern
+    assert response.status_code == 422  # Unprocessable Entity
+
+
+def test_update_language_preference_empty_string(
+    client: TestClient, blgu_user: User, db_session: Session
+):
+    """Test that empty string is rejected as language code"""
+    _override_user_and_db(client, blgu_user, db_session)
+
+    response = client.patch("/api/v1/users/me/language?language=")
+
+    # FastAPI query validation should reject empty string
+    assert response.status_code == 422  # Unprocessable Entity
+
+
+def test_update_language_preference_missing_query_param(
+    client: TestClient, blgu_user: User, db_session: Session
+):
+    """Test that missing language query parameter is rejected"""
+    _override_user_and_db(client, blgu_user, db_session)
+
+    response = client.patch("/api/v1/users/me/language")
+
+    # FastAPI should require the query parameter
+    assert response.status_code == 422  # Unprocessable Entity
+
+
+def test_update_language_preference_unauthorized(client: TestClient):
+    """Test that updating language preference requires authentication"""
+    response = client.patch("/api/v1/users/me/language?language=en")
+
+    # Expect 401 or 403 depending on setup
+    assert response.status_code in [401, 403]
+
+
+def test_update_language_preference_persists_across_requests(
+    client: TestClient, blgu_user: User, db_session: Session
+):
+    """Test that language preference persists in database"""
+    _override_user_and_db(client, blgu_user, db_session)
+
+    # Update to Tagalog
+    response1 = client.patch("/api/v1/users/me/language?language=fil")
+    assert response1.status_code == 200
+
+    # Get current user to verify persistence
+    response2 = client.get("/api/v1/users/me")
+    assert response2.status_code == 200
+    data = response2.json()
+    assert data["preferred_language"] == "fil"
+
+
+def test_update_language_preference_different_roles(
+    client: TestClient, db_session: Session, admin_user: User, assessor_user: User
+):
+    """Test that all user roles can update their language preference"""
+    # Test admin user
+    _override_user_and_db(client, admin_user, db_session)
+    response1 = client.patch("/api/v1/users/me/language?language=en")
+    assert response1.status_code == 200
+    assert response1.json()["preferred_language"] == "en"
+
+    # Test assessor user
+    _override_user_and_db(client, assessor_user, db_session)
+    response2 = client.patch("/api/v1/users/me/language?language=fil")
+    assert response2.status_code == 200
+    assert response2.json()["preferred_language"] == "fil"
+
+
+# ====================================================================
 # GET /api/v1/users/ - Get Users List (Admin Only)
 # ====================================================================
 

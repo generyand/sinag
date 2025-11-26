@@ -8,11 +8,13 @@
  * - Polls every 5 seconds if summary is not yet available (still generating)
  * - Stops polling once summary is received or error occurs
  * - Provides loading, error, and data states
+ * - Supports multiple languages (Bisaya, Tagalog, English)
  */
 
 import { useEffect, useState } from 'react';
 import { ReworkSummaryResponse } from '@/types/rework-summary';
 import { mutator } from '@/lib/api';
+import { type LanguageCode } from '@/providers/LanguageProvider';
 
 interface UseReworkSummaryOptions {
   /** Whether to enable polling (default: true) */
@@ -21,6 +23,8 @@ interface UseReworkSummaryOptions {
   pollingInterval?: number;
   /** Maximum number of polling attempts (default: 20) */
   maxPollingAttempts?: number;
+  /** Language code for the summary (default: uses user's preferred language) */
+  language?: LanguageCode;
 }
 
 interface UseReworkSummaryResult {
@@ -44,6 +48,7 @@ export function useReworkSummary(
     enablePolling = true,
     pollingInterval = 5000,
     maxPollingAttempts = 20,
+    language,
   } = options;
 
   const [data, setData] = useState<ReworkSummaryResponse | null>(null);
@@ -61,8 +66,14 @@ export function useReworkSummary(
       setIsLoading(true);
       setError(null);
 
+      // Build URL with optional language parameter
+      let url = `/api/v1/assessments/${assessmentId}/rework-summary`;
+      if (language) {
+        url += `?language=${language}`;
+      }
+
       const data = await mutator<ReworkSummaryResponse>({
-        url: `/api/v1/assessments/${assessmentId}/rework-summary`,
+        url,
         method: 'GET',
       });
 
@@ -98,12 +109,12 @@ export function useReworkSummary(
     }
   };
 
-  // Initial fetch
+  // Initial fetch and refetch when language changes
   useEffect(() => {
     if (assessmentId) {
       fetchSummary();
     }
-  }, [assessmentId]);
+  }, [assessmentId, language]);
 
   // Polling logic
   useEffect(() => {

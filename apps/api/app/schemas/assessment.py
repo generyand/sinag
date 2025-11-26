@@ -688,6 +688,10 @@ class ReworkSummaryResponse(BaseModel):
         ...,
         description="Timestamp when the summary was generated"
     )
+    language: Optional[str] = Field(
+        None,
+        description="Language code of this summary (ceb=Bisaya, fil=Tagalog, en=English)"
+    )
 
 
 # ============================================================================

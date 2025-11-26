@@ -9,6 +9,7 @@
 
 "use client";
 
+import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense } from "react";
 import {
@@ -30,18 +31,26 @@ import {
 import { useReworkSummary } from "@/hooks/useReworkSummary";
 import { ReworkSummaryCard } from "@/components/features/rework/ReworkSummaryCard";
 import { ReworkLoadingState } from "@/components/features/rework/ReworkLoadingState";
+import { SummaryLanguageDropdown } from "@/components/shared/SummaryLanguageDropdown";
+import { useLanguage, type LanguageCode } from "@/providers/LanguageProvider";
 
 function ReworkSummaryContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const assessmentId = searchParams.get("assessment");
 
+  // Language selection state
+  const { language: defaultLang } = useLanguage();
+  const [selectedLang, setSelectedLang] = useState<LanguageCode>(defaultLang);
+
   const {
     data: reworkSummary,
     isLoading,
     error,
     isGenerating,
-  } = useReworkSummary(assessmentId ? parseInt(assessmentId, 10) : null);
+  } = useReworkSummary(assessmentId ? parseInt(assessmentId, 10) : null, {
+    language: selectedLang,
+  });
 
   // Handle missing assessment ID
   if (!assessmentId) {
@@ -165,7 +174,7 @@ function ReworkSummaryContent() {
 
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-3">
               <Sparkles className="h-8 w-8 text-blue-600" />
               AI-Powered Rework Summary
             </h1>
@@ -174,18 +183,27 @@ function ReworkSummaryContent() {
             </p>
           </div>
 
-          {reworkSummary.estimated_time && (
-            <Card className="border-blue-200 bg-blue-50">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 text-blue-900">
-                  <Clock className="h-4 w-4" />
-                  <span className="text-sm font-medium">
-                    Estimated: {reworkSummary.estimated_time}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <div className="flex flex-col items-end gap-2">
+            {/* Language Selector */}
+            <SummaryLanguageDropdown
+              value={selectedLang}
+              onChange={setSelectedLang}
+              isLoading={isLoading || isGenerating}
+            />
+
+            {reworkSummary.estimated_time && (
+              <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
+                    <Clock className="h-4 w-4" />
+                    <span className="text-sm font-medium">
+                      Estimated: {reworkSummary.estimated_time}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
 

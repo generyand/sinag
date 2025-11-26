@@ -1604,11 +1604,15 @@ def get_submission_status(
 )
 async def get_rework_summary(
     assessment_id: int,
+    language: str = Query(
+        None,
+        description="Language code for the summary: ceb (Bisaya), fil (Tagalog), en (English). Defaults to user's preferred language."
+    ),
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(get_current_blgu_user),
 ) -> ReworkSummaryResponse:
     """
-    Get AI-generated rework summary for an assessment.
+    Get AI-generated rework summary for an assessment in the specified language.
 
     This endpoint retrieves the comprehensive AI-generated summary of rework
     requirements for a BLGU user's assessment. The summary includes:
@@ -1617,20 +1621,25 @@ async def get_rework_summary(
     - Priority actions to address first
     - Estimated time to complete all rework
 
+    Supports multiple languages:
+    - ceb: Bisaya (Cebuano) - Default
+    - fil: Tagalog (Filipino)
+    - en: English
+
     The summary is generated asynchronously when the assessor requests rework.
-    If the summary is still being generated, this endpoint may return 404 or
-    the summary will be null (check the assessment status).
+    Bisaya and English summaries are generated upfront; Tagalog is generated on-demand.
 
     Authorization:
         - BLGU users can only access summaries for their own assessments
 
     Args:
         assessment_id: ID of the assessment
+        language: Language code (ceb, fil, en). Defaults to user's preferred_language.
         db: Database session
         current_user: Current authenticated BLGU user
 
     Returns:
-        ReworkSummaryResponse with comprehensive rework guidance
+        ReworkSummaryResponse with comprehensive rework guidance in the requested language
 
     Raises:
         HTTPException 404: Assessment not found or no rework summary available
@@ -1666,5 +1675,57 @@ async def get_rework_summary(
             detail="Rework summary is still being generated. Please try again in a few moments."
         )
 
-    # Return the rework summary
-    return ReworkSummaryResponse(**assessment.rework_summary)
+    # Determine target language (parameter > user preference > default)
+    target_lang = language or current_user.preferred_language or "ceb"
+
+    # Validate language code
+    if target_lang not in ["ceb", "fil", "en"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid language code: {target_lang}. Use 'ceb', 'fil', or 'en'."
+        )
+
+    # Handle the rework summary data structure
+    summary_data = assessment.rework_summary
+
+    # Check if it's the new multi-language format (keyed by language code)
+    if isinstance(summary_data, dict) and target_lang in summary_data:
+        return ReworkSummaryResponse(**summary_data[target_lang])
+
+    # Check for legacy format (direct summary without language key)
+    if isinstance(summary_data, dict) and "overall_summary" in summary_data:
+        # Legacy format - return as-is (it's in English)
+        if target_lang == "en":
+            return ReworkSummaryResponse(**summary_data)
+        # For other languages, we need to generate on-demand
+        # Fall through to on-demand generation
+
+    # Check if the requested language exists in multi-language format
+    if isinstance(summary_data, dict):
+        # Try to find any available language as fallback
+        for fallback_lang in ["ceb", "en", "fil"]:
+            if fallback_lang in summary_data:
+                # Return available language with a note
+                return ReworkSummaryResponse(**summary_data[fallback_lang])
+
+    # If we get here, generate on-demand (for Tagalog or missing languages)
+    from app.services.intelligence_service import intelligence_service
+
+    try:
+        new_summary = intelligence_service.generate_single_language_summary(
+            db, assessment_id, target_lang
+        )
+
+        # Store the new language version
+        if not isinstance(assessment.rework_summary, dict):
+            assessment.rework_summary = {}
+        assessment.rework_summary[target_lang] = new_summary
+        db.commit()
+        db.refresh(assessment)
+
+        return ReworkSummaryResponse(**new_summary)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate summary in {target_lang}: {str(e)}"
+        )

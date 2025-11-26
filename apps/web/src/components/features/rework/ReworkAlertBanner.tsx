@@ -8,6 +8,7 @@
 
 "use client";
 
+import { useState } from "react";
 import { AlertCircle, MessageSquare, FileText, Sparkles, ExternalLink } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,8 @@ import Link from "next/link";
 import type { FailedIndicator } from "@/types/rework";
 import { useReworkSummary } from "@/hooks/useReworkSummary";
 import { ReworkLoadingState } from "./ReworkLoadingState";
+import { SummaryLanguageDropdown } from "@/components/shared/SummaryLanguageDropdown";
+import { useLanguage, type LanguageCode } from "@/providers/LanguageProvider";
 
 interface ReworkAlertBannerProps {
   indicator: FailedIndicator;
@@ -22,7 +25,11 @@ interface ReworkAlertBannerProps {
 }
 
 export function ReworkAlertBanner({ indicator, assessmentId }: ReworkAlertBannerProps) {
-  const { data: reworkSummary, isLoading, isGenerating } = useReworkSummary(assessmentId);
+  const { language: defaultLang } = useLanguage();
+  const [selectedLang, setSelectedLang] = useState<LanguageCode>(defaultLang);
+  const { data: reworkSummary, isLoading, isGenerating } = useReworkSummary(assessmentId, {
+    language: selectedLang,
+  });
 
   return (
     <div className="space-y-4">
@@ -88,10 +95,18 @@ export function ReworkAlertBanner({ indicator, assessmentId }: ReworkAlertBanner
       {(isLoading || isGenerating || reworkSummary) && (
         <Alert className="border-blue-500 bg-blue-50 dark:bg-blue-950/20">
           <Sparkles className="h-5 w-5 text-blue-600" />
-          <AlertTitle className="text-blue-900 dark:text-blue-100 font-semibold">
-            AI-Powered Summary
-          </AlertTitle>
-          <AlertDescription className="text-blue-800 dark:text-blue-200 space-y-3">
+          <div className="flex items-center justify-between w-full">
+            <AlertTitle className="text-blue-900 dark:text-blue-100 font-semibold">
+              AI-Powered Summary
+            </AlertTitle>
+            <SummaryLanguageDropdown
+              value={selectedLang}
+              onChange={setSelectedLang}
+              isLoading={isLoading || isGenerating}
+              compact
+            />
+          </div>
+          <AlertDescription className="text-blue-800 dark:text-blue-200 space-y-3 mt-2">
             {isGenerating ? (
               <div className="flex items-center gap-2 text-sm">
                 <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full" />

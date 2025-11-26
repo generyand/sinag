@@ -64,6 +64,18 @@ export type IndicatorHistoryResponseArchivedByUser = UserNested | null;
 
 
 /**
+ * PatchUsersMeLanguageParams
+ */
+export type PatchUsersMeLanguageParams = {
+/**
+ * Language code: ceb (Bisaya), fil (Tagalog), or en (English)
+ * @pattern ^(ceb|fil|en)$
+ */
+language: string;
+};
+
+
+/**
  * PostUsersUserIdResetPassword200
  */
 export type PostUsersUserIdResetPassword200 = { [key: string]: unknown };
@@ -91,6 +103,7 @@ export interface User {
   is_active: boolean;
   is_superuser: boolean;
   must_change_password: boolean;
+  preferred_language?: UserPreferredLanguage;
   created_at: string;
   updated_at?: UserUpdatedAt;
 }
@@ -110,6 +123,7 @@ export interface UserAdminCreate {
   is_active?: boolean;
   is_superuser?: boolean;
   must_change_password?: boolean;
+  preferred_language?: UserAdminCreatePreferredLanguage;
 }
 
 
@@ -123,6 +137,20 @@ export type UserAdminCreateBarangayId = number | null;
  * UserAdminCreatePhoneNumber
  */
 export type UserAdminCreatePhoneNumber = string | null;
+
+
+/**
+ * UserAdminCreatePreferredLanguage
+ */
+export type UserAdminCreatePreferredLanguage = typeof UserAdminCreatePreferredLanguage[keyof typeof UserAdminCreatePreferredLanguage];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UserAdminCreatePreferredLanguage = {
+  ceb: 'ceb',
+  fil: 'fil',
+  en: 'en',
+} as const;
 
 
 /**
@@ -144,6 +172,7 @@ export interface UserAdminUpdate {
   is_active?: UserAdminUpdateIsActive;
   is_superuser?: UserAdminUpdateIsSuperuser;
   must_change_password?: UserAdminUpdateMustChangePassword;
+  preferred_language?: UserAdminUpdatePreferredLanguage;
 }
 
 
@@ -187,6 +216,12 @@ export type UserAdminUpdateName = string | null;
  * UserAdminUpdatePhoneNumber
  */
 export type UserAdminUpdatePhoneNumber = string | null;
+
+
+/**
+ * UserAdminUpdatePreferredLanguage
+ */
+export type UserAdminUpdatePreferredLanguage = 'ceb' | 'fil' | 'en' | null;
 
 
 /**
@@ -236,6 +271,20 @@ export type UserPhoneNumber = string | null;
 
 
 /**
+ * UserPreferredLanguage
+ */
+export type UserPreferredLanguage = typeof UserPreferredLanguage[keyof typeof UserPreferredLanguage];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UserPreferredLanguage = {
+  ceb: 'ceb',
+  fil: 'fil',
+  en: 'en',
+} as const;
+
+
+/**
  * UserRole
  */
 export type UserRole = typeof UserRole[keyof typeof UserRole];
@@ -263,6 +312,7 @@ export interface UserUpdate {
   validator_area_id?: UserUpdateValidatorAreaId;
   barangay_id?: UserUpdateBarangayId;
   is_active?: UserUpdateIsActive;
+  preferred_language?: UserUpdatePreferredLanguage;
 }
 
 
@@ -294,6 +344,12 @@ export type UserUpdateName = string | null;
  * UserUpdatePhoneNumber
  */
 export type UserUpdatePhoneNumber = string | null;
+
+
+/**
+ * UserUpdatePreferredLanguage
+ */
+export type UserUpdatePreferredLanguage = 'ceb' | 'fil' | 'en' | null;
 
 
 /**

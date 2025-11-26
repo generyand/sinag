@@ -469,6 +469,17 @@ indicator_id: number;
 
 
 /**
+ * GetAssessmentsAssessmentIdReworkSummaryParams
+ */
+export type GetAssessmentsAssessmentIdReworkSummaryParams = {
+/**
+ * Language code for the summary: ceb (Bisaya), fil (Tagalog), en (English). Defaults to user's preferred language.
+ */
+language?: string;
+};
+
+
+/**
  * GetAssessmentsList200Item
  */
 export type GetAssessmentsList200Item = { [key: string]: unknown };
@@ -489,18 +500,6 @@ assessment_status?: AssessmentStatus | null;
  * GetAssessmentsMyAssessment200
  */
 export type GetAssessmentsMyAssessment200 = { [key: string]: unknown };
-
-
-/**
- * NotificationResponseAssessmentBarangayName
- */
-export type NotificationResponseAssessmentBarangayName = string | null;
-
-
-/**
- * NotificationResponseAssessmentId
- */
-export type NotificationResponseAssessmentId = number | null;
 
 
 /**
@@ -534,6 +533,18 @@ export type GetGarAssessmentIdParams = {
  */
 governance_area_id?: number | null;
 };
+
+
+/**
+ * NotificationResponseAssessmentBarangayName
+ */
+export type NotificationResponseAssessmentBarangayName = string | null;
+
+
+/**
+ * NotificationResponseAssessmentId
+ */
+export type NotificationResponseAssessmentId = number | null;
 
 
 /**
