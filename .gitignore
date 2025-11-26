@@ -65,6 +65,12 @@ coverage/
 .pytest_cache/
 htmlcov/
 
+# Playwright
+apps/web/test-results/
+apps/web/playwright-report/
+**/test-results/
+**/playwright-report/
+
 # ===========================
 # Logs and debugging
 # ===========================
@@ -125,6 +131,11 @@ Thumbs.db
 # Turborepo
 # ===========================
 .turbo
+
+# ===========================
+# Git Worktrees
+# ===========================
+.worktree-info
 
 # ===========================
 # Python specific

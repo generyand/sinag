@@ -1,10 +1,10 @@
 # Architecture Documentation
 
-This section contains comprehensive documentation about VANTAGE's system architecture, design patterns, and technical decisions.
+This section contains comprehensive documentation about SINAG's system architecture, design patterns, and technical decisions.
 
 ## Overview
 
-VANTAGE is a monorepo-based full-stack application built with:
+SINAG is a monorepo-based full-stack application built with:
 - **Frontend**: Next.js 15 (App Router) with React 19 and TypeScript
 - **Backend**: FastAPI (Python 3.13+) with SQLAlchemy
 - **Database**: PostgreSQL (via Supabase)

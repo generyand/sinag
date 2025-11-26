@@ -1,6 +1,6 @@
 # Developer Guides
 
-Step-by-step guides for common development tasks in the VANTAGE project.
+Step-by-step guides for common development tasks in the SINAG project.
 
 ## Available Guides
 

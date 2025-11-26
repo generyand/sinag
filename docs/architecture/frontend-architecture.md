@@ -1,6 +1,6 @@
 # Frontend Architecture
 
-This document provides comprehensive visual documentation of the VANTAGE Next.js frontend architecture, including App Router structure, component organization, state management, data fetching patterns, and authentication flow.
+This document provides comprehensive visual documentation of the SINAG Next.js frontend architecture, including App Router structure, component organization, state management, data fetching patterns, and authentication flow.
 
 ## Table of Contents
 

@@ -276,29 +276,43 @@ vantage/
 │       ├── src/
 │       │   ├── app/              # Next.js App Router
 │       │   │   ├── (app)/        # Authenticated routes
-│       │   │   │   ├── assessor/ # Assessor dashboard & validation
-│       │   │   │   ├── blgu/     # BLGU assessment submission
-│       │   │   │   ├── mlgoo/    # Admin/MLGOO features
-│       │   │   │   ├── reports/  # Analytics & reports
-│       │   │   │   └── user-management/
+│       │   │   │   ├── admin/              # Admin features
+│       │   │   │   ├── analytics/          # Analytics dashboard
+│       │   │   │   ├── assessor/           # Assessor dashboard & validation
+│       │   │   │   ├── blgu/               # BLGU assessment submission
+│       │   │   │   ├── change-password/    # Password change
+│       │   │   │   ├── external-analytics/ # External stakeholder analytics
+│       │   │   │   ├── mlgoo/              # Admin/MLGOO features
+│       │   │   │   ├── reports/            # Analytics & reports
+│       │   │   │   ├── user-management/    # User management
+│       │   │   │   └── validator/          # Validator dashboard & validation
 │       │   │   ├── (auth)/       # Public routes
 │       │   │   │   └── login/
 │       │   │   └── layout.tsx
 │       │   ├── components/
 │       │   │   ├── features/     # Domain-specific components
+│       │   │   │   ├── admin/
 │       │   │   │   ├── analytics/
 │       │   │   │   ├── assessments/
 │       │   │   │   ├── assessor/
 │       │   │   │   ├── auth/
+│       │   │   │   ├── bbis/
 │       │   │   │   ├── dashboard/
 │       │   │   │   ├── dashboard-analytics/
+│       │   │   │   ├── external-analytics/   # External stakeholder views
+│       │   │   │   ├── forms/
+│       │   │   │   ├── indicators/
+│       │   │   │   ├── landing/
 │       │   │   │   ├── landing-page/
+│       │   │   │   ├── movs/
 │       │   │   │   ├── profile/
 │       │   │   │   ├── reports/
+│       │   │   │   ├── rework/               # BLGU rework workflow components
 │       │   │   │   ├── settings/
 │       │   │   │   ├── submissions/
 │       │   │   │   ├── system-settings/
-│       │   │   │   └── users/
+│       │   │   │   ├── users/
+│       │   │   │   └── validator/            # Validator-specific validation UI
 │       │   │   ├── shared/       # Cross-feature components
 │       │   │   └── ui/           # shadcn/ui primitives
 │       │   ├── hooks/            # Custom React hooks
@@ -624,10 +638,11 @@ This application implements a structured workflow:
 
 1. **BLGU Submission**: BLGUs submit self-assessments with Means of Verification (MOVs)
 2. **Assessor Review**: DILG assessors validate submissions (one rework cycle allowed)
-3. **Table Validation**: In-person validation with live compliance checklist
-4. **Classification**: Automated "3+1" SGLGB scoring logic
-5. **Intelligence**: Gemini API generates CapDev recommendations
-6. **Gap Analysis**: Compare initial vs. final results for insights
+3. **Validator Calibration**: Validators can request targeted calibration (routes back to same Validator)
+4. **Table Validation**: In-person validation with live compliance checklist
+5. **Classification**: Automated "3+1" SGLGB scoring logic
+6. **Intelligence**: Gemini API generates CapDev recommendations
+7. **Gap Analysis**: Compare initial vs. final results for insights
 
 ## External Stakeholder Analytics (Epic 5)
 
@@ -663,6 +678,32 @@ Uses the `get_current_external_user` dependency for authentication.
 ## Recent Feature Implementations
 
 This section tracks major features and enhancements added to the platform (most recent first):
+
+### November 2025 - Calibration Tracking & Assessment Resubmission
+
+**1. Calibration Workflow for Validators**
+- **Feature**: Validators can now "calibrate" assessments, sending them back to BLGU for targeted corrections
+- **Workflow**: When a Validator requests calibration, the assessment returns to the same Validator (not Assessor) after BLGU corrections
+- **Database Fields Added**:
+  - `is_calibration_rework`: Boolean flag indicating calibration mode
+  - `calibration_validator_id`: FK to the Validator who requested calibration
+  - `calibration_count`: Integer tracking calibration cycles (max 1)
+- **Files Modified**:
+  - `apps/api/app/db/models/assessment.py` - Added calibration tracking fields
+  - `apps/api/alembic/versions/de1d0f3186e7_add_calibration_count_to_assessments.py` - Migration
+  - `apps/api/alembic/versions/3875cc740ca0_add_calibration_tracking_fields_to_.py` - Migration
+- **API Endpoints**:
+  - `POST /api/v1/assessments/{assessment_id}/submit-for-calibration` - BLGU submits back to Validator
+- **Impact**: Enables Validators to request targeted fixes without routing through the full Assessor workflow
+
+**2. BLGU Dashboard Calibration Support**
+- **Enhancement**: BLGU dashboard now displays calibration status and routing information
+- **Schema Fields Added** (`blgu_dashboard.py`):
+  - `is_calibration_rework`: Shows if BLGU should submit to Validator
+  - `calibration_validator_id`: ID of requesting Validator
+  - `calibration_governance_area_id`: Governance area being calibrated
+  - `calibration_governance_area_name`: Display name for UI
+- **Impact**: BLGU users see clear guidance on where their resubmission will be routed
 
 ### November 2025 - MOV File Management & Assessor Validation Enhancements
 

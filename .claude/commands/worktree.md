@@ -9,7 +9,8 @@ You are helping the user manage git worktrees for parallel development in the SI
 Parse the user's command to determine which action to take:
 
 - `/worktree` or `/worktree help` - Show help
-- `/worktree create <type> <name>` - Create new worktree
+- `/worktree create <name>` - Create new worktree (simple branch name)
+- `/worktree create <type> <name>` - Create with type prefix (feature/, fix/, etc.)
 - `/worktree list` - List all worktrees
 - `/worktree remove <name>` - Remove a worktree
 - `/worktree status` - Show detailed status
@@ -27,7 +28,8 @@ If the user runs `/worktree` without arguments or `/worktree help`, show this gu
 Git Worktree Manager for SINAG
 
 Commands:
-  /worktree create <type> <name>  Create a new worktree
+  /worktree create <name>         Create a new worktree
+  /worktree create <type> <name>  Create with type prefix (optional)
   /worktree list                  List all worktrees
   /worktree remove <name>         Remove a worktree
   /worktree status                Show detailed worktree status
@@ -37,7 +39,7 @@ Commands:
   /worktree env --all             Sync .env files to all worktrees
   /worktree finish <name>         Merge into develop and clean up
 
-Types for create:
+Optional types for create:
   feature   - New features (feature/name branch)
   fix       - Bug fixes (fix/name branch)
   perf      - Performance improvements (perf/name branch)
@@ -45,21 +47,32 @@ Types for create:
   refactor  - Code refactoring (refactor/name branch)
 
 Examples:
-  /worktree create feature analytics-dashboard
-  /worktree create fix pagination-bug
-  /worktree remove analytics-dashboard
+  /worktree create my-feature                 # Branch: my-feature
+  /worktree create feature analytics-dashboard # Branch: feature/analytics-dashboard
+  /worktree create fix pagination-bug          # Branch: fix/pagination-bug
+  /worktree remove my-feature
 ```
 
 ## Action: Create Worktree
 
-If the user runs `/worktree create <type> <name>`:
+If the user runs `/worktree create <name>` or `/worktree create <type> <name>`:
 
-1. Validate the type is one of: feature, fix, perf, docs, refactor
-2. Run the worktree creation script:
+1. Run the worktree creation script:
 
 ```bash
-./scripts/worktree.sh create <type> <name>
+# Simple (no type prefix)
+./scripts/worktree.sh create my-feature
+
+# With type prefix (optional)
+./scripts/worktree.sh create feature my-feature
 ```
+
+The script will:
+- Create the worktree with a new branch
+- Copy `.env` files from the main worktree
+- Configure unique ports (API and Web)
+- Prompt to install dependencies (`pnpm install`)
+- Set up Python environment if `uv` is available
 
 3. After creation, inform the user:
 
@@ -67,16 +80,21 @@ If the user runs `/worktree create <type> <name>`:
 Worktree created successfully!
 
 Branch: <type>/<name>
-Path: /home/kiedajhinn/Projects/vantage-<type>-<name>
+Path: /home/kiedajhinn/Projects/sinag-worktrees/<type>-<name>
 Ports: API=<port>, Web=<port>
 
-Next steps:
-1. Open a new terminal
-2. cd /home/kiedajhinn/Projects/vantage-<type>-<name>
-3. pnpm install
-4. pnpm dev
-5. Or start Claude Code: claude
+To start development:
+  cd /home/kiedajhinn/Projects/sinag-worktrees/<type>-<name>
+  pnpm dev                 # Auto-detects and uses worktree ports
+
+Other commands:
+  pnpm dev:api             # API only
+  pnpm dev:web             # Web only
+  pnpm dev:no-celery       # No background tasks
+  pnpm dev:ports           # Show port configuration
 ```
+
+**Key Feature**: The `pnpm dev` command automatically detects if it's running in a worktree and uses the correct ports. No manual port configuration needed!
 
 ## Action: List Worktrees
 
@@ -218,41 +236,40 @@ Remove worktree and delete branch 'feature/analytics'? [Y/n]
 
 ## Interactive Creation (No Arguments)
 
-If the user runs `/worktree create` without type and name, guide them interactively:
+If the user runs `/worktree create` without a name, guide them interactively:
 
-**Step 1**: Ask what type of work they're doing:
-- Feature (new functionality)
-- Fix (bug fix)
-- Perf (performance improvement)
-- Docs (documentation)
-- Refactor (code restructuring)
+**Step 1**: Ask for a short name (kebab-case, e.g., "user-analytics", "pagination-bug")
 
-**Step 2**: Ask for a short name (kebab-case, e.g., "user-analytics", "pagination-bug")
+**Step 2**: Optionally ask if they want a type prefix (feature/, fix/, etc.) - default to no prefix
 
 **Step 3**: Confirm and create the worktree
 
 ## Important Notes
 
+### Automatic Port Configuration
+- **Zero manual configuration needed!** Just run `pnpm dev` in any worktree
+- The `dev-worktree.sh` script automatically reads `.worktree-info` for port assignments
+- Main worktree uses default ports (API: 8000, Web: 3000)
+- Each additional worktree gets unique ports (8001/3001, 8002/3002, etc.)
+
+### Directory Structure
 - Worktrees are organized in `/home/kiedajhinn/Projects/sinag-worktrees/`
 - The main worktree at `/home/kiedajhinn/Projects/vantage` cannot be removed
-- Each worktree gets unique ports to avoid conflicts when running multiple dev servers
-- Dependencies must be installed separately in each worktree (`pnpm install`)
-- Worktrees share the same git history but have independent working directories
-- Run `pnpm generate-types` in each worktree after API schema changes
+
+### Environment Files
 - `.env` files are automatically copied from main worktree during creation
+- Web `.env.local` is auto-generated with correct API URLs for each worktree
 - Use `/worktree env --all` to sync .env updates to all worktrees at once
-- All worktrees share the same database and Redis (configured in .env)
 
-## Directory Structure
+### Shared Resources
+- All worktrees share the same database (Supabase)
+- All worktrees share the same Redis container
+- Worktrees share the same git history but have independent working directories
 
-```
-Projects/
-├── vantage/                      (main worktree)
-└── sinag-worktrees/            (worktree container)
-    ├── feature-analytics/        (feature/analytics branch)
-    ├── fix-pagination/           (fix/pagination branch)
-    └── perf-database/            (perf/database branch)
-```
+### Development Tips
+- Dependencies are installed during creation (prompts to confirm)
+- Run `pnpm generate-types` in each worktree after API schema changes
+- Use `pnpm dev:ports` to check your current port configuration
 
 ## Error Handling
 

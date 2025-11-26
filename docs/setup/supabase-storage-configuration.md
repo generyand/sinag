@@ -1,6 +1,6 @@
 # Supabase Storage Configuration for MOV Files
 
-This guide provides step-by-step instructions for configuring Supabase Storage to handle Means of Verification (MOV) file uploads for the VANTAGE platform.
+This guide provides step-by-step instructions for configuring Supabase Storage to handle Means of Verification (MOV) file uploads for the SINAG platform.
 
 ## Overview
 

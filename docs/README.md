@@ -1,10 +1,10 @@
-# VANTAGE Documentation
+# SINAG Documentation
 
-Welcome to the VANTAGE documentation! This directory contains comprehensive documentation for the Seal of Good Local Governance for Barangays (SGLGB) assessment platform.
+Welcome to the SINAG documentation! This directory contains comprehensive documentation for the Seal of Good Local Governance for Barangays (SGLGB) assessment platform.
 
 ## Quick Links
 
-- **New to VANTAGE?** Start with [Getting Started](./getting-started/README.md)
+- **New to SINAG?** Start with [Getting Started](./getting-started/README.md)
 - **Need help?** Check [Troubleshooting](./troubleshooting/README.md)
 - **Building features?** See [Developer Guides](./guides/README.md)
 - **Understanding the system?** Read [Architecture](./architecture/README.md)
@@ -89,5 +89,5 @@ See [Contributing Guide](./guides/contributing.md) for more details.
 
 ---
 
-**Last Updated**: 2025-10-31
-**Maintained By**: VANTAGE Development Team
+**Last Updated**: 2025-11-26
+**Maintained By**: SINAG Development Team

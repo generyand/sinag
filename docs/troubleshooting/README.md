@@ -1,6 +1,6 @@
 # Troubleshooting Guide
 
-Common issues and solutions for VANTAGE development.
+Common issues and solutions for SINAG development.
 
 ## Quick Links
 

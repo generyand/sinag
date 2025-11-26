@@ -1,6 +1,6 @@
 # Backend Architecture
 
-This document provides comprehensive visual documentation of the VANTAGE FastAPI backend architecture, including the service layer pattern, dependency injection, request/response flow, and Celery task processing.
+This document provides comprehensive visual documentation of the SINAG FastAPI backend architecture, including the service layer pattern, dependency injection, request/response flow, and Celery task processing.
 
 ## Table of Contents
 

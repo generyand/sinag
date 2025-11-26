@@ -1,6 +1,6 @@
 # Database Schema
 
-This document provides comprehensive visual documentation of the VANTAGE database schema, including entity relationship diagrams, table structures, and data relationships for the SGLGB assessment platform.
+This document provides comprehensive visual documentation of the SINAG database schema, including entity relationship diagrams, table structures, and data relationships for the SGLGB assessment platform.
 
 ## Table of Contents
 
@@ -16,7 +16,7 @@ This document provides comprehensive visual documentation of the VANTAGE databas
 
 ## Complete Entity Relationship Diagram
 
-Comprehensive ERD showing all tables and their relationships in the VANTAGE database:
+Comprehensive ERD showing all tables and their relationships in the SINAG database:
 
 ```mermaid
 erDiagram

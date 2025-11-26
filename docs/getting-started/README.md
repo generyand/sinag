@@ -1,6 +1,6 @@
-# Getting Started with VANTAGE
+# Getting Started with SINAG
 
-Welcome to VANTAGE! This guide will help you set up your development environment and get the application running locally.
+Welcome to SINAG! This guide will help you set up your development environment and get the application running locally.
 
 ## Prerequisites
 

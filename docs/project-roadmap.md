@@ -1,6 +1,6 @@
-# VANTAGE Application - Feature Roadmap
+# SINAG Application - Feature Roadmap
 
-This document outlines the high-level feature epics for the development of the VANTAGE web application. Epics are listed in the general order of implementation.
+This document outlines the high-level feature epics for the development of the SINAG web application. Epics are listed in the general order of implementation.
 
 ---
 
@@ -275,10 +275,10 @@ This document outlines the high-level feature epics for the development of the V
 
 ---
 
-## VANTAGE Web Application: A Brief Summary
+## SINAG Web Application: A Brief Summary
 
-The SGLGB Strategic Analytics Web Application (VANTAGE) is a pre-assessment, preparation, and decision-support tool designed to address the high failure rate of barangays in the official Seal of Good Local Governance for Barangays (SGLGB) assessment. The application manages a complete digital workflow where Barangay Local Government Units (BLGUs) conduct a self-assessment by submitting a Self-Evaluation Document (SED) and uploading digital Means of Verification (MOVs).
+The SGLGB Intelligent Analytics & Governance Platform (SINAG) is a pre-assessment, preparation, and decision-support tool designed to address the high failure rate of barangays in the official Seal of Good Local Governance for Barangays (SGLGB) assessment. The application manages a complete digital workflow where Barangay Local Government Units (BLGUs) conduct a self-assessment by submitting a Self-Evaluation Document (SED) and uploading digital Means of Verification (MOVs).
 
-This submission then enters a single, consolidated rework cycle, where a specialized DILG Area Assessor provides a comprehensive list of all deficiencies for the BLGU to correct and resubmit once. The application's unique value is in its support for a hybrid validation process: during the formal, in-person "Table Validation" meeting, the assessor uses VANTAGE as a live checklist to record the final, official compliance data.
+This submission then enters a single, consolidated rework cycle, where a specialized DILG Area Assessor provides a comprehensive list of all deficiencies for the BLGU to correct and resubmit once. The application's unique value is in its support for a hybrid validation process: during the formal, in-person "Table Validation" meeting, the assessor uses SINAG as a live checklist to record the final, official compliance data.
 
-At its core, VANTAGE features a classification algorithm that runs on this final, validated data to automatically apply the official "3+1" SGLGB logic and determine the official pass/fail result. The system also functions as a powerful gap analysis tool by comparing the initial BLGU submission against the final validated results. Finally, an integration with Google's Gemini API leverages these outcomes to generate actionable CapDev recommendations, providing DILG leadership with a sophisticated platform for data-driven governance.
+At its core, SINAG features a classification algorithm that runs on this final, validated data to automatically apply the official "3+1" SGLGB logic and determine the official pass/fail result. The system also functions as a powerful gap analysis tool by comparing the initial BLGU submission against the final validated results. Finally, an integration with Google's Gemini API leverages these outcomes to generate actionable CapDev recommendations, providing DILG leadership with a sophisticated platform for data-driven governance.

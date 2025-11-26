@@ -8,7 +8,7 @@ The Users API provides endpoints for user management, profile updates, and user 
 
 **Authentication**: All endpoints require authentication. Most endpoints require MLGOO_DILG (admin) role unless otherwise specified.
 
-**Role-Based Assignment Rules**: The system enforces strict validation rules for user role assignments based on the four VANTAGE user roles.
+**Role-Based Assignment Rules**: The system enforces strict validation rules for user role assignments based on the six SINAG user roles.
 
 **Type Generation**: After modifying any user endpoint or schema, run `pnpm generate-types` to update frontend types.
 

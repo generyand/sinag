@@ -1,6 +1,6 @@
 # Lookups API
 
-The Lookups API provides endpoints for fetching reference data from lookup tables such as governance areas and barangays. These endpoints support form dropdowns, filters, and data validation throughout the VANTAGE platform.
+The Lookups API provides endpoints for fetching reference data from lookup tables such as governance areas and barangays. These endpoints support form dropdowns, filters, and data validation throughout the SINAG platform.
 
 ## Overview
 

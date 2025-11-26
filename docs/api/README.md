@@ -1,10 +1,10 @@
-# VANTAGE API Documentation
+# SINAG API Documentation
 
-Complete reference for the VANTAGE REST API - the backend service powering the Seal of Good Local Governance for Barangays (SGLGB) governance assessment platform.
+Complete reference for the SINAG REST API - the backend service powering the Seal of Good Local Governance for Barangays (SGLGB) governance assessment platform.
 
 ## Overview
 
-The VANTAGE API is a FastAPI-based RESTful service that handles assessment submissions, validator workflows, classification, and analytics for the DILG SGLGB program. It features end-to-end type safety with auto-generated TypeScript types, role-based access control, and comprehensive validation.
+The SINAG API is a FastAPI-based RESTful service that handles assessment submissions, validator workflows, classification, and analytics for the DILG SGLGB program. It features end-to-end type safety with auto-generated TypeScript types, role-based access control, and comprehensive validation.
 
 **Key Features:**
 - JWT-based authentication with role-based access control (RBAC)
@@ -69,7 +69,7 @@ FastAPI provides auto-generated, interactive API documentation:
 
 ## Authentication
 
-The VANTAGE API uses JWT (JSON Web Token) bearer authentication for all protected endpoints.
+The SINAG API uses JWT (JSON Web Token) bearer authentication for all protected endpoints.
 
 ### Authentication Flow
 
@@ -248,7 +248,7 @@ Logout user session (client-side token cleanup).
 
 ## Role-Based Access Control
 
-The VANTAGE API implements four user roles with distinct permissions and access levels.
+The SINAG API implements six user roles with distinct permissions and access levels.
 
 ### User Roles
 
@@ -857,7 +857,7 @@ async def create_user(...):
 
 ## SGLGB Workflow Context
 
-The VANTAGE API supports the Seal of Good Local Governance for Barangays (SGLGB) assessment workflow:
+The SINAG API supports the Seal of Good Local Governance for Barangays (SGLGB) assessment workflow:
 
 ### Workflow Stages
 
@@ -923,7 +923,7 @@ Returns detailed health status for monitoring and load balancers.
   "timestamp": "2025-11-19T10:30:00Z",
   "api": {
     "version": "1.0.0",
-    "name": "VANTAGE API"
+    "name": "SINAG API"
   },
   "connections": {
     "database": {

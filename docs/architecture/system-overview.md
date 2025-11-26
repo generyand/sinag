@@ -1,6 +1,6 @@
 # System Architecture Overview
 
-This document provides a comprehensive visual overview of the VANTAGE governance assessment platform architecture, including external integrations, deployment structure, and data flow patterns.
+This document provides a comprehensive visual overview of the SINAG governance assessment platform architecture, including external integrations, deployment structure, and data flow patterns.
 
 ## Table of Contents
 

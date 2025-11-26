@@ -1,6 +1,6 @@
 # Assessor and Validator Validation Workflow
 
-This document describes the validation workflow for both Assessors and Validators in the VANTAGE SGLGB assessment system.
+This document describes the validation workflow for both Assessors and Validators in the SINAG SGLGB assessment system.
 
 **Last Updated:** 2025-11-18
 
