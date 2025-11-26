@@ -171,6 +171,14 @@ class AssessmentService:
             Dictionary with assessment and governance areas data
         """
         try:
+            # Get user with barangay info
+            user = db.query(User).filter(User.id == blgu_user_id).first()
+            barangay_name = None
+            barangay_id = None
+            if user and user.barangay:
+                barangay_name = user.barangay.name
+                barangay_id = user.barangay.id
+
             # Get assessment
             assessment = (
                 db.query(Assessment)
@@ -300,6 +308,8 @@ class AssessmentService:
             "id": assessment.id,
             "status": assessment.status.value,
             "blgu_user_id": assessment.blgu_user_id,
+            "barangay_id": barangay_id,
+            "barangay_name": barangay_name,
             "created_at": assessment.created_at.isoformat() + 'Z',
             "updated_at": assessment.updated_at.isoformat() + 'Z',
             "submitted_at": assessment.submitted_at.isoformat() + 'Z'
