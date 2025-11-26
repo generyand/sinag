@@ -16,6 +16,7 @@ import {
   usePostAssessorAssessmentsAssessmentIdCalibrate,
 } from '@vantage/shared';
 import { toast } from 'sonner';
+import { useAuthStore } from '@/store/useAuthStore';
 
 interface ValidatorValidationClientProps {
   assessmentId: number;
@@ -53,6 +54,9 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const [expandedId, setExpandedId] = useState<number | null>(null);
   // Store checklist state externally to persist across indicator navigation
   const [checklistState, setChecklistState] = useState<Record<string, any>>({});
+
+  // Get current user for per-area calibration check (must be called before conditional returns)
+  const { user: currentUser } = useAuthStore();
 
   // Set initial expandedId when data loads
   useEffect(() => {
@@ -98,8 +102,11 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     ?? '') as string;
   const cycleYear: string = String(core?.cycle_year ?? core?.year ?? '');
   const statusText: string = core?.status ?? core?.assessment_status ?? '';
-  const calibrationCount: number = (core?.calibration_count ?? 0) as number;
-  const calibrationAlreadyUsed = calibrationCount >= 1;
+
+  // Check if THIS validator's area has already been calibrated (per-area limit)
+  const validatorAreaId = currentUser?.validator_area_id;
+  const calibratedAreaIds: number[] = (core?.calibrated_area_ids ?? []) as number[];
+  const calibrationAlreadyUsed = validatorAreaId ? calibratedAreaIds.includes(validatorAreaId) : false;
 
   // Transform to match BLGU assessment structure for TreeNavigator
   const transformedAssessment = {
@@ -419,7 +426,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
               disabled={calibrateMut.isPending || calibrationAlreadyUsed}
               className="w-full sm:w-auto text-white hover:opacity-90"
               style={{ background: calibrationAlreadyUsed ? 'var(--muted)' : 'var(--cityscape-yellow)' }}
-              title={calibrationAlreadyUsed ? 'Calibration has already been used for this assessment (max 1 allowed)' : undefined}
+              title={calibrationAlreadyUsed ? 'Calibration has already been used for your governance area (max 1 per area)' : undefined}
             >
               {calibrateMut.isPending ? (
                 <>

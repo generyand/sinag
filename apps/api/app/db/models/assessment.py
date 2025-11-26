@@ -44,7 +44,10 @@ class Assessment(Base):
     calibration_validator_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )  # The validator who requested calibration
-    calibration_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)  # Max 1 calibration allowed
+    calibration_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)  # Legacy: global count (deprecated)
+    # Track calibration per governance area - stores list of area IDs that have been calibrated
+    # Each area can only be calibrated once (max 1 per area)
+    calibrated_area_ids: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
 
     # Intelligence layer fields
     final_compliance_status: Mapped[ComplianceStatus | None] = mapped_column(

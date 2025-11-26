@@ -1,20 +1,39 @@
 /**
- * Rework Indicators Panel Component
+ * Rework Indicators Panel Component - ENHANCED VERSION
  *
  * Displays all indicators that failed validation and require resubmission.
  * Shows indicators grouped by governance area with feedback summaries.
  *
  * PRIORITY COMPONENT: This is the main entry point for BLGU users to see
  * which indicators need attention when assessment status is REWORK/NEEDS_REWORK.
+ *
+ * ENHANCEMENTS:
+ * - Improved visual hierarchy with gradient backgrounds and better spacing
+ * - Prominent call-to-action button to start addressing rework items
+ * - Circular progress indicator for better visual feedback
+ * - Auto-expanded governance areas (collapsed by default, all expanded on mount)
+ * - Summary of feedback types (comments vs annotations)
+ * - Urgency messaging and helpful instructions
+ * - Improved color scheme using theme variables and better contrast
  */
 
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, ChevronDown, ChevronRight, CheckCircle2 } from "lucide-react";
+import {
+  AlertCircle,
+  ChevronDown,
+  ChevronRight,
+  CheckCircle2,
+  ArrowRight,
+  MessageSquare,
+  FileText,
+  Clock
+} from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { FailedIndicatorCard } from "./FailedIndicatorCard";
 import type { BLGUDashboardResponse } from "@vantage/shared";
 import type { FailedIndicator } from "@/types/rework";
@@ -208,6 +227,27 @@ export function ReworkIndicatorsPanel({
     return groups;
   }, [failedIndicators]);
 
+  // Compute feedback summary statistics
+  const feedbackSummary = useMemo(() => {
+    const totalComments = failedIndicators.reduce(
+      (sum, indicator) => sum + indicator.comments.length,
+      0
+    );
+    const totalAnnotations = failedIndicators.reduce(
+      (sum, indicator) => sum + indicator.annotations.length,
+      0
+    );
+    return { totalComments, totalAnnotations };
+  }, [failedIndicators]);
+
+  // Auto-expand all governance areas on mount for better UX
+  useEffect(() => {
+    const allAreaIds = Array.from(failedByArea.keys());
+    if (allAreaIds.length > 0) {
+      setExpandedAreas(new Set(allAreaIds));
+    }
+  }, [failedByArea]);
+
   const toggleArea = (areaId: number) => {
     setExpandedAreas((prev) => {
       const newSet = new Set(prev);
@@ -224,82 +264,184 @@ export function ReworkIndicatorsPanel({
     return null; // No failed indicators
   }
 
+  // Find the first incomplete indicator for the "Start Fixing" button
+  const firstIncompleteIndicator = failedIndicators.find((f) => !f.is_complete);
+
   return (
-    <Card className="border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-950/20">
-      {/* Header */}
-      <div className="p-6 border-b border-orange-200 dark:border-orange-800">
-        <div className="flex items-start justify-between gap-4 mb-4">
-          <div className="flex items-center gap-3">
-            <AlertCircle className="w-6 h-6 text-orange-600 flex-shrink-0" />
-            <div>
-              <h2 className="text-xl font-semibold text-[var(--foreground)]">
-                {isCalibration ? "Indicators Requiring Calibration" : "Indicators Requiring Rework"}
-              </h2>
-              <p className="text-sm text-[var(--text-secondary)] mt-1">
+    <Card className="border-2 border-orange-300 dark:border-orange-700 bg-gradient-to-br from-orange-50 via-white to-orange-50/30 dark:from-orange-950/30 dark:via-gray-900 dark:to-orange-950/20 shadow-lg">
+      {/* Header with Gradient Background */}
+      <div className="bg-gradient-to-r from-orange-600 to-red-600 dark:from-orange-700 dark:to-red-700 p-6 text-white">
+        <div className="flex items-start justify-between gap-4 mb-6">
+          <div className="flex items-start gap-4 flex-1">
+            {/* Circular Progress Indicator */}
+            <div className="relative flex-shrink-0">
+              <svg className="w-20 h-20 transform -rotate-90">
+                <circle
+                  cx="40"
+                  cy="40"
+                  r="36"
+                  stroke="currentColor"
+                  strokeWidth="6"
+                  fill="none"
+                  className="text-white/20"
+                />
+                <circle
+                  cx="40"
+                  cy="40"
+                  r="36"
+                  stroke="currentColor"
+                  strokeWidth="6"
+                  fill="none"
+                  strokeDasharray={`${2 * Math.PI * 36}`}
+                  strokeDashoffset={`${2 * Math.PI * 36 * (1 - progress.percentage / 100)}`}
+                  className="text-white transition-all duration-500"
+                  strokeLinecap="round"
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-2xl font-bold">{progress.percentage.toFixed(0)}%</span>
+              </div>
+            </div>
+
+            {/* Title and Description */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3 mb-2">
+                <AlertCircle className="w-7 h-7 flex-shrink-0" />
+                <h2 className="text-2xl font-bold">
+                  {isCalibration ? "Indicators Requiring Calibration" : "Action Required: Address Assessor Feedback"}
+                </h2>
+              </div>
+              <p className="text-white/90 text-base leading-relaxed mb-3">
                 {isCalibration && calibrationAreaName ? (
                   <>
-                    <span className="font-medium text-orange-700 dark:text-orange-400">{calibrationAreaName}</span>
-                    {" - "}{progress.remaining} of {progress.total} indicators still need attention
+                    Your <span className="font-semibold">{calibrationAreaName}</span> assessment requires calibration.
+                    Please review and update <span className="font-semibold">{progress.remaining}</span> of{" "}
+                    <span className="font-semibold">{progress.total}</span> indicators to proceed.
                   </>
                 ) : (
-                  <>{progress.remaining} of {progress.total} indicators still need attention</>
+                  <>
+                    The assessor has identified areas needing improvement in your submission.
+                    Please address <span className="font-semibold">{progress.remaining}</span> of{" "}
+                    <span className="font-semibold">{progress.total}</span> indicators to resubmit.
+                  </>
                 )}
               </p>
+
+              {/* Feedback Summary */}
+              <div className="flex items-center gap-4 text-sm text-white/80">
+                {feedbackSummary.totalComments > 0 && (
+                  <div className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-sm">
+                    <MessageSquare className="w-4 h-4" />
+                    <span>{feedbackSummary.totalComments} comment{feedbackSummary.totalComments !== 1 ? "s" : ""}</span>
+                  </div>
+                )}
+                {feedbackSummary.totalAnnotations > 0 && (
+                  <div className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-sm">
+                    <FileText className="w-4 h-4" />
+                    <span>{feedbackSummary.totalAnnotations} annotation{feedbackSummary.totalAnnotations !== 1 ? "s" : ""}</span>
+                  </div>
+                )}
+                {progress.remaining > 0 && (
+                  <div className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-sm">
+                    <Clock className="w-4 h-4" />
+                    <span>Needs attention</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
+          {/* Fixed Count Badge */}
           {progress.fixed > 0 && (
-            <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-950/30 px-3 py-1.5 rounded-sm border border-green-200 dark:border-green-800">
-              <CheckCircle2 className="w-4 h-4" />
-              {progress.fixed} Fixed
+            <div className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-sm shadow-md flex-shrink-0">
+              <CheckCircle2 className="w-5 h-5" />
+              <div className="text-left">
+                <div className="text-xs opacity-90">Fixed</div>
+                <div className="text-lg font-bold">{progress.fixed}</div>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Progress Bar */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-[var(--text-secondary)]">Progress</span>
-            <span className="font-medium text-[var(--foreground)]">
-              {progress.percentage.toFixed(0)}%
-            </span>
+        {/* Call to Action Button */}
+        {firstIncompleteIndicator && (
+          <div className="mt-4">
+            <Button
+              onClick={() => router.push(firstIncompleteIndicator.route_path)}
+              size="lg"
+              className="w-full sm:w-auto bg-white text-orange-600 hover:bg-orange-50 hover:text-orange-700 font-semibold shadow-lg hover:shadow-xl transition-all duration-200 text-base py-6"
+            >
+              <span>Start Fixing Issues</span>
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
           </div>
-          <Progress value={progress.percentage} className="h-2" />
-        </div>
+        )}
+      </div>
+
+      {/* Instructional Message */}
+      <div className="px-6 py-4 bg-blue-50 dark:bg-blue-950/20 border-b border-blue-200 dark:border-blue-800">
+        <p className="text-sm text-blue-900 dark:text-blue-100 leading-relaxed">
+          <strong>What to do next:</strong> Review each indicator below to see the assessor's feedback.
+          Address all comments and annotations, then resubmit your assessment for review. You can track
+          your progress as you complete each indicator.
+        </p>
       </div>
 
       {/* Failed Indicators by Area */}
-      <div className="divide-y divide-orange-200 dark:divide-orange-800">
+      <div className="divide-y divide-gray-200 dark:divide-gray-700">
         {Array.from(failedByArea.entries()).map(([areaId, indicators]) => {
           const isExpanded = expandedAreas.has(areaId);
           const areaName = indicators[0]?.governance_area_name || `Area ${areaId}`;
           const areaFixed = indicators.filter((i) => i.is_complete).length;
+          const areaProgress = indicators.length > 0 ? (areaFixed / indicators.length) * 100 : 0;
 
           return (
-            <div key={areaId}>
+            <div key={areaId} className="bg-white dark:bg-gray-900">
               {/* Area Header */}
               <button
                 onClick={() => toggleArea(areaId)}
-                className="w-full flex items-center justify-between p-4 hover:bg-orange-100/50 dark:hover:bg-orange-950/30 transition-colors"
+                className="w-full flex items-center justify-between p-5 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-1">
                   {isExpanded ? (
-                    <ChevronDown className="w-5 h-5 text-[var(--text-secondary)]" />
+                    <ChevronDown className="w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors" />
                   ) : (
-                    <ChevronRight className="w-5 h-5 text-[var(--text-secondary)]" />
+                    <ChevronRight className="w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors" />
                   )}
-                  <span className="font-semibold text-[var(--foreground)]">
-                    {areaName}
+                  <div className="flex-1 text-left">
+                    <span className="font-semibold text-[var(--foreground)] text-base group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
+                      {areaName}
+                    </span>
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="text-sm text-[var(--text-secondary)]">
+                        {areaFixed} of {indicators.length} fixed
+                      </span>
+                      {areaFixed === indicators.length && (
+                        <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-sm font-medium">
+                          Complete
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mini Progress Bar */}
+                <div className="flex items-center gap-3">
+                  <div className="w-24 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-500"
+                      style={{ width: `${areaProgress}%` }}
+                    />
+                  </div>
+                  <span className="text-sm font-medium text-[var(--foreground)] w-10 text-right">
+                    {areaProgress.toFixed(0)}%
                   </span>
                 </div>
-                <span className="text-sm text-[var(--text-secondary)]">
-                  {areaFixed}/{indicators.length} fixed
-                </span>
               </button>
 
               {/* Indicator Cards */}
               {isExpanded && (
-                <div className="px-4 pb-4 space-y-3">
+                <div className="px-5 pb-5 pt-2 space-y-3 bg-gray-50/50 dark:bg-gray-800/30">
                   {indicators.map((failed) => (
                     <FailedIndicatorCard
                       key={failed.indicator_id}

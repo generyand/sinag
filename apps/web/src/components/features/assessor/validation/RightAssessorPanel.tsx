@@ -29,10 +29,36 @@ type AnyRecord = Record<string, any>;
 
 type LocalStatus = 'Pass' | 'Fail' | 'Conditional' | undefined;
 
+/**
+ * Sort indicator codes numerically (e.g., 1.1.1, 1.1.2, 1.2.1, etc.)
+ */
+function sortIndicatorCode(a: string, b: string): number {
+  const partsA = a.split('.').map(Number);
+  const partsB = b.split('.').map(Number);
+
+  for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+    const numA = partsA[i] ?? 0;
+    const numB = partsB[i] ?? 0;
+    if (numA !== numB) {
+      return numA - numB;
+    }
+  }
+  return 0;
+}
+
 export function RightAssessorPanel({ assessment, form, setField, expandedId, onToggle, onIndicatorSelect, checklistState, onChecklistChange }: RightAssessorPanelProps) {
   const data: AnyRecord = (assessment as unknown as AnyRecord) ?? {};
   const core = (data.assessment as AnyRecord) ?? data;
-  const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
+  const rawResponses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
+
+  // Sort responses by indicator code for consistent navigation
+  const responses = React.useMemo(() => {
+    return [...rawResponses].sort((a, b) => {
+      const codeA = a.indicator?.indicator_code || a.indicator?.code || '';
+      const codeB = b.indicator?.indicator_code || b.indicator?.code || '';
+      return sortIndicatorCode(codeA, codeB);
+    });
+  }, [rawResponses]);
 
   // Get user role to determine permissions
   const { user } = useAuthStore();
@@ -145,7 +171,7 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
     return obj as ResponsesForm;
   }, [responses]);
 
-  const { control, register, formState } = useForm<ResponsesForm>({
+  const { control, register, formState, setValue } = useForm<ResponsesForm>({
     resolver: zodResolver(ResponsesSchema),
     defaultValues,
     mode: 'onChange',
@@ -384,7 +410,7 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                     )}
                                   </div>
                                 ) : item.item_type === 'assessment_field' ? (
-                                  // YES/NO radio buttons for validator assessment
+                                  // YES/NO radio buttons for validator assessment (mutually exclusive)
                                   <div className="space-y-2">
                                     <div className="flex items-start gap-3">
                                       <div className="flex gap-4">
@@ -396,7 +422,13 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                               <Checkbox
                                                 id={`${itemKey}_yes`}
                                                 checked={field.value as any}
-                                                onCheckedChange={field.onChange}
+                                                onCheckedChange={(checked) => {
+                                                  field.onChange(checked);
+                                                  // If YES is checked, uncheck NO (mutually exclusive)
+                                                  if (checked) {
+                                                    setValue(`${itemKey}_no` as any, false);
+                                                  }
+                                                }}
                                               />
                                               <Label htmlFor={`${itemKey}_yes`} className="text-xs font-medium cursor-pointer">
                                                 YES
@@ -412,7 +444,13 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                               <Checkbox
                                                 id={`${itemKey}_no`}
                                                 checked={field.value as any}
-                                                onCheckedChange={field.onChange}
+                                                onCheckedChange={(checked) => {
+                                                  field.onChange(checked);
+                                                  // If NO is checked, uncheck YES (mutually exclusive)
+                                                  if (checked) {
+                                                    setValue(`${itemKey}_yes` as any, false);
+                                                  }
+                                                }}
                                               />
                                               <Label htmlFor={`${itemKey}_no`} className="text-xs font-medium cursor-pointer">
                                                 NO
