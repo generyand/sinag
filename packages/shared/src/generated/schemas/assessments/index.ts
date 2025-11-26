@@ -418,6 +418,46 @@ export type DeleteAssessmentsMovsMovId200 = {[key: string]: string};
 
 
 /**
+ * GARAssessmentListItem
+ */
+export interface GARAssessmentListItem {
+  /** Database ID of the assessment */
+  assessment_id: number;
+  /** Name of the barangay */
+  barangay_name: string;
+  /** Assessment status */
+  status: string;
+  /** Submission timestamp */
+  submitted_at?: GARAssessmentListItemSubmittedAt;
+  /** Validation completion timestamp */
+  validated_at?: GARAssessmentListItemValidatedAt;
+}
+
+
+/**
+ * GARAssessmentListItemSubmittedAt
+ */
+export type GARAssessmentListItemSubmittedAt = string | null;
+
+
+/**
+ * GARAssessmentListItemValidatedAt
+ */
+export type GARAssessmentListItemValidatedAt = string | null;
+
+
+/**
+ * GARAssessmentListResponse
+ */
+export interface GARAssessmentListResponse {
+  /** List of completed assessments */
+  assessments?: GARAssessmentListItem[];
+  /** Total count of assessments */
+  total?: number;
+}
+
+
+/**
  * GetAssessmentsAssessmentIdAnswersParams
  */
 export type GetAssessmentsAssessmentIdAnswersParams = {
@@ -461,6 +501,39 @@ export type NotificationResponseAssessmentBarangayName = string | null;
  * NotificationResponseAssessmentId
  */
 export type NotificationResponseAssessmentId = number | null;
+
+
+/**
+ * GetGarAssessmentIdExportExcelParams
+ */
+export type GetGarAssessmentIdExportExcelParams = {
+/**
+ * Filter by governance area ID
+ */
+governance_area_id?: number | null;
+};
+
+
+/**
+ * GetGarAssessmentIdExportPdfParams
+ */
+export type GetGarAssessmentIdExportPdfParams = {
+/**
+ * Filter by governance area ID
+ */
+governance_area_id?: number | null;
+};
+
+
+/**
+ * GetGarAssessmentIdParams
+ */
+export type GetGarAssessmentIdParams = {
+/**
+ * Filter by governance area ID (1=Financial, 2=Disaster, etc.)
+ */
+governance_area_id?: number | null;
+};
 
 
 /**

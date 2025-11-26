@@ -605,6 +605,7 @@ class AssessorService:
                 else None,
                 "rework_count": assessment.rework_count,
                 "calibration_count": assessment.calibration_count,
+                "calibrated_area_ids": assessment.calibrated_area_ids or [],
                 "blgu_user": {
                     "id": assessment.blgu_user.id,
                     "name": assessment.blgu_user.name,
@@ -835,8 +836,9 @@ class AssessorService:
                 "Assessment has already been sent for rework. Cannot send again."
             )
 
-        # Enforce PRD: Only allow rework from Submitted for Review
-        if assessment.status != AssessmentStatus.SUBMITTED_FOR_REVIEW:
+        # Enforce PRD: Only allow rework from Submitted status
+        # Accept both SUBMITTED and SUBMITTED_FOR_REVIEW (legacy) statuses
+        if assessment.status not in [AssessmentStatus.SUBMITTED, AssessmentStatus.SUBMITTED_FOR_REVIEW]:
             raise ValueError("Rework is only allowed when assessment is Submitted for Review")
 
         # Phase 1 Assessors: Must have at least one indicator with public comments OR MOV annotations to send for rework
@@ -1034,11 +1036,12 @@ class AssessorService:
                 f"No indicators found in your assigned governance area (ID: {validator.validator_area_id})"
             )
 
-        # Check calibration count - only 1 calibration allowed (similar to rework limit)
-        if assessment.calibration_count >= 1:
+        # Check if THIS governance area has already been calibrated (max 1 per area)
+        calibrated_areas = assessment.calibrated_area_ids or []
+        if validator.validator_area_id in calibrated_areas:
             raise ValueError(
-                "Calibration has already been used for this assessment. "
-                "Only one calibration is allowed per assessment (similar to the rework limit)."
+                "Calibration has already been used for your governance area. "
+                "Only one calibration is allowed per governance area."
             )
 
         # Validator must have at least one indicator marked as FAIL (Unmet) to submit for calibration
@@ -1072,7 +1075,12 @@ class AssessorService:
         # Set calibration flags so BLGU knows to submit back to Validator (not Assessor)
         assessment.is_calibration_rework = True
         assessment.calibration_validator_id = validator.id
-        assessment.calibration_count += 1  # Increment calibration count (max 1 allowed)
+        assessment.calibration_count += 1  # Legacy: still increment for backwards compatibility
+
+        # Track which governance area has been calibrated (per-area limit)
+        if assessment.calibrated_area_ids is None:
+            assessment.calibrated_area_ids = []
+        assessment.calibrated_area_ids = assessment.calibrated_area_ids + [validator.validator_area_id]
 
         # Mark ONLY indicators with "Unmet" (FAIL) validation status for rework
         # These are the indicators the BLGU needs to correct and re-upload

@@ -90,6 +90,8 @@ export function useCurrentAssessment() {
     assessment: {
       id: number;
       status: string;
+      barangay_id?: number;
+      barangay_name?: string;
       created_at: string;
       updated_at: string;
       submitted_at?: string;
@@ -287,8 +289,8 @@ export function useCurrentAssessment() {
         id: (
           assessmentData as unknown as APIAssessment
         ).assessment.id.toString(),
-        barangayId: "1", // TODO: Get from user context
-        barangayName: "New Cebu", // TODO: Get from user context
+        barangayId: (assessmentData as unknown as APIAssessment).assessment.barangay_id?.toString() || "unknown",
+        barangayName: (assessmentData as unknown as APIAssessment).assessment.barangay_name || "Unknown Barangay",
         status: (assessmentData as unknown as APIAssessment).assessment.status
           .toLowerCase()
           .replace("_", "-") as AssessmentStatus,

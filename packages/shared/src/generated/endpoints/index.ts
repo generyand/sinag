@@ -11,6 +11,7 @@ export * from './bbis';
 export * from './blgu-dashboard';
 export * from './default';
 export * from './external-analytics';
+export * from './gar';
 export * from './indicators';
 export * from './lookups';
 export * from './movs';

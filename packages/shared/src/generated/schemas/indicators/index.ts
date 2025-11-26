@@ -6,6 +6,7 @@
 import type { CalculationSchema } from '../common';
 import type { BodyTestCalculationApiV1IndicatorsTestCalculationPostAssessmentData } from '../assessments';
 import type { BulkCreateError } from '../error';
+import type { GARChecklistItem } from '../gar';
 import type { FormSchema } from '../formschema';
 import type { RemarkSchema } from '../common';
 import type { IndicatorDraftResponseLockedByUserId } from '../users';
@@ -94,6 +95,33 @@ export interface FailedIndicator {
    */
   percentage: number;
 }
+
+
+/**
+ * GARIndicator
+ */
+export interface GARIndicator {
+  /** Database ID of the indicator */
+  indicator_id: number;
+  /** Indicator code (e.g., '1.1', '1.1.1') */
+  indicator_code: string;
+  /** Indicator name/description */
+  indicator_name: string;
+  /** Overall validation status: 'Pass', 'Fail', 'Conditional', or null */
+  validation_status?: GARIndicatorValidationStatus;
+  /** List of checklist items under this indicator */
+  checklist_items?: GARChecklistItem[];
+  /** True if this is a container/header indicator (e.g., '1.1' parent of '1.1.1') */
+  is_header?: boolean;
+  /** Indentation level for display (0=root, 1=sub, 2=sub-sub) */
+  indent_level?: number;
+}
+
+
+/**
+ * GARIndicatorValidationStatus
+ */
+export type GARIndicatorValidationStatus = string | null;
 
 
 /**

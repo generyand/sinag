@@ -29,10 +29,36 @@ type AnyRecord = Record<string, any>;
 
 type LocalStatus = 'Pass' | 'Fail' | 'Conditional' | undefined;
 
+/**
+ * Sort indicator codes numerically (e.g., 1.1.1, 1.1.2, 1.2.1, etc.)
+ */
+function sortIndicatorCode(a: string, b: string): number {
+  const partsA = a.split('.').map(Number);
+  const partsB = b.split('.').map(Number);
+
+  for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+    const numA = partsA[i] ?? 0;
+    const numB = partsB[i] ?? 0;
+    if (numA !== numB) {
+      return numA - numB;
+    }
+  }
+  return 0;
+}
+
 export function RightAssessorPanel({ assessment, form, setField, expandedId, onToggle, onIndicatorSelect, checklistState, onChecklistChange }: RightAssessorPanelProps) {
   const data: AnyRecord = (assessment as unknown as AnyRecord) ?? {};
   const core = (data.assessment as AnyRecord) ?? data;
-  const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
+  const rawResponses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
+
+  // Sort responses by indicator code for consistent navigation
+  const responses = React.useMemo(() => {
+    return [...rawResponses].sort((a, b) => {
+      const codeA = a.indicator?.indicator_code || a.indicator?.code || '';
+      const codeB = b.indicator?.indicator_code || b.indicator?.code || '';
+      return sortIndicatorCode(codeA, codeB);
+    });
+  }, [rawResponses]);
 
   // Get user role to determine permissions
   const { user } = useAuthStore();
@@ -111,41 +137,62 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
       };
 
       // Initialize checklist data from response_data
-      // IMPORTANT: ALWAYS load assessor validation data (assessor_val_ prefix), regardless of requires_rework status
-      // This allows the assessor to see their progress during rework review cycle
       const responseData = (r as AnyRecord).response_data || {};
       const indicator = (r.indicator as AnyRecord) ?? {};
       const checklistItems = (indicator?.checklist_items as any[]) || [];
 
-      // Load existing checklist values from response_data (with "assessor_val_" prefix)
-      // This applies to BOTH:
-      // 1. Indicators from first review (requires_rework=false) - load old validation data
-      // 2. Indicators during rework (requires_rework=true) - load NEW validation work
-      // NOTE: Form state (useForm) is the source of truth for checklist data during the session
-      // defaultValues only initialize once on mount, subsequent changes are tracked in form state
-      checklistItems.forEach((item: any) => {
-        const itemKey = `checklist_${r.id}_${item.item_id}`;
+      // VALIDATORS: Start with a CLEAN checklist (don't load assessor's data)
+      // Validators do their own independent review - they shouldn't see assessor's checklist
+      // ASSESSORS: Load existing validation data (assessor_val_ prefix)
+      if (isValidator) {
+        // Validators get empty checklist - they start fresh
+        // Use validator_val_ prefix for their own data
+        checklistItems.forEach((item: any) => {
+          const itemKey = `checklist_${r.id}_${item.item_id}`;
 
-        if (item.item_type === 'assessment_field') {
-          // YES/NO checkboxes
-          const yesKey = `assessor_val_${item.item_id}_yes`;
-          const noKey = `assessor_val_${item.item_id}_no`;
-          obj[`${itemKey}_yes`] = responseData[yesKey] ?? false;
-          obj[`${itemKey}_no`] = responseData[noKey] ?? false;
-        } else if (item.item_type === 'document_count' || item.requires_document_count) {
-          // Input fields
-          obj[itemKey] = responseData[`assessor_val_${item.item_id}`] ?? '';
-        } else if (item.item_type !== 'info_text') {
-          // Regular checkboxes
-          obj[itemKey] = responseData[`assessor_val_${item.item_id}`] ?? false;
-        }
-      });
+          if (item.item_type === 'assessment_field') {
+            // YES/NO checkboxes - start unchecked
+            const yesKey = `validator_val_${item.item_id}_yes`;
+            const noKey = `validator_val_${item.item_id}_no`;
+            obj[`${itemKey}_yes`] = responseData[yesKey] ?? false;
+            obj[`${itemKey}_no`] = responseData[noKey] ?? false;
+          } else if (item.item_type === 'document_count' || item.requires_document_count) {
+            // Input fields - start empty
+            obj[itemKey] = responseData[`validator_val_${item.item_id}`] ?? '';
+          } else if (item.item_type !== 'info_text') {
+            // Regular checkboxes - start unchecked
+            obj[itemKey] = responseData[`validator_val_${item.item_id}`] ?? false;
+          }
+        });
+      } else {
+        // Assessors: Load existing validation data (assessor_val_ prefix)
+        // This applies to BOTH:
+        // 1. Indicators from first review (requires_rework=false) - load old validation data
+        // 2. Indicators during rework (requires_rework=true) - load NEW validation work
+        checklistItems.forEach((item: any) => {
+          const itemKey = `checklist_${r.id}_${item.item_id}`;
+
+          if (item.item_type === 'assessment_field') {
+            // YES/NO checkboxes
+            const yesKey = `assessor_val_${item.item_id}_yes`;
+            const noKey = `assessor_val_${item.item_id}_no`;
+            obj[`${itemKey}_yes`] = responseData[yesKey] ?? false;
+            obj[`${itemKey}_no`] = responseData[noKey] ?? false;
+          } else if (item.item_type === 'document_count' || item.requires_document_count) {
+            // Input fields
+            obj[itemKey] = responseData[`assessor_val_${item.item_id}`] ?? '';
+          } else if (item.item_type !== 'info_text') {
+            // Regular checkboxes
+            obj[itemKey] = responseData[`assessor_val_${item.item_id}`] ?? false;
+          }
+        });
+      }
     }
 
     return obj as ResponsesForm;
-  }, [responses]);
+  }, [responses, isValidator]);
 
-  const { control, register, formState } = useForm<ResponsesForm>({
+  const { control, register, formState, setValue } = useForm<ResponsesForm>({
     resolver: zodResolver(ResponsesSchema),
     defaultValues,
     mode: 'onChange',
@@ -384,7 +431,7 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                     )}
                                   </div>
                                 ) : item.item_type === 'assessment_field' ? (
-                                  // YES/NO radio buttons for validator assessment
+                                  // YES/NO radio buttons for validator assessment (mutually exclusive)
                                   <div className="space-y-2">
                                     <div className="flex items-start gap-3">
                                       <div className="flex gap-4">
@@ -396,7 +443,13 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                               <Checkbox
                                                 id={`${itemKey}_yes`}
                                                 checked={field.value as any}
-                                                onCheckedChange={field.onChange}
+                                                onCheckedChange={(checked) => {
+                                                  field.onChange(checked);
+                                                  // If YES is checked, uncheck NO (mutually exclusive)
+                                                  if (checked) {
+                                                    setValue(`${itemKey}_no` as any, false);
+                                                  }
+                                                }}
                                               />
                                               <Label htmlFor={`${itemKey}_yes`} className="text-xs font-medium cursor-pointer">
                                                 YES
@@ -412,7 +465,13 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                               <Checkbox
                                                 id={`${itemKey}_no`}
                                                 checked={field.value as any}
-                                                onCheckedChange={field.onChange}
+                                                onCheckedChange={(checked) => {
+                                                  field.onChange(checked);
+                                                  // If NO is checked, uncheck YES (mutually exclusive)
+                                                  if (checked) {
+                                                    setValue(`${itemKey}_yes` as any, false);
+                                                  }
+                                                }}
                                               />
                                               <Label htmlFor={`${itemKey}_no`} className="text-xs font-medium cursor-pointer">
                                                 NO
@@ -514,11 +573,14 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                       (cr) => cr.condition?.toLowerCase() === 'considered' || cr.condition?.toLowerCase() === 'conditional'
                     );
 
-                    // Calculate automatic status (DISABLED for validators - they make manual decisions)
+                    // Calculate automatic status based on checklist completion
+                    // ENABLED for validators: shows suggestion with lighter colors, but requires click to confirm
                     const checklistData = watched || {};
-                    const autoStatus = isValidator ? null : calculateAutomaticStatus(r.id, checklistData);
+                    const autoStatus = calculateAutomaticStatus(r.id, checklistData);
                     const isManualOverride = manualOverrides[r.id] || false;
                     const currentStatus = form[r.id]?.status;
+                    // For validators: suggestion is shown with lighter color until they click to confirm
+                    const hasSuggestion = isValidator && autoStatus && !currentStatus;
 
                     // Validators use Met/Unmet/Considered
                     const statuses: Array<{value: LocalStatus; label: string}> = [
@@ -568,26 +630,43 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                           <div className="flex items-center gap-2 flex-wrap">
                             {statuses.map(({ value, label }) => {
                               const active = currentStatus === value;
-                              const isAutoRecommended = autoStatus === value && !isManualOverride;
-                              const cls = active
-                                ? value === 'Pass'
+                              const isSuggested = hasSuggestion && autoStatus === value;
+                              const isAutoRecommended = autoStatus === value && !isManualOverride && currentStatus;
+
+                              // Determine button style based on state:
+                              // 1. Active (clicked): Full color
+                              // 2. Suggested (not clicked yet): Light color to hint recommendation
+                              // 3. Default: Outline
+                              let cls = '';
+                              let style: React.CSSProperties | undefined = undefined;
+                              let variant: 'default' | 'outline' = 'outline';
+
+                              if (active) {
+                                // Full color when actively selected
+                                variant = 'default';
+                                cls = value === 'Pass' || value === 'Fail'
                                   ? 'text-white hover:opacity-90'
-                                  : value === 'Fail'
-                                    ? 'text-white hover:opacity-90'
-                                    : 'text-[var(--cityscape-accent-foreground)] hover:opacity-90'
-                                : '';
-                              const style = active
-                                ? value === 'Pass'
+                                  : 'text-[var(--cityscape-accent-foreground)] hover:opacity-90';
+                                style = value === 'Pass'
                                   ? { background: 'var(--success)' }
                                   : value === 'Fail'
                                     ? { background: 'var(--destructive, #ef4444)' }
-                                    : { background: 'var(--cityscape-yellow)' }
-                                : undefined;
+                                    : { background: 'var(--cityscape-yellow)' };
+                              } else if (isSuggested) {
+                                // Light color for suggestion (validator hasn't clicked yet)
+                                variant = 'outline';
+                                cls = value === 'Pass'
+                                  ? 'border-green-400 bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-700'
+                                  : value === 'Fail'
+                                    ? 'border-red-400 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-700'
+                                    : 'border-yellow-400 bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-950/30 dark:text-yellow-400 dark:border-yellow-700';
+                              }
+
                               return (
                                 <Button
                                   key={value}
                                   type="button"
-                                  variant={active ? 'default' : 'outline'}
+                                  variant={variant}
                                   size="sm"
                                   className={cls}
                                   style={style}
@@ -602,11 +681,17 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                   }}
                                 >
                                   {label}
+                                  {isSuggested && <span className="ml-1 text-xs">(suggested)</span>}
                                   {isAutoRecommended && <span className="ml-1">✓</span>}
                                 </Button>
                               );
                             })}
                           </div>
+                          {hasSuggestion && (
+                            <div className="text-[11px] text-muted-foreground italic mt-1">
+                              Suggestion based on checklist. Click to confirm or choose a different option.
+                            </div>
+                          )}
                           {isManualOverride && !isValidator && (
                             <div className="text-[11px] text-orange-600 dark:text-orange-400 flex items-center gap-1">
                               <span>You have manually overridden the automatic result.</span>

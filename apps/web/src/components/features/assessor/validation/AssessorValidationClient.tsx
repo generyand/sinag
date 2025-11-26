@@ -532,11 +532,12 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       setTimeout(() => {
         window.location.href = '/assessor/submissions';
       }, 1500);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending for rework:', error);
+      const errorMessage = error?.response?.data?.detail || error?.message || "Failed to send for rework. Please try again.";
       toast({
         title: "❌ Error",
-        description: "Failed to send for rework. Please try again.",
+        description: errorMessage,
         variant: "destructive",
         duration: 5000,
       });
