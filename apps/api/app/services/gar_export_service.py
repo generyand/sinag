@@ -421,6 +421,61 @@ class GARExportService:
                 elements.append(table)
                 elements.append(Spacer(1, 20))
 
+            # Add summary table if multiple areas (All Areas view)
+            if len(gar_data.governance_areas) > 1:
+                elements.append(Spacer(1, 20))
+
+                # Build summary table
+                summary_data = []
+                summary_style_commands = [
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 6),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+                    ('TOPPADDING', (0, 0), (-1, -1), 6),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ]
+
+                # Core Governance Areas header
+                summary_data.append([
+                    Paragraph("<b>Core Governance Area</b>", cell_style),
+                    Paragraph("<b>Result</b>", cell_style)
+                ])
+                summary_style_commands.append(('BACKGROUND', (0, 0), (1, 0), colors.lightgrey))
+
+                row_idx = 1
+                # Core areas
+                for item in gar_data.summary:
+                    if item.area_type == "Core":
+                        summary_data.append([Paragraph(item.area_name, cell_style), ""])
+                        if item.result:
+                            result_color = met_color if item.result == "Passed" else unmet_color
+                            summary_style_commands.append(('BACKGROUND', (1, row_idx), (1, row_idx), result_color))
+                        row_idx += 1
+
+                # Essential Governance Areas header
+                summary_data.append([
+                    Paragraph("<b>Essential Governance Area</b>", cell_style),
+                    Paragraph("<b>Result</b>", cell_style)
+                ])
+                summary_style_commands.append(('BACKGROUND', (0, row_idx), (1, row_idx), colors.lightgrey))
+                row_idx += 1
+
+                # Essential areas
+                for item in gar_data.summary:
+                    if item.area_type == "Essential":
+                        summary_data.append([Paragraph(item.area_name, cell_style), ""])
+                        if item.result:
+                            result_color = met_color if item.result == "Passed" else unmet_color
+                            summary_style_commands.append(('BACKGROUND', (1, row_idx), (1, row_idx), result_color))
+                        row_idx += 1
+
+                # Create summary table
+                summary_col_widths = [6.0*inch, 1.5*inch]
+                summary_table = Table(summary_data, colWidths=summary_col_widths)
+                summary_table.setStyle(TableStyle(summary_style_commands))
+                elements.append(summary_table)
+
             # Build PDF
             doc.build(elements)
             buffer.seek(0)

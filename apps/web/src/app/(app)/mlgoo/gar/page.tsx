@@ -20,7 +20,7 @@ export default function GARPage() {
   const router = useRouter();
   const { user, isAuthenticated, token } = useAuthStore();
   const [selectedAssessmentId, setSelectedAssessmentId] = useState<string>('');
-  const [selectedAreaId, setSelectedAreaId] = useState<string>('1'); // Default to Financial Administration
+  const [selectedAreaId, setSelectedAreaId] = useState<string>('all'); // Default to All Areas
   const [exportingExcel, setExportingExcel] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
 
@@ -44,7 +44,7 @@ export default function GARPage() {
   // Fetch GAR data for selected assessment
   const { data: garData, isLoading: loadingGar, error: garError } = useGetGarAssessmentId(
     parseInt(selectedAssessmentId) || 0,
-    { governance_area_id: parseInt(selectedAreaId) || undefined },
+    { governance_area_id: selectedAreaId === 'all' ? undefined : parseInt(selectedAreaId) },
     {
       query: {
         enabled: !!selectedAssessmentId && parseInt(selectedAssessmentId) > 0,
@@ -65,7 +65,8 @@ export default function GARPage() {
     if (format === 'pdf') setExportingPdf(true);
 
     const baseUrl = process.env.NEXT_PUBLIC_API_V1_URL || 'http://localhost:8000/api/v1';
-    const url = `${baseUrl}/gar/${selectedAssessmentId}/export/${format}?governance_area_id=${selectedAreaId}`;
+    const areaParam = selectedAreaId === 'all' ? '' : `?governance_area_id=${selectedAreaId}`;
+    const url = `${baseUrl}/gar/${selectedAssessmentId}/export/${format}${areaParam}`;
 
     if (!token) {
       alert('Authentication required. Please log in again.');
@@ -200,6 +201,7 @@ export default function GARPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="all">All Governance Areas</SelectItem>
                     <SelectItem value="1">CGA 1: Financial Administration</SelectItem>
                     <SelectItem value="2">CGA 2: Disaster Preparedness</SelectItem>
                     <SelectItem value="3">CGA 3: Safety, Peace and Order</SelectItem>
