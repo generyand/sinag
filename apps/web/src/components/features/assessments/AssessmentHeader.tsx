@@ -76,8 +76,14 @@ export function AssessmentHeader({
       case "rework":
       case "needs-rework":
         return <AlertCircle className="h-5 w-5 text-orange-600" />;
+      case "submitted":
       case "submitted-for-review":
+      case "submitted_for_review":
+      case "awaiting_final_validation":
+      case "awaiting-final-validation":
+        return <Clock className="h-5 w-5 text-blue-600" />;
       case "validated":
+      case "completed":
         return <CheckCircle className="h-5 w-5 text-green-600" />;
       default:
         return null;
@@ -91,10 +97,17 @@ export function AssessmentHeader({
       case "rework":
       case "needs-rework":
         return isCalibrationRework ? "Calibration in Progress" : "Rework in Progress";
+      case "submitted":
       case "submitted-for-review":
+      case "submitted_for_review":
         return "Submitted for Review";
+      case "awaiting_final_validation":
+      case "awaiting-final-validation":
+        return "Awaiting Final Validation";
       case "validated":
         return "Validated";
+      case "completed":
+        return "Completed";
       default:
         return "Unknown";
     }
