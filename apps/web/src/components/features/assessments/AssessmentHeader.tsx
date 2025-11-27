@@ -2,25 +2,23 @@
 
 import { Button } from "@/components/ui/button";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useSubmitAssessment } from "@/hooks/useAssessment";
-import {
-  usePostAssessmentsAssessmentIdResubmit,
-  usePostAssessmentsAssessmentIdSubmitForCalibration,
-} from "@sinag/shared";
 import { Assessment, AssessmentValidation } from "@/types/assessment";
 import {
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  FileText,
-  Info,
-  Send,
-  TrendingUp,
+    usePostAssessmentsAssessmentIdResubmit,
+    usePostAssessmentsAssessmentIdSubmitForCalibration,
+} from "@sinag/shared";
+import {
+    AlertCircle,
+    CheckCircle,
+    Clock,
+    Info,
+    Send
 } from "lucide-react";
 
 interface AssessmentHeaderProps {
@@ -72,19 +70,19 @@ export function AssessmentHeader({
   const getStatusIcon = () => {
     switch (assessment.status.toLowerCase()) {
       case "draft":
-        return <Clock className="h-5 w-5 text-blue-600" />;
+        return <Clock className="h-4 w-4" />;
       case "rework":
       case "needs-rework":
-        return <AlertCircle className="h-5 w-5 text-orange-600" />;
+        return <AlertCircle className="h-4 w-4" />;
       case "submitted":
       case "submitted-for-review":
       case "submitted_for_review":
       case "awaiting_final_validation":
       case "awaiting-final-validation":
-        return <Clock className="h-5 w-5 text-blue-600" />;
+        return <Clock className="h-4 w-4" />;
       case "validated":
       case "completed":
-        return <CheckCircle className="h-5 w-5 text-green-600" />;
+        return <CheckCircle className="h-4 w-4" />;
       default:
         return null;
     }
@@ -159,34 +157,29 @@ export function AssessmentHeader({
     switch (assessment.status.toLowerCase()) {
       case "draft":
         return {
-          bgGradient: "bg-[var(--card)]",
-          accentColor: "text-blue-600",
-          badgeClass: "bg-blue-100 text-blue-800 border-blue-200",
+          badgeClass: "bg-blue-50 text-blue-700 border-blue-200",
+          iconColor: "text-blue-600",
         };
       case "rework":
       case "needs-rework":
         return {
-          bgGradient: "bg-[var(--card)]",
-          accentColor: "text-amber-600",
-          badgeClass: "bg-amber-100 text-amber-800 border-amber-200",
+          badgeClass: "bg-amber-50 text-amber-700 border-amber-200",
+          iconColor: "text-amber-600",
         };
       case "submitted-for-review":
         return {
-          bgGradient: "bg-[var(--card)]",
-          accentColor: "text-purple-600",
-          badgeClass: "bg-purple-100 text-purple-800 border-purple-200",
+          badgeClass: "bg-purple-50 text-purple-700 border-purple-200",
+          iconColor: "text-purple-600",
         };
       case "validated":
         return {
-          bgGradient: "bg-[var(--card)]",
-          accentColor: "text-emerald-600",
-          badgeClass: "bg-green-100 text-green-800 border-green-200",
+          badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200",
+          iconColor: "text-emerald-600",
         };
       default:
         return {
-          bgGradient: "bg-[var(--card)]",
-          accentColor: "text-gray-600",
-          badgeClass: "bg-gray-100 text-gray-800 border-gray-200",
+          badgeClass: "bg-gray-50 text-gray-700 border-gray-200",
+          iconColor: "text-gray-600",
         };
     }
   };
@@ -194,17 +187,15 @@ export function AssessmentHeader({
   const statusConfig = getStatusConfig();
 
   return (
-    <div
-      className={`relative overflow-hidden ${statusConfig.bgGradient} border border-[var(--border)] rounded-sm shadow-lg p-8`}
-    >
-      {/* Decorative background elements */}
-      <div className="absolute top-0 right-0 w-40 h-40 bg-[var(--cityscape-yellow)]/5 rounded-full -translate-y-20 translate-x-20"></div>
-      <div className="absolute bottom-0 left-0 w-32 h-32 bg-[var(--cityscape-yellow)]/3 rounded-full translate-y-16 -translate-x-16"></div>
+    <div className="relative overflow-hidden bg-[var(--card)] border-b border-[var(--border)]">
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+      <div className="absolute top-0 right-0 w-96 h-96 bg-[var(--cityscape-yellow)]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
-      <div className="relative z-10">
+      <div className="relative z-10 max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Calibration Notice Banner */}
         {isCalibrationRework && calibrationGovernanceAreaName && (
-          <div className="mb-6 p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-sm">
+          <div className="mb-8 p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg shadow-sm">
             <div className="flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
               <div>
@@ -220,63 +211,54 @@ export function AssessmentHeader({
           </div>
         )}
 
-        {/* Header Section */}
-        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-8">
+        <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-8">
           {/* Left side - Title and Status */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold text-[var(--foreground)]">
+          <div className="space-y-6 max-w-3xl">
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-medium ${statusConfig.badgeClass}`}>
+                  <span className={statusConfig.iconColor}>{getStatusIcon()}</span>
+                  {getStatusText()}
+                </div>
+                <span className="text-sm text-[var(--text-secondary)]">
+                  • {assessment.year} Assessment
+                </span>
+              </div>
+              
+              <h1 className="text-3xl sm:text-4xl font-bold text-[var(--foreground)] tracking-tight leading-tight">
                 SGLGB Pre-Assessment for{" "}
-                <span className="bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] bg-clip-text text-transparent">
+                <span className="text-[var(--cityscape-yellow-dark)]">
                   {assessment.barangayName}
                 </span>
               </h1>
-            </div>
-
-            <div className="flex items-center gap-4 flex-wrap">
-              <div
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-sm border ${statusConfig.badgeClass} backdrop-blur-sm`}
-              >
-                {getStatusIcon()}
-                <span className="text-sm font-semibold">{getStatusText()}</span>
-              </div>
-
-              <div className="bg-[var(--hover)] backdrop-blur-sm px-4 py-2 rounded-sm border border-[var(--border)]">
-                <span className="text-sm text-[var(--text-secondary)]">
-                  <FileText className="inline h-4 w-4 mr-1" />
-                  {assessment.completedIndicators} of{" "}
-                  {assessment.totalIndicators} indicators completed
-                </span>
-              </div>
+              <p className="mt-2 text-lg text-[var(--text-secondary)]">
+                Manage and complete your SGLGB assessment indicators and requirements.
+              </p>
             </div>
           </div>
 
-          {/* Right side - Stats and Submit Button */}
-          <div className="flex flex-col items-end gap-4">
+          {/* Right side - Stats and Actions */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-6 xl:pl-8 xl:border-l border-[var(--border)]">
             {/* Progress Stats */}
-            <div className="flex items-center gap-6">
-              <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)]">
-                <div className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+            <div className="flex items-center gap-8">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-[var(--foreground)] tabular-nums">
                   {assessment.completedIndicators}
+                  <span className="text-lg text-[var(--text-secondary)] font-medium">/{assessment.totalIndicators}</span>
                 </div>
-                <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
-                  Completed
-                </div>
-              </div>
-              <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)]">
-                <div className="text-3xl font-bold text-[var(--foreground)]">
-                  {assessment.totalIndicators - assessment.completedIndicators}
-                </div>
-                <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
-                  Remaining
+                <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mt-1">
+                  Indicators
                 </div>
               </div>
-              <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)]">
-                <div className="text-3xl font-bold bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] bg-clip-text text-transparent">
+              
+              <div className="w-px h-12 bg-[var(--border)]"></div>
+              
+              <div className="text-center">
+                <div className="text-3xl font-bold text-[var(--cityscape-yellow-dark)] tabular-nums">
                   {progressPercentage}%
                 </div>
-                <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
-                  Complete
+                <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mt-1">
+                  Completion
                 </div>
               </div>
             </div>
@@ -285,78 +267,71 @@ export function AssessmentHeader({
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div>
-                    <Button
-                      onClick={() => {
-                        if (isReworkStatus) {
-                          if (isCalibrationRework) {
-                            // Use calibration endpoint for Validator calibration
-                            calibrationMutation.mutate({
-                              assessmentId: parseInt(assessment.id),
-                            });
-                          } else {
-                            // Use resubmit endpoint for regular REWORK status
-                            resubmitMutation.mutate({
-                              assessmentId: parseInt(assessment.id),
-                            });
-                          }
+                  <Button
+                    onClick={() => {
+                      if (isReworkStatus) {
+                        if (isCalibrationRework) {
+                          calibrationMutation.mutate({
+                            assessmentId: parseInt(assessment.id),
+                          });
                         } else {
-                          // Use regular submit endpoint for DRAFT
-                          submitMutation.mutate(undefined, {
-                            onSuccess: (result: any) => {
-                              if (result?.is_valid) {
-                                window.alert(
-                                  "Assessment submitted successfully. Redirecting to dashboard."
-                                );
-                                window.location.href = "/blgu/dashboard";
-                              } else if (Array.isArray(result?.errors)) {
-                                const details = result.errors
-                                  .map((e: any) =>
-                                    [e.indicator_name, e.error]
-                                      .filter(Boolean)
-                                      .join(": ")
-                                  )
-                                  .join("\n");
-                                window.alert(
-                                  `Submission failed due to the following issues:\n${details}`
-                                );
-                              }
-                            },
+                          resubmitMutation.mutate({
+                            assessmentId: parseInt(assessment.id),
                           });
                         }
-                      }}
-                      disabled={
-                        !validation.canSubmit ||
-                        submitMutation.isPending ||
-                        resubmitMutation.isPending ||
-                        calibrationMutation.isPending
+                      } else {
+                        submitMutation.mutate(undefined, {
+                          onSuccess: (result: any) => {
+                            if (result?.is_valid) {
+                              window.alert(
+                                "Assessment submitted successfully. Redirecting to dashboard."
+                              );
+                              window.location.href = "/blgu/dashboard";
+                            } else if (Array.isArray(result?.errors)) {
+                              const details = result.errors
+                                .map((e: any) =>
+                                  [e.indicator_name, e.error]
+                                    .filter(Boolean)
+                                    .join(": ")
+                                )
+                                .join("\n");
+                              window.alert(
+                                `Submission failed due to the following issues:\n${details}`
+                              );
+                            }
+                          },
+                        });
                       }
-                      className="h-12 px-8 text-sm font-semibold bg-[var(--cityscape-yellow)] hover:bg-[var(--cityscape-yellow-dark)] text-[var(--cityscape-accent-foreground)] rounded-sm shadow-lg hover:shadow-xl transition-all duration-200"
-                    >
-                      {submitMutation.isPending || resubmitMutation.isPending || calibrationMutation.isPending ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                          {isReworkStatus
-                            ? (isCalibrationRework ? "Submitting for Calibration..." : "Resubmitting...")
-                            : "Submitting..."}
-                        </>
-                      ) : (
-                        <>
-                          <Send className="h-4 w-4 mr-2" />
-                          {isReworkStatus
-                            ? (isCalibrationRework ? "Submit for Calibration" : "Resubmit for Review")
-                            : "Submit for Review"}
-                        </>
-                      )}
-                    </Button>
-                  </div>
+                    }}
+                    disabled={
+                      !validation.canSubmit ||
+                      submitMutation.isPending ||
+                      resubmitMutation.isPending ||
+                      calibrationMutation.isPending
+                    }
+                    className="h-14 px-8 text-base font-semibold bg-[var(--foreground)] hover:bg-[var(--foreground)]/90 text-[var(--background)] rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 min-w-[200px]"
+                  >
+                    {submitMutation.isPending || resubmitMutation.isPending || calibrationMutation.isPending ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current mr-3" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-5 w-5 mr-3" />
+                        {isReworkStatus
+                          ? (isCalibrationRework ? "Submit Calibration" : "Resubmit")
+                          : "Submit Assessment"}
+                      </>
+                    )}
+                  </Button>
                 </TooltipTrigger>
                 {!validation.canSubmit && (
                   <TooltipContent
                     side="bottom"
-                    className="max-w-sm bg-[var(--card)]/95 backdrop-blur-sm border border-[var(--border)] shadow-xl"
+                    className="max-w-sm bg-[var(--card)]/95 backdrop-blur-sm border border-[var(--border)] shadow-xl p-4"
                   >
-                    <div className="p-2">{getTooltipContent()}</div>
+                    {getTooltipContent()}
                   </TooltipContent>
                 )}
               </Tooltip>
@@ -364,84 +339,28 @@ export function AssessmentHeader({
           </div>
         </div>
 
-        {/* Enhanced Progress Section */}
-        <div className="bg-[var(--hover)] backdrop-blur-sm rounded-sm p-6 border border-[var(--border)]">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-blue-600" />
-              <span className="text-lg font-semibold text-[var(--foreground)]">
-                Assessment Progress
-              </span>
-            </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-[var(--foreground)]">
-                {progressPercentage}%
-              </div>
-              <div className="text-xs text-[var(--text-secondary)]">
-                Overall Completion
-              </div>
-            </div>
+        {/* Progress Bar */}
+        <div className="mt-10">
+          <div className="flex justify-between text-sm font-medium mb-2">
+            <span className="text-[var(--foreground)]">Overall Progress</span>
+            <span className="text-[var(--text-secondary)]">{progressPercentage}% Complete</span>
           </div>
-
-          <div className="space-y-3">
-            <div className="w-full bg-[var(--border)]/80 rounded-sm h-3 overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] rounded-sm transition-all duration-1000 ease-out"
-                style={{ width: `${progressPercentage}%` }}
-              />
-            </div>
-
-            <div className="flex justify-between text-sm">
-              <span className="text-[var(--text-secondary)]">
-                {assessment.completedIndicators} indicators completed
-              </span>
-              <span className="text-[var(--text-secondary)]">
-                {assessment.totalIndicators - assessment.completedIndicators}{" "}
-                remaining
-              </span>
-            </div>
+          <div className="w-full bg-[var(--border)] rounded-full h-2 overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] rounded-full transition-all duration-1000 ease-out"
+              style={{ width: `${progressPercentage}%` }}
+            />
           </div>
-
+          
           {/* Validation Info */}
           {!validation.canSubmit &&
             (validation.missingIndicators.length > 0 ||
               validation.missingMOVs.length > 0) && (
-              <div className="mt-4 p-4 bg-[var(--cityscape-yellow)]/10 border border-[var(--cityscape-yellow)]/20 rounded-sm">
-                <div className="flex items-start gap-3">
-                  <Info className="h-5 w-5 text-[var(--cityscape-yellow)] mt-0.5 flex-shrink-0" />
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-[var(--foreground)]">
-                      Complete the following to submit:
-                    </p>
-                    {validation.missingIndicators.length > 0 && (
-                      <div>
-                        <p className="text-xs text-[var(--cityscape-yellow)] font-medium">
-                          Missing Responses (
-                          {validation.missingIndicators.length}):
-                        </p>
-                        <p className="text-xs text-[var(--text-secondary)]">
-                          {validation.missingIndicators.slice(0, 2).join(", ")}
-                          {validation.missingIndicators.length > 2 &&
-                            ` and ${
-                              validation.missingIndicators.length - 2
-                            } more`}
-                        </p>
-                      </div>
-                    )}
-                    {validation.missingMOVs.length > 0 && (
-                      <div>
-                        <p className="text-xs text-[var(--cityscape-yellow)] font-medium">
-                          Missing MOV Files ({validation.missingMOVs.length}):
-                        </p>
-                        <p className="text-xs text-[var(--text-secondary)]">
-                          {validation.missingMOVs.slice(0, 2).join(", ")}
-                          {validation.missingMOVs.length > 2 &&
-                            ` and ${validation.missingMOVs.length - 2} more`}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
+              <div className="mt-4 flex items-start gap-2 text-sm text-amber-600 bg-amber-50 p-3 rounded-md border border-amber-100">
+                <Info className="h-5 w-5 flex-shrink-0" />
+                <span>
+                  You have {validation.missingIndicators.length} missing responses and {validation.missingMOVs.length} missing required files.
+                </span>
               </div>
             )}
         </div>

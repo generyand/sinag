@@ -2,25 +2,24 @@
 
 import FileUploader from "@/components/shared/FileUploader";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
-  useCurrentAssessment,
-  useDeleteMOV,
-  useUpdateResponse,
-  useUploadMOV,
+    useCurrentAssessment,
+    useDeleteMOV,
+    useUpdateResponse,
+    useUploadMOV,
 } from "@/hooks/useAssessment";
-import { useGetAssessmentsMyAssessment } from "@sinag/shared";
 import { uploadMovFile } from "@/lib/uploadMov";
 import { Assessment, ComplianceAnswer, Indicator } from "@/types/assessment";
-import { postAssessmentsResponses } from "@sinag/shared";
+import { postAssessmentsResponses, useGetAssessmentsMyAssessment } from "@sinag/shared";
 import { AlertCircle, CheckCircle, Circle } from "lucide-react";
 import { useState } from "react";
-import { DynamicIndicatorForm } from "./DynamicIndicatorForm";
 import { DynamicFormRenderer } from "../forms/DynamicFormRenderer";
+import { DynamicIndicatorForm } from "./DynamicIndicatorForm";
 
 interface IndicatorAccordionProps {
   indicator: Indicator;
@@ -358,80 +357,71 @@ export function IndicatorAccordion({
     >
       <AccordionItem
         value={indicator.id}
-        className="border-none rounded-lg bg-[var(--card)] shadow-sm hover:shadow-md transition-all duration-200"
+        className="border-none mb-8 last:mb-0"
       >
-        <AccordionTrigger className="group px-4 md:px-6 py-4 hover:no-underline hover:bg-gradient-to-r hover:from-[var(--hover)] hover:to-[var(--card)] rounded-t-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--cityscape-yellow)]">
-          <div className="flex items-start justify-between w-full gap-3 md:gap-4">
+        <AccordionTrigger className="group px-0 py-6 hover:no-underline transition-all duration-200 focus-visible:outline-none">
+          <div className="flex items-start justify-between w-full gap-6">
             {/* Left: Status + Content */}
-            <div className="flex items-start gap-3 md:gap-4 flex-1 min-w-0">
-              {/* Status Icon - Larger, more prominent */}
-              <div className="flex-shrink-0 pt-0.5">
-                {getStatusIcon()}
-              </div>
-
+            <div className="flex items-start gap-4 flex-1 min-w-0">
               {/* Content Stack */}
-              <div className="flex-1 min-w-0 space-y-1.5 md:space-y-2">
+              <div className="flex-1 min-w-0 space-y-3">
                 {/* Code + Name (Primary Info) */}
-                <div className="flex items-baseline gap-2 flex-wrap">
-                  {/* Code - Monospace, subdued badge */}
-                  {indicator.code && (
-                    <span className="text-xs font-mono text-[var(--text-secondary)] tracking-wider uppercase font-semibold bg-[var(--hover)] px-2 py-0.5 rounded">
-                      {indicator.code}
-                    </span>
-                  )}
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-3">
+                    {/* Code - Monospace, subdued badge */}
+                    {indicator.code && (
+                      <span className="text-xs font-mono text-[var(--text-secondary)] tracking-wider uppercase font-semibold bg-[var(--hover)] px-2 py-1 rounded border border-[var(--border)]">
+                        {indicator.code}
+                      </span>
+                    )}
+                    
+                    {/* Status Badge (if not completed) */}
+                    {indicator.status === 'needs_rework' && (
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 text-xs font-medium border border-orange-100">
+                        <AlertCircle className="h-3 w-3" />
+                        Action Required
+                      </span>
+                    )}
+                  </div>
 
                   {/* Name - Bold, prominent */}
-                  <h3 className="text-sm md:text-base font-semibold text-[var(--foreground)] leading-snug flex-1">
+                  <h3 className="text-lg sm:text-xl font-bold text-[var(--foreground)] leading-snug">
                     {indicator.name}
                   </h3>
                 </div>
 
-                {/* Progress Metadata (Only when collapsed) */}
-                {!isOpen && (
-                    <div className="flex items-center gap-2 md:gap-3 text-xs text-[var(--text-secondary)] flex-wrap">
-                      {/* MOV Count */}
-                      {indicator.movFiles.length > 0 && (
-                        <span className="flex items-center gap-1.5">
-                          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                          <span>{indicator.movFiles.length} file{indicator.movFiles.length !== 1 ? 's' : ''}</span>
-                        </span>
-                      )}
-
-                      {/* Needs Rework Badge */}
-                      {indicator.status === 'needs_rework' && (
-                        <>
-                          {indicator.movFiles.length > 0 && (
-                            <span className="text-[var(--border)]">•</span>
-                          )}
-                          <span className="inline-flex items-center gap-1 text-orange-600 font-medium">
-                            <AlertCircle className="h-3 w-3" />
-                            <span className="hidden sm:inline">Action Required</span>
-                            <span className="sm:hidden">Action</span>
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  )}
-
-                {/* Description - Show when expanded */}
-                {isOpen && indicator.description && (
-                  <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+                {/* Description - Always show description for better context */}
+                {indicator.description && (
+                  <p className="text-base text-[var(--text-secondary)] leading-relaxed max-w-3xl">
                     {indicator.description}
                   </p>
                 )}
+                
+                {/* Progress Metadata (Only when collapsed) */}
+                {!isOpen && (
+                    <div className="flex items-center gap-4 text-sm text-[var(--text-secondary)] pt-2">
+                      {/* MOV Count */}
+                      {indicator.movFiles.length > 0 && (
+                        <span className="flex items-center gap-2 px-3 py-1.5 bg-[var(--hover)] rounded-full">
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <span className="font-medium">{indicator.movFiles.length} file{indicator.movFiles.length !== 1 ? 's' : ''}</span>
+                        </span>
+                      )}
+                    </div>
+                  )}
               </div>
             </div>
 
             {/* Right: Completion Badge */}
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 pt-1">
               {getCompletionBadge()}
             </div>
           </div>
         </AccordionTrigger>
 
-        <AccordionContent className="px-6 pb-6 pt-4">
+        <AccordionContent className="px-0 pb-6 pt-2">
           {/* Render children if they exist */}
           {Array.isArray((indicator as any).children) &&
             (indicator as any).children.length > 0 && (
@@ -627,19 +617,19 @@ export function IndicatorAccordion({
 
               {/* MOV File Uploader Section (shown only when compliant == yes and no per-section uploads are defined) */}
               {!isEpic3Format() && shouldShowMov && !hasSectionUploads && (
-                <div className="space-y-4 bg-gradient-to-br from-[var(--card)] to-[var(--hover)] p-6 rounded-lg border-l-4 border-[var(--cityscape-yellow)] shadow-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center h-8 w-8 rounded-full bg-[var(--cityscape-yellow)]/10 border-2 border-[var(--cityscape-yellow)]">
-                      <svg className="h-4 w-4 text-[var(--cityscape-yellow)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="mt-8 pt-8 border-t border-[var(--border)]">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="flex items-center justify-center h-10 w-10 rounded-full bg-[var(--cityscape-yellow)]/10 border border-[var(--cityscape-yellow)]/20">
+                      <svg className="h-5 w-5 text-[var(--cityscape-yellow)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                     </div>
                     <div>
-                      <h4 className="text-sm font-semibold text-[var(--foreground)]">
+                      <h4 className="text-base font-semibold text-[var(--foreground)]">
                         Supporting Documents
                       </h4>
-                      <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-                        Upload Means of Verification (MOV)
+                      <p className="text-sm text-[var(--text-secondary)]">
+                        Upload Means of Verification (MOV) files here.
                       </p>
                     </div>
                   </div>

@@ -1,13 +1,12 @@
 "use client";
 
-import { Assessment, Indicator } from "@/types/assessment";
-import { FileText } from "lucide-react";
-import { RecursiveIndicator } from "./IndicatorAccordion";
-import { ReworkCommentsPanel } from "./rework/ReworkCommentsPanel";
-import { ReworkAlertBanner } from "../rework";
 import { useIndicatorNavigation } from "@/hooks/useIndicatorNavigation";
 import { useReworkContext } from "@/hooks/useReworkContext";
+import { Assessment, Indicator } from "@/types/assessment";
+import { FileText } from "lucide-react";
 import { useRef } from "react";
+import { ReworkAlertBanner } from "../rework";
+import { RecursiveIndicator } from "./IndicatorAccordion";
 
 interface AssessmentContentPanelProps {
   assessment: Assessment;
@@ -49,16 +48,16 @@ export function AssessmentContentPanel({
   // Show empty state if no indicator selected
   if (!selectedIndicator) {
     return (
-      <div className="flex items-center justify-center h-full bg-[var(--background)]">
-        <div className="text-center max-w-md px-4">
-          <div className="w-16 h-16 bg-[var(--hover)] rounded-full flex items-center justify-center mx-auto mb-4">
-            <FileText className="h-8 w-8 text-[var(--text-secondary)]" />
+      <div className="h-full flex items-center justify-center bg-[var(--background)] p-8">
+        <div className="text-center max-w-md">
+          <div className="w-20 h-20 bg-[var(--card)] rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-[var(--border)]">
+            <FileText className="h-10 w-10 text-[var(--text-secondary)] opacity-50" />
           </div>
-          <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">
+          <h3 className="text-xl font-semibold text-[var(--foreground)] mb-3">
             Select an Indicator
           </h3>
-          <p className="text-sm text-[var(--text-secondary)]">
-            Choose an indicator from the navigation panel to view and complete the assessment form.
+          <p className="text-[var(--text-secondary)] leading-relaxed">
+            Choose an indicator from the navigation panel on the left to view its details and complete the assessment requirements.
           </p>
         </div>
       </div>
@@ -79,31 +78,35 @@ export function AssessmentContentPanel({
     <div className="h-full flex flex-col bg-[var(--background)]">
       {/* Scrollable Content */}
       <div ref={contentRef} className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-          {/* Form Content */}
-          <div className="pb-8">
-            <RecursiveIndicator
-              indicator={selectedIndicator}
-              isLocked={indicatorLocked}
-              updateAssessmentData={updateAssessmentData}
-              currentCode={navigation.current?.indicator.code}
-              currentPosition={navigation.position}
-              totalIndicators={navigation.total}
-              hasPrevious={navigation.hasPrevious}
-              hasNext={navigation.hasNext}
-              onPrevious={navigation.navigatePrevious}
-              onNext={navigation.navigateNext}
-              level={0}
-              movAnnotations={indicatorAnnotations}
-            />
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-[var(--card)] rounded-xl shadow-sm border border-[var(--border)] overflow-hidden">
+            {/* Form Content */}
+            <div className="p-6 sm:p-8">
+              <RecursiveIndicator
+                indicator={selectedIndicator}
+                isLocked={indicatorLocked}
+                updateAssessmentData={updateAssessmentData}
+                currentCode={navigation.current?.indicator.code}
+                currentPosition={navigation.position}
+                totalIndicators={navigation.total}
+                hasPrevious={navigation.hasPrevious}
+                hasNext={navigation.hasNext}
+                onPrevious={navigation.navigatePrevious}
+                onNext={navigation.navigateNext}
+                level={0}
+                movAnnotations={indicatorAnnotations}
+              />
+            </div>
           </div>
 
           {/* Rework Alert Banner - Shows indicator-specific assessor feedback at the bottom */}
           {reworkContext?.current_indicator && (
-            <ReworkAlertBanner
-              indicator={reworkContext.current_indicator}
-              assessmentId={resolvedAssessmentId}
-            />
+            <div className="mt-6">
+              <ReworkAlertBanner
+                indicator={reworkContext.current_indicator}
+                assessmentId={resolvedAssessmentId}
+              />
+            </div>
           )}
         </div>
       </div>

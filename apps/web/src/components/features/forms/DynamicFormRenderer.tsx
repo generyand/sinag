@@ -3,38 +3,36 @@
 
 "use client";
 
-import { useMemo, useEffect } from "react";
-import { useForm, FormProvider, Control, FieldValues } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
-import { toast } from "sonner";
-import type { FormSchema } from "@sinag/shared";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
-  useGetAssessmentsAssessmentIdAnswers,
-  usePostAssessmentsAssessmentIdAnswers,
-} from "@sinag/shared";
-import {
-  getSections,
-  getVisibleFields,
-  type Section,
+    getSections,
+    getVisibleFields,
+    type Section,
 } from "@/lib/forms/formSchemaParser";
 import { generateValidationSchema } from "@/lib/forms/generateValidationSchema";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { FormSchema, FormSchemaFieldsItem } from "@sinag/shared";
 import {
-  TextFieldComponent,
-  NumberFieldComponent,
-  TextAreaFieldComponent,
-  SelectFieldComponent,
-  RadioFieldComponent,
-  CheckboxFieldComponent,
-  DateFieldComponent,
-  FileFieldComponent,
-} from "./fields";
+    useGetAssessmentsAssessmentIdAnswers,
+    usePostAssessmentsAssessmentIdAnswers,
+} from "@sinag/shared";
+import { AlertCircle } from "lucide-react";
+import { useEffect, useMemo } from "react";
+import { Control, FieldValues, FormProvider, useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { IndicatorNavigationFooter } from "../assessments/IndicatorNavigationFooter";
 import { CompletionFeedbackPanel } from "./CompletionFeedbackPanel";
-import type { FormSchemaFieldsItem } from "@sinag/shared";
+import {
+    CheckboxFieldComponent,
+    DateFieldComponent,
+    FileFieldComponent,
+    NumberFieldComponent,
+    RadioFieldComponent,
+    TextAreaFieldComponent,
+    TextFieldComponent
+} from "./fields";
 
 interface DynamicFormRendererProps {
   /** Form schema defining the structure and fields */
@@ -196,48 +194,7 @@ export function DynamicFormRenderer({
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Navigation Header - Only show if navigation props are provided */}
-        {showNavigation && (
-          <div className="sticky top-0 z-10 bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-300 rounded-lg px-4 py-3 shadow-md">
-            <div className="flex items-center justify-between gap-4">
-              {/* Left: Previous Button */}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={onPrevious}
-                disabled={!hasPrevious || isLocked}
-                className="flex items-center gap-2 bg-white border-yellow-400 hover:bg-yellow-50 hover:border-yellow-500 text-yellow-700 font-medium disabled:opacity-50"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                <span className="hidden sm:inline">Previous</span>
-              </Button>
-
-              {/* Center: Position Indicator */}
-              <div className="flex items-center gap-2 text-sm bg-white px-3 py-1.5 rounded-md border border-yellow-300">
-                <span className="text-yellow-700 font-medium">Indicator</span>
-                <span className="font-bold text-yellow-800">
-                  {currentCode || `${currentPosition} of ${totalIndicators}`}
-                </span>
-                <span className="text-yellow-700">
-                  ({currentPosition} / {totalIndicators})
-                </span>
-              </div>
-
-              {/* Right: Next Button */}
-              <Button
-                type="button"
-                size="sm"
-                onClick={onNext}
-                disabled={!hasNext || isLocked}
-                className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white font-medium disabled:opacity-50"
-              >
-                <span className="hidden sm:inline">Next</span>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )}
+        {/* Navigation Header - Removed in favor of footer */}
 
         {/* Completion Feedback Panel */}
         <CompletionFeedbackPanel
@@ -262,6 +219,22 @@ export function DynamicFormRenderer({
             movAnnotations={movAnnotations}
           />
         ))}
+
+        {/* Navigation Footer */}
+        {showNavigation && (
+          <div className="pt-6 mt-6">
+            <IndicatorNavigationFooter
+              currentCode={currentCode}
+              currentPosition={currentPosition}
+              totalIndicators={totalIndicators}
+              hasPrevious={hasPrevious || false}
+              hasNext={hasNext || false}
+              onPrevious={onPrevious || (() => {})}
+              onNext={onNext || (() => {})}
+              isLocked={isLocked}
+            />
+          </div>
+        )}
       </form>
     </FormProvider>
   );

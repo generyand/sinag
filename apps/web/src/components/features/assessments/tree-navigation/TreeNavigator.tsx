@@ -1,14 +1,14 @@
 "use client";
 
 import { Assessment } from "@/types/assessment";
-import { useEffect, useState, ReactElement } from "react";
+import { ReactElement, useEffect, useState } from "react";
 import { AssessmentTreeNode } from "./AssessmentTreeNode";
 import { TreeHeader } from "./TreeHeader";
 import {
-  calculateAreaProgress,
-  loadExpandedState,
-  saveExpandedState,
-  getInitialExpandedAreas,
+    calculateAreaProgress,
+    getInitialExpandedAreas,
+    loadExpandedState,
+    saveExpandedState,
 } from "./tree-utils";
 
 interface TreeNavigatorProps {
@@ -104,7 +104,7 @@ export function TreeNavigator({
 
       {/* Scrollable Tree Content */}
       <div
-        className="flex-1 overflow-y-auto"
+        className="flex-1 overflow-y-auto py-4"
         style={{
           scrollbarWidth: "thin",
           scrollbarColor: "var(--border) transparent",
@@ -112,45 +112,49 @@ export function TreeNavigator({
       >
         <style jsx>{`
           div::-webkit-scrollbar {
-            width: 8px;
+            width: 6px;
           }
           div::-webkit-scrollbar-track {
             background: transparent;
           }
           div::-webkit-scrollbar-thumb {
             background: var(--border);
-            border-radius: 4px;
+            border-radius: 3px;
           }
           div::-webkit-scrollbar-thumb:hover {
-            background: var(--cityscape-yellow);
+            background: var(--text-secondary);
           }
         `}</style>
 
-        {assessment.governanceAreas.map((area) => {
-          const isExpanded = expandedAreas.has(area.id);
-          const progress = calculateAreaProgress(area);
+        <div className="px-3 space-y-1">
+          {assessment.governanceAreas.map((area) => {
+            const isExpanded = expandedAreas.has(area.id);
+            const progress = calculateAreaProgress(area);
 
-          return (
-            <div key={area.id}>
-              {/* Area Node */}
-              <AssessmentTreeNode
-                type="area"
-                item={area}
-                isExpanded={isExpanded}
-                onToggle={() => toggleArea(area.id)}
-                progress={progress}
-                level={0}
-              />
+            return (
+              <div key={area.id} className="space-y-1">
+                {/* Area Node */}
+                <AssessmentTreeNode
+                  type="area"
+                  item={area}
+                  isExpanded={isExpanded}
+                  onToggle={() => toggleArea(area.id)}
+                  progress={progress}
+                  level={0}
+                />
 
-              {/* Indicators (when expanded) - Render hierarchical tree */}
-              {isExpanded && (
-                <div>
-                  {renderIndicatorTree(area.indicators, 1)}
-                </div>
-              )}
-            </div>
-          );
-        })}
+                {/* Indicators (when expanded) - Render hierarchical tree */}
+                {isExpanded && (
+                  <div className="relative">
+                    {/* Vertical line for hierarchy */}
+                    <div className="absolute left-[1.125rem] top-0 bottom-0 w-px bg-[var(--border)]" />
+                    {renderIndicatorTree(area.indicators, 1)}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

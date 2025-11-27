@@ -152,7 +152,7 @@ export default function FileUploader({
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full space-y-4">
       <Input
         ref={fileInputRef}
         type="file"
@@ -164,12 +164,12 @@ export default function FileUploader({
       />
 
       <div
-        className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors duration-200 ${
+        className={`relative group border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ease-in-out ${
           isDragOver
-            ? "border-blue-400 bg-blue-50"
+            ? "border-[var(--cityscape-yellow)] bg-[var(--cityscape-yellow)]/5 scale-[1.01]"
             : disabled || isUploading
-            ? "border-gray-200 bg-gray-50"
-            : "border-gray-300 hover:border-gray-400"
+            ? "border-[var(--border)] bg-[var(--muted)] opacity-60"
+            : "border-[var(--border)] hover:border-[var(--cityscape-yellow)] hover:bg-[var(--hover)]"
         } ${
           !disabled && !isUploading ? "cursor-pointer" : "cursor-not-allowed"
         }`}
@@ -179,46 +179,51 @@ export default function FileUploader({
         onClick={triggerFileSelect}
       >
         {isUploading ? (
-          <div className="space-y-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="space-y-4 py-2">
+            <div className="relative mx-auto h-12 w-12">
+              <div className="absolute inset-0 rounded-full border-4 border-[var(--border)] opacity-30"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-[var(--cityscape-yellow)] border-t-transparent animate-spin"></div>
+            </div>
             <div>
-              <p className="text-sm text-gray-600">Uploading files...</p>
-              <div className="mt-2 bg-gray-200 rounded-full h-2">
+              <p className="text-sm font-medium text-[var(--foreground)]">Uploading files...</p>
+              <div className="mt-3 w-full max-w-xs mx-auto bg-[var(--border)] rounded-full h-1.5 overflow-hidden">
                 <div
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  className="bg-[var(--cityscape-yellow)] h-full rounded-full transition-all duration-300 ease-out"
                   style={{ width: `${uploadProgress}%` }}
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-[var(--text-secondary)] mt-2 font-medium">
                 {uploadProgress}% complete
               </p>
             </div>
           </div>
         ) : (
-          <div className="space-y-2">
-            <svg
-              className="mx-auto h-12 w-12 text-gray-400"
-              stroke="currentColor"
-              fill="none"
-              viewBox="0 0 48 48"
-            >
-              <path
-                d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+          <div className="space-y-3 py-2">
+            <div className={`mx-auto h-12 w-12 rounded-full flex items-center justify-center transition-colors duration-200 ${isDragOver ? 'bg-[var(--cityscape-yellow)]/20 text-[var(--cityscape-yellow-dark)]' : 'bg-[var(--hover)] text-[var(--text-secondary)] group-hover:text-[var(--cityscape-yellow-dark)] group-hover:bg-[var(--cityscape-yellow)]/10'}`}>
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                />
+              </svg>
+            </div>
             <div>
-              <p className="text-sm text-gray-600">
-                <span className="font-medium text-blue-600">
+              <p className="text-base font-medium text-[var(--foreground)]">
+                <span className="text-[var(--cityscape-yellow-dark)] hover:underline">
                   Click to upload
                 </span>{" "}
                 or drag and drop
               </p>
-              <p className="text-xs text-gray-500">
-                {accept} files up to {maxSize}MB{" "}
-                {multiple ? "(multiple files allowed)" : ""}
+              <p className="text-sm text-[var(--text-secondary)] mt-1">
+                {accept.replace(/\./g, "").toUpperCase().split(",").join(", ")} files up to {maxSize}MB
+                {multiple ? " (multiple allowed)" : ""}
               </p>
             </div>
           </div>
@@ -227,41 +232,45 @@ export default function FileUploader({
 
       {/* Show existing files */}
       {existingFiles.length > 0 && (
-        <div className="mt-4">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">
-            Existing Files:
+        <div className="space-y-3">
+          <h4 className="text-sm font-medium text-[var(--text-secondary)] uppercase tracking-wider">
+            Uploaded Files
           </h4>
-          <div className="space-y-2">
+          <div className="grid gap-2">
             {existingFiles.map((file) => (
               <div
                 key={file.id}
-                className="flex items-center justify-between text-sm text-gray-600 bg-gray-50 p-2 rounded"
+                className="group flex items-center justify-between p-3 rounded-lg border border-[var(--border)] bg-[var(--card)] hover:border-[var(--cityscape-yellow)]/50 transition-all duration-200"
               >
-                <div className="flex items-center space-x-2">
-                  <svg
-                    className="w-4 h-4 text-blue-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                  <a
-                    href={file.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-blue-600"
-                  >
-                    {file.name}
-                  </a>
-                  <span className="text-gray-400">
-                    ({(file.size / 1024 / 1024).toFixed(1)}MB)
-                  </span>
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex-shrink-0 w-8 h-8 rounded bg-[var(--hover)] flex items-center justify-center text-[var(--text-secondary)]">
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <a
+                      href={file.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block text-sm font-medium text-[var(--foreground)] hover:text-[var(--cityscape-yellow-dark)] truncate transition-colors"
+                    >
+                      {file.name}
+                    </a>
+                    <span className="text-xs text-[var(--text-secondary)]">
+                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                    </span>
+                  </div>
                 </div>
                 {!disabled && !isLoading && onDeleteFile && (
                   <button
@@ -269,7 +278,8 @@ export default function FileUploader({
                       e.stopPropagation();
                       onDeleteFile(file.id);
                     }}
-                    className="text-red-500 hover:text-red-700 p-1 rounded transition-colors"
+                    className="flex-shrink-0 p-2 text-[var(--text-secondary)] hover:text-red-500 hover:bg-red-50 rounded-full transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+                    title="Delete file"
                   >
                     <svg
                       className="w-4 h-4"
@@ -292,46 +302,20 @@ export default function FileUploader({
         </div>
       )}
 
-      {/* Show newly uploaded files */}
+      {/* Show newly uploaded files (transient state) */}
       {uploadedFiles.length > 0 && (
-        <div className="mt-4">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">
-            Newly Uploaded Files:
+        <div className="space-y-3">
+          <h4 className="text-sm font-medium text-[var(--text-secondary)] uppercase tracking-wider">
+            Processing...
           </h4>
-          <div className="space-y-2">
+          <div className="grid gap-2">
             {uploadedFiles.map((file, index) => (
               <div
                 key={index}
-                className="flex items-center justify-between text-sm text-gray-600 bg-gray-50 p-2 rounded"
+                className="flex items-center justify-between p-3 rounded-lg border border-[var(--border)] bg-[var(--hover)]/50"
               >
-                <div className="flex items-center">
-                  <svg
-                    className="w-4 h-4 text-green-500 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  {file.name} ({(file.size / 1024 / 1024).toFixed(1)}MB)
-                </div>
-                {!disabled && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setUploadedFiles((prev) =>
-                        prev.filter((_, i) => i !== index)
-                      );
-                    }}
-                    className="text-red-500 hover:text-red-700 p-1 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Remove file"
-                    disabled={isLoading}
-                  >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
                     <svg
                       className="w-4 h-4"
                       fill="none"
@@ -342,11 +326,15 @@ export default function FileUploader({
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        d="M5 13l4 4L19 7"
                       />
                     </svg>
-                  </button>
-                )}
+                  </div>
+                  <div className="text-sm">
+                    <p className="font-medium text-[var(--foreground)]">{file.name}</p>
+                    <p className="text-xs text-[var(--text-secondary)]">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                  </div>
+                </div>
               </div>
             ))}
           </div>

@@ -1,16 +1,15 @@
 "use client";
 
-import { Indicator, GovernanceArea } from "@/types/assessment";
+import { getGovernanceAreaLogo } from "@/lib/governance-area-logos";
+import { GovernanceArea, Indicator } from "@/types/assessment";
 import {
-  ChevronRight,
-  ChevronDown,
-  Circle,
-  CheckCircle,
-  AlertCircle,
-  Folder,
+    AlertCircle,
+    CheckCircle,
+    ChevronRight,
+    Circle,
+    Folder
 } from "lucide-react";
 import Image from "next/image";
-import { getGovernanceAreaLogo } from "@/lib/governance-area-logos";
 
 interface AssessmentTreeNodeProps {
   type: "area" | "indicator";
@@ -67,18 +66,18 @@ export function AssessmentTreeNode({
       // Use governance area logo if available
       if (logoPath) {
         return (
-          <div className="relative h-6 w-6 flex-shrink-0 transition-transform duration-200 group-hover:scale-105">
+          <div className="relative h-5 w-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-105">
             <Image
               src={logoPath}
               alt={`${area.name} icon`}
-              width={24}
-              height={24}
+              width={20}
+              height={20}
               className="object-contain"
               priority
             />
             {/* Completion badge overlay */}
             {progress && progress.percentage === 100 && (
-              <div className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full border-2 border-[var(--card)]">
+              <div className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-green-500 rounded-full border-2 border-[var(--card)]">
                 <CheckCircle className="h-full w-full text-white" />
               </div>
             )}
@@ -122,29 +121,19 @@ export function AssessmentTreeNode({
     // Indicator status icons
     const indicator = item as Indicator;
 
-    // Debug logging to see what status is being rendered
-    if (indicator.id) {
-      console.log(`[AssessmentTreeNode] Rendering indicator ${indicator.id}:`, {
-        status: indicator.status,
-        name: indicator.name?.substring(0, 30)
-      });
-    }
-
     switch (indicator.status) {
       case "completed":
-        console.log(`[AssessmentTreeNode] MATCHED 'completed' for ${indicator.id}`);
         return <CheckCircle className="h-3.5 w-3.5 text-green-500" />;
       case "needs_rework":
-        console.log(`[AssessmentTreeNode] MATCHED 'needs_rework' for ${indicator.id} - returning AlertCircle`);
         return <AlertCircle className="h-3.5 w-3.5 text-orange-500" />;
       default:
-        console.log(`[AssessmentTreeNode] MATCHED default case for ${indicator.id}, status="${indicator.status}"`);
-        return <Circle className="h-3.5 w-3.5 text-gray-400" />;
+        return <Circle className="h-3.5 w-3.5 text-[var(--border)]" />;
     }
   };
 
-  const height = type === "area" ? 40 : 32;
-  const indent = level * 12 + (type === "area" ? 0 : 20);
+  const height = type === "area" ? 36 : 32;
+  // Adjusted indentation for cleaner hierarchy
+  const indent = level * 16 + (type === "area" ? 0 : 12);
 
   return (
     <div
@@ -154,70 +143,58 @@ export function AssessmentTreeNode({
       aria-level={level + 1}
       tabIndex={0}
       className={`
-        group relative flex items-center ${type === "area" ? "gap-2" : "gap-1.5"} cursor-pointer transition-all duration-150
-        ${isActive ? "bg-[var(--cityscape-yellow)]/10 border-l-[3px] border-l-[var(--cityscape-yellow)]" : "border-l-[3px] border-l-transparent"}
-        ${!isActive ? "hover:bg-[var(--hover)]" : ""}
+        group relative flex items-center ${type === "area" ? "gap-2.5" : "gap-2"} cursor-pointer transition-all duration-200 rounded-md mx-1
+        ${isActive 
+          ? "bg-[var(--cityscape-yellow)]/10 text-[var(--foreground)] font-medium" 
+          : "text-[var(--text-secondary)] hover:bg-[var(--hover)] hover:text-[var(--foreground)]"
+        }
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--cityscape-yellow)]
       `}
       style={{
         height: `${height}px`,
         paddingLeft: `${indent}px`,
-        minHeight: `${height}px`,
+        paddingRight: "8px",
       }}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
     >
+      {/* Active Indicator Line (Left) */}
+      {isActive && (
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-1 bg-[var(--cityscape-yellow)] rounded-r-full" />
+      )}
+
       {/* Expand/Collapse Chevron (Areas only) */}
       {type === "area" && (
-        <div className="flex-shrink-0 w-4 h-4">
-          {isExpanded ? (
-            <ChevronDown className="h-4 w-4 text-[var(--text-secondary)]" />
-          ) : (
-            <ChevronRight className="h-4 w-4 text-[var(--text-secondary)]" />
-          )}
+        <div className="flex-shrink-0 w-4 h-4 flex items-center justify-center transition-transform duration-200" style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+          <ChevronRight className={`h-3.5 w-3.5 ${isActive ? "text-[var(--foreground)]" : "text-[var(--text-secondary)]"}`} />
         </div>
       )}
 
       {/* Status Icon */}
-      <div className="flex-shrink-0">{getStatusIcon()}</div>
+      <div className="flex-shrink-0 flex items-center justify-center">{getStatusIcon()}</div>
 
       {/* Label */}
       <div className="flex-1 min-w-0 flex items-baseline gap-2">
         {type === "area" ? (
           <>
-            <span
-              className={`
-              font-semibold text-sm truncate
-              ${isActive ? "text-[var(--foreground)]" : "text-[var(--foreground)]"}
-            `}
-            >
+            <span className="truncate text-sm">
               {(item as GovernanceArea).code}
             </span>
             {progress && (
-              <span className="text-xs text-[var(--text-secondary)] flex-shrink-0">
+              <span className={`text-xs ${isActive ? "text-[var(--foreground)]/70" : "text-[var(--text-secondary)]"} flex-shrink-0 ml-auto`}>
                 {progress.completed}/{progress.total}
               </span>
             )}
           </>
         ) : (
-          <>
-            <span
-              className={`
-              text-xs font-medium
-              ${isActive ? "text-[var(--foreground)]" : "text-[var(--text-secondary)]"}
-            `}
-              title={item.name}
-            >
-              {(item as Indicator).code || item.name}
-            </span>
-          </>
+          <span
+            className="truncate text-xs"
+            title={item.name}
+          >
+            {(item as Indicator).code || item.name}
+          </span>
         )}
       </div>
-
-      {/* Hover indicator */}
-      {!isActive && (
-        <div className="absolute right-0 top-0 bottom-0 w-1 bg-[var(--cityscape-yellow)] opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
-      )}
     </div>
   );
 }
