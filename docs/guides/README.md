@@ -14,7 +14,6 @@ Step-by-step guides for common development tasks in the SINAG project.
 - [Deployment](./deployment.md) - Deployment procedures
 
 ### UI Implementation Guides
-- [Indicator Builder User Guide](./indicator-builder-user-guide.md) - Guide for using the indicator builder system
 - [UI Implementation: Navigation & Logos](./ui-implementation-navigation-and-logos.md) - Next/Previous navigation and governance area logos
 - [UI Implementation: Tree Navigation](./ui-implementation-tree-navigation.md) - Tree hierarchical navigation for BLGU assessments
 

@@ -18,6 +18,7 @@ Documentation in this directory represents:
 - **[phase6-performance-testing-guide.md](./phase6-performance-testing-guide.md)** - Performance testing guide for Phase 6
 - **[test-organization-plan.md](./test-organization-plan.md)** - Test organization plan
 - **[prd-administrative-features-superseded-by-phase6.md](./prd-administrative-features-superseded-by-phase6.md)** - Original administrative features PRD superseded by Phase 6
+- **[service-documentation-audit-2025-11-19.md](./service-documentation-audit-2025-11-19.md)** - Point-in-time service layer documentation audit (November 2025)
 
 ## Why Archive Instead of Delete?
 
@@ -44,4 +45,4 @@ Keep documentation active (in `troubleshooting/` or `guides/`) when:
 
 ---
 
-**Archive maintained as of**: November 19, 2025
+**Archive maintained as of**: November 28, 2025

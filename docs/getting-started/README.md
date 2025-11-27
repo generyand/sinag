@@ -51,6 +51,7 @@ This starts both frontend (`:3000`) and backend (`:8000`) servers.
 - [Installation Guide](./installation.md) - Detailed setup instructions
 - [Local Development](./local-development.md) - Development workflow
 - [Docker Setup](./docker-setup.md) - Using Docker for development
+- [Supabase Storage Configuration](./supabase-storage-configuration.md) - File storage setup
 
 ## Common First-Time Setup Issues
 

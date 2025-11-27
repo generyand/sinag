@@ -11,7 +11,6 @@ Testing guides and criteria for the SINAG platform.
 
 For comprehensive testing guidelines, see:
 - [Testing Guide](../guides/testing.md) - Complete testing strategy and best practices
-- [Service Documentation Audit](../guides/service-documentation-audit-2025-11-19.md) - Includes unit testing patterns for services
 
 ## Quick Reference
 

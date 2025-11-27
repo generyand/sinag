@@ -16,6 +16,7 @@ New developer onboarding and setup instructions.
 - [Installation](./getting-started/installation.md) - Initial setup
 - [Local Development](./getting-started/local-development.md) - Running locally
 - [Docker Setup](./getting-started/docker-setup.md) - Docker environment
+- [Supabase Storage](./getting-started/supabase-storage-configuration.md) - File storage setup
 
 ### 🏗️ Architecture
 System design, patterns, and technical decisions.
@@ -23,7 +24,7 @@ System design, patterns, and technical decisions.
 - [Backend Architecture](./architecture/backend-architecture.md) - FastAPI structure
 - [Frontend Architecture](./architecture/frontend-architecture.md) - Next.js structure
 - [Database Schema](./architecture/database-schema.md) - Data model design
-- [Type Generation](./architecture/type-generation.md) - Type safety workflow
+- [Type Generation](./guides/type-generation.md) - Type safety workflow
 - [Decisions (ADR)](./architecture/decisions.md) - Architectural decisions
 
 ### 📡 API Documentation
@@ -78,7 +79,7 @@ We follow these documentation standards:
 - **Markdown**: GitHub-flavored markdown
 - **Diagrams**: Mermaid.js for architecture diagrams
 
-See [Contributing Guide](./guides/contributing.md) for more details.
+See [CLAUDE.md](../CLAUDE.md) for project standards and conventions.
 
 ## Getting Help
 
@@ -89,5 +90,5 @@ See [Contributing Guide](./guides/contributing.md) for more details.
 
 ---
 
-**Last Updated**: 2025-11-26
+**Last Updated**: 2025-11-28
 **Maintained By**: SINAG Development Team
