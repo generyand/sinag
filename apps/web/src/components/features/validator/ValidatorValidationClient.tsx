@@ -108,6 +108,14 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const calibratedAreaIds: number[] = (core?.calibrated_area_ids ?? []) as number[];
   const calibrationAlreadyUsed = validatorAreaId ? calibratedAreaIds.includes(validatorAreaId) : false;
 
+  // Get timestamp for MOV file separation (new vs old files)
+  // Priority: calibration_requested_at > rework_requested_at
+  // This helps distinguish files uploaded after rework/calibration request
+  const calibrationRequestedAt: string | null = (core?.calibration_requested_at ?? null) as string | null;
+  const reworkRequestedAt: string | null = (core?.rework_requested_at ?? null) as string | null;
+  // Use calibration timestamp if available, otherwise fall back to rework timestamp
+  const filesSeparationTimestamp = calibrationRequestedAt || reworkRequestedAt;
+
   // Transform to match BLGU assessment structure for TreeNavigator
   const transformedAssessment = {
     id: assessmentId,
@@ -347,6 +355,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
               <MiddleMovFilesPanel
                 assessment={data as any}
                 expandedId={expandedId ?? undefined}
+                calibrationRequestedAt={filesSeparationTimestamp}
               />
             </div>
 
