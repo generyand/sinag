@@ -4,18 +4,29 @@
 
 The **Intelligence Layer Workflow** leverages Google's Gemini 2.5 Flash API to generate actionable Capacity Development (CapDev) recommendations based on failed indicators from validated assessments. This AI-powered system transforms raw validation data into strategic insights that guide DILG capacity building programs and help barangays improve governance compliance.
 
+**Last Updated:** 2025-11-27
+
 ### SGLGB Stage
 
 **Stage 4**: AI-Powered Insight Generation
 
 This stage follows the classification workflow, analyzing failed indicators to produce customized recommendations, capacity development plans, and strategic summaries for MLGOO-DILG decision-makers.
 
+### AI Features
+
+The Intelligence Layer provides three types of AI-generated content:
+
+1. **CapDev Recommendations**: Post-classification insights for MLGOO-DILG planning
+2. **Rework Summaries**: Guidance for BLGU users during Assessor-requested rework
+3. **Calibration Summaries**: Per-governance-area guidance during Validator calibration
+
 ### Key Stakeholders
 
 - **MLGOO-DILG Users**: Request and review AI-generated insights for strategic planning
+- **BLGU Users**: Receive AI-generated summaries in their preferred language during rework/calibration
+- **Validators**: Trigger calibration summary generation when requesting calibration
 - **System (Gemini API)**: Generate recommendations based on assessment data
 - **Celery Workers**: Handle background processing for long-running AI operations
-- **BLGU Users**: Indirectly benefit from targeted CapDev programs based on insights
 
 ### Business Objectives
 
@@ -24,6 +35,7 @@ This stage follows the classification workflow, analyzing failed indicators to p
 3. **Capacity Development Planning**: Generate customized training and program recommendations
 4. **Cost Efficiency**: Use caching and on-demand generation to manage API costs
 5. **Strategic Decision Support**: Enable leadership to make informed decisions about resource deployment
+6. **BLGU Empowerment**: Provide clear, localized guidance to help BLGUs address compliance gaps
 
 ---
 
@@ -241,6 +253,186 @@ flowchart TD
     LogStatusError --> CloseDB
 
     CloseDB --> End([Task Complete])
+```
+
+---
+
+## Rework and Calibration Summaries (Multi-Language)
+
+### Overview
+
+In addition to post-classification CapDev recommendations, the Intelligence Layer generates **rework summaries** and **calibration summaries** to help BLGU users understand what corrections are needed. These summaries are generated in multiple languages based on user preference.
+
+### Supported Languages
+
+| Code | Language | Description |
+|------|----------|-------------|
+| `ceb` | Bisaya/Cebuano | Default language for most BLGUs |
+| `en` | English | For formal documentation |
+| `fil` | Tagalog | For Tagalog-speaking regions |
+
+### Summary Types
+
+#### 1. Rework Summary (`rework_summary`)
+
+Generated when an **Assessor** sends an assessment for rework.
+
+**Trigger**: `POST /api/v1/assessor/assessments/{id}/rework`
+
+**Content**:
+- Overall summary of issues found
+- Per-indicator breakdown of problems
+- Suggested actions for each indicator
+- List of affected MOVs
+- Priority action items
+- Estimated time to complete corrections
+
+**Storage**: `assessments.rework_summary` (JSONB)
+
+**Format**:
+```json
+{
+  "ceb": {
+    "overall_summary": "Bisaya summary...",
+    "indicator_summaries": [
+      {
+        "indicator_id": 5,
+        "indicator_name": "Budget Transparency",
+        "key_issues": ["Issue 1", "Issue 2"],
+        "suggested_actions": ["Action 1", "Action 2"],
+        "affected_movs": ["budget.pdf"]
+      }
+    ],
+    "priority_actions": ["Priority 1", "Priority 2"],
+    "estimated_time": "2-3 days",
+    "generated_at": "2025-11-27T10:00:00Z",
+    "language": "ceb"
+  },
+  "en": { ... },
+  "fil": { ... }
+}
+```
+
+#### 2. Calibration Summary (`calibration_summary`)
+
+Generated when a **Validator** requests calibration for their governance area.
+
+**Trigger**: `POST /api/v1/assessor/assessments/{id}/request-calibration`
+
+**Content**:
+- Summary specific to the calibrated governance area
+- Only indicators within the Validator's area
+- Focused, targeted feedback
+- Clear action items
+
+**Storage**: `assessments.calibration_summary` (JSONB) - legacy single calibration
+
+#### 3. Calibration Summaries by Area (`calibration_summaries_by_area`)
+
+For **parallel calibration** where multiple Validators request calibration simultaneously.
+
+**Storage**: `assessments.calibration_summaries_by_area` (JSONB)
+
+**Format**:
+```json
+{
+  "1": {  // Governance Area ID as string key
+    "ceb": {
+      "governance_area_id": 1,
+      "governance_area": "Financial Administration",
+      "overall_summary": "Bisaya summary for this area...",
+      "indicator_summaries": [...],
+      "priority_actions": [...],
+      "estimated_time": "1-2 days"
+    },
+    "en": { ... },
+    "fil": { ... }
+  },
+  "2": { ... }  // Another governance area
+}
+```
+
+### BLGU Dashboard Integration
+
+The BLGU dashboard (`GET /api/v1/blgu-dashboard/{assessment_id}`) returns AI summaries based on assessment status:
+
+**Request Parameters**:
+- `language` (optional): Override user's preferred language (`ceb`, `en`, `fil`)
+
+**Response Fields**:
+```json
+{
+  "ai_summary": {
+    "overall_summary": "Combined summary from all areas...",
+    "indicator_summaries": [...],
+    "priority_actions": [...],
+    "estimated_time": null,
+    "generated_at": "2025-11-27T10:00:00Z",
+    "language": "ceb",
+    "summary_type": "calibration"  // or "rework"
+  },
+  "ai_summary_available_languages": ["ceb", "en", "fil"],
+  "ai_summaries_by_area": [  // For parallel calibration
+    {
+      "governance_area_id": 1,
+      "governance_area": "Financial Administration",
+      "overall_summary": "...",
+      "indicator_summaries": [...],
+      "priority_actions": [...]
+    },
+    { ... }
+  ]
+}
+```
+
+### Language Selection Priority
+
+1. **Request parameter** (`?language=en`)
+2. **User preference** (`users.preferred_language`)
+3. **Default**: `ceb` (Bisaya)
+
+### Multi-Language Generation Process
+
+When a rework or calibration is requested:
+
+1. **Gather Context**: Collect feedback comments, MOV annotations, validation statuses
+2. **Build Prompt**: Create a structured prompt with all issue details
+3. **Generate All Languages**: Call Gemini API three times (or use parallel calls)
+4. **Store Results**: Save all language versions in the summary field
+5. **Return Preferred**: Dashboard returns the user's preferred language
+
+### Prompt Template for Summaries
+
+```
+You are an AI assistant helping barangay officials understand what corrections are needed for their SGLGB assessment.
+
+CONTEXT:
+- Barangay: {barangay_name}
+- Assessment Year: {year}
+- Summary Type: {rework|calibration}
+- Governance Area: {area_name} (for calibration only)
+
+ISSUES IDENTIFIED:
+{For each indicator with issues:}
+- Indicator: {indicator_name}
+- Status: {validation_status}
+- Assessor Feedback: {feedback_comments}
+- MOV Annotations: {annotation_details}
+
+TASK:
+Generate a helpful summary in {LANGUAGE} that:
+1. Explains the key issues in simple, clear language
+2. Provides specific, actionable steps to address each issue
+3. Lists priority actions in order of importance
+4. Estimates time needed to complete corrections
+
+OUTPUT FORMAT (JSON):
+{
+  "overall_summary": "...",
+  "indicator_summaries": [...],
+  "priority_actions": [...],
+  "estimated_time": "..."
+}
 ```
 
 ---

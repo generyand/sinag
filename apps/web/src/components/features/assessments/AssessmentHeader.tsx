@@ -221,7 +221,7 @@ export function AssessmentHeader({
                   {getStatusText()}
                 </div>
                 <span className="text-sm text-[var(--text-secondary)]">
-                  • {assessment.year} Assessment
+                  • {new Date(assessment.createdAt).getFullYear()} Assessment
                 </span>
               </div>
               

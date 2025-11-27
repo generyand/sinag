@@ -206,9 +206,9 @@ export function FileList({
                         <span>{formatFileSize(file.file_size)}</span>
                         <span>•</span>
                         <span>
-                          {formatDistanceToNow(new Date(file.uploaded_at), {
+                          {file.uploaded_at ? formatDistanceToNow(new Date(file.uploaded_at), {
                             addSuffix: true,
-                          })}
+                          }) : 'Unknown'}
                         </span>
                       </div>
                     </div>

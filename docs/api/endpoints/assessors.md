@@ -1,6 +1,8 @@
 # Assessors API
 
-The Assessors API provides endpoints for DILG assessors and validators to manage their submission queue, validate assessment responses, request rework from BLGUs, and perform table assessments. This API supports the complete assessor workflow from initial review through final validation.
+The Assessors API provides endpoints for DILG assessors and validators to manage their submission queue, validate assessment responses, request rework from BLGUs, request calibration (validators only), manage MOV annotations, and perform table assessments. This API supports the complete assessor workflow from initial review through final validation.
+
+**Last Updated**: 2025-11-27
 
 ## Overview
 
@@ -8,11 +10,13 @@ The Assessors API provides endpoints for DILG assessors and validators to manage
 
 **Authentication**: All endpoints require VALIDATOR or ASSESSOR role (with governance area-based filtering for VALIDATOR).
 
-**Workflow Context**: These endpoints support Stage 2 (Assessor Review and Validation) and Stage 3 (Table Assessment) of the SGLGB workflow.
+**Workflow Context**: These endpoints support Stage 2 (Assessor Review and Validation), Stage 3 (Table Assessment), and Validator Calibration of the SGLGB workflow.
 
 **Type Generation**: After modifying any assessor endpoint or schema, run `pnpm generate-types` to update frontend types.
 
 **Governance Area Filtering**: VALIDATOR role users see only assessments within their assigned governance area. ASSESSOR role users have flexible access to any barangay.
+
+**Calibration Support**: Validators can request calibration for their governance area, which routes the assessment back to the same Validator after BLGU corrections.
 
 ---
 
@@ -417,6 +421,232 @@ Manually trigger the classification algorithm for an assessment.
 
 ---
 
+### POST /api/v1/assessor/assessments/{assessment_id}/request-calibration
+
+Request calibration for an assessment (Validator only).
+
+**Authentication**: VALIDATOR role required
+
+**Workflow Stage**: Validator Calibration (after Stage 2)
+
+**Description**: Allows a Validator to request calibration for indicators in their assigned governance area. The assessment is sent back to BLGU for targeted corrections and will return to the same Validator (not the general Assessor queue). Generates an AI-powered calibration summary in multiple languages to help BLGU understand the issues.
+
+**Business Rules**:
+- Only Validators can request calibration (Assessors cannot)
+- Calibration is limited to the Validator's assigned governance area
+- After BLGU corrections, assessment returns to the same Validator
+- Supports parallel calibration - multiple Validators can request calibration for different areas simultaneously
+- Generates AI summary in Bisaya (ceb), English (en), and Tagalog (fil)
+
+**Path Parameters**:
+- `assessment_id` (integer, required): The ID of the assessment to calibrate
+
+**Request Body**:
+```json
+{
+  "reason": "Optional reason for calibration request",
+  "indicator_ids": [5, 7, 12]  // Optional: specific indicators to flag
+}
+```
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "message": "Calibration requested successfully",
+  "assessment_id": 123,
+  "is_calibration_rework": true,
+  "calibration_validator_id": 45,
+  "calibration_governance_area_id": 2,
+  "calibration_governance_area_name": "Disaster Preparedness",
+  "pending_calibrations_count": 1
+}
+```
+
+**Errors**:
+- `403 Forbidden`: User is not a Validator or not assigned to the assessment's governance area
+- `404 Not Found`: Assessment not found
+- `400 Bad Request`: Assessment is not in a valid state for calibration
+
+---
+
+## MOV Annotation Endpoints
+
+These endpoints allow assessors and validators to annotate uploaded MOV files (PDFs and images) with highlights, rectangles, and comments.
+
+### POST /api/v1/assessor/movs/{mov_file_id}/annotations
+
+Create an annotation on a MOV file.
+
+**Authentication**: ASSESSOR or VALIDATOR role required
+
+**Description**: Creates an annotation on a MOV file. Supports rectangle annotations for images and page-based annotations for PDFs. Annotations are visible to BLGU users during rework/calibration.
+
+**Path Parameters**:
+- `mov_file_id` (integer, required): The ID of the MOV file to annotate
+
+**Request Body**:
+```json
+{
+  "annotation_type": "rectangle",
+  "page": 1,
+  "rect": {
+    "x": 10.5,
+    "y": 20.3,
+    "width": 100.0,
+    "height": 50.0
+  },
+  "comment": "This section is incomplete. Please provide the missing budget breakdown."
+}
+```
+
+**Annotation Types**:
+- `highlight`: Text highlight (PDF only)
+- `underline`: Text underline (PDF only)
+- `rectangle`: Rectangle annotation (PDF and images)
+
+**Response** (200 OK):
+```json
+{
+  "id": 789,
+  "mov_file_id": 456,
+  "annotation_type": "rectangle",
+  "page": 1,
+  "rect": {"x": 10.5, "y": 20.3, "width": 100.0, "height": 50.0},
+  "comment": "This section is incomplete...",
+  "created_by_id": 45,
+  "created_at": "2025-11-27T10:30:00Z"
+}
+```
+
+**Errors**:
+- `403 Forbidden`: User does not have permission to annotate this MOV
+- `404 Not Found`: MOV file not found
+
+---
+
+### GET /api/v1/assessor/movs/{mov_file_id}/annotations
+
+Get all annotations for a MOV file.
+
+**Authentication**: ASSESSOR or VALIDATOR role required
+
+**Path Parameters**:
+- `mov_file_id` (integer, required): The ID of the MOV file
+
+**Response** (200 OK):
+```json
+[
+  {
+    "id": 789,
+    "mov_file_id": 456,
+    "annotation_type": "rectangle",
+    "page": 1,
+    "rect": {"x": 10.5, "y": 20.3, "width": 100.0, "height": 50.0},
+    "comment": "This section is incomplete...",
+    "created_by_id": 45,
+    "created_at": "2025-11-27T10:30:00Z"
+  }
+]
+```
+
+---
+
+### GET /api/v1/assessor/assessments/{assessment_id}/annotations
+
+Get all annotations for an entire assessment.
+
+**Authentication**: ASSESSOR or VALIDATOR role required
+
+**Description**: Returns all MOV annotations for an assessment, grouped by indicator and MOV file. Useful for displaying a summary view of all feedback.
+
+**Path Parameters**:
+- `assessment_id` (integer, required): The ID of the assessment
+
+**Response** (200 OK):
+```json
+{
+  "assessment_id": 123,
+  "total_annotations": 5,
+  "annotations_by_indicator": {
+    "5": [
+      {
+        "id": 789,
+        "mov_file_id": 456,
+        "mov_filename": "budget_report.pdf",
+        "annotation_type": "rectangle",
+        "page": 1,
+        "rect": {...},
+        "comment": "..."
+      }
+    ],
+    "7": [...]
+  }
+}
+```
+
+---
+
+### PATCH /api/v1/assessor/annotations/{annotation_id}
+
+Update an existing annotation.
+
+**Authentication**: ASSESSOR or VALIDATOR role required
+
+**Description**: Updates an annotation's comment or position. Only the annotation creator can update it.
+
+**Path Parameters**:
+- `annotation_id` (integer, required): The ID of the annotation to update
+
+**Request Body**:
+```json
+{
+  "comment": "Updated comment text",
+  "rect": {"x": 15.0, "y": 25.0, "width": 100.0, "height": 50.0}
+}
+```
+
+**Response** (200 OK):
+```json
+{
+  "id": 789,
+  "comment": "Updated comment text",
+  "rect": {"x": 15.0, "y": 25.0, "width": 100.0, "height": 50.0},
+  "updated_at": "2025-11-27T11:00:00Z"
+}
+```
+
+**Errors**:
+- `403 Forbidden`: User is not the annotation creator
+- `404 Not Found`: Annotation not found
+
+---
+
+### DELETE /api/v1/assessor/annotations/{annotation_id}
+
+Delete an annotation.
+
+**Authentication**: ASSESSOR or VALIDATOR role required
+
+**Description**: Deletes an annotation. Only the annotation creator can delete it.
+
+**Path Parameters**:
+- `annotation_id` (integer, required): The ID of the annotation to delete
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "message": "Annotation deleted successfully"
+}
+```
+
+**Errors**:
+- `403 Forbidden`: User is not the annotation creator
+- `404 Not Found`: Annotation not found
+
+---
+
 ### GET /api/v1/assessor/analytics
 
 Get analytics data for the assessor's governance area.
@@ -575,6 +805,14 @@ Automatic on finalization:
 - After BLGU resubmits, assessment proceeds to final validation
 - `rework_count` field enforces this limit (max value: 1)
 
+### Calibration Limits
+
+- **One calibration** per governance area is allowed
+- Calibration is requested by Validators (not Assessors)
+- After BLGU submits for calibration, assessment returns to the same Validator
+- `calibration_count` field tracks calibrations (max value: 1 per area)
+- Multiple Validators can request calibration for different areas simultaneously (parallel calibration)
+
 ### Validation Completeness
 
 - All assessment responses must have a validation status before finalization
@@ -584,8 +822,15 @@ Automatic on finalization:
 ### Comment Visibility
 
 - **Public comments**: Visible to BLGU users (guidance and feedback)
-- **Internal notes**: Visible only to DILG staff (coordination and internal observations)
 - **Assessor remarks**: Saved to assessment_response for validators to review
+- **MOV annotations**: Visible to BLGU users during rework/calibration
+
+### AI Summary Generation
+
+- Rework summaries generated when Assessor sends for rework
+- Calibration summaries generated when Validator requests calibration
+- Summaries available in three languages: Bisaya (ceb), English (en), Tagalog (fil)
+- Language preference stored in `users.preferred_language`
 
 ---
 
@@ -593,19 +838,22 @@ Automatic on finalization:
 
 | Action | BLGU_USER | ASSESSOR | VALIDATOR | MLGOO_DILG |
 |--------|-----------|----------|-----------|------------|
-| View queue | - | ✓ (all) | ✓ (area) | ✓ (all) |
-| View assessment details | ✓ (own) | ✓ (all) | ✓ (area) | ✓ (all) |
-| Validate responses | - | ✓ (all) | ✓ (area) | ✓ (all) |
-| Upload assessor MOVs | - | ✓ (all) | ✓ (area) | ✓ (all) |
-| Send for rework | - | ✓ (all) | ✓ (area) | ✓ (all) |
-| Finalize assessment | - | ✓ (all) | ✓ (area) | ✓ (all) |
-| Trigger classification | - | ✓ (all) | ✓ (area) | ✓ (all) |
-| View analytics | - | ✓ (all) | ✓ (area) | ✓ (all) |
+| View queue | - | All | Area only | All |
+| View assessment details | Own only | All | Area only | All |
+| Validate responses | - | All | Area only | All |
+| Upload assessor MOVs | - | All | Area only | All |
+| Send for rework | - | All | - | All |
+| Request calibration | - | - | Area only | - |
+| Create MOV annotations | - | All | Area only | All |
+| Finalize assessment | - | All | Area only | All |
+| Trigger classification | - | All | Area only | All |
+| View analytics | - | All | Area only | All |
 
 **Legend**:
-- ✓ (own): User can access their own resources only
-- ✓ (area): User can access resources within their assigned governance area
-- ✓ (all): User can access all resources
+- **Own only**: User can access their own resources only
+- **Area only**: User can access resources within their assigned governance area
+- **All**: User can access all resources
+- **-**: Action not permitted for this role
 
 ---
 
@@ -616,3 +864,16 @@ Automatic on finalization:
 - **Table Assessment**: The MOV upload endpoints support both JSON-based and multipart file uploads for flexibility
 - **3+1 Rule**: Classification is automatic during finalization but can be manually triggered for testing
 - **Analytics**: Minimal implementation that can be extended as UI requirements grow
+- **Calibration**: Introduced in November 2025 to support Validator-specific targeted corrections
+- **Parallel Calibration**: Multiple Validators can request calibration simultaneously for different governance areas
+- **AI Summaries**: Multi-language support (Bisaya, English, Tagalog) for rework and calibration summaries
+- **MOV Annotations**: Interactive annotations on PDFs and images, visible to BLGU during rework/calibration
+
+---
+
+## Related Documentation
+
+- [Assessor Validation Workflow](../../workflows/assessor-validation.md) - Complete workflow documentation
+- [BLGU Assessment Workflow](../../workflows/blgu-assessment.md) - BLGU submission and rework/calibration handling
+- [Intelligence Layer](../../workflows/intelligence-layer.md) - AI-generated summaries and recommendations
+- [User Roles and Permissions](../../../CLAUDE.md#user-roles-and-permissions) - Complete role definitions

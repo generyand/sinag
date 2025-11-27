@@ -40,7 +40,7 @@ export default function BLGUAssessmentsPage() {
     {
       query: {
         enabled: !!assessment?.id,
-      },
+      } as any,
     }
   );
 

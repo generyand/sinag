@@ -4,23 +4,28 @@
 
 The **BLGU Assessment Workflow** is the first stage of the SGLGB (Seal of Good Local Governance for Barangays) assessment process. This workflow enables Barangay Local Government Unit (BLGU) users to complete their self-assessment by providing responses to governance indicators and uploading Means of Verification (MOVs) as evidence.
 
+**Last Updated:** 2025-11-27
+
 ### SGLGB Stage
 
 **Stage 1**: Initial BLGU Self-Assessment Submission
 
-This represents the foundational data collection phase where barangays document their governance practices, upload evidence, and submit their assessment for professional review by DILG Assessors.
+This represents the foundational data collection phase where barangays document their governance practices, upload evidence, and submit their assessment for professional review by DILG Assessors and Validators.
 
 ### Key Stakeholders
 
 - **BLGU Users** (`BLGU_USER` role): Barangay officials assigned to complete the self-assessment
 - **System**: Automated validation and completeness checks
+- **Assessors** (indirectly): Receive submitted assessments for initial review
+- **Validators** (indirectly): Receive assessments for final validation and may request calibration
 
 ### Business Objectives
 
 1. **Streamline Data Collection**: Enable efficient, structured data entry for all SGLGB governance indicators
 2. **Ensure Completeness**: Validate that all required information and evidence is provided before submission
 3. **Support Rework Cycle**: Allow BLGUs to address assessor feedback through a single rework opportunity
-4. **Maintain Data Integrity**: Prevent incomplete submissions and ensure high-quality assessment data
+4. **Support Calibration Cycle**: Allow BLGUs to address validator-specific feedback during final validation
+5. **Maintain Data Integrity**: Prevent incomplete submissions and ensure high-quality assessment data
 
 ---
 
@@ -90,6 +95,7 @@ stateDiagram-v2
 
     REWORK --> SUBMITTED: BLGU Resubmits (After Rework)
 
+    AWAITING_FINAL_VALIDATION --> REWORK: Validator Requests Calibration
     AWAITING_FINAL_VALIDATION --> COMPLETED: Validator Finalizes
 
     COMPLETED --> [*]
@@ -112,12 +118,14 @@ stateDiagram-v2
     note right of REWORK
         Assessment is partially editable
         Only flagged indicators unlocked
-        One-time rework opportunity
+        One-time rework (Assessor) or
+        Calibration (Validator) opportunity
     end note
 
     note right of AWAITING_FINAL_VALIDATION
         Assessment locked
         Awaiting Validator final check
+        Validator may request calibration
     end note
 
     note right of COMPLETED
@@ -126,6 +134,17 @@ stateDiagram-v2
         Classification complete
     end note
 ```
+
+### Rework vs Calibration Routing
+
+When an assessment enters the `REWORK` status, BLGU users need to understand where their corrections will be routed:
+
+| Trigger | Flag | Returns To | Endpoint |
+|---------|------|------------|----------|
+| Assessor requests rework | `is_calibration_rework = false` | General Assessor queue | `POST /submit` |
+| Validator requests calibration | `is_calibration_rework = true` | Same requesting Validator | `POST /submit-for-calibration` |
+
+The BLGU Dashboard displays the appropriate submission button and guidance based on the `is_calibration_rework` flag.
 
 ### Completeness Validation Flow
 
@@ -517,6 +536,114 @@ class SubmissionValidationService:
 
 ---
 
+### 8. Handling Calibration Requests (Validator Workflow)
+
+**Purpose**: Enable BLGUs to address validator-specific feedback during final validation through a targeted calibration cycle.
+
+**API Endpoints**:
+- `GET /api/v1/blgu-dashboard/{assessment_id}` - Get dashboard with calibration details
+- `POST /api/v1/assessments/{assessment_id}/submit-for-calibration` - Submit back to requesting Validator
+
+**User Interface Components**:
+- `apps/web/src/components/features/rework/CalibrationSummary.tsx` - Calibration feedback display
+- `apps/web/src/components/features/dashboard/CalibrationBadge.tsx` - Calibration status indicator
+- `apps/web/src/components/features/dashboard/AISummaryCard.tsx` - AI-generated guidance
+
+**Process**:
+
+1. **Validator Requests Calibration**:
+   - During final validation, Validator identifies issues in their governance area
+   - Validator clicks "Request Calibration" for specific indicators
+   - System sets `is_calibration_rework = true`
+   - Records `calibration_validator_id` (FK to requesting Validator)
+   - Generates AI calibration summary in multiple languages
+
+2. **BLGU Dashboard Updates**:
+   - Status badge changes to show calibration mode
+   - Dashboard displays calibration-specific information:
+     - `calibration_governance_area_name`: Which area needs attention
+     - `calibration_validator_id`: Who requested calibration
+     - `pending_calibrations_count`: Number of areas (for parallel calibration)
+     - `ai_summary`: AI-generated guidance in user's preferred language
+
+3. **Review Calibration Feedback**:
+   - **Calibration Summary Section** shows:
+     - Governance area requiring attention
+     - AI-generated summary with key issues
+     - List of affected indicators with specific feedback
+     - MOV annotations from Validator (if any)
+     - Priority action items
+     - Estimated time to complete
+
+4. **Address Calibration Issues**:
+   - Only indicators within the calibrated governance area are editable
+   - User can:
+     - Update response data
+     - Upload new/corrected MOVs
+     - Review MOV annotations to understand Validator concerns
+
+5. **Submit for Calibration**:
+   - User clicks "Submit for Calibration" (distinct from regular resubmit)
+   - System validates completeness of calibrated indicators
+   - Assessment routes back to the **same Validator** who requested calibration
+   - Status changes appropriately for Validator review
+
+**Key Differences from Rework**:
+
+| Aspect | Rework (Assessor) | Calibration (Validator) |
+|--------|-------------------|-------------------------|
+| **Triggered by** | Assessor during initial review | Validator during final validation |
+| **Scope** | Any indicators in assessment | Only Validator's governance area |
+| **Returns to** | General Assessor queue | Same requesting Validator |
+| **Submission endpoint** | `POST /resubmit` | `POST /submit-for-calibration` |
+| **Flag** | `rework_count` incremented | `is_calibration_rework = true` |
+
+**Parallel Calibration Support**:
+
+Multiple Validators can request calibration simultaneously for different governance areas:
+
+```
+BLGU Dashboard shows:
+- pending_calibrations_count: 2
+- calibration_governance_areas: [
+    {
+      "governance_area_id": 1,
+      "governance_area_name": "Financial Administration",
+      "validator_name": "Juan Dela Cruz",
+      "requested_at": "2025-11-27T10:00:00Z"
+    },
+    {
+      "governance_area_id": 3,
+      "governance_area_name": "Safety, Peace and Order",
+      "validator_name": "Maria Santos",
+      "requested_at": "2025-11-27T11:00:00Z"
+    }
+  ]
+- ai_summaries_by_area: [
+    { governance_area_id: 1, overall_summary: "...", indicator_summaries: [...] },
+    { governance_area_id: 3, overall_summary: "...", indicator_summaries: [...] }
+  ]
+```
+
+**AI Summary Integration**:
+
+The dashboard provides AI-generated summaries to help BLGU users:
+
+- **Language Selection**: User can select preferred language (`ceb`, `en`, `fil`) via query parameter or profile setting
+- **Summary Content**:
+  - Overall summary of issues in plain language
+  - Per-indicator breakdown with specific problems and suggested actions
+  - List of affected MOV files
+  - Priority action items
+  - Estimated time to complete corrections
+
+**Database Changes**:
+- Read `is_calibration_rework`, `calibration_validator_id`, `pending_calibrations`
+- Read `calibration_summary` or `calibration_summaries_by_area` for AI guidance
+- After submission: Clear calibration flags, route to Validator
+
+---
+
 ## Assessment Status States
 
 ### Status Lifecycle
@@ -806,12 +933,29 @@ All endpoints require authentication and `BLGU_USER` role unless noted.
 | `/api/v1/assessment-responses/{id}` | PUT | Update single indicator response | `AssessmentResponseUpdate` | Updated response |
 | `/api/v1/assessments/{id}/submit` | POST | Submit for review | None | `SubmitAssessmentResponse` |
 | `/api/v1/assessments/{id}/resubmit` | POST | Resubmit after rework | None | `ResubmitAssessmentResponse` |
+| `/api/v1/assessments/{id}/submit-for-calibration` | POST | Submit for calibration (Validator) | None | `SubmitCalibrationResponse` |
 | `/api/v1/assessments/{id}/validate-completeness` | GET | Check submission readiness | None | `CompletenessValidationResponse` |
 | `/api/v1/movs/upload` | POST | Upload MOV file | Multipart form data | MOV metadata |
 | `/api/v1/movs/{id}` | DELETE | Delete MOV | None | Success confirmation |
 
+### BLGU Dashboard Endpoint
+
+| Endpoint | Method | Purpose | Query Params | Response |
+|----------|--------|---------|--------------|----------|
+| `/api/v1/blgu-dashboard/{assessment_id}` | GET | Get dashboard with completion metrics | `language` (optional) | `BLGUDashboardResponse` |
+
+**BLGU Dashboard Response** includes:
+- Completion metrics (total, completed, incomplete indicators)
+- Governance area breakdown with per-indicator status
+- Rework comments and MOV annotations (if in REWORK status)
+- Calibration tracking fields (`is_calibration_rework`, `calibration_governance_area_name`, etc.)
+- Parallel calibration info (`pending_calibrations_count`, `calibration_governance_areas`)
+- AI summaries (`ai_summary`, `ai_summaries_by_area`, `ai_summary_available_languages`)
+- Final verdict data (only if status is COMPLETED)
+
 **Endpoint Details** - Full documentation available in:
 - `apps/api/app/api/v1/assessments.py` - Assessment routes
+- `apps/api/app/api/v1/blgu_dashboard.py` - BLGU dashboard routes
 - `apps/api/app/api/v1/movs.py` - MOV file routes
 
 ---

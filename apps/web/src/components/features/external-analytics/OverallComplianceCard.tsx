@@ -61,9 +61,10 @@ export function OverallComplianceCard({ data, isLoading, error }: OverallComplia
   }
 
   // Prepare chart data
+  const failPercentage = 100 - data.pass_percentage;
   const chartData = [
     { name: 'Passed', value: data.passed_count, percentage: data.pass_percentage },
-    { name: 'Failed', value: data.failed_count, percentage: data.fail_percentage },
+    { name: 'Failed', value: data.failed_count, percentage: failPercentage },
   ];
 
   const COLORS = {
@@ -79,7 +80,7 @@ export function OverallComplianceCard({ data, isLoading, error }: OverallComplia
           <CardTitle>Overall Municipal Compliance</CardTitle>
         </div>
         <CardDescription>
-          Municipal-wide SGLGB pass/fail statistics across {data.total_assessments} barangays
+          Municipal-wide SGLGB pass/fail statistics across {data.total_barangays} barangays
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -93,7 +94,7 @@ export function OverallComplianceCard({ data, isLoading, error }: OverallComplia
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ percentage }) => `${percentage.toFixed(1)}%`}
+                  label={(props: any) => `${(props.percent * 100).toFixed(1)}%`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
@@ -121,7 +122,7 @@ export function OverallComplianceCard({ data, isLoading, error }: OverallComplia
               <div className="text-sm font-medium text-muted-foreground">Failed</div>
               <div className="mt-2 flex items-baseline gap-2">
                 <span className="text-3xl font-bold text-red-600">{data.failed_count}</span>
-                <span className="text-sm text-muted-foreground">({data.fail_percentage.toFixed(1)}%)</span>
+                <span className="text-sm text-muted-foreground">({failPercentage.toFixed(1)}%)</span>
               </div>
             </div>
           </div>

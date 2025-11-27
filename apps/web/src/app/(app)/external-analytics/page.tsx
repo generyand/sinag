@@ -3,10 +3,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Info, Database, TrendingUp, AlertTriangle, Lightbulb, FileDown, Loader2 } from 'lucide-react';
 import { useGetExternalAnalyticsDashboard } from '@sinag/shared';
 import { OverallComplianceCard } from '@/components/features/external-analytics/OverallComplianceCard';
-import { Skeleton } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 /**
@@ -81,7 +81,7 @@ export default function ExternalAnalyticsPage() {
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            Failed to load dashboard data. {error.message}
+            Failed to load dashboard data. {(error as any)?.message || 'An error occurred'}
           </AlertDescription>
         </Alert>
       )}
@@ -117,7 +117,7 @@ export default function ExternalAnalyticsPage() {
                   >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis type="number" domain={[0, 100]} />
-                    <YAxis dataKey="name" type="category" width={90} />
+                    <YAxis dataKey="area_name" type="category" width={90} />
                     <Tooltip formatter={(value: number) => `${value.toFixed(1)}%`} />
                     <Legend />
                     <Bar dataKey="pass_percentage" name="Pass Rate (%)" fill="#22c55e" />
@@ -129,8 +129,8 @@ export default function ExternalAnalyticsPage() {
               {/* Area Details */}
               <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {data.governance_area_performance.areas.map((area) => (
-                  <div key={area.name} className="rounded-lg border p-4">
-                    <h4 className="font-semibold text-sm mb-2">{area.name}</h4>
+                  <div key={area.area_code} className="rounded-lg border p-4">
+                    <h4 className="font-semibold text-sm mb-2">{area.area_name}</h4>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div>
                         <span className="text-muted-foreground">Passed:</span>
@@ -160,7 +160,7 @@ export default function ExternalAnalyticsPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {data.top_failing_indicators.indicators.map((indicator, index) => (
+                {data.top_failing_indicators.top_failing_indicators.map((indicator, index) => (
                   <div key={indicator.indicator_id} className="flex items-start gap-4 p-4 rounded-lg border">
                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-destructive/10 text-destructive flex items-center justify-center font-bold">
                       #{index + 1}
@@ -178,7 +178,7 @@ export default function ExternalAnalyticsPage() {
                         </div>
                         <div>
                           <span>Total Assessments:</span>
-                          <span className="ml-2 font-medium">{indicator.total_assessments}</span>
+                          <span className="ml-2 font-medium">{indicator.total_assessed}</span>
                         </div>
                       </div>
                     </div>
@@ -209,11 +209,11 @@ export default function ExternalAnalyticsPage() {
                         insight.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
                         'bg-blue-100 text-blue-800'
                       }`}>
-                        {insight.priority.toUpperCase()}
+                        {(insight.priority || 'low').toUpperCase()}
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-semibold mb-2">{insight.governance_area}</h4>
-                        <p className="text-sm text-muted-foreground whitespace-pre-line">{insight.summary}</p>
+                        <h4 className="font-semibold mb-2">{insight.governance_area_name}</h4>
+                        <p className="text-sm text-muted-foreground whitespace-pre-line">{insight.insight_summary}</p>
                       </div>
                     </div>
                   </div>

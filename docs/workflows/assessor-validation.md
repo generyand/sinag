@@ -1,8 +1,8 @@
 # Assessor and Validator Validation Workflow
 
-This document describes the validation workflow for both Assessors and Validators in the SINAG SGLGB assessment system.
+This document describes the validation workflow for both Assessors and Validators in the SINAG SGLGB assessment system, including the calibration workflow introduced in Phase 2.
 
-**Last Updated:** 2025-11-18
+**Last Updated:** 2025-11-27
 
 ---
 
@@ -16,11 +16,12 @@ This document describes the validation workflow for both Assessors and Validator
 - Provide clear, actionable comments/notes to BLGU
 - Identify issues that need to be addressed
 - **Cannot** determine Pass/Fail/Conditional status for indicators
+- Can request ONE rework cycle from BLGU
 
 **Access:** Can work with any barangay (no governance area restriction)
 
 ### Validator
-**Purpose:** Perform final validation and determine Pass/Fail status
+**Purpose:** Perform final validation, determine Pass/Fail status, and calibrate specific indicators
 
 **Responsibilities:**
 - Review indicator responses and uploaded MOV files
@@ -28,12 +29,15 @@ This document describes the validation workflow for both Assessors and Validator
 - **Determine final Pass/Fail/Conditional status** for each indicator
 - Review assessor remarks (if any)
 - Make the final decision on indicator compliance
+- **Request calibration** for specific governance areas (routes back to same Validator)
 
-**Access:** Assigned to specific governance areas only
+**Access:** Assigned to specific governance areas only via `validator_area_id`
 
 ---
 
 ## Workflow Overview
+
+### Main Workflow (Including Calibration)
 
 ```mermaid
 graph TD
@@ -47,9 +51,35 @@ graph TD
     D -->|Looks Good| H[Assessor Finalizes]
     H --> I[Status: AWAITING_FINAL_VALIDATION]
     I --> J[Validator Reviews]
-    J --> K[Validator Determines Pass/Fail]
-    K --> L[Validator Finalizes]
-    L --> M[Status: COMPLETED]
+    J --> K{Validator Decision}
+    K -->|Issues in Area| L[Request Calibration]
+    L --> M[Status: REWORK + is_calibration_rework=true]
+    M --> N[BLGU Addresses Calibration]
+    N --> O[BLGU Submits for Calibration]
+    O --> J
+    K -->|All Good| P[Validator Determines Pass/Fail]
+    P --> Q[Validator Finalizes]
+    Q --> R[Status: COMPLETED]
+```
+
+### Parallel Calibration Flow
+
+Multiple validators can request calibration simultaneously for different governance areas:
+
+```mermaid
+graph TD
+    A[Assessment in AWAITING_FINAL_VALIDATION] --> B[Validator 1 Reviews Area 1]
+    A --> C[Validator 2 Reviews Area 2]
+    A --> D[Validator 3 Reviews Area 3]
+    B -->|Issues| E[Calibration Request Area 1]
+    C -->|Issues| F[Calibration Request Area 2]
+    D -->|Good| G[Mark Area 3 Complete]
+    E --> H[pending_calibrations updated]
+    F --> H
+    H --> I[BLGU Sees All Pending Calibrations]
+    I --> J[BLGU Addresses Each Area]
+    J --> K[Submit for Calibration per Area]
+    K --> L[Each Validator Reviews Their Area]
 ```
 
 ---
@@ -166,7 +196,54 @@ graph TD
 - Provides context from initial review
 - Helps validator make informed decisions
 
-### 5. Finalize Validation
+### 5. Calibration Workflow (Validator Only)
+
+Validators can request **calibration** for indicators in their governance area that need targeted corrections. Unlike rework (which is triggered by Assessors), calibration:
+- Is requested by Validators during final validation
+- Routes BLGU submission back to the **same Validator** (not to all Assessors)
+- Is limited to indicators within the Validator's governance area
+- Supports **parallel calibration** - multiple Validators can request calibration simultaneously
+
+**Calibration Process:**
+
+1. **Validator Identifies Issues**: During table validation, Validator marks indicators as "Unmet"
+2. **Request Calibration**: Validator clicks "Request Calibration" button
+3. **System Updates Assessment**:
+   - Sets `is_calibration_rework = true`
+   - Records `calibration_validator_id` (or adds to `pending_calibrations` array)
+   - Stores `calibration_requested_at` timestamp
+   - Generates AI calibration summary (per governance area)
+4. **BLGU Receives Notification**: Dashboard shows calibration details with:
+   - Which governance area needs attention
+   - AI-generated summary of issues (in preferred language)
+   - List of affected indicators and MOVs
+5. **BLGU Addresses Issues**: Only indicators in the calibrated area are unlocked
+6. **BLGU Submits for Calibration**: Uses dedicated calibration submission endpoint
+7. **Validator Reviews**: Assessment returns to the same Validator for re-review
+
+**Parallel Calibration Support:**
+
+Multiple Validators can request calibration for different governance areas simultaneously:
+
+```python
+# Database fields for parallel calibration
+pending_calibrations: list  # List of calibration requests
+# Format: [{"validator_id": 1, "governance_area_id": 2, "governance_area_name": "...",
+#           "validator_name": "...", "requested_at": "...", "approved": false}, ...]
+
+calibration_summaries_by_area: dict  # AI summaries per governance area
+# Format: {"1": {"ceb": {...}, "en": {...}}, "2": {...}}
+```
+
+**BLGU Dashboard During Calibration:**
+
+The dashboard displays:
+- `pending_calibrations_count`: Total number of areas needing attention
+- `calibration_governance_areas`: List of all pending calibration requests with details
+- `ai_summaries_by_area`: AI-generated summaries grouped by governance area
+- Multi-language support: `ceb` (Bisaya), `en` (English), `fil` (Tagalog)
+
+### 6. Finalize Validation
 - **Condition:** All indicators have Met/Unmet/Considered status
 - **Action:** "Finalize Validation" button
 - **Result:** Status changes to `COMPLETED`
@@ -180,9 +257,22 @@ graph TD
 | `DRAFT` | BLGU is filling out | BLGU only | Submit |
 | `SUBMITTED` | Submitted for review | Assessors | Review, Send Rework, or Finalize |
 | `IN_REVIEW` | Assessor reviewing | Assessors | Continue review |
-| `REWORK` | Needs revision (once only) | BLGU, Assessors | BLGU revises and resubmits |
-| `AWAITING_FINAL_VALIDATION` | Ready for validator | Validators | Determine Pass/Fail, Finalize |
+| `REWORK` | Needs revision | BLGU, Assessors/Validators | BLGU revises and resubmits |
+| `REWORK` + `is_calibration_rework=true` | Calibration needed | BLGU, Validator | BLGU addresses specific area, submits to Validator |
+| `AWAITING_FINAL_VALIDATION` | Ready for validator | Validators | Determine Pass/Fail, Calibrate, or Finalize |
 | `COMPLETED` | Validation complete | All | View final results |
+
+### Calibration vs. Rework
+
+| Aspect | Rework (Assessor) | Calibration (Validator) |
+|--------|-------------------|-------------------------|
+| **Who triggers** | Assessor | Validator |
+| **When triggered** | During initial review | During final validation |
+| **Scope** | Any indicators | Only Validator's governance area |
+| **Returns to** | All Assessors | Same Validator |
+| **Limit** | 1 per assessment | 1 per governance area |
+| **AI Summary** | Yes (rework_summary) | Yes (calibration_summary per area) |
+| **Field flag** | `rework_count = 1` | `is_calibration_rework = true` |
 
 ---
 
@@ -191,15 +281,17 @@ graph TD
 | Feature | Assessor | Validator |
 |---------|----------|-----------|
 | **Access** | All barangays | Assigned governance area only |
-| **Review MOVs** | ✅ Yes | ✅ Yes |
-| **Leave Comments** | ✅ Yes | ✅ Yes |
-| **Set Pass/Fail Status** | ❌ No | ✅ Yes |
-| **See Automatic Result** | ❌ No | ✅ Yes |
-| **Override Automatic Result** | ❌ No | ✅ Yes |
-| **Send for Rework** | ✅ Yes (once) | ❌ No |
-| **Final Validation** | ✅ Forward to Validator | ✅ Mark as COMPLETED |
-| **View Assessor Remarks** | N/A | ✅ Yes (read-only) |
-| **Write Assessor Remarks** | ✅ Yes | ❌ No |
+| **Review MOVs** | Yes | Yes |
+| **Leave Comments** | Yes | Yes |
+| **Set Pass/Fail Status** | No | Yes |
+| **See Automatic Result** | No | Yes |
+| **Override Automatic Result** | No | Yes |
+| **Send for Rework** | Yes (once) | No |
+| **Request Calibration** | No | Yes (per area) |
+| **Final Validation** | Forward to Validator | Mark as COMPLETED |
+| **View Assessor Remarks** | N/A | Yes (read-only) |
+| **Write Assessor Remarks** | Yes | No |
+| **Create MOV Annotations** | Yes | Yes |
 
 ---
 
@@ -301,6 +393,9 @@ graph TD
 ## Technical Implementation
 
 ### Backend Endpoints
+
+**Validation Endpoints:**
+
 - `POST /api/v1/assessor/assessment-responses/{response_id}/validate`
   - Saves validation status, public comment, and assessor remarks
   - Used by both assessors (comments only) and validators (full validation)
@@ -314,12 +409,66 @@ graph TD
   - Assessors: Changes status to AWAITING_FINAL_VALIDATION
   - Validators: Changes status to COMPLETED
 
+**Calibration Endpoints:**
+
+- `POST /api/v1/assessor/assessments/{assessment_id}/request-calibration`
+  - Validator requests calibration for their governance area
+  - Sets `is_calibration_rework = true` and records validator details
+  - Generates AI calibration summary in multiple languages
+
+- `POST /api/v1/assessments/{assessment_id}/submit-for-calibration`
+  - BLGU submits corrected assessment back to the requesting Validator
+  - Only available when `is_calibration_rework = true`
+  - Routes to specific Validator, not general Assessor queue
+
+**MOV Annotation Endpoints:**
+
+- `POST /api/v1/assessor/movs/{mov_file_id}/annotations`
+  - Create annotation on a MOV file (PDF or image)
+  - Supports rectangle annotations with comments
+
+- `GET /api/v1/assessor/movs/{mov_file_id}/annotations`
+  - Get all annotations for a specific MOV file
+
+- `GET /api/v1/assessor/assessments/{assessment_id}/annotations`
+  - Get all annotations for an entire assessment
+
+- `PATCH /api/v1/assessor/annotations/{annotation_id}`
+  - Update an existing annotation
+
+- `DELETE /api/v1/assessor/annotations/{annotation_id}`
+  - Delete an annotation
+
 ### Schema
+
+**Validation Request:**
 ```python
 class ValidationRequest(BaseModel):
     validation_status: ValidationStatus  # Pass, Fail, Conditional
     public_comment: str | None = None    # Visible to BLGU
     assessor_remarks: str | None = None  # Visible to validators only
+```
+
+**Calibration Fields (Assessment Model):**
+```python
+# Single calibration tracking (legacy)
+is_calibration_rework: bool = False      # True if in calibration mode
+calibration_validator_id: int | None     # FK to requesting Validator
+calibration_count: int = 0               # Number of calibrations per area
+
+# Parallel calibration support
+pending_calibrations: list = []          # List of pending calibration requests
+calibration_summaries_by_area: dict = {} # AI summaries per governance area
+```
+
+**MOV Annotation:**
+```python
+class MOVAnnotation(BaseModel):
+    annotation_type: str        # "highlight", "underline", "rectangle"
+    page: int | None           # Page number for PDFs
+    rect: dict | None          # Bounding box {x, y, width, height}
+    rects: list | None         # Multiple rectangles (for text highlights)
+    comment: str               # Annotation comment text
 ```
 
 **Note:** `internal_note` field was removed in November 2025
@@ -328,13 +477,38 @@ class ValidationRequest(BaseModel):
 
 ## Migration Notes
 
-**November 2025 Update:**
-- Removed `internal_note` field from validation requests
-- Simplified comment structure to two fields:
-  - `public_comment` - Visible to BLGU
-  - `assessor_remarks` - Visible to validators
-- Clarified role boundaries: Assessors review, Validators validate
-- Introduced automatic result calculation for validators
+**November 2025 Updates:**
+
+1. **Internal Notes Removal:**
+   - Removed `internal_note` field from validation requests
+   - Simplified comment structure to two fields:
+     - `public_comment` - Visible to BLGU
+     - `assessor_remarks` - Visible to validators
+   - Clarified role boundaries: Assessors review, Validators validate
+   - Introduced automatic result calculation for validators
+
+2. **Calibration Workflow (Phase 2):**
+   - Added `is_calibration_rework` boolean flag to Assessment model
+   - Added `calibration_validator_id` FK to track requesting Validator
+   - Added `calibration_count` to limit calibrations per governance area
+   - Database migration: `de1d0f3186e7_add_calibration_count_to_assessments.py`
+   - Database migration: `3875cc740ca0_add_calibration_tracking_fields_to_.py`
+
+3. **Parallel Calibration Support:**
+   - Added `pending_calibrations` JSONB field for multiple simultaneous calibrations
+   - Added `calibration_summaries_by_area` JSONB field for per-area AI summaries
+   - BLGU dashboard now shows all pending calibrations and their statuses
+
+4. **AI-Generated Summaries:**
+   - Added multi-language support: Bisaya (ceb), English (en), Tagalog (fil)
+   - Rework summaries stored in `rework_summary` field
+   - Calibration summaries stored in `calibration_summary` (legacy) or `calibration_summaries_by_area` (parallel)
+   - User language preference stored in `users.preferred_language`
+
+5. **MOV Annotations:**
+   - Added interactive annotation support for PDF and image MOVs
+   - Assessors/Validators can draw rectangles and add comments
+   - Annotations visible to BLGU during rework/calibration
 
 ---
 
@@ -342,3 +516,4 @@ class ValidationRequest(BaseModel):
 - [Indicator Builder Specification](../indicator-builder-specification.md)
 - [BLGU Assessment Workflow](./blgu-assessment.md)
 - [Classification Algorithm](./classification-algorithm.md)
+- [Intelligence Layer Workflow](./intelligence-layer.md)

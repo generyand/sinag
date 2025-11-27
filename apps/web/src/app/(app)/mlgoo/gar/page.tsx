@@ -48,7 +48,7 @@ export default function GARPage() {
     {
       query: {
         enabled: !!selectedAssessmentId && parseInt(selectedAssessmentId) > 0,
-      },
+      } as any,
     }
   );
 

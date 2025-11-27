@@ -63,7 +63,7 @@ export function GARReportDisplay({ data }: GARReportDisplayProps) {
                         className={`px-4 py-2 ${
                           indicator.is_header ? 'font-bold' : ''
                         }`}
-                        style={{ paddingLeft: `${16 + indicator.indent_level * 16}px` }}
+                        style={{ paddingLeft: `${16 + (indicator.indent_level || 0) * 16}px` }}
                       >
                         {indicator.indicator_code} {indicator.indicator_name}
                       </td>
@@ -196,7 +196,7 @@ export function GARReportDisplay({ data }: GARReportDisplayProps) {
 
       {/* Generated timestamp */}
       <p className="text-sm text-[var(--muted-foreground)] text-center">
-        Report generated: {new Date(data.generated_at).toLocaleString()}
+        Report generated: {data.generated_at ? new Date(data.generated_at).toLocaleString() : 'N/A'}
       </p>
     </div>
   );

@@ -497,7 +497,7 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                                   field.onChange(checked);
                                                   // If YES is checked, uncheck NO (mutually exclusive)
                                                   if (checked) {
-                                                    setValue(`${itemKey}_no` as any, false);
+                                                    setValue(`${itemKey}_no` as any, false as any);
                                                   }
                                                 }}
                                               />
@@ -519,7 +519,7 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                                   field.onChange(checked);
                                                   // If NO is checked, uncheck YES (mutually exclusive)
                                                   if (checked) {
-                                                    setValue(`${itemKey}_yes` as any, false);
+                                                    setValue(`${itemKey}_yes` as any, false as any);
                                                   }
                                                 }}
                                               />

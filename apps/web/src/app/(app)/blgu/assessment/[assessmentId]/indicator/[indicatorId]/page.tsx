@@ -57,7 +57,7 @@ export default function IndicatorFormPage() {
   } = useGetBlguDashboardAssessmentId(assessmentId, undefined, {
     query: {
       enabled: !!assessmentId,
-    },
+    } as any,
   });
 
   // Determine if assessment is locked (SUBMITTED, IN_REVIEW, AWAITING_FINAL_VALIDATION, COMPLETED)

@@ -45,7 +45,7 @@ export default function BLGUDashboardPage() {
       refetchOnWindowFocus: true,
       refetchOnMount: true,
       staleTime: 0, // Always treat as stale to ensure fresh data
-    },
+    } as any,
   });
 
   const assessmentId = (myAssessment?.assessment as any)?.id;
@@ -67,7 +67,7 @@ export default function BLGUDashboardPage() {
       refetchOnWindowFocus: true,
       refetchOnMount: true,
       staleTime: 0, // Always treat as stale to ensure fresh data (important for rework status updates)
-    },
+    } as any,
   });
 
   // Handler for language change - refetches dashboard with new language
