@@ -319,11 +319,11 @@ class StartupService:
             db.close()
 
     def _create_external_users(self) -> None:
-        """Create external stakeholder users (Katuparan Center, UMDC Peace Center) if they don't exist."""
+        """Create external stakeholder user (Katuparan Center) if it doesn't exist."""
         logger.info("🏛️  Checking for external stakeholder users...")
         db: Session = SessionLocal()
         try:
-            # External users configuration
+            # External user configuration (Katuparan Center for research purposes)
             external_users = [
                 {
                     "email": "katuparan@sulop.gov.ph",
@@ -331,13 +331,6 @@ class StartupService:
                     "role": UserRole.KATUPARAN_CENTER_USER,
                     "password": "katuparan2025",  # Default password - should be changed
                     "description": "Katuparan Center - Research and CapDev",
-                },
-                {
-                    "email": "umdc@sulop.gov.ph",
-                    "name": "UMDC Peace Center",
-                    "role": UserRole.UMDC_PEACE_CENTER_USER,
-                    "password": "umdc2025",  # Default password - should be changed
-                    "description": "UMDC Peace Center - Peace and Order Analytics",
                 },
             ]
 
@@ -369,7 +362,7 @@ class StartupService:
             if created_count > 0:
                 db.commit()
                 logger.info(f"  - Created {created_count} external stakeholder user(s) successfully.")
-                logger.info("  ⚠️  Default passwords: katuparan2025, umdc2025 (must be changed on first login)")
+                logger.info("  ⚠️  Default password: katuparan2025 (must be changed on first login)")
             else:
                 logger.info("  - All external users already exist. Skipping.")
 

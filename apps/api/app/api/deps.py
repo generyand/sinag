@@ -359,8 +359,8 @@ async def get_current_external_user(
     """
     Get the current authenticated external stakeholder user.
 
-    Restricts access to users with KATUPARAN_CENTER_USER or UMDC_PEACE_CENTER_USER roles.
-    These users have read-only access to aggregated, anonymized SGLGB data.
+    Restricts access to users with KATUPARAN_CENTER_USER role.
+    These users have read-only access to aggregated, anonymized SGLGB data for research purposes.
 
     Args:
         current_user: Current active user from get_current_active_user dependency
@@ -371,10 +371,7 @@ async def get_current_external_user(
     Raises:
         HTTPException: If user doesn't have external stakeholder role
     """
-    if current_user.role not in (
-        UserRole.KATUPARAN_CENTER_USER,
-        UserRole.UMDC_PEACE_CENTER_USER,
-    ):
+    if current_user.role != UserRole.KATUPARAN_CENTER_USER:
         # Log unauthorized access attempt
         logger.warning(
             f"Unauthorized external analytics access attempt by user_id={current_user.id} "

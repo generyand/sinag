@@ -238,7 +238,7 @@ export function useGetExternalAnalyticsTopFailingIndicators<TData = Awaited<Retu
 
 
 /**
- * Returns aggregated AI-generated recommendations and capacity development needs. For UMDC Peace Center users, insights are filtered to focus on security, social protection, and disaster preparedness areas.
+ * Returns aggregated AI-generated recommendations and capacity development needs for research purposes.
  * @summary Get Anonymized AI Insights
  */
 export const getExternalAnalyticsAiInsightsSummary = (

@@ -64,8 +64,6 @@ export type AnnotationResponseRects = PdfRect[] | null;
 export interface AnonymizedAIInsightsResponse {
   /** Aggregated AI-generated insights */
   insights: AnonymizedInsight[];
-  /** True if insights are filtered for UMDC Peace Center focus areas */
-  filtered_for_umdc?: boolean;
   /** Total number of assessments used to generate these insights */
   total_assessments_analyzed: number;
 }

@@ -646,7 +646,7 @@ This application implements a structured workflow:
 
 ## External Stakeholder Analytics (Epic 5)
 
-The platform provides read-only analytics access for external stakeholders from Katuparan Center and UMDC Peace Center. All data is aggregated and anonymized to protect individual barangay privacy.
+The platform provides read-only analytics access for external stakeholders from Katuparan Center for research purposes. All data is aggregated and anonymized to protect individual barangay privacy.
 
 ### External Analytics Endpoints
 
@@ -665,13 +665,11 @@ Available at `/api/v1/external/analytics/`:
 1. **Minimum Threshold**: Data only shown if ≥5 barangays assessed (prevents identification)
 2. **Aggregation**: All metrics are aggregated across all barangays
 3. **No Individual Data**: Individual barangay performance cannot be identified
-4. **UMDC Filtering**: UMDC Peace Center users see insights filtered to Security, Social Protection, and Disaster Preparedness areas
 
 ### Access Control
 
-Only users with these roles can access external analytics:
+Only users with this role can access external analytics:
 - `KATUPARAN_CENTER_USER`
-- `UMDC_PEACE_CENTER_USER`
 
 Uses the `get_current_external_user` dependency for authentication.
 
@@ -801,15 +799,9 @@ The system implements role-based access control (RBAC) with six distinct user ro
    - Limited to their assigned barangay's data
 
 5. **KATUPARAN_CENTER_USER** (External Stakeholder)
-   - External user from Katuparan Center with read-only analytics access
+   - External user from Katuparan Center with read-only analytics access for research purposes
    - Can view aggregated, anonymized SGLGB data
    - No access to individual barangay data (privacy protection)
-   - Uses `/api/v1/external/analytics/*` endpoints
-
-6. **UMDC_PEACE_CENTER_USER** (External Stakeholder)
-   - External user from UMDC Peace Center with read-only analytics access
-   - Can view aggregated, anonymized SGLGB data
-   - AI insights automatically filtered for Security, Social Protection, and Disaster Preparedness areas
    - Uses `/api/v1/external/analytics/*` endpoints
 
 ### Role-Based Field Requirements
@@ -832,16 +824,13 @@ MLGOO_DILG role → No assignments required
 
 KATUPARAN_CENTER_USER role → No assignments required (external read-only)
                              Clears both validator_area_id and barangay_id
-
-UMDC_PEACE_CENTER_USER role → No assignments required (external read-only)
-                              Clears both validator_area_id and barangay_id
 ```
 
 ### Database Schema
 
 The User model includes these role-related fields:
 
-- `role`: String enum (MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER, KATUPARAN_CENTER_USER, UMDC_PEACE_CENTER_USER)
+- `role`: String enum (MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER, KATUPARAN_CENTER_USER)
 - `validator_area_id`: Integer (nullable) - FK to governance_areas table
 - `barangay_id`: Integer (nullable) - FK to barangays table
 

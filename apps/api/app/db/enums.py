@@ -15,8 +15,7 @@ class UserRole(str, enum.Enum):
     - ASSESSOR: Assessor role with arbitrary barangay selection (enum value 1 in DB)
     - VALIDATOR: Validator role with governance area specialization (enum value 2 in DB)
     - BLGU_USER: BLGU user role with specific barangay assignment (enum value 3 in DB)
-    - KATUPARAN_CENTER_USER: External user from Katuparan Center with read-only access to aggregated data (enum value 4 in DB)
-    - UMDC_PEACE_CENTER_USER: External user from UMDC Peace Center with read-only access to aggregated data (enum value 5 in DB)
+    - KATUPARAN_CENTER_USER: External user from Katuparan Center with read-only access to aggregated data for research purposes (enum value 4 in DB)
     """
 
     MLGOO_DILG = "MLGOO_DILG"
@@ -24,7 +23,6 @@ class UserRole(str, enum.Enum):
     VALIDATOR = "VALIDATOR"
     BLGU_USER = "BLGU_USER"
     KATUPARAN_CENTER_USER = "KATUPARAN_CENTER_USER"
-    UMDC_PEACE_CENTER_USER = "UMDC_PEACE_CENTER_USER"
 
 
 class AreaType(str, enum.Enum):

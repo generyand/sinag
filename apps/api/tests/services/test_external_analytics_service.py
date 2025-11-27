@@ -347,38 +347,18 @@ def test_get_top_failing_indicators_no_data(db_session: Session):
 # ====================================================================
 
 
-def test_get_anonymized_ai_insights_without_umdc_filter(
+def test_get_anonymized_ai_insights(
     db_session: Session,
     governance_areas,
     five_blgu_users,
     five_assessments_passed,
 ):
-    """Test AI insights without UMDC filtering"""
-    result = external_analytics_service.get_anonymized_ai_insights(
-        db_session, filter_for_umdc=False
-    )
+    """Test AI insights retrieval (no filtering - UMDC feature removed)"""
+    result = external_analytics_service.get_anonymized_ai_insights(db_session)
 
     assert isinstance(result.insights, list)
     # Note: Actual insights depend on rework data in database
     # This test just verifies structure
-
-
-def test_get_anonymized_ai_insights_with_umdc_filter(
-    db_session: Session,
-    governance_areas,
-    five_blgu_users,
-    five_assessments_passed,
-):
-    """Test AI insights with UMDC filtering (only SS, SP, DP areas)"""
-    result = external_analytics_service.get_anonymized_ai_insights(
-        db_session, filter_for_umdc=True
-    )
-
-    assert isinstance(result.insights, list)
-
-    # All insights should be from UMDC focus areas (SS, SP, DP)
-    for insight in result.insights:
-        assert insight.governance_area_code in ["SS", "SP", "DP"]
 
 
 def test_get_anonymized_ai_insights_no_data(db_session: Session):
@@ -413,9 +393,7 @@ def test_get_complete_dashboard(
             db_session.add(response)
     db_session.commit()
 
-    result = external_analytics_service.get_complete_dashboard(
-        db_session, filter_for_umdc=False
-    )
+    result = external_analytics_service.get_complete_dashboard(db_session)
 
     # Check all sections are present
     assert result.overall_compliance is not None
@@ -427,23 +405,6 @@ def test_get_complete_dashboard(
     assert result.overall_compliance.total_barangays == 5
     assert result.overall_compliance.passed_count == 3
     assert result.overall_compliance.failed_count == 2
-
-
-def test_get_complete_dashboard_with_umdc_filter(
-    db_session: Session,
-    governance_areas,
-    indicators,
-    five_blgu_users,
-    five_assessments_passed,
-):
-    """Test complete dashboard with UMDC filtering"""
-    result = external_analytics_service.get_complete_dashboard(
-        db_session, filter_for_umdc=True
-    )
-
-    # AI insights should be filtered to UMDC areas
-    for insight in result.ai_insights.insights:
-        assert insight.governance_area_code in ["SS", "SP", "DP"]
 
 
 def test_get_complete_dashboard_insufficient_data_raises_error(
@@ -553,7 +514,6 @@ def test_csv_export_generation(db_session: Session, mixed_assessments):
     csv_content = external_analytics_service.generate_csv_export(
         db=db_session,
         assessment_cycle=None,
-        filter_for_umdc=False,
         user_email="test@example.com",
         user_role="KATUPARAN_CENTER_USER"
     )
@@ -575,21 +535,8 @@ def test_csv_export_generation(db_session: Session, mixed_assessments):
     lines = csv_content.split('\n')
     assert len(lines) > 10  # Should have multiple sections
 
-
-def test_csv_export_with_umdc_filter(db_session: Session, mixed_assessments):
-    """Test CSV export with UMDC filtering applied"""
-    csv_content = external_analytics_service.generate_csv_export(
-        db=db_session,
-        assessment_cycle=None,
-        filter_for_umdc=True,
-        user_email="umdc@example.com",
-        user_role="UMDC_PEACE_CENTER_USER"
-    )
-
-    # Verify UMDC filter indicator is present
-    assert "Filtered for UMDC Peace Center" in csv_content
-    assert isinstance(csv_content, str)
-    assert len(csv_content) > 0
+    # Verify no UMDC filtering (feature removed)
+    assert "Filtered for UMDC Peace Center" not in csv_content
 
 
 def test_csv_export_with_insufficient_data(db_session: Session, governance_areas, indicators):
@@ -624,7 +571,6 @@ def test_csv_export_with_insufficient_data(db_session: Session, governance_areas
         external_analytics_service.generate_csv_export(
             db=db_session,
             assessment_cycle=None,
-            filter_for_umdc=False,
             user_email="test@example.com",
             user_role="KATUPARAN_CENTER_USER"
         )
@@ -638,7 +584,6 @@ def test_pdf_export_generation(db_session: Session, mixed_assessments):
     pdf_content = external_analytics_service.generate_pdf_export(
         db=db_session,
         assessment_cycle=None,
-        filter_for_umdc=False,
         user_email="test@example.com",
         user_role="KATUPARAN_CENTER_USER"
     )
@@ -652,22 +597,6 @@ def test_pdf_export_generation(db_session: Session, mixed_assessments):
 
     # PDF should be substantial in size (at least 4KB for formatted report)
     assert len(pdf_content) > 4000
-
-
-def test_pdf_export_with_umdc_filter(db_session: Session, mixed_assessments):
-    """Test PDF export with UMDC filtering applied"""
-    pdf_content = external_analytics_service.generate_pdf_export(
-        db=db_session,
-        assessment_cycle=None,
-        filter_for_umdc=True,
-        user_email="umdc@example.com",
-        user_role="UMDC_PEACE_CENTER_USER"
-    )
-
-    # Verify PDF is generated
-    assert isinstance(pdf_content, bytes)
-    assert len(pdf_content) > 0
-    assert pdf_content[:4] == b'%PDF'
 
 
 def test_pdf_export_with_insufficient_data(db_session: Session, governance_areas, indicators):
@@ -702,7 +631,6 @@ def test_pdf_export_with_insufficient_data(db_session: Session, governance_areas
         external_analytics_service.generate_pdf_export(
             db=db_session,
             assessment_cycle=None,
-            filter_for_umdc=False,
             user_email="test@example.com",
             user_role="KATUPARAN_CENTER_USER"
         )
@@ -784,9 +712,8 @@ def test_log_export_audit_failure(caplog):
     external_analytics_service._log_export_audit(
         export_type="PDF",
         user_email="test@example.com",
-        user_role="UMDC_PEACE_CENTER_USER",
+        user_role="KATUPARAN_CENTER_USER",
         assessment_cycle="2024-Q1",
-        umdc_filtered=True,
         total_barangays=0,
         success=False,
         error_message="Insufficient data for anonymization"
@@ -804,7 +731,6 @@ def test_csv_export_filename_format(db_session: Session, mixed_assessments):
     csv_content = external_analytics_service.generate_csv_export(
         db=db_session,
         assessment_cycle=None,
-        filter_for_umdc=False,
         user_email="test@example.com",
         user_role="KATUPARAN_CENTER_USER"
     )
@@ -821,7 +747,6 @@ def test_pdf_export_contains_all_sections(db_session: Session, mixed_assessments
     pdf_content = external_analytics_service.generate_pdf_export(
         db=db_session,
         assessment_cycle=None,
-        filter_for_umdc=False,
         user_email="test@example.com",
         user_role="KATUPARAN_CENTER_USER"
     )
@@ -867,24 +792,20 @@ def test_dashboard_caching_cache_miss_then_hit(db_session: Session, mixed_assess
     cache.invalidate_external_analytics()
 
 
-def test_dashboard_caching_different_params_different_cache(db_session: Session, mixed_assessments):
-    """Test that different parameters use different cache keys"""
+def test_dashboard_caching_multiple_calls_use_cache(db_session: Session, mixed_assessments):
+    """Test that multiple calls use cached data"""
     from app.core.cache import cache
 
     # Clear cache
     cache.invalidate_external_analytics()
 
-    # Call with different UMDC filter settings
-    dashboard_katuparan = external_analytics_service.get_complete_dashboard(
-        db_session, filter_for_umdc=False
-    )
-    dashboard_umdc = external_analytics_service.get_complete_dashboard(
-        db_session, filter_for_umdc=True
-    )
+    # Call multiple times - should use cache after first call
+    dashboard1 = external_analytics_service.get_complete_dashboard(db_session)
+    dashboard2 = external_analytics_service.get_complete_dashboard(db_session)
 
-    # Both should return data
-    assert dashboard_katuparan.overall_compliance.total_barangays == 5
-    assert dashboard_umdc.overall_compliance.total_barangays == 5
+    # Both should return same data
+    assert dashboard1.overall_compliance.total_barangays == 5
+    assert dashboard2.overall_compliance.total_barangays == 5
 
     # Cleanup
     cache.invalidate_external_analytics()

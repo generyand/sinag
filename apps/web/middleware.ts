@@ -74,7 +74,7 @@ export function middleware(request: NextRequest) {
       } else if (userRole === 'BLGU_USER') {
         dashboardUrl = new URL('/blgu/dashboard', request.url);
         console.log(`Middleware: Redirecting BLGU_USER to ${dashboardUrl.pathname}`);
-      } else if (userRole === 'KATUPARAN_CENTER_USER' || userRole === 'UMDC_PEACE_CENTER_USER') {
+      } else if (userRole === 'KATUPARAN_CENTER_USER') {
         dashboardUrl = new URL('/external-analytics', request.url);
         console.log(`Middleware: Redirecting ${userRole} to ${dashboardUrl.pathname}`);
       } else {
@@ -177,7 +177,7 @@ export function middleware(request: NextRequest) {
       }
 
       // Check role-based access for external analytics routes
-      if (isExternalAnalyticsRoute && userRole !== 'KATUPARAN_CENTER_USER' && userRole !== 'UMDC_PEACE_CENTER_USER') {
+      if (isExternalAnalyticsRoute && userRole !== 'KATUPARAN_CENTER_USER') {
         console.log(`Middleware: Redirecting non-external user (${userRole}) from ${pathname} to appropriate dashboard`);
         let dashboardUrl;
         if (userRole === 'MLGOO_DILG') {
@@ -193,7 +193,7 @@ export function middleware(request: NextRequest) {
       }
 
       // Prevent external users from accessing internal routes
-      if ((userRole === 'KATUPARAN_CENTER_USER' || userRole === 'UMDC_PEACE_CENTER_USER') && !isExternalAnalyticsRoute) {
+      if (userRole === 'KATUPARAN_CENTER_USER' && !isExternalAnalyticsRoute) {
         console.log(`Middleware: Redirecting external user (${userRole}) from ${pathname} to external analytics dashboard`);
         const dashboardUrl = new URL('/external-analytics', request.url);
         return NextResponse.redirect(dashboardUrl);

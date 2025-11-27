@@ -12,9 +12,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 /**
  * External Analytics Dashboard Page
  *
- * Provides aggregated, anonymized SGLGB data for external stakeholders:
- * - Katuparan Center: Research and CapDev program development
- * - UMDC Peace Center: Peace and order focused analytics
+ * Provides aggregated, anonymized SGLGB data for Katuparan Center
+ * for research and CapDev program development purposes.
  *
  * All data is aggregated to protect individual barangay privacy.
  */

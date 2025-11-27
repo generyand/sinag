@@ -1,6 +1,6 @@
 # 📊 External Analytics Schemas
-# Pydantic models for external stakeholder analytics (Katuparan Center, UMDC Peace Center)
-# These schemas provide aggregated, anonymized SGLGB data for research and CapDev purposes
+# Pydantic models for external stakeholder analytics (Katuparan Center)
+# These schemas provide aggregated, anonymized SGLGB data for research purposes
 
 from pydantic import BaseModel, ConfigDict, Field
 from typing import List, Optional
@@ -102,19 +102,12 @@ class AnonymizedInsight(BaseModel):
 
 class AnonymizedAIInsightsResponse(BaseModel):
     """
-    Response containing aggregated AI insights.
-
-    For UMDC Peace Center, insights are filtered to highlight Security,
-    Social Protection, and Disaster Preparedness areas.
+    Response containing aggregated AI insights for Katuparan Center research.
     """
 
     model_config = ConfigDict(from_attributes=True)
 
     insights: List[AnonymizedInsight] = Field(description="Aggregated AI-generated insights")
-    filtered_for_umdc: bool = Field(
-        False,
-        description="True if insights are filtered for UMDC Peace Center focus areas"
-    )
     total_assessments_analyzed: int = Field(
         description="Total number of assessments used to generate these insights"
     )

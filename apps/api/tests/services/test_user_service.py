@@ -281,6 +281,43 @@ def test_create_user_admin_sets_validator_area_null_for_non_validators(
     assert result.validator_area_id is None
 
 
+def test_create_katuparan_center_user_without_assignments(db_session: Session):
+    """Test creating Katuparan Center user without validator_area_id or barangay_id"""
+    user_data = UserAdminCreate(
+        email="katuparan@sulop.gov.ph",
+        name="Katuparan Center User",
+        password="password123",
+        role=UserRole.KATUPARAN_CENTER_USER,
+    )
+
+    result = user_service.create_user_admin(db_session, user_data)
+
+    assert result.id is not None
+    assert result.email == "katuparan@sulop.gov.ph"
+    assert result.role == UserRole.KATUPARAN_CENTER_USER
+    assert result.validator_area_id is None
+    assert result.barangay_id is None
+    assert result.is_active is True
+
+
+def test_create_katuparan_center_user_clears_assignments(db_session: Session):
+    """Test that creating Katuparan Center user clears any provided assignments"""
+    user_data = UserAdminCreate(
+        email="katuparan2@sulop.gov.ph",
+        name="Katuparan Center User 2",
+        password="password123",
+        role=UserRole.KATUPARAN_CENTER_USER,
+        validator_area_id=1,  # Should be cleared
+        barangay_id=1,  # Should be cleared
+    )
+
+    result = user_service.create_user_admin(db_session, user_data)
+
+    assert result.role == UserRole.KATUPARAN_CENTER_USER
+    assert result.validator_area_id is None
+    assert result.barangay_id is None
+
+
 # ====================================================================
 # Update User Tests
 # ====================================================================
@@ -404,6 +441,24 @@ def test_update_user_admin_clears_validator_area_for_non_validator(
 
     assert result.role == UserRole.BLGU_USER
     assert result.validator_area_id is None
+
+
+def test_update_user_to_katuparan_center_clears_assignments(
+    db_session: Session, sample_user: User
+):
+    """Test that changing to Katuparan Center role clears both assignments"""
+    # Give user both assignments
+    sample_user.validator_area_id = 1
+    sample_user.barangay_id = 1
+    db_session.commit()
+
+    update_data = UserAdminUpdate(role=UserRole.KATUPARAN_CENTER_USER)
+
+    result = user_service.update_user_admin(db_session, sample_user.id, update_data)
+
+    assert result.role == UserRole.KATUPARAN_CENTER_USER
+    assert result.validator_area_id is None
+    assert result.barangay_id is None
 
 
 # ====================================================================

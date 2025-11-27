@@ -28,13 +28,11 @@ logger = logging.getLogger(__name__)
 # Minimum number of barangays required for data to be shown (privacy threshold)
 MINIMUM_AGGREGATION_THRESHOLD = 5
 
-# UMDC Peace Center focus areas (for filtered insights)
-UMDC_FOCUS_AREAS = ["SS", "SP", "DP"]  # Security, Social Protection, Disaster Preparedness
-
 
 class ExternalAnalyticsService:
     """
-    Service for providing aggregated, anonymized SGLGB analytics to external stakeholders.
+    Service for providing aggregated, anonymized SGLGB analytics to Katuparan Center
+    for research purposes.
 
     This service implements strict data privacy rules:
     - All data is aggregated (no individual barangay identification)
@@ -49,7 +47,6 @@ class ExternalAnalyticsService:
         user_email: str,
         user_role: str,
         assessment_cycle: Optional[str],
-        umdc_filtered: bool,
         total_barangays: int,
         success: bool = True,
         error_message: Optional[str] = None
@@ -62,7 +59,6 @@ class ExternalAnalyticsService:
             user_email: Email of user performing export
             user_role: Role of user performing export
             assessment_cycle: Assessment cycle filter (if any)
-            umdc_filtered: Whether UMDC filtering was applied
             total_barangays: Number of barangays in aggregated data
             success: Whether export succeeded
             error_message: Error message if export failed
@@ -73,7 +69,6 @@ class ExternalAnalyticsService:
             "user_email": user_email,
             "user_role": user_role,
             "assessment_cycle": assessment_cycle or "latest",
-            "umdc_filtered": umdc_filtered,
             "total_barangays_aggregated": total_barangays,
             "success": success,
             "error": error_message,
@@ -82,8 +77,7 @@ class ExternalAnalyticsService:
         if success:
             logger.info(
                 f"📄 EXPORT AUDIT: {export_type} export by {user_email} ({user_role}) - "
-                f"{total_barangays} barangays aggregated - Cycle: {assessment_cycle or 'latest'} - "
-                f"UMDC filtered: {umdc_filtered}",
+                f"{total_barangays} barangays aggregated - Cycle: {assessment_cycle or 'latest'}",
                 extra=log_entry
             )
         else:
@@ -449,8 +443,7 @@ class ExternalAnalyticsService:
     def get_anonymized_ai_insights(
         self,
         db: Session,
-        assessment_cycle: Optional[str] = None,
-        filter_for_umdc: bool = False
+        assessment_cycle: Optional[str] = None
     ) -> AnonymizedAIInsightsResponse:
         """
         Get aggregated, anonymized AI-generated insights.
@@ -461,7 +454,6 @@ class ExternalAnalyticsService:
         Args:
             db: Database session
             assessment_cycle: Optional cycle filter
-            filter_for_umdc: If True, prioritize insights for UMDC Peace Center focus areas
 
         Returns:
             AnonymizedAIInsightsResponse with aggregated insights
@@ -481,23 +473,20 @@ class ExternalAnalyticsService:
 
         # For now, we'll create placeholder insights
         # In a real implementation, this would use NLP to extract themes from AI recommendations
-        insights = self._extract_common_themes(assessments, filter_for_umdc)
+        insights = self._extract_common_themes(assessments)
 
         logger.info(
-            f"AI insights generated: {len(insights)} themes from {total_analyzed} assessments "
-            f"(UMDC filter: {filter_for_umdc})"
+            f"AI insights generated: {len(insights)} themes from {total_analyzed} assessments"
         )
 
         return AnonymizedAIInsightsResponse(
             insights=insights,
-            filtered_for_umdc=filter_for_umdc,
             total_assessments_analyzed=total_analyzed,
         )
 
     def _extract_common_themes(
         self,
-        assessments: List[Assessment],
-        filter_for_umdc: bool
+        assessments: List[Assessment]
     ) -> List[AnonymizedInsight]:
         """
         Extract common themes from AI recommendations.
@@ -507,7 +496,6 @@ class ExternalAnalyticsService:
 
         Args:
             assessments: List of assessments with AI recommendations
-            filter_for_umdc: Whether to filter for UMDC focus areas
 
         Returns:
             List of anonymized insights
@@ -556,17 +544,12 @@ class ExternalAnalyticsService:
             ),
         ]
 
-        # Filter for UMDC Peace Center if requested
-        if filter_for_umdc:
-            return [i for i in all_insights if i.governance_area_code in UMDC_FOCUS_AREAS]
-
         return all_insights
 
     def get_complete_dashboard(
         self,
         db: Session,
-        assessment_cycle: Optional[str] = None,
-        filter_for_umdc: bool = False
+        assessment_cycle: Optional[str] = None
     ) -> ExternalAnalyticsDashboardResponse:
         """
         Get all dashboard data in a single response.
@@ -576,7 +559,6 @@ class ExternalAnalyticsService:
         Args:
             db: Database session
             assessment_cycle: Optional cycle filter
-            filter_for_umdc: Whether to filter insights for UMDC Peace Center
 
         Returns:
             ExternalAnalyticsDashboardResponse with all dashboard sections
@@ -586,14 +568,13 @@ class ExternalAnalyticsService:
         """
         logger.info(
             f"Generating external analytics dashboard "
-            f"(cycle: {assessment_cycle or 'latest'}, UMDC filter: {filter_for_umdc})"
+            f"(cycle: {assessment_cycle or 'latest'})"
         )
 
         # Build cache key
         cache_key = cache._generate_cache_key(
             prefix="external_dashboard",
-            assessment_cycle=assessment_cycle or "latest",
-            filter_for_umdc=filter_for_umdc
+            assessment_cycle=assessment_cycle or "latest"
         )
 
         # Try to get from cache
@@ -608,7 +589,7 @@ class ExternalAnalyticsService:
         overall_compliance = self.get_overall_compliance(db, assessment_cycle)
         governance_area_performance = self.get_governance_area_performance(db, assessment_cycle)
         top_failing_indicators = self.get_top_failing_indicators(db, assessment_cycle)
-        ai_insights = self.get_anonymized_ai_insights(db, assessment_cycle, filter_for_umdc)
+        ai_insights = self.get_anonymized_ai_insights(db, assessment_cycle)
 
         dashboard = ExternalAnalyticsDashboardResponse(
             overall_compliance=overall_compliance,
@@ -628,7 +609,6 @@ class ExternalAnalyticsService:
         self,
         db: Session,
         assessment_cycle: Optional[str] = None,
-        filter_for_umdc: bool = False,
         user_email: Optional[str] = None,
         user_role: Optional[str] = None
     ) -> str:
@@ -638,7 +618,6 @@ class ExternalAnalyticsService:
         Args:
             db: Database session
             assessment_cycle: Optional cycle filter
-            filter_for_umdc: Whether to filter for UMDC Peace Center
             user_email: Email of user performing export (for audit logging)
             user_role: Role of user performing export (for audit logging)
 
@@ -653,13 +632,12 @@ class ExternalAnalyticsService:
         from datetime import datetime
 
         logger.info(
-            f"Generating CSV export (cycle: {assessment_cycle or 'latest'}, "
-            f"UMDC filter: {filter_for_umdc})"
+            f"Generating CSV export (cycle: {assessment_cycle or 'latest'})"
         )
 
         try:
             # Get all dashboard data
-            dashboard_data = self.get_complete_dashboard(db, assessment_cycle, filter_for_umdc)
+            dashboard_data = self.get_complete_dashboard(db, assessment_cycle)
 
             # Validate export data adheres to anonymization rules
             self._validate_export_data(dashboard_data)
@@ -720,8 +698,6 @@ class ExternalAnalyticsService:
 
             # AI Insights Section
             writer.writerow(["ANONYMIZED AI INSIGHTS"])
-            if filter_for_umdc:
-                writer.writerow(["Filtered for UMDC Peace Center (Security, Social Protection, Disaster Preparedness)"])
             writer.writerow(["Governance Area", "Theme", "Insight Summary", "Frequency", "Priority"])
             for insight in dashboard_data.ai_insights.insights:
                 writer.writerow([
@@ -742,7 +718,6 @@ class ExternalAnalyticsService:
                     user_email=user_email,
                     user_role=user_role,
                     assessment_cycle=assessment_cycle,
-                    umdc_filtered=filter_for_umdc,
                     total_barangays=dashboard_data.overall_compliance.total_barangays,
                     success=True
                 )
@@ -758,7 +733,6 @@ class ExternalAnalyticsService:
                     user_email=user_email,
                     user_role=user_role,
                     assessment_cycle=assessment_cycle,
-                    umdc_filtered=filter_for_umdc,
                     total_barangays=0,
                     success=False,
                     error_message=str(e)
@@ -772,7 +746,6 @@ class ExternalAnalyticsService:
                     user_email=user_email,
                     user_role=user_role,
                     assessment_cycle=assessment_cycle,
-                    umdc_filtered=filter_for_umdc,
                     total_barangays=0,
                     success=False,
                     error_message=str(e)
@@ -783,7 +756,6 @@ class ExternalAnalyticsService:
         self,
         db: Session,
         assessment_cycle: Optional[str] = None,
-        filter_for_umdc: bool = False,
         user_email: Optional[str] = None,
         user_role: Optional[str] = None
     ) -> bytes:
@@ -793,7 +765,8 @@ class ExternalAnalyticsService:
         Args:
             db: Database session
             assessment_cycle: Optional assessment cycle identifier
-            filter_for_umdc: Whether to filter for UMDC Peace Center areas
+            user_email: Email of user performing export (for audit logging)
+            user_role: Role of user performing export (for audit logging)
 
         Returns:
             PDF file content as bytes
@@ -813,10 +786,10 @@ class ExternalAnalyticsService:
         )
         from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
 
-        logger.info(f"Generating PDF export (cycle: {assessment_cycle or 'latest'}, UMDC filter: {filter_for_umdc})")
+        logger.info(f"Generating PDF export (cycle: {assessment_cycle or 'latest'})")
 
         # Get all dashboard data
-        dashboard_data = self.get_complete_dashboard(db, assessment_cycle, filter_for_umdc)
+        dashboard_data = self.get_complete_dashboard(db, assessment_cycle)
 
         # Create PDF in memory
         buffer = BytesIO()
@@ -875,7 +848,6 @@ class ExternalAnalyticsService:
         metadata_data = [
             ["Generated:", datetime.now().strftime('%Y-%m-%d %H:%M:%S')],
             ["Assessment Cycle:", assessment_cycle or 'Latest'],
-            ["Filtered for UMDC:", "Yes" if filter_for_umdc else "No"],
         ]
         metadata_table = Table(metadata_data, colWidths=[2 * inch, 4 * inch])
         metadata_table.setStyle(TableStyle([

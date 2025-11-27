@@ -1,6 +1,6 @@
 # 📊 External Analytics API Endpoints
-# Read-only API for external stakeholders (Katuparan Center, UMDC Peace Center)
-# All endpoints return aggregated, anonymized data
+# Read-only API for external stakeholders (Katuparan Center)
+# All endpoints return aggregated, anonymized data for research purposes
 
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Query
@@ -39,7 +39,7 @@ async def get_overall_compliance(
     """
     Get municipal-wide SGLGB compliance statistics.
 
-    **Access:** KATUPARAN_CENTER_USER, UMDC_PEACE_CENTER_USER
+    **Access:** KATUPARAN_CENTER_USER
 
     **Privacy:** All data is aggregated across all barangays. Individual barangay
     performance cannot be identified.
@@ -93,7 +93,7 @@ async def get_governance_area_performance(
     """
     Get aggregated performance for all governance areas.
 
-    **Access:** KATUPARAN_CENTER_USER, UMDC_PEACE_CENTER_USER
+    **Access:** KATUPARAN_CENTER_USER
 
     **Privacy:** Data is aggregated at the area level. Individual barangay
     performance is not disclosed.
@@ -139,7 +139,7 @@ async def get_top_failing_indicators(
     """
     Get the top N most frequently failed indicators.
 
-    **Access:** KATUPARAN_CENTER_USER, UMDC_PEACE_CENTER_USER
+    **Access:** KATUPARAN_CENTER_USER
 
     **Privacy:** Aggregated across all barangays to identify common challenges.
 
@@ -174,7 +174,7 @@ async def get_top_failing_indicators(
     "/ai-insights/summary",
     response_model=AnonymizedAIInsightsResponse,
     summary="Get Anonymized AI Insights",
-    description="Returns aggregated AI-generated recommendations and capacity development needs. For UMDC Peace Center users, insights are filtered to focus on security, social protection, and disaster preparedness areas.",
+    description="Returns aggregated AI-generated recommendations and capacity development needs for research purposes.",
 )
 async def get_ai_insights_summary(
     assessment_cycle: Optional[str] = Query(None, description="Assessment cycle filter"),
@@ -184,14 +184,10 @@ async def get_ai_insights_summary(
     """
     Get aggregated, anonymized AI-generated insights.
 
-    **Access:** KATUPARAN_CENTER_USER, UMDC_PEACE_CENTER_USER
+    **Access:** KATUPARAN_CENTER_USER
 
     **Privacy:** Insights are generalized across multiple assessments without
     attribution to specific barangays.
-
-    **UMDC Filtering:** If the user is from UMDC Peace Center, insights are
-    automatically filtered to highlight Security, Social Protection, and
-    Disaster Preparedness areas.
 
     Args:
         assessment_cycle: Optional cycle identifier
@@ -202,17 +198,13 @@ async def get_ai_insights_summary(
         AnonymizedAIInsightsResponse with aggregated insights
     """
     try:
-        # Automatically filter for UMDC Peace Center users
-        filter_for_umdc = current_user.role == UserRole.UMDC_PEACE_CENTER_USER
-
         logger.info(
             f"External user {current_user.email} ({current_user.role}) "
-            f"requesting AI insights (cycle: {assessment_cycle or 'latest'}, "
-            f"UMDC filter: {filter_for_umdc})"
+            f"requesting AI insights (cycle: {assessment_cycle or 'latest'})"
         )
 
         result = external_analytics_service.get_anonymized_ai_insights(
-            db, assessment_cycle, filter_for_umdc
+            db, assessment_cycle
         )
 
         return result
@@ -242,12 +234,9 @@ async def get_complete_dashboard(
     This is the primary endpoint used by the external analytics dashboard.
     It combines all sections for efficient data loading.
 
-    **Access:** KATUPARAN_CENTER_USER, UMDC_PEACE_CENTER_USER
+    **Access:** KATUPARAN_CENTER_USER
 
     **Privacy:** All data is aggregated and anonymized.
-
-    **UMDC Filtering:** AI insights are automatically filtered for UMDC Peace
-    Center users to focus on their areas of interest.
 
     Args:
         assessment_cycle: Optional cycle identifier
@@ -261,17 +250,13 @@ async def get_complete_dashboard(
         400: If insufficient data for anonymization
     """
     try:
-        # Automatically filter for UMDC Peace Center users
-        filter_for_umdc = current_user.role == UserRole.UMDC_PEACE_CENTER_USER
-
         logger.info(
             f"External user {current_user.email} ({current_user.role}) "
-            f"requesting complete dashboard (cycle: {assessment_cycle or 'latest'}, "
-            f"UMDC filter: {filter_for_umdc})"
+            f"requesting complete dashboard (cycle: {assessment_cycle or 'latest'})"
         )
 
         result = external_analytics_service.get_complete_dashboard(
-            db, assessment_cycle, filter_for_umdc
+            db, assessment_cycle
         )
 
         return result
@@ -304,12 +289,9 @@ async def export_csv(
     """
     Export external analytics data as CSV file.
 
-    **Access:** KATUPARAN_CENTER_USER, UMDC_PEACE_CENTER_USER
+    **Access:** KATUPARAN_CENTER_USER
 
     **Privacy:** All data is aggregated and anonymized.
-
-    **UMDC Filtering:** AI insights are automatically filtered for UMDC Peace
-    Center users to focus on their areas of interest.
 
     Args:
         assessment_cycle: Optional cycle identifier
@@ -325,20 +307,15 @@ async def export_csv(
     from datetime import datetime
 
     try:
-        # Automatically filter for UMDC Peace Center users
-        filter_for_umdc = current_user.role == UserRole.UMDC_PEACE_CENTER_USER
-
         logger.info(
             f"External user {current_user.email} ({current_user.role}) "
-            f"requesting CSV export (cycle: {assessment_cycle or 'latest'}, "
-            f"UMDC filter: {filter_for_umdc})"
+            f"requesting CSV export (cycle: {assessment_cycle or 'latest'})"
         )
 
         # Generate CSV content
         csv_content = external_analytics_service.generate_csv_export(
             db=db,
             assessment_cycle=assessment_cycle,
-            filter_for_umdc=filter_for_umdc,
             user_email=current_user.email,
             user_role=current_user.role.value
         )
@@ -385,12 +362,9 @@ async def export_pdf(
     """
     Export external analytics data as PDF file.
 
-    **Access:** KATUPARAN_CENTER_USER, UMDC_PEACE_CENTER_USER
+    **Access:** KATUPARAN_CENTER_USER
 
     **Privacy:** All data is aggregated and anonymized.
-
-    **UMDC Filtering:** AI insights are automatically filtered for UMDC Peace
-    Center users to focus on their areas of interest.
 
     Args:
         assessment_cycle: Optional cycle identifier
@@ -406,20 +380,15 @@ async def export_pdf(
     from datetime import datetime
 
     try:
-        # Automatically filter for UMDC Peace Center users
-        filter_for_umdc = current_user.role == UserRole.UMDC_PEACE_CENTER_USER
-
         logger.info(
             f"External user {current_user.email} ({current_user.role}) "
-            f"requesting PDF export (cycle: {assessment_cycle or 'latest'}, "
-            f"UMDC filter: {filter_for_umdc})"
+            f"requesting PDF export (cycle: {assessment_cycle or 'latest'})"
         )
 
         # Generate PDF content
         pdf_content = external_analytics_service.generate_pdf_export(
             db=db,
             assessment_cycle=assessment_cycle,
-            filter_for_umdc=filter_for_umdc,
             user_email=current_user.email,
             user_role=current_user.role.value
         )
