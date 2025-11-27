@@ -1491,9 +1491,29 @@ def submit_for_calibration_review(
     assessment.status = AssessmentStatus.AWAITING_FINAL_VALIDATION
     assessment.submitted_at = datetime.utcnow()
 
+    # PARALLEL CALIBRATION: Mark all pending calibrations as approved
+    # This signals that BLGU has addressed all calibration requests
+    pending_calibrations = assessment.pending_calibrations or []
+    validator_ids_to_notify = []
+
+    if pending_calibrations:
+        updated_calibrations = []
+        for pc in pending_calibrations:
+            # Mark as approved
+            pc["approved"] = True
+            pc["approved_at"] = datetime.utcnow().isoformat()
+            updated_calibrations.append(pc)
+
+            # Collect validator IDs to notify
+            validator_id = pc.get("validator_id")
+            if validator_id and validator_id not in validator_ids_to_notify:
+                validator_ids_to_notify.append(validator_id)
+
+        assessment.pending_calibrations = updated_calibrations
+
     # Clear calibration flags after successful submission
     assessment.is_calibration_rework = False
-    # Keep calibration_validator_id so we know who requested calibration
+    # Keep calibration_validator_id for backward compatibility
 
     # Clear requires_rework AND validation_status on the indicators that were calibrated
     # IMPORTANT: Clear validation_status so the Validator can re-review these indicators
@@ -1502,25 +1522,43 @@ def submit_for_calibration_review(
         response.requires_rework = False
         response.validation_status = None  # Reset so Validator can re-validate
 
-    # Store validator_id before clearing (we need it for notification)
-    validator_id = assessment.calibration_validator_id
+    # Store legacy validator_id before clearing (we need it for notification)
+    legacy_validator_id = assessment.calibration_validator_id
 
     db.commit()
     db.refresh(assessment)
 
-    # Trigger calibration resubmission notification to the Validator
-    if validator_id:
+    # PARALLEL CALIBRATION: Notify ALL validators who requested calibration
+    notification_count = 0
+    if validator_ids_to_notify:
         try:
             from app.workers.notifications import send_calibration_resubmission_notification
-            send_calibration_resubmission_notification.delay(assessment_id, validator_id)
+
+            for vid in validator_ids_to_notify:
+                send_calibration_resubmission_notification.delay(assessment_id, vid)
+                notification_count += 1
         except Exception as e:
-            # Log but don't fail the request
+            import logging
+            logging.getLogger(__name__).error(f"Failed to queue calibration resubmission notification: {e}")
+    elif legacy_validator_id:
+        # Fallback for legacy single-validator calibration
+        try:
+            from app.workers.notifications import send_calibration_resubmission_notification
+            send_calibration_resubmission_notification.delay(assessment_id, legacy_validator_id)
+            notification_count = 1
+        except Exception as e:
             import logging
             logging.getLogger(__name__).error(f"Failed to queue calibration resubmission notification: {e}")
 
+    # Build message based on number of validators notified
+    if notification_count > 1:
+        message = f"Assessment submitted for calibration review. {notification_count} validators will be notified."
+    else:
+        message = "Assessment submitted for calibration review. It will be reviewed by the Validator."
+
     return ResubmitAssessmentResponse(
         success=True,
-        message="Assessment submitted for calibration review. It will be reviewed by the Validator.",
+        message=message,
         assessment_id=assessment.id,
         resubmitted_at=assessment.submitted_at,
         rework_count=assessment.rework_count

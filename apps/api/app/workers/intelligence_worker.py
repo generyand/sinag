@@ -425,20 +425,27 @@ def _generate_calibration_summary_logic(
                 "message": error_msg,
             }
 
-        # Check if summaries already exist for default languages (avoid duplicate generation)
-        if assessment.calibration_summary:
+        # PARALLEL CALIBRATION: Check if summary already exists for THIS governance area
+        # Summaries are stored in calibration_summaries_by_area keyed by governance_area_id
+        area_id_key = str(governance_area_id)
+        existing_summaries_by_area = assessment.calibration_summaries_by_area or {}
+
+        if area_id_key in existing_summaries_by_area:
+            existing_area_summary = existing_summaries_by_area[area_id_key]
             # Check if it's the new multi-language format with both ceb and en
-            if isinstance(assessment.calibration_summary, dict) and "ceb" in assessment.calibration_summary:
+            if isinstance(existing_area_summary, dict) and "ceb" in existing_area_summary:
                 logger.info(
-                    "Calibration summaries already exist for assessment %s, skipping generation",
+                    "Calibration summaries already exist for assessment %s governance area %s, skipping generation",
                     assessment_id,
+                    governance_area_id,
                 )
                 return {
                     "success": True,
                     "assessment_id": assessment_id,
+                    "governance_area_id": governance_area_id,
                     "skipped": True,
-                    "message": "Calibration summaries already exist",
-                    "calibration_summary": assessment.calibration_summary,
+                    "message": f"Calibration summaries already exist for governance area {governance_area_id}",
+                    "calibration_summary": existing_area_summary,
                 }
 
         # Generate calibration summaries in default languages (Bisaya + English)
@@ -451,17 +458,29 @@ def _generate_calibration_summary_logic(
             logger.error(error_msg)
             return {"success": False, "error": error_msg}
 
-        # Store the summaries in the database (keyed by language)
+        # PARALLEL CALIBRATION: Store summaries in calibration_summaries_by_area
+        # Each governance area has its own summary keyed by area ID
         from datetime import UTC, datetime
 
+        if assessment.calibration_summaries_by_area is None:
+            assessment.calibration_summaries_by_area = {}
+
+        # Update the specific governance area's summary
+        updated_summaries = dict(assessment.calibration_summaries_by_area)
+        updated_summaries[area_id_key] = summaries
+        assessment.calibration_summaries_by_area = updated_summaries
+
+        # Also store in legacy calibration_summary field for backward compatibility
+        # (keeps the most recent single summary)
         assessment.calibration_summary = summaries
         assessment.updated_at = datetime.now(UTC)
         db.commit()
         db.refresh(assessment)
 
         logger.info(
-            "Successfully generated calibration summaries for assessment %s in languages: %s",
+            "Successfully generated calibration summaries for assessment %s governance area %s in languages: %s",
             assessment_id,
+            governance_area_id,
             list(summaries.keys()),
         )
 
@@ -471,7 +490,7 @@ def _generate_calibration_summary_logic(
             "governance_area_id": governance_area_id,
             "calibration_summary": summaries,
             "languages_generated": list(summaries.keys()),
-            "message": "Calibration summaries generated successfully",
+            "message": f"Calibration summaries generated successfully for governance area {governance_area_id}",
         }
 
     except ValueError as e:

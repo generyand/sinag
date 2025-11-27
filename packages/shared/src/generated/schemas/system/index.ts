@@ -160,12 +160,18 @@ export interface BLGUDashboardResponse {
   rework_requested_by?: BLGUDashboardResponseReworkRequestedBy;
   /** If True, BLGU should submit back to Validator (not Assessor). Set when Validator calibrates the assessment. */
   is_calibration_rework?: boolean;
-  /** ID of the Validator who requested calibration (null if regular rework) */
+  /** Legacy: ID of the Validator who requested calibration (null if regular rework). For parallel calibration, use calibration_governance_areas instead. */
   calibration_validator_id?: BLGUDashboardResponseCalibrationValidatorId;
-  /** ID of the governance area that was calibrated (null if regular rework) */
+  /** Legacy: ID of the governance area that was calibrated (null if regular rework). For parallel calibration, use calibration_governance_areas instead. */
   calibration_governance_area_id?: BLGUDashboardResponseCalibrationGovernanceAreaId;
-  /** Name of the governance area that was calibrated (null if regular rework) */
+  /** Legacy: Name of the governance area that was calibrated (null if regular rework). For parallel calibration, use calibration_governance_areas instead. */
   calibration_governance_area_name?: BLGUDashboardResponseCalibrationGovernanceAreaName;
+  /** Number of pending calibration requests from validators */
+  pending_calibrations_count?: number;
+  /** List of all pending calibration requests. Each item contains: governance_area_id, governance_area_name, validator_name, requested_at, approved */
+  calibration_governance_areas?: BLGUDashboardResponseCalibrationGovernanceAreas;
+  /** AI summaries grouped by governance area for parallel calibration. Each item contains governance_area_id, governance_area, overall_summary, indicator_summaries, priority_actions, estimated_time */
+  ai_summaries_by_area?: BLGUDashboardResponseAiSummariesByArea;
   /** Total number of indicators in the assessment */
   total_indicators: number;
   /** Number of indicators with all required fields filled */
@@ -184,7 +190,41 @@ export interface BLGUDashboardResponse {
   ai_summary?: BLGUDashboardResponseAiSummary;
   /** List of language codes for which AI summaries are available (e.g., ['ceb', 'en']). Tagalog ('fil') is generated on-demand if requested. */
   ai_summary_available_languages?: BLGUDashboardResponseAiSummaryAvailableLanguages;
+  /** Timestamp when assessment was first submitted (ISO format) */
+  submitted_at?: BLGUDashboardResponseSubmittedAt;
+  /** Timestamp when final validation was completed (ISO format) */
+  validated_at?: BLGUDashboardResponseValidatedAt;
+  /** Final SGLGB compliance status: 'Passed' or 'Failed'. Only populated when status is COMPLETED. */
+  final_compliance_status?: BLGUDashboardResponseFinalComplianceStatus;
+  /** Results breakdown by governance area. Each item contains: area_id, area_name, area_type (Core/Essential), passed (bool), total_indicators, passed_indicators, failed_indicators. Only populated when status is COMPLETED. */
+  area_results?: BLGUDashboardResponseAreaResults;
+  /** AI-generated CapDev recommendations grouped by governance area. Only populated when status is COMPLETED. */
+  ai_recommendations?: BLGUDashboardResponseAiRecommendations;
 }
+
+
+/**
+ * BLGUDashboardResponseAiRecommendations
+ */
+export type BLGUDashboardResponseAiRecommendations = BLGUDashboardResponseAiRecommendationsAnyOf | null;
+
+
+/**
+ * BLGUDashboardResponseAiRecommendationsAnyOf
+ */
+export type BLGUDashboardResponseAiRecommendationsAnyOf = { [key: string]: unknown };
+
+
+/**
+ * BLGUDashboardResponseAiSummariesByArea
+ */
+export type BLGUDashboardResponseAiSummariesByArea = BLGUDashboardResponseAiSummariesByAreaAnyOfItem[] | null;
+
+
+/**
+ * BLGUDashboardResponseAiSummariesByAreaAnyOfItem
+ */
+export type BLGUDashboardResponseAiSummariesByAreaAnyOfItem = { [key: string]: unknown };
 
 
 /**
@@ -200,6 +240,18 @@ export type BLGUDashboardResponseAiSummaryAvailableLanguages = string[] | null;
 
 
 /**
+ * BLGUDashboardResponseAreaResults
+ */
+export type BLGUDashboardResponseAreaResults = BLGUDashboardResponseAreaResultsAnyOfItem[] | null;
+
+
+/**
+ * BLGUDashboardResponseAreaResultsAnyOfItem
+ */
+export type BLGUDashboardResponseAreaResultsAnyOfItem = { [key: string]: unknown };
+
+
+/**
  * BLGUDashboardResponseCalibrationGovernanceAreaId
  */
 export type BLGUDashboardResponseCalibrationGovernanceAreaId = number | null;
@@ -212,9 +264,27 @@ export type BLGUDashboardResponseCalibrationGovernanceAreaName = string | null;
 
 
 /**
+ * BLGUDashboardResponseCalibrationGovernanceAreas
+ */
+export type BLGUDashboardResponseCalibrationGovernanceAreas = BLGUDashboardResponseCalibrationGovernanceAreasAnyOfItem[] | null;
+
+
+/**
+ * BLGUDashboardResponseCalibrationGovernanceAreasAnyOfItem
+ */
+export type BLGUDashboardResponseCalibrationGovernanceAreasAnyOfItem = { [key: string]: unknown };
+
+
+/**
  * BLGUDashboardResponseCalibrationValidatorId
  */
 export type BLGUDashboardResponseCalibrationValidatorId = number | null;
+
+
+/**
+ * BLGUDashboardResponseFinalComplianceStatus
+ */
+export type BLGUDashboardResponseFinalComplianceStatus = string | null;
 
 
 /**
@@ -233,6 +303,18 @@ export type BLGUDashboardResponseReworkRequestedAt = string | null;
  * BLGUDashboardResponseReworkRequestedBy
  */
 export type BLGUDashboardResponseReworkRequestedBy = number | null;
+
+
+/**
+ * BLGUDashboardResponseSubmittedAt
+ */
+export type BLGUDashboardResponseSubmittedAt = string | null;
+
+
+/**
+ * BLGUDashboardResponseValidatedAt
+ */
+export type BLGUDashboardResponseValidatedAt = string | null;
 
 
 /**

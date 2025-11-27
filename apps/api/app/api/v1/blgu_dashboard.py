@@ -303,23 +303,40 @@ def get_blgu_dashboard(
                 annotation_count = len(annotations_by_indicator_dict.get(indicator_id, []))
                 indicator_data["mov_annotation_count"] = annotation_count
 
-    # Get calibration governance area info if this is a calibration rework
+    # PARALLEL CALIBRATION: Get all pending calibration info
+    # pending_calibrations is a list of calibration requests from different validators
+    pending_calibrations = assessment.pending_calibrations or []
     calibration_governance_area_id = None
     calibration_governance_area_name = None
-    if assessment.is_calibration_rework and assessment.calibration_validator_id:
-        # Get the validator's governance area
-        calibration_validator = db.query(User).filter(User.id == assessment.calibration_validator_id).first()
-        if calibration_validator and calibration_validator.validator_area_id:
-            cal_area = db.query(GovernanceArea).filter(
-                GovernanceArea.id == calibration_validator.validator_area_id
-            ).first()
-            if cal_area:
-                calibration_governance_area_id = cal_area.id
-                calibration_governance_area_name = cal_area.name
+    calibration_governance_areas = []  # List of all pending calibration areas
+
+    if assessment.is_calibration_rework:
+        # Build list of all governance areas with pending calibrations
+        for pc in pending_calibrations:
+            calibration_governance_areas.append({
+                "governance_area_id": pc.get("governance_area_id"),
+                "governance_area_name": pc.get("governance_area_name"),
+                "validator_name": pc.get("validator_name"),
+                "requested_at": pc.get("requested_at"),
+                "approved": pc.get("approved", False),
+            })
+
+        # Legacy single calibration info (for backward compatibility)
+        if assessment.calibration_validator_id:
+            calibration_validator = db.query(User).filter(User.id == assessment.calibration_validator_id).first()
+            if calibration_validator and calibration_validator.validator_area_id:
+                cal_area = db.query(GovernanceArea).filter(
+                    GovernanceArea.id == calibration_validator.validator_area_id
+                ).first()
+                if cal_area:
+                    calibration_governance_area_id = cal_area.id
+                    calibration_governance_area_name = cal_area.name
 
     # AI Summary: Include rework or calibration summary if available
+    # PARALLEL CALIBRATION: Combine summaries from all governance areas
     ai_summary = None
     ai_summary_available_languages = None
+    ai_summaries_by_area = []  # List of summaries from each governance area
 
     if assessment.status in [AssessmentStatus.REWORK, AssessmentStatus.NEEDS_REWORK]:
         # Determine target language (parameter > user preference > default)
@@ -329,78 +346,230 @@ def get_blgu_dashboard(
         if target_lang not in ["ceb", "fil", "en"]:
             target_lang = "ceb"  # Default to Bisaya if invalid
 
-        # Check if this is a calibration rework or regular rework
-        if assessment.is_calibration_rework and assessment.calibration_summary:
-            # Use calibration summary
-            summary_data = assessment.calibration_summary
+        # Check if this is a calibration rework with parallel summaries
+        if assessment.is_calibration_rework and assessment.calibration_summaries_by_area:
+            # PARALLEL CALIBRATION: Combine summaries from all governance areas
             summary_type = "calibration"
-        elif assessment.rework_summary:
-            # Use rework summary
-            summary_data = assessment.rework_summary
-            summary_type = "rework"
-        else:
-            summary_data = None
-            summary_type = None
+            combined_indicator_summaries = []
+            combined_priority_actions = []
+            combined_overall_parts = []
+            all_languages = set()
 
-        if summary_data:
-            # Get available languages
-            if isinstance(summary_data, dict):
-                ai_summary_available_languages = [
+            for area_id_str, area_summary_data in assessment.calibration_summaries_by_area.items():
+                if not isinstance(area_summary_data, dict):
+                    continue
+
+                # Track available languages
+                all_languages.update(
                     lang for lang in ["ceb", "en", "fil"]
-                    if lang in summary_data
-                ]
+                    if lang in area_summary_data
+                )
 
-            # Get the summary in the requested language
-            lang_summary = None
-            if isinstance(summary_data, dict):
-                if target_lang in summary_data:
-                    lang_summary = summary_data[target_lang]
-                elif "overall_summary" in summary_data:
-                    # Legacy format (direct summary without language key)
-                    lang_summary = summary_data
+                # Get the summary in target language
+                lang_summary = None
+                if target_lang in area_summary_data:
+                    lang_summary = area_summary_data[target_lang]
                 else:
                     # Fallback to any available language
                     for fallback_lang in ["ceb", "en", "fil"]:
-                        if fallback_lang in summary_data:
-                            lang_summary = summary_data[fallback_lang]
+                        if fallback_lang in area_summary_data:
+                            lang_summary = area_summary_data[fallback_lang]
                             break
 
-            if lang_summary:
-                # Convert indicator summaries to AISummaryIndicator objects
-                indicator_summaries = []
-                for ind_sum in lang_summary.get("indicator_summaries", []):
-                    indicator_summaries.append(AISummaryIndicator(
-                        indicator_id=ind_sum.get("indicator_id", 0),
-                        indicator_name=ind_sum.get("indicator_name", ""),
-                        key_issues=ind_sum.get("key_issues", []),
-                        suggested_actions=ind_sum.get("suggested_actions", []),
-                        affected_movs=ind_sum.get("affected_movs", []),
-                    ))
+                if lang_summary:
+                    # Add area summary to combined list for UI grouping
+                    area_info = {
+                        "governance_area_id": lang_summary.get("governance_area_id"),
+                        "governance_area": lang_summary.get("governance_area"),
+                        "overall_summary": lang_summary.get("overall_summary", ""),
+                        "indicator_summaries": lang_summary.get("indicator_summaries", []),
+                        "priority_actions": lang_summary.get("priority_actions", []),
+                        "estimated_time": lang_summary.get("estimated_time"),
+                    }
+                    ai_summaries_by_area.append(area_info)
 
-                # Parse generated_at timestamp
-                generated_at = None
-                if lang_summary.get("generated_at"):
-                    try:
-                        generated_at_str = lang_summary["generated_at"]
-                        if isinstance(generated_at_str, str):
-                            # Handle ISO format with or without timezone
-                            if generated_at_str.endswith("Z"):
-                                generated_at_str = generated_at_str[:-1] + "+00:00"
-                            generated_at = datetime.fromisoformat(generated_at_str)
-                    except (ValueError, TypeError):
-                        pass
+                    # Combine for single unified summary
+                    if lang_summary.get("overall_summary"):
+                        area_name = lang_summary.get("governance_area", f"Area {area_id_str}")
+                        combined_overall_parts.append(f"**{area_name}**: {lang_summary['overall_summary']}")
+
+                    for ind_sum in lang_summary.get("indicator_summaries", []):
+                        combined_indicator_summaries.append(AISummaryIndicator(
+                            indicator_id=ind_sum.get("indicator_id", 0),
+                            indicator_name=ind_sum.get("indicator_name", ""),
+                            key_issues=ind_sum.get("key_issues", []),
+                            suggested_actions=ind_sum.get("suggested_actions", []),
+                            affected_movs=ind_sum.get("affected_movs", []),
+                        ))
+
+                    combined_priority_actions.extend(lang_summary.get("priority_actions", []))
+
+            ai_summary_available_languages = list(all_languages) if all_languages else None
+
+            if combined_indicator_summaries:
+                # Create combined AI summary
+                combined_overall = "\n\n".join(combined_overall_parts) if combined_overall_parts else ""
 
                 ai_summary = AISummary(
-                    overall_summary=lang_summary.get("overall_summary", ""),
-                    governance_area=lang_summary.get("governance_area"),
-                    governance_area_id=lang_summary.get("governance_area_id"),
-                    indicator_summaries=indicator_summaries,
-                    priority_actions=lang_summary.get("priority_actions", []),
-                    estimated_time=lang_summary.get("estimated_time"),
-                    generated_at=generated_at,
-                    language=lang_summary.get("language", target_lang),
+                    overall_summary=combined_overall,
+                    governance_area=None,  # Multiple areas
+                    governance_area_id=None,  # Multiple areas
+                    indicator_summaries=combined_indicator_summaries,
+                    priority_actions=combined_priority_actions,
+                    estimated_time=None,  # Combined estimate not meaningful
+                    generated_at=datetime.utcnow(),
+                    language=target_lang,
                     summary_type=summary_type,
                 )
+
+        elif assessment.is_calibration_rework and assessment.calibration_summary:
+            # Legacy single calibration summary (backward compatibility)
+            summary_data = assessment.calibration_summary
+            summary_type = "calibration"
+
+            if summary_data:
+                # Get available languages
+                if isinstance(summary_data, dict):
+                    ai_summary_available_languages = [
+                        lang for lang in ["ceb", "en", "fil"]
+                        if lang in summary_data
+                    ]
+
+                # Get the summary in the requested language
+                lang_summary = None
+                if isinstance(summary_data, dict):
+                    if target_lang in summary_data:
+                        lang_summary = summary_data[target_lang]
+                    elif "overall_summary" in summary_data:
+                        lang_summary = summary_data
+                    else:
+                        for fallback_lang in ["ceb", "en", "fil"]:
+                            if fallback_lang in summary_data:
+                                lang_summary = summary_data[fallback_lang]
+                                break
+
+                if lang_summary:
+                    indicator_summaries = []
+                    for ind_sum in lang_summary.get("indicator_summaries", []):
+                        indicator_summaries.append(AISummaryIndicator(
+                            indicator_id=ind_sum.get("indicator_id", 0),
+                            indicator_name=ind_sum.get("indicator_name", ""),
+                            key_issues=ind_sum.get("key_issues", []),
+                            suggested_actions=ind_sum.get("suggested_actions", []),
+                            affected_movs=ind_sum.get("affected_movs", []),
+                        ))
+
+                    generated_at = None
+                    if lang_summary.get("generated_at"):
+                        try:
+                            generated_at_str = lang_summary["generated_at"]
+                            if isinstance(generated_at_str, str):
+                                if generated_at_str.endswith("Z"):
+                                    generated_at_str = generated_at_str[:-1] + "+00:00"
+                                generated_at = datetime.fromisoformat(generated_at_str)
+                        except (ValueError, TypeError):
+                            pass
+
+                    ai_summary = AISummary(
+                        overall_summary=lang_summary.get("overall_summary", ""),
+                        governance_area=lang_summary.get("governance_area"),
+                        governance_area_id=lang_summary.get("governance_area_id"),
+                        indicator_summaries=indicator_summaries,
+                        priority_actions=lang_summary.get("priority_actions", []),
+                        estimated_time=lang_summary.get("estimated_time"),
+                        generated_at=generated_at,
+                        language=lang_summary.get("language", target_lang),
+                        summary_type=summary_type,
+                    )
+
+        elif assessment.rework_summary:
+            # Use rework summary (assessor rework, not validator calibration)
+            summary_data = assessment.rework_summary
+            summary_type = "rework"
+
+            if summary_data:
+                # Get available languages
+                if isinstance(summary_data, dict):
+                    ai_summary_available_languages = [
+                        lang for lang in ["ceb", "en", "fil"]
+                        if lang in summary_data
+                    ]
+
+                # Get the summary in the requested language
+                lang_summary = None
+                if isinstance(summary_data, dict):
+                    if target_lang in summary_data:
+                        lang_summary = summary_data[target_lang]
+                    elif "overall_summary" in summary_data:
+                        lang_summary = summary_data
+                    else:
+                        for fallback_lang in ["ceb", "en", "fil"]:
+                            if fallback_lang in summary_data:
+                                lang_summary = summary_data[fallback_lang]
+                                break
+
+                if lang_summary:
+                    indicator_summaries = []
+                    for ind_sum in lang_summary.get("indicator_summaries", []):
+                        indicator_summaries.append(AISummaryIndicator(
+                            indicator_id=ind_sum.get("indicator_id", 0),
+                            indicator_name=ind_sum.get("indicator_name", ""),
+                            key_issues=ind_sum.get("key_issues", []),
+                            suggested_actions=ind_sum.get("suggested_actions", []),
+                            affected_movs=ind_sum.get("affected_movs", []),
+                        ))
+
+                    generated_at = None
+                    if lang_summary.get("generated_at"):
+                        try:
+                            generated_at_str = lang_summary["generated_at"]
+                            if isinstance(generated_at_str, str):
+                                if generated_at_str.endswith("Z"):
+                                    generated_at_str = generated_at_str[:-1] + "+00:00"
+                                generated_at = datetime.fromisoformat(generated_at_str)
+                        except (ValueError, TypeError):
+                            pass
+
+                    ai_summary = AISummary(
+                        overall_summary=lang_summary.get("overall_summary", ""),
+                        governance_area=lang_summary.get("governance_area"),
+                        governance_area_id=lang_summary.get("governance_area_id"),
+                        indicator_summaries=indicator_summaries,
+                        priority_actions=lang_summary.get("priority_actions", []),
+                        estimated_time=lang_summary.get("estimated_time"),
+                        generated_at=generated_at,
+                        language=lang_summary.get("language", target_lang),
+                        summary_type=summary_type,
+                    )
+
+    # Verdict data - ONLY expose when assessment is COMPLETED
+    # This ensures BLGU users never see Pass/Fail status prematurely
+    final_compliance_status = None
+    area_results = None
+    ai_recommendations = None
+
+    if assessment.status == AssessmentStatus.COMPLETED:
+        # Now we can expose compliance data
+        final_compliance_status = assessment.final_compliance_status.value if assessment.final_compliance_status else None
+
+        # Parse area_results if available
+        if assessment.area_results:
+            # area_results is stored as JSON dict with area_id keys
+            area_results_list = []
+            for area_id_str, area_data in assessment.area_results.items():
+                area_results_list.append({
+                    "area_id": int(area_id_str) if area_id_str.isdigit() else area_data.get("area_id"),
+                    "area_name": area_data.get("area_name", ""),
+                    "area_type": area_data.get("area_type", "Core"),
+                    "passed": area_data.get("passed", False),
+                    "total_indicators": area_data.get("total_indicators", 0),
+                    "passed_indicators": area_data.get("passed_indicators", 0),
+                    "failed_indicators": area_data.get("failed_indicators", 0),
+                })
+            area_results = area_results_list
+
+        # AI recommendations (CapDev)
+        ai_recommendations = assessment.ai_recommendations
 
     # Epic 5.0: Return status and rework tracking fields
     return {
@@ -411,9 +580,13 @@ def get_blgu_dashboard(
         "rework_requested_by": assessment.rework_requested_by,  # Epic 5.0: Assessor who requested rework
         # Calibration tracking (Phase 2 Validator workflow)
         "is_calibration_rework": assessment.is_calibration_rework,  # True if Validator calibrated (BLGU should submit back to Validator)
-        "calibration_validator_id": assessment.calibration_validator_id,  # Validator who requested calibration
-        "calibration_governance_area_id": calibration_governance_area_id,  # Governance area that was calibrated
-        "calibration_governance_area_name": calibration_governance_area_name,  # Name of calibrated area
+        "calibration_validator_id": assessment.calibration_validator_id,  # Legacy: single validator who requested calibration
+        "calibration_governance_area_id": calibration_governance_area_id,  # Legacy: single governance area that was calibrated
+        "calibration_governance_area_name": calibration_governance_area_name,  # Legacy: name of calibrated area
+        # PARALLEL CALIBRATION: Multiple validators can request calibration
+        "pending_calibrations_count": len(pending_calibrations),  # Total pending calibration requests
+        "calibration_governance_areas": calibration_governance_areas,  # List of all pending calibration areas with details
+        "ai_summaries_by_area": ai_summaries_by_area if ai_summaries_by_area else None,  # Summaries grouped by governance area
         "total_indicators": total_indicators,
         "completed_indicators": completed_indicators,
         "incomplete_indicators": incomplete_indicators,
@@ -424,6 +597,13 @@ def get_blgu_dashboard(
         # AI Summary for rework/calibration guidance
         "ai_summary": ai_summary,
         "ai_summary_available_languages": ai_summary_available_languages,
+        # Timeline dates for phase tracking
+        "submitted_at": assessment.submitted_at.isoformat() + 'Z' if assessment.submitted_at else None,
+        "validated_at": assessment.validated_at.isoformat() + 'Z' if assessment.validated_at else None,
+        # Verdict data - ONLY populated when COMPLETED
+        "final_compliance_status": final_compliance_status,
+        "area_results": area_results,
+        "ai_recommendations": ai_recommendations,
     }
 
 
