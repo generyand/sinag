@@ -18,6 +18,7 @@ from .assessment import (
     AssessmentUpdate,
     AssessmentWithIndicators,
     AssessmentWithResponses,
+    CalibrationSummaryResponse,
     FeedbackComment,
     FeedbackCommentCreate,
     FeedbackCommentListResponse,
@@ -25,10 +26,12 @@ from .assessment import (
     FormSchemaValidation,
     GovernanceAreaWithIndicators,
     Indicator,
+    IndicatorSummary,
     IndicatorWithResponse,
     MOVCreate,
     MOVListResponse,
     MOVUpdate,
+    ReworkSummaryResponse,
 )
 from .analytics import (
     AreaBreakdown,
@@ -88,6 +91,7 @@ __all__ = [
     "FeedbackCommentCreate",
     "FeedbackCommentUpdate",
     "Indicator",
+    "IndicatorSummary",
     "IndicatorWithResponse",
     "AssessmentWithIndicators",
     "GovernanceAreaWithIndicators",
@@ -97,6 +101,8 @@ __all__ = [
     "FeedbackCommentListResponse",
     "AssessmentSubmissionValidation",
     "FormSchemaValidation",
+    "ReworkSummaryResponse",
+    "CalibrationSummaryResponse",
     # User schemas
     "User",
     "UserCreate",

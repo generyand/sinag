@@ -11,14 +11,17 @@
  * - Governance areas with indicator completion status
  * - Assessor rework comments (if assessment needs rework)
  * - Indicator navigation for quick access to incomplete items
+ * - AI-generated summaries for rework/calibration with language toggle
  *
  * Epic 5.0 Features:
  * - LockedStateBanner: Shows locked state during SUBMITTED/IN_REVIEW/COMPLETED
  * - ReworkIndicatorsPanel: Shows assessor feedback during REWORK status
+ * - AISummaryPanel: Shows AI-generated guidance with Bisaya/Tagalog/English toggle
  * - SubmitAssessmentButton: Allows submission when DRAFT and complete
  * - For resubmission after rework: Use "Resubmit for Review" button in /blgu/assessments
  */
 
+import { useState, useCallback } from "react";
 import {
   CompletionMetricsCard,
   IndicatorNavigationList,
@@ -28,13 +31,18 @@ import {
   SubmitAssessmentButton,
   ResubmitAssessmentButton,
 } from "@/components/features/assessments";
-import { ReworkIndicatorsPanel } from "@/components/features/rework";
+import { ReworkIndicatorsPanel, AISummaryPanel } from "@/components/features/rework";
 import { useGetBlguDashboardAssessmentId, useGetAssessmentsMyAssessment } from "@sinag/shared";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Loader2, AlertCircle } from "lucide-react";
 
 export default function BLGUDashboardPage() {
   const { user } = useAuthStore();
+
+  // Language state for AI summary (defaults to user's preference or Bisaya)
+  const [selectedLanguage, setSelectedLanguage] = useState<string>(
+    user?.preferred_language || "ceb"
+  );
 
   // First, fetch the user's assessment to get the correct assessment ID
   // Enable refetchOnWindowFocus to ensure fresh data when user returns to tab
@@ -54,12 +62,16 @@ export default function BLGUDashboardPage() {
 
   // Fetch dashboard data using generated hook (only if we have an assessment ID)
   // Enable refetchOnWindowFocus to automatically fetch updated status when BLGU returns to dashboard
+  // Pass language parameter for AI summary
   const {
     data: dashboardData,
     isLoading: isLoadingDashboard,
     error: dashboardError,
     refetch,
+    isFetching: isFetchingDashboard,
   } = useGetBlguDashboardAssessmentId(assessmentId!, {
+    language: selectedLanguage,
+  }, {
     query: {
       enabled: !!assessmentId,
       refetchOnWindowFocus: true,
@@ -67,6 +79,12 @@ export default function BLGUDashboardPage() {
       staleTime: 0, // Always treat as stale to ensure fresh data (important for rework status updates)
     },
   });
+
+  // Handler for language change - refetches dashboard with new language
+  const handleLanguageChange = useCallback((lang: string) => {
+    setSelectedLanguage(lang);
+    // The query will automatically refetch due to the language parameter change
+  }, []);
 
   const isLoading = isLoadingAssessment || isLoadingDashboard;
   const error = assessmentError || dashboardError;
@@ -133,6 +151,21 @@ export default function BLGUDashboardPage() {
             reworkCount={dashboardData.rework_count}
           />
         </div>
+
+        {/* AI Summary Panel - Shows AI-generated guidance for rework/calibration */}
+        {/* Displayed above the detailed feedback when in REWORK status with AI summary available */}
+        {(dashboardData.status === "REWORK" || dashboardData.status === "NEEDS_REWORK") &&
+         dashboardData.ai_summary && (
+          <div className="mb-6">
+            <AISummaryPanel
+              summary={dashboardData.ai_summary as any}
+              availableLanguages={dashboardData.ai_summary_available_languages || ["ceb", "en"]}
+              currentLanguage={selectedLanguage}
+              onLanguageChange={handleLanguageChange}
+              isLoading={isFetchingDashboard}
+            />
+          </div>
+        )}
 
         {/* Epic 5.0: Rework Indicators Panel (shows failed indicators grouped by area) */}
         {/* Shows when status is REWORK/NEEDS_REWORK AND there are comments or annotations */}

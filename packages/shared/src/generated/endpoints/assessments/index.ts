@@ -25,10 +25,12 @@ import type {
   AssessmentResponseCreate,
   AssessmentResponseUpdate,
   AssessmentSubmissionValidation,
+  CalibrationSummaryResponse,
   CompletenessValidationResponse,
   DeleteAssessmentsMovsMovId200,
   GetAnswersResponse,
   GetAssessmentsAssessmentIdAnswersParams,
+  GetAssessmentsAssessmentIdCalibrationSummaryParams,
   GetAssessmentsAssessmentIdReworkSummaryParams,
   GetAssessmentsList200Item,
   GetAssessmentsListParams,
@@ -1654,6 +1656,111 @@ export function useGetAssessmentsAssessmentIdReworkSummary<TData = Awaited<Retur
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetAssessmentsAssessmentIdReworkSummaryQueryOptions(assessmentId,params,options)
+
+  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
+ * Get AI-generated calibration summary for an assessment in the specified language.
+
+This endpoint retrieves the comprehensive AI-generated summary of calibration
+requirements for a BLGU user's assessment. Unlike rework summaries which cover
+all indicators, calibration summaries focus only on indicators in the validator's
+governance area that were marked as FAIL (Unmet).
+
+The summary includes:
+- Overall summary of main issues in the specific governance area
+- Per-indicator breakdowns with key issues and suggested actions
+- Priority actions to address first
+- Estimated time to complete calibration corrections
+
+Supports multiple languages:
+- ceb: Bisaya (Cebuano) - Default
+- fil: Tagalog (Filipino)
+- en: English
+
+The summary is generated asynchronously when the validator requests calibration.
+Bisaya and English summaries are generated upfront; Tagalog is generated on-demand.
+
+Authorization:
+    - BLGU users can only access summaries for their own assessments
+
+Args:
+    assessment_id: ID of the assessment
+    language: Language code (ceb, fil, en). Defaults to user's preferred_language.
+    db: Database session
+    current_user: Current authenticated BLGU user
+
+Returns:
+    CalibrationSummaryResponse with comprehensive calibration guidance in the requested language
+
+Raises:
+    HTTPException 404: Assessment not found or no calibration summary available
+    HTTPException 403: BLGU user trying to access another barangay's assessment
+    HTTPException 400: Assessment is not in calibration/rework status or not a calibration
+ * @summary Get Calibration Summary
+ */
+export const getAssessments$AssessmentIdCalibrationSummary = (
+    assessmentId: number,
+    params?: GetAssessmentsAssessmentIdCalibrationSummaryParams,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<CalibrationSummaryResponse>(
+      {url: `http://localhost:8000/api/v1/assessments/${assessmentId}/calibration-summary`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+  
+
+export const getGetAssessmentsAssessmentIdCalibrationSummaryQueryKey = (assessmentId: number,
+    params?: GetAssessmentsAssessmentIdCalibrationSummaryParams,) => {
+    return [`http://localhost:8000/api/v1/assessments/${assessmentId}/calibration-summary`, ...(params ? [params]: [])] as const;
+    }
+
+    
+export const getGetAssessmentsAssessmentIdCalibrationSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getAssessments$AssessmentIdCalibrationSummary>>, TError = HTTPValidationError>(assessmentId: number,
+    params?: GetAssessmentsAssessmentIdCalibrationSummaryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessments$AssessmentIdCalibrationSummary>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAssessmentsAssessmentIdCalibrationSummaryQueryKey(assessmentId,params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessments$AssessmentIdCalibrationSummary>>> = ({ signal }) => getAssessments$AssessmentIdCalibrationSummary(assessmentId,params, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessments$AssessmentIdCalibrationSummary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAssessmentsAssessmentIdCalibrationSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessments$AssessmentIdCalibrationSummary>>>
+export type GetAssessmentsAssessmentIdCalibrationSummaryQueryError = HTTPValidationError
+
+
+/**
+ * @summary Get Calibration Summary
+ */
+
+export function useGetAssessmentsAssessmentIdCalibrationSummary<TData = Awaited<ReturnType<typeof getAssessments$AssessmentIdCalibrationSummary>>, TError = HTTPValidationError>(
+ assessmentId: number,
+    params?: GetAssessmentsAssessmentIdCalibrationSummaryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessments$AssessmentIdCalibrationSummary>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAssessmentsAssessmentIdCalibrationSummaryQueryOptions(assessmentId,params,options)
 
   const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

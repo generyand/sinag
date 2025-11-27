@@ -33,6 +33,7 @@ class ChecklistItem:
     mov_description: Optional[str] = None  # Means of Verification description (right column)
     requires_document_count: bool = False  # DEPRECATED: Use item_type="document_count" instead
     display_order: int = 0  # Sort order within indicator
+    option_group: Optional[str] = None  # Option group for OR logic (e.g., "Option A", "Option B")
 
 
 @dataclass

@@ -748,6 +748,7 @@ class AssessorService:
                             "required": item.required,
                             "requires_document_count": item.requires_document_count,
                             "display_order": item.display_order,
+                            "option_group": item.option_group,
                         }
                         for item in sorted(response.indicator.checklist_items, key=lambda x: x.display_order)
                     ],
@@ -1131,7 +1132,7 @@ class AssessorService:
             from app.workers.notifications import send_calibration_notification
 
             # Queue the calibration notification task (Notification #5)
-            task = send_calibration_notification.delay(assessment_id, validator.validator_area_id)
+            task = send_calibration_notification.delay(assessment_id)
             notification_result = {
                 "success": True,
                 "message": "Calibration notification queued successfully",
@@ -1141,6 +1142,23 @@ class AssessorService:
             print(f"Failed to queue calibration notification: {e}")
             notification_result = {"success": False, "error": str(e)}
 
+        # Trigger AI calibration summary generation asynchronously using Celery
+        summary_result = {"success": False, "skipped": True}
+        try:
+            from app.workers.intelligence_worker import generate_calibration_summary_task
+
+            summary_task = generate_calibration_summary_task.delay(
+                assessment_id, validator.validator_area_id
+            )
+            summary_result = {
+                "success": True,
+                "message": "Calibration summary generation queued successfully",
+                "task_id": summary_task.id,
+            }
+        except Exception as e:
+            print(f"Failed to queue calibration summary generation: {e}")
+            summary_result = {"success": False, "error": str(e)}
+
         return {
             "success": True,
             "message": f"Assessment submitted for calibration. {calibrated_count} indicator(s) in {governance_area_name} marked for correction.",
@@ -1149,6 +1167,7 @@ class AssessorService:
             "governance_area": governance_area_name,
             "calibrated_indicators_count": calibrated_count,
             "notification_result": notification_result,
+            "summary_result": summary_result,
         }
 
     def finalize_assessment(
@@ -1366,21 +1385,27 @@ class AssessorService:
             print(f"Failed to calculate BBI statuses: {e}")
             bbi_calculation_result = {"success": False, "error": str(e)}
 
-        # Trigger notification asynchronously using Celery
-        try:
-            from app.workers.notifications import send_validation_complete_notification
+        # Notification #7: If validator completed ALL governance areas (status = COMPLETED),
+        # notify MLGOO users and the BLGU user
+        notification_result = {"success": False, "message": "Not triggered - assessment not COMPLETED"}
+        if assessment.status == AssessmentStatus.COMPLETED:
+            try:
+                from app.workers.notifications import send_validation_complete_notification
 
-            # Queue the notification task to run in the background
-            task = send_validation_complete_notification.delay(assessment_id)
-            notification_result = {
-                "success": True,
-                "message": "Validation complete notification queued successfully",
-                "task_id": task.id,
-            }
-        except Exception as e:
-            # Log the error but don't fail the finalization operation
-            print(f"Failed to queue notification: {e}")
-            notification_result = {"success": False, "error": str(e)}
+                # Queue the notification task to run in the background
+                task = send_validation_complete_notification.delay(assessment_id)
+                notification_result = {
+                    "success": True,
+                    "message": "Validation complete notification queued successfully",
+                    "task_id": task.id,
+                }
+                self.logger.info(
+                    f"Triggered validation complete notification for assessment {assessment_id}"
+                )
+            except Exception as e:
+                # Log the error but don't fail the finalization operation
+                self.logger.error(f"Failed to queue notification: {e}")
+                notification_result = {"success": False, "error": str(e)}
 
         return {
             "success": True,

@@ -268,7 +268,7 @@ describe('NotificationPanel', () => {
 
       expect(
         screen.getByRole('heading', { level: 3, hidden: true })
-      ).toBeDefined;
+      ).toBeDefined();
     });
   });
 });

@@ -7,8 +7,62 @@ IMPORTANT: These schemas show COMPLETION status only (complete/incomplete).
 Compliance status (PASS/FAIL/CONDITIONAL) is NEVER exposed to BLGU users.
 """
 
+from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field
+
+
+class AISummaryIndicator(BaseModel):
+    """Individual indicator summary within an AI-generated summary."""
+
+    indicator_id: int = Field(..., description="Indicator ID")
+    indicator_name: str = Field(..., description="Indicator name")
+    key_issues: List[str] = Field(
+        default_factory=list, description="Key issues identified by assessor/validator"
+    )
+    suggested_actions: List[str] = Field(
+        default_factory=list, description="Suggested actions to address the issues"
+    )
+    affected_movs: List[str] = Field(
+        default_factory=list, description="List of MOV filenames with issues"
+    )
+
+
+class AISummary(BaseModel):
+    """
+    AI-generated summary for rework or calibration.
+
+    Provides overall guidance and per-indicator breakdowns to help
+    BLGU users understand what needs to be fixed.
+    """
+
+    overall_summary: str = Field(
+        ..., description="Brief 2-3 sentence overview of the main issues"
+    )
+    governance_area: Optional[str] = Field(
+        None, description="Name of the governance area (only for calibration)"
+    )
+    governance_area_id: Optional[int] = Field(
+        None, description="ID of the governance area (only for calibration)"
+    )
+    indicator_summaries: List[AISummaryIndicator] = Field(
+        default_factory=list, description="Detailed summaries for each indicator"
+    )
+    priority_actions: List[str] = Field(
+        default_factory=list, description="Top 3-5 priority actions to address first"
+    )
+    estimated_time: Optional[str] = Field(
+        None, description="Estimated time to complete corrections (e.g., '30-45 minutes')"
+    )
+    generated_at: Optional[datetime] = Field(
+        None, description="Timestamp when the summary was generated"
+    )
+    language: Optional[str] = Field(
+        None, description="Language code of this summary (ceb=Bisaya, fil=Tagalog, en=English)"
+    )
+    summary_type: Literal["rework", "calibration"] = Field(
+        ..., description="Type of summary: 'rework' (assessor) or 'calibration' (validator)"
+    )
 
 
 class IndicatorItem(BaseModel):
@@ -132,6 +186,18 @@ class BLGUDashboardResponse(BaseModel):
     )
     mov_annotations_by_indicator: Optional[Dict[int, List[Dict[str, Any]]]] = Field(
         None, description="MOV annotations grouped by indicator ID - shows which MOVs assessor highlighted/commented on (null if no annotations)"
+    )
+
+    # AI-generated summary for rework/calibration guidance
+    ai_summary: Optional[AISummary] = Field(
+        None,
+        description="AI-generated summary with overall guidance, per-indicator breakdowns, and priority actions. "
+        "Only populated when assessment is in REWORK status. Use the language query parameter to get summary in different languages."
+    )
+    ai_summary_available_languages: Optional[List[str]] = Field(
+        None,
+        description="List of language codes for which AI summaries are available (e.g., ['ceb', 'en']). "
+        "Tagalog ('fil') is generated on-demand if requested."
     )
 
     class Config:

@@ -469,6 +469,17 @@ indicator_id: number;
 
 
 /**
+ * GetAssessmentsAssessmentIdCalibrationSummaryParams
+ */
+export type GetAssessmentsAssessmentIdCalibrationSummaryParams = {
+/**
+ * Language code for the summary: ceb (Bisaya), fil (Tagalog), en (English). Defaults to user's preferred language.
+ */
+language?: string;
+};
+
+
+/**
  * GetAssessmentsAssessmentIdReworkSummaryParams
  */
 export type GetAssessmentsAssessmentIdReworkSummaryParams = {
@@ -500,6 +511,17 @@ assessment_status?: AssessmentStatus | null;
  * GetAssessmentsMyAssessment200
  */
 export type GetAssessmentsMyAssessment200 = { [key: string]: unknown };
+
+
+/**
+ * GetBlguDashboardAssessmentIdParams
+ */
+export type GetBlguDashboardAssessmentIdParams = {
+/**
+ * Language code for AI summary: ceb (Bisaya), fil (Tagalog), en (English). Defaults to user's preferred language.
+ */
+language?: string | null;
+};
 
 
 /**

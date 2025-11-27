@@ -51,6 +51,8 @@ class Assessment(Base):
     # Track calibration per governance area - stores list of area IDs that have been calibrated
     # Each area can only be calibrated once (max 1 per area)
     calibrated_area_ids: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
+    # AI-generated calibration summary (similar to rework_summary but for validator calibration)
+    calibration_summary: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     # Intelligence layer fields
     final_compliance_status: Mapped[ComplianceStatus | None] = mapped_column(

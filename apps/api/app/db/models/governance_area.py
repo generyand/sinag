@@ -342,6 +342,9 @@ class ChecklistItem(Base):
     # Sort order within indicator
     display_order: Mapped[int] = mapped_column(Integer, nullable=False, server_default='0')
 
+    # Option group for OR logic (e.g., "Option A", "Option B")
+    option_group: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())

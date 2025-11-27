@@ -11,9 +11,10 @@ Compliance status (PASS/FAIL/CONDITIONAL) is NEVER exposed to BLGU users.
 """
 
 from collections import defaultdict
-from typing import Dict, List, Any
+from datetime import datetime
+from typing import Dict, List, Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.api import deps
@@ -21,7 +22,7 @@ from app.db.enums import AssessmentStatus, UserRole
 from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
-from app.schemas.blgu_dashboard import BLGUDashboardResponse, IndicatorNavigationItem
+from app.schemas.blgu_dashboard import AISummary, AISummaryIndicator, BLGUDashboardResponse, IndicatorNavigationItem
 from app.services.completeness_validation_service import completeness_validation_service
 
 router = APIRouter(tags=["blgu-dashboard"])
@@ -30,6 +31,10 @@ router = APIRouter(tags=["blgu-dashboard"])
 @router.get("/{assessment_id}", response_model=BLGUDashboardResponse)
 def get_blgu_dashboard(
     assessment_id: int,
+    language: Optional[str] = Query(
+        None,
+        description="Language code for AI summary: ceb (Bisaya), fil (Tagalog), en (English). Defaults to user's preferred language."
+    ),
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
 ):
@@ -312,6 +317,91 @@ def get_blgu_dashboard(
                 calibration_governance_area_id = cal_area.id
                 calibration_governance_area_name = cal_area.name
 
+    # AI Summary: Include rework or calibration summary if available
+    ai_summary = None
+    ai_summary_available_languages = None
+
+    if assessment.status in [AssessmentStatus.REWORK, AssessmentStatus.NEEDS_REWORK]:
+        # Determine target language (parameter > user preference > default)
+        target_lang = language or current_user.preferred_language or "ceb"
+
+        # Validate language code
+        if target_lang not in ["ceb", "fil", "en"]:
+            target_lang = "ceb"  # Default to Bisaya if invalid
+
+        # Check if this is a calibration rework or regular rework
+        if assessment.is_calibration_rework and assessment.calibration_summary:
+            # Use calibration summary
+            summary_data = assessment.calibration_summary
+            summary_type = "calibration"
+        elif assessment.rework_summary:
+            # Use rework summary
+            summary_data = assessment.rework_summary
+            summary_type = "rework"
+        else:
+            summary_data = None
+            summary_type = None
+
+        if summary_data:
+            # Get available languages
+            if isinstance(summary_data, dict):
+                ai_summary_available_languages = [
+                    lang for lang in ["ceb", "en", "fil"]
+                    if lang in summary_data
+                ]
+
+            # Get the summary in the requested language
+            lang_summary = None
+            if isinstance(summary_data, dict):
+                if target_lang in summary_data:
+                    lang_summary = summary_data[target_lang]
+                elif "overall_summary" in summary_data:
+                    # Legacy format (direct summary without language key)
+                    lang_summary = summary_data
+                else:
+                    # Fallback to any available language
+                    for fallback_lang in ["ceb", "en", "fil"]:
+                        if fallback_lang in summary_data:
+                            lang_summary = summary_data[fallback_lang]
+                            break
+
+            if lang_summary:
+                # Convert indicator summaries to AISummaryIndicator objects
+                indicator_summaries = []
+                for ind_sum in lang_summary.get("indicator_summaries", []):
+                    indicator_summaries.append(AISummaryIndicator(
+                        indicator_id=ind_sum.get("indicator_id", 0),
+                        indicator_name=ind_sum.get("indicator_name", ""),
+                        key_issues=ind_sum.get("key_issues", []),
+                        suggested_actions=ind_sum.get("suggested_actions", []),
+                        affected_movs=ind_sum.get("affected_movs", []),
+                    ))
+
+                # Parse generated_at timestamp
+                generated_at = None
+                if lang_summary.get("generated_at"):
+                    try:
+                        generated_at_str = lang_summary["generated_at"]
+                        if isinstance(generated_at_str, str):
+                            # Handle ISO format with or without timezone
+                            if generated_at_str.endswith("Z"):
+                                generated_at_str = generated_at_str[:-1] + "+00:00"
+                            generated_at = datetime.fromisoformat(generated_at_str)
+                    except (ValueError, TypeError):
+                        pass
+
+                ai_summary = AISummary(
+                    overall_summary=lang_summary.get("overall_summary", ""),
+                    governance_area=lang_summary.get("governance_area"),
+                    governance_area_id=lang_summary.get("governance_area_id"),
+                    indicator_summaries=indicator_summaries,
+                    priority_actions=lang_summary.get("priority_actions", []),
+                    estimated_time=lang_summary.get("estimated_time"),
+                    generated_at=generated_at,
+                    language=lang_summary.get("language", target_lang),
+                    summary_type=summary_type,
+                )
+
     # Epic 5.0: Return status and rework tracking fields
     return {
         "assessment_id": assessment_id,
@@ -331,6 +421,9 @@ def get_blgu_dashboard(
         "governance_areas": governance_areas_list,
         "rework_comments": rework_comments,
         "mov_annotations_by_indicator": mov_annotations_by_indicator,  # MOV annotations grouped by indicator
+        # AI Summary for rework/calibration guidance
+        "ai_summary": ai_summary,
+        "ai_summary_available_languages": ai_summary_available_languages,
     }
 
 

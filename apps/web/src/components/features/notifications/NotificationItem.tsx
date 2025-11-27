@@ -35,6 +35,8 @@ function getNotificationIcon(type: NotificationType) {
       return { icon: AlertCircle, color: 'text-orange-500', bg: 'bg-orange-50' };
     case 'CALIBRATION_RESUBMITTED':
       return { icon: RefreshCw, color: 'text-purple-500', bg: 'bg-purple-50' };
+    case 'VALIDATION_COMPLETED':
+      return { icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-50' };
     default:
       return { icon: FileCheck, color: 'text-gray-500', bg: 'bg-gray-50' };
   }
@@ -46,25 +48,33 @@ function getNotificationIcon(type: NotificationType) {
 function getNotificationLink(notification: NotificationResponse): string | null {
   if (!notification.assessment_id) return null;
 
-  // For assessors/validators - go to the validation page
-  if (
-    notification.notification_type === 'NEW_SUBMISSION' ||
-    notification.notification_type === 'REWORK_RESUBMITTED' ||
-    notification.notification_type === 'READY_FOR_VALIDATION' ||
-    notification.notification_type === 'CALIBRATION_RESUBMITTED'
-  ) {
-    return `/assessor/validation/${notification.assessment_id}`;
-  }
+  const assessmentId = notification.assessment_id;
 
-  // For BLGU users - go to their dashboard or assessment
-  if (
-    notification.notification_type === 'REWORK_REQUESTED' ||
-    notification.notification_type === 'CALIBRATION_REQUESTED'
-  ) {
-    return `/blgu`;
-  }
+  switch (notification.notification_type) {
+    // Notifications for Assessors - go to assessor validation page
+    case 'NEW_SUBMISSION':
+    case 'REWORK_RESUBMITTED':
+      return `/assessor/submissions/${assessmentId}/validation`;
 
-  return null;
+    // Notifications for Validators - go to validator validation page
+    case 'READY_FOR_VALIDATION':
+    case 'CALIBRATION_RESUBMITTED':
+      return `/validator/submissions/${assessmentId}/validation`;
+
+    // Notifications for BLGU users - go to their dashboard
+    case 'REWORK_REQUESTED':
+    case 'CALIBRATION_REQUESTED':
+      return `/blgu/dashboard`;
+
+    // Notifications for MLGOO and BLGU when validation is complete
+    case 'VALIDATION_COMPLETED':
+      // MLGOO sees it in their submissions, BLGU sees it in dashboard
+      // Default to BLGU dashboard since both can see status there
+      return `/blgu/dashboard`;
+
+    default:
+      return null;
+  }
 }
 
 export function NotificationItem({
@@ -127,16 +137,21 @@ export function NotificationItem({
         <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
           {notification.message}
         </p>
-        {/* Barangay/Governance Area info */}
+        {/* Metadata info - only show if not already in title */}
         <div className="flex items-center gap-2 mt-1">
-          {notification.assessment_barangay_name && (
+          {/* Show barangay name only if not already in title */}
+          {notification.assessment_barangay_name &&
+           !notification.title.includes(notification.assessment_barangay_name) && (
             <span className="text-xs text-muted-foreground">
               {notification.assessment_barangay_name}
             </span>
           )}
-          {notification.governance_area_name && (
+          {/* Show governance area if available and not in title */}
+          {notification.governance_area_name &&
+           !notification.title.includes(notification.governance_area_name) && (
             <>
-              {notification.assessment_barangay_name && (
+              {notification.assessment_barangay_name &&
+               !notification.title.includes(notification.assessment_barangay_name) && (
                 <span className="text-xs text-muted-foreground">|</span>
               )}
               <span className="text-xs text-muted-foreground">

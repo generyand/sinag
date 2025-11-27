@@ -163,7 +163,8 @@ INDICATOR_4_8 = Indicator(
                     mov_description="Verify at least 50% accomplishment of physical targets (Option A)",
                     item_type="assessment_field",
                     required=False,
-                    display_order=2
+                    display_order=2,
+                    option_group="Option A"
                 ),
                 ChecklistItem(
                     id="4_8_4_cert_a",
@@ -171,7 +172,8 @@ INDICATOR_4_8 = Indicator(
                     mov_description="Verification of certification for option A",
                     item_type="checkbox",
                     required=False,
-                    display_order=3
+                    display_order=3,
+                    option_group="Option A"
                 ),
                 ChecklistItem(
                     id="4_8_4_physical_percentage",
@@ -179,7 +181,8 @@ INDICATOR_4_8 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=4
+                    display_order=4,
+                    option_group="Option A"
                 ),
                 # OR separator
                 ChecklistItem(
@@ -197,7 +200,8 @@ INDICATOR_4_8 = Indicator(
                     mov_description="Verify at least 50% fund utilization rate (Option B)",
                     item_type="assessment_field",
                     required=False,
-                    display_order=6
+                    display_order=6,
+                    option_group="Option B"
                 ),
                 ChecklistItem(
                     id="4_8_4_cert_b",
@@ -205,7 +209,8 @@ INDICATOR_4_8 = Indicator(
                     mov_description="Verification of certification for option B",
                     item_type="checkbox",
                     required=False,
-                    display_order=7
+                    display_order=7,
+                    option_group="Option B"
                 ),
                 ChecklistItem(
                     id="4_8_4_amount_utilized",
@@ -213,7 +218,8 @@ INDICATOR_4_8 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=8
+                    display_order=8,
+                    option_group="Option B"
                 ),
                 ChecklistItem(
                     id="4_8_4_amount_allocated",
@@ -221,7 +227,8 @@ INDICATOR_4_8 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=9
+                    display_order=9,
+                    option_group="Option B"
                 ),
             ]
         ),

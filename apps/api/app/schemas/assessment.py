@@ -694,6 +694,50 @@ class ReworkSummaryResponse(BaseModel):
     )
 
 
+class CalibrationSummaryResponse(BaseModel):
+    """AI-generated comprehensive summary of calibration requirements.
+
+    This schema represents the complete calibration summary provided to BLGU users
+    after a validator requests calibration during table validation. Unlike rework
+    summaries which cover all indicators, calibration summaries focus only on
+    indicators in the validator's governance area that were marked as FAIL (Unmet).
+    """
+
+    overall_summary: str = Field(
+        ...,
+        description="Brief 2-3 sentence overview of the main issues in the governance area"
+    )
+    governance_area: Optional[str] = Field(
+        None,
+        description="Name of the governance area being calibrated"
+    )
+    governance_area_id: Optional[int] = Field(
+        None,
+        description="ID of the governance area being calibrated"
+    )
+    indicator_summaries: List[IndicatorSummary] = Field(
+        default_factory=list,
+        description="Detailed summaries for each indicator requiring calibration"
+    )
+    priority_actions: List[str] = Field(
+        default_factory=list,
+        description="Top 3 most critical actions the BLGU should prioritize",
+        max_length=5
+    )
+    estimated_time: Optional[str] = Field(
+        None,
+        description="Estimated time to complete calibration corrections (e.g., '15-30 minutes')"
+    )
+    generated_at: datetime = Field(
+        ...,
+        description="Timestamp when the summary was generated"
+    )
+    language: Optional[str] = Field(
+        None,
+        description="Language code of this summary (ceb=Bisaya, fil=Tagalog, en=English)"
+    )
+
+
 # ============================================================================
 # Update forward references for nested models
 # ============================================================================

@@ -53,7 +53,7 @@ def send_new_submission_notification(self: Any, assessment_id: int) -> Dict[str,
             db=db,
             notification_type=NotificationType.NEW_SUBMISSION,
             title=f"New Submission: {barangay_name}",
-            message=f"Barangay {barangay_name} has submitted their SGLGB assessment for review.",
+            message="A new SGLGB assessment has been submitted for review.",
             assessment_id=assessment_id,
             exclude_user_id=assessment.blgu_user_id,  # Don't notify the submitter
         )
@@ -126,7 +126,7 @@ def send_rework_notification(self: Any, assessment_id: int) -> Dict[str, Any]:
             db=db,
             notification_type=NotificationType.REWORK_REQUESTED,
             title="Assessment Needs Revision",
-            message=f"Your SGLGB assessment for {barangay_name} requires revisions. Please review the assessor feedback and resubmit.",
+            message="Your SGLGB assessment requires revisions. Please review the assessor feedback and resubmit.",
             blgu_user_id=assessment.blgu_user_id,
             assessment_id=assessment_id,
         )
@@ -196,7 +196,7 @@ def send_rework_resubmission_notification(
             db=db,
             notification_type=NotificationType.REWORK_RESUBMITTED,
             title=f"Rework Resubmission: {barangay_name}",
-            message=f"Barangay {barangay_name} has resubmitted their assessment after addressing the requested revisions.",
+            message="The assessment has been resubmitted after addressing the requested revisions.",
             assessment_id=assessment_id,
             exclude_user_id=assessment.blgu_user_id,
         )
@@ -275,8 +275,8 @@ def send_ready_for_validation_notification(
         notifications = notification_service.notify_validators_for_governance_area(
             db=db,
             notification_type=NotificationType.READY_FOR_VALIDATION,
-            title=f"Ready for Validation: {governance_area_name}",
-            message=f"Assessment for Barangay {barangay_name} is ready for final validation in {governance_area_name}.",
+            title=f"Ready for Validation: {barangay_name}",
+            message="An assessment is ready for final validation in your governance area.",
             governance_area_id=governance_area_id,
             assessment_id=assessment_id,
         )
@@ -347,20 +347,21 @@ def send_calibration_notification(self: Any, assessment_id: int) -> Dict[str, An
             barangay_name = assessment.blgu_user.barangay.name
 
         # Get governance area name if calibration_validator_id is set
-        governance_area_name = ""
+        governance_area_name = None
         if assessment.calibration_validator_id:
             validator = db.query(User).filter(
                 User.id == assessment.calibration_validator_id
             ).first()
             if validator and validator.validator_area:
-                governance_area_name = f" for {validator.validator_area.name}"
+                governance_area_name = validator.validator_area.name
 
         # Create notification for BLGU user
+        title = f"Calibration Required: {governance_area_name}" if governance_area_name else "Calibration Required"
         notification = notification_service.notify_blgu_user(
             db=db,
             notification_type=NotificationType.CALIBRATION_REQUESTED,
-            title="Calibration Required",
-            message=f"The validator has requested calibration{governance_area_name} for your SGLGB assessment. Please review the feedback and make the necessary corrections.",
+            title=title,
+            message="The validator has requested calibration. Please review the feedback and make the necessary corrections.",
             blgu_user_id=assessment.blgu_user_id,
             assessment_id=assessment_id,
         )
@@ -443,7 +444,7 @@ def send_calibration_resubmission_notification(
             db=db,
             notification_type=NotificationType.CALIBRATION_RESUBMITTED,
             title=f"Calibration Resubmission: {barangay_name}",
-            message=f"Barangay {barangay_name} has resubmitted their assessment after calibration. Please review the updated indicators.",
+            message="The assessment has been resubmitted after calibration. Please review the updated indicators.",
             validator_id=validator_id,
             assessment_id=assessment_id,
             governance_area_id=governance_area_id,
@@ -489,7 +490,9 @@ def send_validation_complete_notification(
     self: Any, assessment_id: int
 ) -> Dict[str, Any]:
     """
-    Send notification to BLGU user when assessment validation is complete.
+    Send notification to MLGOO users and BLGU user when assessment validation is complete.
+
+    Notification #7: Validator completes validation -> MLGOO and BLGU notified
 
     Args:
         assessment_id: ID of the validated assessment
@@ -507,40 +510,50 @@ def send_validation_complete_notification(
             logger.error("Assessment %s not found", assessment_id)
             return {"success": False, "error": "Assessment not found"}
 
-        if not assessment.blgu_user_id:
-            logger.error("Assessment %s has no BLGU user", assessment_id)
-            return {"success": False, "error": "BLGU user not found"}
-
         # Get barangay name
         barangay_name = "Unknown Barangay"
         if assessment.blgu_user and assessment.blgu_user.barangay:
             barangay_name = assessment.blgu_user.barangay.name
 
-        # Note: For validation complete, we log but don't create in-app notification
-        # since it would be redundant (they can see the status in their dashboard)
-        # The existing behavior is preserved for backward compatibility
+        notifications_created = 0
+
+        # Notify all MLGOO users
+        mlgoo_notifications = notification_service.notify_all_mlgoo_users(
+            db=db,
+            notification_type=NotificationType.VALIDATION_COMPLETED,
+            title=f"Validation Complete: {barangay_name}",
+            message="The SGLGB assessment has been fully validated and is now complete.",
+            assessment_id=assessment_id,
+        )
+        notifications_created += len(mlgoo_notifications)
+
+        # Notify BLGU user
+        if assessment.blgu_user_id:
+            blgu_notification = notification_service.notify_blgu_user(
+                db=db,
+                notification_type=NotificationType.VALIDATION_COMPLETED,
+                title="Assessment Validated!",
+                message="Congratulations! Your SGLGB assessment has been fully validated and is now complete.",
+                blgu_user_id=assessment.blgu_user_id,
+                assessment_id=assessment_id,
+            )
+            notifications_created += 1
+
+        db.commit()
 
         logger.info(
-            "VALIDATION COMPLETE: Assessment %s for %s has been validated",
+            "VALIDATION_COMPLETED notification: Assessment %s for %s - %d users notified",
             assessment_id,
             barangay_name,
+            notifications_created,
         )
-
-        notification_details = {
-            "assessment_id": assessment_id,
-            "blgu_user_name": assessment.blgu_user.name if assessment.blgu_user else "Unknown",
-            "blgu_user_email": assessment.blgu_user.email if assessment.blgu_user else "Unknown",
-            "barangay": barangay_name,
-            "assessment_status": str(assessment.status),
-            "message": f"Congratulations! Your assessment for {barangay_name} has been validated and is now complete.",
-        }
-
-        logger.info("Validation complete notification details: %s", notification_details)
 
         return {
             "success": True,
-            "message": "Validation complete notification processed",
-            "notification_details": notification_details,
+            "message": f"Validation complete notification sent to {notifications_created} user(s)",
+            "assessment_id": assessment_id,
+            "barangay_name": barangay_name,
+            "notifications_created": notifications_created,
         }
 
     except Exception as e:
@@ -549,6 +562,7 @@ def send_validation_complete_notification(
             assessment_id,
             str(e),
         )
+        db.rollback()
         return {"success": False, "error": str(e)}
 
     finally:

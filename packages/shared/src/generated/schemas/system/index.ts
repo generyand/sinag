@@ -9,7 +9,9 @@ import type { AuditLogResponseUserEmail } from '../users';
 import type { AuditLogResponseUserName } from '../users';
 import type { GovernanceAreaGroup } from '../common';
 import type { BLGUDashboardResponseMovAnnotationsByIndicator } from '../indicators';
+import type { AISummary } from '../common';
 import type { ReworkComment } from '../common';
+import type { IndicatorSummary } from '../indicators';
 import type { ChecklistItemResponseMovDescription } from '../movs';
 import type { IncompleteIndicatorDetail } from '../indicators';
 import type { ComplianceRate } from '../common';
@@ -22,7 +24,6 @@ import type { OverallComplianceResponseAssessmentCycle } from '../assessments';
 import type { ChartData } from '../common';
 import type { MapData } from '../common';
 import type { TableData } from '../common';
-import type { IndicatorSummary } from '../indicators';
 import type { AssessmentStatus } from '../assessments';
 import type { SubmissionValidationResult } from '../error';
 import type { ValidationStatus } from '../error';
@@ -179,7 +180,23 @@ export interface BLGUDashboardResponse {
   rework_comments?: BLGUDashboardResponseReworkComments;
   /** MOV annotations grouped by indicator ID - shows which MOVs assessor highlighted/commented on (null if no annotations) */
   mov_annotations_by_indicator?: BLGUDashboardResponseMovAnnotationsByIndicator;
+  /** AI-generated summary with overall guidance, per-indicator breakdowns, and priority actions. Only populated when assessment is in REWORK status. Use the language query parameter to get summary in different languages. */
+  ai_summary?: BLGUDashboardResponseAiSummary;
+  /** List of language codes for which AI summaries are available (e.g., ['ceb', 'en']). Tagalog ('fil') is generated on-demand if requested. */
+  ai_summary_available_languages?: BLGUDashboardResponseAiSummaryAvailableLanguages;
 }
+
+
+/**
+ * BLGUDashboardResponseAiSummary
+ */
+export type BLGUDashboardResponseAiSummary = AISummary | null;
+
+
+/**
+ * BLGUDashboardResponseAiSummaryAvailableLanguages
+ */
+export type BLGUDashboardResponseAiSummaryAvailableLanguages = string[] | null;
 
 
 /**
@@ -234,6 +251,56 @@ export interface BarangayDeadlineStatusResponse {
 
 
 /**
+ * CalibrationSummaryResponse
+ */
+export interface CalibrationSummaryResponse {
+  /** Brief 2-3 sentence overview of the main issues in the governance area */
+  overall_summary: string;
+  /** Name of the governance area being calibrated */
+  governance_area?: CalibrationSummaryResponseGovernanceArea;
+  /** ID of the governance area being calibrated */
+  governance_area_id?: CalibrationSummaryResponseGovernanceAreaId;
+  /** Detailed summaries for each indicator requiring calibration */
+  indicator_summaries?: IndicatorSummary[];
+  /**
+   * Top 3 most critical actions the BLGU should prioritize
+   * @maxItems 5
+   */
+  priority_actions?: string[];
+  /** Estimated time to complete calibration corrections (e.g., '15-30 minutes') */
+  estimated_time?: CalibrationSummaryResponseEstimatedTime;
+  /** Timestamp when the summary was generated */
+  generated_at: string;
+  /** Language code of this summary (ceb=Bisaya, fil=Tagalog, en=English) */
+  language?: CalibrationSummaryResponseLanguage;
+}
+
+
+/**
+ * CalibrationSummaryResponseEstimatedTime
+ */
+export type CalibrationSummaryResponseEstimatedTime = string | null;
+
+
+/**
+ * CalibrationSummaryResponseGovernanceArea
+ */
+export type CalibrationSummaryResponseGovernanceArea = string | null;
+
+
+/**
+ * CalibrationSummaryResponseGovernanceAreaId
+ */
+export type CalibrationSummaryResponseGovernanceAreaId = number | null;
+
+
+/**
+ * CalibrationSummaryResponseLanguage
+ */
+export type CalibrationSummaryResponseLanguage = string | null;
+
+
+/**
  * ChecklistItemResponse
  */
 export interface ChecklistItemResponse {
@@ -242,6 +309,8 @@ export interface ChecklistItemResponse {
   item_id: string;
   /** Display text (e.g., 'a. Barangay Financial Report') */
   label: string;
+  /** Type of checklist item (checkbox, info_text, assessment_field, document_count, calculation_field) */
+  item_type?: string;
   /** Group header (e.g., 'ANNUAL REPORT') */
   group_name?: ChecklistItemResponseGroupName;
   /** Means of Verification description */
@@ -252,6 +321,8 @@ export interface ChecklistItemResponse {
   requires_document_count: boolean;
   /** Sort order within indicator */
   display_order: number;
+  /** Option group for OR logic (e.g., 'Option A', 'Option B') */
+  option_group?: ChecklistItemResponseOptionGroup;
 }
 
 
@@ -259,6 +330,12 @@ export interface ChecklistItemResponse {
  * ChecklistItemResponseGroupName
  */
 export type ChecklistItemResponseGroupName = string | null;
+
+
+/**
+ * ChecklistItemResponseOptionGroup
+ */
+export type ChecklistItemResponseOptionGroup = string | null;
 
 
 /**

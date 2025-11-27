@@ -14,6 +14,7 @@ from app.schemas.assessment import (
     AssessmentResponseCreate,
     AssessmentResponseUpdate,
     AssessmentSubmissionValidation,
+    CalibrationSummaryResponse,
     MOVCreate,
     SaveAnswersRequest,
     SaveAnswersResponse,
@@ -1501,8 +1502,21 @@ def submit_for_calibration_review(
         response.requires_rework = False
         response.validation_status = None  # Reset so Validator can re-validate
 
+    # Store validator_id before clearing (we need it for notification)
+    validator_id = assessment.calibration_validator_id
+
     db.commit()
     db.refresh(assessment)
+
+    # Trigger calibration resubmission notification to the Validator
+    if validator_id:
+        try:
+            from app.workers.notifications import send_calibration_resubmission_notification
+            send_calibration_resubmission_notification.delay(assessment_id, validator_id)
+        except Exception as e:
+            # Log but don't fail the request
+            import logging
+            logging.getLogger(__name__).error(f"Failed to queue calibration resubmission notification: {e}")
 
     return ResubmitAssessmentResponse(
         success=True,
@@ -1728,4 +1742,168 @@ async def get_rework_summary(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate summary in {target_lang}: {str(e)}"
+        )
+
+
+@router.get(
+    "/{assessment_id}/calibration-summary",
+    response_model=CalibrationSummaryResponse,
+    tags=["assessments"]
+)
+async def get_calibration_summary(
+    assessment_id: int,
+    language: str = Query(
+        None,
+        description="Language code for the summary: ceb (Bisaya), fil (Tagalog), en (English). Defaults to user's preferred language."
+    ),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(get_current_blgu_user),
+) -> CalibrationSummaryResponse:
+    """
+    Get AI-generated calibration summary for an assessment in the specified language.
+
+    This endpoint retrieves the comprehensive AI-generated summary of calibration
+    requirements for a BLGU user's assessment. Unlike rework summaries which cover
+    all indicators, calibration summaries focus only on indicators in the validator's
+    governance area that were marked as FAIL (Unmet).
+
+    The summary includes:
+    - Overall summary of main issues in the specific governance area
+    - Per-indicator breakdowns with key issues and suggested actions
+    - Priority actions to address first
+    - Estimated time to complete calibration corrections
+
+    Supports multiple languages:
+    - ceb: Bisaya (Cebuano) - Default
+    - fil: Tagalog (Filipino)
+    - en: English
+
+    The summary is generated asynchronously when the validator requests calibration.
+    Bisaya and English summaries are generated upfront; Tagalog is generated on-demand.
+
+    Authorization:
+        - BLGU users can only access summaries for their own assessments
+
+    Args:
+        assessment_id: ID of the assessment
+        language: Language code (ceb, fil, en). Defaults to user's preferred_language.
+        db: Database session
+        current_user: Current authenticated BLGU user
+
+    Returns:
+        CalibrationSummaryResponse with comprehensive calibration guidance in the requested language
+
+    Raises:
+        HTTPException 404: Assessment not found or no calibration summary available
+        HTTPException 403: BLGU user trying to access another barangay's assessment
+        HTTPException 400: Assessment is not in calibration/rework status or not a calibration
+    """
+    # Load the assessment
+    assessment = db.query(Assessment).filter_by(id=assessment_id).first()
+    if not assessment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Assessment {assessment_id} not found"
+        )
+
+    # Authorization check: BLGU users can only access their own assessments
+    if assessment.blgu_user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only access calibration summaries for your own assessments"
+        )
+
+    # Check if assessment is in rework status with calibration flag
+    if assessment.status != AssessmentStatus.REWORK:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Assessment is not in rework status. Current status: {assessment.status.value}"
+        )
+
+    if not assessment.is_calibration_rework:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This assessment is not a calibration. Use the rework-summary endpoint instead."
+        )
+
+    # Check if calibration summary exists
+    if not assessment.calibration_summary:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Calibration summary is still being generated. Please try again in a few moments."
+        )
+
+    # Determine target language (parameter > user preference > default)
+    target_lang = language or current_user.preferred_language or "ceb"
+
+    # Validate language code
+    if target_lang not in ["ceb", "fil", "en"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid language code: {target_lang}. Use 'ceb', 'fil', or 'en'."
+        )
+
+    # Handle the calibration summary data structure
+    summary_data = assessment.calibration_summary
+
+    # Check if it's the new multi-language format (keyed by language code)
+    if isinstance(summary_data, dict) and target_lang in summary_data:
+        return CalibrationSummaryResponse(**summary_data[target_lang])
+
+    # Check for legacy format (direct summary without language key)
+    if isinstance(summary_data, dict) and "overall_summary" in summary_data:
+        # Legacy format - return as-is (it's in English)
+        if target_lang == "en":
+            return CalibrationSummaryResponse(**summary_data)
+        # For other languages, we need to generate on-demand
+        # Fall through to on-demand generation
+
+    # Check if the requested language exists in multi-language format
+    if isinstance(summary_data, dict):
+        # Try to find any available language as fallback
+        for fallback_lang in ["ceb", "en", "fil"]:
+            if fallback_lang in summary_data:
+                # Return available language with a note
+                return CalibrationSummaryResponse(**summary_data[fallback_lang])
+
+    # If we get here, generate on-demand (for Tagalog or missing languages)
+    from app.services.intelligence_service import intelligence_service
+
+    # Get the governance area ID from the calibration data
+    governance_area_id = None
+
+    # First, try to get from the validator relationship
+    if assessment.calibration_validator:
+        governance_area_id = assessment.calibration_validator.validator_area_id
+
+    # If not found, try to get from stored summary
+    if not governance_area_id and isinstance(summary_data, dict):
+        for lang_data in summary_data.values():
+            if isinstance(lang_data, dict) and "governance_area_id" in lang_data:
+                governance_area_id = lang_data["governance_area_id"]
+                break
+
+    if not governance_area_id:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not determine governance area for calibration summary generation"
+        )
+
+    try:
+        new_summary = intelligence_service.generate_single_language_calibration_summary(
+            db, assessment_id, governance_area_id, target_lang
+        )
+
+        # Store the new language version
+        if not isinstance(assessment.calibration_summary, dict):
+            assessment.calibration_summary = {}
+        assessment.calibration_summary[target_lang] = new_summary
+        db.commit()
+        db.refresh(assessment)
+
+        return CalibrationSummaryResponse(**new_summary)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate calibration summary in {target_lang}: {str(e)}"
         )

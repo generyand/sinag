@@ -280,6 +280,53 @@ class NotificationService:
             governance_area_id=governance_area_id,
         )
 
+    def notify_all_mlgoo_users(
+        self,
+        db: Session,
+        notification_type: NotificationType,
+        title: str,
+        message: str,
+        assessment_id: int,
+    ) -> List[Notification]:
+        """
+        Send notification to ALL active MLGOO_DILG users.
+
+        MLGOO users are notified when assessments are fully validated and complete.
+
+        Args:
+            db: Database session
+            notification_type: Type of notification
+            title: Notification title
+            message: Notification message
+            assessment_id: Related assessment ID
+
+        Returns:
+            List of created Notification objects
+        """
+        # Get all active MLGOO users
+        mlgoo_users = db.query(User).filter(
+            User.role == UserRole.MLGOO_DILG,
+            User.is_active == True,
+        ).all()
+
+        notifications = []
+        for user in mlgoo_users:
+            notification = self.create_notification(
+                db=db,
+                recipient_id=user.id,
+                notification_type=notification_type,
+                title=title,
+                message=message,
+                assessment_id=assessment_id,
+            )
+            notifications.append(notification)
+
+        self.logger.info(
+            f"Created {len(notifications)} notifications for MLGOO users "
+            f"(type: {notification_type.value})"
+        )
+        return notifications
+
     # ==================== RETRIEVAL METHODS ====================
 
     def get_user_notifications(

@@ -3,6 +3,7 @@
 // 📁 Common-related types
 // 🏷️  Based on FastAPI tag: "common"
 
+import type { AISummaryIndicator } from '../indicators';
 import type { AndAllRule } from '../andallrule';
 import type { OrAnyRule } from '../oranyrule';
 import type { PercentageThresholdRule } from '../percentagethresholdrule';
@@ -16,6 +17,74 @@ import type { IndicatorItem } from '../indicators';
 import type { ConditionalRemark } from '../conditionalremark';
 import type { ReorderRequestIndicatorsItem } from '../indicators';
 import type { AssessmentRow } from '../assessments';
+
+/**
+ * AISummary
+ */
+export interface AISummary {
+  /** Brief 2-3 sentence overview of the main issues */
+  overall_summary: string;
+  /** Name of the governance area (only for calibration) */
+  governance_area?: AISummaryGovernanceArea;
+  /** ID of the governance area (only for calibration) */
+  governance_area_id?: AISummaryGovernanceAreaId;
+  /** Detailed summaries for each indicator */
+  indicator_summaries?: AISummaryIndicator[];
+  /** Top 3-5 priority actions to address first */
+  priority_actions?: string[];
+  /** Estimated time to complete corrections (e.g., '30-45 minutes') */
+  estimated_time?: AISummaryEstimatedTime;
+  /** Timestamp when the summary was generated */
+  generated_at?: AISummaryGeneratedAt;
+  /** Language code of this summary (ceb=Bisaya, fil=Tagalog, en=English) */
+  language?: AISummaryLanguage;
+  /** Type of summary: 'rework' (assessor) or 'calibration' (validator) */
+  summary_type: AISummarySummaryType;
+}
+
+
+/**
+ * AISummaryEstimatedTime
+ */
+export type AISummaryEstimatedTime = string | null;
+
+
+/**
+ * AISummaryGeneratedAt
+ */
+export type AISummaryGeneratedAt = string | null;
+
+
+/**
+ * AISummaryGovernanceArea
+ */
+export type AISummaryGovernanceArea = string | null;
+
+
+/**
+ * AISummaryGovernanceAreaId
+ */
+export type AISummaryGovernanceAreaId = number | null;
+
+
+/**
+ * AISummaryLanguage
+ */
+export type AISummaryLanguage = string | null;
+
+
+/**
+ * AISummarySummaryType
+ */
+export type AISummarySummaryType = typeof AISummarySummaryType[keyof typeof AISummarySummaryType];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AISummarySummaryType = {
+  rework: 'rework',
+  calibration: 'calibration',
+} as const;
+
 
 /**
  * AndAllRuleConditionsItem

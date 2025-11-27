@@ -32,9 +32,9 @@ celery_app.conf.update(
 
 # Optional: Configure task routing
 celery_app.conf.task_routes = {
-    "app.workers.notifications.*": {"queue": "notifications"},
-    "app.workers.sglgb_classifier.*": {"queue": "classification"},
-    "app.workers.intelligence.*": {"queue": "intelligence"},
+    "notifications.*": {"queue": "notifications"},
+    "classification.*": {"queue": "classification"},
+    "intelligence.*": {"queue": "intelligence"},
 }
 
 if __name__ == "__main__":
