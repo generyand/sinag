@@ -24,11 +24,13 @@ const ImageAnnotator = dynamic(() => import('@/components/shared/ImageAnnotator'
 interface MiddleMovFilesPanelProps {
   assessment: AssessmentDetailsResponse;
   expandedId?: number | null;
+  /** Optional: Timestamp when calibration was requested, used to separate old vs new files */
+  calibrationRequestedAt?: string | null;
 }
 
 type AnyRecord = Record<string, any>;
 
-export function MiddleMovFilesPanel({ assessment, expandedId }: MiddleMovFilesPanelProps) {
+export function MiddleMovFilesPanel({ assessment, expandedId, calibrationRequestedAt }: MiddleMovFilesPanelProps) {
   const data: AnyRecord = (assessment as unknown as AnyRecord) ?? {};
   const core = (data.assessment as AnyRecord) ?? data;
   const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
@@ -61,7 +63,7 @@ export function MiddleMovFilesPanel({ assessment, expandedId }: MiddleMovFilesPa
     console.log('[MiddleMovFilesPanel] Keys in selectedResponse:', Object.keys(selectedResponse));
   }
 
-  // Get MOV files from the selected response
+  // Get MOV files from the selected response with isNew flag for calibration separation
   const movFiles = React.useMemo(() => {
     if (!selectedResponse) return [];
 
@@ -69,10 +71,20 @@ export function MiddleMovFilesPanel({ assessment, expandedId }: MiddleMovFilesPa
     const files = (selectedResponse.movs as AnyRecord[]) ?? [];
 
     console.log('[MiddleMovFilesPanel] Raw MOVs from response:', files);
+    console.log('[MiddleMovFilesPanel] calibrationRequestedAt:', calibrationRequestedAt);
+
+    // Parse calibration timestamp for comparison
+    const calibrationDate = calibrationRequestedAt ? new Date(calibrationRequestedAt) : null;
 
     // Transform backend MOV format to FileList component format
     // Backend sends: { id, filename, original_filename, file_size, content_type, storage_path, status, uploaded_at }
     return files.map((mov: AnyRecord) => {
+      const uploadedAt = mov.uploaded_at || new Date().toISOString();
+      const uploadDate = new Date(uploadedAt);
+
+      // File is "new" if it was uploaded AFTER the calibration request
+      const isNew = calibrationDate ? uploadDate > calibrationDate : false;
+
       const transformed = {
         id: mov.id,
         assessment_id: selectedResponse.assessment_id,
@@ -82,16 +94,29 @@ export function MiddleMovFilesPanel({ assessment, expandedId }: MiddleMovFilesPa
         file_type: mov.content_type || 'application/octet-stream',
         file_size: mov.file_size || 0,
         uploaded_by: 0, // Not provided by backend
-        uploaded_at: mov.uploaded_at || new Date().toISOString(),
+        uploaded_at: uploadedAt,
         deleted_at: null,
         field_id: mov.field_id || null,
+        isNew, // Flag for visual separation in UI
       };
 
-      console.log('[MiddleMovFilesPanel] Transformed MOV:', { original: mov, transformed });
+      console.log('[MiddleMovFilesPanel] Transformed MOV:', { original: mov, transformed, isNew });
 
       return transformed;
     });
-  }, [selectedResponse]);
+  }, [selectedResponse, calibrationRequestedAt]);
+
+  // Separate files into new (after calibration) and old (before calibration)
+  const { newFiles, oldFiles } = React.useMemo(() => {
+    if (!calibrationRequestedAt) {
+      // No calibration - all files are treated as "old" (normal view)
+      return { newFiles: [], oldFiles: movFiles };
+    }
+    return {
+      newFiles: movFiles.filter((f) => f.isNew),
+      oldFiles: movFiles.filter((f) => !f.isNew),
+    };
+  }, [movFiles, calibrationRequestedAt]);
 
   // State for PDF annotation modal
   const [selectedFile, setSelectedFile] = React.useState<any | null>(null);
@@ -205,7 +230,68 @@ export function MiddleMovFilesPanel({ assessment, expandedId }: MiddleMovFilesPa
               No files uploaded for this indicator
             </p>
           </div>
+        ) : calibrationRequestedAt ? (
+          /* Calibration/Rework mode: Show files in two sections */
+          <div className="space-y-4">
+            {/* New Files Section - Highlighted (only show if there are new files) */}
+            {newFiles.length > 0 && (
+              <div className="rounded-md border-2 border-green-500 bg-green-50/50 p-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-xs font-semibold text-green-700 uppercase tracking-wide">
+                    New Files (After Calibration)
+                  </span>
+                  <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
+                    {newFiles.length} file{newFiles.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                <FileList
+                  files={newFiles}
+                  onPreview={handlePreview}
+                  onDownload={handleDownload}
+                  canDelete={false}
+                  loading={false}
+                  emptyMessage="No new files"
+                  movAnnotations={annotations as any[]}
+                />
+              </div>
+            )}
+
+            {/* Old Files Section */}
+            {oldFiles.length > 0 && (
+              <div className="rounded-md border border-gray-200 bg-gray-50/50 p-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                    Previous Files
+                  </span>
+                  <span className="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">
+                    {oldFiles.length} file{oldFiles.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                <FileList
+                  files={oldFiles}
+                  onPreview={handlePreview}
+                  onDownload={handleDownload}
+                  canDelete={false}
+                  loading={false}
+                  emptyMessage="No previous files"
+                  movAnnotations={annotations as any[]}
+                />
+              </div>
+            )}
+
+            {/* If no files in either category */}
+            {newFiles.length === 0 && oldFiles.length === 0 && (
+              <div className="flex flex-col items-center justify-center text-center p-6">
+                <FileIcon className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                <p className="text-sm text-muted-foreground">
+                  No files uploaded for this indicator
+                </p>
+              </div>
+            )}
+          </div>
         ) : (
+          /* Normal mode: Show all files */
           <FileList
             files={movFiles}
             onPreview={handlePreview}

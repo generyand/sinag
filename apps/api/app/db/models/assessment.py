@@ -44,6 +44,9 @@ class Assessment(Base):
     calibration_validator_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )  # The validator who requested calibration
+    calibration_requested_at: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True
+    )  # When calibration was requested - used to identify new MOV uploads
     calibration_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)  # Legacy: global count (deprecated)
     # Track calibration per governance area - stores list of area IDs that have been calibrated
     # Each area can only be calibrated once (max 1 per area)

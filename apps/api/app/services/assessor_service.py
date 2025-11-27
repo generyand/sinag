@@ -606,6 +606,9 @@ class AssessorService:
                 "rework_count": assessment.rework_count,
                 "calibration_count": assessment.calibration_count,
                 "calibrated_area_ids": assessment.calibrated_area_ids or [],
+                "calibration_requested_at": assessment.calibration_requested_at.isoformat() + 'Z'
+                if assessment.calibration_requested_at
+                else None,
                 "blgu_user": {
                     "id": assessment.blgu_user.id,
                     "name": assessment.blgu_user.name,
@@ -1075,6 +1078,7 @@ class AssessorService:
         # Set calibration flags so BLGU knows to submit back to Validator (not Assessor)
         assessment.is_calibration_rework = True
         assessment.calibration_validator_id = validator.id
+        assessment.calibration_requested_at = datetime.utcnow()  # Track when calibration was requested (for MOV file separation)
         assessment.calibration_count += 1  # Legacy: still increment for backwards compatibility
 
         # Track which governance area has been calibrated (per-area limit)

@@ -293,7 +293,7 @@ export function useCurrentAssessment() {
         barangayName: (assessmentData as unknown as APIAssessment).assessment.barangay_name || "Unknown Barangay",
         status: (assessmentData as unknown as APIAssessment).assessment.status
           .toLowerCase()
-          .replace("_", "-") as AssessmentStatus,
+          .replaceAll("_", "-") as AssessmentStatus,
         createdAt: (assessmentData as unknown as APIAssessment).assessment
           .created_at,
         updatedAt: (assessmentData as unknown as APIAssessment).assessment

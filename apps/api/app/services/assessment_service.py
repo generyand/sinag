@@ -151,6 +151,7 @@ class AssessmentService:
                 joinedload(Assessment.responses).joinedload(
                     AssessmentResponse.feedback_comments
                 ),
+                joinedload(Assessment.mov_files),  # Load new MOVFile model
             )
             .filter(Assessment.id == assessment_id)
             .first()
@@ -1317,6 +1318,10 @@ class AssessmentService:
 
         Business Rule: No "YES" answers without MOVs (Means of Verification).
 
+        Checks both:
+        - Legacy MOV model (movs table, linked via response_id)
+        - New MOVFile model (mov_files table, linked via assessment_id + indicator_id)
+
         Args:
             db: Database session
             assessment: Assessment to validate
@@ -1327,13 +1332,24 @@ class AssessmentService:
         errors = []
         warnings: list[Dict[str, Any]] = []
 
+        # Build a set of indicator IDs that have MOVFiles uploaded (new model)
+        mov_file_indicator_ids = set()
+        for mov_file in assessment.mov_files:
+            # Only count non-deleted files
+            if mov_file.deleted_at is None:
+                mov_file_indicator_ids.add(mov_file.indicator_id)
+
         for response in assessment.responses:
             if not response.response_data:
                 continue
 
             # Check for "YES" answers without MOVs
             has_yes_answer = self._has_yes_answer(response.response_data)
-            has_movs = len(response.movs) > 0
+
+            # Check both legacy MOV model (response.movs) and new MOVFile model
+            has_legacy_movs = len(response.movs) > 0
+            has_new_mov_files = response.indicator_id in mov_file_indicator_ids
+            has_movs = has_legacy_movs or has_new_mov_files
 
             if has_yes_answer and not has_movs:
                 errors.append(
