@@ -331,11 +331,13 @@ class ChecklistItemResponse(BaseModel):
     id: int
     item_id: str = Field(..., description="Unique item identifier (e.g., '1_1_1_a')")
     label: str = Field(..., description="Display text (e.g., 'a. Barangay Financial Report')")
+    item_type: str = Field(default="checkbox", description="Type of checklist item (checkbox, info_text, assessment_field, document_count, calculation_field)")
     group_name: Optional[str] = Field(None, description="Group header (e.g., 'ANNUAL REPORT')")
     mov_description: Optional[str] = Field(None, description="Means of Verification description")
     required: bool = Field(..., description="Required for indicator to pass")
     requires_document_count: bool = Field(..., description="Needs document count input from validator")
     display_order: int = Field(..., description="Sort order within indicator")
+    option_group: Optional[str] = Field(None, description="Option group for OR logic (e.g., 'Option A', 'Option B')")
 
 
 class SimplifiedIndicatorResponse(BaseModel):

@@ -17,6 +17,7 @@ import type {
 
 import type {
   BLGUDashboardResponse,
+  GetBlguDashboardAssessmentIdParams,
   HTTPValidationError,
   IndicatorNavigationItem
 } from '../../schemas';
@@ -49,32 +50,36 @@ Compliance status (PASS/FAIL/CONDITIONAL) is never exposed.
  */
 export const getBlguDashboard$AssessmentId = (
     assessmentId: number,
+    params?: GetBlguDashboardAssessmentIdParams,
  options?: SecondParameter<typeof mutator>,signal?: AbortSignal
 ) => {
       
       
       return mutator<BLGUDashboardResponse>(
-      {url: `http://localhost:8000/api/v1/blgu-dashboard/${assessmentId}`, method: 'GET', signal
+      {url: `http://localhost:8000/api/v1/blgu-dashboard/${assessmentId}`, method: 'GET',
+        params, signal
     },
       options);
     }
   
 
-export const getGetBlguDashboardAssessmentIdQueryKey = (assessmentId: number,) => {
-    return [`http://localhost:8000/api/v1/blgu-dashboard/${assessmentId}`] as const;
+export const getGetBlguDashboardAssessmentIdQueryKey = (assessmentId: number,
+    params?: GetBlguDashboardAssessmentIdParams,) => {
+    return [`http://localhost:8000/api/v1/blgu-dashboard/${assessmentId}`, ...(params ? [params]: [])] as const;
     }
 
     
-export const getGetBlguDashboardAssessmentIdQueryOptions = <TData = Awaited<ReturnType<typeof getBlguDashboard$AssessmentId>>, TError = HTTPValidationError>(assessmentId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBlguDashboard$AssessmentId>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export const getGetBlguDashboardAssessmentIdQueryOptions = <TData = Awaited<ReturnType<typeof getBlguDashboard$AssessmentId>>, TError = HTTPValidationError>(assessmentId: number,
+    params?: GetBlguDashboardAssessmentIdParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBlguDashboard$AssessmentId>>, TError, TData>, request?: SecondParameter<typeof mutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetBlguDashboardAssessmentIdQueryKey(assessmentId);
+  const queryKey =  queryOptions?.queryKey ?? getGetBlguDashboardAssessmentIdQueryKey(assessmentId,params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBlguDashboard$AssessmentId>>> = ({ signal }) => getBlguDashboard$AssessmentId(assessmentId, requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBlguDashboard$AssessmentId>>> = ({ signal }) => getBlguDashboard$AssessmentId(assessmentId,params, requestOptions, signal);
 
       
 
@@ -92,11 +97,12 @@ export type GetBlguDashboardAssessmentIdQueryError = HTTPValidationError
  */
 
 export function useGetBlguDashboardAssessmentId<TData = Awaited<ReturnType<typeof getBlguDashboard$AssessmentId>>, TError = HTTPValidationError>(
- assessmentId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBlguDashboard$AssessmentId>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+ assessmentId: number,
+    params?: GetBlguDashboardAssessmentIdParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBlguDashboard$AssessmentId>>, TError, TData>, request?: SecondParameter<typeof mutator>}
   
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetBlguDashboardAssessmentIdQueryOptions(assessmentId,options)
+  const queryOptions = getGetBlguDashboardAssessmentIdQueryOptions(assessmentId,params,options)
 
   const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

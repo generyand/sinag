@@ -30,7 +30,10 @@ class AssessorService:
         Return submissions filtered by user role and governance area.
 
         **Validators** (users with validator_area_id):
-        - See only assessments in AWAITING_FINAL_VALIDATION status
+        - See assessments in AWAITING_FINAL_VALIDATION status (ready for validation)
+        - ALSO see assessments in REWORK status if they haven't calibrated their area yet
+          (parallel calibration support - other validators may have requested calibration
+          but this validator can still validate or request calibration for their area)
         - Filtered by their assigned governance area
         - These are assessments where assessor clicked "Finalize Validation"
 
@@ -52,12 +55,17 @@ class AssessorService:
             )
         )
 
-        # Validators: Filter by governance area AND only show finalized assessments
-        # Exclude assessments where the validator has already completed their governance area
+        # Validators: Filter by governance area AND show assessments they can work on
+        # - AWAITING_FINAL_VALIDATION: Ready for validation
+        # - REWORK with is_calibration_rework=True: Parallel calibration in progress,
+        #   validator can still validate their area if they haven't calibrated it yet
         if assessor.validator_area_id is not None:
             query = query.filter(
                 Indicator.governance_area_id == assessor.validator_area_id,
-                Assessment.status == AssessmentStatus.AWAITING_FINAL_VALIDATION
+                Assessment.status.in_([
+                    AssessmentStatus.AWAITING_FINAL_VALIDATION,
+                    AssessmentStatus.REWORK,  # Include for parallel calibration
+                ])
             )
         # Assessors: Show assessments ready for initial review
         else:
@@ -85,7 +93,30 @@ class AssessorService:
         items = []
         for a in assessments:
             # For validators: Skip assessments where they've already completed their governance area
+            # or where they have a pending calibration request (waiting for BLGU)
             if assessor.validator_area_id is not None:
+                # PARALLEL CALIBRATION: Check if validator has pending calibration for this assessment
+                # If they already requested calibration, don't show until BLGU resubmits
+                pending_calibrations = a.pending_calibrations or []
+                has_pending_calibration = any(
+                    pc.get("governance_area_id") == assessor.validator_area_id and not pc.get("approved", False)
+                    for pc in pending_calibrations
+                )
+                if has_pending_calibration:
+                    continue  # Skip - validator waiting for BLGU to fix and resubmit
+
+                # For REWORK status: Only show if is_calibration_rework AND validator hasn't calibrated their area
+                # This handles parallel calibration - validator can still validate/calibrate their area
+                if a.status == AssessmentStatus.REWORK:
+                    if not a.is_calibration_rework:
+                        # Regular assessor rework - validators shouldn't see this
+                        continue
+
+                    # Check if this validator's area has already been calibrated
+                    calibrated_areas = a.calibrated_area_ids or []
+                    if assessor.validator_area_id in calibrated_areas:
+                        continue  # Skip - validator already used their calibration for this area
+
                 # Get all responses in the validator's governance area for this assessment
                 validator_area_responses = [
                     r for r in a.responses
@@ -103,6 +134,10 @@ class AssessorService:
                         continue  # Skip this assessment - validator already done
 
             barangay_name = getattr(getattr(a.blgu_user, "barangay", None), "name", "-")
+
+            # Add extra info for parallel calibration
+            pending_count = len(a.pending_calibrations or []) if a.is_calibration_rework else 0
+
             items.append(
                 {
                     "assessment_id": a.id,
@@ -112,6 +147,8 @@ class AssessorService:
                     if hasattr(a.status, "value")
                     else str(a.status),
                     "updated_at": a.updated_at,
+                    "is_calibration_rework": a.is_calibration_rework,
+                    "pending_calibrations_count": pending_count,
                 }
             )
 
@@ -748,6 +785,7 @@ class AssessorService:
                             "required": item.required,
                             "requires_document_count": item.requires_document_count,
                             "display_order": item.display_order,
+                            "option_group": item.option_group,
                         }
                         for item in sorted(response.indicator.checklist_items, key=lambda x: x.display_order)
                     ],
@@ -983,6 +1021,12 @@ class AssessorService:
         """
         Phase 2 (Table Validation): Submit assessment for calibration.
 
+        PARALLEL CALIBRATION SUPPORT:
+        Multiple validators from different governance areas can request calibration
+        simultaneously. The BLGU sees a combined summary of all calibration requests
+        and fixes everything before submitting once. Each validator's calibration
+        request is tracked independently in pending_calibrations.
+
         Calibration is used by Validators to send ONLY their governance area
         indicators back to BLGU for corrections. Unlike Rework (which affects
         all indicators), Calibration only affects indicators in the validator's
@@ -1021,10 +1065,11 @@ class AssessorService:
                 "Only Validators can submit for calibration. Assessors should use 'Send for Rework' instead."
             )
 
-        # Must be in AWAITING_FINAL_VALIDATION status
-        if assessment.status != AssessmentStatus.AWAITING_FINAL_VALIDATION:
+        # Must be in AWAITING_FINAL_VALIDATION or REWORK status (REWORK allows parallel calibration)
+        # REWORK status means another validator already requested calibration - we can add ours
+        if assessment.status not in [AssessmentStatus.AWAITING_FINAL_VALIDATION, AssessmentStatus.REWORK]:
             raise ValueError(
-                "Calibration is only allowed when assessment is in AWAITING_FINAL_VALIDATION status"
+                "Calibration is only allowed when assessment is in AWAITING_FINAL_VALIDATION or REWORK status"
             )
 
         # Get responses in validator's governance area
@@ -1047,6 +1092,18 @@ class AssessorService:
                 "Only one calibration is allowed per governance area."
             )
 
+        # Check if this validator already has a pending calibration for this area
+        pending_calibrations = assessment.pending_calibrations or []
+        existing_pending = [
+            pc for pc in pending_calibrations
+            if pc.get("governance_area_id") == validator.validator_area_id
+        ]
+        if existing_pending:
+            raise ValueError(
+                "You already have a pending calibration request for this governance area. "
+                "Wait for BLGU to resubmit before requesting another calibration."
+            )
+
         # Validator must have at least one indicator marked as FAIL (Unmet) to submit for calibration
         # Check for FAIL indicators in validator's area responses
         failed_responses = [
@@ -1060,25 +1117,46 @@ class AssessorService:
                 "to submit for calibration. Mark indicators that need corrections as 'Unmet' before calibrating."
             )
 
-        # Get MOV annotations for reference (these will be shown to BLGU for context)
-        from app.db.models.assessment import MOVAnnotation
+        # Get governance area name for the response
+        governance_area = (
+            db.query(GovernanceArea)
+            .filter(GovernanceArea.id == validator.validator_area_id)
+            .first()
+        )
+        governance_area_name = governance_area.name if governance_area else "Unknown"
 
-        validator_indicator_ids = [r.indicator_id for r in validator_area_responses]
-        validator_mov_file_ids = [
-            mf.id for mf in assessment.mov_files
-            if mf.indicator_id in validator_indicator_ids
-        ]
+        # PARALLEL CALIBRATION: Add to pending_calibrations list
+        calibration_request = {
+            "validator_id": validator.id,
+            "validator_name": validator.name,
+            "governance_area_id": validator.validator_area_id,
+            "governance_area_name": governance_area_name,
+            "requested_at": datetime.utcnow().isoformat(),
+            "approved": False,  # Will be set to True when BLGU resubmits
+        }
 
-        # Update assessment status to REWORK (same status, different scope)
+        if assessment.pending_calibrations is None:
+            assessment.pending_calibrations = []
+        assessment.pending_calibrations = assessment.pending_calibrations + [calibration_request]
+
+        # Update assessment status to REWORK if not already
+        # First calibration request changes status, subsequent ones keep it in REWORK
+        is_first_calibration = assessment.status == AssessmentStatus.AWAITING_FINAL_VALIDATION
         assessment.status = AssessmentStatus.REWORK
-        assessment.rework_requested_at = datetime.utcnow()
+
+        if is_first_calibration:
+            # First calibration request - set initial timestamps
+            assessment.rework_requested_at = datetime.utcnow()
+            assessment.calibration_requested_at = datetime.utcnow()
+        # Note: Don't update rework_requested_at for subsequent calibrations to preserve original timestamp
+
         assessment.rework_requested_by = validator.id
         # Note: Do NOT increment rework_count for calibration - it's a separate mechanism
 
         # Set calibration flags so BLGU knows to submit back to Validator (not Assessor)
         assessment.is_calibration_rework = True
+        # Legacy field - keep for backward compatibility but parallel calibration uses pending_calibrations
         assessment.calibration_validator_id = validator.id
-        assessment.calibration_requested_at = datetime.utcnow()  # Track when calibration was requested (for MOV file separation)
         assessment.calibration_count += 1  # Legacy: still increment for backwards compatibility
 
         # Track which governance area has been calibrated (per-area limit)
@@ -1089,6 +1167,7 @@ class AssessorService:
         # Mark ONLY indicators with "Unmet" (FAIL) validation status for rework
         # These are the indicators the BLGU needs to correct and re-upload
         calibrated_count = 0
+        calibrated_indicator_ids = []
         for response in validator_area_responses:
             # Only mark indicators that have FAIL (Unmet) status
             # Indicators with PASS (Met), CONDITIONAL, or NOT_APPLICABLE status should NOT be calibrated
@@ -1110,6 +1189,7 @@ class AssessorService:
                     }
 
                 calibrated_count += 1
+                calibrated_indicator_ids.append(response.indicator_id)
                 self.logger.info(
                     f"[CALIBRATION] Marked response {response.id} (indicator {response.indicator_id}) for calibration - was Unmet (FAIL)"
                 )
@@ -1117,21 +1197,13 @@ class AssessorService:
         db.commit()
         db.refresh(assessment)
 
-        # Get governance area name for the response
-        governance_area = (
-            db.query(GovernanceArea)
-            .filter(GovernanceArea.id == validator.validator_area_id)
-            .first()
-        )
-        governance_area_name = governance_area.name if governance_area else "Unknown"
-
         # Trigger notification asynchronously using Celery
         notification_result = {"success": False, "skipped": True}
         try:
             from app.workers.notifications import send_calibration_notification
 
             # Queue the calibration notification task (Notification #5)
-            task = send_calibration_notification.delay(assessment_id, validator.validator_area_id)
+            task = send_calibration_notification.delay(assessment_id)
             notification_result = {
                 "success": True,
                 "message": "Calibration notification queued successfully",
@@ -1141,14 +1213,40 @@ class AssessorService:
             print(f"Failed to queue calibration notification: {e}")
             notification_result = {"success": False, "error": str(e)}
 
+        # Trigger AI calibration summary generation asynchronously using Celery
+        # Summary is stored per governance area in calibration_summaries_by_area
+        summary_result = {"success": False, "skipped": True}
+        try:
+            from app.workers.intelligence_worker import generate_calibration_summary_task
+
+            summary_task = generate_calibration_summary_task.delay(
+                assessment_id, validator.validator_area_id
+            )
+            summary_result = {
+                "success": True,
+                "message": "Calibration summary generation queued successfully",
+                "task_id": summary_task.id,
+            }
+        except Exception as e:
+            print(f"Failed to queue calibration summary generation: {e}")
+            summary_result = {"success": False, "error": str(e)}
+
+        # Calculate total pending calibrations for response
+        total_pending = len(assessment.pending_calibrations)
+
         return {
             "success": True,
             "message": f"Assessment submitted for calibration. {calibrated_count} indicator(s) in {governance_area_name} marked for correction.",
             "assessment_id": assessment_id,
             "new_status": assessment.status.value,
             "governance_area": governance_area_name,
+            "governance_area_id": validator.validator_area_id,
             "calibrated_indicators_count": calibrated_count,
+            "calibrated_indicator_ids": calibrated_indicator_ids,
+            "total_pending_calibrations": total_pending,
+            "is_parallel_calibration": total_pending > 1,
             "notification_result": notification_result,
+            "summary_result": summary_result,
         }
 
     def finalize_assessment(
@@ -1366,21 +1464,27 @@ class AssessorService:
             print(f"Failed to calculate BBI statuses: {e}")
             bbi_calculation_result = {"success": False, "error": str(e)}
 
-        # Trigger notification asynchronously using Celery
-        try:
-            from app.workers.notifications import send_validation_complete_notification
+        # Notification #7: If validator completed ALL governance areas (status = COMPLETED),
+        # notify MLGOO users and the BLGU user
+        notification_result = {"success": False, "message": "Not triggered - assessment not COMPLETED"}
+        if assessment.status == AssessmentStatus.COMPLETED:
+            try:
+                from app.workers.notifications import send_validation_complete_notification
 
-            # Queue the notification task to run in the background
-            task = send_validation_complete_notification.delay(assessment_id)
-            notification_result = {
-                "success": True,
-                "message": "Validation complete notification queued successfully",
-                "task_id": task.id,
-            }
-        except Exception as e:
-            # Log the error but don't fail the finalization operation
-            print(f"Failed to queue notification: {e}")
-            notification_result = {"success": False, "error": str(e)}
+                # Queue the notification task to run in the background
+                task = send_validation_complete_notification.delay(assessment_id)
+                notification_result = {
+                    "success": True,
+                    "message": "Validation complete notification queued successfully",
+                    "task_id": task.id,
+                }
+                self.logger.info(
+                    f"Triggered validation complete notification for assessment {assessment_id}"
+                )
+            except Exception as e:
+                # Log the error but don't fail the finalization operation
+                self.logger.error(f"Failed to queue notification: {e}")
+                notification_result = {"success": False, "error": str(e)}
 
         return {
             "success": True,

@@ -57,7 +57,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="p-0 w-auto"
+        className="p-0 w-auto bg-white border border-gray-200 shadow-lg"
         align="end"
         sideOffset={8}
       >

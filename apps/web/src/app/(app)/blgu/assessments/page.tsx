@@ -36,10 +36,11 @@ export default function BLGUAssessmentsPage() {
   // Fetch MOV annotations for rework workflow
   const { data: dashboardData } = useGetBlguDashboardAssessmentId(
     assessment ? parseInt(assessment.id) : 0,
+    undefined,
     {
       query: {
         enabled: !!assessment?.id,
-      } as any,
+      },
     }
   );
 

@@ -273,11 +273,13 @@ def _seed_sub_indicator(
             indicator_id=sub_indicator.id,
             item_id=item_def.id,
             label=item_def.label,
+            item_type=item_def.item_type,
             group_name=item_def.group_name,
             mov_description=item_def.mov_description,
             required=item_def.required,
             requires_document_count=item_def.requires_document_count,
             display_order=item_def.display_order,
+            option_group=item_def.option_group,
         )
         db.add(checklist_item)
 

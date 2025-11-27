@@ -198,6 +198,24 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
     mode: 'onChange',
   });
 
+  // Helper function to check if an item is filled/checked
+  const isItemFilled = (item: any, itemKey: string, checklistData: Record<string, any>): boolean => {
+    // For document_count or calculation_field, check if value is provided
+    if (item.item_type === 'document_count' || item.item_type === 'calculation_field' || item.requires_document_count) {
+      const value = checklistData[itemKey];
+      return value && String(value).trim() !== '';
+    }
+    // For assessment_field (YES/NO), check if YES is selected
+    else if (item.item_type === 'assessment_field') {
+      const yesValue = checklistData[`${itemKey}_yes`];
+      return yesValue === true;
+    }
+    // Regular checkbox item
+    else {
+      return checklistData[itemKey] === true;
+    }
+  };
+
   // Helper function to calculate automatic status based on checklist
   const calculateAutomaticStatus = React.useCallback((responseId: number, checklistData: Record<string, any>): LocalStatus | null => {
     const response = responses.find(r => r.id === responseId);
@@ -216,42 +234,74 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
 
     if (validatableItems.length === 0) return null;
 
-    // Count checked/filled items
+    // Check if this indicator uses option_group (OR logic between groups)
+    const hasOptionGroups = validatableItems.some((item: any) => item.option_group);
+
+    if (hasOptionGroups) {
+      // Group items by option_group
+      const groups: Record<string, any[]> = {};
+      const ungroupedItems: any[] = [];
+
+      for (const item of validatableItems) {
+        if (item.option_group) {
+          if (!groups[item.option_group]) {
+            groups[item.option_group] = [];
+          }
+          groups[item.option_group].push(item);
+        } else {
+          ungroupedItems.push(item);
+        }
+      }
+
+      // Check if ALL ungrouped items are filled (these are required regardless)
+      for (const item of ungroupedItems) {
+        const itemKey = `checklist_${responseId}_${item.item_id}`;
+        if (!isItemFilled(item, itemKey, checklistData)) {
+          return 'Fail'; // Required ungrouped item not filled
+        }
+      }
+
+      // For OR logic: at least ONE option group must have ALL its items filled
+      const groupNames = Object.keys(groups);
+      if (groupNames.length > 0) {
+        let anyGroupComplete = false;
+
+        for (const groupName of groupNames) {
+          const groupItems = groups[groupName];
+          let groupComplete = true;
+
+          for (const item of groupItems) {
+            const itemKey = `checklist_${responseId}_${item.item_id}`;
+            if (!isItemFilled(item, itemKey, checklistData)) {
+              groupComplete = false;
+              break;
+            }
+          }
+
+          if (groupComplete) {
+            anyGroupComplete = true;
+            break; // One complete group is enough for OR logic
+          }
+        }
+
+        return anyGroupComplete ? 'Pass' : 'Fail';
+      }
+
+      return 'Pass'; // No grouped items, and all ungrouped items are filled
+    }
+
+    // Standard validation (no option groups)
     let checkedCount = 0;
     let totalRequired = 0;
 
     for (const item of validatableItems) {
       const itemKey = `checklist_${responseId}_${item.item_id}`;
 
-      // For document_count or calculation_field, check if value is provided
-      if (item.item_type === 'document_count' || item.item_type === 'calculation_field' || item.requires_document_count) {
-        const value = checklistData[itemKey];
-        if (value && String(value).trim() !== '') {
-          checkedCount++;
-        }
-        if (item.required || validationRule === 'ALL_ITEMS_REQUIRED') {
-          totalRequired++;
-        }
+      if (isItemFilled(item, itemKey, checklistData)) {
+        checkedCount++;
       }
-      // For assessment_field (YES/NO), check if either YES or NO is selected
-      else if (item.item_type === 'assessment_field') {
-        const yesValue = checklistData[`${itemKey}_yes`];
-        const noValue = checklistData[`${itemKey}_no`];
-        if (yesValue === true) {
-          checkedCount++;
-        }
-        if (item.required || validationRule === 'ALL_ITEMS_REQUIRED') {
-          totalRequired++;
-        }
-      }
-      // Regular checkbox item
-      else {
-        if (checklistData[itemKey] === true) {
-          checkedCount++;
-        }
-        if (item.required || validationRule === 'ALL_ITEMS_REQUIRED') {
-          totalRequired++;
-        }
+      if (item.required || validationRule === 'ALL_ITEMS_REQUIRED') {
+        totalRequired++;
       }
     }
 

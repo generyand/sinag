@@ -9,7 +9,9 @@ import type { AuditLogResponseUserEmail } from '../users';
 import type { AuditLogResponseUserName } from '../users';
 import type { GovernanceAreaGroup } from '../common';
 import type { BLGUDashboardResponseMovAnnotationsByIndicator } from '../indicators';
+import type { AISummary } from '../common';
 import type { ReworkComment } from '../common';
+import type { IndicatorSummary } from '../indicators';
 import type { ChecklistItemResponseMovDescription } from '../movs';
 import type { IncompleteIndicatorDetail } from '../indicators';
 import type { ComplianceRate } from '../common';
@@ -22,7 +24,6 @@ import type { OverallComplianceResponseAssessmentCycle } from '../assessments';
 import type { ChartData } from '../common';
 import type { MapData } from '../common';
 import type { TableData } from '../common';
-import type { IndicatorSummary } from '../indicators';
 import type { AssessmentStatus } from '../assessments';
 import type { SubmissionValidationResult } from '../error';
 import type { ValidationStatus } from '../error';
@@ -159,12 +160,18 @@ export interface BLGUDashboardResponse {
   rework_requested_by?: BLGUDashboardResponseReworkRequestedBy;
   /** If True, BLGU should submit back to Validator (not Assessor). Set when Validator calibrates the assessment. */
   is_calibration_rework?: boolean;
-  /** ID of the Validator who requested calibration (null if regular rework) */
+  /** Legacy: ID of the Validator who requested calibration (null if regular rework). For parallel calibration, use calibration_governance_areas instead. */
   calibration_validator_id?: BLGUDashboardResponseCalibrationValidatorId;
-  /** ID of the governance area that was calibrated (null if regular rework) */
+  /** Legacy: ID of the governance area that was calibrated (null if regular rework). For parallel calibration, use calibration_governance_areas instead. */
   calibration_governance_area_id?: BLGUDashboardResponseCalibrationGovernanceAreaId;
-  /** Name of the governance area that was calibrated (null if regular rework) */
+  /** Legacy: Name of the governance area that was calibrated (null if regular rework). For parallel calibration, use calibration_governance_areas instead. */
   calibration_governance_area_name?: BLGUDashboardResponseCalibrationGovernanceAreaName;
+  /** Number of pending calibration requests from validators */
+  pending_calibrations_count?: number;
+  /** List of all pending calibration requests. Each item contains: governance_area_id, governance_area_name, validator_name, requested_at, approved */
+  calibration_governance_areas?: BLGUDashboardResponseCalibrationGovernanceAreas;
+  /** AI summaries grouped by governance area for parallel calibration. Each item contains governance_area_id, governance_area, overall_summary, indicator_summaries, priority_actions, estimated_time */
+  ai_summaries_by_area?: BLGUDashboardResponseAiSummariesByArea;
   /** Total number of indicators in the assessment */
   total_indicators: number;
   /** Number of indicators with all required fields filled */
@@ -179,7 +186,69 @@ export interface BLGUDashboardResponse {
   rework_comments?: BLGUDashboardResponseReworkComments;
   /** MOV annotations grouped by indicator ID - shows which MOVs assessor highlighted/commented on (null if no annotations) */
   mov_annotations_by_indicator?: BLGUDashboardResponseMovAnnotationsByIndicator;
+  /** AI-generated summary with overall guidance, per-indicator breakdowns, and priority actions. Only populated when assessment is in REWORK status. Use the language query parameter to get summary in different languages. */
+  ai_summary?: BLGUDashboardResponseAiSummary;
+  /** List of language codes for which AI summaries are available (e.g., ['ceb', 'en']). Tagalog ('fil') is generated on-demand if requested. */
+  ai_summary_available_languages?: BLGUDashboardResponseAiSummaryAvailableLanguages;
+  /** Timestamp when assessment was first submitted (ISO format) */
+  submitted_at?: BLGUDashboardResponseSubmittedAt;
+  /** Timestamp when final validation was completed (ISO format) */
+  validated_at?: BLGUDashboardResponseValidatedAt;
+  /** Final SGLGB compliance status: 'Passed' or 'Failed'. Only populated when status is COMPLETED. */
+  final_compliance_status?: BLGUDashboardResponseFinalComplianceStatus;
+  /** Results breakdown by governance area. Each item contains: area_id, area_name, area_type (Core/Essential), passed (bool), total_indicators, passed_indicators, failed_indicators. Only populated when status is COMPLETED. */
+  area_results?: BLGUDashboardResponseAreaResults;
+  /** AI-generated CapDev recommendations grouped by governance area. Only populated when status is COMPLETED. */
+  ai_recommendations?: BLGUDashboardResponseAiRecommendations;
 }
+
+
+/**
+ * BLGUDashboardResponseAiRecommendations
+ */
+export type BLGUDashboardResponseAiRecommendations = BLGUDashboardResponseAiRecommendationsAnyOf | null;
+
+
+/**
+ * BLGUDashboardResponseAiRecommendationsAnyOf
+ */
+export type BLGUDashboardResponseAiRecommendationsAnyOf = { [key: string]: unknown };
+
+
+/**
+ * BLGUDashboardResponseAiSummariesByArea
+ */
+export type BLGUDashboardResponseAiSummariesByArea = BLGUDashboardResponseAiSummariesByAreaAnyOfItem[] | null;
+
+
+/**
+ * BLGUDashboardResponseAiSummariesByAreaAnyOfItem
+ */
+export type BLGUDashboardResponseAiSummariesByAreaAnyOfItem = { [key: string]: unknown };
+
+
+/**
+ * BLGUDashboardResponseAiSummary
+ */
+export type BLGUDashboardResponseAiSummary = AISummary | null;
+
+
+/**
+ * BLGUDashboardResponseAiSummaryAvailableLanguages
+ */
+export type BLGUDashboardResponseAiSummaryAvailableLanguages = string[] | null;
+
+
+/**
+ * BLGUDashboardResponseAreaResults
+ */
+export type BLGUDashboardResponseAreaResults = BLGUDashboardResponseAreaResultsAnyOfItem[] | null;
+
+
+/**
+ * BLGUDashboardResponseAreaResultsAnyOfItem
+ */
+export type BLGUDashboardResponseAreaResultsAnyOfItem = { [key: string]: unknown };
 
 
 /**
@@ -195,9 +264,27 @@ export type BLGUDashboardResponseCalibrationGovernanceAreaName = string | null;
 
 
 /**
+ * BLGUDashboardResponseCalibrationGovernanceAreas
+ */
+export type BLGUDashboardResponseCalibrationGovernanceAreas = BLGUDashboardResponseCalibrationGovernanceAreasAnyOfItem[] | null;
+
+
+/**
+ * BLGUDashboardResponseCalibrationGovernanceAreasAnyOfItem
+ */
+export type BLGUDashboardResponseCalibrationGovernanceAreasAnyOfItem = { [key: string]: unknown };
+
+
+/**
  * BLGUDashboardResponseCalibrationValidatorId
  */
 export type BLGUDashboardResponseCalibrationValidatorId = number | null;
+
+
+/**
+ * BLGUDashboardResponseFinalComplianceStatus
+ */
+export type BLGUDashboardResponseFinalComplianceStatus = string | null;
 
 
 /**
@@ -219,6 +306,18 @@ export type BLGUDashboardResponseReworkRequestedBy = number | null;
 
 
 /**
+ * BLGUDashboardResponseSubmittedAt
+ */
+export type BLGUDashboardResponseSubmittedAt = string | null;
+
+
+/**
+ * BLGUDashboardResponseValidatedAt
+ */
+export type BLGUDashboardResponseValidatedAt = string | null;
+
+
+/**
  * BarangayDeadlineStatusResponse
  */
 export interface BarangayDeadlineStatusResponse {
@@ -234,6 +333,56 @@ export interface BarangayDeadlineStatusResponse {
 
 
 /**
+ * CalibrationSummaryResponse
+ */
+export interface CalibrationSummaryResponse {
+  /** Brief 2-3 sentence overview of the main issues in the governance area */
+  overall_summary: string;
+  /** Name of the governance area being calibrated */
+  governance_area?: CalibrationSummaryResponseGovernanceArea;
+  /** ID of the governance area being calibrated */
+  governance_area_id?: CalibrationSummaryResponseGovernanceAreaId;
+  /** Detailed summaries for each indicator requiring calibration */
+  indicator_summaries?: IndicatorSummary[];
+  /**
+   * Top 3 most critical actions the BLGU should prioritize
+   * @maxItems 5
+   */
+  priority_actions?: string[];
+  /** Estimated time to complete calibration corrections (e.g., '15-30 minutes') */
+  estimated_time?: CalibrationSummaryResponseEstimatedTime;
+  /** Timestamp when the summary was generated */
+  generated_at: string;
+  /** Language code of this summary (ceb=Bisaya, fil=Tagalog, en=English) */
+  language?: CalibrationSummaryResponseLanguage;
+}
+
+
+/**
+ * CalibrationSummaryResponseEstimatedTime
+ */
+export type CalibrationSummaryResponseEstimatedTime = string | null;
+
+
+/**
+ * CalibrationSummaryResponseGovernanceArea
+ */
+export type CalibrationSummaryResponseGovernanceArea = string | null;
+
+
+/**
+ * CalibrationSummaryResponseGovernanceAreaId
+ */
+export type CalibrationSummaryResponseGovernanceAreaId = number | null;
+
+
+/**
+ * CalibrationSummaryResponseLanguage
+ */
+export type CalibrationSummaryResponseLanguage = string | null;
+
+
+/**
  * ChecklistItemResponse
  */
 export interface ChecklistItemResponse {
@@ -242,6 +391,8 @@ export interface ChecklistItemResponse {
   item_id: string;
   /** Display text (e.g., 'a. Barangay Financial Report') */
   label: string;
+  /** Type of checklist item (checkbox, info_text, assessment_field, document_count, calculation_field) */
+  item_type?: string;
   /** Group header (e.g., 'ANNUAL REPORT') */
   group_name?: ChecklistItemResponseGroupName;
   /** Means of Verification description */
@@ -252,6 +403,8 @@ export interface ChecklistItemResponse {
   requires_document_count: boolean;
   /** Sort order within indicator */
   display_order: number;
+  /** Option group for OR logic (e.g., 'Option A', 'Option B') */
+  option_group?: ChecklistItemResponseOptionGroup;
 }
 
 
@@ -259,6 +412,12 @@ export interface ChecklistItemResponse {
  * ChecklistItemResponseGroupName
  */
 export type ChecklistItemResponseGroupName = string | null;
+
+
+/**
+ * ChecklistItemResponseOptionGroup
+ */
+export type ChecklistItemResponseOptionGroup = string | null;
 
 
 /**

@@ -7,8 +7,62 @@ IMPORTANT: These schemas show COMPLETION status only (complete/incomplete).
 Compliance status (PASS/FAIL/CONDITIONAL) is NEVER exposed to BLGU users.
 """
 
+from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field
+
+
+class AISummaryIndicator(BaseModel):
+    """Individual indicator summary within an AI-generated summary."""
+
+    indicator_id: int = Field(..., description="Indicator ID")
+    indicator_name: str = Field(..., description="Indicator name")
+    key_issues: List[str] = Field(
+        default_factory=list, description="Key issues identified by assessor/validator"
+    )
+    suggested_actions: List[str] = Field(
+        default_factory=list, description="Suggested actions to address the issues"
+    )
+    affected_movs: List[str] = Field(
+        default_factory=list, description="List of MOV filenames with issues"
+    )
+
+
+class AISummary(BaseModel):
+    """
+    AI-generated summary for rework or calibration.
+
+    Provides overall guidance and per-indicator breakdowns to help
+    BLGU users understand what needs to be fixed.
+    """
+
+    overall_summary: str = Field(
+        ..., description="Brief 2-3 sentence overview of the main issues"
+    )
+    governance_area: Optional[str] = Field(
+        None, description="Name of the governance area (only for calibration)"
+    )
+    governance_area_id: Optional[int] = Field(
+        None, description="ID of the governance area (only for calibration)"
+    )
+    indicator_summaries: List[AISummaryIndicator] = Field(
+        default_factory=list, description="Detailed summaries for each indicator"
+    )
+    priority_actions: List[str] = Field(
+        default_factory=list, description="Top 3-5 priority actions to address first"
+    )
+    estimated_time: Optional[str] = Field(
+        None, description="Estimated time to complete corrections (e.g., '30-45 minutes')"
+    )
+    generated_at: Optional[datetime] = Field(
+        None, description="Timestamp when the summary was generated"
+    )
+    language: Optional[str] = Field(
+        None, description="Language code of this summary (ceb=Bisaya, fil=Tagalog, en=English)"
+    )
+    summary_type: Literal["rework", "calibration"] = Field(
+        ..., description="Type of summary: 'rework' (assessor) or 'calibration' (validator)"
+    )
 
 
 class IndicatorItem(BaseModel):
@@ -103,15 +157,34 @@ class BLGUDashboardResponse(BaseModel):
     )
     calibration_validator_id: Optional[int] = Field(
         None,
-        description="ID of the Validator who requested calibration (null if regular rework)"
+        description="Legacy: ID of the Validator who requested calibration (null if regular rework). "
+        "For parallel calibration, use calibration_governance_areas instead."
     )
     calibration_governance_area_id: Optional[int] = Field(
         None,
-        description="ID of the governance area that was calibrated (null if regular rework)"
+        description="Legacy: ID of the governance area that was calibrated (null if regular rework). "
+        "For parallel calibration, use calibration_governance_areas instead."
     )
     calibration_governance_area_name: Optional[str] = Field(
         None,
-        description="Name of the governance area that was calibrated (null if regular rework)"
+        description="Legacy: Name of the governance area that was calibrated (null if regular rework). "
+        "For parallel calibration, use calibration_governance_areas instead."
+    )
+    # PARALLEL CALIBRATION: Multiple validators can request calibration simultaneously
+    pending_calibrations_count: int = Field(
+        default=0,
+        description="Number of pending calibration requests from validators"
+    )
+    calibration_governance_areas: Optional[List[Dict[str, Any]]] = Field(
+        None,
+        description="List of all pending calibration requests. Each item contains: "
+        "governance_area_id, governance_area_name, validator_name, requested_at, approved"
+    )
+    ai_summaries_by_area: Optional[List[Dict[str, Any]]] = Field(
+        None,
+        description="AI summaries grouped by governance area for parallel calibration. "
+        "Each item contains governance_area_id, governance_area, overall_summary, "
+        "indicator_summaries, priority_actions, estimated_time"
     )
 
     total_indicators: int = Field(..., description="Total number of indicators in the assessment")
@@ -132,6 +205,49 @@ class BLGUDashboardResponse(BaseModel):
     )
     mov_annotations_by_indicator: Optional[Dict[int, List[Dict[str, Any]]]] = Field(
         None, description="MOV annotations grouped by indicator ID - shows which MOVs assessor highlighted/commented on (null if no annotations)"
+    )
+
+    # AI-generated summary for rework/calibration guidance
+    ai_summary: Optional[AISummary] = Field(
+        None,
+        description="AI-generated summary with overall guidance, per-indicator breakdowns, and priority actions. "
+        "Only populated when assessment is in REWORK status. Use the language query parameter to get summary in different languages."
+    )
+    ai_summary_available_languages: Optional[List[str]] = Field(
+        None,
+        description="List of language codes for which AI summaries are available (e.g., ['ceb', 'en']). "
+        "Tagalog ('fil') is generated on-demand if requested."
+    )
+
+    # Timeline dates for phase progression tracking
+    submitted_at: Optional[str] = Field(
+        None,
+        description="Timestamp when assessment was first submitted (ISO format)"
+    )
+    validated_at: Optional[str] = Field(
+        None,
+        description="Timestamp when final validation was completed (ISO format)"
+    )
+
+    # Verdict fields - ONLY populated when status is COMPLETED
+    # IMPORTANT: These are intentionally null until assessment is finalized
+    # to prevent BLGU users from seeing Pass/Fail status prematurely
+    final_compliance_status: Optional[str] = Field(
+        None,
+        description="Final SGLGB compliance status: 'Passed' or 'Failed'. "
+        "Only populated when status is COMPLETED."
+    )
+    area_results: Optional[List[Dict[str, Any]]] = Field(
+        None,
+        description="Results breakdown by governance area. Each item contains: "
+        "area_id, area_name, area_type (Core/Essential), passed (bool), "
+        "total_indicators, passed_indicators, failed_indicators. "
+        "Only populated when status is COMPLETED."
+    )
+    ai_recommendations: Optional[Dict[str, Any]] = Field(
+        None,
+        description="AI-generated CapDev recommendations grouped by governance area. "
+        "Only populated when status is COMPLETED."
     )
 
     class Config:

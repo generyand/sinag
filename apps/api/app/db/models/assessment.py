@@ -43,7 +43,7 @@ class Assessment(Base):
     is_calibration_rework: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     calibration_validator_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
-    )  # The validator who requested calibration
+    )  # Legacy: single validator (kept for backward compatibility)
     calibration_requested_at: Mapped[datetime | None] = mapped_column(
         DateTime, nullable=True
     )  # When calibration was requested - used to identify new MOV uploads
@@ -51,6 +51,14 @@ class Assessment(Base):
     # Track calibration per governance area - stores list of area IDs that have been calibrated
     # Each area can only be calibrated once (max 1 per area)
     calibrated_area_ids: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
+    # AI-generated calibration summary (similar to rework_summary but for validator calibration)
+    calibration_summary: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
+    # PARALLEL CALIBRATION: Support multiple validators calibrating different areas simultaneously
+    # Stores list of pending calibrations: [{"validator_id": 1, "governance_area_id": 2, "requested_at": "...", "approved": false}, ...]
+    pending_calibrations: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
+    # Stores AI summaries per governance area: {"1": {"ceb": {...}, "en": {...}}, "2": {...}}
+    calibration_summaries_by_area: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     # Intelligence layer fields
     final_compliance_status: Mapped[ComplianceStatus | None] = mapped_column(

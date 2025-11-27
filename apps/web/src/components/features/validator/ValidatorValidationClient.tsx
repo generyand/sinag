@@ -8,6 +8,7 @@ import { MiddleMovFilesPanel } from '../assessor/validation/MiddleMovFilesPanel'
 import { Button } from '@/components/ui/button';
 import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { StatusBadge } from '@/components/shared';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -42,6 +43,7 @@ function sortIndicatorCode(a: string, b: string): number {
 }
 
 export function ValidatorValidationClient({ assessmentId }: ValidatorValidationClientProps) {
+  const router = useRouter();
   const { data, isLoading, isError, error } = useGetAssessorAssessmentsAssessmentId(assessmentId);
   const qc = useQueryClient();
   const validateMut = usePostAssessorAssessmentResponsesResponseIdValidate();
@@ -69,6 +71,50 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       }
     }
   }, [data, expandedId]);
+
+  // Initialize form state from database validation_status when data loads
+  // This ensures the "Finalize Validation" button is enabled if all indicators are already validated
+  useEffect(() => {
+    if (data && Object.keys(form).length === 0) {
+      const assessment: AnyRecord = (data as unknown as AnyRecord) ?? {};
+      const core = (assessment.assessment as AnyRecord) ?? assessment;
+      const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
+
+      const initialForm: Record<number, { status?: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string }> = {};
+
+      for (const resp of responses) {
+        // Load validation_status from database if it exists
+        const validationStatus = resp.validation_status;
+        if (validationStatus) {
+          // Map database status to form status
+          const status = validationStatus === 'Pass' ? 'Pass'
+            : validationStatus === 'Fail' ? 'Fail'
+            : validationStatus === 'Conditional' ? 'Conditional'
+            : undefined;
+
+          // Load public comment from feedback_comments (latest validation comment)
+          const feedbackComments = resp.feedback_comments || [];
+          const validationComments = feedbackComments.filter(
+            (fc: any) => fc.comment_type === 'validation' && !fc.is_internal_note
+          );
+          validationComments.sort((a: any, b: any) => {
+            const dateA = new Date(a.created_at || 0).getTime();
+            const dateB = new Date(b.created_at || 0).getTime();
+            return dateB - dateA; // DESC order
+          });
+          const publicComment = validationComments[0]?.comment || '';
+
+          if (status) {
+            initialForm[resp.id] = { status, publicComment };
+          }
+        }
+      }
+
+      if (Object.keys(initialForm).length > 0) {
+        setForm(initialForm);
+      }
+    }
+  }, [data, form]);
 
   if (isLoading) {
     return (
@@ -239,6 +285,9 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
           duration: 5000,
         });
       }
+
+      // Navigate back to submissions queue after successful finalization
+      router.push('/validator/submissions');
     } catch (error: any) {
       console.error('Finalization error:', error);
 
@@ -279,6 +328,9 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       toast.success(`✅ ${message}`, {
         duration: 5000,
       });
+
+      // Navigate back to submissions queue after successful calibration
+      router.push('/validator/submissions');
     } catch (error: any) {
       console.error('Calibration error:', error);
 

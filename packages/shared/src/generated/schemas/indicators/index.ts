@@ -16,6 +16,23 @@ import type { ValidationError } from '../error';
 import type { ChecklistItemResponse } from '../system';
 
 /**
+ * AISummaryIndicator
+ */
+export interface AISummaryIndicator {
+  /** Indicator ID */
+  indicator_id: number;
+  /** Indicator name */
+  indicator_name: string;
+  /** Key issues identified by assessor/validator */
+  key_issues?: string[];
+  /** Suggested actions to address the issues */
+  suggested_actions?: string[];
+  /** List of MOV filenames with issues */
+  affected_movs?: string[];
+}
+
+
+/**
  * BLGUDashboardResponseMovAnnotationsByIndicator
  */
 export type BLGUDashboardResponseMovAnnotationsByIndicator = BLGUDashboardResponseMovAnnotationsByIndicatorAnyOf | null;

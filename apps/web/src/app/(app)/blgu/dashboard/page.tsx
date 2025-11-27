@@ -1,40 +1,38 @@
 "use client";
 
 /**
- * BLGU Dashboard Page - Epic 2.0 + Epic 5.0: Completion Tracking & Submission Workflow
+ * BLGU Dashboard Page - Phase-Based Assessment View
  *
- * This dashboard shows COMPLETION status only (complete/incomplete).
- * COMPLIANCE status (PASS/FAIL/CONDITIONAL) is NEVER exposed to BLGU users.
+ * Restructured dashboard showing three distinct phases:
+ * - Phase 1: Initial Assessment (Assessor review workflow)
+ * - Phase 2: Table Validation (Validator review workflow)
+ * - Verdict: SGLGB Classification Result
  *
- * Features:
- * - Completion metrics (total, completed, incomplete, percentage)
- * - Governance areas with indicator completion status
- * - Assessor rework comments (if assessment needs rework)
- * - Indicator navigation for quick access to incomplete items
+ * This allows BLGU users to review completed phases anytime, providing
+ * better visibility into their assessment journey.
  *
- * Epic 5.0 Features:
- * - LockedStateBanner: Shows locked state during SUBMITTED/IN_REVIEW/COMPLETED
- * - ReworkIndicatorsPanel: Shows assessor feedback during REWORK status
- * - SubmitAssessmentButton: Allows submission when DRAFT and complete
- * - For resubmission after rework: Use "Resubmit for Review" button in /blgu/assessments
+ * IMPORTANT: COMPLIANCE status (PASS/FAIL/CONDITIONAL) is NEVER exposed
+ * to BLGU users until the assessment reaches COMPLETED status.
  */
 
+import { useState, useCallback } from "react";
 import {
-  CompletionMetricsCard,
-  IndicatorNavigationList,
-} from "@/components/features/dashboard";
-import {
-  LockedStateBanner,
-  SubmitAssessmentButton,
-  ResubmitAssessmentButton,
-} from "@/components/features/assessments";
-import { ReworkIndicatorsPanel } from "@/components/features/rework";
+  Phase1Section,
+  Phase2Section,
+  VerdictSection,
+  PhaseTimeline,
+} from "@/components/features/blgu-phases";
 import { useGetBlguDashboardAssessmentId, useGetAssessmentsMyAssessment } from "@sinag/shared";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Loader2, AlertCircle } from "lucide-react";
 
 export default function BLGUDashboardPage() {
   const { user } = useAuthStore();
+
+  // Language state for AI summary (defaults to user's preference or Bisaya)
+  const [selectedLanguage, setSelectedLanguage] = useState<string>(
+    user?.preferred_language || "ceb"
+  );
 
   // First, fetch the user's assessment to get the correct assessment ID
   // Enable refetchOnWindowFocus to ensure fresh data when user returns to tab
@@ -54,12 +52,16 @@ export default function BLGUDashboardPage() {
 
   // Fetch dashboard data using generated hook (only if we have an assessment ID)
   // Enable refetchOnWindowFocus to automatically fetch updated status when BLGU returns to dashboard
+  // Pass language parameter for AI summary
   const {
     data: dashboardData,
     isLoading: isLoadingDashboard,
     error: dashboardError,
     refetch,
+    isFetching: isFetchingDashboard,
   } = useGetBlguDashboardAssessmentId(assessmentId!, {
+    language: selectedLanguage,
+  }, {
     query: {
       enabled: !!assessmentId,
       refetchOnWindowFocus: true,
@@ -67,6 +69,12 @@ export default function BLGUDashboardPage() {
       staleTime: 0, // Always treat as stale to ensure fresh data (important for rework status updates)
     },
   });
+
+  // Handler for language change - refetches dashboard with new language
+  const handleLanguageChange = useCallback((lang: string) => {
+    setSelectedLanguage(lang);
+    // The query will automatically refetch due to the language parameter change
+  }, []);
 
   const isLoading = isLoadingAssessment || isLoadingDashboard;
   const error = assessmentError || dashboardError;
@@ -122,91 +130,75 @@ export default function BLGUDashboardPage() {
             Assessment Dashboard
           </h1>
           <p className="mt-2 text-[var(--text-secondary)]">
-            Track your assessment completion progress
+            Track your SGLGB assessment progress through each phase
           </p>
         </div>
 
-        {/* Epic 5.0: Locked State Banner */}
-        <div className="mb-6">
-          <LockedStateBanner
-            status={dashboardData.status as any}
-            reworkCount={dashboardData.rework_count}
-          />
-        </div>
+        {/* Main Content: Timeline + Phases */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Timeline Sidebar - Desktop */}
+          <div className="hidden lg:block">
+            <div className="sticky top-6">
+              <div className="bg-[var(--card)] rounded-lg border border-[var(--border)] p-4">
+                <PhaseTimeline
+                  submittedAt={dashboardData.submitted_at}
+                  reworkRequestedAt={dashboardData.rework_requested_at}
+                  validatedAt={dashboardData.validated_at}
+                  currentStatus={dashboardData.status}
+                  isCalibrationRework={dashboardData.is_calibration_rework || false}
+                  reworkCount={dashboardData.rework_count}
+                />
+              </div>
+            </div>
+          </div>
 
-        {/* Epic 5.0: Rework Indicators Panel (shows failed indicators grouped by area) */}
-        {/* Shows when status is REWORK/NEEDS_REWORK AND there are comments or annotations */}
-        {/* This replaces the old AssessorCommentsPanel with better UX */}
-        {(dashboardData.status === "REWORK" || dashboardData.status === "NEEDS_REWORK") &&
-         (dashboardData.rework_comments || dashboardData.mov_annotations_by_indicator) && (
-          <div className="mb-6">
-            <ReworkIndicatorsPanel
-              dashboardData={dashboardData as any}
+          {/* Phase Sections */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Mobile Timeline - Collapsible */}
+            <div className="lg:hidden">
+              <details className="bg-[var(--card)] rounded-lg border border-[var(--border)]">
+                <summary className="p-4 cursor-pointer font-medium text-[var(--foreground)]">
+                  View Assessment Journey
+                </summary>
+                <div className="px-4 pb-4">
+                  <PhaseTimeline
+                    submittedAt={dashboardData.submitted_at}
+                    reworkRequestedAt={dashboardData.rework_requested_at}
+                    validatedAt={dashboardData.validated_at}
+                    currentStatus={dashboardData.status}
+                    isCalibrationRework={dashboardData.is_calibration_rework || false}
+                    reworkCount={dashboardData.rework_count}
+                  />
+                </div>
+              </details>
+            </div>
+
+            {/* Phase 1: Initial Assessment */}
+            <Phase1Section
+              dashboardData={dashboardData}
+              assessmentId={assessmentId}
+              selectedLanguage={selectedLanguage}
+              onLanguageChange={handleLanguageChange}
+              isFetchingDashboard={isFetchingDashboard}
+              onRefetch={() => refetch()}
+            />
+
+            {/* Phase 2: Table Validation */}
+            <Phase2Section
+              dashboardData={dashboardData}
+              assessmentId={assessmentId}
+              selectedLanguage={selectedLanguage}
+              onLanguageChange={handleLanguageChange}
+              isFetchingDashboard={isFetchingDashboard}
+              onRefetch={() => refetch()}
+            />
+
+            {/* Verdict: SGLGB Result */}
+            <VerdictSection
+              dashboardData={dashboardData}
               assessmentId={assessmentId}
             />
           </div>
-        )}
-
-        {/* Completion Metrics Section */}
-        {/* Only show completion metrics when BLGU can edit (DRAFT, REWORK, NEEDS_REWORK) */}
-        {/* Hide when assessment is under review (SUBMITTED, IN_REVIEW, AWAITING_FINAL_VALIDATION, COMPLETED) */}
-        {(dashboardData.status === "DRAFT" ||
-          dashboardData.status === "REWORK" ||
-          dashboardData.status === "NEEDS_REWORK") && (
-          <div className="mb-8">
-            <CompletionMetricsCard
-              totalIndicators={dashboardData.total_indicators}
-              completedIndicators={dashboardData.completed_indicators}
-              incompleteIndicators={dashboardData.incomplete_indicators}
-              completionPercentage={dashboardData.completion_percentage}
-            />
-          </div>
-        )}
-
-        {/* Epic 5.0: Submission Button */}
-        <div className="mb-8 flex gap-4">
-          {/* Show SubmitAssessmentButton if DRAFT status */}
-          {dashboardData.status === "DRAFT" && (
-            <SubmitAssessmentButton
-              assessmentId={assessmentId}
-              isComplete={dashboardData.completion_percentage === 100}
-              onSuccess={() => refetch()}
-            />
-          )}
-
-          {/* Show ResubmitAssessmentButton if REWORK status */}
-          {/* The button automatically shows "Submit for Calibration" if is_calibration_rework is true */}
-          {(dashboardData.status === "REWORK" || dashboardData.status === "NEEDS_REWORK") && (
-            <ResubmitAssessmentButton
-              assessmentId={assessmentId}
-              isComplete={dashboardData.completion_percentage === 100}
-              isCalibrationRework={dashboardData.is_calibration_rework || false}
-              onSuccess={() => refetch()}
-            />
-          )}
-        </div>
-
-        {/* Assessor Comments Section - removed in favor of ReworkIndicatorsPanel */}
-
-        {/* Indicator Navigation Section */}
-        <div>
-          <h2 className="text-xl font-semibold text-[var(--foreground)] mb-4">
-            Indicators by Governance Area
-          </h2>
-          <IndicatorNavigationList
-            items={dashboardData.governance_areas.flatMap((area) =>
-              area.indicators.map((indicator) => ({
-                indicator_id: indicator.indicator_id,
-                title: indicator.indicator_name,
-                completion_status: indicator.is_complete
-                  ? ("complete" as const)
-                  : ("incomplete" as const),
-                route_path: `/blgu/assessments?indicator=${indicator.indicator_id}`,
-                governance_area_name: area.governance_area_name,
-                governance_area_id: area.governance_area_id,
-              }))
-            )}
-          />
         </div>
       </div>
     </div>

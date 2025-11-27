@@ -142,6 +142,7 @@ class NotificationType(str, enum.Enum):
     - READY_FOR_VALIDATION: Assessor finalizes -> Validator(s) notified
     - CALIBRATION_REQUESTED: Validator requests calibration -> BLGU notified
     - CALIBRATION_RESUBMITTED: BLGU resubmits calibration -> Same Validator notified
+    - VALIDATION_COMPLETED: Validator completes validation -> MLGOO and BLGU notified
     """
 
     NEW_SUBMISSION = "NEW_SUBMISSION"
@@ -150,3 +151,4 @@ class NotificationType(str, enum.Enum):
     READY_FOR_VALIDATION = "READY_FOR_VALIDATION"
     CALIBRATION_REQUESTED = "CALIBRATION_REQUESTED"
     CALIBRATION_RESUBMITTED = "CALIBRATION_RESUBMITTED"
+    VALIDATION_COMPLETED = "VALIDATION_COMPLETED"

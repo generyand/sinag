@@ -198,7 +198,7 @@ export default function PdfAnnotator({ url, annotateEnabled, annotations, onAdd,
                 flushLine();
 
                 // Get page number from the found page element
-                let pn = pageEl.getAttribute('data-page-number');
+                const pn = pageEl.getAttribute('data-page-number');
                 let pageIndexOverride: number | undefined;
 
                 if (pn) {

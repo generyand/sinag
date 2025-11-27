@@ -32,7 +32,7 @@ export function NotificationPanel({
   onClose,
 }: NotificationPanelProps) {
   return (
-    <div className="w-[380px] max-h-[500px] flex flex-col">
+    <div className="w-[380px] max-h-[500px] flex flex-col bg-white rounded-md">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <div className="flex items-center gap-2">
@@ -101,7 +101,7 @@ export function NotificationPanel({
           </div>
         ) : (
           // Notification list
-          <div className="divide-y">
+          <div className="divide-y divide-gray-100">
             {notifications.map((notification) => (
               <NotificationItem
                 key={notification.id}
