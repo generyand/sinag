@@ -236,13 +236,21 @@ def _seed_sub_indicator(
     sub_def: SubIndicator,
     parent_id: int,
     governance_area_id: int,
-    db: Session
+    db: Session,
+    sort_order: int = 0
 ) -> None:
     """
     Recursively seed a sub-indicator and its children.
 
     This handles nested hierarchies like:
     1.6 → 1.6.1 (container) → 1.6.1.1, 1.6.1.2, 1.6.1.3 (leaf nodes)
+
+    Args:
+        sub_def: SubIndicator definition from Python code
+        parent_id: ID of the parent indicator in the database
+        governance_area_id: ID of the governance area
+        db: SQLAlchemy database session
+        sort_order: Position within siblings (1-based)
     """
     # Generate form_schema from checklist items OR upload_instructions
     form_schema = None
@@ -253,7 +261,7 @@ def _seed_sub_indicator(
             sub_def.validation_rule
         )
 
-    # Create this sub-indicator
+    # Create this sub-indicator with sort_order
     sub_indicator = IndicatorModel(
         indicator_code=sub_def.code,
         name=sub_def.name,
@@ -263,6 +271,7 @@ def _seed_sub_indicator(
         form_schema=form_schema,  # Add generated form schema
         is_active=True,
         is_auto_calculable=True,
+        sort_order=sort_order,  # Set sort_order based on position
     )
     db.add(sub_indicator)
     db.flush()  # Get sub-indicator ID
@@ -284,8 +293,8 @@ def _seed_sub_indicator(
         db.add(checklist_item)
 
     # If this sub-indicator has children, recursively create them (it's a container node)
-    for nested_child in sub_def.children:
-        _seed_sub_indicator(nested_child, sub_indicator.id, governance_area_id, db)
+    for idx, nested_child in enumerate(sub_def.children, start=1):
+        _seed_sub_indicator(nested_child, sub_indicator.id, governance_area_id, db, sort_order=idx)
 
 
 def seed_indicators(indicators: List[Indicator], db: Session, effective_date: datetime = None) -> None:
@@ -327,9 +336,9 @@ def seed_indicators(indicators: List[Indicator], db: Session, effective_date: da
         db.add(parent)
         db.flush()  # Get parent ID
 
-        # Recursively create sub-indicators (children and nested children)
-        for child_def in indicator_def.children:
-            _seed_sub_indicator(child_def, parent.id, indicator_def.governance_area_id, db)
+        # Recursively create sub-indicators (children and nested children) with sort_order
+        for idx, child_def in enumerate(indicator_def.children, start=1):
+            _seed_sub_indicator(child_def, parent.id, indicator_def.governance_area_id, db, sort_order=idx)
 
         db.commit()
 

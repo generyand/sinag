@@ -957,12 +957,14 @@ async def validate_assessment_completeness(
             detail=f"Assessment with ID {assessment_id} not found"
         )
 
-    # Retrieve all active indicators
-    indicators = db.query(Indicator).filter(
-        Indicator.is_active == True
-    ).options(
-        joinedload(Indicator.governance_area)
-    ).all()
+    # Retrieve all active indicators, sorted by governance area, sort_order, and indicator_code
+    indicators = (
+        db.query(Indicator)
+        .filter(Indicator.is_active == True)
+        .options(joinedload(Indicator.governance_area))
+        .order_by(Indicator.governance_area_id, Indicator.sort_order, Indicator.indicator_code)
+        .all()
+    )
 
     # Retrieve all assessment_responses for this assessment
     assessment_responses = db.query(AssessmentResponse).filter(

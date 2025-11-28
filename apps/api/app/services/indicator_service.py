@@ -868,7 +868,7 @@ class IndicatorService:
                 Indicator.governance_area_id == governance_area_id,
                 Indicator.is_active == True
             )
-            .order_by(Indicator.sort_order)
+            .order_by(Indicator.sort_order, Indicator.indicator_code)
             .all()
         )
 
@@ -908,6 +908,11 @@ class IndicatorService:
                 if parent_id in indicator_map:
                     indicator_map[parent_id]["children"].append(indicator_dict)
 
+        # Sort root nodes and all children by sort_order
+        root_nodes.sort(key=lambda x: (x["sort_order"] or 0, x["indicator_code"] or ""))
+        for node in indicator_map.values():
+            node["children"].sort(key=lambda x: (x["sort_order"] or 0, x["indicator_code"] or ""))
+
         return root_nodes
 
     def recalculate_codes(
@@ -933,14 +938,14 @@ class IndicatorService:
         Raises:
             HTTPException: If indicators cannot be loaded or updated
         """
-        # Get all indicators for governance area ordered by sort_order
+        # Get all indicators for governance area ordered by sort_order and indicator_code
         indicators = (
             db.query(Indicator)
             .filter(
                 Indicator.governance_area_id == governance_area_id,
                 Indicator.is_active == True
             )
-            .order_by(Indicator.sort_order)
+            .order_by(Indicator.sort_order, Indicator.indicator_code)
             .all()
         )
 

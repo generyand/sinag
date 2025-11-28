@@ -80,13 +80,18 @@ def get_blgu_dashboard(
     # We need to count ALL indicators, not just those with responses
 
     try:
-        # Get all indicators with eager loading of governance_area (same logic as get_assessment_for_blgu_with_full_data)
-        all_indicators = db.query(Indicator).options(joinedload(Indicator.governance_area)).all()
+        # Get all indicators with eager loading of governance_area, sorted by sort_order and indicator_code
+        all_indicators = (
+            db.query(Indicator)
+            .options(joinedload(Indicator.governance_area))
+            .order_by(Indicator.governance_area_id, Indicator.sort_order, Indicator.indicator_code)
+            .all()
+        )
 
         # Build response lookup for O(1) access
         response_lookup = {r.indicator_id: r for r in assessment.responses}
 
-        # Build parent-child relationships
+        # Build parent-child relationships (children inherit sort order from query)
         children_by_parent: Dict[int | None, list[Indicator]] = {}
         for ind in all_indicators:
             parent_id = ind.parent_id

@@ -17,6 +17,7 @@ from app.db.base import (
 )
 from app.db.enums import UserRole
 from app.db.models.barangay import Barangay
+from app.db.models.governance_area import Indicator
 from app.db.models.user import User
 from app.services.governance_area_service import governance_area_service
 from app.services.indicator_service import indicator_service
@@ -98,6 +99,9 @@ class StartupService:
 
         # Create external stakeholder users if needed
         self._create_external_users()
+
+        # Validate indicator data integrity
+        self._validate_indicators()
 
         # Log detailed connection status
         await self._log_connection_details()
@@ -369,6 +373,107 @@ class StartupService:
         except Exception as e:
             logger.warning(f"⚠️  Could not create external users: {str(e)}")
             db.rollback()
+        finally:
+            db.close()
+
+    def _validate_indicators(self) -> None:
+        """
+        Validate that all expected indicators are present in the database.
+
+        This check prevents issues like missing governance area indicators
+        from going unnoticed. It verifies:
+        1. All 6 governance areas have indicators
+        2. Expected number of parent indicators per area
+        3. No indicators with NULL indicator_code (corrupt records)
+
+        Raises:
+            RuntimeError: If critical indicator data is missing (only in FAIL_FAST mode)
+        """
+        import os
+        # Skip validation in tests
+        if os.getenv("SKIP_STARTUP_SEEDING") == "true":
+            return
+
+        logger.info("📊 Validating indicator data integrity...")
+
+        # Expected parent indicators per governance area (from definitions)
+        EXPECTED_INDICATORS = {
+            1: {"name": "Financial Administration and Sustainability", "count": 7},
+            2: {"name": "Disaster Preparedness", "count": 3},
+            3: {"name": "Safety, Peace and Order", "count": 6},
+            4: {"name": "Social Protection and Sensitivity", "count": 9},
+            5: {"name": "Business-Friendliness and Competitiveness", "count": 3},
+            6: {"name": "Environmental Management", "count": 3},
+        }
+
+        db: Session = SessionLocal()
+        errors: List[str] = []
+        warnings: List[str] = []
+
+        try:
+            # Check for corrupt records (NULL indicator_code)
+            corrupt_count = db.query(Indicator).filter(
+                Indicator.indicator_code.is_(None),
+                Indicator.parent_id.is_(None)  # Only check root indicators
+            ).count()
+
+            if corrupt_count > 0:
+                errors.append(f"Found {corrupt_count} corrupt indicator(s) with NULL indicator_code")
+
+            # Check each governance area
+            for area_id, expected in EXPECTED_INDICATORS.items():
+                actual_count = db.query(Indicator).filter(
+                    Indicator.governance_area_id == area_id,
+                    Indicator.parent_id.is_(None)  # Parent indicators only
+                ).count()
+
+                if actual_count == 0:
+                    errors.append(f"Area {area_id} ({expected['name']}) has NO indicators!")
+                elif actual_count < expected["count"]:
+                    warnings.append(
+                        f"Area {area_id} ({expected['name']}): Expected {expected['count']} "
+                        f"parent indicators, found {actual_count}"
+                    )
+
+            # Check total indicator count
+            total_parents = db.query(Indicator).filter(
+                Indicator.parent_id.is_(None)
+            ).count()
+
+            expected_total = sum(e["count"] for e in EXPECTED_INDICATORS.values())  # 31
+
+            if total_parents < expected_total:
+                warnings.append(
+                    f"Total parent indicators: Expected {expected_total}, found {total_parents}"
+                )
+
+            # Log results
+            if errors:
+                logger.error("❌ Critical indicator data issues found:")
+                for error in errors:
+                    logger.error(f"  - {error}")
+
+                if settings.FAIL_FAST:
+                    error_msg = (
+                        "Critical indicator data integrity issues detected!\n"
+                        "Run migrations to fix: alembic upgrade head\n"
+                        "Issues:\n" + "\n".join(f"  - {e}" for e in errors)
+                    )
+                    raise RuntimeError(error_msg)
+                else:
+                    logger.warning("⚠️  Continuing despite errors (FAIL_FAST=false)")
+
+            if warnings:
+                logger.warning("⚠️  Indicator data warnings:")
+                for warning in warnings:
+                    logger.warning(f"  - {warning}")
+            else:
+                logger.info(f"✅ Indicator validation passed ({total_parents} parent indicators)")
+
+        except RuntimeError:
+            raise
+        except Exception as e:
+            logger.warning(f"⚠️  Could not validate indicators: {str(e)}")
         finally:
             db.close()
 

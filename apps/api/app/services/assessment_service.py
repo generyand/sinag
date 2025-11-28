@@ -232,12 +232,18 @@ class AssessmentService:
         response_lookup = {r.indicator_id: r for r in responses}
 
         # Fetch all indicators once to avoid N+1 and build a tree by area
-        all_indicators = db.query(Indicator).all()
+        # Sort by sort_order to ensure correct ordering
+        all_indicators = (
+            db.query(Indicator)
+            .order_by(Indicator.governance_area_id, Indicator.sort_order, Indicator.indicator_code)
+            .all()
+        )
         indicators_by_area: Dict[int, list[Indicator]] = {}
         for ind in all_indicators:
             indicators_by_area.setdefault(ind.governance_area_id, []).append(ind)
 
         # Pre-build adjacency lists for indicators for O(n) tree assembly
+        # Children inherit order from sorted query
         children_by_parent: Dict[int | None, list[Indicator]] = {}
         for ind in all_indicators:
             children_by_parent.setdefault(getattr(ind, "parent_id", None), []).append(ind)
@@ -269,7 +275,10 @@ class AssessmentService:
                 "children": [],
             }
             # Recurse over children using pre-built adjacency lists
-            for child in children_by_parent.get(ind.id, []):
+            # Sort children by sort_order to ensure correct ordering
+            children = children_by_parent.get(ind.id, [])
+            children_sorted = sorted(children, key=lambda x: (x.sort_order or 0, x.indicator_code or ""))
+            for child in children_sorted:
                 node["children"].append(serialize_indicator_node(child))
             return node
 
@@ -288,6 +297,8 @@ class AssessmentService:
             top_level_inds = [
                 ind for ind in indicators_by_area.get(area.id, []) if getattr(ind, "parent_id", None) is None
             ]
+            # Sort by sort_order to ensure correct ordering (1.1, 1.2, ... not 1.1, 1.10, 1.2)
+            top_level_inds.sort(key=lambda x: (x.sort_order or 0, x.indicator_code or ""))
 
             # All indicators should be shown (no legacy filtering)
             # Previously filtered to show only 1 legacy + Epic 3 indicators per area
