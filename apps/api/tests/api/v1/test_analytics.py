@@ -195,7 +195,6 @@ def test_get_dashboard_success_with_mlgoo_dilg(client, db_session: Session, mlgo
     assert "completion_status" in data
     assert "area_breakdown" in data
     assert "top_failed_indicators" in data
-    assert "barangay_rankings" in data
     assert "trends" in data
 
     # Verify overall compliance rate structure
@@ -282,7 +281,6 @@ def test_get_dashboard_response_structure_matches_schema(client, db_session: Ses
         "completion_status",
         "area_breakdown",
         "top_failed_indicators",
-        "barangay_rankings",
         "trends",
     ]
     for field in required_fields:
@@ -313,13 +311,6 @@ def test_get_dashboard_response_structure_matches_schema(client, db_session: Ses
         for field in indicator_fields:
             assert field in data["top_failed_indicators"][0], f"Missing field in top_failed_indicators item: {field}"
 
-    # Verify barangay_rankings is a list
-    assert isinstance(data["barangay_rankings"], list)
-    if len(data["barangay_rankings"]) > 0:
-        ranking_fields = ["barangay_id", "barangay_name", "score", "rank"]
-        for field in ranking_fields:
-            assert field in data["barangay_rankings"][0], f"Missing field in barangay_rankings item: {field}"
-
     # Verify trends is a list
     assert isinstance(data["trends"], list)
     if len(data["trends"]) > 0:
@@ -346,7 +337,6 @@ def test_get_dashboard_with_no_data(client, db_session: Session, mlgoo_dilg_user
     assert data["overall_compliance_rate"]["failed"] == 0
     assert data["area_breakdown"] == []
     assert data["top_failed_indicators"] == []
-    assert data["barangay_rankings"] == []
 
     client.app.dependency_overrides.clear()
 

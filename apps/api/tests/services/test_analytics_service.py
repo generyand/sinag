@@ -121,7 +121,6 @@ def test_get_dashboard_kpis_with_data(db_session, governance_areas, indicators, 
     assert hasattr(result, 'completion_status')
     assert hasattr(result, 'area_breakdown')
     assert hasattr(result, 'top_failed_indicators')
-    assert hasattr(result, 'barangay_rankings')
     assert hasattr(result, 'trends')
 
     # Check overall compliance rate
@@ -272,39 +271,6 @@ def test_calculate_top_failed_indicators_no_failures(db_session, governance_area
     result = analytics_service._calculate_top_failed_indicators(db_session, None)
 
     # Assert - should return empty list
-    assert result == []
-
-
-def test_calculate_barangay_rankings(db_session, governance_areas, indicators, barangays_with_assessments):
-    """Test barangay rankings calculation"""
-    # Act
-    result = analytics_service._calculate_barangay_rankings(db_session, None)
-
-    # Assert
-    assert len(result) == 10  # 10 barangays
-    assert all(hasattr(item, 'barangay_id') for item in result)
-    assert all(hasattr(item, 'barangay_name') for item in result)
-    assert all(hasattr(item, 'score') for item in result)
-    assert all(hasattr(item, 'rank') for item in result)
-
-    # Rankings should be in descending order by score
-    for i in range(len(result) - 1):
-        assert result[i].score >= result[i + 1].score
-
-    # Ranks should be sequential
-    for i, item in enumerate(result):
-        assert item.rank == i + 1
-
-    # Scores should be between 0 and 100
-    assert all(0 <= item.score <= 100 for item in result)
-
-
-def test_calculate_barangay_rankings_no_assessments(db_session):
-    """Test barangay rankings with no assessments"""
-    # Act
-    result = analytics_service._calculate_barangay_rankings(db_session, None)
-
-    # Assert - should return empty list, not crash
     assert result == []
 
 

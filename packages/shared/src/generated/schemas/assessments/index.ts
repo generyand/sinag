@@ -193,6 +193,7 @@ export type AssessmentDashboardStatsSubmittedAt = string | null;
 export interface AssessmentDetailResponse {
   id: number;
   barangay_name: string;
+  cycle_year: AssessmentDetailResponseCycleYear;
   blgu_user_id: AssessmentDetailResponseBlguUserId;
   blgu_user_name: AssessmentDetailResponseBlguUserName;
   status: string;
@@ -241,6 +242,12 @@ export type AssessmentDetailResponseBlguUserName = string | null;
  * AssessmentDetailResponseComplianceStatus
  */
 export type AssessmentDetailResponseComplianceStatus = string | null;
+
+
+/**
+ * AssessmentDetailResponseCycleYear
+ */
+export type AssessmentDetailResponseCycleYear = number | null;
 
 
 /**

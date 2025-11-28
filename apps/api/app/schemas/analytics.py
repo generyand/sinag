@@ -45,17 +45,6 @@ class FailedIndicator(BaseModel):
     percentage: float = Field(..., description="Failure rate as percentage", ge=0, le=100)
 
 
-class BarangayRanking(BaseModel):
-    """Barangay ranking based on compliance score."""
-
-    model_config = ConfigDict(from_attributes=True)
-
-    barangay_id: int = Field(..., description="Unique identifier for the barangay")
-    barangay_name: str = Field(..., description="Name of the barangay")
-    score: float = Field(..., description="Compliance score (0-100)", ge=0, le=100)
-    rank: int = Field(..., description="Ranking position", ge=1)
-
-
 class TrendData(BaseModel):
     """Historical trend data for a cycle."""
 
@@ -65,6 +54,28 @@ class TrendData(BaseModel):
     cycle_name: str = Field(..., description="Name of the assessment cycle")
     pass_rate: float = Field(..., description="Pass rate for this cycle", ge=0, le=100)
     date: datetime = Field(..., description="Date of the cycle")
+
+
+class StatusDistributionItem(BaseModel):
+    """Single status distribution item for the workflow funnel."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    status: str = Field(..., description="Assessment status name")
+    count: int = Field(..., description="Number of assessments in this status", ge=0)
+    percentage: float = Field(..., description="Percentage of total assessments", ge=0, le=100)
+
+
+class ReworkStats(BaseModel):
+    """Rework and calibration statistics."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    total_assessments: int = Field(..., description="Total number of assessments")
+    assessments_with_rework: int = Field(..., description="Assessments that used rework cycle")
+    rework_rate: float = Field(..., description="Percentage of assessments that needed rework", ge=0, le=100)
+    assessments_with_calibration: int = Field(..., description="Assessments that used calibration")
+    calibration_rate: float = Field(..., description="Percentage of assessments that needed calibration", ge=0, le=100)
 
 
 class DashboardKPIResponse(BaseModel):
@@ -83,15 +94,20 @@ class DashboardKPIResponse(BaseModel):
         description="Top 5 most frequently failed indicators",
         max_length=5
     )
-    barangay_rankings: List[BarangayRanking] = Field(
-        default_factory=list,
-        description="Barangays ranked by compliance score"
-    )
     trends: List[TrendData] = Field(
         default_factory=list,
         description="Historical trend data across cycles",
         max_length=3
     )
+    status_distribution: List[StatusDistributionItem] = Field(
+        default_factory=list,
+        description="Distribution of assessments by workflow status"
+    )
+    rework_stats: ReworkStats = Field(
+        ...,
+        description="Rework and calibration usage statistics"
+    )
+    total_barangays: int = Field(..., description="Total number of barangays in the municipality")
 
 
 # ============================================================================

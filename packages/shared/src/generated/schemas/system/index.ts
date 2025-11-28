@@ -18,8 +18,9 @@ import type { IncompleteIndicatorDetail } from '../indicators';
 import type { ComplianceRate } from '../common';
 import type { AreaBreakdown } from '../common';
 import type { FailedIndicator } from '../indicators';
-import type { BarangayRanking } from '../common';
 import type { TrendData } from '../common';
+import type { StatusDistributionItem } from '../common';
+import type { ReworkStats } from '../common';
 import type { DeadlineOverrideResponse } from '../deadlineoverride';
 import type { OverallComplianceResponseAssessmentCycle } from '../assessments';
 import type { ChartData } from '../common';
@@ -456,13 +457,17 @@ export interface DashboardKPIResponse {
    * @maxItems 5
    */
   top_failed_indicators?: FailedIndicator[];
-  /** Barangays ranked by compliance score */
-  barangay_rankings?: BarangayRanking[];
   /**
    * Historical trend data across cycles
    * @maxItems 3
    */
   trends?: TrendData[];
+  /** Distribution of assessments by workflow status */
+  status_distribution?: StatusDistributionItem[];
+  /** Rework and calibration usage statistics */
+  rework_stats: ReworkStats;
+  /** Total number of barangays in the municipality */
+  total_barangays: number;
 }
 
 

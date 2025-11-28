@@ -45,6 +45,12 @@ export type AssessorQueueItemSubmissionDate = string | null;
 
 
 /**
+ * IndicatorDetailItemAssessorRemarks
+ */
+export type IndicatorDetailItemAssessorRemarks = string | null;
+
+
+/**
  * ValidationRequestAssessorRemarks
  */
 export type ValidationRequestAssessorRemarks = string | null;

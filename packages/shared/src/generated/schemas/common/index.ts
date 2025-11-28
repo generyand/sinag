@@ -274,28 +274,6 @@ export type BarangayMapPointScore = number | null;
 
 
 /**
- * BarangayRanking
- */
-export interface BarangayRanking {
-  /** Unique identifier for the barangay */
-  barangay_id: number;
-  /** Name of the barangay */
-  barangay_name: string;
-  /**
-   * Compliance score (0-100)
-   * @minimum 0
-   * @maximum 100
-   */
-  score: number;
-  /**
-   * Ranking position
-   * @minimum 1
-   */
-  rank: number;
-}
-
-
-/**
  * CalculationSchema
  */
 export interface CalculationSchema {
@@ -915,9 +893,54 @@ export type ReworkCommentCreatedAt = string | null;
 
 
 /**
+ * ReworkStats
+ */
+export interface ReworkStats {
+  /** Total number of assessments */
+  total_assessments: number;
+  /** Assessments that used rework cycle */
+  assessments_with_rework: number;
+  /**
+   * Percentage of assessments that needed rework
+   * @minimum 0
+   * @maximum 100
+   */
+  rework_rate: number;
+  /** Assessments that used calibration */
+  assessments_with_calibration: number;
+  /**
+   * Percentage of assessments that needed calibration
+   * @minimum 0
+   * @maximum 100
+   */
+  calibration_rate: number;
+}
+
+
+/**
  * SectionHeaderFieldHelpText
  */
 export type SectionHeaderFieldHelpText = string | null;
+
+
+/**
+ * StatusDistributionItem
+ */
+export interface StatusDistributionItem {
+  /** Assessment status name */
+  status: string;
+  /**
+   * Number of assessments in this status
+   * @minimum 0
+   */
+  count: number;
+  /**
+   * Percentage of total assessments
+   * @minimum 0
+   * @maximum 100
+   */
+  percentage: number;
+}
 
 
 /**

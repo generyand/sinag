@@ -4,11 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useGetUsersMe } from '@sinag/shared';
-import { 
+import {
   DashboardHeader,
   KPICards,
   MunicipalProgressChart,
-  AssessorQueue,
+  GovernanceAreaBreakdown,
+  ReworkStatsCard,
   FailedIndicators,
   AdminDashboardSkeleton
 } from '@/components/features/dashboard';
@@ -21,8 +22,8 @@ export default function AdminDashboardPage() {
 
   // Auto-generated hook to fetch current user data
   const userQuery = useGetUsersMe();
-  
-  // Admin dashboard data hook
+
+  // Admin dashboard data hook (now uses real API)
   const dashboardQuery = useAdminDashboard(assessmentYear);
 
   // Redirect unauthenticated users to login
@@ -45,7 +46,7 @@ export default function AdminDashboardPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div 
+          <div
             className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-4"
             style={{ borderColor: 'var(--analytics-danger)' }}
           ></div>
@@ -69,7 +70,7 @@ export default function AdminDashboardPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
-          <div 
+          <div
             className="mb-4"
             style={{ color: 'var(--analytics-danger)' }}
           >
@@ -83,7 +84,7 @@ export default function AdminDashboardPage() {
           <p className="text-[var(--muted-foreground)] mb-4">
             Unable to load dashboard data. Please try refreshing the page.
           </p>
-          <button 
+          <button
             onClick={() => dashboardQuery.refetch()}
             className="px-4 py-2 rounded-md transition-colors"
             style={{
@@ -129,7 +130,7 @@ export default function AdminDashboardPage() {
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
             {/* Left Column - Municipal Progress (2/3 width) */}
             <div className="xl:col-span-2">
-              <MunicipalProgressChart 
+              <MunicipalProgressChart
                 data={dashboardData.municipalProgress}
                 totalBarangays={dashboardData.totalBarangays}
               />
@@ -211,13 +212,18 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
-          {/* Enhanced Actionable Intelligence Sections */}
+          {/* Governance Area Performance & Submission Quality */}
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-            {/* Assessor Queue */}
-            <AssessorQueue data={dashboardData.assessorQueue} />
-            
-            {/* Failed Indicators */}
-            <FailedIndicators 
+            {/* Governance Area Breakdown */}
+            <GovernanceAreaBreakdown data={dashboardData.areaBreakdown} />
+
+            {/* Rework Stats */}
+            <ReworkStatsCard data={dashboardData.reworkStats} />
+          </div>
+
+          {/* Failed Indicators - Full Width */}
+          <div className="w-full">
+            <FailedIndicators
               data={dashboardData.failedIndicators}
               totalBarangays={dashboardData.totalBarangays}
             />
@@ -226,4 +232,4 @@ export default function AdminDashboardPage() {
       </div>
     </div>
   );
-} 
+}

@@ -5,15 +5,16 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import List, Optional
 
-from app.db.enums import ComplianceStatus, UserRole
+from app.db.enums import AssessmentStatus, ComplianceStatus, UserRole
 from app.db.models import Assessment, AssessmentResponse, Barangay, GovernanceArea, Indicator, User
 from app.schemas.analytics import (
     AreaBreakdown,
-    BarangayRanking,
     ComplianceRate,
     DashboardKPIResponse,
     FailedIndicator,
     ReportsDataResponse,
+    ReworkStats,
+    StatusDistributionItem,
     TrendData,
 )
 from sqlalchemy import case, desc, func
@@ -56,16 +57,20 @@ class AnalyticsService:
         completion_status = self._calculate_completion_status(db, cycle_id)
         area_breakdown = self._calculate_area_breakdown(db, cycle_id)
         top_failed = self._calculate_top_failed_indicators(db, cycle_id)
-        rankings = self._calculate_barangay_rankings(db, cycle_id)
         trends = self._calculate_trends(db)
+        status_distribution = self._calculate_status_distribution(db, cycle_id)
+        rework_stats = self._calculate_rework_stats(db, cycle_id)
+        total_barangays = self._get_total_barangays(db)
 
         return DashboardKPIResponse(
             overall_compliance_rate=overall_compliance,
             completion_status=completion_status,
             area_breakdown=area_breakdown,
             top_failed_indicators=top_failed,
-            barangay_rankings=rankings,
             trends=trends,
+            status_distribution=status_distribution,
+            rework_stats=rework_stats,
+            total_barangays=total_barangays,
         )
 
     def _calculate_overall_compliance(
@@ -315,89 +320,6 @@ class AnalyticsService:
 
         return failed_indicators
 
-    def _calculate_barangay_rankings(
-        self, db: Session, cycle_id: Optional[int] = None
-    ) -> List[BarangayRanking]:
-        """
-        Calculate barangay rankings based on compliance scores.
-
-        Args:
-            db: Database session
-            cycle_id: Optional assessment cycle ID
-
-        Returns:
-            List of BarangayRanking schemas, ordered by score (descending)
-        """
-        # Get all assessments with their associated barangays
-        query = (
-            db.query(
-                Barangay.id,
-                Barangay.name,
-                Assessment.id.label("assessment_id"),
-            )
-            .join(User, User.barangay_id == Barangay.id)
-            .join(Assessment, Assessment.blgu_user_id == User.id)
-            .filter(Assessment.final_compliance_status.isnot(None))
-        )
-
-        # TODO: Add cycle_id filter
-        # if cycle_id is not None:
-        #     query = query.filter(Assessment.cycle_id == cycle_id)
-
-        results = query.all()
-
-        if not results:
-            return []
-
-        # Calculate score for each barangay
-        barangay_scores = {}
-
-        for result in results:
-            barangay_id = result.id
-            barangay_name = result.name
-            assessment_id = result.assessment_id
-
-            # Get all responses for this assessment
-            responses = (
-                db.query(AssessmentResponse)
-                .filter(AssessmentResponse.assessment_id == assessment_id)
-                .all()
-            )
-
-            if not responses:
-                continue
-
-            # Calculate completion percentage as score
-            completed = sum(1 for r in responses if r.is_completed)
-            total = len(responses)
-            score = (completed / total * 100) if total > 0 else 0.0
-
-            barangay_scores[barangay_id] = {
-                "name": barangay_name,
-                "score": round(score, 2),
-            }
-
-        # Convert to list and sort by score
-        rankings = [
-            {"id": barangay_id, **data}
-            for barangay_id, data in barangay_scores.items()
-        ]
-        rankings.sort(key=lambda x: x["score"], reverse=True)
-
-        # Assign ranks
-        barangay_rankings = []
-        for rank, item in enumerate(rankings, start=1):
-            barangay_rankings.append(
-                BarangayRanking(
-                    barangay_id=item["id"],
-                    barangay_name=item["name"],
-                    score=item["score"],
-                    rank=rank,
-                )
-            )
-
-        return barangay_rankings
-
     def _calculate_trends(self, db: Session) -> List[TrendData]:
         """
         Calculate historical trend data across last 3 cycles.
@@ -417,6 +339,139 @@ class AnalyticsService:
         # 3. Return chronologically ordered (oldest to newest)
 
         return []
+
+    def _calculate_status_distribution(
+        self, db: Session, cycle_id: Optional[int] = None
+    ) -> List[StatusDistributionItem]:
+        """
+        Calculate distribution of assessments by workflow status.
+
+        Args:
+            db: Database session
+            cycle_id: Optional assessment cycle ID
+
+        Returns:
+            List of StatusDistributionItem schemas with count and percentage per status
+        """
+        # Query all assessments grouped by status
+        query = db.query(Assessment)
+
+        # TODO: Add cycle_id filter when implemented
+        # if cycle_id is not None:
+        #     query = query.filter(Assessment.cycle_id == cycle_id)
+
+        assessments = query.all()
+        total = len(assessments)
+
+        if total == 0:
+            return []
+
+        # Count by status
+        status_counts = {}
+        for assessment in assessments:
+            status = assessment.status.value if assessment.status else "UNKNOWN"
+            status_counts[status] = status_counts.get(status, 0) + 1
+
+        # Define display order and friendly names
+        status_display = {
+            AssessmentStatus.DRAFT.value: "Not Started",
+            AssessmentStatus.SUBMITTED.value: "Submitted",
+            AssessmentStatus.IN_REVIEW.value: "In Review",
+            AssessmentStatus.REWORK.value: "In Rework",
+            AssessmentStatus.AWAITING_FINAL_VALIDATION.value: "Awaiting Validation",
+            AssessmentStatus.AWAITING_MLGOO_APPROVAL.value: "Awaiting MLGOO Approval",
+            AssessmentStatus.COMPLETED.value: "Completed",
+        }
+
+        # Build distribution list in workflow order
+        distribution = []
+        for status_enum in [
+            AssessmentStatus.DRAFT,
+            AssessmentStatus.SUBMITTED,
+            AssessmentStatus.IN_REVIEW,
+            AssessmentStatus.REWORK,
+            AssessmentStatus.AWAITING_FINAL_VALIDATION,
+            AssessmentStatus.AWAITING_MLGOO_APPROVAL,
+            AssessmentStatus.COMPLETED,
+        ]:
+            count = status_counts.get(status_enum.value, 0)
+            percentage = (count / total * 100) if total > 0 else 0.0
+
+            distribution.append(
+                StatusDistributionItem(
+                    status=status_display.get(status_enum.value, status_enum.value),
+                    count=count,
+                    percentage=round(percentage, 2),
+                )
+            )
+
+        return distribution
+
+    def _calculate_rework_stats(
+        self, db: Session, cycle_id: Optional[int] = None
+    ) -> ReworkStats:
+        """
+        Calculate rework and calibration usage statistics.
+
+        Args:
+            db: Database session
+            cycle_id: Optional assessment cycle ID
+
+        Returns:
+            ReworkStats schema with rework and calibration rates
+        """
+        # Query all assessments
+        query = db.query(Assessment)
+
+        # TODO: Add cycle_id filter when implemented
+        # if cycle_id is not None:
+        #     query = query.filter(Assessment.cycle_id == cycle_id)
+
+        assessments = query.all()
+        total = len(assessments)
+
+        if total == 0:
+            return ReworkStats(
+                total_assessments=0,
+                assessments_with_rework=0,
+                rework_rate=0.0,
+                assessments_with_calibration=0,
+                calibration_rate=0.0,
+            )
+
+        # Count assessments with rework (rework_count > 0)
+        assessments_with_rework = sum(
+            1 for a in assessments if a.rework_count and a.rework_count > 0
+        )
+
+        # Count assessments with calibration (calibration_count > 0)
+        assessments_with_calibration = sum(
+            1 for a in assessments if a.calibration_count and a.calibration_count > 0
+        )
+
+        # Calculate rates
+        rework_rate = (assessments_with_rework / total * 100) if total > 0 else 0.0
+        calibration_rate = (assessments_with_calibration / total * 100) if total > 0 else 0.0
+
+        return ReworkStats(
+            total_assessments=total,
+            assessments_with_rework=assessments_with_rework,
+            rework_rate=round(rework_rate, 2),
+            assessments_with_calibration=assessments_with_calibration,
+            calibration_rate=round(calibration_rate, 2),
+        )
+
+    def _get_total_barangays(self, db: Session) -> int:
+        """
+        Get total number of barangays in the municipality.
+
+        Args:
+            db: Database session
+
+        Returns:
+            Total count of barangays
+        """
+        return db.query(Barangay).count()
 
     def get_reports_data(
         self,

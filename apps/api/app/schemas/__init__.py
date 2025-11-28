@@ -35,10 +35,11 @@ from .assessment import (
 )
 from .analytics import (
     AreaBreakdown,
-    BarangayRanking,
     ComplianceRate,
     DashboardKPIResponse,
     FailedIndicator,
+    ReworkStats,
+    StatusDistributionItem,
     TrendData,
 )
 from .assessor import (
@@ -73,8 +74,9 @@ __all__ = [
     "ComplianceRate",
     "AreaBreakdown",
     "FailedIndicator",
-    "BarangayRanking",
     "TrendData",
+    "StatusDistributionItem",
+    "ReworkStats",
     # Assessment schemas
     "Assessment",
     "AssessmentCreate",

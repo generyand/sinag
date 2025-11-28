@@ -12,3 +12,5 @@ export { CompletionMetricsCard } from './CompletionMetricsCard';
 export { IndicatorNavigationList } from './IndicatorNavigationList';
 export { AssessorCommentsPanel } from './AssessorCommentsPanel';
 export { CompletionStatusBadge } from './CompletionStatusBadge';
+export { GovernanceAreaBreakdown } from './GovernanceAreaBreakdown';
+export { ReworkStatsCard } from './ReworkStatsCard';

@@ -9,6 +9,7 @@ import type { BulkCreateError } from '../error';
 import type { GARChecklistItem } from '../gar';
 import type { FormSchema } from '../formschema';
 import type { RemarkSchema } from '../common';
+import type { IndicatorDetailItemAssessorRemarks } from '../assessor';
 import type { IndicatorDraftResponseLockedByUserId } from '../users';
 import type { GovernanceAreaNested } from '../common';
 import type { IndicatorHistoryResponseArchivedByUser } from '../users';
@@ -367,7 +368,7 @@ export interface IndicatorDetailItem {
   indicator_name: string;
   indicator_code: IndicatorDetailItemIndicatorCode;
   validation_status: IndicatorDetailItemValidationStatus;
-  validator_remarks: IndicatorDetailItemValidatorRemarks;
+  assessor_remarks: IndicatorDetailItemAssessorRemarks;
   is_recalibration_target: boolean;
 }
 
@@ -382,12 +383,6 @@ export type IndicatorDetailItemIndicatorCode = string | null;
  * IndicatorDetailItemValidationStatus
  */
 export type IndicatorDetailItemValidationStatus = string | null;
-
-
-/**
- * IndicatorDetailItemValidatorRemarks
- */
-export type IndicatorDetailItemValidatorRemarks = string | null;
 
 
 /**
