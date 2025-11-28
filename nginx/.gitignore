@@ -1,0 +1,19 @@
+# SSL certificates and private keys (NEVER commit these!)
+ssl/
+*.pem
+*.key
+*.crt
+*.csr
+
+# Nginx cache directories
+cache/
+tmp/
+
+# Log files (if stored locally)
+logs/
+*.log
+
+# Backup files
+*.bak
+*.old
+*~

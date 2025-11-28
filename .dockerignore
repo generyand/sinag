@@ -1,46 +1,131 @@
-# Git
+# ==============================================================================
+# .dockerignore - Optimized for Security and Build Performance
+# ==============================================================================
+# This file prevents sensitive files and unnecessary build artifacts from
+# being copied into Docker images, improving security and build speed.
+# ==============================================================================
+
+# Git and version control
 .git/
 .gitignore
 .gitattributes
+.github/
 
-# Documentation
+# Documentation (not needed in containers)
 docs/
 README.md
+CHANGELOG.md
+CLAUDE.md
+*.md
+!apps/*/README.md
 
-# Dependencies
+# Dependencies (will be installed in container)
 node_modules/
 .pnp/
 .venv/
 venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
 
-# Build artifacts
+# Build artifacts (will be generated in container)
 dist/
 build/
 .next/
 .turbo/
-__pycache__/
-*.pyc
+*.egg-info/
+*.so
+*.o
 
-# Environment
+# Environment files (CRITICAL - never copy secrets!)
 .env
 .env.*
 *.local
+!.env.example
 
-# IDE
+# IDE and editor files
 .vscode/
 .idea/
+.cursor/
 *.swp
+*.swo
+*.swn
+.DS_Store
+Thumbs.db
 
-# Testing
+# Testing artifacts
 .pytest_cache/
 .coverage
 htmlcov/
-
-# Temporary
-tmp/
-temp/
+coverage/
+.nyc_output/
+test-results/
 *.log
 
-# Scripts
-scripts/
+# CI/CD and deployment
+.github/
+.gitlab-ci.yml
+.circleci/
+azure-pipelines.yml
 
+# Temporary and cache files
+tmp/
+temp/
+.cache/
+.turbo-cache/
+.eslintcache
+*.tsbuildinfo
+
+# Database files (should never be in containers)
+*.db
+*.sqlite
+*.sqlite3
+test.db
+
+# Scripts (not needed in runtime)
+scripts/
+*.sh
+!docker-entrypoint.sh
+
+# Task tracking
+tasks/
+TODO.md
+TASKS.md
+
+# Docker files themselves (meta)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# OS-specific files
+**/.DS_Store
+**/Thumbs.db
+**/*.swp
+**/*.swo
+
+# Backup and temporary files
+*.bak
+*.backup
+*.old
+*~
+
+# Large media files (should be served from CDN/storage)
+# Uncomment if you have media directories:
+# uploads/
+# media/
+# public/uploads/
+
+# Logs (should be handled by logging driver)
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Security scan results
+.trivy/
+scan-results/

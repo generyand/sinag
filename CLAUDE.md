@@ -161,18 +161,69 @@ Redis must be running for Celery to work.
 ### Docker Development
 
 ```bash
-# Start all services (frontend, backend, Redis, Celery)
+# Start all services (frontend, backend, Redis, Celery, Nginx)
 ./scripts/docker-dev.sh up
 
 # View logs
 ./scripts/docker-dev.sh logs
+./scripts/docker-dev.sh logs-nginx    # Nginx logs only
 
 # Stop services
 ./scripts/docker-dev.sh down
 
 # Open shell in API container
 ./scripts/docker-dev.sh shell
+./scripts/docker-dev.sh shell-nginx   # Nginx container
+
+# Test/reload Nginx configuration
+./scripts/docker-dev.sh nginx-test
+./scripts/docker-dev.sh nginx-reload
 ```
+
+### Nginx Reverse Proxy
+
+SINAG uses Nginx as a reverse proxy for all HTTP traffic. Nginx routes requests to the appropriate backend service.
+
+**Access Points:**
+- **Main Entry (Recommended)**: `http://localhost` (via Nginx on port 80)
+- Direct API Access: `http://localhost:8000` (development only)
+- Direct Web Access: `http://localhost:3000` (development only)
+
+**Routing:**
+- `/api/*` → FastAPI backend (api:8000)
+- `/docs`, `/redoc`, `/openapi.json` → FastAPI documentation
+- `/health` → API health check
+- `/_next/*` → Next.js static assets (cached)
+- `/` → Next.js frontend (web:3000)
+
+**Key Features:**
+- Rate limiting: 30 requests/second per IP (burst 50)
+- Gzip compression: Enabled for text-based content
+- Upload size limit: 100MB (for MOV files)
+- Proxy timeout: 5 minutes (for AI/classification tasks)
+- Security headers: X-Frame-Options, XSS protection, etc.
+
+**Configuration Files:**
+- `nginx/nginx.conf` - Main Nginx configuration
+- `nginx/conf.d/default.conf` - Server block and routing rules
+- `nginx/Dockerfile` - Custom Nginx image
+
+**Common Operations:**
+```bash
+# Test configuration syntax
+./scripts/docker-dev.sh nginx-test
+
+# Reload configuration (zero downtime)
+./scripts/docker-dev.sh nginx-reload
+
+# Rebuild Nginx image
+./scripts/docker-dev.sh rebuild nginx
+
+# View Nginx logs
+./scripts/docker-dev.sh logs-nginx
+```
+
+For detailed Nginx documentation, see [Nginx Reverse Proxy Setup Guide](/docs/guides/nginx-reverse-proxy-setup.md).
 
 ## High-Level Architecture
 
