@@ -554,18 +554,32 @@ def get_blgu_dashboard(
 
         # Parse area_results if available
         if assessment.area_results:
-            # area_results is stored as JSON dict with area_id keys
+            # area_results is stored as {"Area Name": "Passed"/"Failed"} from intelligence_service
             area_results_list = []
-            for area_id_str, area_data in assessment.area_results.items():
-                area_results_list.append({
-                    "area_id": int(area_id_str) if area_id_str.isdigit() else area_data.get("area_id"),
-                    "area_name": area_data.get("area_name", ""),
-                    "area_type": area_data.get("area_type", "Core"),
-                    "passed": area_data.get("passed", False),
-                    "total_indicators": area_data.get("total_indicators", 0),
-                    "passed_indicators": area_data.get("passed_indicators", 0),
-                    "failed_indicators": area_data.get("failed_indicators", 0),
-                })
+            for area_name, status in assessment.area_results.items():
+                # Handle both old format (dict with area_data) and new format (string status)
+                if isinstance(status, dict):
+                    # Old format: area_data is a dictionary
+                    area_results_list.append({
+                        "area_id": status.get("area_id"),
+                        "area_name": status.get("area_name", area_name),
+                        "area_type": status.get("area_type", "Core"),
+                        "passed": status.get("passed", False),
+                        "total_indicators": status.get("total_indicators", 0),
+                        "passed_indicators": status.get("passed_indicators", 0),
+                        "failed_indicators": status.get("failed_indicators", 0),
+                    })
+                else:
+                    # New format: status is "Passed" or "Failed" string
+                    area_results_list.append({
+                        "area_id": None,
+                        "area_name": area_name,
+                        "area_type": "Core" if area_name in ["Financial Administration and Sustainability", "Disaster Preparedness", "Safety, Peace and Order"] else "Essential",
+                        "passed": status == "Passed",
+                        "total_indicators": 0,
+                        "passed_indicators": 0,
+                        "failed_indicators": 0,
+                    })
             area_results = area_results_list
 
         # AI recommendations (CapDev)
