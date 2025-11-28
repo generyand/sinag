@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000",
     "dev:celery": "uv run celery -A app.core.celery_app worker --loglevel=info --queues=notifications,classification",
-    "build": "echo 'Python build completed'",
+    "build": "mkdir -p dist && echo 'Python build completed' | tee dist/build-info.txt",
     "test": "uv run pytest -v --tb=short",
     "test:cov": "uv run pytest --cov=app --cov-report=term-missing --cov-report=html",
     "lint": "uv run ruff check .",

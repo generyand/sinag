@@ -1,19 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useFormBuilderStore, isFileUploadField } from '@/store/useFormBuilderStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import type { FileUploadField } from '@sinag/shared';
 
 interface FileUploadPropertiesProps {
@@ -41,31 +34,57 @@ interface FormValues {
 export function FileUploadProperties({ fieldId }: FileUploadPropertiesProps) {
   const { getFieldById, updateField, fields } = useFormBuilderStore();
   const field = getFieldById(fieldId);
+  const fileField = field && isFileUploadField(field) ? field : null;
   const [hasChanges, setHasChanges] = useState(false);
 
-  if (!field || !isFileUploadField(field)) {
-    return <div className="text-sm text-red-600">Error: Field not found or wrong type</div>;
-  }
+  const defaultValues = useMemo<FormValues>(() => {
+    if (!fileField) {
+      return {
+        label: '',
+        field_id: '',
+        required: false,
+        help_text: '',
+        allowed_file_types: 'pdf, jpg, png',
+        max_file_size_mb: 10,
+        enable_conditional_mov: false,
+        conditional_field_id: '',
+        conditional_operator: 'equals',
+        conditional_value: '',
+      };
+    }
 
-  const { register, handleSubmit, watch, setValue, formState: { errors }, reset } = useForm<FormValues>({
-    defaultValues: {
-      label: field.label,
-      field_id: field.field_id,
-      required: field.required,
-      help_text: field.help_text || '',
-      allowed_file_types: field.allowed_file_types?.join(', ') || 'pdf, jpg, png',
-      max_file_size_mb: field.max_file_size_mb || 10,
-      enable_conditional_mov: !!field.conditional_mov_requirement,
-      conditional_field_id: field.conditional_mov_requirement?.field_id || '',
-      conditional_operator: field.conditional_mov_requirement?.operator || 'equals',
-      conditional_value: field.conditional_mov_requirement?.value || '',
-    },
+    return {
+      label: fileField.label,
+      field_id: fileField.field_id,
+      required: fileField.required ?? false,
+      help_text: fileField.help_text || '',
+      allowed_file_types: fileField.allowed_file_types?.join(', ') || 'pdf, jpg, png',
+      max_file_size_mb: fileField.max_file_size_mb || 10,
+      enable_conditional_mov: !!fileField.conditional_mov_requirement,
+      conditional_field_id: fileField.conditional_mov_requirement?.field_id || '',
+      conditional_operator: fileField.conditional_mov_requirement?.operator || 'equals',
+      conditional_value: fileField.conditional_mov_requirement?.value || '',
+    };
+  }, [fileField]);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+    reset,
+  } = useForm<FormValues>({
+    defaultValues,
   });
 
   useEffect(() => {
     const subscription = watch(() => setHasChanges(true));
     return () => subscription.unsubscribe();
   }, [watch]);
+
+  if (!fileField) {
+    return <div className="text-sm text-red-600">Error: Field not found or wrong type</div>;
+  }
 
   const enable_conditional_mov = watch('enable_conditional_mov');
 
@@ -103,7 +122,7 @@ export function FileUploadProperties({ fieldId }: FileUploadPropertiesProps) {
   };
 
   const onCancel = () => {
-    reset();
+    reset(defaultValues);
     setHasChanges(false);
   };
 

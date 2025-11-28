@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { isTextAreaField, useFormBuilderStore } from '@/store/useFormBuilderStore';
 import type { TextAreaField } from '@sinag/shared';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 interface TextAreaPropertiesProps {
@@ -31,28 +31,51 @@ interface FormValues {
 export function TextAreaProperties({ fieldId }: TextAreaPropertiesProps) {
   const { getFieldById, updateField } = useFormBuilderStore();
   const field = getFieldById(fieldId);
+  const textAreaField = field && isTextAreaField(field) ? field : null;
   const [hasChanges, setHasChanges] = useState(false);
 
-  if (!field || !isTextAreaField(field)) {
-    return <div className="text-sm text-red-600">Error: Field not found or wrong type</div>;
-  }
+  const defaultValues = useMemo<FormValues>(() => {
+    if (!textAreaField) {
+      return {
+        label: '',
+        field_id: '',
+        required: false,
+        help_text: '',
+        max_length: undefined,
+        rows: 4,
+        placeholder: undefined,
+      };
+    }
 
-  const { register, handleSubmit, watch, formState: { errors }, reset } = useForm<FormValues>({
-    defaultValues: {
-      label: field.label,
-      field_id: field.field_id,
-      required: field.required,
-      help_text: field.help_text || '',
-      max_length: field.max_length ?? undefined,
-      rows: field.rows ?? 4,
-      placeholder: field.placeholder ?? undefined,
-    },
+    return {
+      label: textAreaField.label,
+      field_id: textAreaField.field_id,
+      required: textAreaField.required ?? false,
+      help_text: textAreaField.help_text || '',
+      max_length: textAreaField.max_length ?? undefined,
+      rows: textAreaField.rows ?? 4,
+      placeholder: textAreaField.placeholder ?? undefined,
+    };
+  }, [textAreaField]);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+    reset,
+  } = useForm<FormValues>({
+    defaultValues,
   });
 
   useEffect(() => {
     const subscription = watch(() => setHasChanges(true));
     return () => subscription.unsubscribe();
   }, [watch]);
+
+  if (!textAreaField) {
+    return <div className="text-sm text-red-600">Error: Field not found or wrong type</div>;
+  }
 
   const onSave = (data: FormValues) => {
     const updates: Partial<TextAreaField> = {
@@ -69,7 +92,7 @@ export function TextAreaProperties({ fieldId }: TextAreaPropertiesProps) {
   };
 
   const onCancel = () => {
-    reset();
+    reset(defaultValues);
     setHasChanges(false);
   };
 

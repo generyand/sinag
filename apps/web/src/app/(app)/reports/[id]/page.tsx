@@ -70,6 +70,7 @@ export default function ReportDetailsPage() {
 
     // Mock data for now
     setTimeout(() => {
+      setError(null);
       setAssessment({
         id: Number(assessmentId),
         status: 'Validated',

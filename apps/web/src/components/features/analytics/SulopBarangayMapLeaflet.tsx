@@ -50,46 +50,6 @@ const SULOP_CENTER: [number, number] = [6.4833, 125.4667]; // Sulop, Davao del S
 const DEFAULT_ZOOM = 12;
 
 /**
- * Convert SVG path data to GeoJSON format
- *
- * This is a helper function that converts your SVG <path> elements
- * into GeoJSON features that Leaflet can understand.
- *
- * Example usage:
- * const geojson = svgPathToGeoJSON('1katipunan', 'M 100 200 L 150 250 ...', bounds);
- */
-function svgPathToGeoJSON(
-  barangayId: string,
-  svgPath: string,
-  bounds: { minLat: number; maxLat: number; minLng: number; maxLng: number }
-): GeoJSON.Feature {
-  // Parse SVG path commands (simplified - you may need a more robust parser)
-  // This is a placeholder - in production, use a library like 'svg-path-parser'
-  // or convert your SVG to GeoJSON externally using tools like QGIS or mapshaper
-
-  // For now, return a placeholder polygon
-  // In production, parse the SVG path and convert to lat/lng coordinates
-  const { minLat, maxLat, minLng, maxLng } = bounds;
-
-  return {
-    type: 'Feature',
-    properties: {
-      id: barangayId,
-    },
-    geometry: {
-      type: 'Polygon',
-      coordinates: [[
-        [minLng, minLat],
-        [maxLng, minLat],
-        [maxLng, maxLat],
-        [minLng, maxLat],
-        [minLng, minLat],
-      ]],
-    },
-  };
-}
-
-/**
  * Sample GeoJSON data for Sulop barangays
  *
  * To integrate your actual SVG:

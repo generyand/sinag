@@ -1,14 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
-import { GripVertical, Plus, Trash2 } from 'lucide-react';
-import { useFormBuilderStore, isCheckboxGroupField } from '@/store/useFormBuilderStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { isCheckboxGroupField, useFormBuilderStore } from '@/store/useFormBuilderStore';
 import type { CheckboxGroupField } from '@sinag/shared';
+import { GripVertical, Plus, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useFieldArray, useForm } from 'react-hook-form';
 
 interface CheckboxGroupPropertiesProps {
   fieldId: string;
@@ -36,16 +36,37 @@ interface FormValues {
 export function CheckboxGroupProperties({ fieldId }: CheckboxGroupPropertiesProps) {
   const { getFieldById, updateField } = useFormBuilderStore();
   const field = getFieldById(fieldId);
+  const checkboxField = field && isCheckboxGroupField(field) ? field : null;
   const [hasChanges, setHasChanges] = useState(false);
 
-  // Type guard
-  if (!field || !isCheckboxGroupField(field)) {
-    return (
-      <div className="text-sm text-red-600">
-        Error: Field not found or wrong type
-      </div>
-    );
-  }
+  const defaultValues = useMemo<FormValues>(() => {
+    if (!checkboxField) {
+      return {
+        label: '',
+        field_id: '',
+        required: false,
+        help_text: '',
+        options: [
+          { label: 'Option 1', value: 'option_1' },
+          { label: 'Option 2', value: 'option_2' },
+        ],
+      };
+    }
+
+    return {
+      label: checkboxField.label,
+      field_id: checkboxField.field_id,
+        required: checkboxField.required ?? false,
+      help_text: checkboxField.help_text || '',
+      options:
+        checkboxField.options?.length
+          ? checkboxField.options
+          : [
+              { label: 'Option 1', value: 'option_1' },
+              { label: 'Option 2', value: 'option_2' },
+            ],
+    };
+  }, [checkboxField]);
 
   const {
     register,
@@ -55,19 +76,10 @@ export function CheckboxGroupProperties({ fieldId }: CheckboxGroupPropertiesProp
     formState: { errors },
     reset,
   } = useForm<FormValues>({
-    defaultValues: {
-      label: field.label,
-      field_id: field.field_id,
-      required: field.required,
-      help_text: field.help_text || '',
-      options: field.options || [
-        { label: 'Option 1', value: 'option_1' },
-        { label: 'Option 2', value: 'option_2' },
-      ],
-    },
+    defaultValues,
   });
 
-  const { fields: optionFields, append, remove, move } = useFieldArray({
+  const { fields: optionFields, append, remove } = useFieldArray({
     control,
     name: 'options',
   });
@@ -79,6 +91,14 @@ export function CheckboxGroupProperties({ fieldId }: CheckboxGroupPropertiesProp
     });
     return () => subscription.unsubscribe();
   }, [watch]);
+
+  if (!checkboxField) {
+    return (
+      <div className="text-sm text-red-600">
+        Error: Field not found or wrong type
+      </div>
+    );
+  }
 
   // Handle save
   const onSave = (data: FormValues) => {
@@ -97,11 +117,17 @@ export function CheckboxGroupProperties({ fieldId }: CheckboxGroupPropertiesProp
   // Handle cancel
   const onCancel = () => {
     reset({
-      label: field.label,
-      field_id: field.field_id,
-      required: field.required,
-      help_text: field.help_text || '',
-      options: field.options,
+      label: checkboxField.label,
+      field_id: checkboxField.field_id,
+      required: checkboxField.required ?? false,
+      help_text: checkboxField.help_text || '',
+      options:
+        checkboxField.options?.length
+          ? checkboxField.options
+          : [
+              { label: 'Option 1', value: 'option_1' },
+              { label: 'Option 2', value: 'option_2' },
+            ],
     });
     setHasChanges(false);
   };

@@ -7,7 +7,6 @@ import { BarangayMapPoint } from "@sinag/shared";
 
 // Fix Leaflet default marker icon issue in Next.js
 // This is needed because webpack doesn't properly bundle the default marker images
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",

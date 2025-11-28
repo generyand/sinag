@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { GripVertical, Plus, Trash2 } from 'lucide-react';
 import { useFormBuilderStore, isRadioButtonField } from '@/store/useFormBuilderStore';
@@ -36,16 +36,37 @@ interface FormValues {
 export function RadioButtonProperties({ fieldId }: RadioButtonPropertiesProps) {
   const { getFieldById, updateField } = useFormBuilderStore();
   const field = getFieldById(fieldId);
+  const radioField = field && isRadioButtonField(field) ? field : null;
   const [hasChanges, setHasChanges] = useState(false);
 
-  // Type guard
-  if (!field || !isRadioButtonField(field)) {
-    return (
-      <div className="text-sm text-red-600">
-        Error: Field not found or wrong type
-      </div>
-    );
-  }
+  const defaultValues = useMemo<FormValues>(() => {
+    if (!radioField) {
+      return {
+        label: '',
+        field_id: '',
+        required: false,
+        help_text: '',
+        options: [
+          { label: 'Option 1', value: 'option_1' },
+          { label: 'Option 2', value: 'option_2' },
+        ],
+      };
+    }
+
+    return {
+      label: radioField.label,
+      field_id: radioField.field_id,
+      required: radioField.required ?? false,
+      help_text: radioField.help_text || '',
+      options:
+        radioField.options?.length
+          ? radioField.options
+          : [
+              { label: 'Option 1', value: 'option_1' },
+              { label: 'Option 2', value: 'option_2' },
+            ],
+    };
+  }, [radioField]);
 
   const {
     register,
@@ -55,16 +76,7 @@ export function RadioButtonProperties({ fieldId }: RadioButtonPropertiesProps) {
     formState: { errors },
     reset,
   } = useForm<FormValues>({
-    defaultValues: {
-      label: field.label,
-      field_id: field.field_id,
-      required: field.required,
-      help_text: field.help_text || '',
-      options: field.options || [
-        { label: 'Option 1', value: 'option_1' },
-        { label: 'Option 2', value: 'option_2' },
-      ],
-    },
+    defaultValues,
   });
 
   const { fields: optionFields, append, remove } = useFieldArray({
@@ -79,6 +91,15 @@ export function RadioButtonProperties({ fieldId }: RadioButtonPropertiesProps) {
     });
     return () => subscription.unsubscribe();
   }, [watch]);
+
+  // Type guard
+  if (!radioField) {
+    return (
+      <div className="text-sm text-red-600">
+        Error: Field not found or wrong type
+      </div>
+    );
+  }
 
   // Handle save
   const onSave = (data: FormValues) => {
@@ -97,11 +118,17 @@ export function RadioButtonProperties({ fieldId }: RadioButtonPropertiesProps) {
   // Handle cancel
   const onCancel = () => {
     reset({
-      label: field.label,
-      field_id: field.field_id,
-      required: field.required,
-      help_text: field.help_text || '',
-      options: field.options,
+      label: radioField.label,
+      field_id: radioField.field_id,
+      required: radioField.required ?? false,
+      help_text: radioField.help_text || '',
+      options:
+        radioField.options?.length
+          ? radioField.options
+          : [
+              { label: 'Option 1', value: 'option_1' },
+              { label: 'Option 2', value: 'option_2' },
+            ],
     });
     setHasChanges(false);
   };

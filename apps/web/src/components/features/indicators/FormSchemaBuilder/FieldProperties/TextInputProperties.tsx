@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { isTextInputField, useFormBuilderStore } from '@/store/useFormBuilderStore';
 import type { TextInputField } from '@sinag/shared';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 interface TextInputPropertiesProps {
@@ -31,28 +31,51 @@ interface FormValues {
 export function TextInputProperties({ fieldId }: TextInputPropertiesProps) {
   const { getFieldById, updateField } = useFormBuilderStore();
   const field = getFieldById(fieldId);
+  const textField = field && isTextInputField(field) ? field : null;
   const [hasChanges, setHasChanges] = useState(false);
 
-  if (!field || !isTextInputField(field)) {
-    return <div className="text-sm text-red-600">Error: Field not found or wrong type</div>;
-  }
+  const defaultValues = useMemo<FormValues>(() => {
+    if (!textField) {
+      return {
+        label: '',
+        field_id: '',
+        required: false,
+        help_text: '',
+        max_length: undefined,
+        placeholder: undefined,
+        default_value: undefined,
+      };
+    }
 
-  const { register, handleSubmit, watch, formState: { errors }, reset } = useForm<FormValues>({
-    defaultValues: {
-      label: field.label,
-      field_id: field.field_id,
-      required: field.required,
-      help_text: field.help_text || '',
-      max_length: field.max_length ?? undefined,
-      placeholder: field.placeholder ?? undefined,
-      default_value: field.default_value ?? undefined,
-    },
+    return {
+      label: textField.label,
+      field_id: textField.field_id,
+      required: textField.required ?? false,
+      help_text: textField.help_text || '',
+      max_length: textField.max_length ?? undefined,
+      placeholder: textField.placeholder ?? undefined,
+      default_value: textField.default_value ?? undefined,
+    };
+  }, [textField]);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+    reset,
+  } = useForm<FormValues>({
+    defaultValues,
   });
 
   useEffect(() => {
     const subscription = watch(() => setHasChanges(true));
     return () => subscription.unsubscribe();
   }, [watch]);
+
+  if (!textField) {
+    return <div className="text-sm text-red-600">Error: Field not found or wrong type</div>;
+  }
 
   const onSave = (data: FormValues) => {
     const updates: Partial<TextInputField> = {
@@ -69,7 +92,7 @@ export function TextInputProperties({ fieldId }: TextInputPropertiesProps) {
   };
 
   const onCancel = () => {
-    reset();
+    reset(defaultValues);
     setHasChanges(false);
   };
 

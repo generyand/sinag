@@ -17,7 +17,6 @@ import { useCycles } from "@/hooks/useCycles";
 import { useBarangays } from "@/hooks/useBarangays";
 import { useIndicators } from "@/hooks/useIndicators";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -56,7 +55,7 @@ export function DeadlineAuditLog() {
   const [pageSize, setPageSize] = React.useState(10);
 
   // Fetch audit log data
-  const { overrides, totalOverrides, isLoading, refetch } = useDeadlineAuditLog({
+  const { overrides, isLoading } = useDeadlineAuditLog({
     cycleId: activeCycle?.id,
     barangayId: barangayFilter || undefined,
     indicatorId: indicatorFilter || undefined,

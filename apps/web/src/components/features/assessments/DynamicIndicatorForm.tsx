@@ -22,7 +22,6 @@ interface DynamicIndicatorFormProps {
   indicatorId?: string;
   responseId?: number | null;
   assessmentId?: string;
-  responseIndicatorId?: number;
   movFiles?: Array<{
     id: string;
     name: string;
@@ -44,7 +43,6 @@ export function DynamicIndicatorForm({
   indicatorId,
   responseId,
   assessmentId,
-  responseIndicatorId,
   movFiles = [],
   updateAssessmentData,
   ensureResponseId,

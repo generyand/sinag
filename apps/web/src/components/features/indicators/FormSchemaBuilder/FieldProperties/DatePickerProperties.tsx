@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { isDatePickerField, useFormBuilderStore } from '@/store/useFormBuilderStore';
 import type { DatePickerField } from '@sinag/shared';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 interface DatePickerPropertiesProps {
@@ -31,28 +31,51 @@ interface FormValues {
 export function DatePickerProperties({ fieldId }: DatePickerPropertiesProps) {
   const { getFieldById, updateField } = useFormBuilderStore();
   const field = getFieldById(fieldId);
+  const dateField = field && isDatePickerField(field) ? field : null;
   const [hasChanges, setHasChanges] = useState(false);
 
-  if (!field || !isDatePickerField(field)) {
-    return <div className="text-sm text-red-600">Error: Field not found or wrong type</div>;
-  }
+  const defaultValues = useMemo<FormValues>(() => {
+    if (!dateField) {
+      return {
+        label: '',
+        field_id: '',
+        required: false,
+        help_text: '',
+        min_date: undefined,
+        max_date: undefined,
+        default_to_today: false,
+      };
+    }
 
-  const { register, handleSubmit, watch, formState: { errors }, reset } = useForm<FormValues>({
-    defaultValues: {
-      label: field.label,
-      field_id: field.field_id,
-      required: field.required,
-      help_text: field.help_text || '',
-      min_date: field.min_date ?? undefined,
-      max_date: field.max_date ?? undefined,
-      default_to_today: field.default_to_today || false,
-    },
+    return {
+      label: dateField.label,
+      field_id: dateField.field_id,
+      required: dateField.required ?? false,
+      help_text: dateField.help_text || '',
+      min_date: dateField.min_date ?? undefined,
+      max_date: dateField.max_date ?? undefined,
+      default_to_today: dateField.default_to_today || false,
+    };
+  }, [dateField]);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+    reset,
+  } = useForm<FormValues>({
+    defaultValues,
   });
 
   useEffect(() => {
     const subscription = watch(() => setHasChanges(true));
     return () => subscription.unsubscribe();
   }, [watch]);
+
+  if (!dateField) {
+    return <div className="text-sm text-red-600">Error: Field not found or wrong type</div>;
+  }
 
   const min_date = watch('min_date');
   const max_date = watch('max_date');
@@ -76,7 +99,7 @@ export function DatePickerProperties({ fieldId }: DatePickerPropertiesProps) {
   };
 
   const onCancel = () => {
-    reset();
+    reset(defaultValues);
     setHasChanges(false);
   };
 

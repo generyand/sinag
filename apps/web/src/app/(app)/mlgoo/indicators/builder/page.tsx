@@ -157,6 +157,7 @@ export default function IndicatorBuilderPage() {
     initializeTree,
     loadTree,
     toast,
+    user,
   ]);
 
   /**

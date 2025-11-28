@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
-import { ChevronRight, Save, Loader2 } from 'lucide-react';
+import { ChevronRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -51,7 +51,6 @@ export default function EditIndicatorPage() {
   const indicatorId = parseInt(params.id as string);
   const { toast } = useToast();
   const { loadFields, fields, markAsSaved, isDirty } = useFormBuilderStore();
-  const [isSaving, setIsSaving] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Fetch indicator data
@@ -104,53 +103,6 @@ export default function EditIndicatorPage() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isDirty]);
-
-  // Handle save changes
-  const handleSaveChanges = handleSubmit(async (data) => {
-    // Validate that form has fields
-    if (fields.length === 0) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please add at least one field to the form',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      const formSchema = {
-        fields: fields,
-      };
-
-      await updateIndicator.mutateAsync({
-        indicatorId: indicatorId,
-        data: {
-          name: data.name,
-          description: data.description || undefined,
-          governance_area_id: data.governance_area_id,
-          parent_id: data.parent_id || undefined,
-          form_schema: formSchema as any,
-        },
-      });
-
-      toast({
-        title: 'Success',
-        description: 'Indicator updated successfully',
-      });
-
-      markAsSaved();
-      router.push(`/mlgoo/indicators/${indicatorId}`);
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error?.response?.data?.detail || error?.message || 'Failed to update indicator',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  });
 
   if (isLoading) {
     return (
@@ -246,7 +198,6 @@ export default function EditIndicatorPage() {
                   router.push(`/mlgoo/indicators/${indicatorId}`);
                 })();
               }}
-              disabled={isSaving}
             >
               Save Changes
             </SaveFormSchemaButton>

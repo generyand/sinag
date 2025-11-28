@@ -54,15 +54,12 @@ export default function NewIndicatorPage() {
     handleSubmit,
     formState: { errors },
     setValue,
-    watch,
   } = useForm<IndicatorFormData>({
     defaultValues: {
       name: '',
       description: '',
     },
   });
-
-  const selectedGovernanceAreaId = watch('governance_area_id');
 
   // Create indicator mutation
   const createIndicator = usePostIndicators();
@@ -132,7 +129,7 @@ export default function NewIndicatorPage() {
         fields: fields,
       };
 
-      const result = await createIndicator.mutateAsync({
+      await createIndicator.mutateAsync({
         data: {
           name: data.name,
           description: data.description || undefined,
@@ -305,40 +302,8 @@ export default function NewIndicatorPage() {
                   Save Draft
                 </Button>
                 <Button
-                  onClick={async () => {
-                    await handleSubmit(async (data) => {
-                      // Validate governance area is selected
-                      if (!data.governance_area_id) {
-                        toast({
-                          title: 'Validation Error',
-                          description: 'Please select a Governance Area',
-                          variant: 'destructive',
-                        });
-                        throw new Error('Governance area is required');
-                      }
-
-                      const formSchema = { fields };
-                      await createIndicator.mutateAsync({
-                        data: {
-                          name: data.name,
-                          description: data.description || undefined,
-                          governance_area_id: data.governance_area_id,
-                          parent_id: data.parent_id || undefined,
-                          form_schema: formSchema as any,
-                          is_active: true,
-                        },
-                      });
-
-                      toast({
-                        title: 'Success',
-                        description: 'Indicator created and published successfully',
-                      });
-
-                      markAsSaved();
-                      // Redirect to indicators list page
-                      router.push(`/mlgoo/indicators`);
-                    })();
-                  }}
+                  type="button"
+                  onClick={handleSaveAndPublish}
                   disabled={isSaving}
                   className="px-6 py-2.5 bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] hover:shadow-lg transition-all text-[var(--foreground)] font-semibold"
                 >

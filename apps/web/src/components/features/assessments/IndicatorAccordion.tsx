@@ -483,7 +483,6 @@ export function IndicatorAccordion({
                   indicatorId={indicator.id}
                   responseId={indicator.responseId}
                   assessmentId={assessment?.id}
-                  responseIndicatorId={(indicator as any).responseIndicatorId}
                   movFiles={indicator.movFiles || []}
                   updateAssessmentData={updateAssessmentData}
                   ensureResponseId={ensureResponseId}

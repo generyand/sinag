@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { isNumberInputField, useFormBuilderStore } from '@/store/useFormBuilderStore';
 import type { NumberInputField } from '@sinag/shared';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 interface NumberInputPropertiesProps {
@@ -38,16 +38,34 @@ interface FormValues {
 export function NumberInputProperties({ fieldId }: NumberInputPropertiesProps) {
   const { getFieldById, updateField } = useFormBuilderStore();
   const field = getFieldById(fieldId);
+  const numberField = field && isNumberInputField(field) ? field : null;
   const [hasChanges, setHasChanges] = useState(false);
 
-  // Type guard
-  if (!field || !isNumberInputField(field)) {
-    return (
-      <div className="text-sm text-red-600">
-        Error: Field not found or wrong type
-      </div>
-    );
-  }
+  const defaultValues = useMemo<FormValues>(() => {
+    if (!numberField) {
+      return {
+        label: '',
+        field_id: '',
+        required: false,
+        help_text: '',
+        min_value: undefined,
+        max_value: undefined,
+        placeholder: undefined,
+        default_value: undefined,
+      };
+    }
+
+    return {
+      label: numberField.label,
+      field_id: numberField.field_id,
+      required: numberField.required ?? false,
+      help_text: numberField.help_text || '',
+      min_value: numberField.min_value ?? undefined,
+      max_value: numberField.max_value ?? undefined,
+      placeholder: numberField.placeholder ?? undefined,
+      default_value: numberField.default_value ?? undefined,
+    };
+  }, [numberField]);
 
   const {
     register,
@@ -56,16 +74,7 @@ export function NumberInputProperties({ fieldId }: NumberInputPropertiesProps) {
     formState: { errors },
     reset,
   } = useForm<FormValues>({
-    defaultValues: {
-      label: field.label,
-      field_id: field.field_id,
-      required: field.required,
-      help_text: field.help_text || '',
-      min_value: field.min_value ?? undefined,
-      max_value: field.max_value ?? undefined,
-      placeholder: field.placeholder ?? undefined,
-      default_value: field.default_value ?? undefined,
-    },
+    defaultValues,
   });
 
   // Watch for changes
@@ -75,6 +84,15 @@ export function NumberInputProperties({ fieldId }: NumberInputPropertiesProps) {
     });
     return () => subscription.unsubscribe();
   }, [watch]);
+
+  // Type guard
+  if (!numberField) {
+    return (
+      <div className="text-sm text-red-600">
+        Error: Field not found or wrong type
+      </div>
+    );
+  }
 
   // Watch min and max for validation
   const min_value = watch('min_value');
@@ -100,14 +118,14 @@ export function NumberInputProperties({ fieldId }: NumberInputPropertiesProps) {
   // Handle cancel
   const onCancel = () => {
     reset({
-      label: field.label,
-      field_id: field.field_id,
-      required: field.required,
-      help_text: field.help_text || '',
-      min_value: field.min_value ?? undefined,
-      max_value: field.max_value ?? undefined,
-      placeholder: field.placeholder ?? undefined,
-      default_value: field.default_value ?? undefined,
+      label: numberField.label,
+      field_id: numberField.field_id,
+      required: numberField.required ?? false,
+      help_text: numberField.help_text || '',
+      min_value: numberField.min_value ?? undefined,
+      max_value: numberField.max_value ?? undefined,
+      placeholder: numberField.placeholder ?? undefined,
+      default_value: numberField.default_value ?? undefined,
     });
     setHasChanges(false);
   };

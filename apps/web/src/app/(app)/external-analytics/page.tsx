@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Info, Database, TrendingUp, AlertTriangle, Lightbulb, FileDown, Loader2 } from 'lucide-react';
+import { Info, TrendingUp, AlertTriangle, Lightbulb, FileDown } from 'lucide-react';
 import { useGetExternalAnalyticsDashboard } from '@sinag/shared';
 import { OverallComplianceCard } from '@/components/features/external-analytics/OverallComplianceCard';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
