@@ -4,6 +4,12 @@
 // 🏷️  Based on FastAPI tag: "mlgoo"
 
 /**
+ * BLGUDashboardResponseMlgooRecalibrationComments
+ */
+export type BLGUDashboardResponseMlgooRecalibrationComments = string | null;
+
+
+/**
  * GetMlgooApprovalQueueParams
  */
 export type GetMlgooApprovalQueueParams = {

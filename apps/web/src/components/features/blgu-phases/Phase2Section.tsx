@@ -40,7 +40,8 @@ interface Phase2SectionProps {
 
 function getPhase2Status(
   status: string,
-  isCalibrationRework: boolean
+  isCalibrationRework: boolean,
+  isMlgooRecalibration: boolean
 ): { phaseStatus: PhaseStatus; statusLabel: string; isActive: boolean } {
   const assessmentStatus = status as AssessmentStatus;
 
@@ -53,6 +54,18 @@ function getPhase2Status(
     return {
       phaseStatus: "not_started",
       statusLabel: "Not Started",
+      isActive: false,
+    };
+  }
+
+  // MLGOO RE-calibration: Phase 2 was already completed
+  if (
+    (assessmentStatus === "REWORK" || assessmentStatus === "NEEDS_REWORK") &&
+    isMlgooRecalibration
+  ) {
+    return {
+      phaseStatus: "completed",
+      statusLabel: "Completed",
       isActive: false,
     };
   }
@@ -123,14 +136,19 @@ export function Phase2Section({
   isFetchingDashboard,
   onRefetch,
 }: Phase2SectionProps) {
+  // Check for MLGOO RE-calibration (distinct from validator calibration)
+  const isMlgooRecalibration = (dashboardData as any).is_mlgoo_recalibration === true;
+
   const { phaseStatus, statusLabel, isActive } = getPhase2Status(
     dashboardData.status,
-    dashboardData.is_calibration_rework || false
+    dashboardData.is_calibration_rework || false,
+    isMlgooRecalibration
   );
 
   const isCalibrationRework =
     (dashboardData.status === "REWORK" || dashboardData.status === "NEEDS_REWORK") &&
-    dashboardData.is_calibration_rework;
+    dashboardData.is_calibration_rework &&
+    !isMlgooRecalibration;
 
   return (
     <PhaseCard

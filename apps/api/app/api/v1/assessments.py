@@ -1323,6 +1323,9 @@ def resubmit_assessment(
             detail=f"Assessment must be in REWORK status to resubmit. Current status: {assessment.status.value}"
         )
 
+    # Check if this is an MLGOO RE-calibration (distinct from assessor rework)
+    is_mlgoo_recalibration = assessment.is_mlgoo_recalibration
+
     # Validate assessment completeness again
     validation_result = submission_validation_service.validate_submission(
         assessment_id=assessment_id,
@@ -1339,19 +1342,38 @@ def resubmit_assessment(
             }
         )
 
-    # Update assessment status back to SUBMITTED
-    assessment.status = AssessmentStatus.SUBMITTED
-    assessment.submitted_at = datetime.utcnow()
+    # MLGOO RE-calibration routes back to MLGOO approval
+    # Regular assessor rework routes back to SUBMITTED (for assessor review)
+    if is_mlgoo_recalibration:
+        assessment.status = AssessmentStatus.AWAITING_MLGOO_APPROVAL
+        # Clear MLGOO recalibration flags after resubmission
+        assessment.is_mlgoo_recalibration = False
+        # Keep mlgoo_recalibration_indicator_ids and comments for audit trail
+        assessment.submitted_at = datetime.utcnow()
+        import logging
+        logging.getLogger(__name__).info(
+            f"[MLGOO RECALIBRATION] Assessment {assessment_id} resubmitted - routing to AWAITING_MLGOO_APPROVAL"
+        )
+    else:
+        assessment.status = AssessmentStatus.SUBMITTED
+        assessment.submitted_at = datetime.utcnow()
+
     db.commit()
     db.refresh(assessment)
 
-    # Send notification to assessors about resubmission (Notification #3)
-    try:
-        from app.workers.notifications import send_rework_resubmission_notification
-        send_rework_resubmission_notification.delay(assessment_id)
-    except Exception as e:
+    # Send notification about resubmission
+    if is_mlgoo_recalibration:
+        # TODO: Send notification to MLGOO about recalibration resubmission
         import logging
-        logging.getLogger(__name__).error(f"Failed to queue rework resubmission notification: {e}")
+        logging.getLogger(__name__).info(f"[MLGOO RECALIBRATION] Notification would be sent for assessment {assessment_id}")
+    else:
+        # Send notification to assessors about resubmission (Notification #3)
+        try:
+            from app.workers.notifications import send_rework_resubmission_notification
+            send_rework_resubmission_notification.delay(assessment_id)
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Failed to queue rework resubmission notification: {e}")
 
     return ResubmitAssessmentResponse(
         success=True,

@@ -24,7 +24,15 @@ import {
   useGetMlgooAssessmentsAssessmentId,
   usePostMlgooAssessmentsAssessmentIdApprove,
   usePostMlgooAssessmentsAssessmentIdRecalibrate,
+  usePatchMlgooAssessmentsAssessmentIdRecalibrationValidation,
 } from "@sinag/shared";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function SubmissionDetailsPage() {
   const { isAuthenticated } = useAuthStore();
@@ -34,10 +42,16 @@ export default function SubmissionDetailsPage() {
 
   const assessmentId = parseInt(params.id as string, 10);
 
-  // State for recalibration mode
+  // State for recalibration mode (requesting new recalibration)
   const [isRecalibrationMode, setIsRecalibrationMode] = React.useState(false);
   const [selectedIndicators, setSelectedIndicators] = React.useState<number[]>([]);
   const [recalibrationComments, setRecalibrationComments] = React.useState("");
+
+  // State for review mode (reviewing resubmitted recalibration targets)
+  const [isReviewMode, setIsReviewMode] = React.useState(false);
+  const [validationUpdates, setValidationUpdates] = React.useState<{
+    [indicatorId: number]: { status: string; remarks: string };
+  }>({});
 
   // Fetch assessment details from API
   const { data, isLoading, isError, error } = useGetMlgooAssessmentsAssessmentId(assessmentId);
@@ -47,6 +61,9 @@ export default function SubmissionDetailsPage() {
 
   // Recalibration mutation
   const recalibrateMutation = usePostMlgooAssessmentsAssessmentIdRecalibrate();
+
+  // Update recalibration validation mutation
+  const updateValidationMutation = usePatchMlgooAssessmentsAssessmentIdRecalibrationValidation();
 
   const handleApprove = async () => {
     if (!assessmentId) return;
@@ -131,6 +148,71 @@ export default function SubmissionDetailsPage() {
     setRecalibrationComments("");
   };
 
+  // Initialize review mode with current validation statuses
+  const startReviewMode = (recalibrationTargetIndicators: any[]) => {
+    const initialUpdates: { [id: number]: { status: string; remarks: string } } = {};
+    recalibrationTargetIndicators.forEach((ind) => {
+      initialUpdates[ind.indicator_id] = {
+        status: ind.validation_status || "Fail",
+        remarks: "",
+      };
+    });
+    setValidationUpdates(initialUpdates);
+    setIsReviewMode(true);
+  };
+
+  const cancelReviewMode = () => {
+    setIsReviewMode(false);
+    setValidationUpdates({});
+  };
+
+  const updateIndicatorStatus = (indicatorId: number, status: string) => {
+    setValidationUpdates((prev) => ({
+      ...prev,
+      [indicatorId]: { ...prev[indicatorId], status },
+    }));
+  };
+
+  const updateIndicatorRemarks = (indicatorId: number, remarks: string) => {
+    setValidationUpdates((prev) => ({
+      ...prev,
+      [indicatorId]: { ...prev[indicatorId], remarks },
+    }));
+  };
+
+  const handleSaveValidationUpdates = async () => {
+    if (!assessmentId || Object.keys(validationUpdates).length === 0) return;
+
+    toast.loading("Saving validation updates...", { id: "save-validation-toast" });
+
+    try {
+      const indicatorUpdates = Object.entries(validationUpdates).map(([id, update]) => ({
+        indicator_id: parseInt(id, 10),
+        validation_status: update.status,
+        remarks: update.remarks || undefined,
+      }));
+
+      await updateValidationMutation.mutateAsync({
+        assessmentId,
+        data: {
+          indicator_updates: indicatorUpdates,
+        },
+      });
+
+      toast.dismiss("save-validation-toast");
+      toast.success("Validation statuses updated successfully!", { duration: 5000 });
+
+      // Invalidate queries to refresh data
+      await queryClient.invalidateQueries();
+      setIsReviewMode(false);
+      setValidationUpdates({});
+    } catch (err: any) {
+      toast.dismiss("save-validation-toast");
+      const errorMessage = err?.response?.data?.detail || err?.message || "Failed to save validation updates";
+      toast.error(`Save failed: ${errorMessage}`, { duration: 6000 });
+    }
+  };
+
   // Show loading if not authenticated
   if (!isAuthenticated) {
     return (
@@ -212,6 +294,28 @@ export default function SubmissionDetailsPage() {
     });
   });
 
+  // Get recalibration target indicators (for review after BLGU resubmission)
+  const recalibrationTargetIds = new Set(assessment.mlgoo_recalibration_indicator_ids || []);
+  const recalibrationTargetIndicators: { indicator_id: number; indicator_name: string; indicator_code: string; areaName: string; validation_status: string }[] = [];
+  governanceAreas.forEach((ga: any) => {
+    (ga.indicators || []).forEach((ind: any) => {
+      if (recalibrationTargetIds.has(ind.indicator_id)) {
+        recalibrationTargetIndicators.push({
+          indicator_id: ind.indicator_id,
+          indicator_name: ind.indicator_name,
+          indicator_code: ind.indicator_code,
+          areaName: ga.name,
+          validation_status: ind.validation_status,
+        });
+      }
+    });
+  });
+
+  // Check if this is a resubmission after recalibration (has recalibration targets but not in active recalibration)
+  const hasResubmittedRecalibration = recalibrationTargetIndicators.length > 0 &&
+    !assessment.is_mlgoo_recalibration &&
+    isAwaitingApproval;
+
   return (
     <div className="min-h-screen bg-[var(--background)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -266,8 +370,19 @@ export default function SubmissionDetailsPage() {
                 </span>
               )}
 
-              {isAwaitingApproval && !isRecalibrationMode && (
+              {isAwaitingApproval && !isRecalibrationMode && !isReviewMode && (
                 <>
+                  {/* Show Review Recalibration button if BLGU has resubmitted after recalibration */}
+                  {hasResubmittedRecalibration && (
+                    <Button
+                      variant="outline"
+                      onClick={() => startReviewMode(recalibrationTargetIndicators)}
+                      className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                    >
+                      <RotateCcw className="mr-2 h-4 w-4" />
+                      Review Recalibration ({recalibrationTargetIndicators.length})
+                    </Button>
+                  )}
                   {canRecalibrate && failedIndicators.length > 0 && (
                     <Button
                       variant="outline"
@@ -391,6 +506,130 @@ export default function SubmissionDetailsPage() {
                       <>
                         <RotateCcw className="mr-2 h-4 w-4" />
                         Submit Recalibration ({selectedIndicators.length} selected)
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Review Mode Panel - For reviewing resubmitted recalibration targets */}
+          {isReviewMode && (
+            <Card className="bg-purple-50 border-purple-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-purple-800">
+                  <RotateCcw className="h-5 w-5" />
+                  Review Recalibration Submissions
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-purple-700">
+                  Review the BLGU&apos;s updated submissions for the recalibration targets.
+                  Update the validation status for each indicator, then approve the assessment.
+                </p>
+
+                <div className="bg-white rounded-sm border border-purple-200 p-4 space-y-4">
+                  <p className="text-sm font-medium text-gray-700">
+                    Recalibration Target Indicators ({recalibrationTargetIndicators.length})
+                  </p>
+                  {recalibrationTargetIndicators.map((ind) => (
+                    <div
+                      key={ind.indicator_id}
+                      className="p-3 bg-purple-50 rounded border border-purple-100 space-y-3"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <p className="font-medium text-sm text-gray-900">
+                            {ind.indicator_code} - {ind.indicator_name}
+                          </p>
+                          <p className="text-xs text-gray-500">{ind.areaName}</p>
+                          <p className="text-xs text-gray-600 mt-1">
+                            Current status:{" "}
+                            <span
+                              className={`font-medium ${
+                                ind.validation_status === "Pass"
+                                  ? "text-green-600"
+                                  : ind.validation_status === "Fail"
+                                  ? "text-red-600"
+                                  : "text-yellow-600"
+                              }`}
+                            >
+                              {ind.validation_status}
+                            </span>
+                          </p>
+                        </div>
+                        <div className="w-40">
+                          <label className="text-xs text-gray-600 mb-1 block">
+                            New Status
+                          </label>
+                          <Select
+                            value={validationUpdates[ind.indicator_id]?.status || ind.validation_status}
+                            onValueChange={(value) => updateIndicatorStatus(ind.indicator_id, value)}
+                          >
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Pass">
+                                <span className="flex items-center gap-2">
+                                  <CheckCircle className="h-3 w-3 text-green-600" />
+                                  Pass
+                                </span>
+                              </SelectItem>
+                              <SelectItem value="Conditional">
+                                <span className="flex items-center gap-2">
+                                  <AlertCircle className="h-3 w-3 text-yellow-600" />
+                                  Conditional
+                                </span>
+                              </SelectItem>
+                              <SelectItem value="Fail">
+                                <span className="flex items-center gap-2">
+                                  <XCircle className="h-3 w-3 text-red-600" />
+                                  Fail
+                                </span>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-600 mb-1 block">
+                          Remarks (optional)
+                        </label>
+                        <Textarea
+                          value={validationUpdates[ind.indicator_id]?.remarks || ""}
+                          onChange={(e) => updateIndicatorRemarks(ind.indicator_id, e.target.value)}
+                          placeholder="Add remarks for this indicator..."
+                          className="min-h-16 text-sm border-purple-200"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={cancelReviewMode}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSaveValidationUpdates}
+                    disabled={updateValidationMutation.isPending}
+                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                  >
+                    {updateValidationMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        Save Validation Updates
                       </>
                     )}
                   </Button>

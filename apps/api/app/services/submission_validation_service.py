@@ -83,20 +83,39 @@ class SubmissionValidationService:
             assessment_status = assessment.status.value if hasattr(assessment.status, 'value') else str(assessment.status)
             rework_requested_at = assessment.rework_requested_at
 
+            # Check if this is an MLGOO RE-calibration
+            is_mlgoo_recalibration = assessment.is_mlgoo_recalibration
+            mlgoo_recalibration_indicator_ids = assessment.mlgoo_recalibration_indicator_ids or []
+            mlgoo_recalibration_requested_at = assessment.mlgoo_recalibration_requested_at
+
+            # For MLGOO RE-calibration, use the MLGOO timestamp instead of rework timestamp
+            if is_mlgoo_recalibration and mlgoo_recalibration_requested_at:
+                effective_rework_timestamp = mlgoo_recalibration_requested_at
+            else:
+                effective_rework_timestamp = rework_requested_at
+
             # ENHANCED LOGGING for debugging
             self.logger.info(
                 f"[SUBMISSION VALIDATION] Assessment {assessment_id} - "
-                f"Status: '{assessment_status}', Rework requested at: {rework_requested_at}"
+                f"Status: '{assessment_status}', Rework requested at: {rework_requested_at}, "
+                f"is_mlgoo_recalibration: {is_mlgoo_recalibration}, "
+                f"mlgoo_recalibration_indicator_ids: {mlgoo_recalibration_indicator_ids}"
             )
 
             # Validate completeness of all indicators (with rework filtering)
+            # For MLGOO RE-calibration, only validate the specific indicators
             incomplete_indicators = self.validate_completeness(
-                assessment_id, db, assessment_status, rework_requested_at
+                assessment_id, db, assessment_status, effective_rework_timestamp,
+                is_mlgoo_recalibration=is_mlgoo_recalibration,
+                mlgoo_indicator_ids=mlgoo_recalibration_indicator_ids
             )
 
             # Validate that all required MOVs are uploaded (with rework filtering)
+            # For MLGOO RE-calibration, only validate the specific indicators
             missing_movs = self.validate_movs(
-                assessment_id, db, assessment_status, rework_requested_at
+                assessment_id, db, assessment_status, effective_rework_timestamp,
+                is_mlgoo_recalibration=is_mlgoo_recalibration,
+                mlgoo_indicator_ids=mlgoo_recalibration_indicator_ids
             )
 
             # Determine overall validity
@@ -145,7 +164,9 @@ class SubmissionValidationService:
         assessment_id: int,
         db: Session,
         assessment_status: str = None,
-        rework_requested_at: datetime = None
+        rework_requested_at: datetime = None,
+        is_mlgoo_recalibration: bool = False,
+        mlgoo_indicator_ids: List[int] = None
     ) -> List[str]:
         """
         Validate that all indicators in the assessment are complete.
@@ -154,6 +175,10 @@ class SubmissionValidationService:
         - Indicators WITH feedback: Only count files uploaded AFTER rework_requested_at
         - Indicators WITHOUT feedback: Count ALL files (old files still valid)
 
+        During MLGOO RE-calibration:
+        - ONLY validate the specific indicators in mlgoo_indicator_ids
+        - Other indicators are NOT checked (they already passed validation)
+
         Recalculates completion on-the-fly to ensure correct validation during rework.
 
         Args:
@@ -161,6 +186,8 @@ class SubmissionValidationService:
             db: SQLAlchemy database session
             assessment_status: Current assessment status (for rework filtering)
             rework_requested_at: Timestamp when rework was requested (for filtering)
+            is_mlgoo_recalibration: True if this is an MLGOO RE-calibration
+            mlgoo_indicator_ids: List of indicator IDs to validate for MLGOO RE-calibration
 
         Returns:
             List of indicator names/IDs that are incomplete (empty list if all complete)
@@ -168,6 +195,7 @@ class SubmissionValidationService:
         from app.db.models.assessment import FeedbackComment, MOVAnnotation
 
         incomplete_indicators = []
+        mlgoo_indicator_ids = mlgoo_indicator_ids or []
 
         # Check if we're in REWORK mode
         is_rework = assessment_status and assessment_status.upper() in ('REWORK', 'NEEDS_REWORK')
@@ -192,6 +220,15 @@ class SubmissionValidationService:
             if not indicator:
                 self.logger.warning(f"[COMPLETENESS DEBUG] Response {response.id} has invalid indicator_id {response.indicator_id}")
                 continue
+
+            # For MLGOO RE-calibration: ONLY validate the specific indicators
+            # Skip all other indicators (they already passed validation)
+            if is_mlgoo_recalibration and mlgoo_indicator_ids:
+                if indicator.id not in mlgoo_indicator_ids:
+                    self.logger.info(
+                        f"[COMPLETENESS] Skipping indicator {indicator.id} - not in MLGOO recalibration list"
+                    )
+                    continue
 
             # During normal operations (not rework), trust the database flag
             if not is_rework or not rework_requested_at:
@@ -257,7 +294,9 @@ class SubmissionValidationService:
         assessment_id: int,
         db: Session,
         assessment_status: str = None,
-        rework_requested_at: datetime = None
+        rework_requested_at: datetime = None,
+        is_mlgoo_recalibration: bool = False,
+        mlgoo_indicator_ids: List[int] = None
     ) -> List[str]:
         """
         Validate that all required MOV files (Epic 4.0) are uploaded.
@@ -265,6 +304,10 @@ class SubmissionValidationService:
         During REWORK status, the filtering logic is:
         - Indicators WITH assessor feedback/comments: Only count files uploaded AFTER rework_requested_at
         - Indicators WITHOUT assessor feedback: Count ALL files (old files are still valid)
+
+        During MLGOO RE-calibration:
+        - ONLY validate the specific indicators in mlgoo_indicator_ids
+        - Other indicators are NOT checked (they already passed validation)
 
         This allows BLGU users to only re-upload files for indicators the assessor flagged,
         while keeping the old files for indicators that passed the first review.
@@ -274,6 +317,8 @@ class SubmissionValidationService:
             db: SQLAlchemy database session
             assessment_status: Current assessment status (for rework filtering)
             rework_requested_at: Timestamp when rework was requested (for filtering)
+            is_mlgoo_recalibration: True if this is an MLGOO RE-calibration
+            mlgoo_indicator_ids: List of indicator IDs to validate for MLGOO RE-calibration
 
         Returns:
             List of indicator names/IDs missing required MOV files (empty list if all present)
@@ -281,6 +326,7 @@ class SubmissionValidationService:
         from app.db.models.assessment import FeedbackComment, MOVAnnotation
 
         missing_movs = []
+        mlgoo_indicator_ids = mlgoo_indicator_ids or []
 
         # Check if we're in REWORK mode
         is_rework = assessment_status and assessment_status.upper() in ('REWORK', 'NEEDS_REWORK')
@@ -302,6 +348,15 @@ class SubmissionValidationService:
             indicator = db.query(Indicator).filter_by(id=response.indicator_id).first()
             if not indicator:
                 continue
+
+            # For MLGOO RE-calibration: ONLY validate the specific indicators
+            # Skip all other indicators (they already passed validation)
+            if is_mlgoo_recalibration and mlgoo_indicator_ids:
+                if indicator.id not in mlgoo_indicator_ids:
+                    self.logger.debug(
+                        f"[MOV VALIDATION] Skipping indicator {indicator.id} - not in MLGOO recalibration list"
+                    )
+                    continue
 
             # Check if this indicator's form schema has file upload fields
             if self._has_file_upload_fields(indicator.form_schema):

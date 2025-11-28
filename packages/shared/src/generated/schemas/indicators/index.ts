@@ -34,6 +34,12 @@ export interface AISummaryIndicator {
 
 
 /**
+ * BLGUDashboardResponseMlgooRecalibrationIndicatorIds
+ */
+export type BLGUDashboardResponseMlgooRecalibrationIndicatorIds = number[] | null;
+
+
+/**
  * BLGUDashboardResponseMovAnnotationsByIndicator
  */
 export type BLGUDashboardResponseMovAnnotationsByIndicator = BLGUDashboardResponseMovAnnotationsByIndicatorAnyOf | null;
@@ -980,6 +986,28 @@ export interface IndicatorValidationResponse {
 
 
 /**
+ * IndicatorValidationUpdate
+ */
+export interface IndicatorValidationUpdate {
+  /** ID of the indicator to update */
+  indicator_id: number;
+  /**
+   * New validation status: Pass, Fail, or Conditional
+   * @pattern ^(Pass|Fail|Conditional)$
+   */
+  validation_status: string;
+  /** Optional remarks for the validation decision */
+  remarks?: IndicatorValidationUpdateRemarks;
+}
+
+
+/**
+ * IndicatorValidationUpdateRemarks
+ */
+export type IndicatorValidationUpdateRemarks = string | null;
+
+
+/**
  * PostIndicatorsTestCalculation200
  */
 export type PostIndicatorsTestCalculation200 = { [key: string]: unknown };
@@ -1079,3 +1107,27 @@ export interface TopFailingIndicatorsResponse {
   /** Top 5 indicators with highest failure rates */
   top_failing_indicators: TopFailingIndicator[];
 }
+
+
+/**
+ * UpdatedIndicatorItem
+ */
+export interface UpdatedIndicatorItem {
+  indicator_id: number;
+  indicator_name: string;
+  previous_status: UpdatedIndicatorItemPreviousStatus;
+  new_status: string;
+  remarks: UpdatedIndicatorItemRemarks;
+}
+
+
+/**
+ * UpdatedIndicatorItemPreviousStatus
+ */
+export type UpdatedIndicatorItemPreviousStatus = string | null;
+
+
+/**
+ * UpdatedIndicatorItemRemarks
+ */
+export type UpdatedIndicatorItemRemarks = string | null;

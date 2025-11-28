@@ -8,7 +8,7 @@ import logging
 
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.db.enums import AssessmentStatus, NotificationType
+from app.db.enums import AssessmentStatus, NotificationType, ValidationStatus
 from app.db.models.assessment import (
     Assessment,
     AssessmentResponse,
@@ -271,6 +271,16 @@ class MLGOOService:
         # Move back to REWORK status for BLGU to make corrections
         assessment.status = AssessmentStatus.REWORK
 
+        # Reset is_completed flag for targeted indicators to require fresh upload
+        # This ensures BLGU must re-upload or make changes to these specific indicators
+        for response in assessment.responses:
+            if response.indicator_id in indicator_ids:
+                response.is_completed = False
+                self.logger.info(
+                    f"Reset is_completed for indicator {response.indicator_id} "
+                    f"(response {response.id}) due to MLGOO RE-calibration"
+                )
+
         db.commit()
         db.refresh(assessment)
 
@@ -505,6 +515,127 @@ class MLGOOService:
             "status": assessment.status.value,
             "grace_period_expires_at": assessment.grace_period_expires_at.isoformat(),
             "unlocked_by": mlgoo_user.name,
+        }
+
+    def update_recalibration_validation(
+        self,
+        db: Session,
+        assessment_id: int,
+        mlgoo_user: User,
+        indicator_updates: List[Dict[str, Any]],
+        comments: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Update validation status of recalibration target indicators.
+
+        After BLGU resubmits their recalibrated MOVs, MLGOO can review and
+        update the validation status of the targeted indicators before approving.
+
+        Args:
+            db: Database session
+            assessment_id: ID of the assessment
+            mlgoo_user: The MLGOO user making the updates
+            indicator_updates: List of dicts with indicator_id, validation_status, and optional remarks
+            comments: Optional overall comments from MLGOO
+
+        Returns:
+            dict: Result of the update operation
+
+        Raises:
+            ValueError: If assessment not found or validation update not allowed
+        """
+        assessment = (
+            db.query(Assessment)
+            .options(
+                joinedload(Assessment.blgu_user).joinedload(User.barangay),
+                selectinload(Assessment.responses).joinedload(AssessmentResponse.indicator),
+            )
+            .filter(Assessment.id == assessment_id)
+            .first()
+        )
+
+        if not assessment:
+            raise ValueError(f"Assessment {assessment_id} not found")
+
+        # Only allow updates when assessment is AWAITING_MLGOO_APPROVAL
+        if assessment.status != AssessmentStatus.AWAITING_MLGOO_APPROVAL:
+            raise ValueError(
+                f"Cannot update validation status. Assessment must be awaiting MLGOO approval. "
+                f"Current status: {assessment.status.value}"
+            )
+
+        # Build a map of indicator_id -> response for quick lookup
+        response_map = {r.indicator_id: r for r in assessment.responses}
+
+        # Get recalibration target indicator IDs (if any)
+        recalibration_targets = set(assessment.mlgoo_recalibration_indicator_ids or [])
+
+        updated_indicators = []
+        for update in indicator_updates:
+            indicator_id = update["indicator_id"]
+            new_status_str = update["validation_status"]
+            remarks = update.get("remarks")
+
+            # Check if the indicator is part of this assessment
+            if indicator_id not in response_map:
+                raise ValueError(f"Indicator {indicator_id} is not part of this assessment")
+
+            # Only allow updates to recalibration targets (if recalibration was requested)
+            if recalibration_targets and indicator_id not in recalibration_targets:
+                raise ValueError(
+                    f"Indicator {indicator_id} is not a recalibration target. "
+                    f"Only recalibration target indicators can be updated."
+                )
+
+            response = response_map[indicator_id]
+
+            # Convert string status to enum
+            try:
+                new_status = ValidationStatus(new_status_str)
+            except ValueError:
+                raise ValueError(f"Invalid validation status: {new_status_str}. Must be Pass, Fail, or Conditional")
+
+            # Store previous status for logging
+            previous_status = response.validation_status.value if response.validation_status else None
+
+            # Update the validation status
+            response.validation_status = new_status
+            if remarks:
+                # Append MLGOO remarks to existing assessor remarks
+                mlgoo_remark = f"[MLGOO Review] {remarks}"
+                if response.assessor_remarks:
+                    response.assessor_remarks = f"{response.assessor_remarks}\n{mlgoo_remark}"
+                else:
+                    response.assessor_remarks = mlgoo_remark
+
+            updated_indicators.append({
+                "indicator_id": indicator_id,
+                "indicator_name": response.indicator.name if response.indicator else "Unknown",
+                "previous_status": previous_status,
+                "new_status": new_status.value,
+                "remarks": remarks,
+            })
+
+            self.logger.info(
+                f"MLGOO {mlgoo_user.name} updated indicator {indicator_id} "
+                f"from {previous_status} to {new_status.value} for assessment {assessment_id}"
+            )
+
+        db.commit()
+
+        # Get barangay name for response
+        barangay_name = "Unknown Barangay"
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+
+        return {
+            "success": True,
+            "message": f"Updated validation status for {len(updated_indicators)} indicator(s)",
+            "assessment_id": assessment_id,
+            "barangay_name": barangay_name,
+            "updated_indicators": updated_indicators,
+            "updated_by": mlgoo_user.name,
+            "updated_at": datetime.utcnow().isoformat(),
         }
 
 

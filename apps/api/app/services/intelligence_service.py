@@ -641,8 +641,12 @@ class IntelligenceService:
                 .first()
             )
 
-            # If no response exists, or if validation status is not PASS, the area fails
-            if not response or response.validation_status != ValidationStatus.PASS:
+            # If no response exists, the area fails
+            # PASS and CONDITIONAL both count as passing (SGLGB rule: Conditional = Considered = Pass)
+            # Only FAIL status causes the area to fail
+            if not response:
+                return False
+            if response.validation_status not in (ValidationStatus.PASS, ValidationStatus.CONDITIONAL):
                 return False
 
         return True

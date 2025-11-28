@@ -24,14 +24,25 @@ import {
   TrendingUp,
   AlertTriangle,
   Lightbulb,
+  AlertCircle,
 } from "lucide-react";
+import { ReworkIndicatorsPanel, AISummaryPanel } from "@/components/features/rework";
+import { ResubmitAssessmentButton } from "@/components/features/assessments";
+import { AISummary } from "@sinag/shared";
 
 interface VerdictSectionProps {
   dashboardData: BLGUDashboardResponse;
   assessmentId: number;
+  selectedLanguage?: string;
+  onLanguageChange?: (lang: string) => void;
+  isFetchingDashboard?: boolean;
+  onRefetch?: () => void;
 }
 
-function getVerdictStatus(status: string): {
+function getVerdictStatus(
+  status: string,
+  isMlgooRecalibration: boolean
+): {
   phaseStatus: PhaseStatus;
   statusLabel: string;
   isActive: boolean;
@@ -41,6 +52,19 @@ function getVerdictStatus(status: string): {
     return {
       phaseStatus: "available",
       statusLabel: "Available",
+      isActive: true,
+      pendingMessage: "",
+    };
+  }
+
+  // MLGOO RE-calibration: Show recalibration state (this is the active phase)
+  if (
+    isMlgooRecalibration &&
+    (status === "REWORK" || status === "NEEDS_REWORK")
+  ) {
+    return {
+      phaseStatus: "calibration",
+      statusLabel: "RE-Calibration Requested",
       isActive: true,
       pendingMessage: "",
     };
@@ -84,9 +108,18 @@ interface AIRecommendation {
 export function VerdictSection({
   dashboardData,
   assessmentId,
+  selectedLanguage = "ceb",
+  onLanguageChange,
+  isFetchingDashboard = false,
+  onRefetch,
 }: VerdictSectionProps) {
+  // Check for MLGOO RE-calibration (distinct from validator calibration)
+  const isMlgooRecalibration = (dashboardData as any).is_mlgoo_recalibration === true;
+  const mlgooRecalibrationComments = (dashboardData as any).mlgoo_recalibration_comments;
+
   const { phaseStatus, statusLabel, isActive, pendingMessage } = getVerdictStatus(
-    dashboardData.status
+    dashboardData.status,
+    isMlgooRecalibration
   );
 
   // Extract verdict data (will be added to schema)
@@ -107,6 +140,69 @@ export function VerdictSection({
       defaultExpanded={isActive}
     >
       <div className="space-y-6">
+        {/* MLGOO RE-Calibration State */}
+        {phaseStatus === "calibration" && isMlgooRecalibration && (
+          <>
+            {/* MLGOO RE-Calibration Header */}
+            <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
+                <div>
+                  <h3 className="font-medium text-amber-800 dark:text-amber-200">
+                    MLGOO RE-Calibration Requested
+                  </h3>
+                  <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                    The MLGOO Chairman has requested re-calibration for specific indicators.
+                    Please review the feedback below and make the necessary corrections.
+                  </p>
+                  {mlgooRecalibrationComments && (
+                    <div className="mt-3 p-3 bg-white dark:bg-gray-800 rounded border border-amber-200 dark:border-amber-700">
+                      <p className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-1">
+                        MLGOO Comments:
+                      </p>
+                      <p className="text-sm text-amber-700 dark:text-amber-300 whitespace-pre-wrap">
+                        {mlgooRecalibrationComments}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* AI Summary Panel for MLGOO RE-calibration */}
+            {dashboardData.ai_summary && onLanguageChange && (
+              <AISummaryPanel
+                summary={dashboardData.ai_summary as AISummary}
+                availableLanguages={dashboardData.ai_summary_available_languages || ["ceb", "en"]}
+                currentLanguage={selectedLanguage}
+                onLanguageChange={onLanguageChange}
+                isLoading={isFetchingDashboard}
+              />
+            )}
+
+            {/* Rework Indicators Panel */}
+            {(dashboardData.rework_comments || dashboardData.mov_annotations_by_indicator) && (
+              <ReworkIndicatorsPanel
+                dashboardData={dashboardData as any}
+                assessmentId={assessmentId}
+              />
+            )}
+
+            {/* Submit for MLGOO RE-calibration Button */}
+            {onRefetch && (
+              <div className="flex gap-4">
+                <ResubmitAssessmentButton
+                  assessmentId={assessmentId}
+                  isComplete={dashboardData.completion_percentage === 100}
+                  isCalibrationRework={false}
+                  isMlgooRecalibration={true}
+                  onSuccess={onRefetch}
+                />
+              </div>
+            )}
+          </>
+        )}
+
         {/* Pending State */}
         {phaseStatus === "pending" && (
           <div className="text-center py-8">

@@ -204,9 +204,9 @@ class GARService:
             indent_level = self._get_indent_level(indicator.indicator_code)
 
             # Check if this is a header indicator (has children)
-            is_header = indicator.parent_id is None and any(
-                i.parent_id == indicator.id for i in indicators
-            )
+            # A header is ANY indicator that has child indicators, regardless of whether
+            # it's a root indicator or a nested intermediate header (e.g., 1.6.1)
+            is_header = any(i.parent_id == indicator.id for i in indicators)
 
             gar_indicators.append(
                 GARIndicator(

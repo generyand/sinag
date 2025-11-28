@@ -40,6 +40,12 @@ export type SubmissionValidationResultErrorMessage = string | null;
 
 
 /**
+ * UpdateRecalibrationValidationRequestComments
+ */
+export type UpdateRecalibrationValidationRequestComments = string | null;
+
+
+/**
  * ValidationError
  */
 export interface ValidationError {

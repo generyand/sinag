@@ -333,6 +333,14 @@ class AssessmentService:
             "rework_requested_at": assessment.rework_requested_at.isoformat() + 'Z'
             if assessment.rework_requested_at
             else None,
+            # MLGOO RE-calibration tracking
+            "is_mlgoo_recalibration": assessment.is_mlgoo_recalibration,
+            "mlgoo_recalibration_requested_at": assessment.mlgoo_recalibration_requested_at.isoformat() + 'Z'
+            if assessment.mlgoo_recalibration_requested_at
+            else None,
+            "mlgoo_recalibration_indicator_ids": assessment.mlgoo_recalibration_indicator_ids,
+            "mlgoo_recalibration_comments": assessment.mlgoo_recalibration_comments,
+            "mlgoo_recalibration_count": assessment.mlgoo_recalibration_count,
         }
 
         return {

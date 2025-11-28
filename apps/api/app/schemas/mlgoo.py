@@ -47,6 +47,37 @@ class UnlockAssessmentRequest(BaseModel):
     )
 
 
+class IndicatorValidationUpdate(BaseModel):
+    """Single indicator validation status update."""
+
+    indicator_id: int = Field(..., description="ID of the indicator to update")
+    validation_status: str = Field(
+        ...,
+        description="New validation status: Pass, Fail, or Conditional",
+        pattern="^(Pass|Fail|Conditional)$",
+    )
+    remarks: Optional[str] = Field(
+        None,
+        description="Optional remarks for the validation decision",
+        max_length=2000,
+    )
+
+
+class UpdateRecalibrationValidationRequest(BaseModel):
+    """Request body for updating validation status of recalibration target indicators."""
+
+    indicator_updates: List[IndicatorValidationUpdate] = Field(
+        ...,
+        description="List of indicator validation status updates",
+        min_length=1,
+    )
+    comments: Optional[str] = Field(
+        None,
+        description="Optional overall comments from MLGOO",
+        max_length=2000,
+    )
+
+
 # ==================== Response Schemas ====================
 
 
@@ -183,3 +214,25 @@ class UnlockAssessmentResponse(BaseModel):
     status: str
     grace_period_expires_at: str
     unlocked_by: str
+
+
+class UpdatedIndicatorItem(BaseModel):
+    """Updated indicator information."""
+
+    indicator_id: int
+    indicator_name: str
+    previous_status: Optional[str]
+    new_status: str
+    remarks: Optional[str]
+
+
+class UpdateRecalibrationValidationResponse(BaseModel):
+    """Response for updating recalibration target validation statuses."""
+
+    success: bool
+    message: str
+    assessment_id: int
+    barangay_name: str
+    updated_indicators: List[UpdatedIndicatorItem]
+    updated_by: str
+    updated_at: str

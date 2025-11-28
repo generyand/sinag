@@ -46,7 +46,8 @@ interface Phase1SectionProps {
 
 function getPhase1Status(
   status: string,
-  isCalibrationRework: boolean
+  isCalibrationRework: boolean,
+  isMlgooRecalibration: boolean
 ): { phaseStatus: PhaseStatus; statusLabel: string; isActive: boolean } {
   const assessmentStatus = status as AssessmentStatus;
 
@@ -66,8 +67,16 @@ function getPhase1Status(
       };
     case "REWORK":
     case "NEEDS_REWORK":
+      // MLGOO RE-calibration: Phase 1 was already completed
+      if (isMlgooRecalibration) {
+        return {
+          phaseStatus: "completed",
+          statusLabel: "Completed",
+          isActive: false,
+        };
+      }
+      // Calibration rework belongs to Phase 2
       if (isCalibrationRework) {
-        // Calibration rework belongs to Phase 2
         return {
           phaseStatus: "completed",
           statusLabel: "Completed",
@@ -104,19 +113,27 @@ export function Phase1Section({
   isFetchingDashboard,
   onRefetch,
 }: Phase1SectionProps) {
+  // Check for MLGOO RE-calibration (distinct from validator calibration)
+  const isMlgooRecalibration = (dashboardData as any).is_mlgoo_recalibration === true;
+
   const { phaseStatus, statusLabel, isActive } = getPhase1Status(
     dashboardData.status,
-    dashboardData.is_calibration_rework || false
+    dashboardData.is_calibration_rework || false,
+    isMlgooRecalibration
   );
 
+  // Phase 1 is editable only during DRAFT or assessor rework (not calibration, not MLGOO recalibration)
   const isEditable =
     dashboardData.status === "DRAFT" ||
     ((dashboardData.status === "REWORK" || dashboardData.status === "NEEDS_REWORK") &&
-      !dashboardData.is_calibration_rework);
+      !dashboardData.is_calibration_rework &&
+      !isMlgooRecalibration);
 
+  // Show rework feedback only for assessor rework (not calibration, not MLGOO recalibration)
   const showReworkFeedback =
     (dashboardData.status === "REWORK" || dashboardData.status === "NEEDS_REWORK") &&
-    !dashboardData.is_calibration_rework;
+    !dashboardData.is_calibration_rework &&
+    !isMlgooRecalibration;
 
   // Build navigation items
   const navigationItems = dashboardData.governance_areas.flatMap((area) =>
@@ -225,7 +242,8 @@ export function Phase1Section({
             )}
 
             {(dashboardData.status === "REWORK" || dashboardData.status === "NEEDS_REWORK") &&
-              !dashboardData.is_calibration_rework && (
+              !dashboardData.is_calibration_rework &&
+              !isMlgooRecalibration && (
                 <ResubmitAssessmentButton
                   assessmentId={assessmentId}
                   isComplete={dashboardData.completion_percentage === 100}

@@ -32,6 +32,8 @@ interface PhaseTimelineProps {
   validatedAt?: string | null;
   currentStatus: string;
   isCalibrationRework: boolean;
+  isMlgooRecalibration?: boolean;
+  mlgooRecalibrationRequestedAt?: string | null;
   reworkCount: number;
   className?: string;
 }
@@ -59,21 +61,27 @@ function buildTimelineEvents(
   validatedAt: string | null | undefined,
   currentStatus: string,
   isCalibrationRework: boolean,
+  isMlgooRecalibration: boolean,
+  mlgooRecalibrationRequestedAt: string | null | undefined,
   reworkCount: number
 ): TimelineEvent[] {
   const events: TimelineEvent[] = [];
 
   // Determine phase completion based on status
+  // During MLGOO RE-calibration, all phases are still considered complete
   const isPhase1Complete = [
     "AWAITING_FINAL_VALIDATION",
     "AWAITING_MLGOO_APPROVAL",
     "COMPLETED",
-  ].includes(currentStatus) || (isCalibrationRework && currentStatus === "REWORK");
+  ].includes(currentStatus) ||
+    (isCalibrationRework && currentStatus === "REWORK") ||
+    (isMlgooRecalibration && (currentStatus === "REWORK" || currentStatus === "NEEDS_REWORK"));
 
-  // Phase 2 is complete when MLGOO approval is pending or assessment is completed
-  const isPhase2Complete = ["AWAITING_MLGOO_APPROVAL", "COMPLETED"].includes(currentStatus);
+  // Phase 2 is complete when MLGOO approval is pending, completed, or during MLGOO RE-calibration
+  const isPhase2Complete = ["AWAITING_MLGOO_APPROVAL", "COMPLETED"].includes(currentStatus) ||
+    (isMlgooRecalibration && (currentStatus === "REWORK" || currentStatus === "NEEDS_REWORK"));
 
-  // Final verdict is only complete when assessment is COMPLETED
+  // Final verdict is only complete when assessment is COMPLETED (not during MLGOO RE-calibration)
   const isPhase3Complete = currentStatus === "COMPLETED";
 
   // Phase 1: Initial Assessment
@@ -151,7 +159,24 @@ function buildTimelineEvents(
   }
 
   // Phase 3: MLGOO Approval (new phase)
-  if (currentStatus === "AWAITING_MLGOO_APPROVAL") {
+  if (isMlgooRecalibration && (currentStatus === "REWORK" || currentStatus === "NEEDS_REWORK")) {
+    // MLGOO RE-calibration: Show approved then RE-calibration requested
+    events.push({
+      id: "phase3-mlgoo-approved",
+      title: "Phase 3: MLGOO Approved",
+      description: "Assessment was approved by MLGOO",
+      status: "completed",
+      phase: 3,
+    });
+    events.push({
+      id: "phase3-mlgoo-recalibration",
+      title: "MLGOO RE-Calibration Requested",
+      description: "MLGOO requested corrections for specific indicators",
+      date: formatDate(mlgooRecalibrationRequestedAt),
+      status: "current",
+      phase: 3,
+    });
+  } else if (currentStatus === "AWAITING_MLGOO_APPROVAL") {
     events.push({
       id: "phase3-mlgoo-approval",
       title: "Phase 3: MLGOO Approval",
@@ -169,17 +194,19 @@ function buildTimelineEvents(
     });
   }
 
-  // Phase 4: Verdict (final result)
-  events.push({
-    id: "phase4-verdict",
-    title: "Verdict: SGLGB Result",
-    description: isPhase3Complete
-      ? "Classification completed"
-      : "Result will be available after MLGOO approval",
-    date: formatDate(validatedAt),
-    status: isPhase3Complete ? "completed" : "pending",
-    phase: 3,
-  });
+  // Phase 4: Verdict (final result) - Skip during MLGOO RE-calibration (shows in RE-calibration)
+  if (!isMlgooRecalibration) {
+    events.push({
+      id: "phase4-verdict",
+      title: "Verdict: SGLGB Result",
+      description: isPhase3Complete
+        ? "Classification completed"
+        : "Result will be available after MLGOO approval",
+      date: formatDate(validatedAt),
+      status: isPhase3Complete ? "completed" : "pending",
+      phase: 3,
+    });
+  }
 
   return events;
 }
@@ -190,6 +217,8 @@ export function PhaseTimeline({
   validatedAt,
   currentStatus,
   isCalibrationRework,
+  isMlgooRecalibration = false,
+  mlgooRecalibrationRequestedAt,
   reworkCount,
   className,
 }: PhaseTimelineProps) {
@@ -199,6 +228,8 @@ export function PhaseTimeline({
     validatedAt,
     currentStatus,
     isCalibrationRework,
+    isMlgooRecalibration,
+    mlgooRecalibrationRequestedAt,
     reworkCount
   );
 

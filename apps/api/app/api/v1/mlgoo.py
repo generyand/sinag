@@ -19,6 +19,8 @@ from app.schemas.mlgoo import (
     RecalibrationResponse,
     UnlockAssessmentRequest,
     UnlockAssessmentResponse,
+    UpdateRecalibrationValidationRequest,
+    UpdateRecalibrationValidationResponse,
 )
 from app.services.mlgoo_service import mlgoo_service
 
@@ -281,6 +283,76 @@ async def unlock_assessment(
             extend_grace_period_days=extend_days,
         )
         return UnlockAssessmentResponse(**result)
+    except ValueError as e:
+        error_msg = str(e)
+        if "not found" in error_msg.lower():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=error_msg,
+            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_msg,
+        )
+
+
+# ==================== Update Recalibration Validation Status ====================
+
+
+@router.patch(
+    "/assessments/{assessment_id}/recalibration-validation",
+    response_model=UpdateRecalibrationValidationResponse,
+    summary="Update Validation Status of Recalibration Targets",
+    description=(
+        "Update the validation status of recalibration target indicators.\n\n"
+        "**Access:** Requires MLGOO_DILG role.\n\n"
+        "After a BLGU resubmits their MOVs for recalibration target indicators, "
+        "MLGOO can review and update the validation status (Pass, Fail, Conditional) "
+        "before approving the assessment.\n\n"
+        "**Important:**\n"
+        "- Only recalibration target indicators can be updated\n"
+        "- Assessment must be in AWAITING_MLGOO_APPROVAL status\n"
+        "- This does NOT automatically approve the assessment - call approve endpoint separately"
+    ),
+    tags=["mlgoo"],
+    responses={
+        200: {"description": "Validation statuses updated successfully"},
+        400: {"description": "Invalid request or validation update not allowed"},
+        403: {"description": "Not enough permissions (MLGOO_DILG role required)"},
+        404: {"description": "Assessment not found"},
+    },
+)
+async def update_recalibration_validation(
+    assessment_id: int,
+    request: UpdateRecalibrationValidationRequest,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_admin_user),
+):
+    """
+    Update validation status of recalibration target indicators.
+
+    After BLGU resubmits MOVs, MLGOO can change the validation status
+    of the targeted indicators before final approval.
+    """
+    try:
+        # Convert Pydantic models to dicts for service
+        indicator_updates = [
+            {
+                "indicator_id": u.indicator_id,
+                "validation_status": u.validation_status,
+                "remarks": u.remarks,
+            }
+            for u in request.indicator_updates
+        ]
+
+        result = mlgoo_service.update_recalibration_validation(
+            db=db,
+            assessment_id=assessment_id,
+            mlgoo_user=current_user,
+            indicator_updates=indicator_updates,
+            comments=request.comments,
+        )
+        return UpdateRecalibrationValidationResponse(**result)
     except ValueError as e:
         error_msg = str(e)
         if "not found" in error_msg.lower():

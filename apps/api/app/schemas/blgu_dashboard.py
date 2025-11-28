@@ -219,6 +219,27 @@ class BLGUDashboardResponse(BaseModel):
         "Tagalog ('fil') is generated on-demand if requested."
     )
 
+    # MLGOO RE-calibration tracking (distinct from Validator calibration)
+    # Used when MLGOO determines validator was too strict and unlocks specific indicators
+    is_mlgoo_recalibration: bool = Field(
+        default=False,
+        description="If True, this is an MLGOO RE-calibration (not regular rework or validator calibration). "
+        "BLGU should only address the specific indicators in mlgoo_recalibration_indicator_ids."
+    )
+    mlgoo_recalibration_indicator_ids: Optional[List[int]] = Field(
+        None,
+        description="List of indicator IDs that MLGOO has unlocked for RE-calibration. "
+        "Only these indicators need to be addressed by BLGU."
+    )
+    mlgoo_recalibration_comments: Optional[str] = Field(
+        None,
+        description="MLGOO's comments explaining why RE-calibration is needed."
+    )
+    mlgoo_recalibration_count: int = Field(
+        default=0,
+        description="Number of times MLGOO has requested RE-calibration (max 1)."
+    )
+
     # Timeline dates for phase progression tracking
     submitted_at: Optional[str] = Field(
         None,

@@ -269,7 +269,15 @@ export function FileFieldComponent({
   const allFiles = filesResponse?.files || [];
 
   // Get rework timestamp from assessment data
+  // For MLGOO RE-calibration, use mlgoo_recalibration_requested_at instead
   const reworkRequestedAt = (assessmentData as any)?.assessment?.rework_requested_at;
+  const isMlgooRecalibration = (assessmentData as any)?.assessment?.is_mlgoo_recalibration === true;
+  const mlgooRecalibrationRequestedAt = (assessmentData as any)?.assessment?.mlgoo_recalibration_requested_at;
+
+  // Use MLGOO recalibration timestamp if it's an MLGOO recalibration, otherwise use regular rework timestamp
+  const effectiveReworkTimestamp = isMlgooRecalibration && mlgooRecalibrationRequestedAt
+    ? mlgooRecalibrationRequestedAt
+    : reworkRequestedAt;
 
   // Separate files based on rework timestamp
   const activeFiles = allFiles.filter((f: any) => f.field_id === field.field_id && !f.deleted_at);
@@ -281,8 +289,8 @@ export function FileFieldComponent({
   let previousFiles: any[] = [];
   let newFiles: any[] = [];
 
-  if (isReworkStatus && reworkRequestedAt) {
-    const reworkDate = new Date(reworkRequestedAt);
+  if (isReworkStatus && effectiveReworkTimestamp) {
+    const reworkDate = new Date(effectiveReworkTimestamp);
 
     console.log('[FileFieldComponent] Rework filtering debug:', {
       field_id: field.field_id,

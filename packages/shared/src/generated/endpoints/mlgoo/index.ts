@@ -29,7 +29,9 @@ import type {
   PostMlgooAssessmentsAssessmentIdUnlockBody,
   RecalibrationRequest,
   RecalibrationResponse,
-  UnlockAssessmentResponse
+  UnlockAssessmentResponse,
+  UpdateRecalibrationValidationRequest,
+  UpdateRecalibrationValidationResponse
 } from '../../schemas';
 
 import { mutator } from '../../../../../../apps/web/src/lib/api';
@@ -401,6 +403,80 @@ export const usePostMlgooAssessmentsAssessmentIdUnlock = <TError = void | HTTPVa
       > => {
 
       const mutationOptions = getPostMlgooAssessmentsAssessmentIdUnlockMutationOptions(options);
+
+      return useMutation(mutationOptions );
+    }
+    /**
+ * Update the validation status of recalibration target indicators.
+
+**Access:** Requires MLGOO_DILG role.
+
+After a BLGU resubmits their MOVs for recalibration target indicators, MLGOO can review and update the validation status (Pass, Fail, Conditional) before approving the assessment.
+
+**Important:**
+- Only recalibration target indicators can be updated
+- Assessment must be in AWAITING_MLGOO_APPROVAL status
+- This does NOT automatically approve the assessment - call approve endpoint separately
+ * @summary Update Validation Status of Recalibration Targets
+ */
+export const patchMlgooAssessments$AssessmentIdRecalibrationValidation = (
+    assessmentId: number,
+    updateRecalibrationValidationRequest: UpdateRecalibrationValidationRequest,
+ options?: SecondParameter<typeof mutator>,) => {
+      
+      
+      return mutator<UpdateRecalibrationValidationResponse>(
+      {url: `http://localhost:8000/api/v1/mlgoo/assessments/${assessmentId}/recalibration-validation`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: updateRecalibrationValidationRequest
+    },
+      options);
+    }
+  
+
+
+export const getPatchMlgooAssessmentsAssessmentIdRecalibrationValidationMutationOptions = <TError = void | HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchMlgooAssessments$AssessmentIdRecalibrationValidation>>, TError,{assessmentId: number;data: UpdateRecalibrationValidationRequest}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof patchMlgooAssessments$AssessmentIdRecalibrationValidation>>, TError,{assessmentId: number;data: UpdateRecalibrationValidationRequest}, TContext> => {
+
+const mutationKey = ['patchMlgooAssessmentsAssessmentIdRecalibrationValidation'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchMlgooAssessments$AssessmentIdRecalibrationValidation>>, {assessmentId: number;data: UpdateRecalibrationValidationRequest}> = (props) => {
+          const {assessmentId,data} = props ?? {};
+
+          return  patchMlgooAssessments$AssessmentIdRecalibrationValidation(assessmentId,data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PatchMlgooAssessmentsAssessmentIdRecalibrationValidationMutationResult = NonNullable<Awaited<ReturnType<typeof patchMlgooAssessments$AssessmentIdRecalibrationValidation>>>
+    export type PatchMlgooAssessmentsAssessmentIdRecalibrationValidationMutationBody = UpdateRecalibrationValidationRequest
+    export type PatchMlgooAssessmentsAssessmentIdRecalibrationValidationMutationError = void | HTTPValidationError
+
+    /**
+ * @summary Update Validation Status of Recalibration Targets
+ */
+export const usePatchMlgooAssessmentsAssessmentIdRecalibrationValidation = <TError = void | HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchMlgooAssessments$AssessmentIdRecalibrationValidation>>, TError,{assessmentId: number;data: UpdateRecalibrationValidationRequest}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof patchMlgooAssessments$AssessmentIdRecalibrationValidation>>,
+        TError,
+        {assessmentId: number;data: UpdateRecalibrationValidationRequest},
+        TContext
+      > => {
+
+      const mutationOptions = getPatchMlgooAssessmentsAssessmentIdRecalibrationValidationMutationOptions(options);
 
       return useMutation(mutationOptions );
     }

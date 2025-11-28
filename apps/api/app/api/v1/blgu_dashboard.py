@@ -617,9 +617,9 @@ def get_blgu_dashboard(
                         "area_type": ga.area_type.value if ga and ga.area_type else ("Core" if area_name in ["Financial Administration and Sustainability", "Disaster Preparedness", "Safety, Peace and Order"] else "Essential"),
                         "passed": status == "Passed",
                         "total_indicators": counts["total"],
-                        "passed_indicators": counts["passed"],
-                        # Include conditional in failed count for display (since they didn't fully pass)
-                        "failed_indicators": counts["failed"] + counts["conditional"],
+                        # SGLGB Rule: Conditional = Considered = PASS (counts toward passing)
+                        "passed_indicators": counts["passed"] + counts["conditional"],
+                        "failed_indicators": counts["failed"],
                     })
             area_results = area_results_list
 
@@ -642,6 +642,12 @@ def get_blgu_dashboard(
         "pending_calibrations_count": len(pending_calibrations),  # Total pending calibration requests
         "calibration_governance_areas": calibration_governance_areas,  # List of all pending calibration areas with details
         "ai_summaries_by_area": ai_summaries_by_area if ai_summaries_by_area else None,  # Summaries grouped by governance area
+        # MLGOO RE-calibration tracking (distinct from Validator calibration)
+        "is_mlgoo_recalibration": assessment.is_mlgoo_recalibration,  # True if MLGOO requested RE-calibration
+        "mlgoo_recalibration_indicator_ids": assessment.mlgoo_recalibration_indicator_ids,  # Specific indicators to address
+        "mlgoo_recalibration_comments": assessment.mlgoo_recalibration_comments,  # MLGOO's explanation
+        "mlgoo_recalibration_count": assessment.mlgoo_recalibration_count,  # Count of RE-calibrations (max 1)
+        "mlgoo_recalibration_requested_at": assessment.mlgoo_recalibration_requested_at.isoformat() + 'Z' if assessment.mlgoo_recalibration_requested_at else None,  # Timestamp for timeline
         "total_indicators": total_indicators,
         "completed_indicators": completed_indicators,
         "incomplete_indicators": incomplete_indicators,

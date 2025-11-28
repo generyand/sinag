@@ -7,9 +7,10 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useSubmitAssessment } from "@/hooks/useAssessment";
+import { useToast } from "@/hooks/use-toast";
 import { Assessment, AssessmentValidation } from "@/types/assessment";
 import {
+    usePostAssessmentsAssessmentIdSubmit,
     usePostAssessmentsAssessmentIdResubmit,
     usePostAssessmentsAssessmentIdSubmitForCalibration,
 } from "@sinag/shared";
@@ -34,18 +35,58 @@ export function AssessmentHeader({
   isCalibrationRework = false,
   calibrationGovernanceAreaName,
 }: AssessmentHeaderProps) {
-  const submitMutation = useSubmitAssessment();
+  const { toast } = useToast();
+
+  // Use Epic 5.0 submit endpoint (POST /assessments/{id}/submit)
+  const submitMutation = usePostAssessmentsAssessmentIdSubmit({
+    mutation: {
+      onSuccess: (data) => {
+        toast({
+          title: "Assessment Submitted",
+          description: `Your assessment was successfully submitted on ${new Date(
+            data.submitted_at
+          ).toLocaleString()}. It is now locked for editing.`,
+          variant: "default",
+        });
+        // Redirect to dashboard after a short delay for toast to be visible
+        setTimeout(() => {
+          window.location.href = "/blgu/dashboard";
+        }, 1500);
+      },
+      onError: (error: any) => {
+        const errorMessage =
+          error?.response?.data?.detail || error?.message || "Failed to submit assessment";
+        toast({
+          title: "Submission Failed",
+          description: typeof errorMessage === 'object' ? errorMessage.message || JSON.stringify(errorMessage) : errorMessage,
+          variant: "destructive",
+        });
+      },
+    },
+  });
 
   // Use different endpoint for resubmit during REWORK status
   const resubmitMutation = usePostAssessmentsAssessmentIdResubmit({
     mutation: {
-      onSuccess: () => {
-        window.alert("Assessment resubmitted successfully. Redirecting to dashboard.");
-        window.location.href = "/blgu/dashboard";
+      onSuccess: (data) => {
+        toast({
+          title: "Assessment Resubmitted",
+          description: `Your assessment was successfully resubmitted on ${new Date(
+            data.resubmitted_at
+          ).toLocaleString()}.`,
+          variant: "default",
+        });
+        setTimeout(() => {
+          window.location.href = "/blgu/dashboard";
+        }, 1500);
       },
       onError: (error: any) => {
         const errorMessage = error?.response?.data?.detail || error?.message || "Failed to resubmit";
-        window.alert(`Resubmission failed: ${errorMessage}`);
+        toast({
+          title: "Resubmission Failed",
+          description: typeof errorMessage === 'object' ? errorMessage.message || JSON.stringify(errorMessage) : errorMessage,
+          variant: "destructive",
+        });
       },
     },
   });
@@ -53,13 +94,25 @@ export function AssessmentHeader({
   // Use calibration-specific endpoint when submitting after Validator calibration
   const calibrationMutation = usePostAssessmentsAssessmentIdSubmitForCalibration({
     mutation: {
-      onSuccess: () => {
-        window.alert("Calibration submitted successfully. Redirecting to dashboard.");
-        window.location.href = "/blgu/dashboard";
+      onSuccess: (data) => {
+        toast({
+          title: "Calibration Submitted",
+          description: `Your calibration was successfully submitted on ${new Date(
+            data.resubmitted_at
+          ).toLocaleString()}.`,
+          variant: "default",
+        });
+        setTimeout(() => {
+          window.location.href = "/blgu/dashboard";
+        }, 1500);
       },
       onError: (error: any) => {
         const errorMessage = error?.response?.data?.detail || error?.message || "Failed to submit calibration";
-        window.alert(`Calibration submission failed: ${errorMessage}`);
+        toast({
+          title: "Calibration Submission Failed",
+          description: typeof errorMessage === 'object' ? errorMessage.message || JSON.stringify(errorMessage) : errorMessage,
+          variant: "destructive",
+        });
       },
     },
   });
@@ -280,26 +333,8 @@ export function AssessmentHeader({
                           });
                         }
                       } else {
-                        submitMutation.mutate(undefined, {
-                          onSuccess: (result: any) => {
-                            if (result?.is_valid) {
-                              window.alert(
-                                "Assessment submitted successfully. Redirecting to dashboard."
-                              );
-                              window.location.href = "/blgu/dashboard";
-                            } else if (Array.isArray(result?.errors)) {
-                              const details = result.errors
-                                .map((e: any) =>
-                                  [e.indicator_name, e.error]
-                                    .filter(Boolean)
-                                    .join(": ")
-                                )
-                                .join("\n");
-                              window.alert(
-                                `Submission failed due to the following issues:\n${details}`
-                              );
-                            }
-                          },
+                        submitMutation.mutate({
+                          assessmentId: parseInt(assessment.id),
                         });
                       }
                     }}

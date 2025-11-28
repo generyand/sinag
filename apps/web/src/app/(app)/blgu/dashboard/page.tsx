@@ -146,6 +146,8 @@ export default function BLGUDashboardPage() {
                   validatedAt={dashboardData.validated_at}
                   currentStatus={dashboardData.status}
                   isCalibrationRework={dashboardData.is_calibration_rework || false}
+                  isMlgooRecalibration={(dashboardData as any).is_mlgoo_recalibration || false}
+                  mlgooRecalibrationRequestedAt={(dashboardData as any).mlgoo_recalibration_requested_at}
                   reworkCount={dashboardData.rework_count}
                 />
               </div>
@@ -167,6 +169,8 @@ export default function BLGUDashboardPage() {
                     validatedAt={dashboardData.validated_at}
                     currentStatus={dashboardData.status}
                     isCalibrationRework={dashboardData.is_calibration_rework || false}
+                    isMlgooRecalibration={(dashboardData as any).is_mlgoo_recalibration || false}
+                    mlgooRecalibrationRequestedAt={(dashboardData as any).mlgoo_recalibration_requested_at}
                     reworkCount={dashboardData.rework_count}
                   />
                 </div>
@@ -197,6 +201,10 @@ export default function BLGUDashboardPage() {
             <VerdictSection
               dashboardData={dashboardData}
               assessmentId={assessmentId}
+              selectedLanguage={selectedLanguage}
+              onLanguageChange={handleLanguageChange}
+              isFetchingDashboard={isFetchingDashboard}
+              onRefetch={() => refetch()}
             />
           </div>
         </div>

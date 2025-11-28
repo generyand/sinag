@@ -70,12 +70,16 @@ export function SubmitAssessmentButton({
         onSuccess?.();
       },
       onError: (error: any) => {
-        const errorMessage =
+        const rawError =
           error?.response?.data?.detail || error?.message || "Failed to submit assessment";
+        // Handle case where error detail is an object (FastAPI validation errors)
+        const errorMessage = typeof rawError === 'object'
+          ? rawError.message || JSON.stringify(rawError)
+          : rawError;
 
         toast({
           title: "Submission Failed",
-          description: errorMessage,
+          description: String(errorMessage),
           variant: "destructive",
         });
 

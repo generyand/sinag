@@ -10,6 +10,8 @@ import type { AuditLogResponseUserEmail } from '../users';
 import type { AuditLogResponseUserName } from '../users';
 import type { GovernanceAreaGroup } from '../common';
 import type { BLGUDashboardResponseMovAnnotationsByIndicator } from '../indicators';
+import type { BLGUDashboardResponseMlgooRecalibrationIndicatorIds } from '../indicators';
+import type { BLGUDashboardResponseMlgooRecalibrationComments } from '../mlgoo';
 import type { AISummary } from '../common';
 import type { ReworkComment } from '../common';
 import type { IndicatorSummary } from '../indicators';
@@ -200,6 +202,14 @@ export interface BLGUDashboardResponse {
   ai_summary?: BLGUDashboardResponseAiSummary;
   /** List of language codes for which AI summaries are available (e.g., ['ceb', 'en']). Tagalog ('fil') is generated on-demand if requested. */
   ai_summary_available_languages?: BLGUDashboardResponseAiSummaryAvailableLanguages;
+  /** If True, this is an MLGOO RE-calibration (not regular rework or validator calibration). BLGU should only address the specific indicators in mlgoo_recalibration_indicator_ids. */
+  is_mlgoo_recalibration?: boolean;
+  /** List of indicator IDs that MLGOO has unlocked for RE-calibration. Only these indicators need to be addressed by BLGU. */
+  mlgoo_recalibration_indicator_ids?: BLGUDashboardResponseMlgooRecalibrationIndicatorIds;
+  /** MLGOO's comments explaining why RE-calibration is needed. */
+  mlgoo_recalibration_comments?: BLGUDashboardResponseMlgooRecalibrationComments;
+  /** Number of times MLGOO has requested RE-calibration (max 1). */
+  mlgoo_recalibration_count?: number;
   /** Timestamp when assessment was first submitted (ISO format) */
   submitted_at?: BLGUDashboardResponseSubmittedAt;
   /** Timestamp when final validation was completed (ISO format) */
