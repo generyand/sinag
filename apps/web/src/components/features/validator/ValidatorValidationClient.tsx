@@ -257,6 +257,12 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   };
 
   const onFinalize = async () => {
+    // Prevent double-clicking by checking if already in progress
+    if (finalizeMut.isPending) {
+      console.log('Finalize already in progress, ignoring duplicate click');
+      return;
+    }
+
     // Show immediate feedback that the process started
     toast.loading('Finalizing validation...', { id: 'finalize-toast' });
 
@@ -267,14 +273,26 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
 
       // Then finalize
       console.log('Finalizing assessment...');
-      const result = await finalizeMut.mutateAsync({ assessmentId }) as { new_status?: string };
+      const result = await finalizeMut.mutateAsync({ assessmentId }) as {
+        new_status?: string;
+        already_finalized?: boolean;
+      };
       await qc.invalidateQueries();
 
-      // Check if assessment is fully complete or partially validated
-      const isFullyComplete = result?.new_status === 'COMPLETED';
-
-      // Dismiss loading toast and show success
+      // Dismiss loading toast
       toast.dismiss('finalize-toast');
+
+      // Handle already finalized case (idempotent response from backend)
+      if (result?.already_finalized) {
+        toast.success('✅ Assessment already finalized and awaiting MLGOO approval.', {
+          duration: 4000,
+        });
+        router.push('/validator/submissions');
+        return;
+      }
+
+      // Check if assessment is fully complete or partially validated
+      const isFullyComplete = result?.new_status === 'AWAITING_MLGOO_APPROVAL';
 
       if (isFullyComplete) {
         toast.success('✅ Assessment fully validated! All governance areas are complete. The assessment is now ready for MLGOO review.', {

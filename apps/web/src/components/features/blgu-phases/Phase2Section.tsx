@@ -26,6 +26,7 @@ type AssessmentStatus =
   | "REWORK"
   | "NEEDS_REWORK"
   | "AWAITING_FINAL_VALIDATION"
+  | "AWAITING_MLGOO_APPROVAL"
   | "COMPLETED";
 
 interface Phase2SectionProps {
@@ -86,6 +87,15 @@ function getPhase2Status(
       phaseStatus: "in_progress",
       statusLabel: "Under Validation",
       isActive: true,
+    };
+  }
+
+  // Awaiting MLGOO Approval (Phase 2 complete, waiting for MLGOO)
+  if (assessmentStatus === "AWAITING_MLGOO_APPROVAL") {
+    return {
+      phaseStatus: "completed",
+      statusLabel: "Completed",
+      isActive: false,
     };
   }
 
@@ -231,8 +241,9 @@ export function Phase2Section({
               Table Validation Completed
             </h3>
             <p className="text-[var(--text-secondary)] max-w-md mx-auto">
-              Your assessment has been validated by the DILG validator team.
-              View your SGLGB result in the Verdict section below.
+              {dashboardData.status === "AWAITING_MLGOO_APPROVAL"
+                ? "Your assessment has been validated and is now awaiting final approval from the MLGOO Chairman."
+                : "Your assessment has been validated by the DILG validator team. View your SGLGB result in the Verdict section below."}
             </p>
           </div>
         )}

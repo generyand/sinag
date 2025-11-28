@@ -10,9 +10,12 @@ import type { PercentageThresholdRule } from '../percentagethresholdrule';
 import type { CountThresholdRule } from '../countthresholdrule';
 import type { MatchValueRule } from '../matchvaluerule';
 import type { BBIFunctionalityCheckRule } from '../bbis';
+import type { ApprovalQueueItemBlguUserId } from '../users';
+import type { ApprovalQueueItemOverallScore } from '../movs';
 import type { FileUploadFieldConditionalMovRequirement } from '../movs';
 import type { SectionHeaderField } from '../sectionheaderfield';
 import type { InfoTextField } from '../infotextfield';
+import type { IndicatorDetailItem } from '../indicators';
 import type { IndicatorItem } from '../indicators';
 import type { ConditionalRemark } from '../conditionalremark';
 import type { ReorderRequestIndicatorsItem } from '../indicators';
@@ -127,6 +130,46 @@ export interface AnonymizedInsight {
  * AnonymizedInsightPriority
  */
 export type AnonymizedInsightPriority = string | null;
+
+
+/**
+ * ApprovalQueueItem
+ */
+export interface ApprovalQueueItem {
+  id: number;
+  barangay_name: string;
+  blgu_user_id: ApprovalQueueItemBlguUserId;
+  status: string;
+  submitted_at: ApprovalQueueItemSubmittedAt;
+  validated_at: ApprovalQueueItemValidatedAt;
+  compliance_status: ApprovalQueueItemComplianceStatus;
+  overall_score: ApprovalQueueItemOverallScore;
+  pass_count: number;
+  fail_count: number;
+  conditional_count: number;
+  total_responses: number;
+  can_recalibrate: boolean;
+  mlgoo_recalibration_count: number;
+  is_mlgoo_recalibration: boolean;
+}
+
+
+/**
+ * ApprovalQueueItemComplianceStatus
+ */
+export type ApprovalQueueItemComplianceStatus = string | null;
+
+
+/**
+ * ApprovalQueueItemSubmittedAt
+ */
+export type ApprovalQueueItemSubmittedAt = string | null;
+
+
+/**
+ * ApprovalQueueItemValidatedAt
+ */
+export type ApprovalQueueItemValidatedAt = string | null;
 
 
 /**
@@ -557,6 +600,26 @@ export type FileUploadFieldOptionGroup = string | null;
  * FormSchemaFieldsItem
  */
 export type FormSchemaFieldsItem = CheckboxGroupField | RadioButtonField | NumberInputField | TextInputField | TextAreaField | DatePickerField | FileUploadField | SectionHeaderField | InfoTextField;
+
+
+/**
+ * GovernanceAreaDetailItem
+ */
+export interface GovernanceAreaDetailItem {
+  id: number;
+  name: string;
+  area_type: GovernanceAreaDetailItemAreaType;
+  pass_count: number;
+  fail_count: number;
+  conditional_count: number;
+  indicators: IndicatorDetailItem[];
+}
+
+
+/**
+ * GovernanceAreaDetailItemAreaType
+ */
+export type GovernanceAreaDetailItemAreaType = string | null;
 
 
 /**

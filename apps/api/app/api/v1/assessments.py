@@ -1343,7 +1343,13 @@ def resubmit_assessment(
     db.commit()
     db.refresh(assessment)
 
-    # TODO (Story 5.19): Send notification to assessor about resubmission
+    # Send notification to assessors about resubmission (Notification #3)
+    try:
+        from app.workers.notifications import send_rework_resubmission_notification
+        send_rework_resubmission_notification.delay(assessment_id)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Failed to queue rework resubmission notification: {e}")
 
     return ResubmitAssessmentResponse(
         success=True,
@@ -1497,11 +1503,14 @@ def submit_for_calibration_review(
     validator_ids_to_notify = []
 
     if pending_calibrations:
+        from sqlalchemy.orm.attributes import flag_modified
+        from datetime import timezone
+
         updated_calibrations = []
         for pc in pending_calibrations:
             # Mark as approved
             pc["approved"] = True
-            pc["approved_at"] = datetime.utcnow().isoformat()
+            pc["approved_at"] = datetime.now(timezone.utc).isoformat()
             updated_calibrations.append(pc)
 
             # Collect validator IDs to notify
@@ -1510,6 +1519,8 @@ def submit_for_calibration_review(
                 validator_ids_to_notify.append(validator_id)
 
         assessment.pending_calibrations = updated_calibrations
+        # CRITICAL: Flag the JSON column as modified so SQLAlchemy detects the change
+        flag_modified(assessment, 'pending_calibrations')
 
     # Clear calibration flags after successful submission
     assessment.is_calibration_rework = False

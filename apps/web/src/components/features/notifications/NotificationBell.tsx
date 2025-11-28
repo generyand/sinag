@@ -21,6 +21,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
     unreadCount,
     totalCount,
     isLoading,
+    isRefreshing,
     isPanelOpen,
     isMarkingAllRead,
     markAsRead,
@@ -66,6 +67,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
           unreadCount={unreadCount}
           totalCount={totalCount}
           isLoading={isLoading}
+          isRefreshing={isRefreshing}
           isMarkingAllRead={isMarkingAllRead}
           onMarkAsRead={(id) => markAsRead([id])}
           onMarkAllAsRead={markAllAsRead}

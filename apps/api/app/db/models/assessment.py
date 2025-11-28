@@ -60,6 +60,30 @@ class Assessment(Base):
     # Stores AI summaries per governance area: {"1": {"ceb": {...}, "en": {...}}, "2": {...}}
     calibration_summaries_by_area: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
+    # MLGOO Final Approval tracking (NEW)
+    mlgoo_approved_by: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    mlgoo_approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    # MLGOO RE-calibration tracking (distinct from Validator calibration)
+    # Used when MLGOO determines validator was too strict and needs to unlock indicators
+    is_mlgoo_recalibration: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    mlgoo_recalibration_requested_by: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    mlgoo_recalibration_requested_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    mlgoo_recalibration_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)  # Max 1
+    mlgoo_recalibration_indicator_ids: Mapped[list | None] = mapped_column(JSON, nullable=True)  # Specific indicators unlocked
+    mlgoo_recalibration_comments: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Grace Period & Auto-lock tracking
+    # When set, BLGU has until this time to comply with rework/calibration
+    grace_period_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # When deadline expires, BLGU is locked from editing and MLGOO is notified
+    is_locked_for_deadline: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    locked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
     # Intelligence layer fields
     final_compliance_status: Mapped[ComplianceStatus | None] = mapped_column(
         Enum(ComplianceStatus, name="compliance_status_enum", create_constraint=True),
@@ -97,6 +121,13 @@ class Assessment(Base):
     calibration_validator = relationship(
         "User", foreign_keys=[calibration_validator_id], post_update=True
     )
+    # MLGOO approval relationships
+    mlgoo_approver = relationship(
+        "User", foreign_keys=[mlgoo_approved_by], post_update=True
+    )
+    mlgoo_recalibration_requester = relationship(
+        "User", foreign_keys=[mlgoo_recalibration_requested_by], post_update=True
+    )
     responses = relationship(
         "AssessmentResponse", back_populates="assessment", cascade="all, delete-orphan"
     )
@@ -133,6 +164,31 @@ class Assessment(Base):
             raise ValueError("rework_count cannot be negative.")
         return value
 
+    @validates('mlgoo_recalibration_count')
+    def validate_mlgoo_recalibration_count(self, key, value):
+        """
+        Validate that mlgoo_recalibration_count does not exceed 1.
+
+        Only one MLGOO RE-calibration cycle is allowed per assessment.
+
+        Args:
+            key: The attribute name being validated
+            value: The new value for mlgoo_recalibration_count
+
+        Returns:
+            The validated value
+
+        Raises:
+            ValueError: If mlgoo_recalibration_count exceeds 1
+        """
+        if value > 1:
+            raise ValueError(
+                "mlgoo_recalibration_count cannot exceed 1. Only one MLGOO RE-calibration cycle is allowed per assessment."
+            )
+        if value < 0:
+            raise ValueError("mlgoo_recalibration_count cannot be negative.")
+        return value
+
     # Helper properties (Epic 5.0)
     @property
     def can_request_rework(self) -> bool:
@@ -157,19 +213,43 @@ class Assessment(Base):
         - SUBMITTED: Submitted for assessor review
         - IN_REVIEW: Currently being reviewed by assessor
         - AWAITING_FINAL_VALIDATION: Awaiting validator final validation
+        - AWAITING_MLGOO_APPROVAL: Awaiting MLGOO final approval
         - COMPLETED: Final validation complete
+
+        OR when is_locked_for_deadline is True (grace period expired).
 
         Locked assessments cannot be edited by BLGU users.
 
         Returns:
             True if assessment is locked, False otherwise (DRAFT or REWORK states)
         """
+        # Check if locked due to deadline expiration
+        if self.is_locked_for_deadline:
+            return True
         return self.status in [
             AssessmentStatus.SUBMITTED,
             AssessmentStatus.IN_REVIEW,
             AssessmentStatus.AWAITING_FINAL_VALIDATION,
+            AssessmentStatus.AWAITING_MLGOO_APPROVAL,
             AssessmentStatus.COMPLETED,
         ]
+
+    @property
+    def can_request_mlgoo_recalibration(self) -> bool:
+        """
+        Check if MLGOO RE-calibration can be requested for this assessment.
+
+        RE-calibration can only be requested if:
+        1. The assessment is in AWAITING_MLGOO_APPROVAL or COMPLETED status
+        2. The MLGOO recalibration count is less than 1 (no recalibration has been requested yet)
+
+        Returns:
+            True if MLGOO RE-calibration can be requested, False otherwise
+        """
+        return (
+            self.status in [AssessmentStatus.AWAITING_MLGOO_APPROVAL, AssessmentStatus.COMPLETED]
+            and self.mlgoo_recalibration_count < 1
+        )
 
 
 class AssessmentResponse(Base):
