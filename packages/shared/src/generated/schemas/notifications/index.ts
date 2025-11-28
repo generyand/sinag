@@ -85,6 +85,35 @@ export type NotificationResponseReadAt = string | null;
 
 
 /**
+ * NotificationResult
+ */
+export interface NotificationResult {
+  success: boolean;
+  message?: NotificationResultMessage;
+  error?: NotificationResultError;
+  task_id?: NotificationResultTaskId;
+}
+
+
+/**
+ * NotificationResultError
+ */
+export type NotificationResultError = string | null;
+
+
+/**
+ * NotificationResultMessage
+ */
+export type NotificationResultMessage = string | null;
+
+
+/**
+ * NotificationResultTaskId
+ */
+export type NotificationResultTaskId = string | null;
+
+
+/**
  * NotificationType
  */
 export type NotificationType = typeof NotificationType[keyof typeof NotificationType];
@@ -99,4 +128,9 @@ export const NotificationType = {
   CALIBRATION_REQUESTED: 'CALIBRATION_REQUESTED',
   CALIBRATION_RESUBMITTED: 'CALIBRATION_RESUBMITTED',
   VALIDATION_COMPLETED: 'VALIDATION_COMPLETED',
+  READY_FOR_MLGOO_APPROVAL: 'READY_FOR_MLGOO_APPROVAL',
+  MLGOO_RECALIBRATION_REQUESTED: 'MLGOO_RECALIBRATION_REQUESTED',
+  ASSESSMENT_APPROVED: 'ASSESSMENT_APPROVED',
+  DEADLINE_EXPIRED_LOCKED: 'DEADLINE_EXPIRED_LOCKED',
+  GRACE_PERIOD_WARNING: 'GRACE_PERIOD_WARNING',
 } as const;

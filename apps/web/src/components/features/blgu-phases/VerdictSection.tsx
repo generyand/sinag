@@ -35,12 +35,23 @@ function getVerdictStatus(status: string): {
   phaseStatus: PhaseStatus;
   statusLabel: string;
   isActive: boolean;
+  pendingMessage: string;
 } {
   if (status === "COMPLETED") {
     return {
       phaseStatus: "available",
       statusLabel: "Available",
       isActive: true,
+      pendingMessage: "",
+    };
+  }
+
+  if (status === "AWAITING_MLGOO_APPROVAL") {
+    return {
+      phaseStatus: "pending",
+      statusLabel: "Awaiting MLGOO Approval",
+      isActive: false,
+      pendingMessage: "Your assessment has been validated and is now awaiting final approval from the MLGOO Chairman.",
     };
   }
 
@@ -48,6 +59,7 @@ function getVerdictStatus(status: string): {
     phaseStatus: "pending",
     statusLabel: "Pending",
     isActive: false,
+    pendingMessage: "Your SGLGB classification result will be available after the table validation is completed by the DILG validator team.",
   };
 }
 
@@ -73,7 +85,7 @@ export function VerdictSection({
   dashboardData,
   assessmentId,
 }: VerdictSectionProps) {
-  const { phaseStatus, statusLabel, isActive } = getVerdictStatus(
+  const { phaseStatus, statusLabel, isActive, pendingMessage } = getVerdictStatus(
     dashboardData.status
   );
 
@@ -102,11 +114,12 @@ export function VerdictSection({
               <Clock className="w-8 h-8 text-gray-400" />
             </div>
             <h3 className="text-lg font-medium text-[var(--foreground)] mb-2">
-              SGLGB Result Pending
+              {dashboardData.status === "AWAITING_MLGOO_APPROVAL"
+                ? "Awaiting MLGOO Approval"
+                : "SGLGB Result Pending"}
             </h3>
             <p className="text-[var(--text-secondary)] max-w-md mx-auto">
-              Your SGLGB classification result will be available after the table
-              validation is completed by the DILG validator team.
+              {pendingMessage}
             </p>
             <div className="mt-6 flex justify-center gap-4">
               <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">

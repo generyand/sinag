@@ -4,6 +4,12 @@
 // 🏷️  Based on FastAPI tag: "movs"
 
 /**
+ * ApprovalQueueItemOverallScore
+ */
+export type ApprovalQueueItemOverallScore = number | null;
+
+
+/**
  * ChecklistItemResponseMovDescription
  */
 export type ChecklistItemResponseMovDescription = string | null;

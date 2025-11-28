@@ -692,3 +692,396 @@ def send_deadline_extension_notification(
         # Only close the session if we created it (not provided for testing)
         if not db_provided:
             db.close()
+
+
+# ==================== READY FOR MLGOO APPROVAL NOTIFICATION ====================
+
+
+@celery_app.task(bind=True, name="notifications.send_ready_for_mlgoo_approval_notification")
+def send_ready_for_mlgoo_approval_notification(
+    self: Any, assessment_id: int
+) -> Dict[str, Any]:
+    """
+    Notification #8: All Validators complete -> MLGOO notified for final approval.
+
+    Sent when all governance areas have been validated and the assessment
+    moves to AWAITING_MLGOO_APPROVAL status.
+
+    Args:
+        assessment_id: ID of the assessment ready for MLGOO approval
+
+    Returns:
+        dict: Result of the notification process
+    """
+    db: Session = SessionLocal()
+
+    try:
+        # Get the assessment with BLGU user details
+        assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+
+        if not assessment:
+            logger.error("Assessment %s not found", assessment_id)
+            return {"success": False, "error": "Assessment not found"}
+
+        # Get barangay name
+        barangay_name = "Unknown Barangay"
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+
+        # Notify all MLGOO users
+        notifications = notification_service.notify_all_mlgoo_users(
+            db=db,
+            notification_type=NotificationType.READY_FOR_MLGOO_APPROVAL,
+            title=f"Ready for Final Approval: {barangay_name}",
+            message="The SGLGB assessment has been validated by all governance areas and is ready for your final approval.",
+            assessment_id=assessment_id,
+        )
+
+        db.commit()
+
+        logger.info(
+            "READY_FOR_MLGOO_APPROVAL notification: Assessment %s for %s - %d MLGOO users notified",
+            assessment_id,
+            barangay_name,
+            len(notifications),
+        )
+
+        return {
+            "success": True,
+            "message": f"Ready for MLGOO approval notification sent to {len(notifications)} user(s)",
+            "assessment_id": assessment_id,
+            "barangay_name": barangay_name,
+            "notifications_created": len(notifications),
+        }
+
+    except Exception as e:
+        logger.error(
+            "Error sending ready for MLGOO approval notification for assessment %s: %s",
+            assessment_id,
+            str(e),
+        )
+        db.rollback()
+        return {"success": False, "error": str(e)}
+
+    finally:
+        db.close()
+
+
+# ==================== MLGOO RECALIBRATION NOTIFICATION ====================
+
+
+@celery_app.task(bind=True, name="notifications.send_mlgoo_recalibration_notification")
+def send_mlgoo_recalibration_notification(
+    self: Any, assessment_id: int
+) -> Dict[str, Any]:
+    """
+    Notification #9: MLGOO requests RE-calibration -> BLGU notified.
+
+    Sent when MLGOO determines the validator was too strict and requests
+    RE-calibration for specific indicators.
+
+    Args:
+        assessment_id: ID of the assessment requiring RE-calibration
+
+    Returns:
+        dict: Result of the notification process
+    """
+    db: Session = SessionLocal()
+
+    try:
+        # Get the assessment
+        assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+
+        if not assessment:
+            logger.error("Assessment %s not found", assessment_id)
+            return {"success": False, "error": "Assessment not found"}
+
+        if not assessment.blgu_user_id:
+            logger.error("Assessment %s has no BLGU user", assessment_id)
+            return {"success": False, "error": "BLGU user not found"}
+
+        # Get barangay name
+        barangay_name = "Unknown Barangay"
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+
+        # Create notification for BLGU user
+        notification = notification_service.notify_blgu_user(
+            db=db,
+            notification_type=NotificationType.MLGOO_RECALIBRATION_REQUESTED,
+            title="RE-calibration Requested by MLGOO",
+            message="The MLGOO Chairman has requested RE-calibration for specific indicators. Please review the feedback and make corrections.",
+            blgu_user_id=assessment.blgu_user_id,
+            assessment_id=assessment_id,
+        )
+
+        db.commit()
+
+        logger.info(
+            "MLGOO_RECALIBRATION_REQUESTED notification: Assessment %s for %s - BLGU user notified",
+            assessment_id,
+            barangay_name,
+        )
+
+        return {
+            "success": True,
+            "message": "MLGOO RE-calibration notification sent successfully",
+            "assessment_id": assessment_id,
+            "barangay_name": barangay_name,
+            "notification_id": notification.id,
+        }
+
+    except Exception as e:
+        logger.error(
+            "Error sending MLGOO RE-calibration notification for assessment %s: %s",
+            assessment_id,
+            str(e),
+        )
+        db.rollback()
+        return {"success": False, "error": str(e)}
+
+    finally:
+        db.close()
+
+
+# ==================== ASSESSMENT APPROVED NOTIFICATION ====================
+
+
+@celery_app.task(bind=True, name="notifications.send_assessment_approved_notification")
+def send_assessment_approved_notification(
+    self: Any, assessment_id: int
+) -> Dict[str, Any]:
+    """
+    Notification #10: MLGOO approves assessment -> BLGU notified.
+
+    Sent when MLGOO gives final approval and assessment moves to COMPLETED.
+
+    Args:
+        assessment_id: ID of the approved assessment
+
+    Returns:
+        dict: Result of the notification process
+    """
+    db: Session = SessionLocal()
+
+    try:
+        # Get the assessment with BLGU user details
+        assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+
+        if not assessment:
+            logger.error("Assessment %s not found", assessment_id)
+            return {"success": False, "error": "Assessment not found"}
+
+        # Get barangay name
+        barangay_name = "Unknown Barangay"
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+
+        notifications_created = 0
+
+        # Notify BLGU user
+        if assessment.blgu_user_id:
+            notification = notification_service.notify_blgu_user(
+                db=db,
+                notification_type=NotificationType.ASSESSMENT_APPROVED,
+                title="Assessment Approved!",
+                message="Congratulations! Your SGLGB assessment has been approved by the MLGOO Chairman and is now officially complete.",
+                blgu_user_id=assessment.blgu_user_id,
+                assessment_id=assessment_id,
+            )
+            notifications_created += 1
+
+        db.commit()
+
+        logger.info(
+            "ASSESSMENT_APPROVED notification: Assessment %s for %s - BLGU user notified",
+            assessment_id,
+            barangay_name,
+        )
+
+        return {
+            "success": True,
+            "message": f"Assessment approved notification sent to {notifications_created} user(s)",
+            "assessment_id": assessment_id,
+            "barangay_name": barangay_name,
+            "notifications_created": notifications_created,
+        }
+
+    except Exception as e:
+        logger.error(
+            "Error sending assessment approved notification for assessment %s: %s",
+            assessment_id,
+            str(e),
+        )
+        db.rollback()
+        return {"success": False, "error": str(e)}
+
+    finally:
+        db.close()
+
+
+# ==================== GRACE PERIOD WARNING NOTIFICATION ====================
+
+
+@celery_app.task(bind=True, name="notifications.send_grace_period_warning_notification")
+def send_grace_period_warning_notification(
+    self: Any, assessment_id: int, hours_remaining: int
+) -> Dict[str, Any]:
+    """
+    Notification #11: Grace period expiring soon -> BLGU warned.
+
+    Sent when the grace period is about to expire (e.g., 24 hours remaining).
+
+    Args:
+        assessment_id: ID of the assessment with expiring grace period
+        hours_remaining: Number of hours remaining until deadline
+
+    Returns:
+        dict: Result of the notification process
+    """
+    db: Session = SessionLocal()
+
+    try:
+        # Get the assessment
+        assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+
+        if not assessment:
+            logger.error("Assessment %s not found", assessment_id)
+            return {"success": False, "error": "Assessment not found"}
+
+        if not assessment.blgu_user_id:
+            logger.error("Assessment %s has no BLGU user", assessment_id)
+            return {"success": False, "error": "BLGU user not found"}
+
+        # Get barangay name
+        barangay_name = "Unknown Barangay"
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+
+        # Create notification for BLGU user
+        notification = notification_service.notify_blgu_user(
+            db=db,
+            notification_type=NotificationType.GRACE_PERIOD_WARNING,
+            title=f"Deadline Warning: {hours_remaining} Hours Remaining",
+            message=f"Your assessment grace period expires in {hours_remaining} hours. Please complete your corrections before the deadline to avoid being locked out.",
+            blgu_user_id=assessment.blgu_user_id,
+            assessment_id=assessment_id,
+        )
+
+        db.commit()
+
+        logger.info(
+            "GRACE_PERIOD_WARNING notification: Assessment %s for %s - %d hours remaining",
+            assessment_id,
+            barangay_name,
+            hours_remaining,
+        )
+
+        return {
+            "success": True,
+            "message": "Grace period warning notification sent successfully",
+            "assessment_id": assessment_id,
+            "barangay_name": barangay_name,
+            "hours_remaining": hours_remaining,
+            "notification_id": notification.id,
+        }
+
+    except Exception as e:
+        logger.error(
+            "Error sending grace period warning notification for assessment %s: %s",
+            assessment_id,
+            str(e),
+        )
+        db.rollback()
+        return {"success": False, "error": str(e)}
+
+    finally:
+        db.close()
+
+
+# ==================== DEADLINE EXPIRED LOCKED NOTIFICATION ====================
+
+
+@celery_app.task(bind=True, name="notifications.send_deadline_expired_notification")
+def send_deadline_expired_notification(
+    self: Any, assessment_id: int
+) -> Dict[str, Any]:
+    """
+    Notification #12: Grace period expired -> BLGU locked, MLGOO notified.
+
+    Sent when the grace period expires, locking the BLGU from further edits
+    and notifying MLGOO to decide what to do.
+
+    Args:
+        assessment_id: ID of the locked assessment
+
+    Returns:
+        dict: Result of the notification process
+    """
+    db: Session = SessionLocal()
+
+    try:
+        # Get the assessment
+        assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+
+        if not assessment:
+            logger.error("Assessment %s not found", assessment_id)
+            return {"success": False, "error": "Assessment not found"}
+
+        # Get barangay name
+        barangay_name = "Unknown Barangay"
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+
+        notifications_created = 0
+
+        # Notify BLGU user that they are locked out
+        if assessment.blgu_user_id:
+            notification_service.notify_blgu_user(
+                db=db,
+                notification_type=NotificationType.DEADLINE_EXPIRED_LOCKED,
+                title="Assessment Deadline Expired",
+                message="The grace period for your assessment has expired. Your assessment is now locked. Please contact MLGOO for further instructions.",
+                blgu_user_id=assessment.blgu_user_id,
+                assessment_id=assessment_id,
+            )
+            notifications_created += 1
+
+        # Notify all MLGOO users about the expired deadline
+        mlgoo_notifications = notification_service.notify_all_mlgoo_users(
+            db=db,
+            notification_type=NotificationType.DEADLINE_EXPIRED_LOCKED,
+            title=f"Deadline Expired: {barangay_name}",
+            message=f"The grace period for {barangay_name}'s assessment has expired. The BLGU is now locked. Please review and take appropriate action.",
+            assessment_id=assessment_id,
+        )
+        notifications_created += len(mlgoo_notifications)
+
+        db.commit()
+
+        logger.info(
+            "DEADLINE_EXPIRED_LOCKED notification: Assessment %s for %s - %d users notified",
+            assessment_id,
+            barangay_name,
+            notifications_created,
+        )
+
+        return {
+            "success": True,
+            "message": f"Deadline expired notification sent to {notifications_created} user(s)",
+            "assessment_id": assessment_id,
+            "barangay_name": barangay_name,
+            "notifications_created": notifications_created,
+        }
+
+    except Exception as e:
+        logger.error(
+            "Error sending deadline expired notification for assessment %s: %s",
+            assessment_id,
+            str(e),
+        )
+        db.rollback()
+        return {"success": False, "error": str(e)}
+
+    finally:
+        db.close()

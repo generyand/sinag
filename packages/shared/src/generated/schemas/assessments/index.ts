@@ -3,8 +3,40 @@
 // 📁 Assessments-related types
 // 🏷️  Based on FastAPI tag: "assessments"
 
+import type { NotificationResult } from '../notifications';
 import type { ProgressSummary } from '../common';
 import type { GovernanceAreaProgress } from '../common';
+import type { GovernanceAreaDetailItem } from '../common';
+
+/**
+ * ApproveAssessmentRequest
+ */
+export interface ApproveAssessmentRequest {
+  /** Optional approval comments */
+  comments?: ApproveAssessmentRequestComments;
+}
+
+
+/**
+ * ApproveAssessmentRequestComments
+ */
+export type ApproveAssessmentRequestComments = string | null;
+
+
+/**
+ * ApproveAssessmentResponse
+ */
+export interface ApproveAssessmentResponse {
+  success: boolean;
+  message: string;
+  assessment_id: number;
+  barangay_name: string;
+  status: string;
+  approved_by: string;
+  approved_at: string;
+  notification_result: NotificationResult;
+}
+
 
 /**
  * AssessmentCycleCreate
@@ -153,6 +185,98 @@ export interface AssessmentDashboardStats {
  * AssessmentDashboardStatsSubmittedAt
  */
 export type AssessmentDashboardStatsSubmittedAt = string | null;
+
+
+/**
+ * AssessmentDetailResponse
+ */
+export interface AssessmentDetailResponse {
+  id: number;
+  barangay_name: string;
+  blgu_user_id: AssessmentDetailResponseBlguUserId;
+  blgu_user_name: AssessmentDetailResponseBlguUserName;
+  status: string;
+  submitted_at: AssessmentDetailResponseSubmittedAt;
+  validated_at: AssessmentDetailResponseValidatedAt;
+  compliance_status: AssessmentDetailResponseComplianceStatus;
+  overall_score: AssessmentDetailResponseOverallScore;
+  area_results: AssessmentDetailResponseAreaResults;
+  governance_areas: GovernanceAreaDetailItem[];
+  can_approve: boolean;
+  can_recalibrate: boolean;
+  mlgoo_recalibration_count: number;
+  is_mlgoo_recalibration: boolean;
+  mlgoo_recalibration_indicator_ids: AssessmentDetailResponseMlgooRecalibrationIndicatorIds;
+  mlgoo_recalibration_comments: AssessmentDetailResponseMlgooRecalibrationComments;
+  grace_period_expires_at: AssessmentDetailResponseGracePeriodExpiresAt;
+  is_locked_for_deadline: boolean;
+}
+
+
+/**
+ * AssessmentDetailResponseAreaResults
+ */
+export type AssessmentDetailResponseAreaResults = AssessmentDetailResponseAreaResultsAnyOf | null;
+
+
+/**
+ * AssessmentDetailResponseAreaResultsAnyOf
+ */
+export type AssessmentDetailResponseAreaResultsAnyOf = { [key: string]: unknown };
+
+
+/**
+ * AssessmentDetailResponseBlguUserId
+ */
+export type AssessmentDetailResponseBlguUserId = number | null;
+
+
+/**
+ * AssessmentDetailResponseBlguUserName
+ */
+export type AssessmentDetailResponseBlguUserName = string | null;
+
+
+/**
+ * AssessmentDetailResponseComplianceStatus
+ */
+export type AssessmentDetailResponseComplianceStatus = string | null;
+
+
+/**
+ * AssessmentDetailResponseGracePeriodExpiresAt
+ */
+export type AssessmentDetailResponseGracePeriodExpiresAt = string | null;
+
+
+/**
+ * AssessmentDetailResponseMlgooRecalibrationComments
+ */
+export type AssessmentDetailResponseMlgooRecalibrationComments = string | null;
+
+
+/**
+ * AssessmentDetailResponseMlgooRecalibrationIndicatorIds
+ */
+export type AssessmentDetailResponseMlgooRecalibrationIndicatorIds = number[] | null;
+
+
+/**
+ * AssessmentDetailResponseOverallScore
+ */
+export type AssessmentDetailResponseOverallScore = number | null;
+
+
+/**
+ * AssessmentDetailResponseSubmittedAt
+ */
+export type AssessmentDetailResponseSubmittedAt = string | null;
+
+
+/**
+ * AssessmentDetailResponseValidatedAt
+ */
+export type AssessmentDetailResponseValidatedAt = string | null;
 
 
 /**
@@ -344,6 +468,7 @@ export const AssessmentStatus = {
   IN_REVIEW: 'IN_REVIEW',
   REWORK: 'REWORK',
   AWAITING_FINAL_VALIDATION: 'AWAITING_FINAL_VALIDATION',
+  AWAITING_MLGOO_APPROVAL: 'AWAITING_MLGOO_APPROVAL',
   COMPLETED: 'COMPLETED',
   SUBMITTED_FOR_REVIEW: 'SUBMITTED_FOR_REVIEW',
   VALIDATED: 'VALIDATED',
@@ -593,6 +718,18 @@ export type PostAssessmentsIdGenerateInsights202 = { [key: string]: unknown };
 
 
 /**
+ * PostMlgooAssessmentsAssessmentIdApproveBody
+ */
+export type PostMlgooAssessmentsAssessmentIdApproveBody = ApproveAssessmentRequest | null;
+
+
+/**
+ * PostMlgooAssessmentsAssessmentIdUnlockBody
+ */
+export type PostMlgooAssessmentsAssessmentIdUnlockBody = UnlockAssessmentRequest | null;
+
+
+/**
  * ResubmitAssessmentResponse
  */
 export interface ResubmitAssessmentResponse {
@@ -612,4 +749,31 @@ export interface SubmitAssessmentResponse {
   message: string;
   assessment_id: number;
   submitted_at: string;
+}
+
+
+/**
+ * UnlockAssessmentRequest
+ */
+export interface UnlockAssessmentRequest {
+  /**
+   * Number of days to extend the grace period
+   * @minimum 1
+   * @maximum 30
+   */
+  extend_grace_period_days?: number;
+}
+
+
+/**
+ * UnlockAssessmentResponse
+ */
+export interface UnlockAssessmentResponse {
+  success: boolean;
+  message: string;
+  assessment_id: number;
+  barangay_name: string;
+  status: string;
+  grace_period_expires_at: string;
+  unlocked_by: string;
 }

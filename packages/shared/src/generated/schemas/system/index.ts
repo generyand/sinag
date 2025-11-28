@@ -5,6 +5,7 @@
 
 import type { PdfRect } from '../common';
 import type { AnonymizedInsight } from '../common';
+import type { ApprovalQueueItem } from '../common';
 import type { AuditLogResponseUserEmail } from '../users';
 import type { AuditLogResponseUserName } from '../users';
 import type { GovernanceAreaGroup } from '../common';
@@ -83,6 +84,16 @@ export interface AnswerResponse {
  */
 export interface ApiResponse {
   message: string;
+}
+
+
+/**
+ * ApprovalQueueResponse
+ */
+export interface ApprovalQueueResponse {
+  success: boolean;
+  count: number;
+  assessments: ApprovalQueueItem[];
 }
 
 

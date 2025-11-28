@@ -359,6 +359,38 @@ export type IndicatorCreateWithOrderTechnicalNotesText = string | null;
 
 
 /**
+ * IndicatorDetailItem
+ */
+export interface IndicatorDetailItem {
+  response_id: number;
+  indicator_id: number;
+  indicator_name: string;
+  indicator_code: IndicatorDetailItemIndicatorCode;
+  validation_status: IndicatorDetailItemValidationStatus;
+  validator_remarks: IndicatorDetailItemValidatorRemarks;
+  is_recalibration_target: boolean;
+}
+
+
+/**
+ * IndicatorDetailItemIndicatorCode
+ */
+export type IndicatorDetailItemIndicatorCode = string | null;
+
+
+/**
+ * IndicatorDetailItemValidationStatus
+ */
+export type IndicatorDetailItemValidationStatus = string | null;
+
+
+/**
+ * IndicatorDetailItemValidatorRemarks
+ */
+export type IndicatorDetailItemValidatorRemarks = string | null;
+
+
+/**
  * IndicatorDraftCreate
  */
 export interface IndicatorDraftCreate {

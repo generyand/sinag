@@ -66,10 +66,15 @@ function buildTimelineEvents(
   // Determine phase completion based on status
   const isPhase1Complete = [
     "AWAITING_FINAL_VALIDATION",
+    "AWAITING_MLGOO_APPROVAL",
     "COMPLETED",
   ].includes(currentStatus) || (isCalibrationRework && currentStatus === "REWORK");
 
-  const isPhase2Complete = currentStatus === "COMPLETED";
+  // Phase 2 is complete when MLGOO approval is pending or assessment is completed
+  const isPhase2Complete = ["AWAITING_MLGOO_APPROVAL", "COMPLETED"].includes(currentStatus);
+
+  // Final verdict is only complete when assessment is COMPLETED
+  const isPhase3Complete = currentStatus === "COMPLETED";
 
   // Phase 1: Initial Assessment
   if (currentStatus === "DRAFT") {
@@ -145,15 +150,34 @@ function buildTimelineEvents(
     });
   }
 
-  // Phase 3: Verdict
+  // Phase 3: MLGOO Approval (new phase)
+  if (currentStatus === "AWAITING_MLGOO_APPROVAL") {
+    events.push({
+      id: "phase3-mlgoo-approval",
+      title: "Phase 3: MLGOO Approval",
+      description: "Awaiting final approval from MLGOO",
+      status: "current",
+      phase: 3,
+    });
+  } else if (isPhase3Complete) {
+    events.push({
+      id: "phase3-mlgoo-approved",
+      title: "Phase 3: MLGOO Approved",
+      description: "Assessment approved by MLGOO",
+      status: "completed",
+      phase: 3,
+    });
+  }
+
+  // Phase 4: Verdict (final result)
   events.push({
-    id: "phase3-verdict",
+    id: "phase4-verdict",
     title: "Verdict: SGLGB Result",
-    description: validatedAt
+    description: isPhase3Complete
       ? "Classification completed"
-      : "Result will be available after validation",
+      : "Result will be available after MLGOO approval",
     date: formatDate(validatedAt),
-    status: isPhase2Complete ? "completed" : "pending",
+    status: isPhase3Complete ? "completed" : "pending",
     phase: 3,
   });
 

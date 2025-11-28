@@ -1138,6 +1138,9 @@ class AssessorService:
         if assessment.pending_calibrations is None:
             assessment.pending_calibrations = []
         assessment.pending_calibrations = assessment.pending_calibrations + [calibration_request]
+        # CRITICAL: Flag the JSON column as modified so SQLAlchemy detects the change
+        from sqlalchemy.orm.attributes import flag_modified
+        flag_modified(assessment, 'pending_calibrations')
 
         # Update assessment status to REWORK if not already
         # First calibration request changes status, subsequent ones keep it in REWORK
@@ -1296,9 +1299,22 @@ class AssessorService:
 
         if is_validator:
             # ===== PHASE 2: VALIDATORS (Table Validation) =====
-            # Must be in AWAITING_FINAL_VALIDATION status
-            if assessment.status != AssessmentStatus.AWAITING_FINAL_VALIDATION:
-                raise ValueError("Validators can only finalize assessments in AWAITING_FINAL_VALIDATION status")
+            # Handle cases where finalization is called on an already-processed assessment
+            if assessment.status == AssessmentStatus.AWAITING_MLGOO_APPROVAL:
+                # Assessment already fully validated - return success (idempotent)
+                return {
+                    "success": True,
+                    "message": "Assessment already fully validated and awaiting MLGOO approval",
+                    "assessment_id": assessment_id,
+                    "new_status": assessment.status.value,
+                    "already_finalized": True,
+                }
+
+            # Must be in AWAITING_FINAL_VALIDATION or REWORK status
+            # REWORK status is allowed for parallel calibration: another validator may have
+            # requested calibration for their area, but this validator can still finalize their area
+            if assessment.status not in [AssessmentStatus.AWAITING_FINAL_VALIDATION, AssessmentStatus.REWORK]:
+                raise ValueError("Validators can only finalize assessments in AWAITING_FINAL_VALIDATION or REWORK status")
 
             # Validators only review indicators in their assigned governance area
             # Filter responses to only those in validator's governance area
@@ -1333,10 +1349,10 @@ class AssessorService:
             )
 
             if all_responses_validated:
-                # All governance areas validated - move to COMPLETED
+                # All governance areas validated - move to AWAITING_MLGOO_APPROVAL
                 # Validators CAN finalize even with FAIL indicators (that's the final result)
-                # MLGOO Chairman will approve this final result
-                assessment.status = AssessmentStatus.COMPLETED
+                # MLGOO Chairman will review and approve this final result
+                assessment.status = AssessmentStatus.AWAITING_MLGOO_APPROVAL
             else:
                 # This validator's area is done, but other areas still pending
                 # Keep status as AWAITING_FINAL_VALIDATION
@@ -1464,22 +1480,22 @@ class AssessorService:
             print(f"Failed to calculate BBI statuses: {e}")
             bbi_calculation_result = {"success": False, "error": str(e)}
 
-        # Notification #7: If validator completed ALL governance areas (status = COMPLETED),
-        # notify MLGOO users and the BLGU user
-        notification_result = {"success": False, "message": "Not triggered - assessment not COMPLETED"}
-        if assessment.status == AssessmentStatus.COMPLETED:
+        # Notification #7: If validator completed ALL governance areas (status = AWAITING_MLGOO_APPROVAL),
+        # notify MLGOO users for final approval
+        notification_result = {"success": False, "message": "Not triggered - assessment not ready for MLGOO approval"}
+        if assessment.status == AssessmentStatus.AWAITING_MLGOO_APPROVAL:
             try:
-                from app.workers.notifications import send_validation_complete_notification
+                from app.workers.notifications import send_ready_for_mlgoo_approval_notification
 
                 # Queue the notification task to run in the background
-                task = send_validation_complete_notification.delay(assessment_id)
+                task = send_ready_for_mlgoo_approval_notification.delay(assessment_id)
                 notification_result = {
                     "success": True,
-                    "message": "Validation complete notification queued successfully",
+                    "message": "Ready for MLGOO approval notification queued successfully",
                     "task_id": task.id,
                 }
                 self.logger.info(
-                    f"Triggered validation complete notification for assessment {assessment_id}"
+                    f"Triggered ready-for-MLGOO-approval notification for assessment {assessment_id}"
                 )
             except Exception as e:
                 # Log the error but don't fail the finalization operation

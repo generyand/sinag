@@ -58,13 +58,14 @@ export function useNotifications({
   const {
     data: notificationsData,
     isLoading: isLoadingNotifications,
+    isFetching: isFetchingNotifications,
     error: notificationsError,
     refetch: refetchNotifications,
   } = useGetNotifications(params, {
     query: {
       queryKey: getGetNotificationsQueryKey(params),
       enabled: isAuthenticated && isPanelOpen,
-      staleTime: 60_000, // 1 minute
+      staleTime: 30_000, // 30 seconds - reduced from 1 minute for faster refresh
       refetchOnWindowFocus: false,
     },
   });
@@ -134,10 +135,12 @@ export function useNotifications({
     }
   }, [countData, isPanelOpen, setUnreadCount]);
 
-  // Update loading state
+  // Update loading state - only show loading on initial load, not during background refetch
+  // This prevents the refresh button from being disabled during background polling
   useEffect(() => {
-    setLoading(isLoadingNotifications || isLoadingCount);
-  }, [isLoadingNotifications, isLoadingCount, setLoading]);
+    // Use isLoading (initial load) instead of isFetching (includes background refetch)
+    setLoading(isLoadingNotifications && !notificationsData);
+  }, [isLoadingNotifications, notificationsData, setLoading]);
 
   // Update error state
   useEffect(() => {
@@ -203,6 +206,7 @@ export function useNotifications({
 
     // State
     isLoading,
+    isRefreshing: isFetchingNotifications, // Track background refetch separately
     isPanelOpen,
     error,
     isMarkingRead: markReadMutation.isPending,

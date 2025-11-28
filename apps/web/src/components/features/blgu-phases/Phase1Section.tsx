@@ -32,6 +32,7 @@ type AssessmentStatus =
   | "REWORK"
   | "NEEDS_REWORK"
   | "AWAITING_FINAL_VALIDATION"
+  | "AWAITING_MLGOO_APPROVAL"
   | "COMPLETED";
 
 interface Phase1SectionProps {
@@ -79,6 +80,7 @@ function getPhase1Status(
         isActive: true,
       };
     case "AWAITING_FINAL_VALIDATION":
+    case "AWAITING_MLGOO_APPROVAL":
     case "COMPLETED":
       return {
         phaseStatus: "completed",

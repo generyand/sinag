@@ -4,6 +4,12 @@
 // 🏷️  Based on FastAPI tag: "users"
 
 /**
+ * ApprovalQueueItemBlguUserId
+ */
+export type ApprovalQueueItemBlguUserId = number | null;
+
+
+/**
  * AuditLogResponseUserEmail
  */
 export type AuditLogResponseUserEmail = string | null;

@@ -593,10 +593,13 @@ class IntelligenceService:
         self, db: Session, assessment_id: int, area_name: str
     ) -> bool:
         """
-        Determine if a governance area has passed (all indicators within that area must pass).
+        Determine if a governance area has passed (all LEAF indicators within that area must pass).
 
-        An area passes if ALL of its indicators have validation_status = 'Pass'.
-        An area fails if ANY indicator has validation_status != 'Pass' or is None.
+        An area passes if ALL of its LEAF indicators have validation_status = 'Pass'.
+        An area fails if ANY leaf indicator has validation_status != 'Pass' or is None.
+
+        IMPORTANT: Only leaf indicators (indicators with no children) are checked.
+        Parent/section indicators don't have responses and should be excluded.
 
         Args:
             db: Database session
@@ -604,22 +607,31 @@ class IntelligenceService:
             area_name: Name of the governance area to check
 
         Returns:
-            True if all indicators in the area passed, False otherwise
+            True if all leaf indicators in the area passed, False otherwise
         """
         # Get all indicators for this governance area
         area = db.query(GovernanceArea).filter(GovernanceArea.name == area_name).first()
         if not area:
             return False
 
-        indicators = (
+        all_indicators = (
             db.query(Indicator).filter(Indicator.governance_area_id == area.id).all()
         )
 
-        if not indicators:
+        if not all_indicators:
             return False  # No indicators = failed area
 
-        # Check all responses for this assessment and area
-        for indicator in indicators:
+        # Build a set of parent IDs to identify which indicators have children
+        parent_ids = {ind.parent_id for ind in all_indicators if ind.parent_id is not None}
+
+        # Filter to only leaf indicators (indicators that are NOT parents of other indicators)
+        leaf_indicators = [ind for ind in all_indicators if ind.id not in parent_ids]
+
+        if not leaf_indicators:
+            return False  # No leaf indicators = failed area
+
+        # Check all responses for leaf indicators only
+        for indicator in leaf_indicators:
             response = (
                 db.query(AssessmentResponse)
                 .filter(

@@ -58,6 +58,7 @@ class AssessmentStatus(str, enum.Enum):
     IN_REVIEW = "IN_REVIEW"
     REWORK = "REWORK"
     AWAITING_FINAL_VALIDATION = "AWAITING_FINAL_VALIDATION"
+    AWAITING_MLGOO_APPROVAL = "AWAITING_MLGOO_APPROVAL"  # NEW: After validators finalize, awaits MLGOO final approval
     COMPLETED = "COMPLETED"
 
     # Legacy states (backward compatibility)
@@ -141,6 +142,11 @@ class NotificationType(str, enum.Enum):
     - CALIBRATION_REQUESTED: Validator requests calibration -> BLGU notified
     - CALIBRATION_RESUBMITTED: BLGU resubmits calibration -> Same Validator notified
     - VALIDATION_COMPLETED: Validator completes validation -> MLGOO and BLGU notified
+    - READY_FOR_MLGOO_APPROVAL: All validators done -> MLGOO notified for final approval
+    - MLGOO_RECALIBRATION_REQUESTED: MLGOO requests RE-calibration -> BLGU notified
+    - ASSESSMENT_APPROVED: MLGOO approves assessment -> BLGU notified
+    - DEADLINE_EXPIRED_LOCKED: Grace period expired -> BLGU locked, MLGOO notified
+    - GRACE_PERIOD_WARNING: Grace period expiring soon -> BLGU warned
     """
 
     NEW_SUBMISSION = "NEW_SUBMISSION"
@@ -150,3 +156,9 @@ class NotificationType(str, enum.Enum):
     CALIBRATION_REQUESTED = "CALIBRATION_REQUESTED"
     CALIBRATION_RESUBMITTED = "CALIBRATION_RESUBMITTED"
     VALIDATION_COMPLETED = "VALIDATION_COMPLETED"
+    # NEW: MLGOO Final Approval Workflow
+    READY_FOR_MLGOO_APPROVAL = "READY_FOR_MLGOO_APPROVAL"
+    MLGOO_RECALIBRATION_REQUESTED = "MLGOO_RECALIBRATION_REQUESTED"
+    ASSESSMENT_APPROVED = "ASSESSMENT_APPROVED"
+    DEADLINE_EXPIRED_LOCKED = "DEADLINE_EXPIRED_LOCKED"
+    GRACE_PERIOD_WARNING = "GRACE_PERIOD_WARNING"
