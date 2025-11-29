@@ -11,6 +11,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { FileTextIcon } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 
 interface RightAssessorPanelProps {
@@ -217,6 +219,205 @@ function sortIndicatorCode(a: string, b: string): number {
     }
   }
   return 0;
+}
+
+/**
+ * Assessor Checklist History Modal (Validator View)
+ *
+ * Shows validators what the assessor checked/filled during Phase 1 validation
+ */
+interface AssessorChecklistHistoryModalProps {
+  response: AnyRecord;
+  indicator: AnyRecord;
+}
+
+function AssessorChecklistHistoryModal({ response, indicator }: AssessorChecklistHistoryModalProps) {
+  const responseData = (response.response_data as Record<string, any>) || {};
+  const checklistItems = (indicator?.checklist_items as any[]) || [];
+  const indicatorLabel = indicator?.name || `Indicator #${response.indicator_id}`;
+
+  if (checklistItems.length === 0) {
+    return null;
+  }
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-2"
+        >
+          <FileTextIcon className="h-4 w-4" />
+          View Assessor's Checklist
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col bg-white dark:bg-gray-900 rounded-sm">
+        <DialogHeader>
+          <DialogTitle>Assessor's Checklist History</DialogTitle>
+          <div className="text-sm text-muted-foreground">
+            {indicatorLabel}
+          </div>
+        </DialogHeader>
+
+        <div className="overflow-y-auto flex-1 pr-2">
+          <div className="space-y-4">
+            {/* Group items by group_name if available */}
+            {(() => {
+              const groupedItems: Record<string, any[]> = {};
+              const ungroupedItems: any[] = [];
+
+              checklistItems.forEach((item) => {
+                if (item.group_name) {
+                  if (!groupedItems[item.group_name]) {
+                    groupedItems[item.group_name] = [];
+                  }
+                  groupedItems[item.group_name].push(item);
+                } else {
+                  ungroupedItems.push(item);
+                }
+              });
+
+              return (
+                <>
+                  {/* Render ungrouped items first */}
+                  {ungroupedItems.length > 0 && (
+                    <div className="space-y-3">
+                      {ungroupedItems.map((item, idx) => (
+                        <ChecklistItemHistory
+                          key={item.id || idx}
+                          item={item}
+                          responseData={responseData}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Render grouped items */}
+                  {Object.entries(groupedItems).map(([groupName, items]) => (
+                    <div key={groupName} className="space-y-3">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-foreground pb-1 border-b border-border">
+                        {groupName}
+                      </div>
+                      {items.map((item, idx) => (
+                        <ChecklistItemHistory
+                          key={item.id || idx}
+                          item={item}
+                          responseData={responseData}
+                        />
+                      ))}
+                    </div>
+                  ))}
+                </>
+              );
+            })()}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
+ * Individual checklist item display for history modal
+ */
+interface ChecklistItemHistoryProps {
+  item: any;
+  responseData: Record<string, any>;
+}
+
+function ChecklistItemHistory({ item, responseData }: ChecklistItemHistoryProps) {
+  // Skip info_text items (they're not filled by assessors)
+  if (item.item_type === 'info_text') {
+    return null;
+  }
+
+  const itemId = item.item_id;
+
+  // Determine the value(s) from response_data using assessor_val_ prefix
+  let displayValue: React.ReactNode = null;
+  let statusBadge: React.ReactNode = null;
+
+  if (item.item_type === 'assessment_field') {
+    // YES/NO checkbox fields
+    const yesKey = `assessor_val_${itemId}_yes`;
+    const noKey = `assessor_val_${itemId}_no`;
+    const yesValue = responseData[yesKey] === true;
+    const noValue = responseData[noKey] === true;
+
+    if (yesValue) {
+      statusBadge = (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+          YES
+        </span>
+      );
+    } else if (noValue) {
+      statusBadge = (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+          NO
+        </span>
+      );
+    } else {
+      statusBadge = (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-semibold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+          Not filled
+        </span>
+      );
+    }
+  } else if (item.item_type === 'document_count' || item.requires_document_count || item.item_type === 'calculation_field') {
+    // Input fields (document count or calculation)
+    const valueKey = `assessor_val_${itemId}`;
+    const value = responseData[valueKey];
+
+    if (value && String(value).trim() !== '') {
+      displayValue = (
+        <span className="inline-flex items-center px-2 py-1 rounded-sm text-sm font-medium bg-blue-50 text-blue-900 dark:bg-blue-950/30 dark:text-blue-200 border border-blue-200 dark:border-blue-800">
+          {String(value)}
+        </span>
+      );
+    } else {
+      displayValue = (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-semibold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+          Not filled
+        </span>
+      );
+    }
+  } else {
+    // Regular checkbox item
+    const checkboxKey = `assessor_val_${itemId}`;
+    const isChecked = responseData[checkboxKey] === true;
+
+    statusBadge = isChecked ? (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+        Checked
+      </span>
+    ) : (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-semibold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+        Unchecked
+      </span>
+    );
+  }
+
+  return (
+    <div className="border border-border rounded-sm p-3 bg-muted/5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1">
+          <div className="text-sm font-medium text-foreground">
+            {item.label}
+          </div>
+          {item.mov_description && item.mov_description !== item.label && (
+            <div className="text-xs text-muted-foreground italic mt-1">
+              {item.mov_description}
+            </div>
+          )}
+        </div>
+        <div className="flex-shrink-0">
+          {statusBadge || displayValue}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function RightAssessorPanel({ assessment, form, setField, expandedId, onToggle, onIndicatorSelect, checklistState, onChecklistChange }: RightAssessorPanelProps) {
@@ -588,12 +789,21 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                     return (
                       <div className="border border-black/10 rounded-sm bg-muted/10">
                         <div className="px-3 py-2 border-b border-black/10 bg-muted/30">
-                          <div className="text-xs font-semibold uppercase tracking-wide">
-                            Validation Checklist
-                            {validationRule === 'ANY_ITEM_REQUIRED' && (
-                              <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-800 font-normal normal-case">
-                                OR Logic: At least 1 required
-                              </span>
+                          <div className="flex items-center justify-between">
+                            <div className="text-xs font-semibold uppercase tracking-wide">
+                              Validation Checklist
+                              {validationRule === 'ANY_ITEM_REQUIRED' && (
+                                <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-800 font-normal normal-case">
+                                  OR Logic: At least 1 required
+                                </span>
+                              )}
+                            </div>
+                            {/* Assessor Checklist History Button (Validators Only) */}
+                            {isValidator && (
+                              <AssessorChecklistHistoryModal
+                                response={r as AnyRecord}
+                                indicator={indicator}
+                              />
                             )}
                           </div>
                         </div>
