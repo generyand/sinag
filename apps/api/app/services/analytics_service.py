@@ -9,6 +9,7 @@ from app.db.enums import AssessmentStatus, ComplianceStatus, UserRole
 from app.db.models import Assessment, AssessmentResponse, Barangay, GovernanceArea, Indicator, User
 from app.schemas.analytics import (
     AreaBreakdown,
+    BarangayRanking,
     ComplianceRate,
     DashboardKPIResponse,
     FailedIndicator,
@@ -58,6 +59,7 @@ class AnalyticsService:
         area_breakdown = self._calculate_area_breakdown(db, cycle_id)
         top_failed = self._calculate_top_failed_indicators(db, cycle_id)
         trends = self._calculate_trends(db)
+        barangay_rankings = self._calculate_barangay_rankings(db, cycle_id)
         status_distribution = self._calculate_status_distribution(db, cycle_id)
         rework_stats = self._calculate_rework_stats(db, cycle_id)
         total_barangays = self._get_total_barangays(db)
@@ -68,6 +70,7 @@ class AnalyticsService:
             area_breakdown=area_breakdown,
             top_failed_indicators=top_failed,
             trends=trends,
+            barangay_rankings=barangay_rankings,
             status_distribution=status_distribution,
             rework_stats=rework_stats,
             total_barangays=total_barangays,
@@ -339,6 +342,60 @@ class AnalyticsService:
         # 3. Return chronologically ordered (oldest to newest)
 
         return []
+
+    def _calculate_barangay_rankings(
+        self, db: Session, cycle_id: Optional[int] = None
+    ) -> List[BarangayRanking]:
+        """
+        Calculate barangay rankings by compliance score.
+
+        Args:
+            db: Database session
+            cycle_id: Optional assessment cycle ID
+
+        Returns:
+            List of BarangayRanking schemas ordered by score (highest first)
+        """
+        # Build base query for validated assessments with scores
+        query = (
+            db.query(
+                Barangay.id.label("barangay_id"),
+                Barangay.name.label("barangay_name"),
+                func.avg(
+                    case(
+                        (Assessment.final_compliance_status == ComplianceStatus.PASSED, 100.0),
+                        (Assessment.final_compliance_status == ComplianceStatus.FAILED, 0.0),
+                        else_=None,
+                    )
+                ).label("score"),
+            )
+            .join(User, Assessment.blgu_user_id == User.id)
+            .join(Barangay, User.barangay_id == Barangay.id)
+            .filter(Assessment.final_compliance_status.isnot(None))
+            .group_by(Barangay.id, Barangay.name)
+        )
+
+        # TODO: Add cycle_id filter when cycle field is added to Assessment model
+        # if cycle_id is not None:
+        #     query = query.filter(Assessment.cycle_id == cycle_id)
+
+        # Get results ordered by score descending
+        results = query.order_by(desc("score")).all()
+
+        # Convert to BarangayRanking schemas with rank
+        rankings = []
+        for rank, result in enumerate(results, start=1):
+            if result.score is not None:
+                rankings.append(
+                    BarangayRanking(
+                        barangay_id=result.barangay_id,
+                        barangay_name=result.barangay_name,
+                        score=round(result.score, 2),
+                        rank=rank,
+                    )
+                )
+
+        return rankings
 
     def _calculate_status_distribution(
         self, db: Session, cycle_id: Optional[int] = None

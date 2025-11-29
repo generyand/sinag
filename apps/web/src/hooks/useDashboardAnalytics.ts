@@ -54,6 +54,15 @@ export function useDashboardAnalytics(cycleId?: number | null) {
         top_failed_indicators: rawData.top_failed_indicators || [],
         barangay_rankings: rawData.barangay_rankings || [],
         trends: rawData.trends || [],
+        status_distribution: rawData.status_distribution || [],
+        rework_stats: rawData.rework_stats || {
+          total_assessments: 0,
+          assessments_with_rework: 0,
+          rework_rate: 0,
+          assessments_with_calibration: 0,
+          calibration_rate: 0,
+        },
+        total_barangays: rawData.total_barangays || 0,
         bbi_functionality: rawData.bbi_functionality,
       }
     : undefined;

@@ -274,6 +274,28 @@ export type BarangayMapPointScore = number | null;
 
 
 /**
+ * BarangayRanking
+ */
+export interface BarangayRanking {
+  /** Unique identifier for the barangay */
+  barangay_id: number;
+  /** Name of the barangay */
+  barangay_name: string;
+  /**
+   * Compliance score for this barangay
+   * @minimum 0
+   * @maximum 100
+   */
+  score: number;
+  /**
+   * Ranking position (1 = highest score)
+   * @minimum 1
+   */
+  rank: number;
+}
+
+
+/**
  * CalculationSchema
  */
 export interface CalculationSchema {

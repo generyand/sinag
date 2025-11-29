@@ -78,6 +78,17 @@ class ReworkStats(BaseModel):
     calibration_rate: float = Field(..., description="Percentage of assessments that needed calibration", ge=0, le=100)
 
 
+class BarangayRanking(BaseModel):
+    """Barangay ranking by compliance score."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    barangay_id: int = Field(..., description="Unique identifier for the barangay")
+    barangay_name: str = Field(..., description="Name of the barangay")
+    score: float = Field(..., description="Compliance score for this barangay", ge=0, le=100)
+    rank: int = Field(..., description="Ranking position (1 = highest score)", ge=1)
+
+
 class DashboardKPIResponse(BaseModel):
     """Complete dashboard KPI response containing all metrics."""
 
@@ -98,6 +109,10 @@ class DashboardKPIResponse(BaseModel):
         default_factory=list,
         description="Historical trend data across cycles",
         max_length=3
+    )
+    barangay_rankings: List[BarangayRanking] = Field(
+        default_factory=list,
+        description="Barangays ranked by compliance score"
     )
     status_distribution: List[StatusDistributionItem] = Field(
         default_factory=list,
