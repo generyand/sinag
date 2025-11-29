@@ -262,12 +262,20 @@ INDICATOR_4_1 = Indicator(
                     display_order=5
                 ),
                 ChecklistItem(
-                    id="4_1_6_calc_physical",
-                    label="% of programs, project, and activities are completed",
+                    id="4_1_6_physical_accomplished",
+                    label="Total number of activities/projects accomplished",
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=6
+                    display_order=6.1
+                ),
+                ChecklistItem(
+                    id="4_1_6_physical_reflected",
+                    label="Total number of activities/projects reflected in the Plan",
+                    mov_description="Please supply the required information:",
+                    item_type="calculation_field",
+                    required=False,
+                    display_order=6.2
                 ),
                 # OR Separator (info_text)
                 ChecklistItem(
@@ -296,20 +304,20 @@ INDICATOR_4_1 = Indicator(
                     display_order=9
                 ),
                 ChecklistItem(
-                    id="4_1_6_calc_b1",
-                    label="Amount utilized (as of Dec. 31, 2023):",
+                    id="4_1_6_financial_utilized",
+                    label="Total amount utilized (as of Dec. 31, 2023)",
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=10
+                    display_order=10.1
                 ),
                 ChecklistItem(
-                    id="4_1_6_calc_b2",
-                    label="Amount allocated for PPAs in the GAD Plan:",
+                    id="4_1_6_financial_allocated",
+                    label="Total amount allocated for PPAs in the GAD Plan",
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=11
+                    display_order=10.2
                 ),
             ]
         ),

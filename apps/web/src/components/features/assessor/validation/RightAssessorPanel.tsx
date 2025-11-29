@@ -30,6 +30,179 @@ type AnyRecord = Record<string, any>;
 type LocalStatus = 'Pass' | 'Fail' | 'Conditional' | undefined;
 
 /**
+ * Physical/Financial Accomplishment Auto-Calculator
+ *
+ * For indicators: 2.1.4, 3.2.3, 4.1.6, 4.3.4, 4.5.6, 4.8.4, 6.1.4
+ *
+ * Physical: (accomplished / reflected) × 100 → auto YES if ≥50%
+ * Financial: (utilized / allocated) × 100 → auto YES if ≥50%
+ *
+ * CANNOT BE OVERRIDDEN - purely calculation-based
+ */
+interface AccomplishmentAutoCalculatorProps {
+  responseId: number;
+  watched: Record<string, any>;
+  indicatorCode: string;
+  subIndicatorCode: string;
+  type: 'physical' | 'financial';
+  setValue: (name: string, value: any) => void;
+}
+
+function AccomplishmentAutoCalculator({
+  responseId,
+  watched,
+  indicatorCode,
+  subIndicatorCode,
+  type,
+  setValue
+}: AccomplishmentAutoCalculatorProps) {
+  // Build field keys based on the sub-indicator code pattern
+  // e.g., for 2.1.4 physical: 2_1_4_physical_accomplished, 2_1_4_physical_reflected
+  const subCode = subIndicatorCode.replace(/\./g, '_');
+
+  const accomplishedKey = `checklist_${responseId}_${subCode}_${type}_accomplished`;
+  const reflectedKey = `checklist_${responseId}_${subCode}_${type}_reflected`;
+  const utilizedKey = `checklist_${responseId}_${subCode}_${type}_utilized`;
+  const allocatedKey = `checklist_${responseId}_${subCode}_${type}_allocated`;
+
+  // Get values from watched form state
+  let numerator = 0;
+  let denominator = 0;
+  let numeratorLabel = '';
+  let denominatorLabel = '';
+  let formulaLabel = '';
+
+  // Plan name mapping for indicator-specific formulas
+  const planNameMap: Record<string, { physical: string; financial: string }> = {
+    '2.1.4': { physical: 'BDRRMP', financial: '70% component of CY 2023 BDRRMF' },
+    '3.2.3': { physical: 'BPOPS Plan', financial: 'BPOPS Plan' },
+    '4.1.6': { physical: 'GAD Plan', financial: 'GAD Plan' },
+    '4.3.4': { physical: 'BDP', financial: 'BDP' },
+    '4.5.6': { physical: 'BCPC Plan', financial: 'BCPC Plan' },
+    '4.8.4': { physical: 'BNAP', financial: 'BNAP' },
+    '6.1.4': { physical: 'BESWMP', financial: 'BESWM Plan' },
+  };
+  const planName = planNameMap[subIndicatorCode]?.[type] || 'Plan';
+
+  if (type === 'physical') {
+    numerator = parseFloat(String(watched[accomplishedKey] || '').replace(/,/g, '')) || 0;
+    denominator = parseFloat(String(watched[reflectedKey] || '').replace(/,/g, '')) || 0;
+    numeratorLabel = 'Accomplished';
+    denominatorLabel = `Reflected in ${planName}`;
+    formulaLabel = `(Accomplished / Reflected in ${planName}) × 100`;
+  } else {
+    numerator = parseFloat(String(watched[utilizedKey] || '').replace(/,/g, '')) || 0;
+    denominator = parseFloat(String(watched[allocatedKey] || '').replace(/,/g, '')) || 0;
+    numeratorLabel = 'Amount Utilized';
+    denominatorLabel = 'Amount Allocated';
+    formulaLabel = `(Amount Utilized / Amount Allocated for ${planName}) × 100`;
+  }
+
+  const percentage = denominator > 0 ? (numerator / denominator) * 100 : 0;
+  const hasValues = numerator > 0 || denominator > 0;
+  const meetsThreshold = percentage >= 50;
+
+  // Build the assessment field key for auto-setting YES/NO
+  // Map sub-indicator codes to their assessment field IDs
+  const assessmentFieldMap: Record<string, Record<string, string>> = {
+    '2.1.4': { physical: '2_1_4_option_a', financial: '2_1_4_option_b' },
+    '3.2.3': { physical: '3_2_3_option_a', financial: '3_2_3_option_b' },
+    '4.1.6': { physical: '4_1_6_option_a', financial: '4_1_6_option_b' },
+    '4.3.4': { physical: '4_3_4_option_a', financial: '4_3_4_option_b' },
+    '4.5.6': { physical: '4_5_6_a', financial: '4_5_6_b' },
+    '4.8.4': { physical: '4_8_4_option_a_check', financial: '4_8_4_option_b_check' },
+    '6.1.4': { physical: '6_1_4_option_a', financial: '6_1_4_option_b' },
+  };
+
+  const assessmentFieldId = assessmentFieldMap[subIndicatorCode]?.[type];
+  const yesKey = assessmentFieldId ? `checklist_${responseId}_${assessmentFieldId}_yes` : null;
+  const noKey = assessmentFieldId ? `checklist_${responseId}_${assessmentFieldId}_no` : null;
+
+  // Auto-set YES/NO based on calculation - CANNOT BE OVERRIDDEN
+  React.useEffect(() => {
+    if (!hasValues || !yesKey || !noKey) return;
+
+    if (meetsThreshold) {
+      setValue(yesKey, true);
+      setValue(noKey, false);
+    } else {
+      setValue(yesKey, false);
+      setValue(noKey, true);
+    }
+  }, [numerator, denominator, meetsThreshold, hasValues, yesKey, noKey, setValue]);
+
+  if (!hasValues) return null;
+
+  const bgColor = meetsThreshold
+    ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800'
+    : 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800';
+  const textColor = meetsThreshold
+    ? 'text-green-800 dark:text-green-300'
+    : 'text-red-800 dark:text-red-300';
+  const percentageColor = meetsThreshold
+    ? 'text-green-900 dark:text-green-200'
+    : 'text-red-900 dark:text-red-200';
+  const subtextColor = meetsThreshold
+    ? 'text-green-700 dark:text-green-400'
+    : 'text-red-700 dark:text-red-400';
+
+  return (
+    <div className={`mt-3 p-3 border rounded-sm ${bgColor}`}>
+      <div className={`text-xs font-medium mb-1 ${textColor}`}>
+        {type === 'physical' ? 'Physical Accomplishment Rate' : 'Fund Utilization Rate'}
+      </div>
+      <div className={`text-lg font-bold ${percentageColor}`}>
+        {percentage.toFixed(2)}%
+      </div>
+      <div className={`text-[11px] mt-1 italic ${subtextColor}`}>
+        Formula: {formulaLabel}
+      </div>
+      <div className={`text-xs font-semibold mt-2 px-2 py-1 rounded inline-block ${
+        meetsThreshold
+          ? 'bg-green-200 text-green-900 dark:bg-green-800 dark:text-green-100'
+          : 'bg-red-200 text-red-900 dark:bg-red-800 dark:text-red-100'
+      }`}>
+        {meetsThreshold ? '✓ AUTO-YES (≥50%)' : '✗ AUTO-NO (<50%)'}
+      </div>
+      <div className={`text-[10px] mt-1 ${subtextColor}`}>
+        This value is automatically calculated and cannot be overridden.
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Computed % Allocation for BDRRMF (Indicator 2.1.3)
+ * Formula: (Amount of BDRRMF / Estimated revenue from regular sources) × 100
+ */
+function ComputedBDRRMFPercentage({ responseId, watched }: { responseId: number; watched: Record<string, any> }) {
+  const estimatedRevenueKey = `checklist_${responseId}_2_1_3_estimated_revenue`;
+  const bdrrmfAmountKey = `checklist_${responseId}_2_1_3_bdrrmf_amount`;
+
+  const estimatedRevenue = parseFloat(String(watched[estimatedRevenueKey] || '').replace(/,/g, '')) || 0;
+  const bdrrmfAmount = parseFloat(String(watched[bdrrmfAmountKey] || '').replace(/,/g, '')) || 0;
+
+  const percentage = estimatedRevenue > 0 ? (bdrrmfAmount / estimatedRevenue) * 100 : 0;
+  const hasValues = estimatedRevenue > 0 || bdrrmfAmount > 0;
+
+  if (!hasValues) return null;
+
+  return (
+    <div className="mt-3 p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-sm">
+      <div className="text-xs font-medium text-green-800 dark:text-green-300 mb-1">
+        % Allocation for BDRRMF
+      </div>
+      <div className="text-lg font-bold text-green-900 dark:text-green-200">
+        {percentage.toFixed(2)}%
+      </div>
+      <div className="text-[11px] text-green-700 dark:text-green-400 mt-1 italic">
+        Formula: (Amount of BDRRMF / Estimated revenue from regular sources) × 100
+      </div>
+    </div>
+  );
+}
+
+/**
  * Sort indicator codes numerically (e.g., 1.1.1, 1.1.2, 1.2.1, etc.)
  */
 function sortIndicatorCode(a: string, b: string): number {
@@ -429,9 +602,11 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                             const itemKey = `checklist_${r.id}_${item.item_id}`;
                             const prevItem = itemIdx > 0 ? checklistItems[itemIdx - 1] : null;
                             const showGroupHeader = item.group_name && item.group_name !== prevItem?.group_name;
+                            const indicatorCode = indicator?.indicator_code || indicator?.code || '';
 
                             return (
-                              <div key={item.id || itemIdx} className="space-y-2">
+                              <React.Fragment key={item.id || itemIdx}>
+                              <div className="space-y-2">
                                 {/* Group Header */}
                                 {showGroupHeader && (
                                   <div className="text-xs font-semibold uppercase tracking-wide text-foreground mt-3 mb-1 pb-1 border-b border-border">
@@ -482,98 +657,123 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                   </div>
                                 ) : item.item_type === 'assessment_field' ? (
                                   // YES/NO radio buttons for validator assessment (mutually exclusive)
-                                  <div className="space-y-2">
-                                    <div className="flex items-start gap-3">
-                                      <div className="flex gap-4">
-                                        <Controller
-                                          name={`${itemKey}_yes` as any}
-                                          control={control}
-                                          render={({ field }) => (
-                                            <div className="flex items-center gap-1">
-                                              <Checkbox
-                                                id={`${itemKey}_yes`}
-                                                checked={field.value as any}
-                                                onCheckedChange={(checked) => {
-                                                  field.onChange(checked);
-                                                  // If YES is checked, uncheck NO (mutually exclusive)
-                                                  if (checked) {
-                                                    setValue(`${itemKey}_no` as any, false as any);
-                                                  }
-                                                }}
-                                              />
-                                              <Label htmlFor={`${itemKey}_yes`} className="text-xs font-medium cursor-pointer">
-                                                YES
-                                              </Label>
-                                            </div>
-                                          )}
-                                        />
-                                        <Controller
-                                          name={`${itemKey}_no` as any}
-                                          control={control}
-                                          render={({ field }) => (
-                                            <div className="flex items-center gap-1">
-                                              <Checkbox
-                                                id={`${itemKey}_no`}
-                                                checked={field.value as any}
-                                                onCheckedChange={(checked) => {
-                                                  field.onChange(checked);
-                                                  // If NO is checked, uncheck YES (mutually exclusive)
-                                                  if (checked) {
-                                                    setValue(`${itemKey}_yes` as any, false as any);
-                                                  }
-                                                }}
-                                              />
-                                              <Label htmlFor={`${itemKey}_no`} className="text-xs font-medium cursor-pointer">
-                                                NO
-                                              </Label>
-                                            </div>
-                                          )}
-                                        />
-                                      </div>
-                                      <div className="flex-1">
-                                        <div className="text-xs font-medium text-foreground">
-                                          {item.label}
-                                        </div>
-                                        {item.mov_description && (
-                                          <div className="text-[11px] text-muted-foreground italic mt-0.5">
-                                            {item.mov_description}
+                                  (() => {
+                                    // Check if this is an auto-calculated field that should be read-only
+                                    const autoCalcIndicators = ['2.1.4', '3.2.3', '4.1.6', '4.3.4', '4.5.6', '4.8.4', '6.1.4'];
+                                    const autoCalcFieldIds = [
+                                      // Physical option fields
+                                      '2_1_4_option_a', '3_2_3_option_a', '4_1_6_option_a', '4_3_4_option_a',
+                                      '4_5_6_a', '4_8_4_option_a_check', '6_1_4_option_a',
+                                      // Financial option fields
+                                      '2_1_4_option_b', '3_2_3_option_b', '4_1_6_option_b', '4_3_4_option_b',
+                                      '4_5_6_b', '4_8_4_option_b_check', '6_1_4_option_b',
+                                    ];
+                                    const isAutoCalculated = autoCalcIndicators.includes(indicatorCode) &&
+                                      autoCalcFieldIds.includes(item.item_id);
+
+                                    return (
+                                      <div className="space-y-2">
+                                        <div className="flex items-start gap-3">
+                                          <div className="flex gap-4">
+                                            <Controller
+                                              name={`${itemKey}_yes` as any}
+                                              control={control}
+                                              render={({ field }) => (
+                                                <div className="flex items-center gap-1">
+                                                  <Checkbox
+                                                    id={`${itemKey}_yes`}
+                                                    checked={field.value as any}
+                                                    disabled={isAutoCalculated}
+                                                    onCheckedChange={(checked) => {
+                                                      if (isAutoCalculated) return; // Prevent manual change
+                                                      field.onChange(checked);
+                                                      // If YES is checked, uncheck NO (mutually exclusive)
+                                                      if (checked) {
+                                                        setValue(`${itemKey}_no` as any, false as any);
+                                                      }
+                                                    }}
+                                                    className={isAutoCalculated ? 'opacity-60' : ''}
+                                                  />
+                                                  <Label
+                                                    htmlFor={`${itemKey}_yes`}
+                                                    className={`text-xs font-medium ${isAutoCalculated ? 'text-muted-foreground' : 'cursor-pointer'}`}
+                                                  >
+                                                    YES
+                                                  </Label>
+                                                </div>
+                                              )}
+                                            />
+                                            <Controller
+                                              name={`${itemKey}_no` as any}
+                                              control={control}
+                                              render={({ field }) => (
+                                                <div className="flex items-center gap-1">
+                                                  <Checkbox
+                                                    id={`${itemKey}_no`}
+                                                    checked={field.value as any}
+                                                    disabled={isAutoCalculated}
+                                                    onCheckedChange={(checked) => {
+                                                      if (isAutoCalculated) return; // Prevent manual change
+                                                      field.onChange(checked);
+                                                      // If NO is checked, uncheck YES (mutually exclusive)
+                                                      if (checked) {
+                                                        setValue(`${itemKey}_yes` as any, false as any);
+                                                      }
+                                                    }}
+                                                    className={isAutoCalculated ? 'opacity-60' : ''}
+                                                  />
+                                                  <Label
+                                                    htmlFor={`${itemKey}_no`}
+                                                    className={`text-xs font-medium ${isAutoCalculated ? 'text-muted-foreground' : 'cursor-pointer'}`}
+                                                  >
+                                                    NO
+                                                  </Label>
+                                                </div>
+                                              )}
+                                            />
                                           </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                ) : item.item_type === 'calculation_field' ? (
-                                  // Calculation/input field
-                                  <div className="space-y-2">
-                                    {item.mov_description && (
-                                      <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded px-3 py-2">
-                                        <div className="text-xs text-orange-800 dark:text-orange-300 italic">
-                                          {item.mov_description}
+                                          <div className="flex-1">
+                                            <div className="text-xs font-medium text-foreground">
+                                              {item.label}
+                                              {isAutoCalculated && (
+                                                <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-normal">
+                                                  Auto-calculated
+                                                </span>
+                                              )}
+                                            </div>
+                                            {item.mov_description && (
+                                              <div className="text-[11px] text-muted-foreground italic mt-0.5">
+                                                {item.mov_description}
+                                              </div>
+                                            )}
+                                          </div>
                                         </div>
                                       </div>
-                                    )}
-                                    <div className="space-y-1">
-                                      <Label htmlFor={itemKey} className="text-xs font-medium text-foreground">
-                                        {item.label}
-                                      </Label>
-                                      <Controller
-                                        name={itemKey as any}
-                                        control={control}
-                                        render={({ field }) => (
-                                          <Input
-                                            id={itemKey}
-                                            type="text"
-                                            placeholder="Enter value"
-                                            value={field.value as any}
-                                            onChange={field.onChange}
-                                            onBlur={field.onBlur}
-                                            name={field.name}
-                                            ref={field.ref}
-                                            className="h-9 text-sm"
-                                          />
-                                        )}
-                                      />
-                                    </div>
+                                    );
+                                  })()
+                                ) : item.item_type === 'calculation_field' ? (
+                                  // Calculation/input field - no redundant mov_description box
+                                  <div className="space-y-1">
+                                    <Label htmlFor={itemKey} className="text-xs font-medium text-foreground">
+                                      {item.label}
+                                    </Label>
+                                    <Controller
+                                      name={itemKey as any}
+                                      control={control}
+                                      render={({ field }) => (
+                                        <Input
+                                          id={itemKey}
+                                          type="text"
+                                          placeholder="Enter value"
+                                          value={field.value as any}
+                                          onChange={field.onChange}
+                                          onBlur={field.onBlur}
+                                          name={field.name}
+                                          ref={field.ref}
+                                          className="h-9 text-sm"
+                                        />
+                                      )}
+                                    />
                                   </div>
                                 ) : (
                                   // Regular checkbox item
@@ -606,6 +806,42 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                   </div>
                                 )}
                               </div>
+
+                              {/* Computed % Allocation for BDRRMF (Indicator 2.1.3) */}
+                              {indicatorCode === '2.1.3' && item.item_id === '2_1_3_bdrrmf_amount' && (
+                                <ComputedBDRRMFPercentage
+                                  responseId={r.id}
+                                  watched={watched}
+                                />
+                              )}
+
+                              {/* Auto-calculated Physical/Financial Accomplishment for specific indicators */}
+                              {/* Physical: show after physical_reflected field */}
+                              {['2.1.4', '3.2.3', '4.1.6', '4.3.4', '4.5.6', '4.8.4', '6.1.4'].includes(indicatorCode) &&
+                                item.item_id?.endsWith('_physical_reflected') && (
+                                <AccomplishmentAutoCalculator
+                                  responseId={r.id}
+                                  watched={watched}
+                                  indicatorCode={indicatorCode}
+                                  subIndicatorCode={indicatorCode}
+                                  type="physical"
+                                  setValue={setValue}
+                                />
+                              )}
+
+                              {/* Financial: show after financial_allocated field */}
+                              {['2.1.4', '3.2.3', '4.1.6', '4.3.4', '4.5.6', '4.8.4', '6.1.4'].includes(indicatorCode) &&
+                                item.item_id?.endsWith('_financial_allocated') && (
+                                <AccomplishmentAutoCalculator
+                                  responseId={r.id}
+                                  watched={watched}
+                                  indicatorCode={indicatorCode}
+                                  subIndicatorCode={indicatorCode}
+                                  type="financial"
+                                  setValue={setValue}
+                                />
+                              )}
+                              </React.Fragment>
                             );
                           })}
                         </div>

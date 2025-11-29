@@ -176,12 +176,21 @@ INDICATOR_4_8 = Indicator(
                     option_group="Option A"
                 ),
                 ChecklistItem(
-                    id="4_8_4_physical_percentage",
-                    label="% of programs, project, and activities are completed",
+                    id="4_8_4_physical_accomplished",
+                    label="Total number of activities/projects accomplished",
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=4,
+                    display_order=4.1,
+                    option_group="Option A"
+                ),
+                ChecklistItem(
+                    id="4_8_4_physical_reflected",
+                    label="Total number of activities/projects reflected in the Plan",
+                    mov_description="Please supply the required information:",
+                    item_type="calculation_field",
+                    required=False,
+                    display_order=4.2,
                     option_group="Option A"
                 ),
                 # OR separator
@@ -213,21 +222,21 @@ INDICATOR_4_8 = Indicator(
                     option_group="Option B"
                 ),
                 ChecklistItem(
-                    id="4_8_4_amount_utilized",
-                    label="Amount utilized (as of Dec. 31, 2023)",
+                    id="4_8_4_financial_utilized",
+                    label="Total amount utilized (as of Dec. 31, 2023)",
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=8,
+                    display_order=8.1,
                     option_group="Option B"
                 ),
                 ChecklistItem(
-                    id="4_8_4_amount_allocated",
-                    label="Amount allocated for PPAs in the BNAP",
+                    id="4_8_4_financial_allocated",
+                    label="Total amount allocated for PPAs in the BNAP",
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=9,
+                    display_order=8.2,
                     option_group="Option B"
                 ),
             ]

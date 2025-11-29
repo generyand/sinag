@@ -116,12 +116,20 @@ INDICATOR_3_2 = Indicator(
                     display_order=3
                 ),
                 ChecklistItem(
-                    id="3_2_3_calc_physical",
-                    label="% of programs, project, and activities are completed",
+                    id="3_2_3_physical_accomplished",
+                    label="Total number of activities/projects accomplished",
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=4
+                    display_order=4.1
+                ),
+                ChecklistItem(
+                    id="3_2_3_physical_reflected",
+                    label="Total number of activities/projects reflected in the Plan",
+                    mov_description="Please supply the required information:",
+                    item_type="calculation_field",
+                    required=False,
+                    display_order=4.2
                 ),
 
                 # OR Separator (info_text)
@@ -152,20 +160,20 @@ INDICATOR_3_2 = Indicator(
                     display_order=7
                 ),
                 ChecklistItem(
-                    id="3_2_3_calc_b1",
-                    label="Amount utilized (as of Dec. 31, 2023):",
+                    id="3_2_3_financial_utilized",
+                    label="Total amount utilized (as of Dec. 31, 2023)",
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=8
+                    display_order=8.1
                 ),
                 ChecklistItem(
-                    id="3_2_3_calc_b2",
-                    label="Amount allocated for FPAs in the BPOPS Plan for CY 2023:",
+                    id="3_2_3_financial_allocated",
+                    label="Total amount allocated for FPAs in the BPOPS Plan for CY 2023",
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=9
+                    display_order=8.2
                 ),
             ]
         ),
