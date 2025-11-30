@@ -114,126 +114,113 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="space-y-8">
-          {/* Enhanced Header Section */}
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header Section */}
+        <section className="mb-6">
           <DashboardHeader
             municipality={dashboardData.municipality}
             performanceYear={dashboardData.performanceYear}
             assessmentYear={dashboardData.assessmentYear}
             onAssessmentYearChange={(year) => {
-              // For now, we don't have cycle selection in the header
-              // This could be updated to select a cycle by ID in the future
               console.log('Year changed:', year);
             }}
           />
+        </section>
 
-          {/* Enhanced KPI Cards */}
+        {/* KPI Cards Section */}
+        <section className="mb-6">
           <KPICards data={dashboardData.kpiData} />
+        </section>
 
-          {/* Main Content Grid */}
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-            {/* Left Column - Municipal Progress (2/3 width) */}
-            <div className="xl:col-span-2">
+        {/* Main Content: Progress Chart + Sidebar */}
+        <section className="mb-6">
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+            {/* Municipal Progress Chart - 8 columns */}
+            <div className="xl:col-span-8">
               <MunicipalProgressChart
                 data={dashboardData.municipalProgress}
                 totalBarangays={dashboardData.totalBarangays}
               />
             </div>
 
-            {/* Right Column - Quick Stats (1/3 width) */}
-            <div className="space-y-6">
-              {/* Real-time Status Card */}
-              <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-[var(--foreground)]">System Status</h3>
-                </div>
-                <div className="space-y-4">
-                  <div
-                    className="flex items-center justify-between p-3 rounded-sm bg-[var(--muted)]/20 border border-[var(--border)]"
-                  >
+            {/* Sidebar - 4 columns */}
+            <div className="xl:col-span-4 flex flex-col gap-6">
+              {/* System Status Card */}
+              <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-sm p-5">
+                <h3 className="text-base font-semibold text-[var(--foreground)] mb-4">
+                  System Status
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 rounded-sm bg-[var(--muted)]/20 border border-[var(--border)]">
                     <div className="flex items-center gap-2">
-                      <div
-                        className="w-2 h-2 rounded-full animate-pulse"
-                        style={{ backgroundColor: 'var(--cityscape-yellow)' }}
-                      ></div>
+                      <div className="w-2 h-2 rounded-full animate-pulse bg-[var(--cityscape-yellow)]" />
                       <span className="text-sm font-medium text-[var(--foreground)]">Live Data</span>
                     </div>
-                    <span
-                      className="text-xs font-semibold"
-                      style={{ color: 'var(--cityscape-yellow)' }}
-                    >
+                    <span className="text-xs font-semibold text-[var(--cityscape-yellow)]">
                       ACTIVE
                     </span>
                   </div>
-                  <div
-                    className="flex items-center justify-between p-3 rounded-sm bg-[var(--muted)]/20 border border-[var(--border)]"
-                  >
+                  <div className="flex items-center justify-between p-3 rounded-sm bg-[var(--muted)]/20 border border-[var(--border)]">
                     <span className="text-sm font-medium text-[var(--foreground)]">Last Updated</span>
-                    <span className="text-xs text-[var(--muted-foreground)]">{new Date().toLocaleTimeString()}</span>
-                  </div>
-                  <div
-                    className="flex items-center justify-between p-3 rounded-sm bg-[var(--muted)]/20 border border-[var(--border)]"
-                  >
-                    <span className="text-sm font-medium text-[var(--foreground)]">Auto-refresh</span>
-                    <span
-                      className="text-xs font-semibold text-[var(--text-secondary)]"
-                    >
-                      30s
+                    <span className="text-xs text-[var(--muted-foreground)]">
+                      {new Date().toLocaleTimeString()}
                     </span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 rounded-sm bg-[var(--muted)]/20 border border-[var(--border)]">
+                    <span className="text-sm font-medium text-[var(--foreground)]">Auto-refresh</span>
+                    <span className="text-xs font-semibold text-[var(--text-secondary)]">30s</span>
                   </div>
                 </div>
               </div>
 
               {/* Quick Actions Card */}
-              <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-[var(--foreground)]">Quick Actions</h3>
-                </div>
+              <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-sm p-5 flex-1">
+                <h3 className="text-base font-semibold text-[var(--foreground)] mb-4">
+                  Quick Actions
+                </h3>
                 <div className="space-y-3">
                   <button
                     onClick={() => router.push('/mlgoo/submissions')}
-                    className="group w-full text-left p-4 rounded-sm border border-[var(--border)] bg-[var(--muted)]/20 hover:bg-[var(--cityscape-yellow)]/10 hover:border-[var(--cityscape-yellow)] hover:shadow-md transition-all duration-200"
+                    className="w-full text-left p-3 rounded-sm border border-[var(--border)] bg-[var(--muted)]/20 hover:bg-[var(--cityscape-yellow)]/10 hover:border-[var(--cityscape-yellow)] transition-all duration-200"
                   >
-                    <div className="font-semibold text-[var(--foreground)]">Review Submissions</div>
-                    <div className="text-sm text-[var(--text-secondary)]">Check pending assessments</div>
+                    <div className="font-medium text-[var(--foreground)] text-sm">Review Submissions</div>
+                    <div className="text-xs text-[var(--text-secondary)]">Check pending assessments</div>
                   </button>
                   <button
                     onClick={() => router.push('/mlgoo/reports')}
-                    className="group w-full text-left p-4 rounded-sm border border-[var(--border)] bg-[var(--muted)]/20 hover:bg-[var(--cityscape-yellow)]/10 hover:border-[var(--cityscape-yellow)] hover:shadow-md transition-all duration-200"
+                    className="w-full text-left p-3 rounded-sm border border-[var(--border)] bg-[var(--muted)]/20 hover:bg-[var(--cityscape-yellow)]/10 hover:border-[var(--cityscape-yellow)] transition-all duration-200"
                   >
-                    <div className="font-semibold text-[var(--foreground)]">Generate Reports</div>
-                    <div className="text-sm text-[var(--text-secondary)]">View analytics & insights</div>
+                    <div className="font-medium text-[var(--foreground)] text-sm">Generate Reports</div>
+                    <div className="text-xs text-[var(--text-secondary)]">View analytics & insights</div>
                   </button>
                   <button
                     onClick={() => router.push('/user-management')}
-                    className="group w-full text-left p-4 rounded-sm border border-[var(--border)] bg-[var(--muted)]/20 hover:bg-[var(--cityscape-yellow)]/10 hover:border-[var(--cityscape-yellow)] hover:shadow-md transition-all duration-200"
+                    className="w-full text-left p-3 rounded-sm border border-[var(--border)] bg-[var(--muted)]/20 hover:bg-[var(--cityscape-yellow)]/10 hover:border-[var(--cityscape-yellow)] transition-all duration-200"
                   >
-                    <div className="font-semibold text-[var(--foreground)]">Manage Users</div>
-                    <div className="text-sm text-[var(--text-secondary)]">User accounts & permissions</div>
+                    <div className="font-medium text-[var(--foreground)] text-sm">Manage Users</div>
+                    <div className="text-xs text-[var(--text-secondary)]">User accounts & permissions</div>
                   </button>
                 </div>
               </div>
             </div>
           </div>
+        </section>
 
-          {/* Governance Area Performance & Submission Quality */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-            {/* Governance Area Breakdown */}
+        {/* Governance Area & Rework Stats */}
+        <section className="mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <GovernanceAreaBreakdown data={dashboardData.areaBreakdown} />
-
-            {/* Rework Stats */}
             <ReworkStatsCard data={dashboardData.reworkStats} />
           </div>
+        </section>
 
-          {/* Failed Indicators - Full Width */}
-          <div className="w-full">
-            <FailedIndicators
-              data={dashboardData.failedIndicators}
-              totalBarangays={dashboardData.totalBarangays}
-            />
-          </div>
-        </div>
+        {/* Failed Indicators - Full Width */}
+        <section>
+          <FailedIndicators
+            data={dashboardData.failedIndicators}
+            totalBarangays={dashboardData.totalBarangays}
+          />
+        </section>
       </div>
     </div>
   );

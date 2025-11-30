@@ -277,8 +277,13 @@ export function SulopBarangayMapIntegrated({
                 className="w-full h-full"
                 xmlns="http://www.w3.org/2000/svg"
               >
-                {/* Background */}
-                <rect width="1920" height="892" className="fill-gray-50 dark:fill-gray-900" />
+                {/* Background - Click to close details panel */}
+                <rect
+                  width="1920"
+                  height="892"
+                  className="fill-gray-50 dark:fill-gray-900 cursor-pointer"
+                  onClick={() => setSelectedBarangay(null)}
+                />
 
                 {/* Title */}
                 <text
