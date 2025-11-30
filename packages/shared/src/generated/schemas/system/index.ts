@@ -21,6 +21,7 @@ import type { ComplianceRate } from '../common';
 import type { AreaBreakdown } from '../common';
 import type { FailedIndicator } from '../indicators';
 import type { TrendData } from '../common';
+import type { BarangayRanking } from '../common';
 import type { StatusDistributionItem } from '../common';
 import type { ReworkStats } from '../common';
 import type { DeadlineOverrideResponse } from '../deadlineoverride';
@@ -472,6 +473,8 @@ export interface DashboardKPIResponse {
    * @maxItems 3
    */
   trends?: TrendData[];
+  /** Barangays ranked by compliance score */
+  barangay_rankings?: BarangayRanking[];
   /** Distribution of assessments by workflow status */
   status_distribution?: StatusDistributionItem[];
   /** Rework and calibration usage statistics */

@@ -160,12 +160,20 @@ INDICATOR_4_3 = Indicator(
                     display_order=3
                 ),
                 ChecklistItem(
-                    id="4_3_4_calc_physical",
-                    label="% of programs, projects, and activities completed",
-                    mov_description="Please supply the percentage of programs, projects, and activities completed: ____% (Total number of activities/projects accomplished / Total number of activities/projects reflected in the BDP) x 100",
+                    id="4_3_4_physical_accomplished",
+                    label="Total number of activities/projects accomplished",
+                    mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=4
+                    display_order=4.1
+                ),
+                ChecklistItem(
+                    id="4_3_4_physical_reflected",
+                    label="Total number of activities/projects reflected in the Plan",
+                    mov_description="Please supply the required information:",
+                    item_type="calculation_field",
+                    required=False,
+                    display_order=4.2
                 ),
                 # OR separator
                 ChecklistItem(
@@ -186,20 +194,20 @@ INDICATOR_4_3 = Indicator(
                     display_order=6
                 ),
                 ChecklistItem(
-                    id="4_3_4_calc_b1",
-                    label="Amount utilized (as of Dec 31, 2023):",
-                    mov_description="Please supply the amount utilized (as of Dec 31, 2023): _____ Amount Utilized",
+                    id="4_3_4_financial_utilized",
+                    label="Total amount utilized (as of Dec 31, 2023)",
+                    mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=7
+                    display_order=7.1
                 ),
                 ChecklistItem(
-                    id="4_3_4_calc_b2",
-                    label="Amount allocated for PPAs in the BDP:",
-                    mov_description="Please supply the amount allocated for PPAs in the BDP: _____ Amount Allocated",
+                    id="4_3_4_financial_allocated",
+                    label="Total amount allocated for PPAs in the BDP",
+                    mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=8
+                    display_order=7.2
                 ),
             ]
         ),

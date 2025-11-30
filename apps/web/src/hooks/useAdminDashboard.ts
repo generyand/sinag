@@ -1,4 +1,4 @@
-import { useGetAnalyticsDashboard, DashboardKPIResponse } from '@sinag/shared';
+import { DashboardKPIResponse, useGetAnalyticsDashboard } from '@sinag/shared';
 
 // Status color mapping for the municipal progress chart
 const statusColorMap: Record<string, { color: string; bgColor: string }> = {
@@ -140,13 +140,7 @@ function transformDashboardData(apiData: DashboardKPIResponse): AdminDashboardDa
 
 export function useAdminDashboard(year?: string) {
   const query = useGetAnalyticsDashboard(
-    year ? { cycle_id: parseInt(year) } : undefined,
-    {
-      query: {
-        staleTime: 5 * 60 * 1000, // 5 minutes
-        refetchInterval: 30 * 1000, // Refetch every 30 seconds for real-time updates
-      },
-    }
+    year ? { cycle_id: parseInt(year) } : undefined
   );
 
   // Transform the data when available

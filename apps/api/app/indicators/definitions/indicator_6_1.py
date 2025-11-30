@@ -155,7 +155,7 @@ INDICATOR_6_1 = Indicator(
                     required=False,
                     display_order=2
                 ),
-                # OPTION A: YES/NO, then % calculation
+                # OPTION A: YES/NO, then calculation fields
                 ChecklistItem(
                     id="6_1_4_option_a",
                     label="a. At least 50% accomplishment of the physical targets in the BESWMP",
@@ -165,12 +165,20 @@ INDICATOR_6_1 = Indicator(
                     display_order=3
                 ),
                 ChecklistItem(
-                    id="6_1_4_calc_a_percentage",
-                    label="% of programs, project, and activities completed",
+                    id="6_1_4_physical_accomplished",
+                    label="Total number of activities/projects accomplished",
                     item_type="calculation_field",
-                    mov_description="",
+                    mov_description="Please supply the required information:",
                     required=False,
-                    display_order=4
+                    display_order=4.1
+                ),
+                ChecklistItem(
+                    id="6_1_4_physical_reflected",
+                    label="Total number of activities/projects reflected in the BESWMP",
+                    item_type="calculation_field",
+                    mov_description="Please supply the required information:",
+                    required=False,
+                    display_order=4.2
                 ),
                 # OR separator
                 ChecklistItem(
@@ -191,20 +199,20 @@ INDICATOR_6_1 = Indicator(
                     display_order=6
                 ),
                 ChecklistItem(
-                    id="6_1_4_calc_b_utilized",
-                    label="Amount utilized (as of Dec 31, 2023):",
+                    id="6_1_4_financial_utilized",
+                    label="Total amount utilized (as of Dec 31, 2023)",
                     item_type="calculation_field",
-                    mov_description="",
+                    mov_description="Please supply the required information:",
                     required=False,
-                    display_order=7
+                    display_order=7.1
                 ),
                 ChecklistItem(
-                    id="6_1_4_calc_b_allocated",
-                    label="Amount allocated for PPAs in the BESWM Plan:",
+                    id="6_1_4_financial_allocated",
+                    label="Total amount allocated for PPAs in the BESWM Plan",
                     item_type="calculation_field",
-                    mov_description="",
+                    mov_description="Please supply the required information:",
                     required=False,
-                    display_order=8
+                    display_order=7.2
                 ),
             ]
         ),
