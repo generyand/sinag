@@ -372,7 +372,10 @@ export function DeadlineStatusDashboard() {
                       </span>
                       {status.phase1.submitted_at && (
                         <p className="text-xs text-[var(--muted-foreground)] mt-1">
-                          {new Date(status.phase1.submitted_at).toLocaleDateString()}
+                          {(() => {
+                            const date = new Date(status.phase1.submitted_at);
+                            return isNaN(date.getTime()) ? "" : date.toLocaleDateString();
+                          })()}
                         </p>
                       )}
                     </td>
@@ -384,7 +387,10 @@ export function DeadlineStatusDashboard() {
                       </span>
                       {status.rework.submitted_at && (
                         <p className="text-xs text-[var(--muted-foreground)] mt-1">
-                          {new Date(status.rework.submitted_at).toLocaleDateString()}
+                          {(() => {
+                            const date = new Date(status.rework.submitted_at);
+                            return isNaN(date.getTime()) ? "" : date.toLocaleDateString();
+                          })()}
                         </p>
                       )}
                     </td>
@@ -396,7 +402,10 @@ export function DeadlineStatusDashboard() {
                       </span>
                       {status.phase2.submitted_at && (
                         <p className="text-xs text-[var(--muted-foreground)] mt-1">
-                          {new Date(status.phase2.submitted_at).toLocaleDateString()}
+                          {(() => {
+                            const date = new Date(status.phase2.submitted_at);
+                            return isNaN(date.getTime()) ? "" : date.toLocaleDateString();
+                          })()}
                         </p>
                       )}
                     </td>
@@ -408,7 +417,10 @@ export function DeadlineStatusDashboard() {
                       </span>
                       {status.calibration.submitted_at && (
                         <p className="text-xs text-[var(--muted-foreground)] mt-1">
-                          {new Date(status.calibration.submitted_at).toLocaleDateString()}
+                          {(() => {
+                            const date = new Date(status.calibration.submitted_at);
+                            return isNaN(date.getTime()) ? "" : date.toLocaleDateString();
+                          })()}
                         </p>
                       )}
                     </td>

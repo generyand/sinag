@@ -93,6 +93,8 @@ export function AreaBreakdownBarChart({ data }: AreaBreakdownBarChartProps) {
         <YAxis
           tick={{ fontSize: 12 }}
           className="text-muted-foreground"
+          allowDecimals={false}
+          tickFormatter={(value) => Math.floor(value).toString()}
           label={{
             value: "Count",
             angle: -90,

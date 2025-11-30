@@ -138,9 +138,10 @@ function transformDashboardData(apiData: DashboardKPIResponse): AdminDashboardDa
   };
 }
 
-export function useAdminDashboard(year?: string) {
+export function useAdminDashboard(cycleId?: number) {
+  // Pass cycle_id only if explicitly provided (not a year string)
   const query = useGetAnalyticsDashboard(
-    year ? { cycle_id: parseInt(year) } : undefined
+    cycleId ? { cycle_id: cycleId } : undefined
   );
 
   // Transform the data when available

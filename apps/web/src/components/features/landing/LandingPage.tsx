@@ -1,9 +1,9 @@
 "use client";
 
 import {
-  BarangaysSection,
   ChallengeSection,
   Footer as OldFooter,
+  MapSection,
   ProcessSection,
 } from "@/components/features/landing-page";
 import { Header } from "./Header";
@@ -25,8 +25,8 @@ export function LandingPage() {
         <div id="process" className="bg-white">
           <ProcessSection />
         </div>
-        <div id="coverage" className="bg-white">
-          <BarangaysSection />
+        <div id="map" className="bg-gray-50">
+          <MapSection />
         </div>
         <OldFooter />
       </div>
