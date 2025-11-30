@@ -3,13 +3,28 @@
 
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { FileList } from "@/components/features/movs/FileList";
+import { FileListWithDelete } from "@/components/features/movs/FileListWithDelete";
+import { FileUpload } from "@/components/features/movs/FileUpload";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle2, Loader2, Info, X, FileIcon, AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useUploadStore } from "@/store/useUploadStore";
+import type { FileUploadField } from "@sinag/shared";
+import {
+    MOVFileResponse,
+    useGetAssessmentsMyAssessment,
+    useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles,
+    usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload
+} from "@sinag/shared";
+import { getGetAssessmentsMyAssessmentQueryKey } from "@sinag/shared/src/generated/endpoints/assessments";
+import { useQueryClient } from "@tanstack/react-query";
+import { AlertCircle, CheckCircle2, FileIcon, Info, Loader2, X } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useState } from "react";
+import toast from "react-hot-toast";
 
 // Dynamically import annotators to avoid SSR issues
 const PdfAnnotator = dynamic(() => import('@/components/shared/PdfAnnotator'), {
@@ -21,22 +36,6 @@ const ImageAnnotator = dynamic(() => import('@/components/shared/ImageAnnotator'
   ssr: false,
   loading: () => <div className="flex items-center justify-center h-[70vh]">Loading image viewer...</div>,
 });
-import type { FileUploadField } from "@sinag/shared";
-import {
-  useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles,
-  usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload,
-  useGetAssessmentsMyAssessment,
-  MOVFileResponse,
-  AssessmentStatus,
-} from "@sinag/shared";
-import { getGetAssessmentsMyAssessmentQueryKey } from "@sinag/shared/src/generated/endpoints/assessments";
-import { useAuthStore } from "@/store/useAuthStore";
-import { useUploadStore } from "@/store/useUploadStore";
-import { FileUpload } from "@/components/features/movs/FileUpload";
-import { FileListWithDelete } from "@/components/features/movs/FileListWithDelete";
-import { FileList } from "@/components/features/movs/FileList";
-import toast from "react-hot-toast";
-import { useQueryClient } from "@tanstack/react-query";
 
 interface FileFieldComponentProps {
   field: FileUploadField;
@@ -482,8 +481,8 @@ export function FileFieldComponent({
 
       {/* Uploaded Files List (New files during rework, or all files in other statuses) */}
       {files.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm font-medium">
+        <div className="space-y-4 mt-6">
+          <div className="flex items-center gap-2 text-sm font-medium mb-3">
             {isReworkStatus && <CheckCircle2 className="h-4 w-4 text-green-600" />}
             <span className={isReworkStatus ? 'text-green-600' : ''}>Uploaded Files</span>
             <span className="text-muted-foreground font-normal">({files.length} file{files.length !== 1 ? 's' : ''} uploaded)</span>

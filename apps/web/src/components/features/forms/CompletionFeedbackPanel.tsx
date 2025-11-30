@@ -3,14 +3,12 @@
 
 "use client";
 
-import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle2, AlertCircle } from "lucide-react";
-import type { FormSchema, FormSchemaFieldsItem, MOVFileResponse } from "@sinag/shared";
 import { isFieldRequired } from "@/lib/forms/formSchemaParser";
-import { useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles, useGetAssessmentsMyAssessment } from "@sinag/shared";
+import type { FormSchema, FormSchemaFieldsItem, MOVFileResponse } from "@sinag/shared";
+import { useGetAssessmentsMyAssessment, useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles } from "@sinag/shared";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { useMemo } from "react";
 
 interface CompletionFeedbackPanelProps {
   /** Current form values */
@@ -204,53 +202,68 @@ export function CompletionFeedbackPanel({
   }
 
   return (
-    <Card className="border-none shadow-sm">
-      <CardHeader>
-        <CardTitle className="text-lg">Form Completion</CardTitle>
+    <Card className="border border-[var(--border)] shadow-sm bg-[var(--card)] rounded-lg overflow-hidden">
+      <CardHeader className="pb-4 border-b border-[var(--border)] bg-[var(--muted)]/20">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-bold uppercase tracking-wide text-[var(--foreground)]">
+            Form Completion
+          </CardTitle>
+          <span className="text-xs font-medium text-[var(--text-secondary)] bg-[var(--muted)] px-2 py-0.5 rounded border border-[var(--border)]">
+            {completed} / {totalRequired} Required
+          </span>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="p-6 space-y-6">
         {/* Progress Bar */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-medium">
-              {completed} of {totalRequired} required fields completed
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-medium text-[var(--text-secondary)]">
+              Overall Progress
             </span>
-            <span className="text-muted-foreground">{percentage}%</span>
+            <span className="font-bold text-[var(--foreground)]">{percentage}% Complete</span>
           </div>
-          <Progress
-            value={percentage}
-            className="h-2"
-            progressColor={getProgressColor()}
-          />
+          <div className="h-2.5 w-full bg-[var(--muted)] rounded-full overflow-hidden">
+            <div 
+              className="h-full transition-all duration-500 ease-out rounded-full"
+              style={{ 
+                width: `${percentage}%`,
+                backgroundColor: getProgressColor()
+              }}
+            />
+          </div>
         </div>
 
         {/* Success Message for 100% Completion */}
         {percentage === 100 && (
-          <Alert className="border-green-500 bg-green-50 dark:bg-green-950">
-            <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-            <AlertDescription className="text-green-800 dark:text-green-200">
-              All required fields completed!
-            </AlertDescription>
-          </Alert>
+          <div className="flex items-start gap-3 p-3 rounded-md bg-green-500/10 border border-green-500/20">
+            <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <h4 className="text-sm font-bold text-green-700">All set!</h4>
+              <p className="text-xs text-green-600/90 mt-0.5">
+                All required fields have been completed. You can now proceed to the next indicator.
+              </p>
+            </div>
+          </div>
         )}
 
         {/* Incomplete Required Fields List */}
         {percentage < 100 && incompleteFields.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">
-              Please complete the following required fields:
+          <div className="space-y-3 pt-2 border-t border-[var(--border)]">
+            <p className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] flex items-center gap-2">
+              <AlertCircle className="h-3.5 w-3.5" />
+              Missing Requirements
             </p>
-            <ul className="space-y-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {incompleteFields.map((field) => (
-                <li
+                <div
                   key={field.field_id}
-                  className="flex items-center gap-2 text-sm text-destructive"
+                  className="flex items-center gap-2 text-xs text-red-600 bg-red-50 dark:bg-red-900/10 px-2 py-1.5 rounded border border-red-100 dark:border-red-900/20"
                 >
-                  <AlertCircle className="h-3 w-3" />
-                  <span>{field.label}</span>
-                </li>
+                  <div className="h-1.5 w-1.5 rounded-full bg-red-500 flex-shrink-0" />
+                  <span className="truncate" title={field.label}>{field.label}</span>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         )}
       </CardContent>

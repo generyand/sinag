@@ -318,14 +318,14 @@ export function DynamicIndicatorForm({
             {form.watch(name) && (field as any).mov_upload_section && (
               <div className="ml-6 mt-6">
                 <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl overflow-hidden shadow-sm">
-                  <div className="p-4 border-b border-[var(--border)] bg-[var(--hover)]/30 flex items-center gap-3">
+                  <div className="p-4 border-b border-[var(--border)] bg-[var(--muted)]/30 flex items-center gap-3">
                     <div className="flex items-center justify-center h-8 w-8 rounded-full bg-[var(--cityscape-yellow)]/10 text-[var(--cityscape-yellow-dark)]">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                       </svg>
                     </div>
                     <div>
-                      <h4 className="text-sm font-semibold text-[var(--foreground)]">
+                      <h4 className="text-sm font-bold text-[var(--foreground)] uppercase tracking-wide">
                         Upload Files for{" "}
                         {(field as any).mov_upload_section ===
                         "bfdp_monitoring_forms"
@@ -333,7 +333,7 @@ export function DynamicIndicatorForm({
                           : "Photo Documentation"}
                       </h4>
                       <p className="text-xs text-[var(--text-secondary)]">
-                        Supported formats: PDF, Images
+                        Supported formats: PDF, Images (Max 10MB)
                       </p>
                     </div>
                   </div>
@@ -460,22 +460,22 @@ export function DynamicIndicatorForm({
                           relative group border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ease-in-out cursor-pointer
                           ${isDisabled || isUploading 
                             ? "border-[var(--border)] bg-[var(--muted)] opacity-60 cursor-not-allowed" 
-                            : "border-[var(--border)] hover:border-[var(--cityscape-yellow)] hover:bg-[var(--cityscape-yellow)]/5"
+                            : "border-[var(--border)] bg-[var(--card)] hover:border-[var(--cityscape-yellow)] hover:bg-[var(--cityscape-yellow)]/5 hover:shadow-sm"
                           }
                         `}
                       >
                         <div className="space-y-3">
-                          <div className="mx-auto h-12 w-12 rounded-full bg-[var(--hover)] flex items-center justify-center text-[var(--text-secondary)] group-hover:text-[var(--cityscape-yellow-dark)] group-hover:bg-[var(--cityscape-yellow)]/10 transition-colors duration-200">
+                          <div className="mx-auto h-12 w-12 rounded-full bg-[var(--muted)] flex items-center justify-center text-[var(--text-secondary)] group-hover:text-[var(--cityscape-yellow-dark)] group-hover:bg-[var(--cityscape-yellow)]/10 transition-colors duration-200">
                             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                             </svg>
                           </div>
                           <div>
                             <p className="text-base font-medium text-[var(--foreground)]">
-                              <span className="text-[var(--cityscape-yellow-dark)] hover:underline">Click to upload</span> or drag and drop
+                              <span className="text-[var(--cityscape-yellow-dark)] font-bold hover:underline">Click to upload</span> or drag and drop
                             </p>
-                            <p className="text-sm text-[var(--text-secondary)] mt-1">
-                              Multiple files allowed
+                            <p className="text-xs text-[var(--text-secondary)] mt-1 uppercase tracking-wide">
+                              PDF, JPG, PNG up to 10MB
                             </p>
                           </div>
                         </div>
@@ -485,14 +485,14 @@ export function DynamicIndicatorForm({
                         const sectionKey = (field as any).mov_upload_section || 'unknown_section';
                         const state = sectionUpload[sectionKey];
                         return state?.active ? (
-                        <div className="mt-4 p-4 bg-[var(--hover)] rounded-lg border border-[var(--border)]">
+                        <div className="mt-4 p-4 bg-[var(--muted)]/30 rounded-lg border border-[var(--border)]">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-[var(--foreground)]">Uploading files...</span>
-                            <span className="text-xs font-medium text-[var(--text-secondary)]">{state.progress}%</span>
+                            <span className="text-xs font-bold uppercase tracking-wide text-[var(--foreground)]">Uploading files...</span>
+                            <span className="text-xs font-bold text-[var(--text-secondary)]">{state.progress}%</span>
                           </div>
-                          <div className="h-2 bg-[var(--border)] rounded-full overflow-hidden">
+                          <div className="h-1.5 bg-[var(--border)] rounded-full overflow-hidden">
                             <div
-                              className="h-2 bg-[var(--cityscape-yellow)] transition-all duration-150 ease-out"
+                              className="h-full bg-[var(--cityscape-yellow)] transition-all duration-150 ease-out"
                               style={{ width: `${state.progress}%` }}
                             />
                           </div>
@@ -504,7 +504,7 @@ export function DynamicIndicatorForm({
                 </div>
                 
                 {localMovs.length > 0 && (
-                  <div className="mt-4 space-y-2">
+                  <div className="mt-6 space-y-3">
                     {localMovs
                       .filter(
                         (f) =>
@@ -513,10 +513,10 @@ export function DynamicIndicatorForm({
                       .map((f) => (
                         <div
                           key={f.id}
-                          className="group flex items-center justify-between p-3 rounded-lg border border-[var(--border)] bg-[var(--card)] hover:border-[var(--cityscape-yellow)]/50 transition-all duration-200"
+                          className="group flex items-center justify-between p-3 rounded-lg border border-[var(--border)] bg-[var(--card)] hover:border-[var(--cityscape-yellow)]/50 hover:shadow-sm transition-all duration-200"
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="flex-shrink-0 w-8 h-8 rounded bg-[var(--hover)] flex items-center justify-center text-[var(--text-secondary)] text-xs font-medium uppercase">
+                            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[var(--muted)] flex items-center justify-center text-[var(--text-secondary)] text-[10px] font-bold uppercase border border-[var(--border)]">
                               {getFileBadge(f.name)}
                             </div>
                             <div className="min-w-0">

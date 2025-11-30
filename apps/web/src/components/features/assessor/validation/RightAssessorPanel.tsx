@@ -1,19 +1,18 @@
 "use client";
 
-import * as React from 'react';
-import { useForm, Controller, useWatch } from 'react-hook-form';
-import { z } from 'zod';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { useAuthStore } from '@/store/useAuthStore';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { AssessmentDetailsResponse } from '@sinag/shared';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { FileTextIcon } from 'lucide-react';
-import { useAuthStore } from '@/store/useAuthStore';
+import * as React from 'react';
+import { Controller, useForm, useWatch } from 'react-hook-form';
+import { z } from 'zod';
 
 interface RightAssessorPanelProps {
   assessment: AssessmentDetailsResponse;
@@ -739,16 +738,28 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
   // }, [watched, expandedId, isValidator, manualOverrides]);
 
   return (
-    <div className="p-4">
-      <div className="text-sm text-muted-foreground mb-3">
-        {isValidator ? 'Validator Controls' : 'Assessor Controls'}
+    <div className="flex flex-col h-full">
+      <div className="h-14 flex items-center px-3 border-b border-[var(--border)] bg-muted/5 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <FileTextIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+          <div className="text-xs font-semibold uppercase tracking-wide text-foreground truncate">
+            {isValidator ? 'Validator Controls' : 'Assessor Controls'}
+          </div>
+        </div>
       </div>
-      <div className="space-y-4">
+      <div className="flex-1 overflow-y-auto p-4">
+        <div className="space-y-4">
         {responses.length === 0 ? (
           <div className="text-sm text-muted-foreground">No indicators found.</div>
         ) : expandedId == null ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <div className="text-sm">Select an indicator from the left panel to begin validation</div>
+          <div className="flex flex-col items-center justify-center h-full text-center p-6 text-muted-foreground/60 min-h-[400px]">
+            <div className="bg-muted/10 p-4 rounded-full mb-4">
+              <FileTextIcon className="h-8 w-8 opacity-50" />
+            </div>
+            <p className="text-sm font-medium text-foreground/80 mb-1">No Indicator Selected</p>
+            <p className="text-xs max-w-[200px]">
+              Select an indicator from the left panel to begin validation
+            </p>
           </div>
         ) : (
           (() => {
@@ -787,13 +798,13 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                     if (checklistItems.length === 0) return null;
 
                     return (
-                      <div className="border border-black/10 rounded-sm bg-muted/10">
-                        <div className="px-3 py-2 border-b border-black/10 bg-muted/30">
+                      <div className="border border-[var(--border)] rounded-sm bg-card">
+                        <div className="px-3 py-2 border-b border-[var(--border)] bg-muted/5">
                           <div className="flex items-center justify-between">
-                            <div className="text-xs font-semibold uppercase tracking-wide">
+                            <div className="text-xs font-semibold uppercase tracking-wide text-foreground">
                               Validation Checklist
                               {validationRule === 'ANY_ITEM_REQUIRED' && (
-                                <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-800 font-normal normal-case">
+                                <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-800 font-normal normal-case dark:bg-yellow-900/30 dark:text-yellow-200">
                                   OR Logic: At least 1 required
                                 </span>
                               )}
@@ -1301,6 +1312,7 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
           })()
         )}
       </div>
+    </div>
     </div>
   );
 }
