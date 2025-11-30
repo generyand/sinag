@@ -42,8 +42,9 @@ EXPOSE 80 443
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost/health || exit 1
 
-# Run as non-root user (nginx user is created by base image)
-USER nginx
+# Note: Nginx must run as root to bind to port 80/443
+# The nginx.conf is configured to drop privileges after binding to ports
+# This is a standard and secure Nginx pattern
 
 # Start Nginx
 CMD ["nginx", "-g", "daemon off;"]

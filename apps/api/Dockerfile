@@ -40,21 +40,25 @@ RUN chown -R appuser:appuser /app
 # ------------------------------------------------------------------------------
 FROM base AS dependencies
 
-# Switch to non-root user
-USER appuser
-
 # Copy dependency files (only what's needed for installation)
-COPY --chown=appuser:appuser pyproject.toml uv.lock ./
+# Install as root since --system installs to /usr/local which requires root
+COPY pyproject.toml uv.lock ./
 
 # Install production dependencies using uv
 # --system flag installs to system Python (no virtual env in container)
 # --no-cache prevents caching to reduce image size
 RUN uv pip install --system --no-cache -r pyproject.toml
 
+# Switch to non-root user after installation
+USER appuser
+
 # ------------------------------------------------------------------------------
 # Stage 3: Development (includes dev dependencies and source code)
 # ------------------------------------------------------------------------------
 FROM dependencies AS development
+
+# Switch to root to install dev dependencies
+USER root
 
 # Install dev dependencies for development environment
 RUN uv pip install --system --no-cache \
@@ -65,6 +69,9 @@ RUN uv pip install --system --no-cache \
     pytest-asyncio==1.0.0 \
     pytest-cov==7.0.0 \
     ruff==0.11.13
+
+# Switch back to non-root user
+USER appuser
 
 # Copy application code
 COPY --chown=appuser:appuser . .

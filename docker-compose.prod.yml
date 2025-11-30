@@ -1,239 +1,148 @@
 # ==============================================================================
-# SINAG Production Docker Compose Configuration
+# SINAG Production Docker Compose - GitHub Container Registry (GHCR)
 # ==============================================================================
-# This configuration is optimized for production deployments with:
-# - Proper secrets management using Docker secrets
-# - Network isolation and security
-# - Resource limits and health checks
-# - Production-grade logging
-# - High availability configuration
-# ==============================================================================
+# This configuration pulls pre-built images from GitHub Container Registry.
+# Designed for simple EC2 deployment by students.
 #
 # USAGE:
-#   docker-compose -f docker-compose.prod.yml up -d
+#   1. Copy .env.example to .env and fill in your values
+#   2. Login to GHCR: echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
+#   3. Pull images: docker compose -f docker-compose.prod.yml pull
+#   4. Start: docker compose -f docker-compose.prod.yml up -d
+#   5. Run migrations: docker compose -f docker-compose.prod.yml exec api alembic upgrade head
 #
-# PREREQUISITES:
-#   1. Create Docker secrets for sensitive data:
-#      echo "your-secret-key" | docker secret create sinag_secret_key -
-#      echo "your-db-url" | docker secret create sinag_database_url -
-#      echo "your-supabase-key" | docker secret create sinag_supabase_key -
-#      echo "your-gemini-key" | docker secret create sinag_gemini_api_key -
-#
-#   2. Set up external PostgreSQL (Supabase) before deploying
-#   3. Configure environment-specific variables in production .env files
 # ==============================================================================
-
-version: '3.8'
 
 services:
   # ============================================================================
-  # Redis - Message Broker for Celery (Production Configuration)
+  # Redis - Message Broker for Celery
   # ============================================================================
   redis:
     image: redis:7-alpine
-    container_name: sinag-redis-prod
-    restart: always
-
-    # Only expose internally - accessed via backend services
-    expose:
-      - "6379"
+    container_name: sinag-redis
+    restart: unless-stopped
 
     volumes:
       - redis-data:/data
 
-    # Production Redis configuration with persistence
-    command: >
-      redis-server
-      --appendonly yes
-      --appendfsync everysec
-      --maxmemory 512mb
-      --maxmemory-policy allkeys-lru
-      --requirepass ${REDIS_PASSWORD:-changeme}
+    command: redis-server --appendonly yes
 
-    # Health check
     healthcheck:
-      test: ["CMD", "redis-cli", "--pass", "${REDIS_PASSWORD:-changeme}", "ping"]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 5s
 
-    # Production resource limits
     deploy:
       resources:
         limits:
-          cpus: '1.0'
-          memory: 768M
-        reservations:
-          cpus: '0.5'
+          cpus: '0.50'
           memory: 512M
-      replicas: 1
-      restart_policy:
-        condition: any
-        delay: 5s
-        max_attempts: 3
-        window: 120s
 
-    # Security: Run as non-root user
-    user: "999:999"
-
-    # Production logging with rotation
     logging:
       driver: "json-file"
       options:
-        max-size: "50m"
-        max-file: "10"
-        compress: "true"
+        max-size: "10m"
+        max-file: "3"
 
     networks:
-      sinag-backend:
-        ipv4_address: 172.26.0.10
+      - sinag-network
 
   # ============================================================================
-  # FastAPI Backend (Production Configuration)
+  # FastAPI Backend (from GHCR)
   # ============================================================================
   api:
-    build:
-      context: apps/api
-      dockerfile: Dockerfile
-      target: production
-      args:
-        - BUILD_DATE=${BUILD_DATE}
-        - VERSION=${VERSION:-latest}
+    image: ghcr.io/${GITHUB_REPOSITORY}/sinag-api:${IMAGE_TAG:-latest}
+    container_name: sinag-api
+    restart: unless-stopped
 
-    container_name: sinag-api-prod
-    restart: always
-
-    # Only expose internally - accessed via Nginx
     expose:
       - "8000"
 
-    # Production secrets using Docker secrets
-    secrets:
-      - sinag_secret_key
-      - sinag_database_url
-      - sinag_supabase_key
-      - sinag_gemini_api_key
-
     environment:
-      # Application configuration
+      # Application
       - ENVIRONMENT=production
       - DEBUG=false
-      - LOG_LEVEL=info
-
-      # Redis configuration (internal network)
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-changeme}@redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-changeme}@redis:6379/0
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-changeme}@redis:6379/0
-
-      # Security settings
+      - FAIL_FAST=true
+      - SECRET_KEY=${SECRET_KEY}
       - ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=10080
-
-      # Feature flags
+      # Database (Supabase)
+      - DATABASE_URL=${DATABASE_URL}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - REQUIRE_ALL_CONNECTIONS=true
+      # Redis/Celery (internal Docker network)
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - REDIS_URL=redis://redis:6379/0
       - REQUIRE_CELERY=true
-      - FAIL_FAST=true
-
-      # Secrets paths (read from Docker secrets)
-      - SECRET_KEY_FILE=/run/secrets/sinag_secret_key
-      - DATABASE_URL_FILE=/run/secrets/sinag_database_url
-      - SUPABASE_SERVICE_ROLE_KEY_FILE=/run/secrets/sinag_supabase_key
-      - GEMINI_API_KEY_FILE=/run/secrets/sinag_gemini_api_key
+      # AI (required)
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - REQUIRE_GEMINI=true
 
     depends_on:
       redis:
         condition: service_healthy
 
-    # Health check
     healthcheck:
-      test:
-        [
-          "CMD",
-          "python",
-          "-c",
-          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
-        ]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 40s
 
-    # Production resource limits
     deploy:
       resources:
         limits:
-          cpus: '2.0'
-          memory: 2G
-        reservations:
           cpus: '1.0'
           memory: 1G
-      replicas: 2  # High availability with 2 replicas
-      restart_policy:
-        condition: any
-        delay: 10s
-        max_attempts: 3
-        window: 120s
-      update_config:
-        parallelism: 1
-        delay: 10s
-        order: start-first
 
-    # Production logging
     logging:
       driver: "json-file"
       options:
-        max-size: "100m"
-        max-file: "10"
-        compress: "true"
+        max-size: "10m"
+        max-file: "5"
 
     networks:
-      sinag-backend:
-        ipv4_address: 172.26.0.20
-      sinag-frontend:
+      - sinag-network
 
   # ============================================================================
-  # Celery Worker - Background Task Processor (Production Configuration)
+  # Celery Worker (from GHCR - same image as API)
   # ============================================================================
   celery-worker:
-    build:
-      context: apps/api
-      dockerfile: Dockerfile
-      target: celery-worker
-      args:
-        - BUILD_DATE=${BUILD_DATE}
-        - VERSION=${VERSION:-latest}
+    image: ghcr.io/${GITHUB_REPOSITORY}/sinag-api:${IMAGE_TAG:-latest}
+    container_name: sinag-celery-worker
+    restart: unless-stopped
 
-    container_name: sinag-celery-worker-prod
-    restart: always
-
-    # Production secrets
-    secrets:
-      - sinag_secret_key
-      - sinag_database_url
-      - sinag_supabase_key
-      - sinag_gemini_api_key
+    command: >
+      celery -A app.core.celery_app worker
+      --loglevel=info
+      --queues=notifications,classification
+      --concurrency=2
 
     environment:
+      # Application
       - ENVIRONMENT=production
       - DEBUG=false
-      - LOG_LEVEL=info
-
-      # Redis configuration
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-changeme}@redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-changeme}@redis:6379/0
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-changeme}@redis:6379/0
-
-      # Celery production optimizations
-      - CELERY_WORKER_PREFETCH_MULTIPLIER=4
-      - CELERY_WORKER_MAX_TASKS_PER_CHILD=1000
-      - CELERY_TASK_TIME_LIMIT=3600
-      - CELERY_TASK_SOFT_TIME_LIMIT=3300
-
-      # Secrets paths
-      - SECRET_KEY_FILE=/run/secrets/sinag_secret_key
-      - DATABASE_URL_FILE=/run/secrets/sinag_database_url
-      - SUPABASE_SERVICE_ROLE_KEY_FILE=/run/secrets/sinag_supabase_key
-      - GEMINI_API_KEY_FILE=/run/secrets/sinag_gemini_api_key
+      - FAIL_FAST=true
+      - SECRET_KEY=${SECRET_KEY}
+      # Database (Supabase)
+      - DATABASE_URL=${DATABASE_URL}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - REQUIRE_ALL_CONNECTIONS=true
+      # Redis/Celery (internal Docker network)
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - REDIS_URL=redis://redis:6379/0
+      - REQUIRE_CELERY=true
+      # AI (required)
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - REQUIRE_GEMINI=true
 
     depends_on:
       api:
@@ -241,143 +150,81 @@ services:
       redis:
         condition: service_healthy
 
-    # Health check
-    healthcheck:
-      test: ["CMD-SHELL", "celery -A app.core.celery_app inspect ping -d celery@$$HOSTNAME"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-
-    # Production resource limits
     deploy:
       resources:
         limits:
-          cpus: '4.0'
-          memory: 4G
-        reservations:
-          cpus: '2.0'
-          memory: 2G
-      replicas: 2  # Multiple workers for high availability
-      restart_policy:
-        condition: any
-        delay: 10s
-        max_attempts: 3
-        window: 120s
+          cpus: '1.0'
+          memory: 1G
 
-    # Production logging
     logging:
       driver: "json-file"
       options:
-        max-size: "100m"
-        max-file: "10"
-        compress: "true"
+        max-size: "10m"
+        max-file: "5"
 
     networks:
-      sinag-backend:
-        ipv4_address: 172.26.0.30
+      - sinag-network
 
   # ============================================================================
-  # Next.js Frontend (Production Configuration)
+  # Next.js Frontend (from GHCR)
+  # ============================================================================
+  # NOTE: NEXT_PUBLIC_* variables are baked at build time in GitHub Actions.
+  # Set them in GitHub repo Settings > Secrets and variables > Actions > Variables
   # ============================================================================
   web:
-    build:
-      context: .
-      dockerfile: apps/web/Dockerfile
-      target: production
-      args:
-        - BUILD_DATE=${BUILD_DATE}
-        - VERSION=${VERSION:-latest}
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://api.sinag.gov.ph}
+    image: ghcr.io/${GITHUB_REPOSITORY}/sinag-web:${IMAGE_TAG:-latest}
+    container_name: sinag-web
+    restart: unless-stopped
 
-    container_name: sinag-web-prod
-    restart: always
-
-    # Only expose internally - accessed via Nginx
     expose:
       - "3000"
 
     environment:
       - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1
-      - PORT=3000
-
-      # API URLs (server-side uses internal network)
-      - API_BASE_URL=http://api:8000
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://api.sinag.gov.ph}
 
     depends_on:
       api:
         condition: service_healthy
 
-    # Health check
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-
-    # Production resource limits
     deploy:
       resources:
         limits:
-          cpus: '2.0'
-          memory: 2G
-        reservations:
-          cpus: '1.0'
-          memory: 1G
-      replicas: 2  # High availability
-      restart_policy:
-        condition: any
-        delay: 10s
-        max_attempts: 3
-        window: 120s
-      update_config:
-        parallelism: 1
-        delay: 10s
-        order: start-first
+          cpus: '0.5'
+          memory: 512M
 
-    # Production logging
     logging:
       driver: "json-file"
       options:
-        max-size: "100m"
-        max-file: "10"
-        compress: "true"
+        max-size: "10m"
+        max-file: "5"
 
     networks:
-      sinag-frontend:
-        ipv4_address: 172.26.1.40
+      - sinag-network
 
   # ============================================================================
-  # Nginx Reverse Proxy (Production)
+  # Nginx Reverse Proxy (from GHCR)
   # ============================================================================
   nginx:
-    build:
-      context: nginx
-      dockerfile: Dockerfile
-
-    container_name: sinag-nginx-prod
-    restart: always
+    image: ghcr.io/${GITHUB_REPOSITORY}/sinag-nginx:${IMAGE_TAG:-latest}
+    container_name: sinag-nginx
+    restart: unless-stopped
 
     ports:
       - "80:80"
       # - "443:443"  # Uncomment when SSL is configured
 
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      # - ./nginx/ssl:/etc/nginx/ssl:ro  # Uncomment for SSL certificates
       - nginx-logs:/var/log/nginx
+      # Uncomment for SSL:
+      # - /etc/letsencrypt:/etc/letsencrypt:ro
 
     depends_on:
       api:
         condition: service_healthy
       web:
-        condition: service_healthy
+        condition: service_started
 
-    # Health check
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/health"]
       interval: 30s
@@ -385,86 +232,33 @@ services:
       retries: 3
       start_period: 10s
 
-    # Production resource limits
     deploy:
       resources:
         limits:
-          cpus: '1.0'
-          memory: 512M
-        reservations:
-          cpus: '0.5'
-          memory: 256M
-      replicas: 1
-      restart_policy:
-        condition: any
-        delay: 5s
-        max_attempts: 3
-        window: 120s
+          cpus: '0.25'
+          memory: 128M
 
-    # Production logging
     logging:
       driver: "json-file"
       options:
-        max-size: "50m"
-        max-file: "10"
-        compress: "true"
+        max-size: "10m"
+        max-file: "5"
 
     networks:
-      sinag-frontend:
-        ipv4_address: 172.26.1.50
+      - sinag-network
 
 # ==============================================================================
-# Docker Secrets (for sensitive data)
-# ==============================================================================
-secrets:
-  sinag_secret_key:
-    external: true
-  sinag_database_url:
-    external: true
-  sinag_supabase_key:
-    external: true
-  sinag_gemini_api_key:
-    external: true
-
-# ==============================================================================
-# Networks (isolated for security)
+# Networks
 # ==============================================================================
 networks:
-  # Backend network - API, Celery, Redis
-  sinag-backend:
+  sinag-network:
     driver: bridge
-    enable_ipv6: false
-    internal: true  # No external access
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.26.0.0/24
-          gateway: 172.26.0.1
-    driver_opts:
-      com.docker.network.bridge.name: sinag-backend
-      com.docker.network.bridge.enable_ip_masquerade: "true"
-
-  # Frontend network - Web and API (for SSR)
-  sinag-frontend:
-    driver: bridge
-    enable_ipv6: false
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.26.1.0/24
-          gateway: 172.26.1.1
-    driver_opts:
-      com.docker.network.bridge.name: sinag-frontend
 
 # ==============================================================================
-# Volumes (persistent data)
+# Volumes
 # ==============================================================================
 volumes:
   redis-data:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./data/redis
   nginx-logs:
     driver: local

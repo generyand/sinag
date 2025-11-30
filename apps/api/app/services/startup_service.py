@@ -91,6 +91,9 @@ class StartupService:
         # Validate Redis connection (for Celery)
         self._validate_redis_connection()
 
+        # Validate Gemini API connection (for AI features)
+        self._validate_gemini_connection()
+
         # Seed initial data
         self._seed_initial_data()
 
@@ -130,10 +133,10 @@ class StartupService:
             ("SUPABASE_SERVICE_ROLE_KEY", settings.SUPABASE_SERVICE_ROLE_KEY),
         ]
 
-        # Important but optional variables
-        optional_vars = [
-            ("GEMINI_API_KEY", settings.GEMINI_API_KEY, "AI features will be disabled"),
-            ("CELERY_BROKER_URL", settings.CELERY_BROKER_URL, "Background tasks may not work"),
+        # Conditionally required variables (based on REQUIRE_* flags)
+        conditional_vars = [
+            ("GEMINI_API_KEY", settings.GEMINI_API_KEY, settings.REQUIRE_GEMINI, "AI features (classification, recommendations)"),
+            ("CELERY_BROKER_URL", settings.CELERY_BROKER_URL, settings.REQUIRE_CELERY, "Background tasks"),
         ]
 
         # Check critical variables
@@ -141,10 +144,13 @@ class StartupService:
             if not var_value or (isinstance(var_value, str) and var_value.strip() == ""):
                 errors.append(f"  ❌ {var_name} is not set or empty")
 
-        # Check optional variables
-        for var_name, var_value, impact in optional_vars:
+        # Check conditionally required variables
+        for var_name, var_value, is_required, feature_name in conditional_vars:
             if not var_value or (isinstance(var_value, str) and var_value.strip() == ""):
-                warnings.append(f"  ⚠️  {var_name} is not set - {impact}")
+                if is_required and settings.FAIL_FAST:
+                    errors.append(f"  ❌ {var_name} is not set - required for {feature_name}")
+                else:
+                    warnings.append(f"  ⚠️  {var_name} is not set - {feature_name} will be disabled")
 
         # Validate SECRET_KEY is not the default
         if settings.SECRET_KEY and len(settings.SECRET_KEY) < 32:
@@ -223,6 +229,61 @@ class StartupService:
                 redis_client.close()
             except:
                 pass
+
+    def _validate_gemini_connection(self) -> None:
+        """
+        Validate Gemini API key and connection.
+
+        Raises:
+            RuntimeError: If Gemini connection fails and both FAIL_FAST=true and REQUIRE_GEMINI=true
+        """
+        logger.info("🤖 Checking Gemini API connection...")
+
+        # Skip if no API key provided
+        if not settings.GEMINI_API_KEY:
+            should_fail = settings.FAIL_FAST and settings.REQUIRE_GEMINI
+            if should_fail:
+                error_message = "GEMINI_API_KEY is not set"
+                logger.critical(f"❌ {error_message}")
+                logger.critical("AI features (classification, recommendations) will not work!")
+                logger.critical("To bypass: Set REQUIRE_GEMINI=false in environment (NOT RECOMMENDED)")
+                raise RuntimeError(error_message)
+            else:
+                logger.warning("⚠️  GEMINI_API_KEY is not set - AI features will be disabled")
+                return
+
+        try:
+            import google.generativeai as genai
+
+            # Configure the API
+            genai.configure(api_key=settings.GEMINI_API_KEY)
+
+            # Test the connection by listing models
+            models = list(genai.list_models())
+
+            if models:
+                logger.info(f"✅ Gemini API connection: healthy ({len(models)} models available)")
+            else:
+                raise ConnectionError("No models available from Gemini API")
+
+        except Exception as e:
+            error_message = f"Gemini API connection failed: {str(e)}"
+
+            # Determine if we should fail based on FAIL_FAST and REQUIRE_GEMINI
+            should_fail = settings.FAIL_FAST and settings.REQUIRE_GEMINI
+
+            if should_fail:
+                logger.critical(f"❌ {error_message}")
+                logger.critical("AI features (classification, recommendations) will not work!")
+                logger.critical("To bypass: Set FAIL_FAST=false OR REQUIRE_GEMINI=false (NOT RECOMMENDED)")
+                raise RuntimeError(error_message)
+            else:
+                logger.warning(f"⚠️  {error_message}")
+                logger.warning("AI features will be disabled")
+                if not settings.REQUIRE_GEMINI:
+                    logger.warning("Continuing because REQUIRE_GEMINI=false")
+                if not settings.FAIL_FAST:
+                    logger.warning("Continuing because FAIL_FAST=false")
 
     def _log_startup_info(self) -> None:
         """Log basic startup information"""

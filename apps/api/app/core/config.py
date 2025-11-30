@@ -103,6 +103,7 @@ class Settings(BaseSettings):
 
     # Gemini AI Configuration
     GEMINI_API_KEY: Optional[str] = None
+    REQUIRE_GEMINI: bool = True  # If False, Gemini failures only log warnings
 
     # Environment
     ENVIRONMENT: str = "development"

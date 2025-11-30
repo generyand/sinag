@@ -61,12 +61,18 @@ CMD ["pnpm", "dev", "--turbopack"]
 # ------------------------------------------------------------------------------
 FROM deps AS builder
 
+# Build arguments for NEXT_PUBLIC_* variables (must be set at build time)
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_API_V1_URL
+
 # Copy all source code
 COPY . .
 
 # Set environment variables for build
 ENV NEXT_TELEMETRY_DISABLED=1 \
-    NODE_ENV=production
+    NODE_ENV=production \
+    NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
+    NEXT_PUBLIC_API_V1_URL=${NEXT_PUBLIC_API_V1_URL}
 
 # Set working directory to web app
 WORKDIR /app/apps/web
