@@ -18,13 +18,14 @@ import { useAdminDashboard } from '@/hooks/useAdminDashboard';
 export default function AdminDashboardPage() {
   const router = useRouter();
   const { user, setUser, isAuthenticated } = useAuthStore();
-  const [assessmentYear, setAssessmentYear] = useState('2024');
+  const [selectedCycleId, setSelectedCycleId] = useState<number | undefined>(undefined);
 
   // Auto-generated hook to fetch current user data
   const userQuery = useGetUsersMe();
 
   // Admin dashboard data hook (now uses real API)
-  const dashboardQuery = useAdminDashboard(assessmentYear);
+  // Pass undefined to get data for all cycles, or a specific cycle_id
+  const dashboardQuery = useAdminDashboard(selectedCycleId);
 
   // Redirect unauthenticated users to login
   useEffect(() => {
@@ -120,7 +121,11 @@ export default function AdminDashboardPage() {
             municipality={dashboardData.municipality}
             performanceYear={dashboardData.performanceYear}
             assessmentYear={dashboardData.assessmentYear}
-            onAssessmentYearChange={setAssessmentYear}
+            onAssessmentYearChange={(year) => {
+              // For now, we don't have cycle selection in the header
+              // This could be updated to select a cycle by ID in the future
+              console.log('Year changed:', year);
+            }}
           />
 
           {/* Enhanced KPI Cards */}

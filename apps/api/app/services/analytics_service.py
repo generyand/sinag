@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import List, Optional
 
-from app.db.enums import AssessmentStatus, ComplianceStatus, UserRole
+from app.db.enums import AssessmentStatus, ComplianceStatus, UserRole, ValidationStatus
 from app.db.models import Assessment, AssessmentResponse, Barangay, GovernanceArea, Indicator, User
 from app.schemas.analytics import (
     AreaBreakdown,
@@ -228,7 +228,8 @@ class AnalyticsService:
                 )
                 continue
 
-            # For each assessment, check if all indicators in this area are completed
+            # For each assessment, check if this governance area passed or failed
+            # based on validation status (aligned with GAR methodology)
             passed_count = 0
             failed_count = 0
 
@@ -242,10 +243,23 @@ class AnalyticsService:
                 if not area_responses:
                     continue
 
-                # Check if all indicators in this area are completed
-                all_completed = all(r.is_completed for r in area_responses)
+                # Count indicators by validation status
+                met_count = sum(
+                    1 for r in area_responses
+                    if r.validation_status in (ValidationStatus.PASS, ValidationStatus.CONDITIONAL)
+                )
+                total_validated = sum(
+                    1 for r in area_responses
+                    if r.validation_status is not None
+                )
 
-                if all_completed:
+                # Skip if no indicators have been validated yet
+                if total_validated == 0:
+                    continue
+
+                # A barangay "passes" this area if ALL validated indicators are met (Pass/Conditional)
+                # This aligns with GAR methodology where all indicators must pass for area compliance
+                if met_count == total_validated:
                     passed_count += 1
                 else:
                     failed_count += 1
@@ -271,6 +285,9 @@ class AnalyticsService:
         """
         Calculate top 5 most frequently failed indicators.
 
+        Uses validation_status (FAIL) to determine failed indicators,
+        aligned with GAR methodology.
+
         Args:
             db: Database session
             cycle_id: Optional assessment cycle ID
@@ -278,7 +295,7 @@ class AnalyticsService:
         Returns:
             List of FailedIndicator schemas (max 5)
         """
-        # Build query for incomplete responses
+        # Build query for FAILED validation status responses
         query = (
             db.query(
                 Indicator.id,
@@ -286,7 +303,7 @@ class AnalyticsService:
                 func.count(AssessmentResponse.id).label("failure_count"),
             )
             .join(AssessmentResponse, AssessmentResponse.indicator_id == Indicator.id)
-            .filter(AssessmentResponse.is_completed == False)
+            .filter(AssessmentResponse.validation_status == ValidationStatus.FAIL)
         )
 
         # TODO: Add cycle_id filter via Assessment join
@@ -621,6 +638,10 @@ class AnalyticsService:
         """
         Aggregate bar chart data: pass/fail rates by governance area.
 
+        Shows how many barangays passed vs failed each governance area based on
+        validation status (Pass/Conditional = passed, Fail = failed).
+        Aligned with GAR methodology.
+
         Args:
             db: Database session
             assessments: List of filtered assessments
@@ -628,6 +649,7 @@ class AnalyticsService:
         Returns:
             List of BarChartData
         """
+        from app.db.enums import ValidationStatus
         from app.schemas.analytics import BarChartData
 
         if not assessments:
@@ -652,11 +674,8 @@ class AnalyticsService:
             failed_count = 0
 
             # For each assessment, check if this governance area passed or failed
+            # based on validation status (aligned with GAR methodology)
             for assessment in assessments:
-                if assessment.final_compliance_status is None:
-                    # Skip in-progress assessments for bar chart
-                    continue
-
                 # Get responses for this area's indicators
                 area_responses = [
                     r for r in assessment.responses
@@ -666,10 +685,23 @@ class AnalyticsService:
                 if not area_responses:
                     continue
 
-                # Check if all indicators in this area are completed
-                all_completed = all(r.is_completed for r in area_responses)
+                # Count indicators by validation status
+                met_count = sum(
+                    1 for r in area_responses
+                    if r.validation_status in (ValidationStatus.PASS, ValidationStatus.CONDITIONAL)
+                )
+                total_validated = sum(
+                    1 for r in area_responses
+                    if r.validation_status is not None
+                )
 
-                if all_completed:
+                # Skip if no indicators have been validated yet
+                if total_validated == 0:
+                    continue
+
+                # A barangay "passes" this area if ALL validated indicators are met (Pass/Conditional)
+                # This aligns with GAR methodology where all indicators must pass for area compliance
+                if met_count == total_validated:
                     passed_count += 1
                 else:
                     failed_count += 1
@@ -816,6 +848,7 @@ class AnalyticsService:
         Returns:
             MapData schema with list of barangay map points
         """
+        from app.db.enums import ValidationStatus
         from app.schemas.analytics import BarangayMapPoint, MapData
 
         # Get all assessments from the filtered query
@@ -847,12 +880,27 @@ class AnalyticsService:
             else:
                 status = "In Progress"
 
-            # Calculate score (completion percentage)
+            # Calculate score based on indicators met (Pass/Conditional) vs total validated
+            # This aligns with GAR methodology
             score = None
             if assessment.responses:
-                completed = sum(1 for r in assessment.responses if r.is_completed)
-                total = len(assessment.responses)
-                score = round((completed / total * 100), 2) if total > 0 else 0.0
+                # Count indicators by validation status
+                met_count = sum(
+                    1 for r in assessment.responses
+                    if r.validation_status in (ValidationStatus.PASS, ValidationStatus.CONDITIONAL)
+                )
+                total_validated = sum(
+                    1 for r in assessment.responses
+                    if r.validation_status is not None
+                )
+
+                if total_validated > 0:
+                    score = round((met_count / total_validated * 100), 2)
+                else:
+                    # Fallback to completion percentage if no validation status yet
+                    completed = sum(1 for r in assessment.responses if r.is_completed)
+                    total = len(assessment.responses)
+                    score = round((completed / total * 100), 2) if total > 0 else 0.0
 
             # Get coordinates (handle missing lat/lng fields gracefully)
             lat = getattr(barangay, 'latitude', None) or getattr(barangay, 'lat', None)
@@ -885,6 +933,7 @@ class AnalyticsService:
         Returns:
             TableData schema with paginated rows
         """
+        from app.db.enums import ValidationStatus
         from app.schemas.analytics import AssessmentRow, TableData
 
         # Get total count before pagination
@@ -934,12 +983,27 @@ class AnalyticsService:
             else:
                 status = "In Progress"
 
-            # Calculate score (completion percentage)
+            # Calculate score based on indicators met (Pass/Conditional) vs total validated
+            # This aligns with GAR methodology
             score = None
             if assessment.responses:
-                completed = sum(1 for r in assessment.responses if r.is_completed)
-                total = len(assessment.responses)
-                score = round((completed / total * 100), 2) if total > 0 else 0.0
+                # Count indicators by validation status
+                met_count = sum(
+                    1 for r in assessment.responses
+                    if r.validation_status in (ValidationStatus.PASS, ValidationStatus.CONDITIONAL)
+                )
+                total_validated = sum(
+                    1 for r in assessment.responses
+                    if r.validation_status is not None
+                )
+
+                if total_validated > 0:
+                    score = round((met_count / total_validated * 100), 2)
+                else:
+                    # Fallback to completion percentage if no validation status yet
+                    completed = sum(1 for r in assessment.responses if r.is_completed)
+                    total = len(assessment.responses)
+                    score = round((completed / total * 100), 2) if total > 0 else 0.0
 
             rows.append(
                 AssessmentRow(

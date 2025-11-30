@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import type { IndicatorResponse } from "@sinag/shared";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Filter, Plus } from "lucide-react";
+import { Search, Filter } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface IndicatorListProps {
@@ -191,20 +190,6 @@ export default function IndicatorList({
             </div>
           </div>
 
-          {/* Create New Button */}
-          <div className="lg:mb-0">
-            <Button
-              onClick={() => router.push('/mlgoo/indicators/builder')}
-              className="w-full sm:w-auto h-11 px-6 font-semibold hover:shadow-lg transition-all duration-200"
-              style={{
-                background: 'linear-gradient(to bottom right, var(--cityscape-yellow), var(--cityscape-yellow-dark))',
-                color: 'var(--foreground)',
-              }}
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              Hierarchical Builder
-            </Button>
-          </div>
         </div>
 
         {/* Results count */}

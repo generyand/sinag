@@ -43,7 +43,7 @@ export function Footer() {
   return (
     <footer
       ref={footerAnimation.elementRef}
-      className={`relative z-20 w-full bg-gradient-to-br from-gray-900 via-black to-gray-800 text-white py-16 px-8 mt-16 transition-all duration-1000 overflow-hidden ${
+      className={`relative z-20 w-full bg-gradient-to-br from-gray-900 via-black to-gray-800 text-white py-16 px-8 transition-all duration-1000 overflow-hidden ${
         footerAnimation.isVisible
           ? "opacity-100 translate-y-0"
           : "opacity-0 translate-y-8"
