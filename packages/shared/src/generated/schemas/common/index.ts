@@ -758,6 +758,14 @@ export type OrAnyRuleConditionsItem = AndAllRule | OrAnyRule | PercentageThresho
 
 
 /**
+ * PasswordResetRequest
+ */
+export interface PasswordResetRequest {
+  new_password: string;
+}
+
+
+/**
  * PdfRect
  */
 export interface PdfRect {

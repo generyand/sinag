@@ -18,9 +18,11 @@ import {
 } from '@/components/ui/select';
 import { useGovernanceAreas } from '@/hooks/useGovernanceAreas';
 import { useBarangays } from '@/hooks/useBarangays';
+import { useToast } from '@/hooks/use-toast';
 import { UserRole, UserAdminCreate, UserAdminUpdate, Barangay, GovernanceArea } from '@sinag/shared';
 import { usePostUsers, usePutUsersUserId, getGetUsersQueryKey } from '@sinag/shared/src/generated/endpoints/users';
 import { useQueryClient } from '@tanstack/react-query';
+import { AxiosError } from 'axios';
 
 interface UserFormProps {
   open: boolean;
@@ -41,6 +43,25 @@ interface UserFormProps {
   isEditing?: boolean;
 }
 
+// Helper function to extract error message from API response
+function getErrorMessage(error: unknown): string {
+  if (error instanceof AxiosError) {
+    // Try to get the detail from the response
+    const detail = error.response?.data?.detail;
+    if (typeof detail === 'string') {
+      return detail;
+    }
+    // Handle validation errors (array of objects)
+    if (Array.isArray(detail)) {
+      return detail.map((err: { msg?: string }) => err.msg || 'Validation error').join(', ');
+    }
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return 'An unexpected error occurred';
+}
+
 export function UserForm({ open, onOpenChange, initialValues, isEditing = false }: UserFormProps) {
   const [form, setForm] = React.useState({
     name: '',
@@ -56,6 +77,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
   });
 
   const [errors, setErrors] = React.useState<Record<string, string>>({});
+  const { toast } = useToast();
 
   // Fetch governance areas and barangays data
   const { data: governanceAreas, isLoading: isLoadingGovernanceAreas } = useGovernanceAreas();
@@ -132,9 +154,9 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setForm((prev) => ({ 
-      ...prev, 
-      [name]: value === '' ? null : value 
+    setForm((prev) => ({
+      ...prev,
+      [name]: value === '' ? null : parseInt(value, 10)
     }));
   };
 
@@ -153,21 +175,32 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!form.name.trim()) {
       newErrors.name = 'Name is required';
     }
-    
+
     if (!form.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(form.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
-    
+
     if (!isEditing && !form.password.trim()) {
       newErrors.password = 'Password is required';
+    } else if (!isEditing && form.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
     }
-    
+
+    // Role-based validation
+    if (form.role === UserRole.VALIDATOR && !form.validator_area_id) {
+      newErrors.validator_area_id = 'Governance area is required for Validator role';
+    }
+
+    if (form.role === UserRole.BLGU_USER && !form.barangay_id) {
+      newErrors.barangay_id = 'Barangay is required for BLGU User role';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -197,13 +230,20 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
         { userId: initialValues.id, data: updateData },
         {
           onSuccess: () => {
-            // Invalidate the users query to refetch the data
             queryClient.invalidateQueries({ queryKey: getGetUsersQueryKey() });
+            toast({
+              title: 'User Updated',
+              description: `Successfully updated ${form.name}'s account.`,
+            });
             onOpenChange(false);
           },
           onError: (error) => {
-            console.error('Failed to update user:', error);
-            // TODO: Add proper error handling/toast notification
+            const errorMessage = getErrorMessage(error);
+            toast({
+              title: 'Update Failed',
+              description: errorMessage,
+              variant: 'destructive',
+            });
           },
         }
       );
@@ -226,13 +266,20 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
         { data: createData },
         {
           onSuccess: () => {
-            // Invalidate the users query to refetch the data
             queryClient.invalidateQueries({ queryKey: getGetUsersQueryKey() });
+            toast({
+              title: 'User Created',
+              description: `Successfully created account for ${form.name}.`,
+            });
             onOpenChange(false);
           },
           onError: (error) => {
-            console.error('Failed to create user:', error);
-            // TODO: Add proper error handling/toast notification
+            const errorMessage = getErrorMessage(error);
+            toast({
+              title: 'Creation Failed',
+              description: errorMessage,
+              variant: 'destructive',
+            });
           },
         }
       );
@@ -339,13 +386,13 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
             {/* Conditional dropdown for BLGU User role */}
             {form.role === UserRole.BLGU_USER && (
               <div>
-                <Label htmlFor="barangay_id" className="text-sm font-medium text-[var(--foreground)]">Assigned Barangay</Label>
-                <Select 
-                  value={form.barangay_id?.toString() || ''} 
+                <Label htmlFor="barangay_id" className="text-sm font-medium text-[var(--foreground)]">Assigned Barangay *</Label>
+                <Select
+                  value={form.barangay_id?.toString() || ''}
                   onValueChange={(value) => handleSelectChange('barangay_id', value)}
                   disabled={isLoading}
                 >
-                  <SelectTrigger className="mt-1 border-[var(--border)] focus:border-[var(--cityscape-yellow)] focus:ring-[var(--cityscape-yellow)]/20">
+                  <SelectTrigger className={`mt-1 border-[var(--border)] focus:border-[var(--cityscape-yellow)] focus:ring-[var(--cityscape-yellow)]/20 ${errors.barangay_id ? 'border-red-500 dark:border-red-700' : ''}`}>
                     <SelectValue placeholder="Select a barangay" />
                   </SelectTrigger>
                   <SelectContent className="bg-[var(--card)] border border-[var(--border)]">
@@ -362,6 +409,9 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
                     )}
                   </SelectContent>
                 </Select>
+                {errors.barangay_id && (
+                  <p className="text-red-600 dark:text-red-400 text-xs mt-1">{errors.barangay_id}</p>
+                )}
               </div>
             )}
             
@@ -374,7 +424,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
                   onValueChange={(value) => handleSelectChange('validator_area_id', value)}
                   disabled={isLoading}
                 >
-                  <SelectTrigger className="mt-1 border-[var(--border)] focus:border-[var(--cityscape-yellow)] focus:ring-[var(--cityscape-yellow)]/20">
+                  <SelectTrigger className={`mt-1 border-[var(--border)] focus:border-[var(--cityscape-yellow)] focus:ring-[var(--cityscape-yellow)]/20 ${errors.validator_area_id ? 'border-red-500 dark:border-red-700' : ''}`}>
                     <SelectValue placeholder="Select a governance area" />
                   </SelectTrigger>
                   <SelectContent className="bg-[var(--card)] border border-[var(--border)]">
@@ -391,6 +441,9 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
                     )}
                   </SelectContent>
                 </Select>
+                {errors.validator_area_id && (
+                  <p className="text-red-600 dark:text-red-400 text-xs mt-1">{errors.validator_area_id}</p>
+                )}
               </div>
             )}
           </div>

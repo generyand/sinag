@@ -23,9 +23,9 @@ import type {
   GetUsersParams,
   GetUsersStatsDashboard200,
   HTTPValidationError,
+  PasswordResetRequest,
   PatchUsersMeLanguageParams,
   PostUsersUserIdResetPassword200,
-  PostUsersUserIdResetPasswordParams,
   User,
   UserAdminCreate,
   UserAdminUpdate,
@@ -671,18 +671,25 @@ export const usePostUsersUserIdActivate = <TError = HTTPValidationError,
 
 Requires admin privileges (MLGOO_DILG role).
 Sets must_change_password to True.
+
+Password requirements:
+- At least 8 characters
+- At least one uppercase letter
+- At least one lowercase letter
+- At least one digit
  * @summary Reset User Password
  */
 export const postUsers$UserIdResetPassword = (
     userId: number,
-    params: PostUsersUserIdResetPasswordParams,
+    passwordResetRequest: PasswordResetRequest,
  options?: SecondParameter<typeof mutator>,signal?: AbortSignal
 ) => {
       
       
       return mutator<PostUsersUserIdResetPassword200>(
       {url: `http://localhost:8000/api/v1/users/${userId}/reset-password`, method: 'POST',
-        params, signal
+      headers: {'Content-Type': 'application/json', },
+      data: passwordResetRequest, signal
     },
       options);
     }
@@ -690,8 +697,8 @@ export const postUsers$UserIdResetPassword = (
 
 
 export const getPostUsersUserIdResetPasswordMutationOptions = <TError = HTTPValidationError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postUsers$UserIdResetPassword>>, TError,{userId: number;params: PostUsersUserIdResetPasswordParams}, TContext>, request?: SecondParameter<typeof mutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof postUsers$UserIdResetPassword>>, TError,{userId: number;params: PostUsersUserIdResetPasswordParams}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postUsers$UserIdResetPassword>>, TError,{userId: number;data: PasswordResetRequest}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postUsers$UserIdResetPassword>>, TError,{userId: number;data: PasswordResetRequest}, TContext> => {
 
 const mutationKey = ['postUsersUserIdResetPassword'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -703,10 +710,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postUsers$UserIdResetPassword>>, {userId: number;params: PostUsersUserIdResetPasswordParams}> = (props) => {
-          const {userId,params} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postUsers$UserIdResetPassword>>, {userId: number;data: PasswordResetRequest}> = (props) => {
+          const {userId,data} = props ?? {};
 
-          return  postUsers$UserIdResetPassword(userId,params,requestOptions)
+          return  postUsers$UserIdResetPassword(userId,data,requestOptions)
         }
 
         
@@ -715,18 +722,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type PostUsersUserIdResetPasswordMutationResult = NonNullable<Awaited<ReturnType<typeof postUsers$UserIdResetPassword>>>
-    
+    export type PostUsersUserIdResetPasswordMutationBody = PasswordResetRequest
     export type PostUsersUserIdResetPasswordMutationError = HTTPValidationError
 
     /**
  * @summary Reset User Password
  */
 export const usePostUsersUserIdResetPassword = <TError = HTTPValidationError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postUsers$UserIdResetPassword>>, TError,{userId: number;params: PostUsersUserIdResetPasswordParams}, TContext>, request?: SecondParameter<typeof mutator>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postUsers$UserIdResetPassword>>, TError,{userId: number;data: PasswordResetRequest}, TContext>, request?: SecondParameter<typeof mutator>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof postUsers$UserIdResetPassword>>,
         TError,
-        {userId: number;params: PostUsersUserIdResetPasswordParams},
+        {userId: number;data: PasswordResetRequest},
         TContext
       > => {
 

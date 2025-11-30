@@ -206,14 +206,14 @@ def test_get_users_with_combined_filters(db_session: Session):
 # ====================================================================
 
 
-def test_create_user_admin_success(db_session: Session):
+def test_create_user_admin_success(db_session: Session, mock_barangay):
     """Test creating a new user with admin privileges"""
     user_data = UserAdminCreate(
         email="newuser@example.com",
         name="New User",
-        password="password123",
+        password="Password123",
         role=UserRole.BLGU_USER,
-        barangay_id=1,  # Required for BLGU_USER role
+        barangay_id=mock_barangay.id,  # Required for BLGU_USER role
     )
 
     result = user_service.create_user_admin(db_session, user_data)
@@ -223,7 +223,7 @@ def test_create_user_admin_success(db_session: Session):
     assert result.name == "New User"
     assert result.role == UserRole.BLGU_USER
     assert result.is_active is True
-    assert verify_password("password123", result.hashed_password)
+    assert verify_password("Password123", result.hashed_password)
 
 
 def test_create_user_admin_duplicate_email_raises_error(
@@ -233,7 +233,7 @@ def test_create_user_admin_duplicate_email_raises_error(
     user_data = UserAdminCreate(
         email="sample@example.com",  # Duplicate
         name="Another User",
-        password="password123",
+        password="Password123",
         role=UserRole.BLGU_USER,
     )
 
@@ -251,7 +251,7 @@ def test_create_user_admin_validator_requires_validator_area(
     user_data = UserAdminCreate(
         email="validator@example.com",
         name="Validator User",
-        password="password123",
+        password="Password123",
         role=UserRole.VALIDATOR,
         validator_area_id=None,  # Missing required field
     )
@@ -264,16 +264,16 @@ def test_create_user_admin_validator_requires_validator_area(
 
 
 def test_create_user_admin_sets_validator_area_null_for_non_validators(
-    db_session: Session
+    db_session: Session, mock_barangay, mock_governance_area
 ):
     """Test that validator_area_id is set to null for non-validator roles"""
     user_data = UserAdminCreate(
         email="blgu@example.com",
         name="BLGU User",
-        password="password123",
+        password="Password123",
         role=UserRole.BLGU_USER,
-        validator_area_id=1,  # This should be ignored
-        barangay_id=1,  # Required for BLGU_USER role
+        validator_area_id=mock_governance_area.id,  # This should be ignored
+        barangay_id=mock_barangay.id,  # Required for BLGU_USER role
     )
 
     result = user_service.create_user_admin(db_session, user_data)
@@ -286,7 +286,7 @@ def test_create_katuparan_center_user_without_assignments(db_session: Session):
     user_data = UserAdminCreate(
         email="katuparan@sulop.gov.ph",
         name="Katuparan Center User",
-        password="password123",
+        password="Password123",
         role=UserRole.KATUPARAN_CENTER_USER,
     )
 
@@ -300,15 +300,15 @@ def test_create_katuparan_center_user_without_assignments(db_session: Session):
     assert result.is_active is True
 
 
-def test_create_katuparan_center_user_clears_assignments(db_session: Session):
+def test_create_katuparan_center_user_clears_assignments(db_session: Session, mock_barangay, mock_governance_area):
     """Test that creating Katuparan Center user clears any provided assignments"""
     user_data = UserAdminCreate(
         email="katuparan2@sulop.gov.ph",
         name="Katuparan Center User 2",
-        password="password123",
+        password="Password123",
         role=UserRole.KATUPARAN_CENTER_USER,
-        validator_area_id=1,  # Should be cleared
-        barangay_id=1,  # Should be cleared
+        validator_area_id=mock_governance_area.id,  # Should be cleared
+        barangay_id=mock_barangay.id,  # Should be cleared
     )
 
     result = user_service.create_user_admin(db_session, user_data)
@@ -398,15 +398,15 @@ def test_update_user_admin_validator_requires_validator_area(
 
 
 def test_update_user_admin_clears_barangay_for_validator(
-    db_session: Session, sample_user: User
+    db_session: Session, sample_user: User, mock_barangay, mock_governance_area
 ):
     """Test that changing to Validator role clears barangay_id"""
     # Give user a barangay_id first
-    sample_user.barangay_id = 1
+    sample_user.barangay_id = mock_barangay.id
     db_session.commit()
 
     update_data = UserAdminUpdate(
-        role=UserRole.VALIDATOR, validator_area_id=1
+        role=UserRole.VALIDATOR, validator_area_id=mock_governance_area.id
     )
 
     result = user_service.update_user_admin(db_session, sample_user.id, update_data)
@@ -416,7 +416,7 @@ def test_update_user_admin_clears_barangay_for_validator(
 
 
 def test_update_user_admin_clears_validator_area_for_non_validator(
-    db_session: Session
+    db_session: Session, mock_barangay, mock_governance_area
 ):
     """Test that changing from Validator to other role clears validator_area_id"""
     # Create a validator with governance area
@@ -425,7 +425,7 @@ def test_update_user_admin_clears_validator_area_for_non_validator(
         name="Validator",
         hashed_password=get_password_hash("pass"),
         role=UserRole.VALIDATOR,
-        validator_area_id=1,
+        validator_area_id=mock_governance_area.id,
         is_active=True,
     )
     db_session.add(validator)
@@ -434,7 +434,7 @@ def test_update_user_admin_clears_validator_area_for_non_validator(
 
     update_data = UserAdminUpdate(
         role=UserRole.BLGU_USER,
-        barangay_id=1  # Required for BLGU_USER role
+        barangay_id=mock_barangay.id  # Required for BLGU_USER role
     )
 
     result = user_service.update_user_admin(db_session, validator.id, update_data)

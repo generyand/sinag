@@ -88,14 +88,6 @@ export type PostUsersUserIdResetPassword200 = { [key: string]: unknown };
 
 
 /**
- * PostUsersUserIdResetPasswordParams
- */
-export type PostUsersUserIdResetPasswordParams = {
-new_password: string;
-};
-
-
-/**
  * User
  */
 export interface User {

@@ -280,9 +280,11 @@ def mock_governance_area(db_session):
     from app.db.models.governance_area import GovernanceArea
     from app.db.enums import AreaType
 
-    unique_name = f"Test Governance Area {uuid.uuid4().hex[:8]}"
+    unique_id = uuid.uuid4().hex[:8]
+    unique_name = f"Test Governance Area {unique_id}"
+    unique_code = f"T{unique_id[:1].upper()}"  # 2-letter code like "TA", "TB", etc.
 
-    area = GovernanceArea(name=unique_name, area_type=AreaType.CORE)
+    area = GovernanceArea(name=unique_name, code=unique_code, area_type=AreaType.CORE)
     db_session.add(area)
     db_session.commit()
     db_session.refresh(area)

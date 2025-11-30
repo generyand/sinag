@@ -1,11 +1,37 @@
 # 👥 User Schemas
 # Pydantic models for user-related API requests and responses
 
-from pydantic import BaseModel, ConfigDict
+import re
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Literal, Optional, Union
 
 from app.db.enums import UserRole
+
+
+def coerce_to_optional_int(v: Union[int, str, None]) -> Optional[int]:
+    """Coerce string integers to int, handle null/empty strings."""
+    if v is None or v == '' or v == 'null':
+        return None
+    if isinstance(v, str):
+        try:
+            return int(v)
+        except ValueError:
+            raise ValueError(f"Invalid integer value: {v}")
+    return v
+
+
+def validate_password_strength(v: str) -> str:
+    """Validate password meets minimum security requirements."""
+    if len(v) < 8:
+        raise ValueError('Password must be at least 8 characters long')
+    if not re.search(r'[A-Z]', v):
+        raise ValueError('Password must contain at least one uppercase letter')
+    if not re.search(r'[a-z]', v):
+        raise ValueError('Password must contain at least one lowercase letter')
+    if not re.search(r'\d', v):
+        raise ValueError('Password must contain at least one digit')
+    return v
 
 # Language code type for AI summary preferences
 LanguageCode = Literal["ceb", "fil", "en"]
@@ -17,7 +43,7 @@ class User(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    email: str
+    email: str  # Keep as str for response (already validated on input)
     name: str
     role: UserRole
     phone_number: Optional[str] = None
@@ -34,7 +60,7 @@ class User(BaseModel):
 class UserCreate(BaseModel):
     """Schema for creating a new user."""
 
-    email: str
+    email: EmailStr
     name: str
     password: str
     role: UserRole = UserRole.BLGU_USER
@@ -44,11 +70,21 @@ class UserCreate(BaseModel):
     must_change_password: bool = True
     preferred_language: LanguageCode = "ceb"
 
+    @field_validator('password')
+    @classmethod
+    def check_password_strength(cls, v: str) -> str:
+        return validate_password_strength(v)
+
+    @field_validator('barangay_id', mode='before')
+    @classmethod
+    def coerce_barangay_id(cls, v: Union[int, str, None]) -> Optional[int]:
+        return coerce_to_optional_int(v)
+
 
 class UserUpdate(BaseModel):
     """Schema for updating user information."""
 
-    email: Optional[str] = None
+    email: Optional[EmailStr] = None
     name: Optional[str] = None
     role: Optional[UserRole] = None
     phone_number: Optional[str] = None
@@ -57,11 +93,16 @@ class UserUpdate(BaseModel):
     is_active: Optional[bool] = None
     preferred_language: Optional[LanguageCode] = None
 
+    @field_validator('validator_area_id', 'barangay_id', mode='before')
+    @classmethod
+    def coerce_ids(cls, v: Union[int, str, None]) -> Optional[int]:
+        return coerce_to_optional_int(v)
+
 
 class UserAdminCreate(BaseModel):
     """Schema for admin creating a new user with all permissions."""
 
-    email: str
+    email: EmailStr
     name: str
     password: str
     role: UserRole = UserRole.BLGU_USER
@@ -73,11 +114,21 @@ class UserAdminCreate(BaseModel):
     must_change_password: bool = True
     preferred_language: LanguageCode = "ceb"
 
+    @field_validator('password')
+    @classmethod
+    def check_password_strength(cls, v: str) -> str:
+        return validate_password_strength(v)
+
+    @field_validator('validator_area_id', 'barangay_id', mode='before')
+    @classmethod
+    def coerce_ids(cls, v: Union[int, str, None]) -> Optional[int]:
+        return coerce_to_optional_int(v)
+
 
 class UserAdminUpdate(BaseModel):
     """Schema for admin updating user information with all permissions."""
 
-    email: Optional[str] = None
+    email: Optional[EmailStr] = None
     name: Optional[str] = None
     role: Optional[UserRole] = None
     phone_number: Optional[str] = None
@@ -87,6 +138,11 @@ class UserAdminUpdate(BaseModel):
     is_superuser: Optional[bool] = None
     must_change_password: Optional[bool] = None
     preferred_language: Optional[LanguageCode] = None
+
+    @field_validator('validator_area_id', 'barangay_id', mode='before')
+    @classmethod
+    def coerce_ids(cls, v: Union[int, str, None]) -> Optional[int]:
+        return coerce_to_optional_int(v)
 
 
 class UserListResponse(BaseModel):
@@ -107,3 +163,14 @@ class UserInDB(User):
     hashed_password: str
     is_superuser: bool = False
     updated_at: Optional[datetime] = None
+
+
+class PasswordResetRequest(BaseModel):
+    """Schema for admin password reset request."""
+
+    new_password: str
+
+    @field_validator('new_password')
+    @classmethod
+    def check_password_strength(cls, v: str) -> str:
+        return validate_password_strength(v)

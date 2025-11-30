@@ -6,6 +6,8 @@ from typing import List, Optional
 from app.core.security import get_password_hash, verify_password
 from app.db.enums import UserRole
 from app.db.models.user import User
+from app.db.models.governance_area import GovernanceArea
+from app.db.models.barangay import Barangay
 from app.schemas.user import UserAdminCreate, UserAdminUpdate, UserCreate, UserUpdate
 from fastapi import HTTPException, status
 from sqlalchemy import func
@@ -244,6 +246,15 @@ class UserService:
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Governance area is required for Validator role.",
                 )
+            # Verify governance area exists
+            governance_area = db.query(GovernanceArea).filter(
+                GovernanceArea.id == user_create.validator_area_id
+            ).first()
+            if not governance_area:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Governance area with ID {user_create.validator_area_id} does not exist.",
+                )
             # Ensure barangay_id is null for validators
             user_create.barangay_id = None
         elif user_create.role == UserRole.BLGU_USER:
@@ -252,6 +263,15 @@ class UserService:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Barangay is required for BLGU User role.",
+                )
+            # Verify barangay exists
+            barangay = db.query(Barangay).filter(
+                Barangay.id == user_create.barangay_id
+            ).first()
+            if not barangay:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Barangay with ID {user_create.barangay_id} does not exist.",
                 )
             # Ensure validator_area_id is null for BLGU users
             user_create.validator_area_id = None
@@ -314,23 +334,42 @@ class UserService:
 
         if role == UserRole.VALIDATOR:
             # VALIDATOR role requires validator_area_id
-            if (
-                "validator_area_id" not in update_data
-                and db_user.validator_area_id is None
-            ):
+            validator_area_id = update_data.get("validator_area_id", db_user.validator_area_id)
+            if not validator_area_id:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Governance area is required for Validator role.",
                 )
+            # Verify governance area exists if it's being updated
+            if "validator_area_id" in update_data and update_data["validator_area_id"]:
+                governance_area = db.query(GovernanceArea).filter(
+                    GovernanceArea.id == update_data["validator_area_id"]
+                ).first()
+                if not governance_area:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Governance area with ID {update_data['validator_area_id']} does not exist.",
+                    )
             # Ensure barangay_id is set to null if role is changed to Validator
             update_data["barangay_id"] = None
         elif role == UserRole.BLGU_USER:
             # BLGU_USER role requires barangay_id
-            if "barangay_id" not in update_data and db_user.barangay_id is None:
+            barangay_id = update_data.get("barangay_id", db_user.barangay_id)
+            if not barangay_id:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Barangay is required for BLGU User role.",
                 )
+            # Verify barangay exists if it's being updated
+            if "barangay_id" in update_data and update_data["barangay_id"]:
+                barangay = db.query(Barangay).filter(
+                    Barangay.id == update_data["barangay_id"]
+                ).first()
+                if not barangay:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Barangay with ID {update_data['barangay_id']} does not exist.",
+                    )
             # Ensure validator_area_id is set to null for BLGU users
             update_data["validator_area_id"] = None
         elif role in (

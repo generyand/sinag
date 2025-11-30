@@ -8,6 +8,7 @@ from app.api import deps
 from app.db.models.user import User
 from app.schemas.user import User as UserSchema
 from app.schemas.user import (
+    PasswordResetRequest,
     UserAdminCreate,
     UserAdminUpdate,
     UserListResponse,
@@ -226,7 +227,7 @@ async def activate_user(
 @router.post("/{user_id}/reset-password", response_model=dict, tags=["users"])
 async def reset_user_password(
     user_id: int,
-    new_password: str,
+    reset_data: PasswordResetRequest,
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_admin_user),
 ):
@@ -235,8 +236,14 @@ async def reset_user_password(
 
     Requires admin privileges (MLGOO_DILG role).
     Sets must_change_password to True.
+
+    Password requirements:
+    - At least 8 characters
+    - At least one uppercase letter
+    - At least one lowercase letter
+    - At least one digit
     """
-    reset_user = user_service.reset_password(db, user_id, new_password)
+    reset_user = user_service.reset_password(db, user_id, reset_data.new_password)
     if not reset_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
