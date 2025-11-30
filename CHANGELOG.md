@@ -7,7 +7,102 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### User Management Validation and Error Handling (2025-11-30)
+
+**Summary:** Comprehensive validation and error handling improvements for user management, including role-based routing fixes and form validation enhancements.
+
+- **Role-Based Routing Fix**
+  - Fixed password change page redirect logic to correctly route all 5 user roles to their appropriate dashboards
+  - KATUPARAN_CENTER_USER now correctly redirects to `/external-analytics` instead of `/blgu/dashboard`
+  - ASSESSOR redirects to `/assessor/submissions`
+  - VALIDATOR redirects to `/validator/submissions`
+  - Prevents "access denied" errors for non-BLGU users after password change
+
+- **User Form Validation**
+  - Enhanced UserForm component with comprehensive validation
+  - Improved error message extraction from API responses
+  - Added role-based field visibility (validator_area_id, barangay_id)
+  - Better handling of validation errors returned as arrays
+
+- **Lookups API Enhancement**
+  - Added `/api/v1/lookups/roles` endpoint with human-readable role descriptions
+  - UserRoleOption schema with value, label, and description for better UX
+  - Supports dynamic role dropdown population in admin forms
+
+- **Backend Tests**
+  - Added comprehensive password change routing tests (`test_auth_password_change_routing.py`)
+  - Tests cover all 5 user roles with parameterized test cases
+  - Validates token validity, role-based access, and error handling
+
+#### Production Deployment Infrastructure (2025-11-28)
+
+**Summary:** Production-ready Docker configuration, Nginx reverse proxy, and EC2 deployment automation.
+
+- **Nginx Reverse Proxy**
+  - Complete Nginx configuration with request routing (`/api/*` -> FastAPI, `/` -> Next.js)
+  - Rate limiting (30 req/s per IP), security headers, and gzip compression
+  - SSL-ready template for future HTTPS deployment
+  - Health checks and zero-downtime configuration reloads
+  - Documentation: `docs/guides/nginx-reverse-proxy-setup.md`, `docs/guides/nginx-quick-start.md`
+
+- **Docker Production Configuration**
+  - New `docker-compose.prod.yml` with resource limits and health checks
+  - Multi-stage Dockerfiles optimized for production (50-83% image size reduction)
+  - Docker secrets for sensitive configuration management
+  - Network isolation between frontend and backend services
+  - Security scanning scripts (`docker-security-scan.sh`)
+
+- **EC2 Deployment Automation**
+  - Automated deployment script (`scripts/deploy.sh`) with migration error handling
+  - EC2 setup script (`scripts/setup-ec2.sh`) with OS detection (Amazon Linux, Ubuntu)
+  - GitHub Actions workflows for CI/CD (`build-and-push.yml`, `deploy.yml`)
+  - Comprehensive EC2 deployment guide: `docs/guides/ec2-deployment-guide.md`
+  - DevOps checklist: `docs/guides/devops-checklist.md`
+
+- **DevOps Fixes Applied**
+  - Next.js standalone output configuration for production builds
+  - Web container health check endpoint (`/api/health`)
+  - Environment variable passthrough for NEXT_PUBLIC_API_URL
+  - Nginx non-root user fix for port 80 binding
+  - Migration failure handling in deploy script
+
+#### Gemini API Integration Enhancement (2025-11-29)
+
+**Summary:** Enhanced AI-powered insights with improved Gemini API integration and streamlined production deployment.
+
+- Improved intelligence service with better error handling
+- Optimized API request batching for classification tasks
+- Enhanced CapDev recommendation generation
+
+#### Dashboard Analytics Improvements (2025-11-29)
+
+**Summary:** Fixed dashboard analytics types and added barangay rankings.
+
+- Added barangay rankings endpoint and UI component
+- Fixed dashboard analytics TypeScript types
+- Improved analytics service with new metrics
+- Refactored dashboard to use real API data instead of mock data
+
 ### Changed
+
+#### Documentation Cleanup (2025-11-30)
+
+**Summary:** Cleaned up temporary documentation files generated during Claude Code sessions to improve project organization.
+
+**Deleted Files (9 temporary documentation files):**
+- `NGINX_SETUP_SUMMARY.md` - Implementation summary (Nov 2025)
+- `NGINX_IMPLEMENTATION_CHECKLIST.md` - Implementation checklist (Nov 2025)
+- `DOCKER_SECURITY_AUDIT.md` - Audit report (Nov 2025)
+- `DOCKER_QUICK_REFERENCE.md` - Quick reference guide (Nov 2025)
+- `DEVOPS_REVIEW.md` - DevOps review document (Nov 2025)
+- `docs/testing/TESTING_IMPLEMENTATION_SUMMARY.md` - Test implementation summary
+- `docs/testing/TEST_DELIVERABLES_INDEX.md` - Test deliverables index
+- `docs/testing/password-change-routing-test-gap-analysis.md` - Gap analysis document
+- `apps/api/tests/api/v1/README_PASSWORD_CHANGE_TESTS.md` - Redundant test readme
+
+**Rationale:** These temporary documentation files were generated during coding sessions and documented completed work. Essential content is already consolidated in CLAUDE.md, the organized `docs/` folder structure, and code comments.
 
 #### Documentation Cleanup (2025-11-25)
 

@@ -5,6 +5,10 @@
   "private": true,
   "main": "./src/generated/index.ts",
   "types": "./src/generated/index.ts",
+  "exports": {
+    ".": "./src/generated/index.ts",
+    "./src/generated/*": "./src/generated/*"
+  },
   "scripts": {
     "generate": "cd ../../ && pnpm generate-types",
     "type-check": "tsc --noEmit --skipLibCheck"
@@ -16,4 +20,4 @@
     "@tanstack/react-query": "^5.80.7",
     "typescript": "^5.0.0"
   }
-} 
+}

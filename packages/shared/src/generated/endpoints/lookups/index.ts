@@ -17,7 +17,8 @@ import type {
 
 import type {
   Barangay,
-  GovernanceArea
+  GovernanceArea,
+  UserRoleOption
 } from '../../schemas';
 
 import { mutator } from '../../../../../../apps/web/src/lib/api';
@@ -151,6 +152,72 @@ export function useGetLookupsBarangays<TData = Awaited<ReturnType<typeof getLook
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetLookupsBarangaysQueryOptions(options)
+
+  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
+ * Retrieve all available user roles with their labels and descriptions.
+Accessible by all authenticated users.
+Used for populating role dropdowns in user management forms.
+ * @summary Get All Roles
+ */
+export const getLookupsRoles = (
+    
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<UserRoleOption[]>(
+      {url: `http://localhost:8000/api/v1/lookups/roles`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+export const getGetLookupsRolesQueryKey = () => {
+    return [`http://localhost:8000/api/v1/lookups/roles`] as const;
+    }
+
+    
+export const getGetLookupsRolesQueryOptions = <TData = Awaited<ReturnType<typeof getLookupsRoles>>, TError = unknown>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLookupsRoles>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLookupsRolesQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLookupsRoles>>> = ({ signal }) => getLookupsRoles(requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLookupsRoles>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetLookupsRolesQueryResult = NonNullable<Awaited<ReturnType<typeof getLookupsRoles>>>
+export type GetLookupsRolesQueryError = unknown
+
+
+/**
+ * @summary Get All Roles
+ */
+
+export function useGetLookupsRoles<TData = Awaited<ReturnType<typeof getLookupsRoles>>, TError = unknown>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLookupsRoles>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetLookupsRolesQueryOptions(options)
 
   const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

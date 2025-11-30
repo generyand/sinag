@@ -299,6 +299,22 @@ export const UserRole = {
 
 
 /**
+ * UserRoleOption
+ */
+export interface UserRoleOption {
+  value: UserRole;
+  label: string;
+  description?: UserRoleOptionDescription;
+}
+
+
+/**
+ * UserRoleOptionDescription
+ */
+export type UserRoleOptionDescription = string | null;
+
+
+/**
  * UserUpdate
  */
 export interface UserUpdate {

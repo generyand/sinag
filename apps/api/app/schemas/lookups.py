@@ -2,8 +2,9 @@
 # Pydantic models for representing data from lookup tables like
 # governance areas and barangays in API responses.
 
+from typing import Optional
 from pydantic import BaseModel
-from app.db.enums import AreaType
+from app.db.enums import AreaType, UserRole
 
 
 # --- Governance Area Schemas ---
@@ -50,5 +51,24 @@ class Barangay(BarangayBase):
 
     class Config:
         """Pydantic configuration to allow ORM model mapping."""
+
+        from_attributes = True
+
+
+# --- User Role Schemas ---
+
+
+class UserRoleOption(BaseModel):
+    """
+    Schema for a user role option in dropdowns.
+    Provides the role value and a human-readable label.
+    """
+
+    value: UserRole
+    label: str
+    description: Optional[str] = None
+
+    class Config:
+        """Pydantic configuration."""
 
         from_attributes = True

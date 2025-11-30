@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useUsers } from "@/hooks/useUsers";
 import type { UserListResponse, User } from "@sinag/shared";
 import UserManagementTable from "./UserManagementTable";
@@ -22,8 +22,18 @@ export default function UserListSection() {
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [editingUser, setEditingUser] = React.useState<User | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const usersPerPage = 5;
+
+  // Debounce search query to prevent lag during typing
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300); // 300ms debounce delay
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
   const { data, isLoading, error } = useUsers({
     page: 1,
     size: 100, // Fetch up to 100 users to show all users
@@ -33,17 +43,17 @@ export default function UserListSection() {
     error: unknown;
   };
 
-  // Filter and paginate users
+  // Filter and paginate users - now using debounced search query
   const filteredAndPaginatedUsers = useMemo(() => {
     if (!data?.users) return { users: [], totalPages: 0, totalUsers: 0 };
 
-    // Filter users based on search query
+    // Filter users based on debounced search query (prevents lag during typing)
     const filtered = data.users.filter(
       (user) =>
-        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (user.phone_number && user.phone_number.includes(searchQuery))
+        user.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+        user.email.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+        user.role.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+        (user.phone_number && user.phone_number.includes(debouncedSearchQuery))
     );
 
     // Calculate pagination
@@ -60,22 +70,33 @@ export default function UserListSection() {
       totalUsers: data.total || filtered.length, // Use API total if available
       allFilteredUsers: filtered,
     };
-  }, [data?.users, data?.total, searchQuery, currentPage]);
+  }, [data?.users, data?.total, debouncedSearchQuery, currentPage]);
 
-  // Reset to first page when search changes
+  // Reset to first page when debounced search changes
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery]);
+  }, [debouncedSearchQuery]);
 
-  const handleEditUser = (user: User) => {
+  const handleEditUser = useCallback((user: User) => {
     setEditingUser(user);
     setIsFormOpen(true);
-  };
+  }, []);
 
-  const handleCloseForm = () => {
+  const handleCloseForm = useCallback(() => {
     setIsFormOpen(false);
     setEditingUser(null);
-  };
+  }, []);
+
+  // Memoize stats calculations to prevent unnecessary recalculations
+  const stats = useMemo(() => {
+    if (!data?.users) return { total: 0, active: 0, blgu: 0 };
+
+    return {
+      total: data.total || data.users.length,
+      active: data.users.filter((u) => u.is_active).length,
+      blgu: data.users.filter((u) => u.role === "BLGU_USER").length,
+    };
+  }, [data?.users, data?.total]);
 
   if (isLoading) {
     return <UserManagementSkeleton />;
@@ -132,7 +153,7 @@ export default function UserListSection() {
             <div className="flex items-center gap-6">
               <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)]">
                 <div className="text-3xl font-bold text-[var(--foreground)]">
-                  {data.total || data.users.length}
+                  {stats.total}
                 </div>
                 <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
                   Total
@@ -140,7 +161,7 @@ export default function UserListSection() {
               </div>
               <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)]">
                 <div className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                  {data.users.filter((u) => u.is_active).length}
+                  {stats.active}
                 </div>
                 <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
                   Active
@@ -148,7 +169,7 @@ export default function UserListSection() {
               </div>
               <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)]">
                 <div className="text-3xl font-bold bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] bg-clip-text text-transparent">
-                  {data.users.filter((u) => u.role === "BLGU_USER").length}
+                  {stats.blgu}
                 </div>
                 <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
                   BLGU
@@ -355,27 +376,49 @@ export default function UserListSection() {
         </div>
       </div>
 
-      <UserForm
+      <MemoizedUserForm
         open={isFormOpen}
         onOpenChange={handleCloseForm}
-        initialValues={
-          editingUser
-            ? {
-                id: editingUser.id,
-                name: editingUser.name,
-                email: editingUser.email,
-                role: editingUser.role,
-                phone_number: editingUser.phone_number || undefined,
-                validator_area_id: editingUser.validator_area_id || undefined,
-                barangay_id: editingUser.barangay_id || undefined,
-                is_active: editingUser.is_active,
-                is_superuser: editingUser.is_superuser,
-                must_change_password: editingUser.must_change_password,
-              }
-            : undefined
-        }
-        isEditing={!!editingUser}
+        editingUser={editingUser}
       />
     </div>
   );
 }
+
+// Memoized wrapper for UserForm to prevent unnecessary re-renders
+// This component memoizes the initialValues computation
+const MemoizedUserForm = React.memo(function MemoizedUserForm({
+  open,
+  onOpenChange,
+  editingUser,
+}: {
+  open: boolean;
+  onOpenChange: () => void;
+  editingUser: User | null;
+}) {
+  // Memoize initialValues to prevent new object creation on every render
+  const initialValues = useMemo(() => {
+    if (!editingUser) return undefined;
+    return {
+      id: editingUser.id,
+      name: editingUser.name,
+      email: editingUser.email,
+      role: editingUser.role,
+      phone_number: editingUser.phone_number || undefined,
+      validator_area_id: editingUser.validator_area_id || undefined,
+      barangay_id: editingUser.barangay_id || undefined,
+      is_active: editingUser.is_active,
+      is_superuser: editingUser.is_superuser,
+      must_change_password: editingUser.must_change_password,
+    };
+  }, [editingUser]);
+
+  return (
+    <UserForm
+      open={open}
+      onOpenChange={onOpenChange}
+      initialValues={initialValues}
+      isEditing={!!editingUser}
+    />
+  );
+});

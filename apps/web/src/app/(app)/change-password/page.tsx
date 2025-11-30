@@ -37,9 +37,7 @@ import "./change-password.css";
 export default function ChangePasswordPage() {
   const router = useRouter();
   const { user, setMustChangePassword } = useAuthStore();
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showPasswords, setShowPasswords] = useState(false);
   const [formData, setFormData] = useState({
     current_password: "",
     new_password: "",
@@ -71,8 +69,25 @@ export default function ChangePasswordPage() {
         setMustChangePassword(false);
 
         // Redirect to appropriate dashboard based on user role
-        const isAdmin = user?.role === "MLGOO_DILG";
-        const dashboardPath = isAdmin ? "/mlgoo/dashboard" : "/blgu/dashboard";
+        let dashboardPath: string;
+        switch (user?.role) {
+          case "MLGOO_DILG":
+            dashboardPath = "/mlgoo/dashboard";
+            break;
+          case "ASSESSOR":
+            dashboardPath = "/assessor/submissions";
+            break;
+          case "VALIDATOR":
+            dashboardPath = "/validator/submissions";
+            break;
+          case "KATUPARAN_CENTER_USER":
+            dashboardPath = "/external-analytics";
+            break;
+          case "BLGU_USER":
+          default:
+            dashboardPath = "/blgu/dashboard";
+            break;
+        }
         router.replace(dashboardPath);
       },
       onError: (error) => {
@@ -230,38 +245,46 @@ export default function ChangePasswordPage() {
                   )}
 
                   <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8 flex-1 flex flex-col">
+                    {/* Show/Hide Passwords Toggle */}
+                    <div className="flex items-center justify-end">
+                      <button
+                        type="button"
+                        className="flex items-center space-x-2 text-sm text-[var(--text-secondary)] hover:text-[var(--foreground)] transition-colors"
+                        onClick={() => setShowPasswords(!showPasswords)}
+                      >
+                        {showPasswords ? (
+                          <>
+                            <EyeOff className="h-4 w-4" />
+                            <span>Hide passwords</span>
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="h-4 w-4" />
+                            <span>Show passwords</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
                     {/* Current Password */}
                     <div className="space-y-3">
                       <Label htmlFor="current_password" className="text-base font-medium text-[var(--foreground)]">
                         Current Password
                       </Label>
-                      <div className="relative">
-                                                   <Input
-                             id="current_password"
-                             type={showCurrentPassword ? "text" : "password"}
-                             value={formData.current_password}
-                             onChange={(e) => handleInputChange("current_password", e.target.value)}
-                             placeholder="Enter your current password"
-                             className={cn(
-                               "h-14 px-4 pr-12 text-base border rounded-sm transition-all duration-200",
-                               errors.current_password
-                                 ? "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/20 focus:border-red-500 focus:ring-red-500/20"
-                                 : "border-[var(--border)] focus:border-[var(--cityscape-yellow)] focus:ring-[var(--cityscape-yellow)]/20"
-                             )}
-                             disabled={changePasswordMutation.isPending}
-                           />
-                        <button
-                          type="button"
-                          className="absolute inset-y-0 right-0 w-14 flex items-center justify-center hover:bg-[var(--hover)] rounded-r-sm transition-colors"
-                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                        >
-                          {showCurrentPassword ? (
-                            <EyeOff className="h-5 w-5 text-[var(--text-muted)] hover:text-[var(--foreground)]" />
-                          ) : (
-                            <Eye className="h-5 w-5 text-[var(--text-muted)] hover:text-[var(--foreground)]" />
-                          )}
-                        </button>
-                      </div>
+                      <Input
+                        id="current_password"
+                        type={showPasswords ? "text" : "password"}
+                        value={formData.current_password}
+                        onChange={(e) => handleInputChange("current_password", e.target.value)}
+                        placeholder="Enter your current password"
+                        className={cn(
+                          "h-14 px-4 text-base border rounded-sm transition-all duration-200",
+                          errors.current_password
+                            ? "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/20 focus:border-red-500 focus:ring-red-500/20"
+                            : "border-[var(--border)] focus:border-[var(--cityscape-yellow)] focus:ring-[var(--cityscape-yellow)]/20"
+                        )}
+                        disabled={changePasswordMutation.isPending}
+                      />
                       {errors.current_password && (
                         <p className="text-sm text-red-600 dark:text-red-400 flex items-center">
                           <AlertCircle className="h-4 w-4 mr-2" />
@@ -275,33 +298,20 @@ export default function ChangePasswordPage() {
                       <Label htmlFor="new_password" className="text-base font-medium text-[var(--foreground)]">
                         New Password
                       </Label>
-                      <div className="relative">
-                                                   <Input
-                             id="new_password"
-                             type={showNewPassword ? "text" : "password"}
-                             value={formData.new_password}
-                             onChange={(e) => handleInputChange("new_password", e.target.value)}
-                             placeholder="Enter your new password"
-                             className={cn(
-                               "h-14 px-4 pr-12 text-base border rounded-sm transition-all duration-200",
-                               errors.new_password
-                                 ? "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/20 focus:border-red-500 focus:ring-red-500/20"
-                                 : "border-[var(--border)] focus:border-[var(--cityscape-yellow)] focus:ring-[var(--cityscape-yellow)]/20"
-                             )}
-                             disabled={changePasswordMutation.isPending}
-                           />
-                        <button
-                          type="button"
-                          className="absolute inset-y-0 right-0 w-14 flex items-center justify-center hover:bg-[var(--hover)] rounded-r-sm transition-colors"
-                          onClick={() => setShowNewPassword(!showNewPassword)}
-                        >
-                          {showNewPassword ? (
-                            <EyeOff className="h-5 w-5 text-[var(--text-muted)] hover:text-[var(--foreground)]" />
-                          ) : (
-                            <Eye className="h-5 w-5 text-[var(--text-muted)] hover:text-[var(--foreground)]" />
-                          )}
-                        </button>
-                      </div>
+                      <Input
+                        id="new_password"
+                        type={showPasswords ? "text" : "password"}
+                        value={formData.new_password}
+                        onChange={(e) => handleInputChange("new_password", e.target.value)}
+                        placeholder="Enter your new password"
+                        className={cn(
+                          "h-14 px-4 text-base border rounded-sm transition-all duration-200",
+                          errors.new_password
+                            ? "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/20 focus:border-red-500 focus:ring-red-500/20"
+                            : "border-[var(--border)] focus:border-[var(--cityscape-yellow)] focus:ring-[var(--cityscape-yellow)]/20"
+                        )}
+                        disabled={changePasswordMutation.isPending}
+                      />
                       {errors.new_password && (
                         <p className="text-sm text-red-600 dark:text-red-400 flex items-center">
                           <AlertCircle className="h-4 w-4 mr-2" />
@@ -319,33 +329,20 @@ export default function ChangePasswordPage() {
                       <Label htmlFor="confirm_password" className="text-base font-medium text-[var(--foreground)]">
                         Confirm New Password
                       </Label>
-                      <div className="relative">
-                                                   <Input
-                             id="confirm_password"
-                             type={showConfirmPassword ? "text" : "password"}
-                             value={formData.confirm_password}
-                             onChange={(e) => handleInputChange("confirm_password", e.target.value)}
-                             placeholder="Confirm your new password"
-                             className={cn(
-                               "h-14 px-4 pr-12 text-base border rounded-sm transition-all duration-200",
-                               errors.confirm_password
-                                 ? "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/20 focus:border-red-500 focus:ring-red-500/20"
-                                 : "border-[var(--border)] focus:border-[var(--cityscape-yellow)] focus:ring-[var(--cityscape-yellow)]/20"
-                             )}
-                             disabled={changePasswordMutation.isPending}
-                           />
-                        <button
-                          type="button"
-                          className="absolute inset-y-0 right-0 w-14 flex items-center justify-center hover:bg-[var(--hover)] rounded-r-sm transition-colors"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        >
-                          {showConfirmPassword ? (
-                            <EyeOff className="h-5 w-5 text-[var(--text-muted)] hover:text-[var(--foreground)]" />
-                          ) : (
-                            <Eye className="h-5 w-5 text-[var(--text-muted)] hover:text-[var(--foreground)]" />
-                          )}
-                        </button>
-                      </div>
+                      <Input
+                        id="confirm_password"
+                        type={showPasswords ? "text" : "password"}
+                        value={formData.confirm_password}
+                        onChange={(e) => handleInputChange("confirm_password", e.target.value)}
+                        placeholder="Confirm your new password"
+                        className={cn(
+                          "h-14 px-4 text-base border rounded-sm transition-all duration-200",
+                          errors.confirm_password
+                            ? "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/20 focus:border-red-500 focus:ring-red-500/20"
+                            : "border-[var(--border)] focus:border-[var(--cityscape-yellow)] focus:ring-[var(--cityscape-yellow)]/20"
+                        )}
+                        disabled={changePasswordMutation.isPending}
+                      />
                       {errors.confirm_password && (
                         <p className="text-sm text-red-600 dark:text-red-400 flex items-center">
                           <AlertCircle className="h-4 w-4 mr-2" />
