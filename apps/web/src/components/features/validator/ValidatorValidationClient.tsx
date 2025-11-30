@@ -5,6 +5,7 @@ import { useGetAssessorAssessmentsAssessmentId } from '@sinag/shared';
 import { useState, useEffect } from 'react';
 import { RightAssessorPanel } from '../assessor/validation/RightAssessorPanel';
 import { MiddleMovFilesPanel } from '../assessor/validation/MiddleMovFilesPanel';
+import { BBIPreviewPanel, BBIPreviewData } from './BBIPreviewPanel';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -460,6 +461,11 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                 />
               </div>
             </div>
+          </div>
+
+          {/* BBI Preview Panel */}
+          <div className="mt-4">
+            <BBIPreviewPanel data={(data as any)?.bbi_preview as BBIPreviewData} />
           </div>
         </div>
       </div>

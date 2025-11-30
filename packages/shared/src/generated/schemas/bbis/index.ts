@@ -3,8 +3,65 @@
 // 📁 Bbis-related types
 // 🏷️  Based on FastAPI tag: "bbis"
 
+import type { SubIndicatorResult } from '../indicators';
+import type { BBIResultResponseSubIndicatorsPassed } from '../indicators';
+import type { BBIResultResponseSubIndicatorsTotal } from '../indicators';
+import type { BBIResultResponseSubIndicatorResults } from '../indicators';
 import type { GovernanceAreaSummary } from '../governancearea';
 import type { TestBBICalculationRequestIndicatorStatuses } from '../indicators';
+
+/**
+ * BBIComplianceResult
+ */
+export interface BBIComplianceResult {
+  /** BBI ID */
+  bbi_id: number;
+  /** BBI name */
+  bbi_name: string;
+  /** BBI abbreviation (indicator code) */
+  bbi_abbreviation: string;
+  /** Governance area ID */
+  governance_area_id: number;
+  /** Governance area name */
+  governance_area_name?: BBIComplianceResultGovernanceAreaName;
+  /** Assessment ID */
+  assessment_id: number;
+  /** Compliance rate 0-100% */
+  compliance_percentage: number;
+  /** 3-tier rating: HIGHLY_FUNCTIONAL, MODERATELY_FUNCTIONAL, LOW_FUNCTIONAL */
+  compliance_rating: string;
+  /** Number of sub-indicators that passed */
+  sub_indicators_passed: number;
+  /** Total number of sub-indicators evaluated */
+  sub_indicators_total: number;
+  /** Detailed pass/fail results for each sub-indicator */
+  sub_indicator_results: SubIndicatorResult[];
+  calculation_date: string;
+}
+
+
+/**
+ * BBIComplianceResultGovernanceAreaName
+ */
+export type BBIComplianceResultGovernanceAreaName = string | null;
+
+
+/**
+ * BBIComplianceSummary
+ */
+export interface BBIComplianceSummary {
+  /** Total number of BBIs evaluated */
+  total_bbis: number;
+  /** Number of BBIs with HIGHLY_FUNCTIONAL rating */
+  highly_functional_count: number;
+  /** Number of BBIs with MODERATELY_FUNCTIONAL rating */
+  moderately_functional_count: number;
+  /** Number of BBIs with LOW_FUNCTIONAL rating */
+  low_functional_count: number;
+  /** Average compliance percentage across all BBIs */
+  average_compliance_percentage: number;
+}
+
 
 /**
  * BBICreate
@@ -135,9 +192,19 @@ export interface BBIResultResponse {
   bbi_id: number;
   /** Assessment ID */
   assessment_id: number;
-  /** BBI status (Functional/Non-Functional) */
+  /** BBI status (legacy: Functional/Non-Functional) */
   status: BBIStatus;
   id: number;
+  /** Compliance rate 0-100% */
+  compliance_percentage?: BBIResultResponseCompliancePercentage;
+  /** 3-tier rating: HIGHLY_FUNCTIONAL, MODERATELY_FUNCTIONAL, LOW_FUNCTIONAL */
+  compliance_rating?: BBIResultResponseComplianceRating;
+  /** Number of sub-indicators that passed */
+  sub_indicators_passed?: BBIResultResponseSubIndicatorsPassed;
+  /** Total number of sub-indicators evaluated */
+  sub_indicators_total?: BBIResultResponseSubIndicatorsTotal;
+  /** Detailed pass/fail results for each sub-indicator */
+  sub_indicator_results?: BBIResultResponseSubIndicatorResults;
   calculation_details?: BBIResultResponseCalculationDetails;
   calculation_date: string;
 }
@@ -156,6 +223,18 @@ export type BBIResultResponseCalculationDetailsAnyOf = { [key: string]: unknown 
 
 
 /**
+ * BBIResultResponseCompliancePercentage
+ */
+export type BBIResultResponseCompliancePercentage = number | null;
+
+
+/**
+ * BBIResultResponseComplianceRating
+ */
+export type BBIResultResponseComplianceRating = string | null;
+
+
+/**
  * BBIStatus
  */
 export type BBIStatus = typeof BBIStatus[keyof typeof BBIStatus];
@@ -163,6 +242,9 @@ export type BBIStatus = typeof BBIStatus[keyof typeof BBIStatus];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const BBIStatus = {
+  HIGHLY_FUNCTIONAL: 'HIGHLY_FUNCTIONAL',
+  MODERATELY_FUNCTIONAL: 'MODERATELY_FUNCTIONAL',
+  LOW_FUNCTIONAL: 'LOW_FUNCTIONAL',
   FUNCTIONAL: 'FUNCTIONAL',
   NON_FUNCTIONAL: 'NON_FUNCTIONAL',
 } as const;

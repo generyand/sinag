@@ -5,7 +5,7 @@ from datetime import datetime
 
 from app.db.base import Base
 from app.db.enums import BBIStatus
-from sqlalchemy import JSON, Boolean, Column, DateTime, Enum, ForeignKey, Integer, String, Text, func
+from sqlalchemy import JSON, Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
@@ -57,9 +57,13 @@ class BBIResult(Base):
     """
     BBIResult table model for database storage.
 
-    Stores the calculated status (Functional/Non-Functional) of a BBI
-    for a specific assessment. This is computed when an assessment is finalized
-    based on the BBI's mapping_rules and the assessment's indicator statuses.
+    Stores the calculated compliance status of a BBI for a specific assessment.
+    Per DILG MC 2024-417, BBI functionality is based on compliance rate:
+    - 75-100%: HIGHLY_FUNCTIONAL
+    - 50-74%: MODERATELY_FUNCTIONAL
+    - <50%: LOW_FUNCTIONAL
+
+    Compliance rate = (Passed Sub-Indicators / Total Sub-Indicators) × 100%
     """
 
     __tablename__ = "bbi_results"
@@ -67,10 +71,29 @@ class BBIResult(Base):
     # Primary key
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
 
-    # BBI status result
+    # Legacy BBI status result (kept for backward compatibility)
     status: Mapped[BBIStatus] = mapped_column(
         Enum(BBIStatus, name="bbi_status_enum", create_constraint=True),
         nullable=False,
+    )
+
+    # New compliance fields (DILG MC 2024-417)
+    compliance_percentage: Mapped[float | None] = mapped_column(
+        Float, nullable=True, comment="Compliance rate 0-100%"
+    )
+    compliance_rating: Mapped[str | None] = mapped_column(
+        String(30), nullable=True,
+        comment="3-tier rating: HIGHLY_FUNCTIONAL, MODERATELY_FUNCTIONAL, LOW_FUNCTIONAL"
+    )
+    sub_indicators_passed: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, comment="Number of sub-indicators that passed"
+    )
+    sub_indicators_total: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, comment="Total number of sub-indicators evaluated"
+    )
+    sub_indicator_results: Mapped[dict | None] = mapped_column(
+        JSON, nullable=True,
+        comment="Detailed pass/fail results for each sub-indicator"
     )
 
     # Calculation details (optional JSON field for debugging/audit trail)

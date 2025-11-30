@@ -11,7 +11,9 @@ import {
   GovernanceAreaBreakdown,
   ReworkStatsCard,
   FailedIndicators,
-  AdminDashboardSkeleton
+  AdminDashboardSkeleton,
+  BBIAnalyticsCard,
+  type BBIAnalyticsData,
 } from '@/components/features/dashboard';
 import { useAdminDashboard } from '@/hooks/useAdminDashboard';
 
@@ -212,6 +214,13 @@ export default function AdminDashboardPage() {
             <GovernanceAreaBreakdown data={dashboardData.areaBreakdown} />
             <ReworkStatsCard data={dashboardData.reworkStats} />
           </div>
+        </section>
+
+        {/* BBI Analytics Section */}
+        <section className="mb-6">
+          <BBIAnalyticsCard
+            data={(dashboardData as any).bbiAnalytics as BBIAnalyticsData}
+          />
         </section>
 
         {/* Failed Indicators - Full Width */}

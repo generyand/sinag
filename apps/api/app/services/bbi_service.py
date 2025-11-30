@@ -4,12 +4,17 @@ Comprehensive BBI (Barangay-based Institutions) management service.
 
 This service handles:
 - Full CRUD operations for BBIs
-- BBI status calculation based on mapping rules
+- BBI compliance rate calculation based on sub-indicator checklist results (DILG MC 2024-417)
 - Integration with assessment finalization workflow
+
+Compliance Rate Calculation (DILG MC 2024-417):
+- 75% - 100%: HIGHLY_FUNCTIONAL
+- 50% - 74%: MODERATELY_FUNCTIONAL
+- Below 50%: LOW_FUNCTIONAL
 """
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from fastapi import HTTPException, status
 from loguru import logger
@@ -19,7 +24,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.db.enums import BBIStatus, ValidationStatus
 from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.bbi import BBI, BBIResult
-from app.db.models.governance_area import GovernanceArea, Indicator
+from app.db.models.governance_area import ChecklistItem, GovernanceArea, Indicator
 
 
 class BBIService:
@@ -273,7 +278,396 @@ class BBIService:
         return bbi
 
     # ========================================================================
-    # BBI Status Calculation
+    # BBI Compliance Rate Calculation (DILG MC 2024-417)
+    # ========================================================================
+
+    def calculate_bbi_compliance(
+        self,
+        db: Session,
+        assessment_id: int,
+        bbi_indicator: Indicator,
+    ) -> Dict[str, Any]:
+        """
+        Calculate BBI compliance rate based on sub-indicator checklist results.
+
+        Per DILG MC 2024-417:
+        - 75% - 100%: HIGHLY_FUNCTIONAL
+        - 50% - 74%: MODERATELY_FUNCTIONAL
+        - Below 50%: LOW_FUNCTIONAL
+
+        Args:
+            db: Database session
+            assessment_id: Assessment ID
+            bbi_indicator: The BBI indicator (is_bbi=True) with children
+
+        Returns:
+            Dictionary with compliance calculation results:
+            {
+                "compliance_percentage": float,
+                "compliance_rating": str,
+                "sub_indicators_passed": int,
+                "sub_indicators_total": int,
+                "sub_indicator_results": [
+                    {"code": "2.1.1", "name": "Structure", "passed": True, ...},
+                    ...
+                ]
+            }
+        """
+        # Get sub-indicators (children of the BBI indicator)
+        sub_indicators = (
+            db.query(Indicator)
+            .filter(
+                and_(
+                    Indicator.parent_id == bbi_indicator.id,
+                    Indicator.is_active == True,
+                )
+            )
+            .order_by(Indicator.sort_order, Indicator.indicator_code)
+            .all()
+        )
+
+        if not sub_indicators:
+            # No sub-indicators - treat as single indicator
+            # Check if the BBI indicator itself passes based on its response
+            response = (
+                db.query(AssessmentResponse)
+                .filter(
+                    and_(
+                        AssessmentResponse.assessment_id == assessment_id,
+                        AssessmentResponse.indicator_id == bbi_indicator.id,
+                    )
+                )
+                .first()
+            )
+
+            passed = response and response.validation_status == ValidationStatus.PASS
+            return {
+                "compliance_percentage": 100.0 if passed else 0.0,
+                "compliance_rating": BBIStatus.HIGHLY_FUNCTIONAL.value if passed else BBIStatus.LOW_FUNCTIONAL.value,
+                "sub_indicators_passed": 1 if passed else 0,
+                "sub_indicators_total": 1,
+                "sub_indicator_results": [
+                    {
+                        "code": bbi_indicator.indicator_code,
+                        "name": bbi_indicator.name,
+                        "passed": passed,
+                        "checklist_summary": {},
+                    }
+                ],
+            }
+
+        # Evaluate each sub-indicator
+        sub_indicator_results = []
+        passed_count = 0
+
+        for sub_indicator in sub_indicators:
+            result = self._evaluate_sub_indicator_compliance(
+                db, assessment_id, sub_indicator
+            )
+            sub_indicator_results.append(result)
+            if result["passed"]:
+                passed_count += 1
+
+        total_count = len(sub_indicators)
+        compliance_percentage = (passed_count / total_count * 100) if total_count > 0 else 0.0
+        compliance_rating = self._get_compliance_rating(compliance_percentage)
+
+        return {
+            "compliance_percentage": round(compliance_percentage, 2),
+            "compliance_rating": compliance_rating.value,
+            "sub_indicators_passed": passed_count,
+            "sub_indicators_total": total_count,
+            "sub_indicator_results": sub_indicator_results,
+        }
+
+    def _evaluate_sub_indicator_compliance(
+        self,
+        db: Session,
+        assessment_id: int,
+        sub_indicator: Indicator,
+    ) -> Dict[str, Any]:
+        """
+        Evaluate if a sub-indicator passes based on its checklist items.
+
+        A sub-indicator PASSES if all required checklist items are satisfied.
+
+        Args:
+            db: Database session
+            assessment_id: Assessment ID
+            sub_indicator: The sub-indicator to evaluate
+
+        Returns:
+            Dictionary with evaluation results:
+            {
+                "code": "2.1.1",
+                "name": "Structure",
+                "passed": True/False,
+                "checklist_summary": {
+                    "item_id": {"label": "...", "required": True, "satisfied": True},
+                    ...
+                }
+            }
+        """
+        # Get the assessment response for this sub-indicator
+        response = (
+            db.query(AssessmentResponse)
+            .filter(
+                and_(
+                    AssessmentResponse.assessment_id == assessment_id,
+                    AssessmentResponse.indicator_id == sub_indicator.id,
+                )
+            )
+            .first()
+        )
+
+        response_data = response.response_data if response else {}
+
+        # Get checklist items for this sub-indicator
+        checklist_items = (
+            db.query(ChecklistItem)
+            .filter(ChecklistItem.indicator_id == sub_indicator.id)
+            .order_by(ChecklistItem.display_order)
+            .all()
+        )
+
+        checklist_summary = {}
+        all_required_satisfied = True
+
+        for item in checklist_items:
+            satisfied = self._is_checklist_item_satisfied(item, response_data)
+            checklist_summary[item.item_id] = {
+                "label": item.label,
+                "required": item.required,
+                "satisfied": satisfied,
+                "item_type": item.item_type,
+            }
+
+            # Check if required item is not satisfied
+            if item.required and not satisfied:
+                all_required_satisfied = False
+
+        # Handle validation_rule for the sub-indicator
+        # ALL_ITEMS_REQUIRED: all required items must be satisfied
+        # ANY_ITEM_REQUIRED: at least one required item must be satisfied (OR logic)
+        validation_rule = sub_indicator.validation_rule or "ALL_ITEMS_REQUIRED"
+
+        if validation_rule == "ANY_ITEM_REQUIRED":
+            # For OR logic, check if at least one required item is satisfied
+            required_items = [
+                item for item in checklist_items if item.required
+            ]
+            satisfied_required = [
+                item for item in required_items
+                if self._is_checklist_item_satisfied(item, response_data)
+            ]
+            passed = len(satisfied_required) > 0 if required_items else True
+        else:
+            # Default: ALL_ITEMS_REQUIRED
+            passed = all_required_satisfied
+
+        return {
+            "code": sub_indicator.indicator_code,
+            "name": sub_indicator.name,
+            "passed": passed,
+            "validation_rule": validation_rule,
+            "checklist_summary": checklist_summary,
+        }
+
+    def _is_checklist_item_satisfied(
+        self,
+        item: ChecklistItem,
+        response_data: Dict[str, Any],
+    ) -> bool:
+        """
+        Check if a single checklist item is satisfied based on response data.
+
+        Args:
+            item: The checklist item to check
+            response_data: The response data from AssessmentResponse
+
+        Returns:
+            True if the item is satisfied, False otherwise
+        """
+        item_id = item.item_id
+
+        # Skip info_text items - they don't need validation
+        if item.item_type == "info_text":
+            return True
+
+        # Check standard checkbox validation
+        if item_id in response_data:
+            value = response_data[item_id]
+            if isinstance(value, bool):
+                return value
+            if isinstance(value, str):
+                return value.lower() in ["true", "yes", "1"]
+
+        # Check for YES/NO pattern (assessment_field)
+        yes_key = f"{item_id}_yes"
+        no_key = f"{item_id}_no"
+        if yes_key in response_data or no_key in response_data:
+            if response_data.get(yes_key):
+                return True
+            elif response_data.get(no_key):
+                return False
+
+        # Check for document_count or calculation_field - has value means satisfied
+        if item.item_type in ["document_count", "calculation_field"]:
+            if item_id in response_data and response_data[item_id]:
+                return True
+
+        return False
+
+    def _get_compliance_rating(self, percentage: float) -> BBIStatus:
+        """
+        Map compliance percentage to 3-tier rating per DILG MC 2024-417.
+
+        Args:
+            percentage: Compliance percentage (0-100)
+
+        Returns:
+            BBIStatus rating
+        """
+        if percentage >= 75:
+            return BBIStatus.HIGHLY_FUNCTIONAL
+        elif percentage >= 50:
+            return BBIStatus.MODERATELY_FUNCTIONAL
+        else:
+            return BBIStatus.LOW_FUNCTIONAL
+
+    def calculate_all_bbi_compliance(
+        self, db: Session, assessment_id: int
+    ) -> List[BBIResult]:
+        """
+        Calculate compliance for all BBI indicators for an assessment.
+
+        This method should be called when an assessment is finalized.
+        It finds all indicators marked as BBIs (is_bbi=True), calculates
+        their compliance rates, and stores the results.
+
+        Args:
+            db: Database session
+            assessment_id: Assessment ID
+
+        Returns:
+            List of created BBIResult instances
+        """
+        # Get assessment
+        assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+        if not assessment:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Assessment with ID {assessment_id} not found",
+            )
+
+        # Find all BBI indicators (is_bbi=True)
+        bbi_indicators = (
+            db.query(Indicator)
+            .filter(
+                and_(
+                    Indicator.is_bbi == True,
+                    Indicator.is_active == True,
+                )
+            )
+            .options(joinedload(Indicator.governance_area))
+            .all()
+        )
+
+        logger.info(f"Found {len(bbi_indicators)} BBI indicators for assessment {assessment_id}")
+
+        # Delete existing BBI results for this assessment (recalculation)
+        db.query(BBIResult).filter(BBIResult.assessment_id == assessment_id).delete()
+
+        # Calculate compliance for each BBI indicator
+        bbi_results = []
+        for bbi_indicator in bbi_indicators:
+            try:
+                # Get or create BBI record for this indicator
+                bbi = self._get_or_create_bbi_for_indicator(db, bbi_indicator)
+
+                # Calculate compliance
+                compliance = self.calculate_bbi_compliance(
+                    db, assessment_id, bbi_indicator
+                )
+
+                # Create BBIResult with compliance data
+                bbi_result = BBIResult(
+                    bbi_id=bbi.id,
+                    assessment_id=assessment_id,
+                    status=BBIStatus(compliance["compliance_rating"]),
+                    compliance_percentage=compliance["compliance_percentage"],
+                    compliance_rating=compliance["compliance_rating"],
+                    sub_indicators_passed=compliance["sub_indicators_passed"],
+                    sub_indicators_total=compliance["sub_indicators_total"],
+                    sub_indicator_results=compliance["sub_indicator_results"],
+                    calculation_details={
+                        "indicator_code": bbi_indicator.indicator_code,
+                        "indicator_name": bbi_indicator.name,
+                        "calculation_method": "percentage_based",
+                        "calculated_at": datetime.utcnow().isoformat(),
+                    },
+                )
+                db.add(bbi_result)
+                bbi_results.append(bbi_result)
+
+                logger.info(
+                    f"Calculated BBI compliance for {bbi_indicator.indicator_code} "
+                    f"({bbi_indicator.name}): {compliance['compliance_percentage']}% "
+                    f"= {compliance['compliance_rating']}"
+                )
+            except Exception as e:
+                logger.error(
+                    f"Error calculating BBI compliance for indicator "
+                    f"{bbi_indicator.indicator_code}: {str(e)}"
+                )
+                # Continue with other BBIs even if one fails
+
+        db.commit()
+        return bbi_results
+
+    def _get_or_create_bbi_for_indicator(
+        self, db: Session, indicator: Indicator
+    ) -> BBI:
+        """
+        Get or create a BBI record for a given BBI indicator.
+
+        Args:
+            db: Database session
+            indicator: The BBI indicator
+
+        Returns:
+            BBI instance
+        """
+        # Try to find existing BBI by name/abbreviation
+        bbi = (
+            db.query(BBI)
+            .filter(
+                and_(
+                    BBI.governance_area_id == indicator.governance_area_id,
+                    BBI.abbreviation == indicator.indicator_code,
+                )
+            )
+            .first()
+        )
+
+        if not bbi:
+            # Create new BBI
+            bbi = BBI(
+                name=indicator.name,
+                abbreviation=indicator.indicator_code,
+                description=indicator.description,
+                governance_area_id=indicator.governance_area_id,
+                is_active=True,
+                mapping_rules=None,  # Using percentage-based calculation instead
+            )
+            db.add(bbi)
+            db.flush()  # Get the ID without committing
+            logger.info(f"Created BBI for indicator {indicator.indicator_code}: {indicator.name}")
+
+        return bbi
+
+    # ========================================================================
+    # Legacy BBI Status Calculation (Backward Compatibility)
     # ========================================================================
 
     def calculate_bbi_status(

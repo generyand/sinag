@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AssessmentBBIComplianceResponse,
   BBICreate,
   BBIListResponse,
   BBIResponse,
@@ -539,3 +540,149 @@ export function useGetBbisResultsAssessmentAssessmentId<TData = Awaited<ReturnTy
 
 
 
+/**
+ * Get BBI compliance data for a specific assessment (DILG MC 2024-417).
+
+Accessible by all authenticated users.
+
+Returns the compliance rate and 3-tier rating for all BBI indicators:
+- HIGHLY_FUNCTIONAL: 75% - 100% compliance
+- MODERATELY_FUNCTIONAL: 50% - 74% compliance
+- LOW_FUNCTIONAL: Below 50% compliance
+
+Includes detailed sub-indicator pass/fail breakdown for each BBI.
+ * @summary Get Assessment Bbi Compliance
+ */
+export const getBbisComplianceAssessment$AssessmentId = (
+    assessmentId: number,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<AssessmentBBIComplianceResponse>(
+      {url: `http://localhost:8000/api/v1/bbis/compliance/assessment/${assessmentId}`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+export const getGetBbisComplianceAssessmentAssessmentIdQueryKey = (assessmentId: number,) => {
+    return [`http://localhost:8000/api/v1/bbis/compliance/assessment/${assessmentId}`] as const;
+    }
+
+    
+export const getGetBbisComplianceAssessmentAssessmentIdQueryOptions = <TData = Awaited<ReturnType<typeof getBbisComplianceAssessment$AssessmentId>>, TError = HTTPValidationError>(assessmentId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBbisComplianceAssessment$AssessmentId>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBbisComplianceAssessmentAssessmentIdQueryKey(assessmentId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBbisComplianceAssessment$AssessmentId>>> = ({ signal }) => getBbisComplianceAssessment$AssessmentId(assessmentId, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBbisComplianceAssessment$AssessmentId>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBbisComplianceAssessmentAssessmentIdQueryResult = NonNullable<Awaited<ReturnType<typeof getBbisComplianceAssessment$AssessmentId>>>
+export type GetBbisComplianceAssessmentAssessmentIdQueryError = HTTPValidationError
+
+
+/**
+ * @summary Get Assessment Bbi Compliance
+ */
+
+export function useGetBbisComplianceAssessmentAssessmentId<TData = Awaited<ReturnType<typeof getBbisComplianceAssessment$AssessmentId>>, TError = HTTPValidationError>(
+ assessmentId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBbisComplianceAssessment$AssessmentId>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBbisComplianceAssessmentAssessmentIdQueryOptions(assessmentId,options)
+
+  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
+ * Calculate/recalculate BBI compliance for an assessment.
+
+Requires admin privileges (MLGOO_DILG role).
+
+This endpoint calculates compliance rates for all BBI indicators based on
+sub-indicator checklist results and stores the results in the database.
+
+Use this endpoint to:
+- Calculate compliance for a newly finalized assessment
+- Recalculate compliance if sub-indicator data has changed
+ * @summary Calculate Assessment Bbi Compliance
+ */
+export const postBbisComplianceCalculate$AssessmentId = (
+    assessmentId: number,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<AssessmentBBIComplianceResponse>(
+      {url: `http://localhost:8000/api/v1/bbis/compliance/calculate/${assessmentId}`, method: 'POST', signal
+    },
+      options);
+    }
+  
+
+
+export const getPostBbisComplianceCalculateAssessmentIdMutationOptions = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postBbisComplianceCalculate$AssessmentId>>, TError,{assessmentId: number}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postBbisComplianceCalculate$AssessmentId>>, TError,{assessmentId: number}, TContext> => {
+
+const mutationKey = ['postBbisComplianceCalculateAssessmentId'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postBbisComplianceCalculate$AssessmentId>>, {assessmentId: number}> = (props) => {
+          const {assessmentId} = props ?? {};
+
+          return  postBbisComplianceCalculate$AssessmentId(assessmentId,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostBbisComplianceCalculateAssessmentIdMutationResult = NonNullable<Awaited<ReturnType<typeof postBbisComplianceCalculate$AssessmentId>>>
+    
+    export type PostBbisComplianceCalculateAssessmentIdMutationError = HTTPValidationError
+
+    /**
+ * @summary Calculate Assessment Bbi Compliance
+ */
+export const usePostBbisComplianceCalculateAssessmentId = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postBbisComplianceCalculate$AssessmentId>>, TError,{assessmentId: number}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postBbisComplianceCalculate$AssessmentId>>,
+        TError,
+        {assessmentId: number},
+        TContext
+      > => {
+
+      const mutationOptions = getPostBbisComplianceCalculateAssessmentIdMutationOptions(options);
+
+      return useMutation(mutationOptions );
+    }
+    

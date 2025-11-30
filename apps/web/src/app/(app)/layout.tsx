@@ -16,7 +16,6 @@ const mlgooNavigation = [
   { name: "Submission Queue", href: "/mlgoo/submissions", icon: "clipboard" },
   { name: "GAR Reports", href: "/mlgoo/gar", icon: "clipboard" },
   { name: "Analytics & Reports", href: "/analytics", icon: "chart" },
-  { name: "BBIs", href: "/mlgoo/bbis", icon: "layers" },
   { name: "Assessment Cycles", href: "/mlgoo/cycles", icon: "calendar" },
   { name: "User Management", href: "/user-management", icon: "users" },
   { name: "System Settings", href: "/mlgoo/settings", icon: "settings" },
@@ -632,8 +631,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         "View analytics and generate reports on assessment data"}
                       {pathname.startsWith("/mlgoo/indicators") &&
                         "Create and manage assessment indicators with custom form schemas"}
-                      {pathname.startsWith("/mlgoo/bbis") &&
-                        "Configure and manage Barangay Basic Indicator mappings"}
                       {pathname.startsWith("/mlgoo/cycles") &&
                         "Create and manage assessment cycles with submission deadlines"}
                       {pathname.startsWith("/mlgoo/deadlines") &&

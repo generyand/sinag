@@ -7,11 +7,15 @@ from typing import Any, Dict, List, Optional
 from app.api import deps
 from app.db.models.user import User
 from app.schemas.bbi import (
+    AssessmentBBIComplianceResponse,
+    BBIComplianceResult,
+    BBIComplianceSummary,
     BBICreate,
     BBIResponse,
     BBIResultResponse,
     BBIUpdate,
     BBIWithGovernanceArea,
+    SubIndicatorResult,
     TestBBICalculationRequest,
     TestBBICalculationResponse,
 )
@@ -294,3 +298,263 @@ async def get_assessment_bbi_results(
     """
     bbi_results = bbi_service.get_bbi_results(db, assessment_id)
     return bbi_results
+
+
+# ============================================================================
+# BBI Compliance Endpoints (DILG MC 2024-417)
+# ============================================================================
+
+
+@router.get(
+    "/compliance/assessment/{assessment_id}",
+    response_model=AssessmentBBIComplianceResponse,
+    tags=["bbis"],
+)
+async def get_assessment_bbi_compliance(
+    assessment_id: int,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """
+    Get BBI compliance data for a specific assessment (DILG MC 2024-417).
+
+    Accessible by all authenticated users.
+
+    Returns the compliance rate and 3-tier rating for all BBI indicators:
+    - HIGHLY_FUNCTIONAL: 75% - 100% compliance
+    - MODERATELY_FUNCTIONAL: 50% - 74% compliance
+    - LOW_FUNCTIONAL: Below 50% compliance
+
+    Includes detailed sub-indicator pass/fail breakdown for each BBI.
+    """
+    from datetime import datetime
+
+    from app.db.models.assessment import Assessment
+    from app.db.models.barangay import Barangay
+    from app.db.models.governance_area import Indicator
+    from sqlalchemy import and_
+
+    # Get assessment with barangay info
+    assessment = (
+        db.query(Assessment)
+        .filter(Assessment.id == assessment_id)
+        .first()
+    )
+    if not assessment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Assessment with ID {assessment_id} not found",
+        )
+
+    # Get barangay info
+    barangay = None
+    barangay_name = None
+    barangay_id = None
+    if assessment.blgu_user and assessment.blgu_user.barangay_id:
+        barangay = (
+            db.query(Barangay)
+            .filter(Barangay.id == assessment.blgu_user.barangay_id)
+            .first()
+        )
+        if barangay:
+            barangay_name = barangay.name
+            barangay_id = barangay.id
+
+    # Get existing BBI results
+    bbi_results = bbi_service.get_bbi_results(db, assessment_id)
+
+    if not bbi_results:
+        # Calculate compliance if not yet done
+        bbi_results = bbi_service.calculate_all_bbi_compliance(db, assessment_id)
+
+    # Transform results to compliance response format
+    compliance_results = []
+    highly_functional_count = 0
+    moderately_functional_count = 0
+    low_functional_count = 0
+    total_percentage = 0.0
+
+    for result in bbi_results:
+        # Get BBI and governance area info
+        bbi = result.bbi
+        governance_area_name = bbi.governance_area.name if bbi.governance_area else None
+
+        # Parse sub_indicator_results
+        sub_results = []
+        if result.sub_indicator_results:
+            for sr in result.sub_indicator_results:
+                sub_results.append(SubIndicatorResult(
+                    code=sr.get("code", ""),
+                    name=sr.get("name", ""),
+                    passed=sr.get("passed", False),
+                    validation_rule=sr.get("validation_rule"),
+                    checklist_summary=sr.get("checklist_summary"),
+                ))
+
+        compliance_result = BBIComplianceResult(
+            bbi_id=result.bbi_id,
+            bbi_name=bbi.name,
+            bbi_abbreviation=bbi.abbreviation,
+            governance_area_id=bbi.governance_area_id,
+            governance_area_name=governance_area_name,
+            assessment_id=assessment_id,
+            compliance_percentage=result.compliance_percentage or 0.0,
+            compliance_rating=result.compliance_rating or result.status.value,
+            sub_indicators_passed=result.sub_indicators_passed or 0,
+            sub_indicators_total=result.sub_indicators_total or 0,
+            sub_indicator_results=sub_results,
+            calculation_date=result.calculation_date,
+        )
+        compliance_results.append(compliance_result)
+
+        # Update counts
+        rating = result.compliance_rating or result.status.value
+        if rating == "HIGHLY_FUNCTIONAL" or rating == "FUNCTIONAL":
+            highly_functional_count += 1
+        elif rating == "MODERATELY_FUNCTIONAL":
+            moderately_functional_count += 1
+        else:
+            low_functional_count += 1
+
+        total_percentage += result.compliance_percentage or 0.0
+
+    # Calculate summary
+    total_bbis = len(compliance_results)
+    avg_percentage = (total_percentage / total_bbis) if total_bbis > 0 else 0.0
+
+    summary = BBIComplianceSummary(
+        total_bbis=total_bbis,
+        highly_functional_count=highly_functional_count,
+        moderately_functional_count=moderately_functional_count,
+        low_functional_count=low_functional_count,
+        average_compliance_percentage=round(avg_percentage, 2),
+    )
+
+    return AssessmentBBIComplianceResponse(
+        assessment_id=assessment_id,
+        barangay_id=barangay_id,
+        barangay_name=barangay_name,
+        bbi_results=compliance_results,
+        summary=summary,
+        calculated_at=datetime.utcnow(),
+    )
+
+
+@router.post(
+    "/compliance/calculate/{assessment_id}",
+    response_model=AssessmentBBIComplianceResponse,
+    tags=["bbis"],
+)
+async def calculate_assessment_bbi_compliance(
+    assessment_id: int,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_admin_user),
+):
+    """
+    Calculate/recalculate BBI compliance for an assessment.
+
+    Requires admin privileges (MLGOO_DILG role).
+
+    This endpoint calculates compliance rates for all BBI indicators based on
+    sub-indicator checklist results and stores the results in the database.
+
+    Use this endpoint to:
+    - Calculate compliance for a newly finalized assessment
+    - Recalculate compliance if sub-indicator data has changed
+    """
+    from datetime import datetime
+
+    from app.db.models.assessment import Assessment
+    from app.db.models.barangay import Barangay
+
+    # Get assessment
+    assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+    if not assessment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Assessment with ID {assessment_id} not found",
+        )
+
+    # Calculate compliance
+    bbi_results = bbi_service.calculate_all_bbi_compliance(db, assessment_id)
+
+    # Get barangay info
+    barangay_name = None
+    barangay_id = None
+    if assessment.blgu_user and assessment.blgu_user.barangay_id:
+        barangay = (
+            db.query(Barangay)
+            .filter(Barangay.id == assessment.blgu_user.barangay_id)
+            .first()
+        )
+        if barangay:
+            barangay_name = barangay.name
+            barangay_id = barangay.id
+
+    # Transform results
+    compliance_results = []
+    highly_functional_count = 0
+    moderately_functional_count = 0
+    low_functional_count = 0
+    total_percentage = 0.0
+
+    for result in bbi_results:
+        bbi = result.bbi
+        governance_area_name = bbi.governance_area.name if bbi.governance_area else None
+
+        sub_results = []
+        if result.sub_indicator_results:
+            for sr in result.sub_indicator_results:
+                sub_results.append(SubIndicatorResult(
+                    code=sr.get("code", ""),
+                    name=sr.get("name", ""),
+                    passed=sr.get("passed", False),
+                    validation_rule=sr.get("validation_rule"),
+                    checklist_summary=sr.get("checklist_summary"),
+                ))
+
+        compliance_result = BBIComplianceResult(
+            bbi_id=result.bbi_id,
+            bbi_name=bbi.name,
+            bbi_abbreviation=bbi.abbreviation,
+            governance_area_id=bbi.governance_area_id,
+            governance_area_name=governance_area_name,
+            assessment_id=assessment_id,
+            compliance_percentage=result.compliance_percentage or 0.0,
+            compliance_rating=result.compliance_rating or result.status.value,
+            sub_indicators_passed=result.sub_indicators_passed or 0,
+            sub_indicators_total=result.sub_indicators_total or 0,
+            sub_indicator_results=sub_results,
+            calculation_date=result.calculation_date,
+        )
+        compliance_results.append(compliance_result)
+
+        rating = result.compliance_rating or result.status.value
+        if rating == "HIGHLY_FUNCTIONAL" or rating == "FUNCTIONAL":
+            highly_functional_count += 1
+        elif rating == "MODERATELY_FUNCTIONAL":
+            moderately_functional_count += 1
+        else:
+            low_functional_count += 1
+
+        total_percentage += result.compliance_percentage or 0.0
+
+    total_bbis = len(compliance_results)
+    avg_percentage = (total_percentage / total_bbis) if total_bbis > 0 else 0.0
+
+    summary = BBIComplianceSummary(
+        total_bbis=total_bbis,
+        highly_functional_count=highly_functional_count,
+        moderately_functional_count=moderately_functional_count,
+        low_functional_count=low_functional_count,
+        average_compliance_percentage=round(avg_percentage, 2),
+    )
+
+    return AssessmentBBIComplianceResponse(
+        assessment_id=assessment_id,
+        barangay_id=barangay_id,
+        barangay_name=barangay_name,
+        bbi_results=compliance_results,
+        summary=summary,
+        calculated_at=datetime.utcnow(),
+    )

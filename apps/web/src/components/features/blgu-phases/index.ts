@@ -12,3 +12,10 @@ export { Phase1Section } from "./Phase1Section";
 export { Phase2Section } from "./Phase2Section";
 export { VerdictSection } from "./VerdictSection";
 export { PhaseTimeline } from "./PhaseTimeline";
+export {
+  BBIComplianceCard,
+  type BBIComplianceData,
+  type BBIComplianceResult,
+  type BBIComplianceSummary,
+  type SubIndicatorResult,
+} from "./BBIComplianceCard";

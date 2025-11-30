@@ -15,6 +15,7 @@
  */
 
 import { PhaseCard, PhaseStatus } from "./PhaseCard";
+import { BBIComplianceCard, BBIComplianceData } from "./BBIComplianceCard";
 import { BLGUDashboardResponse } from "@sinag/shared";
 import {
   Clock,
@@ -127,6 +128,9 @@ export function VerdictSection({
   const areaResults: AreaResult[] = (dashboardData as any).area_results || [];
   const aiRecommendations: AIRecommendation[] =
     (dashboardData as any).ai_recommendations?.recommendations || [];
+
+  // Extract BBI compliance data (DILG MC 2024-417)
+  const bbiComplianceData: BBIComplianceData | undefined = (dashboardData as any).bbi_compliance;
 
   const isPassed = finalComplianceStatus === "Passed";
 
@@ -330,6 +334,9 @@ export function VerdictSection({
                 </div>
               </div>
             )}
+
+            {/* BBI Compliance Results (DILG MC 2024-417) */}
+            <BBIComplianceCard data={bbiComplianceData} />
 
             {/* AI Recommendations (CapDev) */}
             {aiRecommendations.length > 0 && (

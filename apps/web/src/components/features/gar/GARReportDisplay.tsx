@@ -1,6 +1,7 @@
 'use client';
 
 import { GARResponse } from '@sinag/shared';
+import { BBIComplianceSection, BBIComplianceData } from './BBIComplianceSection';
 
 interface GARReportDisplayProps {
   data: GARResponse;
@@ -192,6 +193,9 @@ export function GARReportDisplay({ data }: GARReportDisplayProps) {
           </table>
         </div>
       )}
+
+      {/* BBI Compliance Section (DILG MC 2024-417) */}
+      <BBIComplianceSection data={(data as any).bbi_compliance as BBIComplianceData} />
 
       {/* Generated timestamp */}
       <p className="text-sm text-[var(--muted-foreground)] text-center">

@@ -34,6 +34,30 @@ export interface AISummaryIndicator {
 
 
 /**
+ * BBIResultResponseSubIndicatorResults
+ */
+export type BBIResultResponseSubIndicatorResults = BBIResultResponseSubIndicatorResultsAnyOfItem[] | null;
+
+
+/**
+ * BBIResultResponseSubIndicatorResultsAnyOfItem
+ */
+export type BBIResultResponseSubIndicatorResultsAnyOfItem = { [key: string]: unknown };
+
+
+/**
+ * BBIResultResponseSubIndicatorsPassed
+ */
+export type BBIResultResponseSubIndicatorsPassed = number | null;
+
+
+/**
+ * BBIResultResponseSubIndicatorsTotal
+ */
+export type BBIResultResponseSubIndicatorsTotal = number | null;
+
+
+/**
  * BLGUDashboardResponseMlgooRecalibrationIndicatorIds
  */
 export type BLGUDashboardResponseMlgooRecalibrationIndicatorIds = number[] | null;
@@ -1071,6 +1095,41 @@ export type SimplifiedIndicatorResponseGovernanceArea = GovernanceAreaNested | n
  * SimplifiedIndicatorResponseParentId
  */
 export type SimplifiedIndicatorResponseParentId = number | null;
+
+
+/**
+ * SubIndicatorResult
+ */
+export interface SubIndicatorResult {
+  /** Sub-indicator code (e.g., '2.1.1') */
+  code: string;
+  /** Sub-indicator name (e.g., 'Structure') */
+  name: string;
+  /** Whether the sub-indicator passed */
+  passed: boolean;
+  /** Validation rule used (ALL_ITEMS_REQUIRED or ANY_ITEM_REQUIRED) */
+  validation_rule?: SubIndicatorResultValidationRule;
+  /** Summary of checklist item results */
+  checklist_summary?: SubIndicatorResultChecklistSummary;
+}
+
+
+/**
+ * SubIndicatorResultChecklistSummary
+ */
+export type SubIndicatorResultChecklistSummary = SubIndicatorResultChecklistSummaryAnyOf | null;
+
+
+/**
+ * SubIndicatorResultChecklistSummaryAnyOf
+ */
+export type SubIndicatorResultChecklistSummaryAnyOf = { [key: string]: unknown };
+
+
+/**
+ * SubIndicatorResultValidationRule
+ */
+export type SubIndicatorResultValidationRule = string | null;
 
 
 /**

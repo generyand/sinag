@@ -121,11 +121,25 @@ class BBIStatus(str, enum.Enum):
     """
     Enum for BBI (Barangay-based Institutions) functionality status.
 
-    BBIs can be either:
-    - FUNCTIONAL: The BBI meets all requirements and is operating properly
-    - NON_FUNCTIONAL: The BBI does not meet requirements or is not operating
+    Per DILG MC 2024-417, BBI functionality is determined by compliance rate:
+    - HIGHLY_FUNCTIONAL: 75% - 100% compliance rate
+    - MODERATELY_FUNCTIONAL: 50% - 74% compliance rate
+    - LOW_FUNCTIONAL: Below 50% compliance rate
+
+    Compliance rate is calculated as:
+    (Passed Sub-Indicators / Total Sub-Indicators) × 100%
+
+    Legacy values (kept for backward compatibility):
+    - FUNCTIONAL: Maps to HIGHLY_FUNCTIONAL
+    - NON_FUNCTIONAL: Maps to LOW_FUNCTIONAL
     """
 
+    # New 3-tier rating system (DILG MC 2024-417)
+    HIGHLY_FUNCTIONAL = "HIGHLY_FUNCTIONAL"
+    MODERATELY_FUNCTIONAL = "MODERATELY_FUNCTIONAL"
+    LOW_FUNCTIONAL = "LOW_FUNCTIONAL"
+
+    # Legacy values (backward compatibility)
     FUNCTIONAL = "FUNCTIONAL"
     NON_FUNCTIONAL = "NON_FUNCTIONAL"
 

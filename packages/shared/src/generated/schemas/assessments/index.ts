@@ -4,6 +4,8 @@
 // 🏷️  Based on FastAPI tag: "assessments"
 
 import type { NotificationResult } from '../notifications';
+import type { BBIComplianceResult } from '../bbis';
+import type { BBIComplianceSummary } from '../bbis';
 import type { ProgressSummary } from '../common';
 import type { GovernanceAreaProgress } from '../common';
 import type { GovernanceAreaDetailItem } from '../common';
@@ -36,6 +38,37 @@ export interface ApproveAssessmentResponse {
   approved_at: string;
   notification_result: NotificationResult;
 }
+
+
+/**
+ * AssessmentBBIComplianceResponse
+ */
+export interface AssessmentBBIComplianceResponse {
+  /** Assessment ID */
+  assessment_id: number;
+  /** Barangay ID */
+  barangay_id?: AssessmentBBIComplianceResponseBarangayId;
+  /** Barangay name */
+  barangay_name?: AssessmentBBIComplianceResponseBarangayName;
+  /** Compliance results for each BBI */
+  bbi_results: BBIComplianceResult[];
+  /** Summary statistics for BBI compliance */
+  summary: BBIComplianceSummary;
+  /** When the compliance was calculated */
+  calculated_at: string;
+}
+
+
+/**
+ * AssessmentBBIComplianceResponseBarangayId
+ */
+export type AssessmentBBIComplianceResponseBarangayId = number | null;
+
+
+/**
+ * AssessmentBBIComplianceResponseBarangayName
+ */
+export type AssessmentBBIComplianceResponseBarangayName = string | null;
 
 
 /**

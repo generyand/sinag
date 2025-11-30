@@ -14,3 +14,9 @@ export { AssessorCommentsPanel } from './AssessorCommentsPanel';
 export { CompletionStatusBadge } from './CompletionStatusBadge';
 export { GovernanceAreaBreakdown } from './GovernanceAreaBreakdown';
 export { ReworkStatsCard } from './ReworkStatsCard';
+export {
+  BBIAnalyticsCard,
+  type BBIAnalyticsData,
+  type BBIAnalyticsSummary,
+  type BBIAnalyticsItem,
+} from './BBIAnalyticsCard';
