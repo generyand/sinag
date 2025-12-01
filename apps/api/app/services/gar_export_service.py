@@ -10,6 +10,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
 from app.schemas.gar import GARResponse, GARGovernanceArea, GARIndicator, GARChecklistItem
+from app.schemas.bbi import AssessmentBBIComplianceResponse
 
 
 class GARExportService:
@@ -25,6 +26,11 @@ class GARExportService:
             "unmet": "FF6B6B",  # Light red
             "header_bg": "90EE90",  # Light green for area headers
             "overall_bg": "90EE90",  # Light green for overall result
+            # BBI compliance colors (DILG MC 2024-417)
+            "bbi_highly_functional": "90EE90",  # Light green (75%+)
+            "bbi_moderately_functional": "FFD700",  # Gold/amber (50-74%)
+            "bbi_low_functional": "FF6B6B",  # Light red (<50%)
+            "bbi_header_bg": "B0C4DE",  # Light steel blue
         }
 
         # Define border style
@@ -66,6 +72,10 @@ class GARExportService:
         # Add summary table if multiple areas
         if len(gar_data.governance_areas) > 1:
             current_row = self._add_summary_table(ws, gar_data, current_row)
+
+        # Add BBI compliance section (DILG MC 2024-417)
+        if gar_data.bbi_compliance and gar_data.bbi_compliance.bbi_results:
+            current_row = self._add_bbi_compliance_table(ws, gar_data.bbi_compliance, current_row)
 
         # Save to buffer
         buffer = io.BytesIO()
@@ -258,6 +268,120 @@ class GARExportService:
                 row += 1
 
         return row
+
+    def _add_bbi_compliance_table(
+        self, ws, bbi_data: AssessmentBBIComplianceResponse, start_row: int
+    ) -> int:
+        """Add BBI compliance table per DILG MC 2024-417."""
+        row = start_row + 2  # Add spacing
+
+        # Section title
+        ws.merge_cells(f"A{row}:B{row}")
+        cell = ws[f"A{row}"]
+        cell.value = "BBI FUNCTIONALITY COMPLIANCE (DILG MC 2024-417)"
+        cell.font = Font(bold=True, size=11)
+        cell.fill = PatternFill(
+            start_color=self.colors["bbi_header_bg"],
+            end_color=self.colors["bbi_header_bg"],
+            fill_type="solid",
+        )
+        cell.border = self.thin_border
+        ws[f"B{row}"].border = self.thin_border
+        row += 1
+
+        # Column headers
+        ws[f"A{row}"].value = "BBI"
+        ws[f"A{row}"].font = Font(bold=True)
+        ws[f"A{row}"].border = self.thin_border
+        ws[f"A{row}"].alignment = Alignment(horizontal="center")
+
+        ws[f"B{row}"].value = "COMPLIANCE"
+        ws[f"B{row}"].font = Font(bold=True)
+        ws[f"B{row}"].border = self.thin_border
+        ws[f"B{row}"].alignment = Alignment(horizontal="center")
+        row += 1
+
+        # BBI results
+        for bbi in bbi_data.bbi_results:
+            # BBI name
+            ws[f"A{row}"].value = f"{bbi.bbi_abbreviation} - {bbi.bbi_name}"
+            ws[f"A{row}"].border = self.thin_border
+            ws[f"A{row}"].alignment = Alignment(wrap_text=True, vertical="center")
+
+            # Compliance percentage and rating
+            ws[f"B{row}"].value = f"{round(bbi.compliance_percentage)}%"
+            ws[f"B{row}"].border = self.thin_border
+            ws[f"B{row}"].alignment = Alignment(horizontal="center", vertical="center")
+
+            # Color based on rating
+            rating_color = self._get_bbi_rating_color(bbi.compliance_rating)
+            if rating_color:
+                ws[f"B{row}"].fill = PatternFill(
+                    start_color=rating_color, end_color=rating_color, fill_type="solid"
+                )
+            row += 1
+
+        # Average compliance row
+        ws[f"A{row}"].value = "AVERAGE COMPLIANCE"
+        ws[f"A{row}"].font = Font(bold=True)
+        ws[f"A{row}"].border = self.thin_border
+        ws[f"A{row}"].fill = PatternFill(
+            start_color=self.colors["bbi_header_bg"],
+            end_color=self.colors["bbi_header_bg"],
+            fill_type="solid",
+        )
+
+        avg_pct = bbi_data.summary.average_compliance_percentage
+        ws[f"B{row}"].value = f"{round(avg_pct)}%"
+        ws[f"B{row}"].font = Font(bold=True)
+        ws[f"B{row}"].border = self.thin_border
+        ws[f"B{row}"].alignment = Alignment(horizontal="center")
+
+        # Color for average
+        avg_rating = self._determine_rating_from_percentage(avg_pct)
+        avg_color = self._get_bbi_rating_color(avg_rating)
+        if avg_color:
+            ws[f"B{row}"].fill = PatternFill(
+                start_color=avg_color, end_color=avg_color, fill_type="solid"
+            )
+        row += 1
+
+        # Summary counts row
+        row += 1
+        ws[f"A{row}"].value = (
+            f"Summary: {bbi_data.summary.highly_functional_count} Highly Functional, "
+            f"{bbi_data.summary.moderately_functional_count} Moderately Functional, "
+            f"{bbi_data.summary.low_functional_count} Low Functional"
+        )
+        ws[f"A{row}"].font = Font(italic=True, size=9)
+        ws.merge_cells(f"A{row}:B{row}")
+        row += 1
+
+        # Rating legend
+        ws[f"A{row}"].value = "Rating: 75%+ = Highly Functional, 50-74% = Moderately Functional, <50% = Low Functional"
+        ws[f"A{row}"].font = Font(italic=True, size=9)
+        ws.merge_cells(f"A{row}:B{row}")
+
+        return row + 1
+
+    def _get_bbi_rating_color(self, rating: str) -> Optional[str]:
+        """Get color for BBI compliance rating."""
+        rating_upper = rating.upper() if rating else ""
+        if "HIGHLY" in rating_upper:
+            return self.colors["bbi_highly_functional"]
+        elif "MODERATELY" in rating_upper:
+            return self.colors["bbi_moderately_functional"]
+        elif "LOW" in rating_upper:
+            return self.colors["bbi_low_functional"]
+        return None
+
+    def _determine_rating_from_percentage(self, percentage: float) -> str:
+        """Determine rating tier from percentage."""
+        if percentage >= 75:
+            return "HIGHLY_FUNCTIONAL"
+        elif percentage >= 50:
+            return "MODERATELY_FUNCTIONAL"
+        return "LOW_FUNCTIONAL"
 
     def _get_status_color(self, status: str) -> Optional[str]:
         """Get color for validation status."""
@@ -475,6 +599,106 @@ class GARExportService:
                 summary_table = Table(summary_data, colWidths=summary_col_widths)
                 summary_table.setStyle(TableStyle(summary_style_commands))
                 elements.append(summary_table)
+
+            # Add BBI compliance section (DILG MC 2024-417)
+            if gar_data.bbi_compliance and gar_data.bbi_compliance.bbi_results:
+                elements.append(Spacer(1, 30))
+
+                # BBI compliance colors for PDF
+                bbi_highly_color = colors.Color(0.56, 0.93, 0.56)  # Light green
+                bbi_mod_color = colors.Color(1, 0.84, 0)  # Gold/amber
+                bbi_low_color = colors.Color(1, 0.42, 0.42)  # Light red
+                bbi_header_color = colors.Color(0.69, 0.77, 0.87)  # Light steel blue
+
+                # Build BBI table
+                bbi_table_data = []
+                bbi_style_commands = [
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 6),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+                    ('TOPPADDING', (0, 0), (-1, -1), 6),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ]
+
+                # Section header
+                bbi_table_data.append([
+                    Paragraph("<b>BBI FUNCTIONALITY COMPLIANCE (DILG MC 2024-417)</b>", cell_style),
+                    ""
+                ])
+                bbi_style_commands.append(('SPAN', (0, 0), (1, 0)))
+                bbi_style_commands.append(('BACKGROUND', (0, 0), (1, 0), bbi_header_color))
+                bbi_style_commands.append(('ALIGN', (0, 0), (1, 0), 'CENTER'))
+
+                # Column headers
+                bbi_table_data.append([
+                    Paragraph("<b>BBI</b>", cell_style),
+                    Paragraph("<b>COMPLIANCE</b>", cell_style)
+                ])
+                bbi_style_commands.append(('BACKGROUND', (0, 1), (1, 1), colors.lightgrey))
+                bbi_style_commands.append(('ALIGN', (0, 1), (1, 1), 'CENTER'))
+
+                row_idx = 2
+                # BBI results
+                for bbi in gar_data.bbi_compliance.bbi_results:
+                    bbi_table_data.append([
+                        Paragraph(f"{bbi.bbi_abbreviation} - {bbi.bbi_name}", cell_style),
+                        f"{round(bbi.compliance_percentage)}%"
+                    ])
+                    bbi_style_commands.append(('ALIGN', (1, row_idx), (1, row_idx), 'CENTER'))
+
+                    # Color based on rating
+                    rating = bbi.compliance_rating.upper() if bbi.compliance_rating else ""
+                    if "HIGHLY" in rating:
+                        bbi_style_commands.append(('BACKGROUND', (1, row_idx), (1, row_idx), bbi_highly_color))
+                    elif "MODERATELY" in rating:
+                        bbi_style_commands.append(('BACKGROUND', (1, row_idx), (1, row_idx), bbi_mod_color))
+                    elif "LOW" in rating:
+                        bbi_style_commands.append(('BACKGROUND', (1, row_idx), (1, row_idx), bbi_low_color))
+                    row_idx += 1
+
+                # Average compliance row
+                avg_pct = gar_data.bbi_compliance.summary.average_compliance_percentage
+                bbi_table_data.append([
+                    Paragraph("<b>AVERAGE COMPLIANCE</b>", cell_style),
+                    f"{round(avg_pct)}%"
+                ])
+                bbi_style_commands.append(('BACKGROUND', (0, row_idx), (0, row_idx), bbi_header_color))
+                bbi_style_commands.append(('ALIGN', (1, row_idx), (1, row_idx), 'CENTER'))
+
+                # Color for average
+                if avg_pct >= 75:
+                    bbi_style_commands.append(('BACKGROUND', (1, row_idx), (1, row_idx), bbi_highly_color))
+                elif avg_pct >= 50:
+                    bbi_style_commands.append(('BACKGROUND', (1, row_idx), (1, row_idx), bbi_mod_color))
+                else:
+                    bbi_style_commands.append(('BACKGROUND', (1, row_idx), (1, row_idx), bbi_low_color))
+
+                # Create BBI table
+                bbi_col_widths = [6.0*inch, 1.5*inch]
+                bbi_table = Table(bbi_table_data, colWidths=bbi_col_widths)
+                bbi_table.setStyle(TableStyle(bbi_style_commands))
+                elements.append(bbi_table)
+
+                # Summary and legend
+                summary_text = (
+                    f"Summary: {gar_data.bbi_compliance.summary.highly_functional_count} Highly Functional, "
+                    f"{gar_data.bbi_compliance.summary.moderately_functional_count} Moderately Functional, "
+                    f"{gar_data.bbi_compliance.summary.low_functional_count} Low Functional"
+                )
+                legend_style = ParagraphStyle(
+                    'BBILegend',
+                    parent=styles['Normal'],
+                    fontSize=8,
+                    fontStyle='italic',
+                    spaceAfter=4,
+                )
+                elements.append(Spacer(1, 8))
+                elements.append(Paragraph(summary_text, legend_style))
+                elements.append(Paragraph(
+                    "Rating: 75%+ = Highly Functional, 50-74% = Moderately Functional, &lt;50% = Low Functional",
+                    legend_style
+                ))
 
             # Build PDF
             doc.build(elements)

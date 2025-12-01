@@ -21,6 +21,7 @@ from app.schemas.gar import (
     GARResponse,
     GARSummaryItem,
 )
+from app.services.bbi_service import bbi_service
 
 
 class GARService:
@@ -130,6 +131,16 @@ class GARService:
         # Determine cycle year from assessment or use default
         cycle_year = "CY 2025 SGLGB (PY 2024)"
 
+        # Get BBI compliance data (DILG MC 2024-417)
+        bbi_compliance = None
+        try:
+            bbi_compliance = bbi_service.get_assessment_bbi_compliance(
+                db=db,
+                assessment_id=assessment_id,
+            )
+        except Exception as e:
+            self.logger.warning(f"Failed to get BBI compliance data for assessment {assessment_id}: {e}")
+
         return GARResponse(
             assessment_id=assessment.id,
             barangay_name=barangay_name,
@@ -138,6 +149,7 @@ class GARService:
             cycle_year=cycle_year,
             governance_areas=gar_areas,
             summary=summary,
+            bbi_compliance=bbi_compliance,
             generated_at=datetime.utcnow(),
         )
 

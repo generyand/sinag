@@ -2,6 +2,8 @@
 Tests for BBI service layer (app/services/bbi_service.py)
 """
 
+from typing import List
+
 import pytest
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
@@ -631,3 +633,405 @@ def test_evaluate_mapping_rules_unknown_operator(db_session: Session):
 
     # Should default to AND, so result is False (not all pass)
     assert result is False
+
+
+# ====================================================================
+# BBI Compliance Rate Calculation Tests (DILG MC 2024-417)
+# ====================================================================
+
+
+class TestGetComplianceRating:
+    """Tests for the _get_compliance_rating method (3-tier system)."""
+
+    def test_highly_functional_at_75_percent(self):
+        """Test that 75% returns HIGHLY_FUNCTIONAL"""
+        result = bbi_service._get_compliance_rating(75.0)
+        assert result == BBIStatus.HIGHLY_FUNCTIONAL
+
+    def test_highly_functional_at_100_percent(self):
+        """Test that 100% returns HIGHLY_FUNCTIONAL"""
+        result = bbi_service._get_compliance_rating(100.0)
+        assert result == BBIStatus.HIGHLY_FUNCTIONAL
+
+    def test_highly_functional_at_80_percent(self):
+        """Test that 80% returns HIGHLY_FUNCTIONAL"""
+        result = bbi_service._get_compliance_rating(80.0)
+        assert result == BBIStatus.HIGHLY_FUNCTIONAL
+
+    def test_moderately_functional_at_50_percent(self):
+        """Test that 50% returns MODERATELY_FUNCTIONAL"""
+        result = bbi_service._get_compliance_rating(50.0)
+        assert result == BBIStatus.MODERATELY_FUNCTIONAL
+
+    def test_moderately_functional_at_74_percent(self):
+        """Test that 74% returns MODERATELY_FUNCTIONAL"""
+        result = bbi_service._get_compliance_rating(74.0)
+        assert result == BBIStatus.MODERATELY_FUNCTIONAL
+
+    def test_moderately_functional_at_60_percent(self):
+        """Test that 60% returns MODERATELY_FUNCTIONAL"""
+        result = bbi_service._get_compliance_rating(60.0)
+        assert result == BBIStatus.MODERATELY_FUNCTIONAL
+
+    def test_low_functional_at_49_percent(self):
+        """Test that 49% returns LOW_FUNCTIONAL"""
+        result = bbi_service._get_compliance_rating(49.0)
+        assert result == BBIStatus.LOW_FUNCTIONAL
+
+    def test_low_functional_at_0_percent(self):
+        """Test that 0% returns LOW_FUNCTIONAL"""
+        result = bbi_service._get_compliance_rating(0.0)
+        assert result == BBIStatus.LOW_FUNCTIONAL
+
+    def test_low_functional_at_25_percent(self):
+        """Test that 25% returns LOW_FUNCTIONAL"""
+        result = bbi_service._get_compliance_rating(25.0)
+        assert result == BBIStatus.LOW_FUNCTIONAL
+
+    def test_boundary_74_99_is_moderately_functional(self):
+        """Test boundary case: 74.99% should be MODERATELY_FUNCTIONAL"""
+        result = bbi_service._get_compliance_rating(74.99)
+        assert result == BBIStatus.MODERATELY_FUNCTIONAL
+
+    def test_boundary_49_99_is_low_functional(self):
+        """Test boundary case: 49.99% should be LOW_FUNCTIONAL"""
+        result = bbi_service._get_compliance_rating(49.99)
+        assert result == BBIStatus.LOW_FUNCTIONAL
+
+
+class TestIsChecklistItemSatisfied:
+    """Tests for the _is_checklist_item_satisfied method."""
+
+    def test_boolean_true_satisfied(self, db_session: Session):
+        """Test that boolean True value satisfies item"""
+        from app.db.models.governance_area import ChecklistItem
+
+        item = ChecklistItem(
+            item_id="test_item",
+            label="Test Item",
+            item_type="checkbox",
+            required=True,
+        )
+        response_data = {"test_item": True}
+
+        result = bbi_service._is_checklist_item_satisfied(item, response_data)
+        assert result is True
+
+    def test_boolean_false_not_satisfied(self, db_session: Session):
+        """Test that boolean False value does not satisfy item"""
+        from app.db.models.governance_area import ChecklistItem
+
+        item = ChecklistItem(
+            item_id="test_item",
+            label="Test Item",
+            item_type="checkbox",
+            required=True,
+        )
+        response_data = {"test_item": False}
+
+        result = bbi_service._is_checklist_item_satisfied(item, response_data)
+        assert result is False
+
+    def test_string_true_satisfied(self, db_session: Session):
+        """Test that string 'true' value satisfies item"""
+        from app.db.models.governance_area import ChecklistItem
+
+        item = ChecklistItem(
+            item_id="test_item",
+            label="Test Item",
+            item_type="checkbox",
+            required=True,
+        )
+        response_data = {"test_item": "true"}
+
+        result = bbi_service._is_checklist_item_satisfied(item, response_data)
+        assert result is True
+
+    def test_string_yes_satisfied(self, db_session: Session):
+        """Test that string 'yes' value satisfies item"""
+        from app.db.models.governance_area import ChecklistItem
+
+        item = ChecklistItem(
+            item_id="test_item",
+            label="Test Item",
+            item_type="checkbox",
+            required=True,
+        )
+        response_data = {"test_item": "yes"}
+
+        result = bbi_service._is_checklist_item_satisfied(item, response_data)
+        assert result is True
+
+    def test_yes_no_pattern_yes_satisfied(self, db_session: Session):
+        """Test YES/NO pattern with _yes=True satisfies item"""
+        from app.db.models.governance_area import ChecklistItem
+
+        item = ChecklistItem(
+            item_id="test_item",
+            label="Test Item",
+            item_type="assessment_field",
+            required=True,
+        )
+        response_data = {"test_item_yes": True, "test_item_no": False}
+
+        result = bbi_service._is_checklist_item_satisfied(item, response_data)
+        assert result is True
+
+    def test_yes_no_pattern_no_not_satisfied(self, db_session: Session):
+        """Test YES/NO pattern with _no=True does not satisfy item"""
+        from app.db.models.governance_area import ChecklistItem
+
+        item = ChecklistItem(
+            item_id="test_item",
+            label="Test Item",
+            item_type="assessment_field",
+            required=True,
+        )
+        response_data = {"test_item_yes": False, "test_item_no": True}
+
+        result = bbi_service._is_checklist_item_satisfied(item, response_data)
+        assert result is False
+
+    def test_info_text_always_satisfied(self, db_session: Session):
+        """Test that info_text items are always satisfied"""
+        from app.db.models.governance_area import ChecklistItem
+
+        item = ChecklistItem(
+            item_id="info_item",
+            label="Information text",
+            item_type="info_text",
+            required=False,
+        )
+        response_data = {}  # No response needed for info_text
+
+        result = bbi_service._is_checklist_item_satisfied(item, response_data)
+        assert result is True
+
+    def test_document_count_with_value_satisfied(self, db_session: Session):
+        """Test that document_count with value satisfies item"""
+        from app.db.models.governance_area import ChecklistItem
+
+        item = ChecklistItem(
+            item_id="doc_count",
+            label="Document count",
+            item_type="document_count",
+            required=True,
+        )
+        response_data = {"doc_count": 5}
+
+        result = bbi_service._is_checklist_item_satisfied(item, response_data)
+        assert result is True
+
+    def test_document_count_empty_not_satisfied(self, db_session: Session):
+        """Test that document_count with empty value does not satisfy item"""
+        from app.db.models.governance_area import ChecklistItem
+
+        item = ChecklistItem(
+            item_id="doc_count",
+            label="Document count",
+            item_type="document_count",
+            required=True,
+        )
+        response_data = {"doc_count": 0}
+
+        result = bbi_service._is_checklist_item_satisfied(item, response_data)
+        assert result is False
+
+    def test_missing_item_not_satisfied(self, db_session: Session):
+        """Test that missing response data does not satisfy item"""
+        from app.db.models.governance_area import ChecklistItem
+
+        item = ChecklistItem(
+            item_id="test_item",
+            label="Test Item",
+            item_type="checkbox",
+            required=True,
+        )
+        response_data = {}  # No response for this item
+
+        result = bbi_service._is_checklist_item_satisfied(item, response_data)
+        assert result is False
+
+
+class TestCalculateBbiComplianceIntegration:
+    """Integration tests for calculate_bbi_compliance with database."""
+
+    @pytest.fixture
+    def bbi_indicator(
+        self, db_session: Session, sample_governance_area: GovernanceArea
+    ):
+        """Create a BBI indicator with is_bbi=True"""
+        indicator = Indicator(
+            name="Barangay Development Council",
+            indicator_code="2.1",
+            description="BDC indicator",
+            governance_area_id=sample_governance_area.id,
+            is_bbi=True,
+            is_active=True,
+        )
+        db_session.add(indicator)
+        db_session.commit()
+        db_session.refresh(indicator)
+        return indicator
+
+    @pytest.fixture
+    def bbi_sub_indicators(
+        self, db_session: Session, bbi_indicator: Indicator, sample_governance_area: GovernanceArea
+    ):
+        """Create sub-indicators for the BBI indicator"""
+        sub_indicators = []
+        for i, name in enumerate(["Structure", "Meetings", "Plans"], start=1):
+            sub_indicator = Indicator(
+                name=name,
+                indicator_code=f"2.1.{i}",
+                description=f"{name} sub-indicator",
+                governance_area_id=sample_governance_area.id,
+                parent_id=bbi_indicator.id,
+                is_active=True,
+                sort_order=i,
+            )
+            db_session.add(sub_indicator)
+            sub_indicators.append(sub_indicator)
+        db_session.commit()
+        for si in sub_indicators:
+            db_session.refresh(si)
+        return sub_indicators
+
+    def test_compliance_100_percent_all_pass(
+        self,
+        db_session: Session,
+        bbi_indicator: Indicator,
+        bbi_sub_indicators: List[Indicator],
+        sample_assessment: Assessment,
+    ):
+        """Test 100% compliance when all sub-indicators pass"""
+        # Create passing responses for all sub-indicators
+        for sub_indicator in bbi_sub_indicators:
+            response = AssessmentResponse(
+                assessment_id=sample_assessment.id,
+                indicator_id=sub_indicator.id,
+                validation_status=ValidationStatus.PASS,
+                response_data={},
+            )
+            db_session.add(response)
+        db_session.commit()
+
+        result = bbi_service.calculate_bbi_compliance(
+            db_session, sample_assessment.id, bbi_indicator
+        )
+
+        assert result["compliance_percentage"] == 100.0
+        assert result["compliance_rating"] == BBIStatus.HIGHLY_FUNCTIONAL.value
+        assert result["sub_indicators_passed"] == 3
+        assert result["sub_indicators_total"] == 3
+
+    def test_compliance_66_percent_two_of_three_pass(
+        self,
+        db_session: Session,
+        bbi_indicator: Indicator,
+        bbi_sub_indicators: List[Indicator],
+        sample_assessment: Assessment,
+    ):
+        """Test ~66% compliance when 2 of 3 sub-indicators pass"""
+        # Create responses: 2 pass, 1 fail
+        for i, sub_indicator in enumerate(bbi_sub_indicators):
+            response = AssessmentResponse(
+                assessment_id=sample_assessment.id,
+                indicator_id=sub_indicator.id,
+                validation_status=ValidationStatus.PASS if i < 2 else ValidationStatus.FAIL,
+                response_data={},
+            )
+            db_session.add(response)
+        db_session.commit()
+
+        result = bbi_service.calculate_bbi_compliance(
+            db_session, sample_assessment.id, bbi_indicator
+        )
+
+        assert result["compliance_percentage"] == pytest.approx(66.67, rel=0.01)
+        assert result["compliance_rating"] == BBIStatus.MODERATELY_FUNCTIONAL.value
+        assert result["sub_indicators_passed"] == 2
+        assert result["sub_indicators_total"] == 3
+
+    def test_compliance_33_percent_one_of_three_pass(
+        self,
+        db_session: Session,
+        bbi_indicator: Indicator,
+        bbi_sub_indicators: List[Indicator],
+        sample_assessment: Assessment,
+    ):
+        """Test ~33% compliance when 1 of 3 sub-indicators pass"""
+        # Create responses: 1 pass, 2 fail
+        for i, sub_indicator in enumerate(bbi_sub_indicators):
+            response = AssessmentResponse(
+                assessment_id=sample_assessment.id,
+                indicator_id=sub_indicator.id,
+                validation_status=ValidationStatus.PASS if i == 0 else ValidationStatus.FAIL,
+                response_data={},
+            )
+            db_session.add(response)
+        db_session.commit()
+
+        result = bbi_service.calculate_bbi_compliance(
+            db_session, sample_assessment.id, bbi_indicator
+        )
+
+        assert result["compliance_percentage"] == pytest.approx(33.33, rel=0.01)
+        assert result["compliance_rating"] == BBIStatus.LOW_FUNCTIONAL.value
+        assert result["sub_indicators_passed"] == 1
+        assert result["sub_indicators_total"] == 3
+
+    def test_compliance_0_percent_all_fail(
+        self,
+        db_session: Session,
+        bbi_indicator: Indicator,
+        bbi_sub_indicators: List[Indicator],
+        sample_assessment: Assessment,
+    ):
+        """Test 0% compliance when all sub-indicators fail"""
+        # Create failing responses for all sub-indicators
+        for sub_indicator in bbi_sub_indicators:
+            response = AssessmentResponse(
+                assessment_id=sample_assessment.id,
+                indicator_id=sub_indicator.id,
+                validation_status=ValidationStatus.FAIL,
+                response_data={},
+            )
+            db_session.add(response)
+        db_session.commit()
+
+        result = bbi_service.calculate_bbi_compliance(
+            db_session, sample_assessment.id, bbi_indicator
+        )
+
+        assert result["compliance_percentage"] == 0.0
+        assert result["compliance_rating"] == BBIStatus.LOW_FUNCTIONAL.value
+        assert result["sub_indicators_passed"] == 0
+        assert result["sub_indicators_total"] == 3
+
+    def test_compliance_no_sub_indicators_single_indicator(
+        self,
+        db_session: Session,
+        bbi_indicator: Indicator,
+        sample_assessment: Assessment,
+    ):
+        """Test compliance for BBI with no sub-indicators (single indicator)"""
+        # Note: We don't create bbi_sub_indicators fixture here
+        # Create a passing response for the BBI indicator itself
+        response = AssessmentResponse(
+            assessment_id=sample_assessment.id,
+            indicator_id=bbi_indicator.id,
+            validation_status=ValidationStatus.PASS,
+            response_data={},
+        )
+        db_session.add(response)
+        db_session.commit()
+
+        result = bbi_service.calculate_bbi_compliance(
+            db_session, sample_assessment.id, bbi_indicator
+        )
+
+        assert result["compliance_percentage"] == 100.0
+        assert result["compliance_rating"] == BBIStatus.HIGHLY_FUNCTIONAL.value
+        assert result["sub_indicators_passed"] == 1
+        assert result["sub_indicators_total"] == 1

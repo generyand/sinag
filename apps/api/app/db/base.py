@@ -44,19 +44,22 @@ engine = None
 SessionLocal = None
 
 if settings.DATABASE_URL:
-    # Create database engine with Supabase PostgreSQL
+    # Determine if using local or remote database
+    is_local_db = "localhost" in settings.DATABASE_URL or "127.0.0.1" in settings.DATABASE_URL
+
+    # Connection arguments - SSL required for remote, optional for local
+    connect_args = {"options": "-c timezone=utc"}
+    if not is_local_db:
+        connect_args["sslmode"] = "require"
+
+    # Create database engine
     engine = create_engine(
         settings.DATABASE_URL,
-        # Connection pool settings optimized for Supabase
         pool_pre_ping=True,
         pool_recycle=300,
         pool_size=10,
         max_overflow=20,
-        # Supabase specific connection parameters
-        connect_args={
-            "options": "-c timezone=utc",
-            "sslmode": "require",
-        },
+        connect_args=connect_args,
     )
 
     # Create session factory

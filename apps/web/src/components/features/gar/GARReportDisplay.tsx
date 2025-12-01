@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { GARResponse } from '@sinag/shared';
 import { BBIComplianceSection, BBIComplianceData } from './BBIComplianceSection';
 
@@ -63,10 +64,9 @@ export function GARReportDisplay({ data }: GARReportDisplayProps) {
             </thead>
             <tbody>
               {area.indicators?.map((indicator) => (
-                <>
+                <React.Fragment key={indicator.indicator_id}>
                   {/* Indicator Row */}
                   <tr
-                    key={indicator.indicator_id}
                     className={`border-b border-[var(--border)] ${
                       indicator.is_header ? 'bg-green-50 dark:bg-green-900/10' : ''
                     }`}
@@ -109,7 +109,7 @@ export function GARReportDisplay({ data }: GARReportDisplayProps) {
                       </td>
                     </tr>
                   ))}
-                </>
+                </React.Fragment>
               ))}
 
               {/* Overall Result Row */}

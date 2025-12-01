@@ -548,3 +548,290 @@ def test_get_bbi_results_no_results(client: TestClient, db_session: Session, adm
     data = response.json()
     assert isinstance(data, list)
     assert len(data) == 0
+
+
+# ====================================================================
+# BBI Compliance Endpoints (DILG MC 2024-417)
+# ====================================================================
+
+
+@pytest.fixture
+def bbi_indicator(db_session: Session, governance_area: GovernanceArea):
+    """Create a BBI indicator with is_bbi=True for compliance testing"""
+    indicator = Indicator(
+        name="Barangay Development Council",
+        indicator_code="2.1",
+        description="BDC indicator",
+        governance_area_id=governance_area.id,
+        is_bbi=True,
+        is_active=True,
+    )
+    db_session.add(indicator)
+    db_session.commit()
+    db_session.refresh(indicator)
+    return indicator
+
+
+@pytest.fixture
+def bbi_sub_indicators(db_session: Session, bbi_indicator: Indicator, governance_area: GovernanceArea):
+    """Create sub-indicators for the BBI indicator"""
+    sub_indicators = []
+    for i, name in enumerate(["Structure", "Meetings", "Plans"], start=1):
+        sub_indicator = Indicator(
+            name=name,
+            indicator_code=f"2.1.{i}",
+            description=f"{name} sub-indicator",
+            governance_area_id=governance_area.id,
+            parent_id=bbi_indicator.id,
+            is_active=True,
+            sort_order=i,
+        )
+        db_session.add(sub_indicator)
+        sub_indicators.append(sub_indicator)
+    db_session.commit()
+    for si in sub_indicators:
+        db_session.refresh(si)
+    return sub_indicators
+
+
+def test_get_assessment_bbi_compliance_success(
+    client: TestClient,
+    db_session: Session,
+    admin_user: User,
+    mock_blgu_user,
+    governance_area: GovernanceArea,
+    bbi_indicator: Indicator,
+    bbi_sub_indicators,
+):
+    """Test getting BBI compliance data for an assessment"""
+    _override_admin(client, admin_user, db_session)
+
+    # Create assessment
+    assessment = Assessment(
+        blgu_user_id=mock_blgu_user.id,
+        status=AssessmentStatus.VALIDATED,
+    )
+    db_session.add(assessment)
+    db_session.commit()
+    db_session.refresh(assessment)
+
+    # Create passing responses for sub-indicators
+    for sub_indicator in bbi_sub_indicators:
+        response = AssessmentResponse(
+            assessment_id=assessment.id,
+            indicator_id=sub_indicator.id,
+            validation_status=ValidationStatus.PASS,
+            response_data={},
+        )
+        db_session.add(response)
+    db_session.commit()
+
+    response = client.get(f"/api/v1/bbis/compliance/assessment/{assessment.id}")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "assessment_id" in data
+    assert data["assessment_id"] == assessment.id
+    assert "bbi_results" in data
+    assert "summary" in data
+    assert "calculated_at" in data
+
+
+def test_get_assessment_bbi_compliance_not_found(
+    client: TestClient, db_session: Session, admin_user: User
+):
+    """Test getting BBI compliance for non-existent assessment"""
+    _override_admin(client, admin_user, db_session)
+
+    response = client.get("/api/v1/bbis/compliance/assessment/99999")
+
+    assert response.status_code == 404
+
+
+def test_get_assessment_bbi_compliance_summary_structure(
+    client: TestClient,
+    db_session: Session,
+    admin_user: User,
+    mock_blgu_user,
+    governance_area: GovernanceArea,
+    bbi_indicator: Indicator,
+    bbi_sub_indicators,
+):
+    """Test that BBI compliance summary has correct structure"""
+    _override_admin(client, admin_user, db_session)
+
+    # Create assessment
+    assessment = Assessment(
+        blgu_user_id=mock_blgu_user.id,
+        status=AssessmentStatus.VALIDATED,
+    )
+    db_session.add(assessment)
+    db_session.commit()
+    db_session.refresh(assessment)
+
+    # Create responses (2 pass, 1 fail = 66% = MODERATELY_FUNCTIONAL)
+    for i, sub_indicator in enumerate(bbi_sub_indicators):
+        response = AssessmentResponse(
+            assessment_id=assessment.id,
+            indicator_id=sub_indicator.id,
+            validation_status=ValidationStatus.PASS if i < 2 else ValidationStatus.FAIL,
+            response_data={},
+        )
+        db_session.add(response)
+    db_session.commit()
+
+    response = client.get(f"/api/v1/bbis/compliance/assessment/{assessment.id}")
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Check summary structure
+    summary = data["summary"]
+    assert "total_bbis" in summary
+    assert "highly_functional_count" in summary
+    assert "moderately_functional_count" in summary
+    assert "low_functional_count" in summary
+    assert "average_compliance_percentage" in summary
+
+
+def test_calculate_assessment_bbi_compliance_success(
+    client: TestClient,
+    db_session: Session,
+    admin_user: User,
+    mock_blgu_user,
+    governance_area: GovernanceArea,
+    bbi_indicator: Indicator,
+    bbi_sub_indicators,
+):
+    """Test calculating BBI compliance for an assessment"""
+    _override_admin(client, admin_user, db_session)
+
+    # Create assessment
+    assessment = Assessment(
+        blgu_user_id=mock_blgu_user.id,
+        status=AssessmentStatus.VALIDATED,
+    )
+    db_session.add(assessment)
+    db_session.commit()
+    db_session.refresh(assessment)
+
+    # Create all passing responses (100% = HIGHLY_FUNCTIONAL)
+    for sub_indicator in bbi_sub_indicators:
+        response = AssessmentResponse(
+            assessment_id=assessment.id,
+            indicator_id=sub_indicator.id,
+            validation_status=ValidationStatus.PASS,
+            response_data={},
+        )
+        db_session.add(response)
+    db_session.commit()
+
+    response = client.post(f"/api/v1/bbis/compliance/calculate/{assessment.id}")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["assessment_id"] == assessment.id
+    assert "bbi_results" in data
+    assert len(data["bbi_results"]) >= 1
+
+
+def test_calculate_assessment_bbi_compliance_not_found(
+    client: TestClient, db_session: Session, admin_user: User
+):
+    """Test calculating BBI compliance for non-existent assessment"""
+    _override_admin(client, admin_user, db_session)
+
+    response = client.post("/api/v1/bbis/compliance/calculate/99999")
+
+    assert response.status_code == 404
+
+
+def test_calculate_assessment_bbi_compliance_unauthorized(
+    client: TestClient, db_session: Session, mock_blgu_user
+):
+    """Test that calculate compliance requires admin privileges"""
+    # Override with non-admin user
+    def _override_regular_user():
+        return mock_blgu_user
+
+    def _override_get_db():
+        try:
+            yield db_session
+        finally:
+            pass
+
+    client.app.dependency_overrides[deps.get_current_active_user] = _override_regular_user
+    client.app.dependency_overrides[deps.get_db] = _override_get_db
+
+    # Create assessment
+    assessment = Assessment(
+        blgu_user_id=mock_blgu_user.id,
+        status=AssessmentStatus.VALIDATED,
+    )
+    db_session.add(assessment)
+    db_session.commit()
+    db_session.refresh(assessment)
+
+    response = client.post(f"/api/v1/bbis/compliance/calculate/{assessment.id}")
+
+    # Should be unauthorized (403) since we're not admin
+    assert response.status_code == 403
+
+
+def test_get_assessment_bbi_compliance_result_structure(
+    client: TestClient,
+    db_session: Session,
+    admin_user: User,
+    mock_blgu_user,
+    governance_area: GovernanceArea,
+    bbi_indicator: Indicator,
+    bbi_sub_indicators,
+):
+    """Test that BBI compliance results have correct structure per DILG MC 2024-417"""
+    _override_admin(client, admin_user, db_session)
+
+    # Create assessment
+    assessment = Assessment(
+        blgu_user_id=mock_blgu_user.id,
+        status=AssessmentStatus.VALIDATED,
+    )
+    db_session.add(assessment)
+    db_session.commit()
+    db_session.refresh(assessment)
+
+    # Create responses
+    for sub_indicator in bbi_sub_indicators:
+        response = AssessmentResponse(
+            assessment_id=assessment.id,
+            indicator_id=sub_indicator.id,
+            validation_status=ValidationStatus.PASS,
+            response_data={},
+        )
+        db_session.add(response)
+    db_session.commit()
+
+    response = client.get(f"/api/v1/bbis/compliance/assessment/{assessment.id}")
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Check result structure
+    if data["bbi_results"]:
+        result = data["bbi_results"][0]
+        assert "bbi_id" in result
+        assert "bbi_name" in result
+        assert "bbi_abbreviation" in result
+        assert "compliance_percentage" in result
+        assert "compliance_rating" in result
+        assert "sub_indicators_passed" in result
+        assert "sub_indicators_total" in result
+
+        # Verify rating is one of the valid values
+        valid_ratings = [
+            "HIGHLY_FUNCTIONAL",
+            "MODERATELY_FUNCTIONAL",
+            "LOW_FUNCTIONAL",
+            "FUNCTIONAL",
+            "NON_FUNCTIONAL",
+        ]
+        assert result["compliance_rating"] in valid_ratings

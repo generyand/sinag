@@ -6,6 +6,8 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from app.schemas.bbi import AssessmentBBIComplianceResponse
+
 
 class GARChecklistItem(BaseModel):
     """Single checklist item (MOV) with validation result."""
@@ -75,6 +77,9 @@ class GARResponse(BaseModel):
         default_factory=list, description="List of governance areas with indicators"
     )
     summary: List[GARSummaryItem] = Field(default_factory=list, description="Summary table data")
+    bbi_compliance: Optional[AssessmentBBIComplianceResponse] = Field(
+        None, description="BBI compliance data per DILG MC 2024-417"
+    )
     generated_at: datetime = Field(default_factory=datetime.utcnow, description="Report generation timestamp")
 
 

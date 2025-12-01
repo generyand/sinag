@@ -4,6 +4,7 @@
 // 🏷️  Based on FastAPI tag: "gar"
 
 import type { GARIndicator } from '../indicators';
+import type { GARResponseBbiCompliance } from '../bbis';
 
 /**
  * GARChecklistItem
@@ -87,6 +88,8 @@ export interface GARResponse {
   governance_areas?: GARGovernanceArea[];
   /** Summary table data */
   summary?: GARSummaryItem[];
+  /** BBI compliance data per DILG MC 2024-417 */
+  bbi_compliance?: GARResponseBbiCompliance;
   /** Report generation timestamp */
   generated_at?: string;
 }

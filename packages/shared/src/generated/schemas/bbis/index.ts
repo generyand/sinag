@@ -8,6 +8,7 @@ import type { BBIResultResponseSubIndicatorsPassed } from '../indicators';
 import type { BBIResultResponseSubIndicatorsTotal } from '../indicators';
 import type { BBIResultResponseSubIndicatorResults } from '../indicators';
 import type { GovernanceAreaSummary } from '../governancearea';
+import type { AssessmentBBIComplianceResponse } from '../assessments';
 import type { TestBBICalculationRequestIndicatorStatuses } from '../indicators';
 
 /**
@@ -332,6 +333,12 @@ export type BBIWithGovernanceAreaMappingRules = BBIWithGovernanceAreaMappingRule
  * BBIWithGovernanceAreaMappingRulesAnyOf
  */
 export type BBIWithGovernanceAreaMappingRulesAnyOf = { [key: string]: unknown };
+
+
+/**
+ * GARResponseBbiCompliance
+ */
+export type GARResponseBbiCompliance = AssessmentBBIComplianceResponse | null;
 
 
 /**
