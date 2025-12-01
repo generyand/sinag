@@ -119,9 +119,9 @@ export type MOVStatus = typeof MOVStatus[keyof typeof MOVStatus];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const MOVStatus = {
-  Pending: 'Pending',
-  Uploaded: 'Uploaded',
-  Deleted: 'Deleted',
+  PENDING: 'PENDING',
+  UPLOADED: 'UPLOADED',
+  DELETED: 'DELETED',
 } as const;
 
 

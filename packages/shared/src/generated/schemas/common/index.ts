@@ -201,8 +201,8 @@ export type AreaType = typeof AreaType[keyof typeof AreaType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const AreaType = {
-  Core: 'Core',
-  Essential: 'Essential',
+  CORE: 'CORE',
+  ESSENTIAL: 'ESSENTIAL',
 } as const;
 
 

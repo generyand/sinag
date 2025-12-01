@@ -23,6 +23,8 @@ export interface GovernanceAreaPerformance {
   failed_count: number;
   /** Percentage that passed this area (0-100) */
   pass_percentage: number;
+  /** Percentage that failed this area (0-100) */
+  fail_percentage: number;
   /** Total number of indicators in this area */
   indicator_count: number;
   /** Breakdown showing % of barangays passing each indicator */

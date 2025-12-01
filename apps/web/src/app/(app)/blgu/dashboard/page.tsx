@@ -15,7 +15,8 @@
  * to BLGU users until the assessment reaches COMPLETED status.
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Phase1Section,
   Phase2Section,
@@ -28,11 +29,32 @@ import { Loader2, AlertCircle } from "lucide-react";
 
 export default function BLGUDashboardPage() {
   const { user } = useAuthStore();
+  const router = useRouter();
 
   // Language state for AI summary (defaults to user's preference or Bisaya)
   const [selectedLanguage, setSelectedLanguage] = useState<string>(
     user?.preferred_language || "ceb"
   );
+
+  // Only BLGU users should fetch assessment data
+  // This prevents 403 errors when other roles (e.g., KATUPARAN_CENTER_USER)
+  // briefly render this page during middleware redirects
+  const isBLGU = user?.role === "BLGU_USER";
+
+  // Redirect non-BLGU users to their appropriate dashboard
+  // This is a client-side fallback in case middleware redirect has a race condition
+  useEffect(() => {
+    if (user && !isBLGU) {
+      const redirectMap: Record<string, string> = {
+        KATUPARAN_CENTER_USER: "/katuparan/dashboard",
+        MLGOO_DILG: "/mlgoo/dashboard",
+        ASSESSOR: "/assessor/dashboard",
+        VALIDATOR: "/validator/dashboard",
+      };
+      const redirectPath = redirectMap[user.role] || "/";
+      router.replace(redirectPath);
+    }
+  }, [user, isBLGU, router]);
 
   // First, fetch the user's assessment to get the correct assessment ID
   // Enable refetchOnWindowFocus to ensure fresh data when user returns to tab
@@ -42,6 +64,7 @@ export default function BLGUDashboardPage() {
     error: assessmentError,
   } = useGetAssessmentsMyAssessment({
     query: {
+      enabled: isBLGU, // Only fetch for BLGU users
       refetchOnWindowFocus: true,
       refetchOnMount: true,
       staleTime: 0, // Always treat as stale to ensure fresh data
@@ -78,6 +101,18 @@ export default function BLGUDashboardPage() {
 
   const isLoading = isLoadingAssessment || isLoadingDashboard;
   const error = assessmentError || dashboardError;
+
+  // Non-BLGU users: show redirect message while useEffect redirects them
+  if (user && !isBLGU) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-[var(--cityscape-yellow)] mx-auto mb-4" />
+          <p className="text-[var(--text-secondary)]">Redirecting to your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Loading state
   if (isLoading) {

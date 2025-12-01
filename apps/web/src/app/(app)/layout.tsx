@@ -47,8 +47,10 @@ const validatorNavigation = [
   { name: "Profile", href: "/validator/profile", icon: "user" },
 ];
 
-const externalAnalyticsNavigation = [
-  { name: "Analytics Dashboard", href: "/external-analytics", icon: "chart" },
+const katuparanNavigation = [
+  { name: "Dashboard", href: "/katuparan/dashboard", icon: "home" },
+  { name: "Reports", href: "/katuparan/reports", icon: "clipboard" },
+  { name: "Profile", href: "/katuparan/profile", icon: "user" },
 ];
 
 const getIcon = (name: string) => {
@@ -249,49 +251,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       : isValidator
       ? validatorNavigation
       : isExternalUser
-      ? externalAnalyticsNavigation
+      ? katuparanNavigation
       : blguNavigation
     : blguNavigation;
 
   // Track when user data is loaded
   useEffect(() => {
-    console.log("User Data Loading State:", {
-      isAuthenticated,
-      hasUser: !!user,
-      userRole: user?.role,
-      isUserDataLoaded,
-    });
-
     if (isAuthenticated && user) {
-      console.log("Setting user data as loaded");
       setIsUserDataLoaded(true);
     } else {
-      console.log("Setting user data as not loaded");
       setIsUserDataLoaded(false);
     }
-  }, [isAuthenticated, user, isUserDataLoaded]);
-
-  // Debug logging for routing issues
-  useEffect(() => {
-    console.log("Layout Debug:", {
-      user,
-      userRole: user?.role,
-      isAdmin,
-      isAssessor,
-      pathname,
-      isAuthenticated,
-      mustChangePassword,
-      isUserDataLoaded,
-    });
-  }, [
-    user,
-    isAdmin,
-    isAssessor,
-    pathname,
-    isAuthenticated,
-    mustChangePassword,
-    isUserDataLoaded,
-  ]);
+  }, [isAuthenticated, user]);
 
   // Redirect unauthenticated users to login
   useEffect(() => {
@@ -331,9 +302,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           : isValidator
           ? "/validator/submissions"
           : isExternalUser
-          ? "/external-analytics"
+          ? "/katuparan/dashboard"
           : "/blgu/dashboard";
-        console.log("Redirecting from root to:", dashboardPath);
         router.replace(dashboardPath);
       }
     }
@@ -602,11 +572,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         : navigation.find((item) => pathname === item.href)
                             ?.name || "Dashboard"
                       : isExternalUser
-                      ? // External user titles (Katuparan Center)
-                        pathname === "/external-analytics"
-                        ? "SGLGB Analytics Dashboard"
+                      ? // Katuparan Center titles
+                        pathname === "/katuparan/dashboard"
+                        ? "Municipal SGLGB Overview"
+                        : pathname === "/katuparan/reports"
+                        ? "Data Export & Trends"
+                        : pathname === "/katuparan/profile"
+                        ? "User Settings"
                         : navigation.find((item) => pathname === item.href)
-                            ?.name || "Analytics Dashboard"
+                            ?.name || "Dashboard"
                       : // BLGU titles - show specific titles for better UX
                       pathname === "/blgu/dashboard"
                       ? "SGLGB Dashboard"
@@ -662,10 +636,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         "Manage your account settings and profile information"}
                     </p>
                   )}
-                  {isExternalUser && pathname.startsWith("/external") && (
+                  {isExternalUser && pathname.startsWith("/katuparan") && (
                     <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                      {pathname === "/external-analytics" &&
-                        "Aggregated and anonymized SGLGB performance data for research purposes"}
+                      {pathname === "/katuparan/dashboard" &&
+                        "High-level, anonymized insights into SGLGB performance across all barangays"}
+                      {pathname === "/katuparan/reports" &&
+                        "Download aggregated data for research and CapDev planning"}
+                      {pathname === "/katuparan/profile" &&
+                        "Manage your account settings and password"}
                     </p>
                   )}
                 </div>

@@ -51,13 +51,10 @@ export default function LoginForm({ isDarkMode = false }: LoginFormProps) {
   const loginMutation = usePostAuthLogin({
     mutation: {
       onSuccess: (response) => {
-        console.log("Login successful:", response);
-
         // Extract token from response
         const accessToken = response.access_token;
 
         if (!accessToken) {
-          console.error("No access token received from server");
           return;
         }
 
@@ -82,11 +79,7 @@ export default function LoginForm({ isDarkMode = false }: LoginFormProps) {
         // Trigger user data fetch
         setShouldFetchUser(true);
       },
-      onError: (error) => {
-        console.error("Login failed:", error);
-        console.log("Error type:", typeof error);
-        console.log("Error details:", error);
-
+      onError: () => {
         // Show error toast with specific message
         toast.error("Wrong email or password", {
           duration: 3000,
@@ -104,12 +97,6 @@ export default function LoginForm({ isDarkMode = false }: LoginFormProps) {
         // Error handled successfully - no navigation needed
       },
       retry: false, // Disable retry to prevent multiple requests
-      onSettled: (data, error) => {
-        console.log("Mutation settled - Data:", data, "Error:", error);
-        if (error) {
-          console.log("Error in onSettled:", error);
-        }
-      },
     },
   });
 
@@ -127,7 +114,6 @@ export default function LoginForm({ isDarkMode = false }: LoginFormProps) {
       // Trigger user data fetch
       userQuery.refetch().then((result) => {
         if (result.data) {
-          console.log("User data fetched:", result.data);
           // Store user in auth store
           setUser(result.data);
 
@@ -142,6 +128,7 @@ export default function LoginForm({ isDarkMode = false }: LoginFormProps) {
               redirectTo.startsWith("/mlgoo/") ||
               redirectTo.startsWith("/assessor/") ||
               redirectTo.startsWith("/validator/") ||
+              redirectTo.startsWith("/katuparan/") ||
               redirectTo.startsWith("/user-management/") ||
               redirectTo.startsWith("/change-password");
 
@@ -152,6 +139,7 @@ export default function LoginForm({ isDarkMode = false }: LoginFormProps) {
               const isAdmin = result.data.role === "MLGOO_DILG";
               const isAssessor = result.data.role === "ASSESSOR";
               const isValidator = result.data.role === "VALIDATOR";
+              const isExternalUser = result.data.role === "KATUPARAN_CENTER_USER";
 
               if (isAdmin) {
                 targetPath = "/mlgoo/dashboard";
@@ -159,21 +147,18 @@ export default function LoginForm({ isDarkMode = false }: LoginFormProps) {
                 targetPath = "/assessor/submissions";
               } else if (isValidator) {
                 targetPath = "/validator/submissions";
+              } else if (isExternalUser) {
+                targetPath = "/katuparan/dashboard";
               } else {
                 targetPath = "/blgu/dashboard";
               }
             }
           } else {
             // No redirect parameter, go to appropriate dashboard
-            console.log("LoginForm: No redirect parameter, determining dashboard based on role");
-            console.log("LoginForm: User data:", result.data);
-            console.log("LoginForm: User role:", result.data.role);
-
             const isAdmin = result.data.role === "MLGOO_DILG";
             const isAssessor = result.data.role === "ASSESSOR";
             const isValidator = result.data.role === "VALIDATOR";
-
-            console.log("LoginForm: Role checks:", { isAdmin, isAssessor, isValidator });
+            const isExternalUser = result.data.role === "KATUPARAN_CENTER_USER";
 
             if (isAdmin) {
               targetPath = "/mlgoo/dashboard";
@@ -181,19 +166,16 @@ export default function LoginForm({ isDarkMode = false }: LoginFormProps) {
               targetPath = "/assessor/submissions";
             } else if (isValidator) {
               targetPath = "/validator/submissions";
+            } else if (isExternalUser) {
+              targetPath = "/katuparan/dashboard";
             } else {
               targetPath = "/blgu/dashboard";
             }
-
-            console.log("LoginForm: Determined target path:", targetPath);
           }
 
-          console.log("LoginForm: Navigating to:", targetPath);
           router.replace(targetPath);
         } else if (result.error) {
-          console.error("Failed to fetch user data:", result.error);
-          // Even if user fetch fails, we can still redirect to dashboard
-          // Since we don't have user data, redirect to login to be safe
+          // If user fetch fails, redirect to login
           router.replace("/login");
         }
         // Reset the flag
@@ -210,7 +192,6 @@ export default function LoginForm({ isDarkMode = false }: LoginFormProps) {
   }, [loginMutation.isSuccess]);
 
   const handleSubmit = (e: React.FormEvent) => {
-    console.log("Submit triggered", e.type);
     e.preventDefault();
     e.stopPropagation();
 
@@ -220,15 +201,8 @@ export default function LoginForm({ isDarkMode = false }: LoginFormProps) {
       remember_me: rememberMe,
     };
 
-    console.log("Submitting credentials:", credentials);
-
     // Use regular mutate instead of mutateAsync to prevent form refresh
-    try {
-      loginMutation.mutate({ data: credentials });
-    } catch (error) {
-      console.error("Mutation error caught:", error);
-      // Error should be handled by onError callback
-    }
+    loginMutation.mutate({ data: credentials });
   };
 
   // Get error message for display

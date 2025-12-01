@@ -598,6 +598,8 @@ export interface OverallComplianceResponse {
   failed_count: number;
   /** Percentage of barangays that passed (0-100) */
   pass_percentage: number;
+  /** Percentage of barangays that failed (0-100) */
+  fail_percentage: number;
   /** Assessment cycle identifier */
   assessment_cycle?: OverallComplianceResponseAssessmentCycle;
 }
