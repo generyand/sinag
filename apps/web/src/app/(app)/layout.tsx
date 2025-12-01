@@ -47,6 +47,10 @@ const validatorNavigation = [
   { name: "Profile", href: "/validator/profile", icon: "user" },
 ];
 
+const externalAnalyticsNavigation = [
+  { name: "Analytics Dashboard", href: "/external-analytics", icon: "chart" },
+];
+
 const getIcon = (name: string) => {
   switch (name) {
     case "home":
@@ -236,6 +240,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const isAdmin = user?.role === "MLGOO_DILG";
   const isAssessor = user?.role === "ASSESSOR";
   const isValidator = user?.role === "VALIDATOR";
+  const isExternalUser = user?.role === "KATUPARAN_CENTER_USER";
   const navigation = user
     ? isAdmin
       ? mlgooNavigation
@@ -243,6 +248,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       ? assessorNavigation
       : isValidator
       ? validatorNavigation
+      : isExternalUser
+      ? externalAnalyticsNavigation
       : blguNavigation
     : blguNavigation;
 
@@ -323,12 +330,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           ? "/assessor/submissions"
           : isValidator
           ? "/validator/submissions"
+          : isExternalUser
+          ? "/external-analytics"
           : "/blgu/dashboard";
         console.log("Redirecting from root to:", dashboardPath);
         router.replace(dashboardPath);
       }
     }
-  }, [isAuthenticated, user, mustChangePassword, pathname, router, isAdmin, isAssessor, isValidator, isUserDataLoaded]);
+  }, [isAuthenticated, user, mustChangePassword, pathname, router, isAdmin, isAssessor, isValidator, isExternalUser, isUserDataLoaded]);
 
   // Show loading if not authenticated
   if (!isAuthenticated) {
@@ -428,6 +437,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       ? "Assessor Portal"
                       : isValidator
                       ? "Validator Portal"
+                      : isExternalUser
+                      ? "Katuparan Center"
                       : "Barangay Portal"}
                   </p>
                 </div>
@@ -481,6 +492,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         ? "Assessor Portal"
                         : isValidator
                         ? "Validator Portal"
+                        : isExternalUser
+                        ? "Katuparan Center"
                         : "Barangay Portal"}
                     </p>
                   </div>
@@ -588,6 +601,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         ? "Profile"
                         : navigation.find((item) => pathname === item.href)
                             ?.name || "Dashboard"
+                      : isExternalUser
+                      ? // External user titles (Katuparan Center)
+                        pathname === "/external-analytics"
+                        ? "SGLGB Analytics Dashboard"
+                        : navigation.find((item) => pathname === item.href)
+                            ?.name || "Analytics Dashboard"
                       : // BLGU titles - show specific titles for better UX
                       pathname === "/blgu/dashboard"
                       ? "SGLGB Dashboard"
@@ -641,6 +660,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         "Configure system settings and preferences"}
                       {pathname === "/mlgoo/profile" &&
                         "Manage your account settings and profile information"}
+                    </p>
+                  )}
+                  {isExternalUser && pathname.startsWith("/external") && (
+                    <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                      {pathname === "/external-analytics" &&
+                        "Aggregated and anonymized SGLGB performance data for research purposes"}
                     </p>
                   )}
                 </div>

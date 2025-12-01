@@ -4,10 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Info, TrendingUp, AlertTriangle, Lightbulb, FileDown } from 'lucide-react';
+import { Info, TrendingUp, AlertTriangle, Lightbulb, FileDown, Database, ShieldCheck } from 'lucide-react';
 import { useGetExternalAnalyticsDashboard } from '@sinag/shared';
 import { OverallComplianceCard } from '@/components/features/external-analytics/OverallComplianceCard';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { AxiosError } from 'axios';
 
 /**
  * External Analytics Dashboard Page
@@ -75,14 +76,55 @@ export default function ExternalAnalyticsPage() {
         </div>
       )}
 
-      {/* Error State */}
+      {/* Error State - User-friendly handling */}
       {error && (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            Failed to load dashboard data. {(error as any)?.message || 'An error occurred'}
-          </AlertDescription>
-        </Alert>
+        (() => {
+          const axiosError = error as AxiosError<{ detail: string }>;
+          const isInsufficientData = axiosError?.response?.status === 400 &&
+            axiosError?.response?.data?.detail?.includes('Insufficient data');
+
+          if (isInsufficientData) {
+            return (
+              <Card className="border-dashed">
+                <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="rounded-full bg-muted p-4 mb-6">
+                    <Database className="h-12 w-12 text-muted-foreground" />
+                  </div>
+                  <h2 className="text-2xl font-semibold mb-3">
+                    Analytics Data Not Yet Available
+                  </h2>
+                  <p className="text-muted-foreground max-w-md mb-6">
+                    To protect individual barangay privacy, analytics are only displayed when there
+                    are at least <strong>5 barangays</strong> with completed assessments.
+                  </p>
+                  <div className="bg-muted/50 rounded-lg p-4 max-w-lg">
+                    <div className="flex items-start gap-3">
+                      <ShieldCheck className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                      <div className="text-sm text-left">
+                        <p className="font-medium mb-1">Why this restriction?</p>
+                        <p className="text-muted-foreground">
+                          This privacy threshold ensures that aggregated data cannot be used to
+                          identify individual barangay performance. Once more assessments are
+                          validated, you&apos;ll see comprehensive analytics here.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          }
+
+          // Generic error for other cases
+          return (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                Unable to load dashboard data. Please try again later or contact support if the issue persists.
+              </AlertDescription>
+            </Alert>
+          );
+        })()
       )}
 
       {/* Dashboard Content */}
