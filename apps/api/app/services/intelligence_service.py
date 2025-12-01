@@ -24,6 +24,7 @@ from app.schemas.calculation_schema import (
     PercentageThresholdRule,
 )
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm.attributes import flag_modified
 
 # Core governance areas (must all pass for compliance)
 CORE_AREAS = [
@@ -1922,6 +1923,453 @@ GUIDELINES:
             Dictionary with calibration summary in the requested language
         """
         return self.generate_calibration_summary(db, assessment_id, governance_area_id, language)
+
+    # ========================================
+    # CAPDEV (CAPACITY DEVELOPMENT) INSIGHTS GENERATION
+    # Generated after MLGOO approval for approved assessments
+    # ========================================
+
+    def build_capdev_prompt(
+        self, db: Session, assessment_id: int, language: str = "ceb"
+    ) -> str:
+        """
+        Build a comprehensive prompt for CapDev insights generation.
+
+        Creates a detailed prompt that analyzes:
+        - Failed indicators and governance area weaknesses
+        - Area-level compliance results
+        - Assessor/Validator feedback patterns
+        - Generates actionable CapDev interventions
+
+        Args:
+            db: Database session
+            assessment_id: ID of the approved assessment
+            language: Language code for output (ceb=Bisaya, fil=Tagalog, en=English)
+
+        Returns:
+            Formatted prompt string for Gemini API
+
+        Raises:
+            ValueError: If assessment not found or not approved
+        """
+        from app.db.models.user import User
+
+        # Get assessment with all relationships
+        assessment = (
+            db.query(Assessment)
+            .options(
+                joinedload(Assessment.blgu_user).joinedload(User.barangay),
+                joinedload(Assessment.responses)
+                .joinedload(AssessmentResponse.indicator)
+                .joinedload(Indicator.governance_area),
+                joinedload(Assessment.responses).joinedload(
+                    AssessmentResponse.feedback_comments
+                ),
+            )
+            .filter(Assessment.id == assessment_id)
+            .first()
+        )
+
+        if not assessment:
+            raise ValueError(f"Assessment {assessment_id} not found")
+
+        if not assessment.mlgoo_approved_at:
+            raise ValueError(f"Assessment {assessment_id} has not been approved by MLGOO")
+
+        # Get barangay name
+        barangay_name = "Unknown"
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+
+        # Get assessment year
+        assessment_year = str(assessment.mlgoo_approved_at.year)
+
+        # Get compliance status
+        compliance_status = (
+            assessment.final_compliance_status.value
+            if assessment.final_compliance_status
+            else "Not classified"
+        )
+
+        # Get area results
+        area_results = assessment.area_results or {}
+
+        # Group indicators by governance area and status
+        area_analysis = {}
+        for response in assessment.responses:
+            indicator = response.indicator
+            if not indicator or not indicator.governance_area:
+                continue
+
+            area_name = indicator.governance_area.name
+            area_type = indicator.governance_area.area_type.value
+
+            if area_name not in area_analysis:
+                area_analysis[area_name] = {
+                    "area_type": area_type,
+                    "passed_indicators": [],
+                    "failed_indicators": [],
+                    "assessor_feedback": [],
+                }
+
+            if response.validation_status in (ValidationStatus.PASS, ValidationStatus.CONDITIONAL):
+                area_analysis[area_name]["passed_indicators"].append(indicator.name)
+            else:
+                area_analysis[area_name]["failed_indicators"].append({
+                    "name": indicator.name,
+                    "description": indicator.description,
+                })
+
+                # Collect feedback for failed indicators
+                for comment in response.feedback_comments:
+                    if not comment.is_internal_note:
+                        area_analysis[area_name]["assessor_feedback"].append(comment.comment)
+
+        # Get language instruction
+        lang_instruction = LANGUAGE_INSTRUCTIONS.get(
+            language, LANGUAGE_INSTRUCTIONS["ceb"]
+        )
+
+        # Build the prompt
+        prompt = f"""{lang_instruction}
+
+You are an expert consultant specializing in local governance capacity development for Philippine barangays. You are analyzing the SGLGB (Seal of Good Local Governance - Barangay) assessment results to generate comprehensive Capacity Development (CapDev) recommendations.
+
+BARANGAY INFORMATION:
+- Name: {barangay_name}
+- Assessment Year: {assessment_year}
+- Overall Compliance Status: {compliance_status}
+
+AREA-LEVEL RESULTS:
+"""
+        for area_name, status in area_results.items():
+            area_type = "Core" if area_name in CORE_AREAS else "Essential"
+            prompt += f"- {area_name} ({area_type}): {status}\n"
+
+        prompt += """
+
+DETAILED AREA ANALYSIS:
+"""
+        for area_name, analysis in area_analysis.items():
+            prompt += f"""
+{area_name} ({analysis["area_type"]}):
+  - Passed Indicators: {len(analysis["passed_indicators"])}
+  - Failed Indicators: {len(analysis["failed_indicators"])}
+"""
+            if analysis["failed_indicators"]:
+                prompt += "  - Failed Indicator Details:\n"
+                for ind in analysis["failed_indicators"]:
+                    prompt += f"    • {ind['name']}: {ind['description'][:100]}...\n"
+
+            if analysis["assessor_feedback"]:
+                prompt += "  - Key Assessor Feedback:\n"
+                for feedback in analysis["assessor_feedback"][:3]:  # Limit to 3 per area
+                    prompt += f"    • {feedback[:150]}...\n"
+
+        prompt += """
+
+TASK:
+Based on the assessment results above, generate a comprehensive CapDev (Capacity Development) analysis in the following JSON structure:
+
+{
+  "summary": "A comprehensive 3-4 sentence summary of the barangay's key governance strengths and weaknesses. Highlight the most critical areas needing improvement.",
+  "governance_weaknesses": [
+    "Specific weakness 1 identified from failed indicators",
+    "Specific weakness 2 identified from failed indicators",
+    "..."
+  ],
+  "recommendations": [
+    "Actionable recommendation 1 - specific and implementable",
+    "Actionable recommendation 2 - specific and implementable",
+    "..."
+  ],
+  "capacity_development_needs": [
+    {
+      "category": "Training",
+      "description": "Specific training need",
+      "affected_indicators": ["Indicator 1", "Indicator 2"],
+      "suggested_providers": ["DILG", "LGA", "Partner NGO"]
+    },
+    {
+      "category": "Resources",
+      "description": "Resource or equipment need",
+      "affected_indicators": ["Indicator 1"],
+      "suggested_providers": ["Municipal Government", "National Agency"]
+    },
+    {
+      "category": "Technical Assistance",
+      "description": "Technical support need",
+      "affected_indicators": ["Indicator 1", "Indicator 2"],
+      "suggested_providers": ["DILG Regional Office"]
+    },
+    {
+      "category": "Policy",
+      "description": "Policy or ordinance development need",
+      "affected_indicators": ["Indicator 1"],
+      "suggested_providers": ["Sangguniang Barangay"]
+    }
+  ],
+  "suggested_interventions": [
+    {
+      "title": "Intervention title",
+      "description": "Detailed description of the intervention",
+      "governance_area": "Affected governance area",
+      "priority": "Immediate",
+      "estimated_duration": "1-2 weeks",
+      "resource_requirements": "Brief description of resources needed"
+    },
+    {
+      "title": "Another intervention",
+      "description": "Description",
+      "governance_area": "Governance area",
+      "priority": "Short-term",
+      "estimated_duration": "1-2 months",
+      "resource_requirements": "Resources needed"
+    }
+  ],
+  "priority_actions": [
+    "Highest priority action 1 - the most critical immediate step",
+    "Highest priority action 2",
+    "Highest priority action 3",
+    "Highest priority action 4",
+    "Highest priority action 5"
+  ]
+}
+
+GUIDELINES:
+1. Focus on ROOT CAUSES of non-compliance, not just symptoms
+2. Provide SPECIFIC, ACTIONABLE interventions tailored to Philippine barangay context
+3. Categorize capacity development needs into: Training, Resources, Technical Assistance, Policy
+4. For suggested_interventions priority, use: "Immediate" (within 1 month), "Short-term" (1-3 months), "Long-term" (3-6 months)
+5. Include realistic resource requirements and suggested providers (DILG, LGA, municipal government, etc.)
+6. Priority actions should be the 5 most critical steps the barangay should take immediately
+7. Consider the "3+1" SGLGB rule: All 3 Core areas must pass + at least 1 Essential area
+8. Recommendations should be practical for a barangay-level government
+9. Use simple language that barangay officials can understand
+"""
+
+        return prompt
+
+    def generate_capdev_insights(
+        self, db: Session, assessment_id: int, language: str = "ceb"
+    ) -> Dict[str, Any]:
+        """
+        Generate AI-powered CapDev insights for an approved assessment.
+
+        Builds a comprehensive prompt from assessment data, calls Gemini API,
+        and returns structured CapDev insights including:
+        - Summary of governance weaknesses
+        - Actionable recommendations
+        - Categorized capacity development needs
+        - Prioritized interventions
+
+        Args:
+            db: Database session
+            assessment_id: ID of the approved assessment
+            language: Language code for output (ceb=Bisaya, fil=Tagalog, en=English)
+
+        Returns:
+            Dictionary with CapDev insights structure
+
+        Raises:
+            ValueError: If assessment not found, not approved, or API key not configured
+            Exception: If API call fails or response parsing fails
+        """
+        # Check if API key is configured
+        if not settings.GEMINI_API_KEY:
+            raise ValueError("GEMINI_API_KEY not configured in environment")
+
+        # Build the prompt
+        prompt = self.build_capdev_prompt(db, assessment_id, language)
+
+        # Configure Gemini
+        genai.configure(api_key=settings.GEMINI_API_KEY)  # type: ignore
+
+        # Initialize the model
+        model = genai.GenerativeModel("gemini-2.5-flash")  # type: ignore
+
+        try:
+            # Call the API with generation configuration
+            generation_config = {
+                "temperature": 0.7,
+                "max_output_tokens": 16384,  # Larger output for comprehensive CapDev
+            }
+
+            response = model.generate_content(
+                prompt,
+                generation_config=generation_config,  # type: ignore
+            )
+
+            # Parse the response text
+            if not response or not hasattr(response, "text") or not response.text:
+                raise Exception("Gemini API returned empty or invalid response")
+
+            response_text = response.text
+
+            # Extract JSON from the response
+            if "```json" in response_text:
+                start = response_text.find("```json") + 7
+                end = response_text.find("```", start)
+                json_str = response_text[start:end].strip()
+            elif "```" in response_text:
+                start = response_text.find("```") + 3
+                end = response_text.find("```", start)
+                json_str = response_text[start:end].strip()
+            else:
+                json_str = response_text.strip()
+
+            # Parse the JSON
+            parsed_response = json.loads(json_str)
+
+            # Validate the response structure
+            required_keys = [
+                "summary",
+                "governance_weaknesses",
+                "recommendations",
+                "capacity_development_needs",
+                "suggested_interventions",
+                "priority_actions",
+            ]
+            if not all(key in parsed_response for key in required_keys):
+                raise ValueError(
+                    f"Gemini API response missing required keys. Got: {list(parsed_response.keys())}"
+                )
+
+            # Add metadata
+            parsed_response["generated_at"] = datetime.now(UTC).isoformat()
+            parsed_response["language"] = language
+            parsed_response["assessment_id"] = assessment_id
+
+            logger.info(
+                f"Successfully generated CapDev insights for assessment {assessment_id} in {language}"
+            )
+
+            return parsed_response
+
+        except json.JSONDecodeError as e:
+            logger.error(
+                f"Failed to parse Gemini API response as JSON for assessment {assessment_id}: {response_text}"
+            )
+            raise Exception(
+                f"Failed to parse Gemini API response as JSON"
+            ) from e
+        except TimeoutError as e:
+            logger.error(
+                f"Gemini API request timed out for assessment {assessment_id}"
+            )
+            raise Exception(
+                "Gemini API request timed out after waiting for response"
+            ) from e
+        except ValueError:
+            raise
+        except Exception as e:
+            error_message = str(e).lower()
+            if "quota" in error_message or "rate limit" in error_message:
+                logger.error(f"Gemini API quota/rate limit hit: {str(e)}")
+                raise Exception(
+                    "Gemini API quota exceeded or rate limit hit. Please try again later."
+                ) from e
+            elif "network" in error_message or "connection" in error_message:
+                logger.error(f"Network error calling Gemini API: {str(e)}")
+                raise Exception(
+                    "Network error connecting to Gemini API."
+                ) from e
+            elif "permission" in error_message or "unauthorized" in error_message:
+                logger.error(f"Gemini API authentication failed: {str(e)}")
+                raise Exception(
+                    "Gemini API authentication failed. Please check your API key."
+                ) from e
+            else:
+                logger.error(f"Gemini API call failed: {str(e)}")
+                raise Exception(f"Gemini API call failed: {str(e)}") from e
+
+    def generate_default_language_capdev_insights(
+        self, db: Session, assessment_id: int
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Generate CapDev insights in default languages (Bisaya + English).
+
+        This is called by the Celery worker when MLGOO approves an assessment.
+        Generates insights in both Bisaya (ceb) and English (en) upfront.
+
+        Args:
+            db: Database session
+            assessment_id: ID of the approved assessment
+
+        Returns:
+            Dictionary keyed by language code with insights data:
+            {"ceb": {...}, "en": {...}}
+        """
+        insights = {}
+        for lang in DEFAULT_LANGUAGES:
+            try:
+                logger.info(
+                    f"Generating {lang} CapDev insights for assessment {assessment_id}"
+                )
+                insights[lang] = self.generate_capdev_insights(db, assessment_id, lang)
+            except Exception as e:
+                logger.error(
+                    f"Failed to generate {lang} CapDev insights for assessment {assessment_id}: {e}"
+                )
+                # Continue with other languages even if one fails
+        return insights
+
+    def get_capdev_insights_with_caching(
+        self, db: Session, assessment_id: int, language: str = "ceb"
+    ) -> Dict[str, Any]:
+        """
+        Get CapDev insights with language-aware caching.
+
+        First checks if capdev_insights already exists for the requested language.
+        If cached data exists, returns it immediately without calling Gemini API.
+        If not, calls Gemini API, stores the result, and returns it.
+
+        Args:
+            db: Database session
+            assessment_id: ID of the assessment
+            language: Language code for output (ceb=Bisaya, fil=Tagalog, en=English)
+
+        Returns:
+            Dictionary with CapDev insights
+
+        Raises:
+            ValueError: If assessment not found or not approved
+            Exception: If API call fails
+        """
+        # Get assessment to check for cached insights
+        assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+        if not assessment:
+            raise ValueError(f"Assessment {assessment_id} not found")
+
+        if not assessment.mlgoo_approved_at:
+            raise ValueError(f"Assessment {assessment_id} has not been approved by MLGOO")
+
+        # Check if capdev_insights already exists for this language
+        if assessment.capdev_insights:
+            if isinstance(assessment.capdev_insights, dict):
+                if language in assessment.capdev_insights:
+                    logger.info(
+                        f"Returning cached CapDev insights for assessment {assessment_id} in {language}"
+                    )
+                    return assessment.capdev_insights[language]
+
+        # No cached data for this language, generate new insights
+        insights = self.generate_capdev_insights(db, assessment_id, language)
+
+        # Store in database under the language key
+        if not assessment.capdev_insights:
+            assessment.capdev_insights = {}
+
+        assessment.capdev_insights[language] = insights
+        # Mark the JSON column as modified so SQLAlchemy detects the change
+        flag_modified(assessment, "capdev_insights")
+        assessment.capdev_insights_generated_at = datetime.now(UTC)
+        assessment.capdev_insights_status = "completed"
+        assessment.updated_at = datetime.now(UTC)
+        db.commit()
+        db.refresh(assessment)
+
+        return insights
 
 
 intelligence_service = IntelligenceService()

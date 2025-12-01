@@ -146,6 +146,31 @@ export interface FailedIndicator {
 
 
 /**
+ * FailingIndicator
+ */
+export interface FailingIndicator {
+  /** Indicator ID */
+  indicator_id: number;
+  /** Indicator code (e.g., GA1-01) */
+  indicator_code: string;
+  /** Indicator name */
+  indicator_name: string;
+  /** Name of the governance area this indicator belongs to */
+  governance_area: string;
+  /** Governance area ID */
+  governance_area_id: number;
+  /** Number of barangays that failed this indicator */
+  fail_count: number;
+  /** Total barangays assessed for this indicator */
+  total_assessed: number;
+  /** Percentage of barangays that failed (0-100) */
+  fail_rate: number;
+  /** Common issues identified for this indicator */
+  common_issues?: string[];
+}
+
+
+/**
  * GARIndicator
  */
 export interface GARIndicator {
@@ -220,15 +245,20 @@ export type GetIndicatorsTreeGovernanceAreaId200Item = { [key: string]: unknown 
 
 
 /**
- * GovernanceAreaPerformanceIndicatorsBreakdown
+ * GetMunicipalOverviewTopFailingIndicatorsParams
  */
-export type GovernanceAreaPerformanceIndicatorsBreakdown = GovernanceAreaPerformanceIndicatorsBreakdownAnyOfItem[] | null;
-
-
+export type GetMunicipalOverviewTopFailingIndicatorsParams = {
 /**
- * GovernanceAreaPerformanceIndicatorsBreakdownAnyOfItem
+ * Maximum number of indicators
+ * @minimum 1
+ * @maximum 50
  */
-export type GovernanceAreaPerformanceIndicatorsBreakdownAnyOfItem = { [key: string]: unknown };
+limit?: number;
+/**
+ * Assessment cycle filter
+ */
+assessment_cycle?: string | null;
+};
 
 
 /**
@@ -1050,6 +1080,12 @@ export type PostIndicatorsValidateFormSchema200 = { [key: string]: unknown };
 
 
 /**
+ * PriorityActionSuccessIndicator
+ */
+export type PriorityActionSuccessIndicator = string | null;
+
+
+/**
  * ReorderRequestIndicatorsItem
  */
 export type ReorderRequestIndicatorsItem = { [key: string]: unknown };
@@ -1156,6 +1192,17 @@ export interface TopFailingIndicator {
   total_assessed: number;
   /** Percentage of barangays that failed (0-100) */
   failure_percentage: number;
+}
+
+
+/**
+ * TopFailingIndicatorsList
+ */
+export interface TopFailingIndicatorsList {
+  /** Top failing indicators */
+  indicators?: FailingIndicator[];
+  /** Total number of unique indicators assessed */
+  total_indicators_assessed: number;
 }
 
 

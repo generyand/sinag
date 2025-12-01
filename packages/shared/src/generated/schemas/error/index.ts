@@ -81,7 +81,7 @@ export type ValidationStatus = typeof ValidationStatus[keyof typeof ValidationSt
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ValidationStatus = {
-  Pass: 'Pass',
-  Fail: 'Fail',
-  Conditional: 'Conditional',
+  PASS: 'PASS',
+  FAIL: 'FAIL',
+  CONDITIONAL: 'CONDITIONAL',
 } as const;

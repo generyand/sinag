@@ -47,8 +47,10 @@ const validatorNavigation = [
   { name: "Profile", href: "/validator/profile", icon: "user" },
 ];
 
-const externalAnalyticsNavigation = [
-  { name: "Analytics Dashboard", href: "/external-analytics", icon: "chart" },
+const katuparanNavigation = [
+  { name: "Dashboard", href: "/katuparan/dashboard", icon: "home" },
+  { name: "Reports", href: "/katuparan/reports", icon: "clipboard" },
+  { name: "Profile", href: "/katuparan/profile", icon: "user" },
 ];
 
 const getIcon = (name: string) => {
@@ -203,6 +205,22 @@ const getIcon = (name: string) => {
           />
         </svg>
       );
+    case "building":
+      return (
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+          />
+        </svg>
+      );
     case "clock":
       return (
         <svg
@@ -249,49 +267,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       : isValidator
       ? validatorNavigation
       : isExternalUser
-      ? externalAnalyticsNavigation
+      ? katuparanNavigation
       : blguNavigation
     : blguNavigation;
 
   // Track when user data is loaded
   useEffect(() => {
-    console.log("User Data Loading State:", {
-      isAuthenticated,
-      hasUser: !!user,
-      userRole: user?.role,
-      isUserDataLoaded,
-    });
-
     if (isAuthenticated && user) {
-      console.log("Setting user data as loaded");
       setIsUserDataLoaded(true);
     } else {
-      console.log("Setting user data as not loaded");
       setIsUserDataLoaded(false);
     }
-  }, [isAuthenticated, user, isUserDataLoaded]);
-
-  // Debug logging for routing issues
-  useEffect(() => {
-    console.log("Layout Debug:", {
-      user,
-      userRole: user?.role,
-      isAdmin,
-      isAssessor,
-      pathname,
-      isAuthenticated,
-      mustChangePassword,
-      isUserDataLoaded,
-    });
-  }, [
-    user,
-    isAdmin,
-    isAssessor,
-    pathname,
-    isAuthenticated,
-    mustChangePassword,
-    isUserDataLoaded,
-  ]);
+  }, [isAuthenticated, user]);
 
   // Redirect unauthenticated users to login
   useEffect(() => {
@@ -331,9 +318,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           : isValidator
           ? "/validator/submissions"
           : isExternalUser
-          ? "/external-analytics"
+          ? "/katuparan/dashboard"
           : "/blgu/dashboard";
-        console.log("Redirecting from root to:", dashboardPath);
         router.replace(dashboardPath);
       }
     }
@@ -602,11 +588,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         : navigation.find((item) => pathname === item.href)
                             ?.name || "Dashboard"
                       : isExternalUser
-                      ? // External user titles (Katuparan Center)
-                        pathname === "/external-analytics"
-                        ? "SGLGB Analytics Dashboard"
+                      ? // Katuparan Center titles
+                        pathname === "/katuparan/dashboard"
+                        ? "Municipal SGLGB Overview"
+                        : pathname === "/katuparan/reports"
+                        ? "Data Export & Trends"
+                        : pathname === "/katuparan/profile"
+                        ? "User Settings"
                         : navigation.find((item) => pathname === item.href)
-                            ?.name || "Analytics Dashboard"
+                            ?.name || "Dashboard"
                       : // BLGU titles - show specific titles for better UX
                       pathname === "/blgu/dashboard"
                       ? "SGLGB Dashboard"
@@ -648,6 +638,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         "Review and manage submitted assessments from barangays"}
                       {pathname === "/mlgoo/reports" &&
                         "View analytics and generate reports on assessment data"}
+                      {pathname === "/analytics" &&
+                        "Comprehensive analytics, municipal overview, and performance reports"}
                       {pathname.startsWith("/mlgoo/indicators") &&
                         "Create and manage assessment indicators with custom form schemas"}
                       {pathname.startsWith("/mlgoo/cycles") &&
@@ -662,10 +654,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         "Manage your account settings and profile information"}
                     </p>
                   )}
-                  {isExternalUser && pathname.startsWith("/external") && (
+                  {isExternalUser && pathname.startsWith("/katuparan") && (
                     <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                      {pathname === "/external-analytics" &&
-                        "Aggregated and anonymized SGLGB performance data for research purposes"}
+                      {pathname === "/katuparan/dashboard" &&
+                        "High-level, anonymized insights into SGLGB performance across all barangays"}
+                      {pathname === "/katuparan/reports" &&
+                        "Download aggregated data for research and CapDev planning"}
+                      {pathname === "/katuparan/profile" &&
+                        "Manage your account settings and password"}
                     </p>
                   )}
                 </div>

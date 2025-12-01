@@ -176,6 +176,7 @@ class ExternalAnalyticsService:
         failed_count = total_barangays - passed_count
 
         pass_percentage = (passed_count / total_barangays * 100) if total_barangays > 0 else 0.0
+        fail_percentage = (failed_count / total_barangays * 100) if total_barangays > 0 else 0.0
 
         logger.info(
             f"Overall compliance calculated: {passed_count}/{total_barangays} passed ({pass_percentage:.1f}%)"
@@ -186,6 +187,7 @@ class ExternalAnalyticsService:
             passed_count=passed_count,
             failed_count=failed_count,
             pass_percentage=round(pass_percentage, 2),
+            fail_percentage=round(fail_percentage, 2),
             assessment_cycle=assessment_cycle,
         )
 
@@ -269,6 +271,7 @@ class ExternalAnalyticsService:
                 continue
 
             pass_percentage = (passed_count / total_assessed * 100) if total_assessed > 0 else 0.0
+            fail_percentage = (failed_count / total_assessed * 100) if total_assessed > 0 else 0.0
 
             # Get indicator breakdown for this area
             indicators = db.query(Indicator).filter(
@@ -289,6 +292,7 @@ class ExternalAnalyticsService:
                     passed_count=passed_count,
                     failed_count=failed_count,
                     pass_percentage=round(pass_percentage, 2),
+                    fail_percentage=round(fail_percentage, 2),
                     indicator_count=len(indicators),
                     indicators_breakdown=indicator_breakdown,
                 )

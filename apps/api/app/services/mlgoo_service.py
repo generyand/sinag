@@ -181,6 +181,29 @@ class MLGOOService:
             self.logger.error(f"Failed to queue approval notification: {e}")
             notification_result = {"success": False, "error": str(e)}
 
+        # Trigger CapDev (Capacity Development) AI insights generation
+        capdev_result = {"success": False, "message": "Not triggered"}
+        try:
+            from app.workers.intelligence_worker import generate_capdev_insights_task
+
+            # Set initial status to 'pending' before queueing task
+            assessment.capdev_insights_status = "pending"
+            db.commit()
+
+            capdev_task = generate_capdev_insights_task.delay(assessment_id)
+            capdev_result = {
+                "success": True,
+                "message": "CapDev insights generation queued",
+                "task_id": capdev_task.id,
+            }
+            self.logger.info(
+                f"Queued CapDev insights generation for assessment {assessment_id} "
+                f"(task_id: {capdev_task.id})"
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to queue CapDev insights generation: {e}")
+            capdev_result = {"success": False, "error": str(e)}
+
         return {
             "success": True,
             "message": f"Assessment for {barangay_name} has been approved and is now COMPLETED",
@@ -190,6 +213,7 @@ class MLGOOService:
             "approved_by": mlgoo_user.name,
             "approved_at": assessment.mlgoo_approved_at.isoformat(),
             "notification_result": notification_result,
+            "capdev_insights_result": capdev_result,
         }
 
     def request_recalibration(

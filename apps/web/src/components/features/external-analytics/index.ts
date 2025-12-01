@@ -1,1 +1,0 @@
-export { OverallComplianceCard } from './OverallComplianceCard';

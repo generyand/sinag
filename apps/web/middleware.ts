@@ -23,7 +23,7 @@ export function middleware(request: NextRequest) {
     '/validator',
     '/user-management',
     '/change-password',
-    '/external-analytics',
+    '/katuparan',
   ];
   
   // Define auth routes (login, register, etc.)
@@ -75,7 +75,7 @@ export function middleware(request: NextRequest) {
         dashboardUrl = new URL('/blgu/dashboard', request.url);
         console.log(`Middleware: Redirecting BLGU_USER to ${dashboardUrl.pathname}`);
       } else if (userRole === 'KATUPARAN_CENTER_USER') {
-        dashboardUrl = new URL('/external-analytics', request.url);
+        dashboardUrl = new URL('/katuparan/dashboard', request.url);
         console.log(`Middleware: Redirecting ${userRole} to ${dashboardUrl.pathname}`);
       } else {
         // If role is unrecognized, allow the request to proceed without redirect
@@ -122,18 +122,23 @@ export function middleware(request: NextRequest) {
       const isAssessorRoute = pathname.startsWith('/assessor');
       const isValidatorRoute = pathname.startsWith('/validator');
       const isBLGURoute = pathname.startsWith('/blgu');
-      const isExternalAnalyticsRoute = pathname.startsWith('/external-analytics');
+      const isKatuparanRoute = pathname.startsWith('/katuparan');
 
       console.log(`Middleware: [Protected Route Check] User role: ${userRole}, Path: ${pathname}`);
-      console.log(`Middleware: [Route Flags] Admin: ${isAdminRoute}, Assessor: ${isAssessorRoute}, Validator: ${isValidatorRoute}, BLGU: ${isBLGURoute}, External: ${isExternalAnalyticsRoute}`);
+      console.log(`Middleware: [Route Flags] Admin: ${isAdminRoute}, Assessor: ${isAssessorRoute}, Validator: ${isValidatorRoute}, BLGU: ${isBLGURoute}, Katuparan: ${isKatuparanRoute}`);
 
-      // CRITICAL: Immediately redirect ASSESSOR/VALIDATOR away from BLGU routes FIRST
+      // CRITICAL: Immediately redirect non-BLGU users away from BLGU routes FIRST
       // This must be the first check to prevent any flash of BLGU dashboard
-      if (isBLGURoute && (userRole === 'ASSESSOR' || userRole === 'VALIDATOR')) {
+      if (isBLGURoute && (userRole === 'ASSESSOR' || userRole === 'VALIDATOR' || userRole === 'KATUPARAN_CENTER_USER')) {
         console.log(`Middleware: IMMEDIATE redirect - ${userRole} user trying to access BLGU route ${pathname}`);
-        const dashboardUrl = userRole === 'ASSESSOR'
-          ? new URL('/assessor/submissions', request.url)
-          : new URL('/validator/submissions', request.url);
+        let dashboardUrl;
+        if (userRole === 'ASSESSOR') {
+          dashboardUrl = new URL('/assessor/submissions', request.url);
+        } else if (userRole === 'VALIDATOR') {
+          dashboardUrl = new URL('/validator/submissions', request.url);
+        } else {
+          dashboardUrl = new URL('/katuparan/dashboard', request.url);
+        }
         return NextResponse.redirect(dashboardUrl);
       }
 
@@ -146,6 +151,8 @@ export function middleware(request: NextRequest) {
           dashboardUrl = new URL('/assessor/submissions', request.url);
         } else if (userRole === 'VALIDATOR') {
           dashboardUrl = new URL('/validator/submissions', request.url);
+        } else if (userRole === 'KATUPARAN_CENTER_USER') {
+          dashboardUrl = new URL('/katuparan/dashboard', request.url);
         } else {
           dashboardUrl = new URL('/blgu/dashboard', request.url);
         }
@@ -158,6 +165,8 @@ export function middleware(request: NextRequest) {
         let dashboardUrl;
         if (userRole === 'VALIDATOR') {
           dashboardUrl = new URL('/validator/submissions', request.url);
+        } else if (userRole === 'KATUPARAN_CENTER_USER') {
+          dashboardUrl = new URL('/katuparan/dashboard', request.url);
         } else {
           dashboardUrl = new URL('/blgu/dashboard', request.url);
         }
@@ -170,15 +179,17 @@ export function middleware(request: NextRequest) {
         let dashboardUrl;
         if (userRole === 'ASSESSOR') {
           dashboardUrl = new URL('/assessor/submissions', request.url);
+        } else if (userRole === 'KATUPARAN_CENTER_USER') {
+          dashboardUrl = new URL('/katuparan/dashboard', request.url);
         } else {
           dashboardUrl = new URL('/blgu/dashboard', request.url);
         }
         return NextResponse.redirect(dashboardUrl);
       }
 
-      // Check role-based access for external analytics routes
-      if (isExternalAnalyticsRoute && userRole !== 'KATUPARAN_CENTER_USER') {
-        console.log(`Middleware: Redirecting non-external user (${userRole}) from ${pathname} to appropriate dashboard`);
+      // Check role-based access for Katuparan routes
+      if (isKatuparanRoute && userRole !== 'KATUPARAN_CENTER_USER') {
+        console.log(`Middleware: Redirecting non-Katuparan user (${userRole}) from ${pathname} to appropriate dashboard`);
         let dashboardUrl;
         if (userRole === 'MLGOO_DILG') {
           dashboardUrl = new URL('/mlgoo/dashboard', request.url);
@@ -192,10 +203,10 @@ export function middleware(request: NextRequest) {
         return NextResponse.redirect(dashboardUrl);
       }
 
-      // Prevent external users from accessing internal routes
-      if (userRole === 'KATUPARAN_CENTER_USER' && !isExternalAnalyticsRoute) {
-        console.log(`Middleware: Redirecting external user (${userRole}) from ${pathname} to external analytics dashboard`);
-        const dashboardUrl = new URL('/external-analytics', request.url);
+      // Prevent Katuparan users from accessing internal routes
+      if (userRole === 'KATUPARAN_CENTER_USER' && !isKatuparanRoute) {
+        console.log(`Middleware: Redirecting Katuparan user (${userRole}) from ${pathname} to Katuparan dashboard`);
+        const dashboardUrl = new URL('/katuparan/dashboard', request.url);
         return NextResponse.redirect(dashboardUrl);
       }
 

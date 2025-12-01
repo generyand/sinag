@@ -92,6 +92,18 @@ class Assessment(Base):
     area_results: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     ai_recommendations: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
+    # CapDev (Capacity Development) AI Insights (generated after MLGOO approval)
+    # Structure: {
+    #   "ceb": {"summary": "...", "recommendations": [...], "capacity_development_needs": [...],
+    #           "suggested_interventions": [...], "priority_actions": [...], "generated_at": "..."},
+    #   "en": {...}
+    # }
+    capdev_insights: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    capdev_insights_generated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    capdev_insights_status: Mapped[str | None] = mapped_column(
+        String(20), nullable=True
+    )  # 'pending', 'generating', 'completed', 'failed'
+
     # Foreign key to BLGU user
     blgu_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
 

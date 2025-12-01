@@ -370,6 +370,33 @@ async def get_active_cycle(
     return AssessmentCycleResponse.model_validate(cycle)
 
 
+@router.get(
+    "/cycles",
+    response_model=list[AssessmentCycleResponse],
+    tags=["admin"],
+    summary="List all assessment cycles",
+    description="Retrieve all assessment cycles, ordered by year (most recent first). Requires MLGOO_DILG role.",
+)
+async def list_assessment_cycles(
+    include_inactive: bool = Query(
+        True,
+        description="Whether to include inactive cycles",
+    ),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_mlgoo_dilg),
+):
+    """
+    List all assessment cycles.
+
+    **Authentication:** Requires MLGOO_DILG role.
+
+    **Returns:**
+    - List of all assessment cycles, ordered by year (most recent first)
+    """
+    cycles = deadline_service.list_cycles(db, include_inactive=include_inactive)
+    return [AssessmentCycleResponse.model_validate(cycle) for cycle in cycles]
+
+
 @router.put(
     "/cycles/{cycle_id}",
     response_model=AssessmentCycleResponse,

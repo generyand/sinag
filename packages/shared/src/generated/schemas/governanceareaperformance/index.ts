@@ -3,30 +3,19 @@
 // 📁 Governanceareaperformance-related types
 // 🏷️  Based on FastAPI tag: "governanceareaperformance"
 
-import type { GovernanceAreaPerformanceIndicatorsBreakdown } from '../indicators';
+import type { AppSchemasMunicipalInsightsGovernanceAreaPerformance } from '../common';
+import type { AppSchemasExternalAnalyticsGovernanceAreaPerformance } from '../analytics';
 
 /**
- * GovernanceAreaPerformance
+ * GovernanceAreaPerformanceList
  */
-export interface GovernanceAreaPerformance {
-  /** Governance area code (e.g., 'FA', 'DM') */
-  area_code: string;
-  /** Full governance area name */
-  area_name: string;
-  /** Core or Essential */
-  area_type: string;
-  /** Number of barangays assessed in this area */
-  total_barangays_assessed: number;
-  /** Number of barangays that passed this area */
-  passed_count: number;
-  /** Number of barangays that failed this area */
-  failed_count: number;
-  /** Percentage that passed this area (0-100) */
-  pass_percentage: number;
-  /** Total number of indicators in this area */
-  indicator_count: number;
-  /** Breakdown showing % of barangays passing each indicator */
-  indicators_breakdown?: GovernanceAreaPerformanceIndicatorsBreakdown;
+export interface GovernanceAreaPerformanceList {
+  /** Performance data for each governance area */
+  areas?: AppSchemasMunicipalInsightsGovernanceAreaPerformance[];
+  /** Average pass rate across core areas */
+  core_areas_pass_rate: number;
+  /** Average pass rate across essential areas */
+  essential_areas_pass_rate: number;
 }
 
 
@@ -35,5 +24,5 @@ export interface GovernanceAreaPerformance {
  */
 export interface GovernanceAreaPerformanceResponse {
   /** Performance data for all 6 governance areas */
-  areas: GovernanceAreaPerformance[];
+  areas: AppSchemasExternalAnalyticsGovernanceAreaPerformance[];
 }

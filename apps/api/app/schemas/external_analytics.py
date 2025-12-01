@@ -20,6 +20,7 @@ class OverallComplianceResponse(BaseModel):
     passed_count: int = Field(description="Number of barangays that passed SGLGB")
     failed_count: int = Field(description="Number of barangays that failed SGLGB")
     pass_percentage: float = Field(description="Percentage of barangays that passed (0-100)")
+    fail_percentage: float = Field(description="Percentage of barangays that failed (0-100)")
     assessment_cycle: Optional[str] = Field(None, description="Assessment cycle identifier")
 
 
@@ -40,6 +41,7 @@ class GovernanceAreaPerformance(BaseModel):
     passed_count: int = Field(description="Number of barangays that passed this area")
     failed_count: int = Field(description="Number of barangays that failed this area")
     pass_percentage: float = Field(description="Percentage that passed this area (0-100)")
+    fail_percentage: float = Field(description="Percentage that failed this area (0-100)")
     indicator_count: int = Field(description="Total number of indicators in this area")
     indicators_breakdown: Optional[List[dict]] = Field(
         None,

@@ -81,7 +81,7 @@ export default function ChangePasswordPage() {
             dashboardPath = "/validator/submissions";
             break;
           case "KATUPARAN_CENTER_USER":
-            dashboardPath = "/external-analytics";
+            dashboardPath = "/katuparan/dashboard";
             break;
           case "BLGU_USER":
           default:
