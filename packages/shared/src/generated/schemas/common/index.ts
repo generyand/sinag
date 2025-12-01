@@ -12,11 +12,17 @@ import type { MatchValueRule } from '../matchvaluerule';
 import type { BBIFunctionalityCheckRule } from '../bbis';
 import type { ApprovalQueueItemBlguUserId } from '../users';
 import type { ApprovalQueueItemOverallScore } from '../movs';
+import type { BarangayAssessmentStatus } from '../assessments';
 import type { FileUploadFieldConditionalMovRequirement } from '../movs';
 import type { SectionHeaderField } from '../sectionheaderfield';
 import type { InfoTextField } from '../infotextfield';
 import type { IndicatorDetailItem } from '../indicators';
 import type { IndicatorItem } from '../indicators';
+import type { GovernanceAreaPerformanceList } from '../governanceareaperformance';
+import type { TopFailingIndicatorsList } from '../indicators';
+import type { AggregatedCapDevSummary } from '../capdev';
+import type { MunicipalOverviewDashboardAssessmentCycle } from '../assessments';
+import type { PriorityActionSuccessIndicator } from '../indicators';
 import type { ConditionalRemark } from '../conditionalremark';
 import type { ReorderRequestIndicatorsItem } from '../indicators';
 import type { AssessmentRow } from '../assessments';
@@ -130,6 +136,29 @@ export interface AnonymizedInsight {
  * AnonymizedInsightPriority
  */
 export type AnonymizedInsightPriority = string | null;
+
+
+/**
+ * AppSchemasMunicipalInsightsGovernanceAreaPerformance
+ */
+export interface AppSchemasMunicipalInsightsGovernanceAreaPerformance {
+  /** Governance area ID */
+  id: number;
+  /** Governance area name */
+  name: string;
+  /** Area type: CORE or ESSENTIAL */
+  area_type: string;
+  /** Total number of indicators in this area */
+  total_indicators: number;
+  /** Number of barangays that passed this area */
+  passed_count: number;
+  /** Number of barangays that failed this area */
+  failed_count: number;
+  /** Percentage of barangays that passed this area (0-100) */
+  pass_rate: number;
+  /** Common weaknesses identified in this area */
+  common_weaknesses?: string[];
+}
 
 
 /**
@@ -292,6 +321,17 @@ export interface BarangayRanking {
    * @minimum 1
    */
   rank: number;
+}
+
+
+/**
+ * BarangayStatusList
+ */
+export interface BarangayStatusList {
+  /** Status of each barangay */
+  barangays?: BarangayAssessmentStatus[];
+  /** Total number of barangays */
+  total_count: number;
 }
 
 
@@ -603,6 +643,54 @@ export type FormSchemaFieldsItem = CheckboxGroupField | RadioButtonField | Numbe
 
 
 /**
+ * GetMunicipalOverviewBarangayStatusesParams
+ */
+export type GetMunicipalOverviewBarangayStatusesParams = {
+/**
+ * Include draft assessments
+ */
+include_draft?: boolean;
+};
+
+
+/**
+ * GetMunicipalOverviewComplianceSummaryParams
+ */
+export type GetMunicipalOverviewComplianceSummaryParams = {
+/**
+ * Assessment cycle filter
+ */
+assessment_cycle?: string | null;
+};
+
+
+/**
+ * GetMunicipalOverviewDashboardParams
+ */
+export type GetMunicipalOverviewDashboardParams = {
+/**
+ * Assessment cycle filter (defaults to most recent)
+ */
+assessment_cycle?: string | null;
+/**
+ * Whether to include draft assessments in barangay list
+ */
+include_draft?: boolean;
+};
+
+
+/**
+ * GetMunicipalOverviewGovernanceAreasParams
+ */
+export type GetMunicipalOverviewGovernanceAreasParams = {
+/**
+ * Assessment cycle filter
+ */
+assessment_cycle?: string | null;
+};
+
+
+/**
  * GovernanceAreaDetailItem
  */
 export interface GovernanceAreaDetailItem {
@@ -660,6 +748,19 @@ export interface GovernanceAreaProgress {
 
 
 /**
+ * GovernanceWeakness
+ */
+export interface GovernanceWeakness {
+  /** Name of the governance area */
+  area_name: string;
+  /** Description of the weakness */
+  description: string;
+  /** Severity level: high, medium, low */
+  severity: string;
+}
+
+
+/**
  * InfoTextFieldHelpText
  */
 export type InfoTextFieldHelpText = string | null;
@@ -687,6 +788,50 @@ export const MatchValueRuleOperator = {
   contains: 'contains',
   not_contains: 'not_contains',
 } as const;
+
+
+/**
+ * MunicipalComplianceSummary
+ */
+export interface MunicipalComplianceSummary {
+  /** Total number of barangays in the municipality */
+  total_barangays: number;
+  /** Number of barangays with completed assessments */
+  assessed_barangays: number;
+  /** Number of barangays that passed SGLGB */
+  passed_barangays: number;
+  /** Number of barangays that failed SGLGB */
+  failed_barangays: number;
+  /** Percentage of assessed barangays that passed (0-100) */
+  compliance_rate: number;
+  /** Percentage of barangays that have been assessed (0-100) */
+  assessment_rate: number;
+  /** Number of assessments awaiting MLGOO approval */
+  pending_mlgoo_approval: number;
+  /** Number of assessments in progress (draft/submitted/rework) */
+  in_progress: number;
+}
+
+
+/**
+ * MunicipalOverviewDashboard
+ */
+export interface MunicipalOverviewDashboard {
+  /** Municipal-wide compliance statistics */
+  compliance_summary: MunicipalComplianceSummary;
+  /** Performance breakdown by governance area */
+  governance_area_performance: GovernanceAreaPerformanceList;
+  /** Most frequently failed indicators */
+  top_failing_indicators: TopFailingIndicatorsList;
+  /** Aggregated capacity development needs */
+  capdev_summary: AggregatedCapDevSummary;
+  /** Assessment status of each barangay */
+  barangay_statuses: BarangayStatusList;
+  /** When this dashboard data was generated */
+  generated_at: string;
+  /** Assessment cycle filter if applied */
+  assessment_cycle?: MunicipalOverviewDashboardAssessmentCycle;
+}
 
 
 /**
@@ -831,6 +976,21 @@ export interface PieChartData {
 
 
 /**
+ * PriorityAction
+ */
+export interface PriorityAction {
+  /** Specific action to be taken */
+  action: string;
+  /** Who is responsible for this action */
+  responsible_party: string;
+  /** Suggested timeline (immediate, short-term, medium-term) */
+  timeline: string;
+  /** How to measure success */
+  success_indicator?: PriorityActionSuccessIndicator;
+}
+
+
+/**
  * ProgressSummary
  */
 export interface ProgressSummary {
@@ -971,6 +1131,37 @@ export interface StatusDistributionItem {
    */
   percentage: number;
 }
+
+
+/**
+ * SuggestedIntervention
+ */
+export interface SuggestedIntervention {
+  /** Type: training, workshop, mentoring, etc. */
+  intervention_type: string;
+  /** Title of the intervention */
+  title: string;
+  /** Detailed description */
+  description: string;
+  /** Who should participate */
+  target_audience: string;
+  /** Estimated duration (e.g., '2 days', '1 week') */
+  estimated_duration?: SuggestedInterventionEstimatedDuration;
+  /** Resources required for the intervention */
+  resources_needed?: SuggestedInterventionResourcesNeeded;
+}
+
+
+/**
+ * SuggestedInterventionEstimatedDuration
+ */
+export type SuggestedInterventionEstimatedDuration = string | null;
+
+
+/**
+ * SuggestedInterventionResourcesNeeded
+ */
+export type SuggestedInterventionResourcesNeeded = string[] | null;
 
 
 /**

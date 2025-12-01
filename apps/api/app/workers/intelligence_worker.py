@@ -595,3 +595,227 @@ def generate_calibration_summary_task(
         )
 
     return result
+
+
+def _generate_capdev_insights_logic(
+    assessment_id: int,
+    retry_count: int,
+    max_retries: int,
+    default_retry_delay: int,
+    db: Session | None = None,
+) -> Dict[str, Any]:
+    """
+    Core logic for generating CapDev (Capacity Development) insights.
+
+    This is triggered after MLGOO approval to generate comprehensive
+    AI-powered capacity development recommendations for the barangay.
+
+    Args:
+        assessment_id: ID of the assessment
+        retry_count: Current retry attempt number
+        max_retries: Maximum number of retries allowed
+        default_retry_delay: Base delay for exponential backoff
+        db: Optional database session (for testing)
+
+    Returns:
+        dict: Result of the CapDev insights generation process
+    """
+    needs_cleanup = False
+    if db is None:
+        db = SessionLocal()
+        needs_cleanup = True
+
+    try:
+        logger.info(
+            "Generating CapDev insights for assessment %s (attempt %s)",
+            assessment_id,
+            retry_count + 1,
+        )
+
+        # Verify assessment exists
+        assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+
+        if not assessment:
+            error_msg = f"Assessment {assessment_id} not found"
+            logger.error(error_msg)
+            return {"success": False, "error": error_msg}
+
+        # Check if assessment is MLGOO approved (COMPLETED status with mlgoo_approved_at set)
+        if assessment.status != AssessmentStatus.COMPLETED or not assessment.mlgoo_approved_at:
+            error_msg = f"Assessment {assessment_id} is not MLGOO approved. Status: {assessment.status}"
+            logger.error(error_msg)
+            return {"success": False, "error": error_msg}
+
+        # Check if CapDev insights already exist (avoid duplicate generation)
+        if assessment.capdev_insights:
+            # Check if it's the new multi-language format with both ceb and en
+            if isinstance(assessment.capdev_insights, dict) and "ceb" in assessment.capdev_insights:
+                logger.info(
+                    "CapDev insights already exist for assessment %s, skipping generation",
+                    assessment_id,
+                )
+                return {
+                    "success": True,
+                    "assessment_id": assessment_id,
+                    "skipped": True,
+                    "message": "CapDev insights already exist",
+                    "capdev_insights": assessment.capdev_insights,
+                }
+
+        # Update status to 'generating'
+        assessment.capdev_insights_status = "generating"
+        db.commit()
+
+        # Generate CapDev insights in default languages (Bisaya + English)
+        insights = intelligence_service.generate_default_language_capdev_insights(
+            db, assessment_id
+        )
+
+        if not insights:
+            error_msg = f"Failed to generate any CapDev insights for assessment {assessment_id}"
+            logger.error(error_msg)
+            assessment.capdev_insights_status = "failed"
+            db.commit()
+            return {"success": False, "error": error_msg}
+
+        # Store the insights in the database (keyed by language)
+        from datetime import UTC, datetime
+
+        assessment.capdev_insights = insights
+        assessment.capdev_insights_status = "completed"
+        assessment.capdev_insights_generated_at = datetime.now(UTC)
+        assessment.updated_at = datetime.now(UTC)
+        db.commit()
+        db.refresh(assessment)
+
+        logger.info(
+            "Successfully generated CapDev insights for assessment %s in languages: %s",
+            assessment_id,
+            list(insights.keys()),
+        )
+
+        return {
+            "success": True,
+            "assessment_id": assessment_id,
+            "capdev_insights": insights,
+            "languages_generated": list(insights.keys()),
+            "message": "CapDev insights generated successfully",
+        }
+
+    except ValueError as e:
+        # Don't retry on validation errors
+        error_msg = str(e)
+        logger.error(
+            "Validation error generating CapDev insights for assessment %s: %s",
+            assessment_id,
+            error_msg,
+        )
+        # Update status to failed
+        try:
+            assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+            if assessment:
+                assessment.capdev_insights_status = "failed"
+                db.commit()
+        except Exception:
+            pass
+        return {"success": False, "error": error_msg}
+
+    except Exception as e:
+        # Log error
+        error_msg = str(e)
+        logger.error(
+            "Error generating CapDev insights for assessment %s (attempt %s): %s",
+            assessment_id,
+            retry_count + 1,
+            error_msg,
+        )
+
+        # Update status to failed on final retry
+        if retry_count >= max_retries - 1:
+            try:
+                assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+                if assessment:
+                    assessment.capdev_insights_status = "failed"
+                    db.commit()
+            except Exception:
+                pass
+
+        # Return error (retry logic handled by Celery task wrapper)
+        return {"success": False, "error": error_msg}
+
+    finally:
+        if needs_cleanup:
+            db.close()
+
+
+@celery_app.task(
+    bind=True,
+    name="intelligence.generate_capdev_insights_task",
+    max_retries=3,
+    default_retry_delay=60,  # Start with 60 seconds
+    queue="classification",  # Use classification queue for AI tasks
+)
+def generate_capdev_insights_task(self: Any, assessment_id: int) -> Dict[str, Any]:
+    """
+    Generate AI-powered CapDev (Capacity Development) insights using Gemini API.
+
+    This is a Celery task that runs in the background after MLGOO approval
+    to generate comprehensive capacity development recommendations for the barangay.
+
+    The task:
+    1. Verifies assessment is MLGOO_APPROVED
+    2. Calls intelligence_service.generate_default_language_capdev_insights()
+    3. Generates insights analyzing failed indicators, area results, and assessor feedback
+    4. Saves results to capdev_insights column (multi-language: ceb, en)
+    5. Updates capdev_insights_status and capdev_insights_generated_at
+    6. Returns success status
+
+    The generated insights include:
+    - Summary of governance weaknesses
+    - Actionable recommendations
+    - Capacity development needs
+    - Suggested interventions
+    - Priority actions
+
+    Args:
+        assessment_id: ID of the MLGOO-approved assessment
+
+    Returns:
+        dict: Result of the CapDev insights generation process
+    """
+    result = _generate_capdev_insights_logic(
+        assessment_id, self.request.retries, self.max_retries, self.default_retry_delay
+    )
+
+    # If successful or skipped, return the result
+    if result["success"]:
+        return result
+
+    # Handle retry logic for non-validation errors
+    if "error" in result:
+        # Don't retry on validation errors (ValueError)
+        if (
+            "not found" in result["error"].lower()
+            or "not mlgoo approved" in result["error"].lower()
+            or "not completed" in result["error"].lower()
+        ):
+            return result
+
+        # Retry with exponential backoff for other errors
+        if self.request.retries < self.max_retries:
+            retry_count = self.request.retries + 1
+            retry_delay = self.default_retry_delay * (2 ** (retry_count - 1))
+            logger.info(
+                "Retrying CapDev insights generation for assessment %s in %s seconds...",
+                assessment_id,
+                retry_delay,
+            )
+            raise self.retry(countdown=retry_delay)
+
+        logger.error(
+            "Max retries exceeded for assessment %s CapDev insights. Failing with error: %s",
+            assessment_id,
+            result["error"],
+        )
+
+    return result

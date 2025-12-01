@@ -7,7 +7,7 @@
 # 📦 Imports
 from fastapi import APIRouter
 
-from . import admin, analytics, assessments, assessor, auth, bbis, blgu_dashboard, external_analytics, gar, indicators, lookups, mlgoo, movs, notifications, system, users
+from . import admin, analytics, assessments, assessor, auth, bbis, blgu_dashboard, capdev, external_analytics, gar, indicators, lookups, mlgoo, movs, municipal_overview, notifications, system, users
 
 # Create the main API router for V1
 api_router = APIRouter()
@@ -31,3 +31,5 @@ api_router.include_router(notifications.router, prefix="/notifications", tags=["
 api_router.include_router(external_analytics.router)  # Prefix already included in router definition
 api_router.include_router(gar.router, prefix="/gar", tags=["gar"])
 api_router.include_router(mlgoo.router, prefix="/mlgoo", tags=["mlgoo"])
+api_router.include_router(capdev.router)  # Prefix already included in router definition
+api_router.include_router(municipal_overview.router)  # Prefix already included in router definition

@@ -9,6 +9,45 @@ import type { TopFailingIndicatorsResponse } from '../indicators';
 import type { AnonymizedAIInsightsResponse } from '../system';
 
 /**
+ * AppSchemasExternalAnalyticsGovernanceAreaPerformance
+ */
+export interface AppSchemasExternalAnalyticsGovernanceAreaPerformance {
+  /** Governance area code (e.g., 'FA', 'DM') */
+  area_code: string;
+  /** Full governance area name */
+  area_name: string;
+  /** Core or Essential */
+  area_type: string;
+  /** Number of barangays assessed in this area */
+  total_barangays_assessed: number;
+  /** Number of barangays that passed this area */
+  passed_count: number;
+  /** Number of barangays that failed this area */
+  failed_count: number;
+  /** Percentage that passed this area (0-100) */
+  pass_percentage: number;
+  /** Percentage that failed this area (0-100) */
+  fail_percentage: number;
+  /** Total number of indicators in this area */
+  indicator_count: number;
+  /** Breakdown showing % of barangays passing each indicator */
+  indicators_breakdown?: AppSchemasExternalAnalyticsGovernanceAreaPerformanceIndicatorsBreakdown;
+}
+
+
+/**
+ * AppSchemasExternalAnalyticsGovernanceAreaPerformanceIndicatorsBreakdown
+ */
+export type AppSchemasExternalAnalyticsGovernanceAreaPerformanceIndicatorsBreakdown = AppSchemasExternalAnalyticsGovernanceAreaPerformanceIndicatorsBreakdownAnyOfItem[] | null;
+
+
+/**
+ * AppSchemasExternalAnalyticsGovernanceAreaPerformanceIndicatorsBreakdownAnyOfItem
+ */
+export type AppSchemasExternalAnalyticsGovernanceAreaPerformanceIndicatorsBreakdownAnyOfItem = { [key: string]: unknown };
+
+
+/**
  * ExternalAnalyticsDashboardResponse
  */
 export interface ExternalAnalyticsDashboardResponse {

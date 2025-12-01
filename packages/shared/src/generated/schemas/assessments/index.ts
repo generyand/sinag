@@ -545,6 +545,69 @@ export type AssessorAnalyticsResponseAssessmentPeriod = string | null;
 
 
 /**
+ * BarangayAssessmentStatus
+ */
+export interface BarangayAssessmentStatus {
+  /** Barangay ID */
+  barangay_id: number;
+  /** Barangay name */
+  barangay_name: string;
+  /** Assessment ID if exists */
+  assessment_id?: BarangayAssessmentStatusAssessmentId;
+  /** Assessment status */
+  status: string;
+  /** Final compliance status: PASSED or FAILED */
+  compliance_status?: BarangayAssessmentStatusComplianceStatus;
+  /** When assessment was submitted */
+  submitted_at?: BarangayAssessmentStatusSubmittedAt;
+  /** When MLGOO approved the assessment */
+  mlgoo_approved_at?: BarangayAssessmentStatusMlgooApprovedAt;
+  /** Overall pass rate percentage */
+  overall_score?: BarangayAssessmentStatusOverallScore;
+  /** Whether CapDev insights have been generated */
+  has_capdev_insights?: boolean;
+  /** CapDev insights generation status */
+  capdev_status?: BarangayAssessmentStatusCapdevStatus;
+}
+
+
+/**
+ * BarangayAssessmentStatusAssessmentId
+ */
+export type BarangayAssessmentStatusAssessmentId = number | null;
+
+
+/**
+ * BarangayAssessmentStatusCapdevStatus
+ */
+export type BarangayAssessmentStatusCapdevStatus = string | null;
+
+
+/**
+ * BarangayAssessmentStatusComplianceStatus
+ */
+export type BarangayAssessmentStatusComplianceStatus = string | null;
+
+
+/**
+ * BarangayAssessmentStatusMlgooApprovedAt
+ */
+export type BarangayAssessmentStatusMlgooApprovedAt = string | null;
+
+
+/**
+ * BarangayAssessmentStatusOverallScore
+ */
+export type BarangayAssessmentStatusOverallScore = number | null;
+
+
+/**
+ * BarangayAssessmentStatusSubmittedAt
+ */
+export type BarangayAssessmentStatusSubmittedAt = string | null;
+
+
+/**
  * BodyTestCalculationApiV1IndicatorsTestCalculationPostAssessmentData
  */
 export type BodyTestCalculationApiV1IndicatorsTestCalculationPostAssessmentData = { [key: string]: unknown };
@@ -723,6 +786,12 @@ governance_area_id?: number | null;
 
 
 /**
+ * MunicipalOverviewDashboardAssessmentCycle
+ */
+export type MunicipalOverviewDashboardAssessmentCycle = string | null;
+
+
+/**
  * NotificationResponseAssessmentBarangayName
  */
 export type NotificationResponseAssessmentBarangayName = string | null;
@@ -755,6 +824,17 @@ indicator_id: number;
  * PostAssessmentsIdGenerateInsights202
  */
 export type PostAssessmentsIdGenerateInsights202 = { [key: string]: unknown };
+
+
+/**
+ * PostCapdevAssessmentsAssessmentIdRegenerateParams
+ */
+export type PostCapdevAssessmentsAssessmentIdRegenerateParams = {
+/**
+ * Force regeneration even if insights exist
+ */
+force?: boolean;
+};
 
 
 /**
