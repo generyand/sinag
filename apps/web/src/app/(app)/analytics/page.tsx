@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
-import { useGetUsersMe, useGetAnalyticsReports } from "@sinag/shared";
+import { useGetUsersMe, useGetAnalyticsReports, useGetMunicipalOverviewDashboard, useGetAdminCycles } from "@sinag/shared";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -19,13 +19,11 @@ import {
   RefreshCw,
   Filter,
   BarChart3,
-  LineChart,
   Map,
   Table2,
   PieChart,
-  Trophy,
-  TrendingUp,
   Layers,
+  Building2,
 } from "lucide-react";
 import { useDashboardAnalytics } from "@/hooks/useDashboardAnalytics";
 import {
@@ -33,24 +31,28 @@ import {
   CompletionStatusCard,
   AreaBreakdownCard,
   TopFailedIndicatorsCard,
-  BarangayRankingsCard,
   BBIFunctionalityWidget,
-  TrendChart,
 } from "@/components/features/dashboard-analytics";
 import {
   FilterControls,
   VisualizationGrid,
   ExportControls,
 } from "@/components/features/reports";
+import {
+  ComplianceSummaryCard,
+  GovernanceAreaPerformanceCard,
+  TopFailingIndicatorsCard,
+  AggregatedCapDevCard,
+  BarangayStatusTable,
+} from "@/components/features/municipal-overview";
 
 // Tab definitions with icons
 const TABS = [
-  { id: "overview", label: "Overview", icon: BarChart3 },
+  { id: "overview", label: "Overview", icon: Building2 },
+  { id: "kpis", label: "KPIs", icon: BarChart3 },
   { id: "charts", label: "Charts", icon: PieChart },
   { id: "map", label: "Geographic", icon: Map },
   { id: "table", label: "Detailed Results", icon: Table2 },
-  { id: "rankings", label: "Rankings", icon: Trophy },
-  { id: "trends", label: "Trends", icon: TrendingUp },
   { id: "bbi", label: "BBI Status", icon: Layers },
 ] as const;
 
@@ -107,6 +109,24 @@ export default function AnalyticsPage() {
     page: filters.page,
     page_size: filters.page_size,
   });
+
+  // Municipal Overview data hook
+  const {
+    data: municipalData,
+    isLoading: isMunicipalLoading,
+    error: municipalError,
+  } = useGetMunicipalOverviewDashboard();
+
+  // Assessment cycles data hook
+  const {
+    data: cyclesData,
+    isLoading: isCyclesLoading,
+  } = useGetAdminCycles();
+
+  // Handler for viewing CapDev insights - navigates to submissions detail page
+  const handleViewCapDev = (assessmentId: number) => {
+    router.push(`/mlgoo/submissions/${assessmentId}`);
+  };
 
   // Update URL when tab changes
   const handleTabChange = (tab: TabId) => {
@@ -170,8 +190,8 @@ export default function AnalyticsPage() {
     );
   }
 
-  const isLoading = isDashboardLoading || isReportsLoading;
-  const error = dashboardError || reportsError;
+  const isLoading = isDashboardLoading || isReportsLoading || isMunicipalLoading;
+  const error = dashboardError || reportsError || municipalError;
 
   // Show loading skeleton
   if (isLoading && !dashboardData && !reportsData) {
@@ -314,9 +334,10 @@ export default function AnalyticsPage() {
                       setFilters((prev) => ({ ...prev, cycle_id: cycleId }));
                     }
                   }}
+                  disabled={isCyclesLoading}
                 >
                   <SelectTrigger className="w-full bg-[var(--background)] border-[var(--border)] rounded">
-                    <SelectValue placeholder="Select cycle" />
+                    <SelectValue placeholder={isCyclesLoading ? "Loading cycles..." : "Select cycle"} />
                   </SelectTrigger>
                   <SelectContent className="bg-[var(--card)] border border-[var(--border)] shadow-xl rounded z-50">
                     <SelectItem
@@ -325,24 +346,24 @@ export default function AnalyticsPage() {
                     >
                       All Cycles
                     </SelectItem>
-                    <SelectItem
-                      value="1"
-                      className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
-                    >
-                      Cycle 1 - 2024 Q1
-                    </SelectItem>
-                    <SelectItem
-                      value="2"
-                      className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
-                    >
-                      Cycle 2 - 2024 Q2
-                    </SelectItem>
-                    <SelectItem
-                      value="3"
-                      className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
-                    >
-                      Cycle 3 - 2024 Q3
-                    </SelectItem>
+                    {cyclesData?.map((cycle) => (
+                      <SelectItem
+                        key={cycle.id}
+                        value={cycle.id.toString()}
+                        className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
+                      >
+                        {cycle.name} ({cycle.year}){cycle.is_active && " ✓"}
+                      </SelectItem>
+                    ))}
+                    {!isCyclesLoading && (!cyclesData || cyclesData.length === 0) && (
+                      <SelectItem
+                        value="none"
+                        disabled
+                        className="text-[var(--text-secondary)] px-3 py-2"
+                      >
+                        No cycles available
+                      </SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -417,17 +438,45 @@ export default function AnalyticsPage() {
 
           {/* Tab Content */}
           <div className="space-y-6">
-            {/* Overview Tab - KPI Cards */}
-            {activeTab === "overview" && dashboardData && (
+            {/* Overview Tab - Municipal Overview Dashboard */}
+            {activeTab === "overview" && municipalData && (
+              <>
+                {/* Compliance Summary - Full Width */}
+                <ComplianceSummaryCard data={municipalData.compliance_summary} />
+
+                {/* Two Column Layout for Analytics */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <GovernanceAreaPerformanceCard data={municipalData.governance_area_performance} />
+                  <TopFailingIndicatorsCard data={municipalData.top_failing_indicators} />
+                </div>
+
+                {/* Aggregated CapDev Insights */}
+                <AggregatedCapDevCard data={municipalData.capdev_summary} />
+
+                {/* Barangay Status Table - Full Width */}
+                <BarangayStatusTable
+                  data={municipalData.barangay_statuses}
+                  onViewCapDev={handleViewCapDev}
+                />
+
+                {/* Footer with generation timestamp */}
+                <p className="text-xs text-gray-400 text-right">
+                  Dashboard generated: {new Date(municipalData.generated_at).toLocaleString()}
+                  {municipalData.assessment_cycle && ` | Cycle: ${municipalData.assessment_cycle}`}
+                </p>
+              </>
+            )}
+
+            {/* KPIs Tab - Original KPI Cards */}
+            {activeTab === "kpis" && dashboardData && (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <ComplianceRateCard data={dashboardData.overall_compliance_rate} />
                   <CompletionStatusCard data={dashboardData.completion_status} />
                   <TopFailedIndicatorsCard data={dashboardData.top_failed_indicators || []} />
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6">
                   <AreaBreakdownCard data={dashboardData.area_breakdown || []} />
-                  <BarangayRankingsCard data={dashboardData.barangay_rankings || []} />
                 </div>
               </>
             )}
@@ -457,19 +506,6 @@ export default function AnalyticsPage() {
                 isLoading={isReportsLoading}
                 showOnly={["table"]}
               />
-            )}
-
-            {/* Rankings Tab */}
-            {activeTab === "rankings" && dashboardData && (
-              <div className="grid grid-cols-1 gap-6">
-                <BarangayRankingsCard data={dashboardData.barangay_rankings || []} />
-                <TopFailedIndicatorsCard data={dashboardData.top_failed_indicators || []} />
-              </div>
-            )}
-
-            {/* Trends Tab */}
-            {activeTab === "trends" && dashboardData && (
-              <TrendChart data={dashboardData.trends || []} />
             )}
 
             {/* BBI Tab */}

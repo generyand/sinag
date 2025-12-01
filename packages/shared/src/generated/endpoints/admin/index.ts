@@ -32,6 +32,7 @@ import type {
   DeadlineStatusListResponse,
   GetAdminAuditLogsExportParams,
   GetAdminAuditLogsParams,
+  GetAdminCyclesParams,
   GetAdminDeadlinesOverridesExportParams,
   GetAdminDeadlinesOverridesParams,
   GetAdminDeadlinesStatusParams,
@@ -377,6 +378,71 @@ export const usePostAdminCycles = <TError = HTTPValidationError,
       return useMutation(mutationOptions );
     }
     /**
+ * Retrieve all assessment cycles, ordered by year (most recent first). Requires MLGOO_DILG role.
+ * @summary List all assessment cycles
+ */
+export const getAdminCycles = (
+    params?: GetAdminCyclesParams,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<AssessmentCycleResponse[]>(
+      {url: `http://localhost:8000/api/v1/admin/cycles`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+  
+
+export const getGetAdminCyclesQueryKey = (params?: GetAdminCyclesParams,) => {
+    return [`http://localhost:8000/api/v1/admin/cycles`, ...(params ? [params]: [])] as const;
+    }
+
+    
+export const getGetAdminCyclesQueryOptions = <TData = Awaited<ReturnType<typeof getAdminCycles>>, TError = HTTPValidationError>(params?: GetAdminCyclesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminCycles>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminCyclesQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminCycles>>> = ({ signal }) => getAdminCycles(params, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminCycles>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminCyclesQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminCycles>>>
+export type GetAdminCyclesQueryError = HTTPValidationError
+
+
+/**
+ * @summary List all assessment cycles
+ */
+
+export function useGetAdminCycles<TData = Awaited<ReturnType<typeof getAdminCycles>>, TError = HTTPValidationError>(
+ params?: GetAdminCyclesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminCycles>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminCyclesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
  * Retrieve the currently active assessment cycle. Requires MLGOO_DILG role.
  * @summary Get the active assessment cycle
  */

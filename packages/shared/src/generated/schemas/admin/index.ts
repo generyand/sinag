@@ -81,6 +81,17 @@ end_date?: string | null;
 
 
 /**
+ * GetAdminCyclesParams
+ */
+export type GetAdminCyclesParams = {
+/**
+ * Whether to include inactive cycles
+ */
+include_inactive?: boolean;
+};
+
+
+/**
  * GetAdminDeadlinesOverridesExportParams
  */
 export type GetAdminDeadlinesOverridesExportParams = {

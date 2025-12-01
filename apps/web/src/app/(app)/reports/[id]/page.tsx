@@ -8,92 +8,87 @@ import {
 } from '@/components/features/reports';
 import { PageHeader } from '@/components/shared';
 import { useIntelligence } from '@/hooks';
+import { useGetMlgooAssessmentsAssessmentId, useGetCapdevAssessmentsAssessmentId } from '@sinag/shared';
 import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
-
-interface AssessmentDetails {
-  id: number;
-  status: string;
-  final_compliance_status?: 'Passed' | 'Failed';
-  area_results?: Record<string, string>;
-  ai_recommendations?: Record<string, any>;
-  blgu_user?: {
-    name: string;
-    barangay?: {
-      name: string;
-    };
-  };
-}
+import { useMemo } from 'react';
 
 export default function ReportDetailsPage() {
   const params = useParams();
-  const assessmentId = params.id as string;
-  const [assessment, setAssessment] = useState<AssessmentDetails | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
-  
+  const assessmentId = Number(params.id);
+
+  // Fetch assessment details from MLGOO API
+  const {
+    data: assessmentData,
+    isLoading,
+    error: fetchError,
+    refetch: refetchAssessment
+  } = useGetMlgooAssessmentsAssessmentId(assessmentId, {
+    query: {
+      enabled: !isNaN(assessmentId),
+    }
+  });
+
+  // Fetch CapDev insights (AI recommendations)
+  const {
+    data: capdevData,
+    isLoading: isLoadingCapdev,
+    refetch: refetchCapdev
+  } = useGetCapdevAssessmentsAssessmentId(assessmentId, {
+    query: {
+      enabled: !isNaN(assessmentId) && assessmentData?.status === 'COMPLETED',
+    }
+  });
+
   const { generateInsights: handleGenerateInsights, isGenerating, error: generationError } = useIntelligence();
 
+  // Transform area_results from API format to display format
+  const areaResults = useMemo(() => {
+    if (!assessmentData?.area_results) return undefined;
+
+    // Convert area_results object to the expected format
+    const results: Record<string, string> = {};
+    if (typeof assessmentData.area_results === 'object') {
+      Object.entries(assessmentData.area_results).forEach(([key, value]) => {
+        // Handle different possible formats
+        if (typeof value === 'string') {
+          results[key] = value;
+        } else if (typeof value === 'object' && value !== null && 'status' in value) {
+          results[key] = (value as { status: string }).status;
+        }
+      });
+    }
+    return Object.keys(results).length > 0 ? results : undefined;
+  }, [assessmentData?.area_results]);
+
+  // Transform governance_areas to area_results format if area_results is not available
+  const derivedAreaResults = useMemo(() => {
+    if (areaResults) return areaResults;
+    if (!assessmentData?.governance_areas) return undefined;
+
+    const results: Record<string, string> = {};
+    assessmentData.governance_areas.forEach((area) => {
+      // Determine pass/fail based on area validation status
+      const isPassed = area.indicators?.every(ind => ind.validation_status === 'PASSED') ?? false;
+      results[area.name] = isPassed ? 'Passed' : 'Failed';
+    });
+    return Object.keys(results).length > 0 ? results : undefined;
+  }, [areaResults, assessmentData?.governance_areas]);
+
   const handleGenerate = async () => {
-    if (!assessment?.id) return;
-    
-    setIsGeneratingInsights(true);
+    if (!assessmentId) return;
+
     try {
-      await handleGenerateInsights(Number(assessmentId));
-      // Refresh assessment data to get updated ai_recommendations
-      // TODO: Replace with actual refetch logic
+      await handleGenerateInsights(assessmentId);
+      // Refetch CapDev data after generation
       setTimeout(() => {
-        setIsGeneratingInsights(false);
-      }, 30000); // Mock timeout, actual polling will handle this
+        refetchCapdev();
+      }, 5000);
     } catch (err) {
-      setIsGeneratingInsights(false);
       console.error('Failed to generate insights:', err);
     }
   };
 
-  useEffect(() => {
-    // TODO: Replace with actual API call
-    // const fetchAssessmentDetails = async () => {
-    //   try {
-    //     const response = await fetch(`/api/v1/assessments/${assessmentId}`);
-    //     if (!response.ok) throw new Error('Failed to fetch assessment');
-    //     const data = await response.json();
-    //     setAssessment(data);
-    //   } catch (err) {
-    //     setError(err instanceof Error ? err.message : 'Unknown error');
-    //   } finally {
-    //     setIsLoading(false);
-    //   }
-    // };
-    // fetchAssessmentDetails();
-
-    // Mock data for now
-    setTimeout(() => {
-      setError(null);
-      setAssessment({
-        id: Number(assessmentId),
-        status: 'Validated',
-        final_compliance_status: 'Passed',
-        area_results: {
-          'Financial Administration and Sustainability': 'Passed',
-          'Disaster Preparedness': 'Passed',
-          'Safety, Peace and Order': 'Passed',
-          'Social Protection and Sensitivity': 'Passed',
-          'Business-Friendliness and Competitiveness': 'Failed',
-          'Environmental Management': 'Failed',
-        },
-        ai_recommendations: undefined,
-        blgu_user: {
-          name: 'Sample User',
-          barangay: {
-            name: 'Sample Barangay',
-          },
-        },
-      });
-      setIsLoading(false);
-    }, 500);
-  }, [assessmentId]);
+  const error = fetchError ? 'Failed to load assessment details' : null;
 
   if (isLoading) {
     return (
@@ -106,7 +101,7 @@ export default function ReportDetailsPage() {
     );
   }
 
-  if (error || !assessment) {
+  if (error || !assessmentData) {
     return (
       <div className="min-h-screen bg-background p-8">
         <div className="max-w-4xl mx-auto">
@@ -119,16 +114,37 @@ export default function ReportDetailsPage() {
     );
   }
 
+  // Determine compliance status from API response
+  const complianceStatus = assessmentData.compliance_status as 'Passed' | 'Failed' | undefined;
+  const isValidated = assessmentData.status === 'COMPLETED' || assessmentData.status === 'AWAITING_MLGOO_APPROVAL';
+  const hasCapdevInsights = capdevData?.status === 'completed' && capdevData?.insights;
+
+  // Transform CapDev insights to the format expected by AIInsightsDisplay
+  const transformedInsights = useMemo(() => {
+    if (!hasCapdevInsights || !capdevData?.insights) return null;
+
+    // Get the first available language's insights
+    const defaultLang = capdevData.available_languages?.[0] || 'en';
+    const langInsights = capdevData.insights[defaultLang];
+    if (!langInsights) return null;
+
+    return {
+      summary: langInsights.summary || '',
+      recommendations: langInsights.recommendations?.map(r => r.title || r.description || '') || [],
+      capacity_development_needs: langInsights.capacity_development_needs?.map(n => n.area || n.current_gap || '') || [],
+    };
+  }, [hasCapdevInsights, capdevData?.insights, capdevData?.available_languages]);
+
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-4xl mx-auto space-y-6">
         <PageHeader
-          title={`Assessment Report - ${assessment.blgu_user?.barangay?.name || 'Unknown'}`}
+          title={`Assessment Report - ${assessmentData.barangay_name || 'Unknown'}`}
           description="View detailed SGLGB compliance status and area breakdown"
         />
 
         {/* Compliance Status Badge */}
-        {assessment.final_compliance_status && (
+        {complianceStatus && (
           <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
@@ -139,16 +155,16 @@ export default function ReportDetailsPage() {
                   Overall compliance determination based on the 3+1 rule
                 </p>
               </div>
-              <ComplianceBadge status={assessment.final_compliance_status} />
+              <ComplianceBadge status={complianceStatus} />
             </div>
           </div>
         )}
 
         {/* Area Results */}
-        {assessment.area_results && (
+        {derivedAreaResults && (
           <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
             <h3 className="text-lg font-semibold mb-4">Governance Area Results</h3>
-            <AreaResultsDisplay areaResults={assessment.area_results} />
+            <AreaResultsDisplay areaResults={derivedAreaResults} />
           </div>
         )}
 
@@ -164,21 +180,31 @@ export default function ReportDetailsPage() {
           </div>
 
           {/* Generate Insights Button (if not already generated) */}
-          {!assessment.ai_recommendations && (
+          {!hasCapdevInsights && (
             <InsightsGenerator
-              assessmentId={assessment.id}
-              isAssessmentValidated={assessment.status === 'Validated'}
+              assessmentId={assessmentData.id}
+              isAssessmentValidated={isValidated}
               onGenerate={handleGenerate}
-              isGenerating={isGenerating || isGeneratingInsights}
+              isGenerating={isGenerating || isLoadingCapdev}
             />
           )}
 
           {/* Generating State */}
-          {(isGenerating || isGeneratingInsights) && (
+          {isGenerating && (
             <div className="flex items-center gap-2 p-4 bg-muted/50 rounded-md border border-muted">
               <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               <p className="text-sm text-muted-foreground">
                 Generating AI insights... This may take a few moments.
+              </p>
+            </div>
+          )}
+
+          {/* CapDev Loading State */}
+          {isLoadingCapdev && !isGenerating && (
+            <div className="flex items-center gap-2 p-4 bg-muted/50 rounded-md border border-muted">
+              <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <p className="text-sm text-muted-foreground">
+                Loading AI insights...
               </p>
             </div>
           )}
@@ -192,9 +218,20 @@ export default function ReportDetailsPage() {
             </div>
           )}
 
-          {/* Display Insights */}
-          {assessment.ai_recommendations && (
-            <AIInsightsDisplay insights={assessment.ai_recommendations as any} />
+          {/* Display CapDev Insights */}
+          {transformedInsights && (
+            <AIInsightsDisplay insights={transformedInsights} />
+          )}
+
+          {/* Show status message if insights exist but are not completed */}
+          {capdevData && !hasCapdevInsights && capdevData.status !== 'not_generated' && (
+            <div className="p-4 bg-muted/50 rounded-md border border-muted">
+              <p className="text-sm text-muted-foreground">
+                {capdevData.status === 'pending' && 'AI insights generation is queued...'}
+                {capdevData.status === 'generating' && 'AI insights are being generated...'}
+                {capdevData.status === 'failed' && 'AI insights generation failed. You can try regenerating.'}
+              </p>
+            </div>
           )}
         </div>
       </div>

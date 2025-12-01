@@ -122,6 +122,22 @@ class DeadlineService:
         """
         return db.query(AssessmentCycle).filter(AssessmentCycle.is_active == True).first()
 
+    def list_cycles(self, db: Session, include_inactive: bool = True) -> list[AssessmentCycle]:
+        """
+        List all assessment cycles, ordered by year descending (most recent first).
+
+        Args:
+            db: Database session
+            include_inactive: Whether to include inactive cycles (default True)
+
+        Returns:
+            List of assessment cycles
+        """
+        query = db.query(AssessmentCycle)
+        if not include_inactive:
+            query = query.filter(AssessmentCycle.is_active == True)
+        return query.order_by(AssessmentCycle.year.desc(), AssessmentCycle.id.desc()).all()
+
     def update_cycle(
         self,
         db: Session,
