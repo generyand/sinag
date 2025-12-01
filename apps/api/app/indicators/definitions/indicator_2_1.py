@@ -129,14 +129,17 @@ INDICATOR_2_1 = Indicator(
         # Sub-Indicator 2.1.4: Accomplishment Reports
         SubIndicator(
             code="2.1.4",
-            name="Accomplishment Reports: At least 50% accomplishment (physical OR financial)",
+            name="Accomplishment Reports: Physical accomplishment OR fund utilization (only 1 of the below reports is required)",
             upload_instructions=(
-                "Upload based on your chosen option (only ONE option is required):\n\n"
-                "1. (Option A: Physical) Accomplishment Report\n"
-                "2. (Option A: Physical) Certification on the submission and correctness of Accomplishment Report signed by the C/MDRRMO\n"
-                "3. (Option B: Financial) Annual LDRRMF Utilization Report\n"
-                "4. (Option B: Financial) Certification on the submission and correctness of fund utilization report signed by the C/MDRRMO\n\n"
-                "Note: Choose either Option A (upload fields 1 & 2) OR Option B (upload fields 3 & 4). Only ONE option is required."
+                "Upload the following:\n\n"
+                "OPTION A - PHYSICAL:\n"
+                "- Accomplishment Report\n"
+                "- Certification on the submission and correctness of Accomplishment Report signed by the C/MDRRMO\n\n"
+                "OR\n\n"
+                "OPTION B - FINANCIAL:\n"
+                "- Annual LDRRMF Utilization Report\n"
+                "- Certification on the submission and correctness of fund utilization report signed by the C/MDRRMO\n\n"
+                "Note: Choose either Option A (Physical) OR Option B (Financial). Only ONE option is required."
             ),
             validation_rule="ANY_ITEM_REQUIRED",  # Only ONE option (A or B) is required
             checklist_items=[
@@ -144,15 +147,15 @@ INDICATOR_2_1 = Indicator(
                 ChecklistItem(
                     id="2_1_4_option_a",
                     label="a. At least 50% accomplishment of the physical targets in the BDRRM Plan",
-                    mov_description="Option A label - informational only",
+                    mov_description="Assessment for physical accomplishment option",
                     item_type="assessment_field",
                     required=False,
                     display_order=2
                 ),
                 ChecklistItem(
                     id="2_1_4_upload_1",
-                    label="Accomplishment Report, and",
-                    mov_description="Verification of uploaded Accomplishment Report",
+                    label="Accomplishment Report",
+                    mov_description="Verification of uploaded Accomplishment Report (Option A - Physical)",
                     item_type="checkbox",
                     required=False,
                     display_order=3
@@ -160,7 +163,7 @@ INDICATOR_2_1 = Indicator(
                 ChecklistItem(
                     id="2_1_4_upload_2",
                     label="Certification on the submission and correctness of Accomplishment Report signed by the C/MDRRMO",
-                    mov_description="Verification of uploaded Certification on the submission and correctness of Accomplishment Report",
+                    mov_description="Verification of uploaded Certification (Option A - Physical)",
                     item_type="checkbox",
                     required=False,
                     display_order=4
@@ -195,16 +198,16 @@ INDICATOR_2_1 = Indicator(
                 # Option B: Financial Accomplishment (with YES/NO assessment)
                 ChecklistItem(
                     id="2_1_4_option_b",
-                    label="b. At least 50% fund utilization of the 70% component of CY 2023 BDRRMF - Preparedness component as of December 31, 2023.",
-                    mov_description="Option B label - informational only",
+                    label="b. At least 50% fund utilization of the 70% component of CY 2023 BDRRMF - Preparedness component as of December 31, 2023",
+                    mov_description="Assessment for fund utilization option",
                     item_type="assessment_field",
                     required=False,
                     display_order=7
                 ),
                 ChecklistItem(
                     id="2_1_4_upload_3",
-                    label="Annual LDRRMF Utilization Report, and",
-                    mov_description="Verification of uploaded Annual LDRRMF Utilization Report",
+                    label="Annual LDRRMF Utilization Report",
+                    mov_description="Verification of uploaded Annual LDRRMF Utilization Report (Option B - Financial)",
                     item_type="checkbox",
                     required=False,
                     display_order=8
@@ -212,7 +215,7 @@ INDICATOR_2_1 = Indicator(
                 ChecklistItem(
                     id="2_1_4_upload_4",
                     label="Certification on the submission and correctness of fund utilization report signed by the C/MDRRMO",
-                    mov_description="Verification of uploaded Certification on the submission and correctness of fund utilization report",
+                    mov_description="Verification of uploaded Certification (Option B - Financial)",
                     item_type="checkbox",
                     required=False,
                     display_order=9

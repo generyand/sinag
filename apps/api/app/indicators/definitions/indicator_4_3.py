@@ -127,18 +127,18 @@ INDICATOR_4_3 = Indicator(
             code="4.3.4",
             name="Accomplishment Reports: Physical accomplishment OR fund utilization (only 1 of the below reports is required)",
             upload_instructions=(
-                "Upload: CY 2023 Accomplishment Report (with received stamp by the C/MPDC)\n\n"
-                "IMPORTANT: Only ONE (1) of the options below is required"
+                "Upload:\n"
+                "- (PHYSICAL or/and FINANCIAL) CY 2023 Accomplishment Report with received stamp by the C/MPDC"
             ),
-            validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # OR logic: either physical OR budget
+            validation_rule="ALL_ITEMS_REQUIRED",  # Single upload field required
             checklist_items=[
-                # Single document verification checkbox
+                # Single shared upload field for PHYSICAL or/and FINANCIAL
                 ChecklistItem(
-                    id="4_3_4_report",
-                    label="CY 2023 Accomplishment Report (with received stamp by the C/MPDC)",
-                    mov_description="Verification of uploaded CY 2023 Accomplishment Report with received stamp by the C/MPDC",
+                    id="4_3_4_upload",
+                    label="(PHYSICAL or/and FINANCIAL) CY 2023 Accomplishment Report with received stamp by the C/MPDC",
+                    mov_description="Verification of uploaded CY 2023 Accomplishment Report (PHYSICAL or/and FINANCIAL)",
                     item_type="checkbox",
-                    required=False,
+                    required=True,
                     display_order=1
                 ),
                 # Important note (info_text)

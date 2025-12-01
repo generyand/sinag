@@ -229,29 +229,37 @@ INDICATOR_4_1 = Indicator(
             code="4.1.6",
             name="Accomplishment Reports: Physical accomplishment OR fund utilization (only 1 of the below reports is required)",
             upload_instructions=(
-                "Upload ONE of the following (only 1 required):\n\n"
-                "1. 4.1.6.1. At least 50% accomplishment of the physical targets in the GAD Plan\n"
-                "2. 4.1.6.2. At least 50% fund utilization of the CY 2023 GAD Budget\n\n"
-                "Note: You only need to upload ONE option (either option 1 OR option 2)."
+                "Upload the following:\n\n"
+                "SHARED (Required):\n"
+                "- 2023 GAD Accomplishment Report\n\n"
+                "PLUS ONE of the following (PHYSICAL or FINANCIAL):\n\n"
+                "OPTION A - PHYSICAL:\n"
+                "- Certification on the submitted CY 2023 GAD Accomplishment Report indicating at least 50% accomplishment of the physical targets in the GAD Plan signed by the C/MSWDO or C/MLGOO\n\n"
+                "OR\n\n"
+                "OPTION B - FINANCIAL:\n"
+                "- Certification on the submitted CY 2023 GAD Accomplishment Report indicating at least 50% fund utilization of the CY 2023 GAD Budget signed by the C/MSWDO or C/MLGOO"
             ),
-            validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # OR logic: either physical OR budget
+            validation_rule="SHARED_PLUS_OR_LOGIC",  # SHARED + (A OR B)
             checklist_items=[
-                # Single document verification checkbox
+                # SHARED document verification
                 ChecklistItem(
                     id="4_1_6_report",
                     label="2023 GAD Accomplishment Report",
                     mov_description="Verification of uploaded 2023 GAD Accomplishment Report",
                     item_type="checkbox",
-                    required=False,
-                    display_order=1
-                ),                # Option A: Physical Accomplishment - YES/NO assessment
+                    required=True,
+                    display_order=1,
+                    option_group="shared"
+                ),
+                # Option A: Physical Accomplishment - YES/NO assessment
                 ChecklistItem(
                     id="4_1_6_option_a",
                     label="a. At least 50% accomplishment of the physical targets in the GAD Plan",
                     mov_description="Checkbox for physical accomplishment option",
                     item_type="assessment_field",
                     required=False,
-                    display_order=4
+                    display_order=4,
+                    option_group="option_a"
                 ),
                 ChecklistItem(
                     id="4_1_6_cert_physical",
@@ -259,7 +267,8 @@ INDICATOR_4_1 = Indicator(
                     mov_description="Verification of certification for physical accomplishment",
                     item_type="checkbox",
                     required=False,
-                    display_order=5
+                    display_order=5,
+                    option_group="option_a"
                 ),
                 ChecklistItem(
                     id="4_1_6_physical_accomplished",
@@ -267,7 +276,8 @@ INDICATOR_4_1 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=6.1
+                    display_order=6,
+                    option_group="option_a"
                 ),
                 ChecklistItem(
                     id="4_1_6_physical_reflected",
@@ -275,7 +285,8 @@ INDICATOR_4_1 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=6.2
+                    display_order=7,
+                    option_group="option_a"
                 ),
                 # OR Separator (info_text)
                 ChecklistItem(
@@ -284,7 +295,7 @@ INDICATOR_4_1 = Indicator(
                     mov_description="OR",
                     item_type="info_text",
                     required=False,
-                    display_order=7
+                    display_order=8
                 ),
                 # Option B: Fund Utilization - YES/NO assessment
                 ChecklistItem(
@@ -293,7 +304,8 @@ INDICATOR_4_1 = Indicator(
                     mov_description="Checkbox for fund utilization option",
                     item_type="assessment_field",
                     required=False,
-                    display_order=8
+                    display_order=9,
+                    option_group="option_b"
                 ),
                 ChecklistItem(
                     id="4_1_6_cert_financial",
@@ -301,7 +313,8 @@ INDICATOR_4_1 = Indicator(
                     mov_description="Verification of certification for 50% fund utilization",
                     item_type="checkbox",
                     required=False,
-                    display_order=9
+                    display_order=10,
+                    option_group="option_b"
                 ),
                 ChecklistItem(
                     id="4_1_6_financial_utilized",
@@ -309,7 +322,8 @@ INDICATOR_4_1 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=10.1
+                    display_order=11,
+                    option_group="option_b"
                 ),
                 ChecklistItem(
                     id="4_1_6_financial_allocated",
@@ -317,7 +331,8 @@ INDICATOR_4_1 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=10.2
+                    display_order=12,
+                    option_group="option_b"
                 ),
             ]
         ),

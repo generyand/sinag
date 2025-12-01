@@ -125,11 +125,14 @@ INDICATOR_6_1 = Indicator(
             code="6.1.4",
             name="Accomplishment Reports: Physical accomplishment OR fund utilization (only 1 of the below reports is required)",
             upload_instructions=(
-                "Upload: Three (3) Monthly Accomplishment Reports covering July-September 2023\n\n"
+                "Upload:\n"
+                "- (PHYSICAL or/and FINANCIAL) Three (3) Monthly Accomplishment Reports covering July-September 2023\n\n"
                 "Please supply the number of documents submitted: _____ Monthly Accomplishment Reports were submitted\n\n"
+                "OPTION A - PHYSICAL:\n"
                 "To compute Physical Accomplishment Rate:\n"
                 "(Total number of activities/projects accomplished / Total number of activities/projects reflected in the BESWMP) × 100\n\n"
                 "OR\n\n"
+                "OPTION B - FINANCIAL:\n"
                 "Amount utilized (as of Dec 31, 2023):\n"
                 "Amount allocated for PPAs in the BESWM Plan:\n\n"
                 "To compute % utilization:\n"
@@ -140,9 +143,9 @@ INDICATOR_6_1 = Indicator(
                 # Document checkbox
                 ChecklistItem(
                     id="6_1_4_upload",
-                    label="Three (3) Monthly Accomplishment Reports covering July-September 2023",
+                    label="(PHYSICAL or/and FINANCIAL) Three (3) Monthly Accomplishment Reports covering July-September 2023",
                     item_type="checkbox",
-                    mov_description="Please supply the number of documents submitted: _____ Monthly Accomplishment Reports were submitted",
+                    mov_description="Verification of uploaded Monthly Accomplishment Reports (PHYSICAL or/and FINANCIAL)",
                     required=False,
                     display_order=1
                 ),
@@ -151,7 +154,7 @@ INDICATOR_6_1 = Indicator(
                     id="6_1_4_report_count",
                     label="Number of Monthly Accomplishment Reports submitted",
                     item_type="calculation_field",
-                    mov_description="",
+                    mov_description="Please supply the number of documents submitted:",
                     required=False,
                     display_order=2
                 ),

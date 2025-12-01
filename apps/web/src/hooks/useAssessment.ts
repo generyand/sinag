@@ -83,7 +83,15 @@ export function useCurrentAssessment() {
     isLoading,
     error,
     refetch,
-  } = useGetAssessmentsMyAssessment();
+  } = useGetAssessmentsMyAssessment({
+    query: {
+      // Use short staleTime so invalidations trigger immediate refetch
+      // This ensures indicator completion status updates reflect in sidebar immediately
+      staleTime: 0,
+      // Refetch when window regains focus to ensure fresh data
+      refetchOnWindowFocus: true,
+    },
+  } as any);
 
   // Transform API response to match frontend expectations
   interface APIAssessment {

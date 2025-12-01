@@ -136,25 +136,26 @@ INDICATOR_4_8 = Indicator(
             name="Accomplishment Report",
             upload_instructions=(
                 "Upload the following:\n\n"
-                "1. Accomplishment Report on CY 2023 BNAP\n\n"
-                "For OPTION A (Physical Accomplishment):\n"
-                "- Supply % of programs, projects, and activities completed\n"
-                "- Upload Certification indicating at least 50% accomplishment of physical targets signed by C/MLGOO\n\n"
+                "SHARED (Required):\n"
+                "- Accomplishment Report on CY 2023 BNAP\n\n"
+                "PLUS ONE of the following (PHYSICAL or FINANCIAL):\n\n"
+                "OPTION A - PHYSICAL:\n"
+                "- Certification on the submitted BNAP Accomplishment Report for CY 2023 indicating at least 50% accomplishment of the physical targets in the BNAP signed by the C/MLGOO\n\n"
                 "OR\n\n"
-                "For OPTION B (Fund Utilization):\n"
-                "- Supply amount utilized and amount allocated\n"
-                "- Upload Certification indicating at least 50% fund utilization rate signed by C/MLGOO"
+                "OPTION B - FINANCIAL:\n"
+                "- Certification on the submitted BNAP Accomplishment Report for CY 2023 indicating at least 50% fund utilization rate of the CY 2023 BNAP Budget signed by the C/MLGOO"
             ),
-            validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",
+            validation_rule="SHARED_PLUS_OR_LOGIC",  # SHARED + (A OR B)
             checklist_items=[
-                # Accomplishment Report checkbox
+                # SHARED: Accomplishment Report
                 ChecklistItem(
                     id="4_8_4_upload_report",
-                    label="Accomplishment Report on CY 2023 BNAP;",
+                    label="Accomplishment Report on CY 2023 BNAP",
                     mov_description="Verification of uploaded Accomplishment Report on CY 2023 BNAP",
                     item_type="checkbox",
-                    required=False,
-                    display_order=1
+                    required=True,
+                    display_order=1,
+                    option_group="shared"
                 ),
                 # OPTION A: YES/NO, then CERTIFICATION, then calculation
                 ChecklistItem(
@@ -164,7 +165,7 @@ INDICATOR_4_8 = Indicator(
                     item_type="assessment_field",
                     required=False,
                     display_order=2,
-                    option_group="Option A"
+                    option_group="option_a"
                 ),
                 ChecklistItem(
                     id="4_8_4_cert_a",
@@ -173,7 +174,7 @@ INDICATOR_4_8 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=3,
-                    option_group="Option A"
+                    option_group="option_a"
                 ),
                 ChecklistItem(
                     id="4_8_4_physical_accomplished",
@@ -181,8 +182,8 @@ INDICATOR_4_8 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=4.1,
-                    option_group="Option A"
+                    display_order=4,
+                    option_group="option_a"
                 ),
                 ChecklistItem(
                     id="4_8_4_physical_reflected",
@@ -190,8 +191,8 @@ INDICATOR_4_8 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=4.2,
-                    option_group="Option A"
+                    display_order=5,
+                    option_group="option_a"
                 ),
                 # OR separator
                 ChecklistItem(
@@ -200,7 +201,7 @@ INDICATOR_4_8 = Indicator(
                     mov_description="OR",
                     item_type="info_text",
                     required=False,
-                    display_order=5
+                    display_order=6
                 ),
                 # OPTION B: YES/NO, then CERTIFICATION, then calculations
                 ChecklistItem(
@@ -209,8 +210,8 @@ INDICATOR_4_8 = Indicator(
                     mov_description="Verify at least 50% fund utilization rate (Option B)",
                     item_type="assessment_field",
                     required=False,
-                    display_order=6,
-                    option_group="Option B"
+                    display_order=7,
+                    option_group="option_b"
                 ),
                 ChecklistItem(
                     id="4_8_4_cert_b",
@@ -218,8 +219,8 @@ INDICATOR_4_8 = Indicator(
                     mov_description="Verification of certification for option B",
                     item_type="checkbox",
                     required=False,
-                    display_order=7,
-                    option_group="Option B"
+                    display_order=8,
+                    option_group="option_b"
                 ),
                 ChecklistItem(
                     id="4_8_4_financial_utilized",
@@ -227,8 +228,8 @@ INDICATOR_4_8 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=8.1,
-                    option_group="Option B"
+                    display_order=9,
+                    option_group="option_b"
                 ),
                 ChecklistItem(
                     id="4_8_4_financial_allocated",
@@ -236,8 +237,8 @@ INDICATOR_4_8 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=8.2,
-                    option_group="Option B"
+                    display_order=10,
+                    option_group="option_b"
                 ),
             ]
         ),

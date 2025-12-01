@@ -17,7 +17,7 @@ from app.db.base import (
 )
 from app.db.enums import UserRole
 from app.db.models.barangay import Barangay
-from app.db.models.governance_area import Indicator
+from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
 from app.services.governance_area_service import governance_area_service
 from app.services.indicator_service import indicator_service
@@ -104,6 +104,9 @@ class StartupService:
 
         # Create external stakeholder users if needed
         self._create_external_users()
+
+        # Seed demo users (BLGU, Assessors, Validators) if needed
+        self._seed_demo_users()
 
         # Validate indicator data integrity
         self._validate_indicators()
@@ -421,6 +424,161 @@ class StartupService:
 
         except Exception as e:
             logger.warning(f"⚠️  Could not create external users: {str(e)}")
+            db.rollback()
+        finally:
+            db.close()
+
+    def _seed_demo_users(self) -> None:
+        """
+        Seed demo users for development/testing purposes.
+
+        Creates:
+        - 25 BLGU users (one per barangay)
+        - 3 Assessors (no governance area assignment)
+        - 6 Validators (one per governance area)
+
+        All users are created with a default password and must_change_password=True.
+        This method is idempotent - it will not create duplicates.
+        """
+        import os
+        # Skip seeding in tests
+        if os.getenv("SKIP_STARTUP_SEEDING") == "true":
+            logger.info("⏭️  Skipping demo user seeding (test mode)")
+            return
+
+        logger.info("👥 Seeding demo users...")
+        db: Session = SessionLocal()
+
+        DEFAULT_PASSWORD = "sinag2025"
+
+        try:
+            created_blgu = 0
+            created_assessors = 0
+            created_validators = 0
+
+            # ─────────────────────────────────────────────────────────────
+            # 1. Seed BLGU Users (one per barangay)
+            # ─────────────────────────────────────────────────────────────
+            logger.info("  - Seeding BLGU users...")
+            barangays = db.query(Barangay).all()
+
+            for barangay in barangays:
+                # Create email from barangay name (lowercase, replace spaces with underscores)
+                email = f"{barangay.name.lower().replace(' ', '_').replace('-', '_')}@sinag.dev"
+
+                # Check if user already exists
+                existing = db.query(User).filter(User.email == email).first()
+                if existing:
+                    continue
+
+                user = User(
+                    email=email,
+                    name=f"BLGU {barangay.name}",
+                    hashed_password=get_password_hash(DEFAULT_PASSWORD),
+                    role=UserRole.BLGU_USER,
+                    barangay_id=barangay.id,
+                    is_active=True,
+                    is_superuser=False,
+                    must_change_password=True,
+                )
+                db.add(user)
+                created_blgu += 1
+
+            if created_blgu > 0:
+                db.flush()
+                logger.info(f"    ✓ Created {created_blgu} BLGU user(s)")
+            else:
+                logger.info("    - BLGU users already exist. Skipping.")
+
+            # ─────────────────────────────────────────────────────────────
+            # 2. Seed Assessors (3 assessors, no area assignment)
+            # ─────────────────────────────────────────────────────────────
+            logger.info("  - Seeding Assessor users...")
+
+            for i in range(1, 4):  # 3 assessors
+                email = f"assessor{i}@sinag.dev"
+
+                # Check if user already exists
+                existing = db.query(User).filter(User.email == email).first()
+                if existing:
+                    continue
+
+                user = User(
+                    email=email,
+                    name=f"Assessor {i}",
+                    hashed_password=get_password_hash(DEFAULT_PASSWORD),
+                    role=UserRole.ASSESSOR,
+                    is_active=True,
+                    is_superuser=False,
+                    must_change_password=True,
+                )
+                db.add(user)
+                created_assessors += 1
+
+            if created_assessors > 0:
+                db.flush()
+                logger.info(f"    ✓ Created {created_assessors} Assessor user(s)")
+            else:
+                logger.info("    - Assessors already exist. Skipping.")
+
+            # ─────────────────────────────────────────────────────────────
+            # 3. Seed Validators (6 validators, one per governance area)
+            # ─────────────────────────────────────────────────────────────
+            logger.info("  - Seeding Validator users...")
+            governance_areas = db.query(GovernanceArea).order_by(GovernanceArea.id).all()
+
+            for area in governance_areas:
+                email = f"validator_area{area.id}@sinag.dev"
+
+                # Check if user already exists
+                existing = db.query(User).filter(User.email == email).first()
+                if existing:
+                    continue
+
+                # Create a short name for the validator based on area
+                area_short_names = {
+                    1: "Financial Admin",
+                    2: "Disaster Prep",
+                    3: "Peace & Order",
+                    4: "Social Protection",
+                    5: "Business-Friendly",
+                    6: "Environmental Mgmt",
+                }
+                short_name = area_short_names.get(area.id, f"Area {area.id}")
+
+                user = User(
+                    email=email,
+                    name=f"Validator - {short_name}",
+                    hashed_password=get_password_hash(DEFAULT_PASSWORD),
+                    role=UserRole.VALIDATOR,
+                    validator_area_id=area.id,
+                    is_active=True,
+                    is_superuser=False,
+                    must_change_password=True,
+                )
+                db.add(user)
+                created_validators += 1
+
+            if created_validators > 0:
+                db.flush()
+                logger.info(f"    ✓ Created {created_validators} Validator user(s)")
+            else:
+                logger.info("    - Validators already exist. Skipping.")
+
+            # ─────────────────────────────────────────────────────────────
+            # Commit all changes
+            # ─────────────────────────────────────────────────────────────
+            db.commit()
+
+            total_created = created_blgu + created_assessors + created_validators
+            if total_created > 0:
+                logger.info(f"  ✅ Demo user seeding complete! ({total_created} users created)")
+                logger.info(f"  ⚠️  Default password for all demo users: {DEFAULT_PASSWORD}")
+            else:
+                logger.info("  - All demo users already exist. Skipping.")
+
+        except Exception as e:
+            logger.warning(f"⚠️  Could not seed demo users: {str(e)}")
             db.rollback()
         finally:
             db.close()

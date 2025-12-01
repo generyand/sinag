@@ -30,6 +30,7 @@ from app.schemas.assessment import (
 from fastapi import HTTPException, status  # type: ignore[reportMissingImports]
 from sqlalchemy import and_, func  # type: ignore[reportMissingImports]
 from sqlalchemy.orm import Session, joinedload  # type: ignore[reportMissingImports]
+from app.services.completeness_validation_service import completeness_validation_service
 
 
 class AssessmentService:
@@ -1000,7 +1001,10 @@ class AssessmentService:
             True if response is completed, False otherwise
         """
         if not response_data or not isinstance(response_data, dict):
-            return False
+            # For new format with fields array, allow empty response_data
+            # since completion is based on MOV uploads
+            if not form_schema.get('fields'):
+                return False
 
         # Filter MOVs during rework status - only count files uploaded AFTER rework was requested
         filtered_movs = movs or []
@@ -1010,6 +1014,22 @@ class AssessmentService:
                 if mov.uploaded_at and mov.uploaded_at >= rework_requested_at
             ]
             print(f"[DEBUG] _check_response_completion: REWORK mode - filtered {len(movs)} MOVs to {len(filtered_movs)} (uploaded after {rework_requested_at})")
+
+        # Check if this is the new Epic 4.0 format with 'fields' array
+        # Use completeness_validation_service for these schemas
+        if 'fields' in form_schema and isinstance(form_schema.get('fields'), list):
+            try:
+                result = completeness_validation_service.validate_completeness(
+                    form_schema=form_schema,
+                    response_data=response_data or {},
+                    uploaded_movs=filtered_movs
+                )
+                print(f"[DEBUG] _check_response_completion (new format): is_complete={result['is_complete']}, "
+                      f"filled={result['filled_field_count']}/{result['required_field_count']}")
+                return result['is_complete']
+            except Exception as e:
+                print(f"[DEBUG] _check_response_completion: Error using completeness_validation_service: {e}")
+                return False
 
         # Use filtered_movs instead of movs for all MOV checks below
         movs = filtered_movs

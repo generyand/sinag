@@ -179,18 +179,18 @@ INDICATOR_4_5 = Indicator(
             code="4.5.6",
             name="Accomplishment Reports: Physical accomplishment OR financial utilization (only 1 of the below reports is required)",
             upload_instructions=(
-                "Upload: Approved Accomplishment Report on BCPC AWFP for CY 2023 with received stamp by the City/Municipality Inter-Agency Monitoring Task Force (IMTF)\n\n"
-                "IMPORTANT: Only ONE (1) of the options below is required"
+                "Upload:\n"
+                "- (PHYSICAL or/and FINANCIAL) Approved Accomplishment Report on BCPC AWFP for CY 2023 with received stamp by the City/Municipality Inter-Agency Monitoring Task Force (IMTF)"
             ),
-            validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # OR logic: either physical OR budget
+            validation_rule="ALL_ITEMS_REQUIRED",  # Single upload field required
             checklist_items=[
-                # Single document verification checkbox
+                # Single shared upload field for PHYSICAL or/and FINANCIAL
                 ChecklistItem(
                     id="4_5_6_upload",
-                    label="Approved Accomplishment Report on BCPC AWFP for CY 2023 with received stamp by the City/Municipality Inter-Agency Monitoring Task Force (IMTF)",
-                    mov_description="Verification of uploaded Accomplishment Report with received stamp by IMTF",
+                    label="(PHYSICAL or/and FINANCIAL) Approved Accomplishment Report on BCPC AWFP for CY 2023 with received stamp by the City/Municipality Inter-Agency Monitoring Task Force (IMTF)",
+                    mov_description="Verification of uploaded Accomplishment Report (PHYSICAL or/and FINANCIAL)",
                     item_type="checkbox",
-                    required=False,
+                    required=True,
                     display_order=1
                 ),
                 # OPTION A - Physical Accomplishment

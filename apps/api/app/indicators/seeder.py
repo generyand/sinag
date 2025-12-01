@@ -20,6 +20,7 @@ def _parse_upload_sections_from_instructions(upload_instructions: str) -> List[D
     This parses upload requirements from the upload_instructions string, supporting:
     1. Numbered items (e.g., "1.", "2.")
     2. OPTION-based structures (e.g., "OPTION A", "OPTION B")
+    3. Hybrid format: numbered items with "(Option A:", "(Option B:" in labels
 
     For example:
         "Upload the following documents:
@@ -36,6 +37,13 @@ def _parse_upload_sections_from_instructions(upload_instructions: str) -> List[D
         - MOA with junkshop
         - Mechanism..."
 
+    Or (hybrid format for OR conditions like 2.1.4):
+        "Upload based on your chosen option:
+        1. (Option A: Physical) Accomplishment Report
+        2. (Option A: Physical) Certification...
+        3. (Option B: Financial) Annual Report
+        4. (Option B: Financial) Certification..."
+
     Returns a list of upload field definitions.
     """
     if not upload_instructions:
@@ -44,27 +52,60 @@ def _parse_upload_sections_from_instructions(upload_instructions: str) -> List[D
     upload_sections = []
     lines = upload_instructions.strip().split('\n')
 
-    # Check if this uses OPTION-based structure
-    has_options = any('OPTION' in line.upper() for line in lines)
+    # Check if this uses pure OPTION-based structure (with bullet points)
+    # vs hybrid format (numbered items with Option labels)
+    # Also check for SHARED+OR format (SHARED section + OPTION A/B)
+    has_bullet_options = any(
+        line.strip().upper().startswith('OPTION') and
+        not line.strip()[0].isdigit()  # Not a numbered item
+        for line in lines
+    )
+    has_numbered_with_options = any(
+        line.strip() and
+        line.strip()[0].isdigit() and
+        '(OPTION' in line.upper()
+        for line in lines
+    )
+    has_shared_section = any(
+        line.strip().upper().startswith('SHARED')
+        for line in lines
+    )
 
-    if has_options:
-        # Parse OPTION-based structure (e.g., 6.2.1)
-        current_option = None
+    if (has_bullet_options or has_shared_section) and not has_numbered_with_options:
+        # Parse OPTION-based structure (e.g., 6.2.1) or SHARED+OR format (e.g., 4.1.6, 4.8.4)
+        # SHARED+OR format: SHARED (Required) + (OPTION A OR OPTION B)
+        current_section = None  # Track current section (shared, option_a, option_b)
         current_option_id = None
         field_counter = 0
+        is_shared_section = False
 
         for line in lines:
             line_stripped = line.strip()
+            line_upper = line_stripped.upper()
 
-            # Detect option headers (e.g., "OPTION A - For MRF:")
-            if 'OPTION' in line_stripped.upper():
-                current_option = line_stripped
+            # Detect SHARED section header (e.g., "SHARED (Required):")
+            if line_upper.startswith('SHARED'):
+                current_section = line_stripped
+                current_option_id = 'shared'
+                is_shared_section = True
+                # Add section header for SHARED
+                upload_sections.append({
+                    "field_id": f"section_header_{len(upload_sections) + 1}",
+                    "field_type": "section_header",
+                    "label": line_stripped,
+                    "description": "",
+                    "required": False
+                })
+            # Detect option headers (e.g., "OPTION A - PHYSICAL:")
+            elif 'OPTION' in line_upper and (not line_stripped[0].isdigit() if line_stripped else True):
+                current_section = line_stripped
+                is_shared_section = False
                 # Extract option letter (A, B, C) for grouping
-                if 'OPTION A' in line_stripped.upper():
+                if 'OPTION A' in line_upper:
                     current_option_id = 'option_a'
-                elif 'OPTION B' in line_stripped.upper():
+                elif 'OPTION B' in line_upper:
                     current_option_id = 'option_b'
-                elif 'OPTION C' in line_stripped.upper():
+                elif 'OPTION C' in line_upper:
                     current_option_id = 'option_c'
                 else:
                     current_option_id = f'option_{len(upload_sections) + 1}'
@@ -78,7 +119,7 @@ def _parse_upload_sections_from_instructions(upload_instructions: str) -> List[D
                     "required": False
                 })
             # Detect "OR" separators
-            elif line_stripped.upper() == 'OR':
+            elif line_upper == 'OR':
                 upload_sections.append({
                     "field_id": f"or_separator_{len(upload_sections) + 1}",
                     "field_type": "info_text",
@@ -86,35 +127,112 @@ def _parse_upload_sections_from_instructions(upload_instructions: str) -> List[D
                     "description": "",
                     "required": False
                 })
-                # Reset option after OR separator
-                current_option_id = None
+                # Don't reset option_id - let next OPTION header set it
             # Detect bullet points (upload fields)
-            elif line_stripped.startswith('-') and current_option:
+            elif line_stripped.startswith('-') and current_section:
                 field_counter += 1
                 label = line_stripped[1:].strip()  # Remove leading "-"
+
+                # SHARED fields are required, OPTION fields are not (OR logic)
+                is_required = (current_option_id == 'shared')
 
                 upload_sections.append({
                     "field_id": f"upload_section_{field_counter}",
                     "field_type": "file_upload",
                     "label": label,
                     "description": label,
-                    "required": True,
+                    "required": is_required,
                     "accept": ".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.mp4",
                     "multiple": True,
                     "max_size": 50,
                     "option_group": current_option_id  # Add option group for frontend grouping
                 })
 
-    else:
-        # Parse numbered structure (existing logic)
+    elif has_numbered_with_options:
+        # Parse hybrid format: numbered items with "(Option A:", "(Option B:" labels
+        # Used for OR conditions like indicator 2.1.4
         current_number = 0
+
         for line in lines:
-            line = line.strip()
+            line_stripped = line.strip()
+
             # Look for numbered items (e.g., "1.", "2.", etc.)
-            if line and line[0].isdigit() and '.' in line[:3]:
+            if line_stripped and line_stripped[0].isdigit() and '.' in line_stripped[:3]:
                 current_number += 1
                 # Extract the label after the number
-                label = line.split('.', 1)[1].strip() if '.' in line else line
+                label = line_stripped.split('.', 1)[1].strip() if '.' in line_stripped else line_stripped
+
+                # Determine option group from label
+                option_group = None
+                if '(OPTION A' in line_stripped.upper():
+                    option_group = 'option_a'
+                elif '(OPTION B' in line_stripped.upper():
+                    option_group = 'option_b'
+                elif '(OPTION C' in line_stripped.upper():
+                    option_group = 'option_c'
+
+                upload_sections.append({
+                    "field_id": f"upload_section_{current_number}",
+                    "field_type": "file_upload",
+                    "label": label,
+                    "description": label,
+                    "required": False,  # OR logic - not all required
+                    "accept": ".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.mp4",
+                    "multiple": True,
+                    "max_size": 50,
+                    "option_group": option_group
+                })
+
+    else:
+        # Parse numbered structure (existing logic)
+        # But skip informational lists that aren't actual upload requirements
+
+        # Detect if numbered items are informational (e.g., "Minimum Composition of BNC:")
+        # by checking for headers that indicate the list is not uploads
+        # IMPORTANT: These must appear at the START of a line, not embedded in text
+        informational_header_starts = [
+            'minimum composition',
+            'composition of',
+            'members of',
+            'membership:',
+            'membership of',
+            'components:',
+            'criteria:',
+            'note:',  # Notes are informational
+        ]
+
+        # Also check if the numbered items appear AFTER an informational header
+        # If so, they're likely not upload requirements
+        in_informational_section = False
+        current_number = 0
+
+        for line in lines:
+            line_stripped = line.strip()
+            line_lower = line_stripped.lower()
+
+            # Check if we're entering an informational section
+            # The header must START the line (not be embedded like "Photo Requirements:")
+            is_informational_header = any(
+                line_lower.startswith(header)
+                for header in informational_header_starts
+            )
+            if is_informational_header:
+                in_informational_section = True
+                continue
+
+            # Reset if we hit "Upload" again (new upload section)
+            if line_lower.startswith('upload') and ':' in line_lower:
+                in_informational_section = False
+
+            # Look for numbered items (e.g., "1.", "2.", etc.)
+            if line_stripped and line_stripped[0].isdigit() and '.' in line_stripped[:3]:
+                # Skip if we're in an informational section
+                if in_informational_section:
+                    continue
+
+                current_number += 1
+                # Extract the label after the number
+                label = line_stripped.split('.', 1)[1].strip() if '.' in line_stripped else line_stripped
 
                 upload_sections.append({
                     "field_id": f"upload_section_{current_number}",
@@ -127,7 +245,27 @@ def _parse_upload_sections_from_instructions(upload_instructions: str) -> List[D
                     "max_size": 50
                 })
 
-        # If no numbered sections found, extract label from first meaningful line
+        # If no numbered sections found, check for bullet point format or extract from first line
+        if not upload_sections:
+            # First, check for bullet point items (lines starting with "-")
+            bullet_counter = 0
+            for line in lines:
+                line_stripped = line.strip()
+                if line_stripped.startswith('-'):
+                    bullet_counter += 1
+                    label = line_stripped[1:].strip()  # Remove leading "-"
+                    upload_sections.append({
+                        "field_id": f"upload_section_{bullet_counter}",
+                        "field_type": "file_upload",
+                        "label": label,
+                        "description": label,
+                        "required": True,
+                        "accept": ".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.mp4",
+                        "multiple": True,
+                        "max_size": 50
+                    })
+
+        # If still no sections found, extract label from first meaningful line
         if not upload_sections:
             # Try to extract a specific label from the instructions
             label = "Upload required documents"  # default fallback

@@ -69,8 +69,15 @@ export function CompletionFeedbackPanel({
     const fields = formSchema.fields as FormSchemaFieldsItem[];
     const validationRule = (formSchema as any).validation_rule || "ALL_ITEMS_REQUIRED";
 
-    // Get all required fields
-    const requiredFields = fields.filter((field) => isFieldRequired(field));
+    // For OR-logic indicators, treat all file_upload fields as "required" for completion purposes
+    // (even though individual fields have required: false)
+    const isOrLogic = validationRule === "ANY_ITEM_REQUIRED" || validationRule === "OR_LOGIC_AT_LEAST_1_REQUIRED";
+    const isSharedPlusOrLogic = validationRule === "SHARED_PLUS_OR_LOGIC";
+
+    // Get fields to track for completion
+    const requiredFields = (isOrLogic || isSharedPlusOrLogic)
+      ? fields.filter((field) => field.field_type === "file_upload")  // All upload fields for OR logic
+      : fields.filter((field) => isFieldRequired(field));  // Only required fields for AND logic
 
     // Helper function to check if a field is filled
     const isFieldFilled = (field: FormSchemaFieldsItem): boolean => {
@@ -104,8 +111,70 @@ export function CompletionFeedbackPanel({
       return true;
     };
 
+    // For SHARED+OR logic (e.g., indicator 4.1.6, 4.8.4)
+    // Pattern: SHARED (required) + (OPTION A OR OPTION B) = 2 total requirements
+    if (isSharedPlusOrLogic) {
+      // Group fields by option_group
+      const sharedFields: FormSchemaFieldsItem[] = [];
+      const optionAFields: FormSchemaFieldsItem[] = [];
+      const optionBFields: FormSchemaFieldsItem[] = [];
+
+      requiredFields.forEach((field) => {
+        const optionGroup = (field as any).option_group;
+        if (optionGroup === 'shared') {
+          sharedFields.push(field);
+        } else if (optionGroup === 'option_a') {
+          optionAFields.push(field);
+        } else if (optionGroup === 'option_b') {
+          optionBFields.push(field);
+        }
+      });
+
+      // Check SHARED fields - all must be filled
+      const sharedComplete = sharedFields.length > 0
+        ? sharedFields.every(field => isFieldFilled(field))
+        : true;
+
+      // Check OPTION A - at least 1 upload
+      const optionAHasUpload = optionAFields.some(field => isFieldFilled(field));
+
+      // Check OPTION B - at least 1 upload
+      const optionBHasUpload = optionBFields.some(field => isFieldFilled(field));
+
+      // Either option_a OR option_b must have at least 1 upload
+      const optionComplete = optionAHasUpload || optionBHasUpload;
+
+      // Total requirements: 2 (1 for shared + 1 for option)
+      const totalRequired = 2;
+      let completed = 0;
+      if (sharedComplete) completed += 1;
+      if (optionComplete) completed += 1;
+
+      const percentage = Math.round((completed / totalRequired) * 100);
+
+      // Get incomplete fields for display
+      const incompleteFields: FormSchemaFieldsItem[] = [];
+      if (!sharedComplete) {
+        incompleteFields.push(...sharedFields.filter(field => !isFieldFilled(field)));
+      }
+      if (!optionComplete) {
+        // Show first incomplete field from each option as hint
+        const firstOptionAIncomplete = optionAFields.find(field => !isFieldFilled(field));
+        const firstOptionBIncomplete = optionBFields.find(field => !isFieldFilled(field));
+        if (firstOptionAIncomplete) incompleteFields.push(firstOptionAIncomplete);
+        if (firstOptionBIncomplete) incompleteFields.push(firstOptionBIncomplete);
+      }
+
+      return {
+        totalRequired,
+        completed,
+        percentage,
+        incompleteFields,
+      };
+    }
+
     // For grouped OR logic (e.g., indicator 2.1.4 with Option A vs Option B, or 6.2.1 with Options A/B/C)
-    if (validationRule === "ANY_ITEM_REQUIRED" || validationRule === "OR_LOGIC_AT_LEAST_1_REQUIRED") {
+    if (isOrLogic) {
       // Detect field groups by analyzing field_ids
       const groups: Record<string, FormSchemaFieldsItem[]> = {};
 

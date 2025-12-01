@@ -118,17 +118,36 @@ class CompletenessValidationService:
             # Parse and validate the form schema using Pydantic
             schema_obj = FormSchema(**form_schema)
 
-            # Get all required fields
-            required_fields = self._get_required_fields(schema_obj, response_data)
-
             # Check for grouped OR validation (e.g., indicator 2.1.4, 6.2.1)
             validation_rule = form_schema.get('validation_rule', 'ALL_ITEMS_REQUIRED')
 
             if validation_rule in ('ANY_ITEM_REQUIRED', 'OR_LOGIC_AT_LEAST_1_REQUIRED'):
-                # Detect and validate field groups
+                # For OR-logic, get ALL file_upload fields (not just required=True)
+                # because individual fields have required=False but completing one option group is required
+                or_fields = [
+                    field for field in schema_obj.fields
+                    if isinstance(field, FileUploadField)
+                ]
+                logger.info(f"[OR LOGIC] Found {len(or_fields)} file_upload fields for OR validation")
                 return self._validate_grouped_or_fields(
-                    required_fields, response_data, uploaded_movs
+                    or_fields, response_data, uploaded_movs
                 )
+
+            if validation_rule == 'SHARED_PLUS_OR_LOGIC':
+                # SHARED+OR validation: SHARED fields (required) + (OPTION A OR OPTION B)
+                # Requirements: 0/2 → Need 1 shared + 1 from (option_a OR option_b)
+                # If both option_a AND option_b have uploads, still counts as 1/2 (not 2/2)
+                upload_fields = [
+                    field for field in schema_obj.fields
+                    if isinstance(field, FileUploadField)
+                ]
+                logger.info(f"[SHARED+OR LOGIC] Found {len(upload_fields)} file_upload fields")
+                return self._validate_shared_plus_or_fields(
+                    upload_fields, response_data, uploaded_movs
+                )
+
+            # Get all required fields for standard AND validation
+            required_fields = self._get_required_fields(schema_obj, response_data)
 
             # Standard validation: check each required field
             missing_fields = []
@@ -401,6 +420,119 @@ class CompletenessValidationService:
         filled_count = 1 if is_complete else 0
 
         logger.info(f"[GROUPED OR] Validation result: {filled_count}/{required_count} groups complete")
+
+        return {
+            "is_complete": is_complete,
+            "missing_fields": missing_fields,
+            "required_field_count": required_count,
+            "filled_field_count": filled_count
+        }
+
+    def _validate_shared_plus_or_fields(
+        self,
+        fields: List[FormField],
+        response_data: Dict[str, Any],
+        uploaded_movs: List[Any]
+    ) -> Dict[str, Any]:
+        """
+        Validate fields with SHARED+OR logic (e.g., indicator 4.1.6, 4.8.4).
+
+        Pattern: SHARED (required) + (OPTION A OR OPTION B)
+        - SHARED fields must ALL be filled
+        - At least ONE option group (A or B) must have at least 1 upload
+        - Total requirement: 2 (1 for shared + 1 for either option)
+
+        Args:
+            fields: List of file upload fields to validate
+            response_data: The assessment response data
+            uploaded_movs: List of uploaded MOV objects
+
+        Returns:
+            Dict with validation results showing X/2 completion
+        """
+        # Group fields by option_group
+        shared_fields = []
+        option_a_fields = []
+        option_b_fields = []
+
+        for field in fields:
+            if isinstance(field, FileUploadField):
+                option_group = field.option_group
+                if option_group == 'shared':
+                    shared_fields.append(field)
+                elif option_group == 'option_a':
+                    option_a_fields.append(field)
+                elif option_group == 'option_b':
+                    option_b_fields.append(field)
+
+        logger.info(
+            f"[SHARED+OR LOGIC] Groups: shared={len(shared_fields)}, "
+            f"option_a={len(option_a_fields)}, option_b={len(option_b_fields)}"
+        )
+
+        # Check SHARED fields completion
+        shared_filled = 0
+        shared_missing = []
+        for field in shared_fields:
+            if self._is_field_filled(field, response_data, uploaded_movs):
+                shared_filled += 1
+            else:
+                shared_missing.append(field)
+
+        shared_complete = (len(shared_missing) == 0 and len(shared_fields) > 0) if shared_fields else True
+        logger.info(f"[SHARED+OR LOGIC] SHARED: {shared_filled}/{len(shared_fields)} filled, complete={shared_complete}")
+
+        # Check OPTION A fields - at least 1 upload needed
+        option_a_has_upload = False
+        for field in option_a_fields:
+            if self._is_field_filled(field, response_data, uploaded_movs):
+                option_a_has_upload = True
+                break
+
+        # Check OPTION B fields - at least 1 upload needed
+        option_b_has_upload = False
+        for field in option_b_fields:
+            if self._is_field_filled(field, response_data, uploaded_movs):
+                option_b_has_upload = True
+                break
+
+        logger.info(f"[SHARED+OR LOGIC] option_a_has_upload={option_a_has_upload}, option_b_has_upload={option_b_has_upload}")
+
+        # Either option_a OR option_b must have at least 1 upload
+        option_complete = option_a_has_upload or option_b_has_upload
+
+        # Total requirements: 2 (1 for shared + 1 for option)
+        required_count = 2
+        filled_count = 0
+
+        if shared_complete:
+            filled_count += 1
+
+        if option_complete:
+            filled_count += 1
+
+        is_complete = (filled_count == required_count)
+
+        # Build missing fields list
+        missing_fields = []
+        if not shared_complete:
+            for field in shared_missing:
+                missing_fields.append({
+                    "field_id": field.field_id,
+                    "label": field.label,
+                    "reason": "Required SHARED document is missing"
+                })
+
+        if not option_complete:
+            # Report all option fields as potentially missing since user needs to pick one
+            for field in option_a_fields + option_b_fields:
+                missing_fields.append({
+                    "field_id": field.field_id,
+                    "label": field.label,
+                    "reason": "At least one OPTION document is required (PHYSICAL or FINANCIAL)"
+                })
+
+        logger.info(f"[SHARED+OR LOGIC] Validation result: {filled_count}/{required_count} complete")
 
         return {
             "is_complete": is_complete,
