@@ -12,6 +12,7 @@ import {
   AlertCircle,
   Loader2,
   RotateCcw,
+  Lightbulb,
 } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,8 @@ import {
   usePostMlgooAssessmentsAssessmentIdApprove,
   usePostMlgooAssessmentsAssessmentIdRecalibrate,
   usePatchMlgooAssessmentsAssessmentIdRecalibrationValidation,
+  useGetCapdevAssessmentsAssessmentId,
+  usePostCapdevAssessmentsAssessmentIdRegenerate,
 } from "@sinag/shared";
 import {
   Select,
@@ -33,6 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CapDevInsightsCard } from "@/components/features/capdev";
 
 export default function SubmissionDetailsPage() {
   const { isAuthenticated } = useAuthStore();
@@ -64,6 +68,45 @@ export default function SubmissionDetailsPage() {
 
   // Update recalibration validation mutation
   const updateValidationMutation = usePatchMlgooAssessmentsAssessmentIdRecalibrationValidation();
+
+  // CapDev insights query - only fetch if assessment is completed
+  const {
+    data: capdevInsights,
+    isLoading: isCapdevLoading,
+    refetch: refetchCapdev,
+  } = useGetCapdevAssessmentsAssessmentId(assessmentId, {
+    query: {
+      enabled: !!(assessmentId && data && (data as any)?.status === "COMPLETED"),
+    },
+  });
+
+  // CapDev regeneration mutation
+  const regenerateCapdevMutation = usePostCapdevAssessmentsAssessmentIdRegenerate();
+
+  const handleRegenerateCapdev = async () => {
+    if (!assessmentId) return;
+
+    toast.loading("Regenerating CapDev insights...", { id: "capdev-regenerate" });
+
+    try {
+      await regenerateCapdevMutation.mutateAsync({
+        assessmentId,
+        params: { force: true },
+      });
+
+      toast.dismiss("capdev-regenerate");
+      toast.success("CapDev insights regeneration started. Please refresh in a few minutes.", {
+        duration: 5000,
+      });
+
+      // Refetch after a delay to get updated status
+      setTimeout(() => refetchCapdev(), 3000);
+    } catch (err: any) {
+      toast.dismiss("capdev-regenerate");
+      const errorMessage = err?.response?.data?.detail || err?.message || "Failed to regenerate";
+      toast.error(`Regeneration failed: ${errorMessage}`, { duration: 6000 });
+    }
+  };
 
   const handleApprove = async () => {
     if (!assessmentId) return;
@@ -882,6 +925,16 @@ export default function SubmissionDetailsPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* CapDev AI Insights Section - Only for Completed Assessments */}
+          {assessment.status === "COMPLETED" && (
+            <CapDevInsightsCard
+              insights={capdevInsights as any}
+              isLoading={isCapdevLoading}
+              onRegenerate={handleRegenerateCapdev}
+              isRegenerating={regenerateCapdevMutation.isPending}
+            />
+          )}
         </div>
       </div>
     </div>

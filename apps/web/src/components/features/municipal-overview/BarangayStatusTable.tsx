@@ -19,6 +19,7 @@ import type { BarangayStatusList, BarangayAssessmentStatus } from '@sinag/shared
 
 interface BarangayStatusTableProps {
   data: BarangayStatusList;
+  /** Callback when View CapDev is clicked. Receives assessment_id. Default navigates to /mlgoo/submissions/{id} */
   onViewCapDev?: (assessmentId: number) => void;
 }
 
