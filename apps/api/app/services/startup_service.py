@@ -21,6 +21,8 @@ from app.db.models.governance_area import Indicator
 from app.db.models.user import User
 from app.services.governance_area_service import governance_area_service
 from app.services.indicator_service import indicator_service
+from app.indicators.definitions import ALL_INDICATORS
+from app.indicators.seeder import seed_indicators
 from sqlalchemy.orm import Session  # type: ignore[reportMissingImports]
 
 logger = logging.getLogger(__name__)
@@ -320,28 +322,14 @@ class StartupService:
             governance_area_service.seed_governance_areas(db)
             logger.info("  - Governance areas seeding complete.")
 
-            # NOTE: Mock indicators and old seeding logic is now DISABLED
-            # We use hardcoded indicators from app/indicators/definitions/ instead
-            # These are seeded via Alembic migrations
-            logger.info("  - Using hardcoded SGLGB indicators from migrations (not mock data)")
-
-            # # Seed mock indicators
-            # logger.info("  - Seeding mock indicators for testing...")
-            # indicator_service.seed_mock_indicators(db)
-            # logger.info("  - Mock indicators seeding complete.")
-
-            # # Ensure Area 1 exists as a SINGLE indicator (sub-items live in schema only)
-            # logger.info("  - Enforcing Area 1 as a single indicator (sub-indicators in schema)...")
-            # indicator_service.enforce_area1_as_single_indicator(db)
-            # logger.info("  - Area 1 DB indicator enforced as single.")
-
-            # # Ensure official governance area names are used as indicator names
-            # indicator_service.standardize_indicator_area_names(db)
-
-            # # Seed indicators for areas 2-6 with specific codes (2.1.1, 3.1.1, 4.1.1, 5.1.1, 6.1.1)
-            # logger.info("  - Seeding indicators for governance areas 2-6...")
-            # indicator_service.seed_areas_2_to_6_indicators(db)
-            # logger.info("  - Areas 2-6 indicators seeding complete.")
+            # Seed hardcoded SGLGB indicators from Python definitions
+            existing_indicators = db.query(Indicator).count()
+            if existing_indicators == 0:
+                logger.info("  - Seeding hardcoded SGLGB indicators...")
+                seed_indicators(ALL_INDICATORS, db)
+                logger.info(f"  - Indicator seeding complete. ({len(ALL_INDICATORS)} parent indicators created)")
+            else:
+                logger.info(f"  - Indicators already exist ({existing_indicators}). Skipping seed.")
 
         except Exception as e:
             logger.warning(f"⚠️  Could not seed initial data: {str(e)}")

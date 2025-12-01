@@ -30,8 +30,8 @@ class AreaType(str, enum.Enum):
     Enum for the type of governance area (Core or Essential).
     """
 
-    CORE = "Core"
-    ESSENTIAL = "Essential"
+    CORE = "CORE"
+    ESSENTIAL = "ESSENTIAL"
 
 
 class AssessmentStatus(str, enum.Enum):
@@ -72,9 +72,9 @@ class MOVStatus(str, enum.Enum):
     Enum for MOV (Means of Verification) file status.
     """
 
-    PENDING = "Pending"
-    UPLOADED = "Uploaded"
-    DELETED = "Deleted"
+    PENDING = "PENDING"
+    UPLOADED = "UPLOADED"
+    DELETED = "DELETED"
 
 
 class ValidationStatus(str, enum.Enum):
@@ -82,9 +82,9 @@ class ValidationStatus(str, enum.Enum):
     Enum for individual assessment response validation status.
     """
 
-    PASS = "Pass"
-    FAIL = "Fail"
-    CONDITIONAL = "Conditional"
+    PASS = "PASS"
+    FAIL = "FAIL"
+    CONDITIONAL = "CONDITIONAL"
 
 
 class ComplianceStatus(str, enum.Enum):
@@ -92,8 +92,8 @@ class ComplianceStatus(str, enum.Enum):
     Enum for final SGLGB compliance status of an assessment.
     """
 
-    PASSED = "Passed"
-    FAILED = "Failed"
+    PASSED = "PASSED"
+    FAILED = "FAILED"
 
 
 class RuleType(str, enum.Enum):

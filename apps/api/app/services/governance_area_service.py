@@ -24,23 +24,37 @@ class GovernanceAreaService:
             {
                 "id": 1,
                 "name": "Financial Administration and Sustainability",
+                "code": "AREA1",
                 "area_type": AreaType.CORE,
             },
-            {"id": 2, "name": "Disaster Preparedness", "area_type": AreaType.CORE},
-            {"id": 3, "name": "Safety, Peace and Order", "area_type": AreaType.CORE},
+            {
+                "id": 2,
+                "name": "Disaster Preparedness",
+                "code": "AREA2",
+                "area_type": AreaType.CORE,
+            },
+            {
+                "id": 3,
+                "name": "Safety, Peace and Order",
+                "code": "AREA3",
+                "area_type": AreaType.CORE,
+            },
             {
                 "id": 4,
                 "name": "Social Protection and Sensitivity",
+                "code": "AREA4",
                 "area_type": AreaType.ESSENTIAL,
             },
             {
                 "id": 5,
                 "name": "Business-Friendliness and Competitiveness",
+                "code": "AREA5",
                 "area_type": AreaType.ESSENTIAL,
             },
             {
                 "id": 6,
                 "name": "Environmental Management",
+                "code": "AREA6",
                 "area_type": AreaType.ESSENTIAL,
             },
         ]
