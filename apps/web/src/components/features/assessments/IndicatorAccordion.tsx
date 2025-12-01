@@ -273,17 +273,17 @@ export function IndicatorAccordion({
 
     if (indicator.status === 'completed') {
       return (
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100 text-green-800 border border-green-200">
-          <CheckCircle className="h-4 w-4" />
-          <span className="text-sm font-semibold">Complete</span>
+        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-500/10 text-green-600 border border-green-500/20 shadow-sm">
+          <CheckCircle className="h-3.5 w-3.5" />
+          <span className="text-xs font-bold uppercase tracking-wide">Complete</span>
         </div>
       );
     }
 
     if (indicator.status === 'needs_rework') {
       return (
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-100 text-orange-800 border border-orange-200">
-          <span className="text-sm font-semibold">Rework Needed</span>
+        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500/10 text-orange-600 border border-orange-500/20 shadow-sm animate-pulse">
+          <span className="text-xs font-bold uppercase tracking-wide">Rework Needed</span>
         </div>
       );
     }
@@ -291,9 +291,13 @@ export function IndicatorAccordion({
     if (percentage > 0) {
       return (
         <div className="flex items-center gap-2">
+          <div className="flex flex-col items-end mr-2">
+            <span className="text-xs font-bold text-[var(--foreground)]">{percentage}%</span>
+            <span className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wider">Progress</span>
+          </div>
           {/* Mini Progress Circle */}
-          <div className="relative h-10 w-10">
-            <svg className="transform -rotate-90" viewBox="0 0 36 36">
+          <div className="relative h-9 w-9">
+            <svg className="transform -rotate-90 w-full h-full" viewBox="0 0 36 36">
               {/* Background circle */}
               <circle
                 cx="18"
@@ -302,7 +306,7 @@ export function IndicatorAccordion({
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="3"
-                className="text-gray-200"
+                className="text-[var(--muted)]"
               />
               {/* Progress circle */}
               <circle
@@ -314,22 +318,17 @@ export function IndicatorAccordion({
                 strokeWidth="3"
                 strokeDasharray={`${percentage} ${100 - percentage}`}
                 strokeLinecap="round"
-                className="text-blue-500 transition-all duration-500"
+                className="text-[var(--cityscape-yellow)] transition-all duration-500"
               />
             </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-xs font-bold text-[var(--foreground)]">
-                {percentage}%
-              </span>
-            </div>
           </div>
         </div>
       );
     }
 
     return (
-      <div className="text-xs text-[var(--text-secondary)] font-medium">
-        Not Started
+      <div className="px-3 py-1 rounded-full bg-[var(--muted)] text-[var(--text-secondary)] border border-[var(--border)]">
+        <span className="text-[10px] font-bold uppercase tracking-wide">Not Started</span>
       </div>
     );
   };
@@ -357,27 +356,27 @@ export function IndicatorAccordion({
     >
       <AccordionItem
         value={indicator.id}
-        className="border-none mb-8 last:mb-0"
+        className="border border-[var(--border)] rounded-lg mb-4 bg-[var(--card)] shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md"
       >
-        <AccordionTrigger className="group px-0 py-6 hover:no-underline transition-all duration-200 focus-visible:outline-none">
+        <AccordionTrigger className="group px-6 py-5 hover:no-underline transition-all duration-200 focus-visible:outline-none data-[state=open]:bg-[var(--muted)]/30">
           <div className="flex items-start justify-between w-full gap-6">
             {/* Left: Status + Content */}
             <div className="flex items-start gap-4 flex-1 min-w-0">
               {/* Content Stack */}
-              <div className="flex-1 min-w-0 space-y-3">
+              <div className="flex-1 min-w-0 space-y-2">
                 {/* Code + Name (Primary Info) */}
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center gap-2.5">
                     {/* Code - Monospace, subdued badge */}
                     {indicator.code && (
-                      <span className="text-xs font-mono text-[var(--text-secondary)] tracking-wider uppercase font-semibold bg-[var(--hover)] px-2 py-1 rounded border border-[var(--border)]">
+                      <span className="text-[10px] font-mono text-[var(--text-secondary)] tracking-wider uppercase font-bold bg-[var(--muted)] px-2 py-0.5 rounded border border-[var(--border)]">
                         {indicator.code}
                       </span>
                     )}
                     
                     {/* Status Badge (if not completed) */}
                     {indicator.status === 'needs_rework' && (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 text-xs font-medium border border-orange-100">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 text-[10px] font-bold uppercase tracking-wide border border-orange-100">
                         <AlertCircle className="h-3 w-3" />
                         Action Required
                       </span>
@@ -385,25 +384,25 @@ export function IndicatorAccordion({
                   </div>
 
                   {/* Name - Bold, prominent */}
-                  <h3 className="text-lg sm:text-xl font-bold text-[var(--foreground)] leading-snug">
+                  <h3 className="text-lg font-bold text-[var(--foreground)] leading-tight group-hover:text-[var(--cityscape-yellow-dark)] transition-colors">
                     {indicator.name}
                   </h3>
                 </div>
 
                 {/* Description - Always show description for better context */}
                 {indicator.description && (
-                  <p className="text-base text-[var(--text-secondary)] leading-relaxed max-w-3xl">
+                  <p className="text-sm text-[var(--text-secondary)] leading-relaxed max-w-4xl">
                     {indicator.description}
                   </p>
                 )}
                 
                 {/* Progress Metadata (Only when collapsed) */}
                 {!isOpen && (
-                    <div className="flex items-center gap-4 text-sm text-[var(--text-secondary)] pt-2">
+                    <div className="flex items-center gap-4 text-xs text-[var(--text-secondary)] pt-1">
                       {/* MOV Count */}
                       {indicator.movFiles.length > 0 && (
-                        <span className="flex items-center gap-2 px-3 py-1.5 bg-[var(--hover)] rounded-full">
-                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <span className="flex items-center gap-1.5">
+                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
                           <span className="font-medium">{indicator.movFiles.length} file{indicator.movFiles.length !== 1 ? 's' : ''}</span>
@@ -421,7 +420,7 @@ export function IndicatorAccordion({
           </div>
         </AccordionTrigger>
 
-        <AccordionContent className="px-0 pb-6 pt-2">
+        <AccordionContent className="px-6 pb-6 pt-2">
           {/* Render children if they exist */}
           {Array.isArray((indicator as any).children) &&
             (indicator as any).children.length > 0 && (

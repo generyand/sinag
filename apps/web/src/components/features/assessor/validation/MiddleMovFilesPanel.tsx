@@ -1,13 +1,12 @@
 "use client";
 
-import * as React from 'react';
-import type { AssessmentDetailsResponse } from '@sinag/shared';
 import { FileList } from '@/components/features/movs/FileList';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileIcon, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useMovAnnotations } from '@/hooks/useMovAnnotations';
+import type { AssessmentDetailsResponse } from '@sinag/shared';
+import { FileIcon, X } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import * as React from 'react';
 
 // Dynamically import PdfAnnotator to avoid SSR issues
 const PdfAnnotator = dynamic(() => import('@/components/shared/PdfAnnotator'), {
@@ -204,12 +203,13 @@ export function MiddleMovFilesPanel({ assessment, expandedId, calibrationRequest
   return (
     <div className="h-full flex flex-col bg-card">
       {/* Header */}
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center gap-2">
-          <FileIcon className="h-5 w-5 text-muted-foreground" />
-          <div>
-            <h3 className="text-sm font-semibold">BLGU Uploaded Files</h3>
-            <p className="text-xs text-muted-foreground">{indicatorName}</p>
+      {/* Header */}
+      <div className="h-14 flex items-center px-3 border-b border-[var(--border)] bg-muted/5 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <FileIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+          <div className="min-w-0">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground truncate">BLGU Uploaded Files</h3>
+            <p className="text-[10px] text-muted-foreground truncate max-w-[200px]">{indicatorName}</p>
           </div>
         </div>
       </div>
@@ -217,17 +217,23 @@ export function MiddleMovFilesPanel({ assessment, expandedId, calibrationRequest
       {/* Files List */}
       <div className="flex-1 overflow-y-auto p-4">
         {!selectedResponse ? (
-          <div className="flex flex-col items-center justify-center h-full text-center p-6">
-            <FileIcon className="h-12 w-12 text-muted-foreground/50 mb-3" />
-            <p className="text-sm text-muted-foreground">
+          <div className="flex flex-col items-center justify-center h-full text-center p-6 text-muted-foreground/60">
+            <div className="bg-muted/10 p-4 rounded-full mb-4">
+              <FileIcon className="h-8 w-8 opacity-50" />
+            </div>
+            <p className="text-sm font-medium text-foreground/80 mb-1">No Indicator Selected</p>
+            <p className="text-xs max-w-[180px]">
               Select an indicator from the left panel to view uploaded files
             </p>
           </div>
         ) : movFiles.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center p-6">
-            <FileIcon className="h-12 w-12 text-muted-foreground/50 mb-3" />
-            <p className="text-sm text-muted-foreground">
-              No files uploaded for this indicator
+          <div className="flex flex-col items-center justify-center h-full text-center p-6 text-muted-foreground/60">
+            <div className="bg-muted/10 p-4 rounded-full mb-4">
+              <FileIcon className="h-8 w-8 opacity-50" />
+            </div>
+            <p className="text-sm font-medium text-foreground/80 mb-1">No Files Uploaded</p>
+            <p className="text-xs max-w-[180px]">
+              There are no files uploaded for this indicator yet
             </p>
           </div>
         ) : calibrationRequestedAt ? (

@@ -1,22 +1,21 @@
 "use client";
 
 import { TreeNavigator } from '@/components/features/assessments/tree-navigation';
-import { useGetAssessorAssessmentsAssessmentId } from '@sinag/shared';
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { RightAssessorPanel } from './RightAssessorPanel';
-import { MiddleMovFilesPanel } from './MiddleMovFilesPanel';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft } from 'lucide-react';
-import Link from 'next/link';
 import { StatusBadge } from '@/components/shared';
-import { useQueryClient } from '@tanstack/react-query';
-import {
-  usePostAssessorAssessmentResponsesResponseIdValidate,
-  usePostAssessorAssessmentsAssessmentIdFinalize,
-  usePostAssessorAssessmentsAssessmentIdRework,
-} from '@sinag/shared';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/store/useAuthStore';
+import {
+    useGetAssessorAssessmentsAssessmentId, usePostAssessorAssessmentResponsesResponseIdValidate,
+    usePostAssessorAssessmentsAssessmentIdFinalize,
+    usePostAssessorAssessmentsAssessmentIdRework
+} from '@sinag/shared';
+import { useQueryClient } from '@tanstack/react-query';
+import { ChevronLeft } from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { MiddleMovFilesPanel } from './MiddleMovFilesPanel';
+import { RightAssessorPanel } from './RightAssessorPanel';
 
 interface AssessorValidationClientProps {
   assessmentId: number;
@@ -596,33 +595,34 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   return (
     <div className="min-h-screen bg-[var(--background)] flex flex-col">
       {/* Header */}
-      <div className="sticky top-0 z-20 bg-card/80 backdrop-blur border-b border-[var(--border)]">
-        <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <Button asChild variant="ghost" size="sm" className="shrink-0">
-              <Link href="/assessor/submissions" className="flex items-center gap-1">
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
+        <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <Button asChild variant="ghost" size="sm" className="shrink-0 gap-1 text-muted-foreground hover:text-foreground px-2">
+              <Link href="/assessor/submissions">
                 <ChevronLeft className="h-4 w-4" />
-                <span>Submissions Queue</span>
+                <span className="font-medium">Queue</span>
               </Link>
             </Button>
-            <div className="min-w-0">
-              <div className="text-sm font-medium truncate">
-                {barangayName ? `Barangay: ${barangayName}` : ''}
-                {barangayName && governanceArea ? ' — ' : ''}
-                {governanceArea ? `Governance Area: ${governanceArea}` : ''}
-                {cycleYear ? ` (CY ${cycleYear})` : ''}
+            <div className="h-8 w-px bg-border shrink-0" />
+            <div className="min-w-0 flex flex-col justify-center">
+              <div className="text-sm font-bold text-foreground truncate leading-tight">
+                {barangayName} <span className="text-muted-foreground font-medium mx-1">/</span> {governanceArea}
               </div>
-              <div className="text-xs text-muted-foreground truncate">Assessor Validation Workspace</div>
+              <div className="text-xs text-muted-foreground truncate leading-tight mt-0.5">
+                Assessor Validation Workspace {cycleYear ? `• CY ${cycleYear}` : ''}
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {statusText ? <StatusBadge status={statusText} /> : null}
+          <div className="flex items-center gap-3">
+            {statusText ? <div className="scale-90 origin-right"><StatusBadge status={statusText} /></div> : null}
             <Button
               variant="outline"
               size="sm"
               type="button"
               onClick={onSaveDraft}
               disabled={isSaving}
+              className="ml-2"
             >
               {isSaving ? 'Saving...' : 'Save as Draft'}
             </Button>
@@ -631,12 +631,12 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       </div>
 
       {/* Three-Column Layout */}
-      <div className="flex-1">
-        <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-row gap-6">
+      <div className="flex-1 overflow-hidden">
+        <div className="h-full max-w-[1920px] mx-auto">
+          <div className="flex flex-row h-[calc(100vh-125px)] bg-white border-b border-[var(--border)]">
             {/* Left Panel - Indicator Tree Navigation */}
-            <div className="w-[240px] flex-shrink-0 rounded-sm shadow-md border border-black/5 overflow-hidden min-h-[600px] bg-white">
-              <div className="h-full overflow-y-auto">
+            <div className="w-[280px] flex-shrink-0 border-r border-[var(--border)] overflow-hidden flex flex-col bg-muted/5">
+              <div className="flex-1 overflow-y-auto">
                 <TreeNavigator
                   assessment={transformedAssessment as any}
                   selectedIndicatorId={selectedIndicatorId}
@@ -646,7 +646,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             </div>
 
             {/* Middle Panel - MOV Files */}
-            <div className="w-[240px] flex-shrink-0 rounded-sm shadow-md border border-black/5 overflow-hidden min-h-[600px] bg-white">
+            <div className="w-[320px] flex-shrink-0 border-r border-[var(--border)] overflow-hidden flex flex-col bg-white">
               <MiddleMovFilesPanel
                 assessment={data as any}
                 expandedId={expandedId ?? undefined}
@@ -654,8 +654,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             </div>
 
             {/* Right Panel - MOV Checklist/Validation */}
-            <div className="flex-1 rounded-sm shadow-md border border-black/5 overflow-hidden min-h-[600px] bg-white">
-              <div className="h-full overflow-y-auto">
+            <div className="flex-1 overflow-hidden flex flex-col bg-white">
+              <div className="flex-1 overflow-y-auto">
                 <RightAssessorPanel
                   assessment={data as any}
                   form={form}

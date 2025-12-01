@@ -1,10 +1,10 @@
 // ☑️ Checkbox Field Component
 // Multi-select checkbox group field with React Hook Form integration
 
-import { Controller, Control, FieldValues, Path } from "react-hook-form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import type { CheckboxGroupField } from "@sinag/shared";
+import { Control, Controller, FieldValues, Path } from "react-hook-form";
 
 interface CheckboxFieldComponentProps<TFieldValues extends FieldValues> {
   field: CheckboxGroupField;
@@ -44,39 +44,40 @@ export function CheckboxFieldComponent<TFieldValues extends FieldValues>({
             : [];
 
           return (
-            <div className="flex flex-col space-y-2">
+            <div className="flex flex-col gap-3">
               {field.options.map((option) => {
                 const isChecked = currentValue.includes(option.value);
 
                 return (
                   <div
                     key={option.value}
-                    className="flex items-center space-x-2"
+                    className="flex items-center space-x-3 p-3 rounded-lg border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--hover)] hover:border-[var(--cityscape-yellow)]/50 transition-all duration-200 cursor-pointer group"
+                    onClick={() => {
+                        if (!isChecked) {
+                          controllerField.onChange([...currentValue, option.value]);
+                        } else {
+                          controllerField.onChange(currentValue.filter((v: string) => v !== option.value));
+                        }
+                    }}
                   >
                     <Checkbox
                       id={`${field.field_id}-${option.value}`}
                       checked={isChecked}
                       onCheckedChange={(checked) => {
                         if (checked) {
-                          // Add value to array
-                          controllerField.onChange([
-                            ...currentValue,
-                            option.value,
-                          ]);
+                          controllerField.onChange([...currentValue, option.value]);
                         } else {
-                          // Remove value from array
-                          controllerField.onChange(
-                            currentValue.filter((v: string) => v !== option.value)
-                          );
+                          controllerField.onChange(currentValue.filter((v: string) => v !== option.value));
                         }
                       }}
                       aria-describedby={
                         error ? `${field.field_id}-error` : undefined
                       }
+                      className="data-[state=checked]:bg-[var(--cityscape-yellow)] data-[state=checked]:text-[var(--cityscape-yellow-dark)] border-[var(--muted-foreground)] group-hover:border-[var(--cityscape-yellow)]"
                     />
                     <Label
                       htmlFor={`${field.field_id}-${option.value}`}
-                      className="font-normal cursor-pointer"
+                      className="font-medium cursor-pointer flex-1 text-[var(--foreground)] group-hover:text-[var(--cityscape-yellow-dark)] transition-colors"
                     >
                       {option.label}
                     </Label>

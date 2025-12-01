@@ -193,7 +193,7 @@ export function DynamicFormRenderer({
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         {/* Navigation Header - Removed in favor of footer */}
 
         {/* Completion Feedback Panel */}
@@ -278,14 +278,14 @@ function SectionRenderer({
   }
 
   return (
-    <Card className="border-none shadow-none bg-transparent">
-      <CardHeader className="px-0">
-        <CardTitle className="text-lg">{section.title}</CardTitle>
+    <Card className="border-none shadow-none bg-transparent mb-8 last:mb-0">
+      <CardHeader className="px-0 pb-6">
+        <CardTitle className="text-xl font-bold text-[var(--foreground)]">{section.title}</CardTitle>
         {section.description && (
-          <CardDescription>{section.description}</CardDescription>
+          <CardDescription className="text-base mt-2">{section.description}</CardDescription>
         )}
       </CardHeader>
-      <CardContent className="space-y-6 px-0">
+      <CardContent className="space-y-8 px-0">
         {visibleFields.map((field) => (
           <FieldRenderer
             key={field.field_id}

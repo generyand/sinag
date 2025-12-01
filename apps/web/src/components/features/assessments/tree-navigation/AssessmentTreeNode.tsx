@@ -143,10 +143,10 @@ export function AssessmentTreeNode({
       aria-level={level + 1}
       tabIndex={0}
       className={`
-        group relative flex items-center ${type === "area" ? "gap-2.5" : "gap-2"} cursor-pointer transition-all duration-200 rounded-md mx-1
+        group relative flex items-center ${type === "area" ? "gap-2.5" : "gap-2"} cursor-pointer transition-colors duration-200 rounded-md mx-1
         ${isActive 
           ? "bg-[var(--cityscape-yellow)]/10 text-[var(--foreground)] font-medium" 
-          : "text-[var(--text-secondary)] hover:bg-[var(--hover)] hover:text-[var(--foreground)]"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground"
         }
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--cityscape-yellow)]
       `}
