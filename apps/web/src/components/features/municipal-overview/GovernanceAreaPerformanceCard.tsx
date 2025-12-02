@@ -30,7 +30,7 @@ export function GovernanceAreaPerformanceCard({ data }: GovernanceAreaPerformanc
       <CardContent>
         <div className="space-y-4">
           {data.areas.map((area: AppSchemasMunicipalInsightsGovernanceAreaPerformance) => (
-            <div key={area.id} className="p-4 bg-gray-50 rounded-lg">
+            <div key={area.id} className="p-4 bg-[var(--muted)]/30 rounded-sm border border-[var(--border)]">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{area.name}</span>

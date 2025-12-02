@@ -240,7 +240,7 @@ export default function AnalyticsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="space-y-6">
           {/* Enhanced Header Section */}
-          <div className="relative overflow-hidden bg-[var(--card)] rounded shadow-lg border border-[var(--border)] p-8">
+          <div className="relative overflow-hidden bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-8">
             {/* Decorative background elements */}
             <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-blue-500/10 to-indigo-500/5 dark:from-blue-400/20 dark:to-indigo-400/10 rounded-full -translate-y-20 translate-x-20"></div>
             <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-purple-500/10 to-pink-500/5 dark:from-purple-400/20 dark:to-pink-400/10 rounded-full translate-y-16 -translate-x-16"></div>
@@ -248,7 +248,7 @@ export default function AnalyticsPage() {
             <div className="relative z-10">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-gradient-to-br from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] rounded shadow-md">
+                  <div className="p-3 bg-gradient-to-br from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] rounded-sm shadow-md">
                     <BarChart3 className="h-8 w-8 text-[var(--foreground)]" />
                   </div>
                   <div>
@@ -286,7 +286,7 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Tab Navigation */}
-          <div className="bg-[var(--card)] rounded shadow-lg border border-[var(--border)] p-2">
+          <div className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-2">
             <Tabs value={activeTab} onValueChange={(v) => handleTabChange(v as TabId)}>
               <TabsList className="w-full flex flex-wrap gap-1 bg-transparent h-auto p-0">
                 {TABS.map((tab) => {
@@ -295,7 +295,7 @@ export default function AnalyticsPage() {
                     <TabsTrigger
                       key={tab.id}
                       value={tab.id}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded data-[state=active]:bg-[var(--cityscape-yellow)] data-[state=active]:text-[var(--foreground)] data-[state=active]:shadow-sm transition-all"
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-sm data-[state=active]:bg-[var(--cityscape-yellow)] data-[state=active]:text-[var(--foreground)] data-[state=active]:shadow-sm transition-all"
                     >
                       <Icon className="h-4 w-4" />
                       <span className="hidden sm:inline">{tab.label}</span>
@@ -307,7 +307,7 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Global Filters */}
-          <div className="bg-[var(--card)] rounded shadow-lg border border-[var(--border)] p-6">
+          <div className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-6">
             <div className="flex items-center gap-3 mb-4">
               <Filter className="h-5 w-5" style={{ color: "var(--cityscape-yellow)" }} />
               <h2 className="text-lg font-semibold text-[var(--foreground)]">
@@ -336,10 +336,10 @@ export default function AnalyticsPage() {
                   }}
                   disabled={isCyclesLoading}
                 >
-                  <SelectTrigger className="w-full bg-[var(--background)] border-[var(--border)] rounded">
+                  <SelectTrigger className="w-full bg-[var(--background)] border-[var(--border)] rounded-sm">
                     <SelectValue placeholder={isCyclesLoading ? "Loading cycles..." : "Select cycle"} />
                   </SelectTrigger>
-                  <SelectContent className="bg-[var(--card)] border border-[var(--border)] shadow-xl rounded z-50">
+                  <SelectContent className="bg-[var(--card)] border border-[var(--border)] shadow-xl rounded-sm z-50">
                     <SelectItem
                       value="all"
                       className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
@@ -379,10 +379,10 @@ export default function AnalyticsPage() {
                     setSelectedPhase(value);
                   }}
                 >
-                  <SelectTrigger className="w-full bg-[var(--background)] border-[var(--border)] rounded">
+                  <SelectTrigger className="w-full bg-[var(--background)] border-[var(--border)] rounded-sm">
                     <SelectValue placeholder="Select phase" />
                   </SelectTrigger>
-                  <SelectContent className="bg-[var(--card)] border border-[var(--border)] shadow-xl rounded z-50">
+                  <SelectContent className="bg-[var(--card)] border border-[var(--border)] shadow-xl rounded-sm z-50">
                     <SelectItem
                       value="all"
                       className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
@@ -410,7 +410,7 @@ export default function AnalyticsPage() {
             {selectedPhase !== "all" && (
               <div className="flex items-center gap-2 mt-4">
                 <div
-                  className={`inline-flex items-center px-3 py-1 rounded text-xs font-medium border ${
+                  className={`inline-flex items-center px-3 py-1 rounded-sm text-xs font-medium border ${
                     selectedPhase === "phase1"
                       ? "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800"
                       : "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-800"
@@ -526,11 +526,11 @@ function DashboardSkeleton() {
   return (
     <div className="space-y-6">
       {/* Header Skeleton */}
-      <div className="relative overflow-hidden bg-[var(--card)] rounded shadow-lg border border-[var(--border)] p-8">
+      <div className="relative overflow-hidden bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-8">
         <div className="relative z-10">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-4">
-              <Skeleton className="h-14 w-14 rounded" />
+              <Skeleton className="h-14 w-14 rounded-sm" />
               <div>
                 <Skeleton className="h-8 w-64 mb-2" />
                 <Skeleton className="h-4 w-96" />
@@ -541,18 +541,18 @@ function DashboardSkeleton() {
       </div>
 
       {/* Tabs Skeleton */}
-      <div className="bg-[var(--card)] rounded shadow-lg border border-[var(--border)] p-2">
+      <div className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-2">
         <div className="flex gap-2">
           {[...Array(7)].map((_, i) => (
-            <Skeleton key={i} className="h-10 w-28 rounded" />
+            <Skeleton key={i} className="h-10 w-28 rounded-sm" />
           ))}
         </div>
       </div>
 
       {/* Filters Skeleton */}
-      <div className="bg-[var(--card)] rounded shadow-lg border border-[var(--border)] p-6">
+      <div className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-6">
         <div className="flex items-center gap-3 mb-4">
-          <Skeleton className="h-5 w-5 rounded" />
+          <Skeleton className="h-5 w-5 rounded-sm" />
           <Skeleton className="h-6 w-32" />
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
@@ -572,7 +572,7 @@ function DashboardSkeleton() {
         {[...Array(3)].map((_, i) => (
           <div
             key={i}
-            className="bg-[var(--card)] p-6 rounded shadow-lg border border-[var(--border)] space-y-4"
+            className="bg-[var(--card)] p-6 rounded-sm shadow-lg border border-[var(--border)] space-y-4"
           >
             <Skeleton className="h-5 w-40" />
             <Skeleton className="h-4 w-48" />

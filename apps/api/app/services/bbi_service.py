@@ -762,11 +762,12 @@ class BBIService:
         {
             "operator": "AND" or "OR",
             "conditions": [
-                {"indicator_id": 1, "required_status": "Pass"},
-                {"indicator_id": 2, "required_status": "Pass"},
+                {"indicator_id": 1, "required_status": "PASS"},
+                {"indicator_id": 2, "required_status": "PASS"},
                 ...
             ]
         }
+        Note: required_status must match ValidationStatus enum values (uppercase: "PASS", "FAIL", "CONDITIONAL")
 
         Args:
             mapping_rules: BBI mapping rules (JSON)

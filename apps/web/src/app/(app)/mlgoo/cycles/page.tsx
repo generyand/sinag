@@ -88,8 +88,12 @@ export default function CyclesPage() {
     );
   }
 
-  // Show error state
-  if (activeCycleError) {
+  // Handle error state - but 404 means no active cycle, which is valid
+  // Only show error for non-404 errors
+  const isNotFoundError = activeCycleError &&
+    (activeCycleError as any)?.response?.status === 404;
+
+  if (activeCycleError && !isNotFoundError) {
     return (
       <div className="min-h-screen bg-[var(--background)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -105,6 +109,9 @@ export default function CyclesPage() {
       </div>
     );
   }
+
+  // Treat 404 as "no active cycle" (valid state)
+  const hasNoCycle = !activeCycle || isNotFoundError;
 
   // Format date for display
   const formatDate = (dateString: string | null | undefined) => {
@@ -202,7 +209,7 @@ export default function CyclesPage() {
                     </span>
                   </div>
                 </div>
-              ) : activeCycle ? (
+              ) : !hasNoCycle && activeCycle ? (
                 <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg">
                   {/* Cycle Header */}
                   <div className="p-6 border-b border-[var(--border)]">
@@ -349,7 +356,7 @@ export default function CyclesPage() {
               )}
 
               {/* Show Create Button when there's an active cycle */}
-              {activeCycle && !showCreateForm && (
+              {!hasNoCycle && activeCycle && !showCreateForm && (
                 <div className="flex justify-center">
                   <Button
                     onClick={() => setShowCreateForm(true)}

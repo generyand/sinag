@@ -207,12 +207,14 @@ export function GARReportDisplay({ data }: GARReportDisplayProps) {
 
 // Helper functions for colors
 function getStatusColor(status: string | null | undefined): string {
-  switch (status) {
-    case 'Pass':
+  // Normalize status to handle case variations (backend returns PASS, FAIL, CONDITIONAL)
+  const normalizedStatus = status?.toUpperCase();
+  switch (normalizedStatus) {
+    case 'PASS':
       return 'bg-green-500';
-    case 'Conditional':
+    case 'CONDITIONAL':
       return 'bg-yellow-400';
-    case 'Fail':
+    case 'FAIL':
       return 'bg-red-500';
     default:
       return 'bg-gray-200 dark:bg-gray-700';

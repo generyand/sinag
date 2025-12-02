@@ -230,13 +230,13 @@ class CalculationSchema(BaseModel):
         min_length=1,
         description="Top-level condition groups (evaluated with implicit AND)"
     )
-    output_status_on_pass: Literal["Pass", "Fail"] = Field(
-        default="Pass",
-        description="Status to assign when conditions are met"
+    output_status_on_pass: Literal["PASS", "FAIL"] = Field(
+        default="PASS",
+        description="Status to assign when conditions are met (matches ValidationStatus enum)"
     )
-    output_status_on_fail: Literal["Pass", "Fail"] = Field(
-        default="Fail",
-        description="Status to assign when conditions are not met"
+    output_status_on_fail: Literal["PASS", "FAIL"] = Field(
+        default="FAIL",
+        description="Status to assign when conditions are not met (matches ValidationStatus enum)"
     )
 
     @field_validator("condition_groups")
@@ -270,8 +270,8 @@ class CalculationSchema(BaseModel):
                         ]
                     }
                 ],
-                "output_status_on_pass": "Pass",
-                "output_status_on_fail": "Fail"
+                "output_status_on_pass": "PASS",
+                "output_status_on_fail": "FAIL"
             }
         }
 

@@ -577,6 +577,7 @@ def get_blgu_dashboard(
                 }
 
             # Count validation statuses from responses
+            # Note: ValidationStatus enum values are uppercase (PASS, FAIL, CONDITIONAL)
             for response in assessment.responses:
                 if response.indicator and response.indicator.governance_area:
                     ga_name = response.indicator.governance_area.name
@@ -584,11 +585,11 @@ def get_blgu_dashboard(
                         area_indicator_counts[ga_name]["total"] += 1
                         if response.validation_status:
                             status_val = response.validation_status.value if hasattr(response.validation_status, 'value') else response.validation_status
-                            if status_val == "Pass":
+                            if status_val == "PASS":
                                 area_indicator_counts[ga_name]["passed"] += 1
-                            elif status_val == "Fail":
+                            elif status_val == "FAIL":
                                 area_indicator_counts[ga_name]["failed"] += 1
-                            elif status_val == "Conditional":
+                            elif status_val == "CONDITIONAL":
                                 area_indicator_counts[ga_name]["conditional"] += 1
 
             # area_results is stored as {"Area Name": "Passed"/"Failed"} from intelligence_service
@@ -625,6 +626,48 @@ def get_blgu_dashboard(
 
         # AI recommendations (CapDev)
         ai_recommendations = assessment.ai_recommendations
+
+    # BBI Compliance data - ONLY expose when assessment is COMPLETED
+    bbi_compliance = None
+    if assessment.status == AssessmentStatus.COMPLETED:
+        from app.services.bbi_service import bbi_service
+        from app.db.models.bbi import BBIResult
+
+        bbi_results = bbi_service.get_bbi_results(db, assessment_id)
+        if bbi_results:
+            # Calculate summary
+            highly_functional = sum(1 for r in bbi_results if r.compliance_rating == "HIGHLY_FUNCTIONAL")
+            moderately_functional = sum(1 for r in bbi_results if r.compliance_rating == "MODERATELY_FUNCTIONAL")
+            low_functional = sum(1 for r in bbi_results if r.compliance_rating == "LOW_FUNCTIONAL")
+            avg_compliance = sum(r.compliance_percentage for r in bbi_results) / len(bbi_results) if bbi_results else 0
+
+            bbi_compliance = {
+                "assessment_id": assessment_id,
+                "bbi_results": [
+                    {
+                        "bbi_id": r.bbi_id,
+                        "bbi_name": r.bbi.name if r.bbi else "Unknown",
+                        "bbi_abbreviation": r.bbi.abbreviation if r.bbi else "",
+                        "governance_area_id": r.bbi.governance_area_id if r.bbi else None,
+                        "assessment_id": r.assessment_id,
+                        "compliance_percentage": r.compliance_percentage or 0,
+                        "compliance_rating": r.compliance_rating or "LOW_FUNCTIONAL",
+                        "sub_indicators_passed": r.sub_indicators_passed or 0,
+                        "sub_indicators_total": r.sub_indicators_total or 0,
+                        "sub_indicator_results": r.sub_indicator_results or [],
+                        "calculation_date": r.calculation_date.isoformat() + 'Z' if r.calculation_date else None,
+                    }
+                    for r in bbi_results
+                ],
+                "summary": {
+                    "total_bbis": len(bbi_results),
+                    "highly_functional_count": highly_functional,
+                    "moderately_functional_count": moderately_functional,
+                    "low_functional_count": low_functional,
+                    "average_compliance_percentage": round(avg_compliance, 2),
+                },
+                "calculated_at": bbi_results[0].calculation_date.isoformat() + 'Z' if bbi_results and bbi_results[0].calculation_date else None,
+            }
 
     # Epic 5.0: Return status and rework tracking fields
     return {
@@ -665,6 +708,8 @@ def get_blgu_dashboard(
         "final_compliance_status": final_compliance_status,
         "area_results": area_results,
         "ai_recommendations": ai_recommendations,
+        # BBI Compliance data - ONLY populated when COMPLETED
+        "bbi_compliance": bbi_compliance,
     }
 
 

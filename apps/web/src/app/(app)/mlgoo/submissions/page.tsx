@@ -61,6 +61,7 @@ export default function AdminSubmissionsPage() {
       "completed": AssessmentStatus.COMPLETED,
       "validated": AssessmentStatus.VALIDATED,
       "awaiting_final": AssessmentStatus.AWAITING_FINAL_VALIDATION,
+      "awaiting_mlgoo": AssessmentStatus.AWAITING_MLGOO_APPROVAL,
       "in_review": AssessmentStatus.IN_REVIEW,
       "rework": AssessmentStatus.REWORK,
       "submitted": AssessmentStatus.SUBMITTED,
@@ -84,6 +85,7 @@ export default function AdminSubmissionsPage() {
         [AssessmentStatus.COMPLETED]: "Completed",
         [AssessmentStatus.VALIDATED]: "Validated",
         [AssessmentStatus.AWAITING_FINAL_VALIDATION]: "Awaiting Final Validation",
+        [AssessmentStatus.AWAITING_MLGOO_APPROVAL]: "Awaiting MLGOO Approval",
         [AssessmentStatus.IN_REVIEW]: "In Review",
         [AssessmentStatus.REWORK]: "Needs Rework",
         [AssessmentStatus.SUBMITTED]: "Submitted for Review",
@@ -92,11 +94,20 @@ export default function AdminSubmissionsPage() {
         [AssessmentStatus.NEEDS_REWORK]: "Needs Rework",
       };
 
-      const currentStatus = statusMap[assessment.status] || assessment.status;
+      // Check if this is MLGOO RE-calibration (different from regular rework)
+      let currentStatus = statusMap[assessment.status] || assessment.status;
+      if (assessment.is_mlgoo_recalibration && (assessment.status === AssessmentStatus.REWORK || assessment.status === "REWORK")) {
+        currentStatus = "MLGOO RE-Calibration";
+      }
 
-      // Calculate progress based on area_results if available
+      // Calculate progress based on status (more reliable than area_results for display)
+      // Completed assessments should always show 100% progress
       let overallProgress = 0;
-      if (assessment.area_results && typeof assessment.area_results === 'object') {
+      if (assessment.status === AssessmentStatus.COMPLETED || assessment.status === AssessmentStatus.VALIDATED) {
+        overallProgress = 100;
+      } else if (assessment.final_compliance_status === "COMPLIANT" || assessment.final_compliance_status === "PASSED") {
+        overallProgress = 100;
+      } else if (assessment.area_results && typeof assessment.area_results === 'object') {
         const results = Object.values(assessment.area_results);
         if (results.length > 0) {
           const totalCompliance = results.reduce((sum: number, result: any) => {
@@ -104,12 +115,10 @@ export default function AdminSubmissionsPage() {
           }, 0);
           overallProgress = Math.round(totalCompliance / results.length);
         }
-      } else if (assessment.final_compliance_status === "COMPLIANT") {
-        overallProgress = 100;
-      } else if (assessment.status === AssessmentStatus.COMPLETED || assessment.status === AssessmentStatus.VALIDATED) {
-        overallProgress = 100;
-      } else if (assessment.status === AssessmentStatus.AWAITING_FINAL_VALIDATION) {
+      } else if (assessment.status === AssessmentStatus.AWAITING_MLGOO_APPROVAL) {
         overallProgress = 95;
+      } else if (assessment.status === AssessmentStatus.AWAITING_FINAL_VALIDATION) {
+        overallProgress = 90;
       } else if (assessment.status === AssessmentStatus.IN_REVIEW) {
         overallProgress = 75;
       } else if (assessment.status === AssessmentStatus.SUBMITTED) {
@@ -169,16 +178,37 @@ export default function AdminSubmissionsPage() {
 
   // Show error state
   if (error) {
+    // Check if it's a 403 forbidden error (user doesn't have MLGOO_DILG role)
+    const errorResponse = (error as any)?.response;
+    const isForbidden = errorResponse?.status === 403;
+    const isUnauthorized = errorResponse?.status === 401;
+
+    const errorTitle = isForbidden
+      ? "Access Denied"
+      : isUnauthorized
+      ? "Authentication Required"
+      : "Failed to Load Assessments";
+
+    const errorMessage = isForbidden
+      ? "You need MLGOO/DILG admin privileges to access this page. Please log in with an admin account (e.g., admin@sinag.com)."
+      : isUnauthorized
+      ? "Please log in to access this page."
+      : (error as any)?.message || "An unexpected error occurred";
+
     return (
       <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
         <div className="max-w-md w-full bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg p-8">
           <div className="text-center">
-            <XCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
+            {isForbidden ? (
+              <AlertTriangle className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
+            ) : (
+              <XCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
+            )}
             <h2 className="text-xl font-semibold text-[var(--foreground)] mb-2">
-              Failed to Load Assessments
+              {errorTitle}
             </h2>
             <p className="text-[var(--muted-foreground)] mb-4">
-              {(error as any)?.message || "An unexpected error occurred"}
+              {errorMessage}
             </p>
             <Button
               onClick={() => window.location.reload()}
@@ -194,6 +224,11 @@ export default function AdminSubmissionsPage() {
 
   const getStatusConfig = (status: string) => {
     const configs = {
+      "Awaiting MLGOO Approval": {
+        bgColor: 'var(--kpi-purple-from)',
+        textColor: 'var(--kpi-purple-text)',
+        icon: Clock,
+      },
       "Submitted for Review": {
         bgColor: 'var(--analytics-warning-bg)',
         textColor: 'var(--analytics-warning-text)',
@@ -222,6 +257,11 @@ export default function AdminSubmissionsPage() {
       "Needs Rework": {
         bgColor: 'var(--analytics-warning-bg)',
         textColor: 'var(--analytics-warning-text)',
+        icon: AlertTriangle,
+      },
+      "MLGOO RE-Calibration": {
+        bgColor: 'var(--kpi-purple-from)',
+        textColor: 'var(--kpi-purple-text)',
         icon: AlertTriangle,
       },
       "Validated": {
@@ -355,6 +395,12 @@ export default function AdminSubmissionsPage() {
                           className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
                         >
                           Completed
+                        </SelectItem>
+                        <SelectItem
+                          value="awaiting_mlgoo"
+                          className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
+                        >
+                          Awaiting MLGOO Approval
                         </SelectItem>
                         <SelectItem
                           value="validated"

@@ -385,11 +385,13 @@ class GARExportService:
 
     def _get_status_color(self, status: str) -> Optional[str]:
         """Get color for validation status."""
-        if status == "Pass":
+        # Normalize to uppercase for comparison (ValidationStatus enum values are PASS, FAIL, CONDITIONAL)
+        normalized = status.upper() if status else ""
+        if normalized == "PASS":
             return self.colors["met"]
-        elif status == "Conditional":
+        elif normalized == "CONDITIONAL":
             return self.colors["considered"]
-        elif status == "Fail":
+        elif normalized == "FAIL":
             return self.colors["unmet"]
         return None
 
@@ -501,13 +503,14 @@ class GARExportService:
                     # Use Paragraph for text wrapping
                     table_data.append([Paragraph(indicator_text, cell_style), ""])
 
-                    # Color for indicator
+                    # Color for indicator (ValidationStatus enum values are PASS, FAIL, CONDITIONAL)
                     if indicator.validation_status and not indicator.is_header:
-                        if indicator.validation_status == "Pass":
+                        status_upper = indicator.validation_status.upper() if indicator.validation_status else ""
+                        if status_upper == "PASS":
                             style_commands.append(('BACKGROUND', (1, row_idx), (1, row_idx), met_color))
-                        elif indicator.validation_status == "Conditional":
+                        elif status_upper == "CONDITIONAL":
                             style_commands.append(('BACKGROUND', (1, row_idx), (1, row_idx), considered_color))
-                        elif indicator.validation_status == "Fail":
+                        elif status_upper == "FAIL":
                             style_commands.append(('BACKGROUND', (1, row_idx), (1, row_idx), unmet_color))
 
                     if indicator.is_header:

@@ -32,7 +32,7 @@ export function TopFailingIndicatorsCard({ data }: TopFailingIndicatorsCardProps
           {data.indicators.map((indicator: FailingIndicator, idx: number) => (
             <div
               key={indicator.indicator_id}
-              className="p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+              className="p-3 border border-[var(--border)] rounded-sm hover:bg-[var(--muted)]/30 transition-colors"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">

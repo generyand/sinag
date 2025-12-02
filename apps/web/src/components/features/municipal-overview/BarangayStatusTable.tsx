@@ -122,7 +122,7 @@ export function BarangayStatusTable({ data, onViewCapDev }: BarangayStatusTableP
         </div>
 
         {/* Table */}
-        <div className="border rounded-lg overflow-hidden">
+        <div className="border border-[var(--border)] rounded-sm overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>

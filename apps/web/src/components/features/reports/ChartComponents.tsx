@@ -39,7 +39,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string> 
     const passRate = total > 0 ? ((passed / total) * 100).toFixed(1) : 0;
 
     return (
-      <div className="bg-card rounded p-3 shadow-lg border border-gray-200">
+      <div className="bg-white dark:bg-gray-800 rounded-sm p-3 shadow-lg border border-border">
         <p className="font-semibold text-sm mb-2">{label}</p>
         <div className="space-y-1 text-xs">
           <div className="flex items-center gap-2">
@@ -183,7 +183,7 @@ const PieTooltip = ({ active, payload }: TooltipProps<number, string> & { payloa
   if (active && payload && payload.length) {
     const data = payload[0].payload as PieChartData;
     return (
-      <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
+      <div className="bg-white dark:bg-gray-800 border border-border rounded-sm p-3 shadow-lg">
         <p className="font-semibold text-sm mb-1">{data.status}</p>
         <div className="space-y-1 text-xs">
           <p>Count: {data.count}</p>
@@ -251,7 +251,7 @@ const TrendTooltip = ({ active, payload }: TooltipProps<number, string> & { payl
   if (active && payload && payload.length) {
     const data = payload[0].payload as TrendData;
     return (
-      <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
+      <div className="bg-white dark:bg-gray-800 border border-border rounded-sm p-3 shadow-lg">
         <p className="font-semibold text-sm mb-1">{data.cycle_name}</p>
         <div className="space-y-1 text-xs">
           <p>Pass Rate: {data.pass_rate.toFixed(1)}%</p>
