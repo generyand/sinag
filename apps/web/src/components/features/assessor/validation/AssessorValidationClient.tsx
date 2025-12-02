@@ -132,6 +132,11 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   , [core.responses]);
 
   const reworkCount: number = core.rework_count ?? 0;
+
+  // Get timestamps for MOV file separation (new vs old files)
+  // For assessors: rework_requested_at shows files uploaded after assessor's previous rework request
+  const reworkRequestedAt: string | null = (core?.rework_requested_at ?? null) as string | null;
+
   const barangayName: string = (core?.blgu_user?.barangay?.name
     ?? core?.barangay?.name
     ?? core?.barangay_name
@@ -654,6 +659,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               <MiddleMovFilesPanel
                 assessment={data as any}
                 expandedId={expandedId ?? undefined}
+                reworkRequestedAt={reworkRequestedAt}
+                separationLabel="After Rework"
               />
             </div>
 

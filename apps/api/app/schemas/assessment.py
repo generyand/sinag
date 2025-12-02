@@ -57,9 +57,12 @@ class Assessment(BaseModel):
     final_compliance_status: Optional[ComplianceStatus] = None
     area_results: Optional[Dict[str, Any]] = None
     ai_recommendations: Optional[Dict[str, Any]] = None
-    # Rework tracking
+    # Rework tracking (Assessor stage)
     rework_requested_at: Optional[datetime] = None
     rework_count: int = 0
+    # Calibration tracking (Validator stage)
+    calibration_requested_at: Optional[datetime] = None
+    calibrated_area_ids: Optional[List[int]] = None
     # MLGOO RE-calibration tracking
     is_mlgoo_recalibration: bool = False
     mlgoo_recalibration_requested_at: Optional[datetime] = None

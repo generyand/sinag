@@ -34,6 +34,10 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
   const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
   const assessmentId: number = data.assessment_id ?? core.id ?? 0;
   const reworkCount: number = core.rework_count ?? 0;
+
+  // Get timestamps for MOV file separation (new vs old files)
+  const reworkRequestedAt: string | null = (core?.rework_requested_at ?? null) as string | null;
+
   // Prefer assessor payload structure: assessment.blgu_user.barangay.name
   const barangayName: string = (core?.blgu_user?.barangay?.name
     ?? core?.barangay?.name
@@ -289,7 +293,12 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
 
             {/* Middle Panel - MOV Files */}
             <div className="rounded-sm shadow-md border border-black/5 overflow-hidden min-w-0 w-full min-h-[600px] bg-white">
-              <MiddleMovFilesPanel assessment={assessment} expandedId={expandedId ?? undefined} />
+              <MiddleMovFilesPanel
+                assessment={assessment}
+                expandedId={expandedId ?? undefined}
+                reworkRequestedAt={reworkRequestedAt}
+                separationLabel="After Rework"
+              />
             </div>
 
             {/* Right Panel - MOV Checklist/Validation */}

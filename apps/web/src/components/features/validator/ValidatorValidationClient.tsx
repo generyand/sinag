@@ -81,6 +81,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       for (const resp of responses) {
         // Load validation_status from database if it exists
         const validationStatus = resp.validation_status;
+
         if (validationStatus) {
           // Map database status (uppercase: PASS, FAIL, CONDITIONAL) to form status (title case: Pass, Fail, Conditional)
           const upperStatus = String(validationStatus).toUpperCase();
@@ -182,13 +183,12 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const calibratedAreaIds: number[] = (core?.calibrated_area_ids ?? []) as number[];
   const calibrationAlreadyUsed = validatorAreaId ? calibratedAreaIds.includes(validatorAreaId) : false;
 
-  // Get timestamp for MOV file separation (new vs old files)
-  // Priority: calibration_requested_at > rework_requested_at
-  // This helps distinguish files uploaded after rework/calibration request
+  // Get timestamps for MOV file separation (new vs old files)
+  // These are passed to MiddleMovFilesPanel which determines per-indicator which timestamp to use
   const calibrationRequestedAt: string | null = (core?.calibration_requested_at ?? null) as string | null;
   const reworkRequestedAt: string | null = (core?.rework_requested_at ?? null) as string | null;
-  // Use calibration timestamp if available, otherwise fall back to rework timestamp
-  const filesSeparationTimestamp = calibrationRequestedAt || reworkRequestedAt;
+  // Default label (MiddleMovFilesPanel will override based on indicator context)
+  const separationLabel = calibrationRequestedAt ? "After Calibration" : "After Rework";
 
   // Transform to match BLGU assessment structure for TreeNavigator
   const transformedAssessment = {
@@ -287,7 +287,6 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       // Show loading toast
       toast.loading(`Saving ${payloads.length} validation decision${payloads.length > 1 ? 's' : ''}...`, { id: 'save-draft-toast' });
 
-      console.log('Saving validation decisions:', payloads);
       await Promise.all(
         payloads.map((p) =>
           validateMut.mutateAsync({
@@ -304,7 +303,6 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       );
       // Invalidate all queries to force refetch with updated response_data
       await qc.invalidateQueries();
-      console.log('Validation saved successfully');
 
       // Dismiss loading and show success
       toast.dismiss('save-draft-toast');
@@ -388,11 +386,9 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
 
     try {
       // Save any pending changes first
-      console.log('Saving draft before calibration...');
       await onSaveDraft();
 
       // Then submit for calibration
-      console.log('Submitting for calibration...');
       const result = await calibrateMut.mutateAsync({ assessmentId }) as {
         message?: string;
         governance_area?: string;
@@ -489,7 +485,9 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
               <MiddleMovFilesPanel
                 assessment={data as any}
                 expandedId={expandedId ?? undefined}
-                calibrationRequestedAt={filesSeparationTimestamp}
+                calibrationRequestedAt={calibrationRequestedAt}
+                reworkRequestedAt={reworkRequestedAt}
+                separationLabel={separationLabel}
               />
             </div>
 
