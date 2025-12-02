@@ -132,7 +132,8 @@ export function VerdictSection({
   // Extract BBI compliance data (DILG MC 2024-417)
   const bbiComplianceData: BBIComplianceData | undefined = (dashboardData as any).bbi_compliance;
 
-  const isPassed = finalComplianceStatus === "Passed";
+  // ComplianceStatus enum values are uppercase: "PASSED" or "FAILED"
+  const isPassed = finalComplianceStatus === "PASSED";
 
   return (
     <PhaseCard
