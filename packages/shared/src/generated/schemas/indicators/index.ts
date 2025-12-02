@@ -10,6 +10,7 @@ import type { GARChecklistItem } from '../gar';
 import type { FormSchema } from '../formschema';
 import type { RemarkSchema } from '../common';
 import type { IndicatorDetailItemAssessorRemarks } from '../assessor';
+import type { MOVFileItem } from '../movs';
 import type { IndicatorDraftResponseLockedByUserId } from '../users';
 import type { GovernanceAreaNested } from '../common';
 import type { IndicatorHistoryResponseArchivedByUser } from '../users';
@@ -180,7 +181,7 @@ export interface GARIndicator {
   indicator_code: string;
   /** Indicator name/description */
   indicator_name: string;
-  /** Overall validation status: 'Pass', 'Fail', 'Conditional', or null */
+  /** Overall validation status: 'PASS', 'FAIL', 'CONDITIONAL', or null */
   validation_status?: GARIndicatorValidationStatus;
   /** List of checklist items under this indicator */
   checklist_items?: GARChecklistItem[];
@@ -430,6 +431,7 @@ export interface IndicatorDetailItem {
   validation_status: IndicatorDetailItemValidationStatus;
   assessor_remarks: IndicatorDetailItemAssessorRemarks;
   is_recalibration_target: boolean;
+  mov_files?: MOVFileItem[];
 }
 
 
@@ -1077,12 +1079,6 @@ export type PostIndicatorsValidateCalculationSchema200 = { [key: string]: unknow
  * PostIndicatorsValidateFormSchema200
  */
 export type PostIndicatorsValidateFormSchema200 = { [key: string]: unknown };
-
-
-/**
- * PriorityActionSuccessIndicator
- */
-export type PriorityActionSuccessIndicator = string | null;
 
 
 /**

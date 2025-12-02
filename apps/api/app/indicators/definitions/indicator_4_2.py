@@ -33,39 +33,43 @@ INDICATOR_4_2 = Indicator(
             ),
             validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # BHS/C operated OR clustered
             checklist_items=[
-                # Document verification checkboxes
+                # Option A - BHS/C Operated (both items must be complete for this option)
                 ChecklistItem(
                     id="4_2_1_photo",
                     label="Photo documentation of the BHS/C (Photo Requirements: One photo with Distant View and one photo with Close-up View)",
                     mov_description="Verification of uploaded photos showing BHS/C (Option 1 - BHS/C Operated)",
                     item_type="checkbox",
                     required=False,
-                    display_order=1
+                    display_order=1,
+                    option_group="option_a"
                 ),
-                ChecklistItem(
-                    id="4_2_1_cert_clustered",
-                    label="For clustered BHS/C: Certification from C/MHO on the clustering scheme",
-                    mov_description="Verification of uploaded certification from C/MHO for clustered BHS/C (Option 2 - Clustered)",
-                    item_type="checkbox",
-                    required=False,
-                    display_order=2
-                ),                # Option a - YES/NO assessment
                 ChecklistItem(
                     id="4_2_1_option_a",
                     label="Barangay Health Station/Center operated",
                     mov_description="Assessment for BHS/C operated option",
                     item_type="assessment_field",
                     required=False,
-                    display_order=4
+                    display_order=2,
+                    option_group="option_a"
                 ),
-                # Option b - YES/NO assessment
+                # Option B - Clustered BHS/C (both items must be complete for this option)
+                ChecklistItem(
+                    id="4_2_1_cert_clustered",
+                    label="For clustered BHS/C: Certification from C/MHO on the clustering scheme",
+                    mov_description="Verification of uploaded certification from C/MHO for clustered BHS/C (Option 2 - Clustered)",
+                    item_type="checkbox",
+                    required=False,
+                    display_order=3,
+                    option_group="option_b"
+                ),
                 ChecklistItem(
                     id="4_2_1_option_b",
-                    label="Clustered Clustered Health Station/Center accessed by several barangays in a city/municipality (Consideration)",
+                    label="Clustered Health Station/Center accessed by several barangays in a city/municipality (Consideration)",
                     mov_description="Assessment for clustered BHS/C option",
                     item_type="assessment_field",
                     required=False,
-                    display_order=5
+                    display_order=4,
+                    option_group="option_b"
                 ),
             ]
         ),

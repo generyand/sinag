@@ -689,12 +689,13 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
     if (validationRule === 'ALL_ITEMS_REQUIRED') {
       // All required items must be checked
       return checkedCount >= totalRequired ? 'Pass' : 'Fail';
-    } else if (validationRule === 'ANY_ITEM_REQUIRED') {
+    } else if (validationRule === 'ANY_ITEM_REQUIRED' || validationRule === 'OR_LOGIC_AT_LEAST_1_REQUIRED') {
       // At least one item must be checked
       return checkedCount > 0 ? 'Pass' : 'Fail';
     }
 
-    return null;
+    // Default: if at least one item is checked, pass
+    return checkedCount > 0 ? 'Pass' : null;
   }, [responses]);
 
   // Track manual overrides separately

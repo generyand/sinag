@@ -3,10 +3,6 @@
 // 📁 Capdev-related types
 // 🏷️  Based on FastAPI tag: "capdev"
 
-import type { GovernanceWeakness } from '../common';
-import type { SuggestedIntervention } from '../common';
-import type { PriorityAction } from '../common';
-
 /**
  * AggregatedCapDevSummary
  */
@@ -66,40 +62,13 @@ export interface CapDevInsightsByLanguage {
 /**
  * CapDevInsightsByLanguageContent
  */
-export type CapDevInsightsByLanguageContent = CapDevInsightsContent | null;
+export type CapDevInsightsByLanguageContent = unknown | null;
 
 
 /**
  * CapDevInsightsByLanguageGeneratedAt
  */
 export type CapDevInsightsByLanguageGeneratedAt = string | null;
-
-
-/**
- * CapDevInsightsContent
- */
-export interface CapDevInsightsContent {
-  /** Executive summary of the CapDev analysis */
-  summary: string;
-  /** Identified governance weaknesses */
-  governance_weaknesses?: GovernanceWeakness[];
-  /** Capacity development recommendations */
-  recommendations?: CapDevRecommendation[];
-  /** Identified capacity development needs */
-  capacity_development_needs?: CapDevNeed[];
-  /** Suggested interventions */
-  suggested_interventions?: SuggestedIntervention[];
-  /** Priority action items */
-  priority_actions?: PriorityAction[];
-  /** When this content was generated */
-  generated_at?: CapDevInsightsContentGeneratedAt;
-}
-
-
-/**
- * CapDevInsightsContentGeneratedAt
- */
-export type CapDevInsightsContentGeneratedAt = string | null;
 
 
 /**
@@ -136,57 +105,7 @@ export type CapDevInsightsResponseInsights = CapDevInsightsResponseInsightsAnyOf
 /**
  * CapDevInsightsResponseInsightsAnyOf
  */
-export type CapDevInsightsResponseInsightsAnyOf = {[key: string]: CapDevInsightsContent};
-
-
-/**
- * CapDevNeed
- */
-export interface CapDevNeed {
-  /** Area requiring development */
-  area: string;
-  /** Description of the current gap */
-  current_gap: string;
-  /** Desired target state */
-  target_state: string;
-  /** Skills that need to be developed */
-  skills_required?: CapDevNeedSkillsRequired;
-}
-
-
-/**
- * CapDevNeedSkillsRequired
- */
-export type CapDevNeedSkillsRequired = string[] | null;
-
-
-/**
- * CapDevRecommendation
- */
-export interface CapDevRecommendation {
-  /** Short title of the recommendation */
-  title: string;
-  /** Detailed description */
-  description: string;
-  /** Related governance area if applicable */
-  governance_area?: CapDevRecommendationGovernanceArea;
-  /** Priority level: high, medium, low */
-  priority?: string;
-  /** Expected impact of implementing this recommendation */
-  expected_impact?: CapDevRecommendationExpectedImpact;
-}
-
-
-/**
- * CapDevRecommendationExpectedImpact
- */
-export type CapDevRecommendationExpectedImpact = string | null;
-
-
-/**
- * CapDevRecommendationGovernanceArea
- */
-export type CapDevRecommendationGovernanceArea = string | null;
+export type CapDevInsightsResponseInsightsAnyOf = { [key: string]: unknown };
 
 
 /**

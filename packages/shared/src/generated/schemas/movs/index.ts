@@ -68,6 +68,32 @@ export type MOVCreateFieldId = string | null;
 
 
 /**
+ * MOVFileItem
+ */
+export interface MOVFileItem {
+  id: number;
+  file_name: string;
+  file_url: string;
+  file_type: string;
+  file_size: number;
+  field_id?: MOVFileItemFieldId;
+  uploaded_at?: MOVFileItemUploadedAt;
+}
+
+
+/**
+ * MOVFileItemFieldId
+ */
+export type MOVFileItemFieldId = string | null;
+
+
+/**
+ * MOVFileItemUploadedAt
+ */
+export type MOVFileItemUploadedAt = string | null;
+
+
+/**
  * MOVFileListResponse
  */
 export interface MOVFileListResponse {

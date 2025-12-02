@@ -33,6 +33,7 @@ import {
   usePatchMlgooAssessmentsAssessmentIdRecalibrationValidation,
   useGetCapdevAssessmentsAssessmentId,
   usePostCapdevAssessmentsAssessmentIdRegenerate,
+  getGetCapdevAssessmentsAssessmentIdQueryKey,
 } from "@sinag/shared";
 import {
   Select,
@@ -88,6 +89,7 @@ export default function SubmissionDetailsPage() {
     refetch: refetchCapdev,
   } = useGetCapdevAssessmentsAssessmentId(assessmentId, {
     query: {
+      queryKey: getGetCapdevAssessmentsAssessmentIdQueryKey(assessmentId),
       enabled: !!(assessmentId && data && (data as any)?.status === "COMPLETED"),
     },
   });
