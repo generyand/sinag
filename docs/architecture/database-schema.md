@@ -59,7 +59,7 @@ erDiagram
         string email UK
         string name
         string phone_number
-        enum role "MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER"
+        enum role "MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER, KATUPARAN_CENTER_USER"
         int validator_area_id FK
         int barangay_id FK
         string hashed_password
@@ -109,15 +109,39 @@ erDiagram
 
     assessments {
         int id PK
-        enum status "DRAFT, SUBMITTED, IN_REVIEW, REWORK, AWAITING_FINAL_VALIDATION, COMPLETED"
+        enum status "DRAFT, SUBMITTED, IN_REVIEW, REWORK, AWAITING_FINAL_VALIDATION, AWAITING_MLGOO_APPROVAL, COMPLETED"
         int rework_count
         datetime rework_requested_at
         int rework_requested_by FK
         text rework_comments
-        enum final_compliance_status "FULLY_COMPLIANT, SUBSTANTIALLY_COMPLIANT, etc"
+        json rework_summary
+        boolean is_calibration_rework
+        int calibration_validator_id FK
+        datetime calibration_requested_at
+        int calibration_count
+        json calibrated_area_ids
+        json calibration_summary
+        json pending_calibrations
+        json calibration_summaries_by_area
+        int mlgoo_approved_by FK
+        datetime mlgoo_approved_at
+        boolean is_mlgoo_recalibration
+        int mlgoo_recalibration_requested_by FK
+        datetime mlgoo_recalibration_requested_at
+        int mlgoo_recalibration_count
+        json mlgoo_recalibration_indicator_ids
+        text mlgoo_recalibration_comments
+        datetime grace_period_expires_at
+        boolean is_locked_for_deadline
+        datetime locked_at
+        enum final_compliance_status "PASSED, FAILED"
         json area_results
         json ai_recommendations
+        json capdev_insights
+        datetime capdev_insights_generated_at
+        string capdev_insights_status
         int blgu_user_id FK
+        int reviewed_by FK
         datetime created_at
         datetime updated_at
         datetime submitted_at
@@ -187,11 +211,24 @@ erDiagram
 
     bbi_results {
         int id PK
-        enum status "FUNCTIONAL, NON_FUNCTIONAL"
+        enum status "HIGHLY_FUNCTIONAL, MODERATELY_FUNCTIONAL, LOW_FUNCTIONAL"
         json calculation_details
         int assessment_id FK
         int bbi_id FK
         datetime calculation_date
+    }
+
+    mov_annotations {
+        int id PK
+        int mov_file_id FK
+        int assessor_id FK
+        string annotation_type
+        int page
+        json rect
+        json rects
+        text comment
+        datetime created_at
+        datetime updated_at
     }
 
     checklist_items {
@@ -278,7 +315,7 @@ erDiagram
         string email UK "Unique email address"
         string name "Full name"
         string phone_number "Contact number"
-        enum role "MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER"
+        enum role "MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER, KATUPARAN_CENTER_USER"
         int validator_area_id FK "For VALIDATOR role only"
         int barangay_id FK "For BLGU_USER role only"
         string hashed_password "bcrypt hashed"
@@ -306,19 +343,21 @@ erDiagram
 
 | Role | Required Fields | Optional Fields | Purpose |
 |------|-----------------|-----------------|---------|
-| `MLGOO_DILG` | email, name, password | - | System administrators with full access |
+| `MLGOO_DILG` | email, name, password | - | System administrators with full access, final approval authority |
 | `VALIDATOR` | email, name, password, **validator_area_id** | - | Area-specific validators (requires governance area assignment) |
-| `ASSESSOR` | email, name, password | validator_area_id | Flexible assessors (can work with any barangay) |
+| `ASSESSOR` | email, name, password | - | Flexible assessors (can work with any barangay) |
 | `BLGU_USER` | email, name, password, **barangay_id** | - | Barangay users (requires barangay assignment) |
+| `KATUPARAN_CENTER_USER` | email, name, password | - | External research users with read-only access to aggregated analytics |
 
 **Business Rules:**
 
 1. **VALIDATOR role**: Must have `validator_area_id` set to a valid governance area
 2. **BLGU_USER role**: Must have `barangay_id` set to a valid barangay
-3. **ASSESSOR role**: Can optionally have `validator_area_id` for area-filtered access
-4. **MLGOO_DILG role**: No assignments required (system-wide access)
-5. **Email uniqueness**: Each email can only be used once across all roles
-6. **Password change**: All new users must change password on first login (`must_change_password = True`)
+3. **ASSESSOR role**: No assignments required (can work with any barangay)
+4. **MLGOO_DILG role**: No assignments required (system-wide access, final approval authority)
+5. **KATUPARAN_CENTER_USER role**: No assignments required (read-only external access)
+6. **Email uniqueness**: Each email can only be used once across all roles
+7. **Password change**: All new users must change password on first login (`must_change_password = True`)
 
 **Example Queries:**
 
@@ -362,15 +401,31 @@ erDiagram
 
     assessments {
         int id PK
-        enum status "DRAFT, SUBMITTED, IN_REVIEW, REWORK, AWAITING_FINAL_VALIDATION, COMPLETED"
+        enum status "DRAFT, SUBMITTED, IN_REVIEW, REWORK, AWAITING_FINAL_VALIDATION, AWAITING_MLGOO_APPROVAL, COMPLETED"
         int rework_count "Max 1 per assessment"
         datetime rework_requested_at
         int rework_requested_by FK "Assessor who requested rework"
         text rework_comments
-        enum final_compliance_status "FULLY_COMPLIANT, SUBSTANTIALLY_COMPLIANT, PARTIALLY_COMPLIANT, NON_COMPLIANT"
+        json rework_summary "AI-generated rework summary"
+        boolean is_calibration_rework "Routes back to Validator"
+        int calibration_validator_id FK "Validator who requested calibration"
+        datetime calibration_requested_at
+        int calibration_count "Deprecated: use calibrated_area_ids"
+        json calibrated_area_ids "Track per-area calibration"
+        json pending_calibrations "Parallel calibration support"
+        int mlgoo_approved_by FK "MLGOO who gave final approval"
+        datetime mlgoo_approved_at
+        boolean is_mlgoo_recalibration "MLGOO RE-calibration mode"
+        int mlgoo_recalibration_count "Max 1 per assessment"
+        datetime grace_period_expires_at "Deadline for BLGU compliance"
+        boolean is_locked_for_deadline "Auto-locked after deadline"
+        enum final_compliance_status "PASSED, FAILED"
         json area_results "Scores by governance area"
-        json ai_recommendations "Gemini-generated CapDev plans"
+        json ai_recommendations "Gemini-generated insights"
+        json capdev_insights "CapDev recommendations by language"
+        string capdev_insights_status "pending, generating, completed, failed"
         int blgu_user_id FK
+        int reviewed_by FK "Assessor who completed review"
         datetime created_at
         datetime updated_at
         datetime submitted_at
@@ -446,21 +501,66 @@ stateDiagram-v2
     IN_REVIEW --> REWORK: Assessor requests rework (max 1)
     IN_REVIEW --> AWAITING_FINAL_VALIDATION: Assessor approves
     REWORK --> SUBMITTED: BLGU resubmits after fixes
-    AWAITING_FINAL_VALIDATION --> COMPLETED: Validator finalizes
+    AWAITING_FINAL_VALIDATION --> REWORK: Validator requests calibration
+    AWAITING_FINAL_VALIDATION --> AWAITING_MLGOO_APPROVAL: Validator finalizes
+    AWAITING_MLGOO_APPROVAL --> REWORK: MLGOO requests RE-calibration (max 1)
+    AWAITING_MLGOO_APPROVAL --> COMPLETED: MLGOO approves
     COMPLETED --> [*]: Assessment archived
 
     note right of REWORK
-        Only ONE rework cycle allowed
-        rework_count must be <= 1
+        Rework routes depend on mode:
+        - is_calibration_rework=false: Back to Assessor
+        - is_calibration_rework=true: Back to same Validator
+        - is_mlgoo_recalibration=true: Unlocks specific indicators
+    end note
+
+    note right of AWAITING_MLGOO_APPROVAL
+        NEW STATE: MLGOO final approval required
+        - Reviews all validator decisions
+        - Can request RE-calibration (max 1)
+        - Final authority on assessment outcome
     end note
 
     note right of COMPLETED
         Triggers classification:
         - 3+1 SGLGB scoring
-        - BBI calculation
-        - Gemini AI recommendations
+        - BBI calculation (3-tier rating)
+        - CapDev insights generation
     end note
 ```
+
+**Calibration Workflow (Validator to BLGU):**
+
+When a Validator requests calibration:
+1. Assessment status changes to `REWORK`
+2. `is_calibration_rework` is set to `true`
+3. `calibration_validator_id` stores the requesting Validator's ID
+4. `calibrated_area_ids` tracks which governance areas have been calibrated
+5. BLGU makes corrections and resubmits
+6. Assessment routes back to the **same Validator** (not Assessor)
+7. Each governance area can only be calibrated once (max 1 per area)
+
+**Parallel Calibration:**
+
+Multiple Validators can calibrate different governance areas simultaneously:
+- `pending_calibrations` stores: `[{"validator_id": 1, "governance_area_id": 2, "requested_at": "...", "approved": false}, ...]`
+- `calibration_summaries_by_area` stores per-area AI summaries
+
+**MLGOO RE-calibration (distinct from Validator calibration):**
+
+When MLGOO determines a Validator was too strict:
+1. MLGOO sets `is_mlgoo_recalibration = true`
+2. `mlgoo_recalibration_indicator_ids` specifies which indicators to unlock
+3. BLGU can update only those specific indicators
+4. Maximum of 1 MLGOO RE-calibration per assessment
+
+**Grace Period & Auto-Lock:**
+
+- `grace_period_expires_at`: Deadline for BLGU to comply with rework/calibration
+- `is_locked_for_deadline`: When `true`, BLGU cannot edit assessment
+- `locked_at`: Timestamp when auto-lock was triggered
+- System sends `GRACE_PERIOD_WARNING` notification before expiration
+- System sends `DEADLINE_EXPIRED_LOCKED` notification when locked
 
 **Validation Status Options:**
 
@@ -665,7 +765,7 @@ erDiagram
 
     bbi_results {
         int id PK
-        enum status "FUNCTIONAL, NON_FUNCTIONAL"
+        enum status "HIGHLY_FUNCTIONAL, MODERATELY_FUNCTIONAL, LOW_FUNCTIONAL"
         json calculation_details "Audit trail of rule evaluation"
         int assessment_id FK
         int bbi_id FK
@@ -730,15 +830,37 @@ erDiagram
 }
 ```
 
+**BBI 3-Tier Rating System (DILG MC 2024-417):**
+
+BBI functionality is now determined by compliance rate using a 3-tier system:
+
+| Status | Compliance Rate | Description |
+|--------|-----------------|-------------|
+| `HIGHLY_FUNCTIONAL` | 75% - 100% | Full or near-full compliance with all sub-indicators |
+| `MODERATELY_FUNCTIONAL` | 50% - 74% | Partial compliance, some improvements needed |
+| `LOW_FUNCTIONAL` | Below 50% | Significant gaps in compliance |
+
+**Compliance Rate Calculation:**
+
+```
+Compliance Rate = (Passed Sub-Indicators / Total Sub-Indicators) x 100%
+```
+
+**Legacy Values (backward compatibility):**
+- `FUNCTIONAL` maps to `HIGHLY_FUNCTIONAL`
+- `NON_FUNCTIONAL` maps to `LOW_FUNCTIONAL`
+
 **BBI Calculation Logic:**
 
 1. **Fetch Assessment**: Get assessment with all indicator responses
 2. **Identify BBI Indicators**: Query indicators where `is_bbi = True` for governance area
 3. **Evaluate Mapping Rules**: Check validation status against BBI mapping rules
-4. **Determine Status**:
-   - `FUNCTIONAL`: All required indicators passed (or met threshold)
-   - `NON_FUNCTIONAL`: One or more required indicators failed
-5. **Store Result**: Insert `bbi_results` record with calculation details for audit
+4. **Calculate Compliance Rate**: Count passed sub-indicators vs. total
+5. **Determine 3-Tier Status**:
+   - >= 75%: `HIGHLY_FUNCTIONAL`
+   - 50-74%: `MODERATELY_FUNCTIONAL`
+   - < 50%: `LOW_FUNCTIONAL`
+6. **Store Result**: Insert `bbi_results` record with calculation details for audit
 
 **Example Queries:**
 
@@ -987,17 +1109,17 @@ CREATE INDEX idx_deadline_overrides_created_at_desc ON deadline_overrides(create
 
 ## Database Statistics
 
-Current schema metrics (as of November 2025):
+Current schema metrics (as of December 2025):
 
 | Category | Count | Notes |
 |----------|-------|-------|
-| **Core Tables** | 17 | Main application tables |
-| **Total Columns** | ~200+ | Across all tables |
-| **Foreign Keys** | 25+ | Enforcing referential integrity |
+| **Core Tables** | 18 | Main application tables (including mov_annotations) |
+| **Total Columns** | ~250+ | Across all tables |
+| **Foreign Keys** | 30+ | Enforcing referential integrity |
 | **Unique Constraints** | 15+ | Ensuring data uniqueness |
 | **Check Constraints** | 5+ | Business rule enforcement |
-| **Indexes** | 40+ | Performance optimization |
-| **Enums** | 7 | AssessmentStatus, ValidationStatus, UserRole, etc |
+| **Indexes** | 45+ | Performance optimization |
+| **Enums** | 8 | AssessmentStatus, ValidationStatus, UserRole, BBIStatus, NotificationType, etc |
 
 ---
 
@@ -1030,12 +1152,117 @@ alembic downgrade -1
 
 ---
 
+## MOV Annotations
+
+The `mov_annotations` table supports interactive annotation of MOV files (PDFs and images) by assessors:
+
+```mermaid
+erDiagram
+    mov_files ||--o{ mov_annotations : "has"
+    users ||--o{ mov_annotations : "creates"
+
+    mov_annotations {
+        int id PK
+        int mov_file_id FK "Target MOV file"
+        int assessor_id FK "Assessor who created"
+        string annotation_type "pdfRect or imageRect"
+        int page "Page number (0-indexed for PDFs)"
+        json rect "Primary rectangle coords (percentages)"
+        json rects "Multi-line rectangles for text selections"
+        text comment "Annotation comment text"
+        datetime created_at
+        datetime updated_at
+    }
+```
+
+**Annotation Types:**
+
+| Type | Description | Use Case |
+|------|-------------|----------|
+| `pdfRect` | Rectangle annotation on PDF page | Highlight text or mark areas on PDF MOVs |
+| `imageRect` | Rectangle annotation on image | Mark areas on image MOVs (JPG, PNG) |
+
+**Rectangle Format (stored as percentages for responsive rendering):**
+
+```json
+{
+  "x": 10.5,   // Left position as % of document width
+  "y": 25.0,  // Top position as % of document height
+  "w": 30.0,  // Width as % of document width
+  "h": 5.0    // Height as % of document height
+}
+```
+
+---
+
+## CapDev Insights
+
+AI-generated Capacity Development (CapDev) insights are stored in the `capdev_insights` JSON field:
+
+```json
+{
+  "ceb": {
+    "summary": "Kinatibuk-ang pagsusi...",
+    "recommendations": ["Recommendation 1", "..."],
+    "capacity_development_needs": ["Training need 1", "..."],
+    "suggested_interventions": ["Intervention 1", "..."],
+    "priority_actions": ["Action 1", "..."],
+    "generated_at": "2025-12-01T10:30:00Z"
+  },
+  "en": {
+    "summary": "Overall assessment...",
+    "recommendations": ["Recommendation 1", "..."],
+    "capacity_development_needs": ["Training need 1", "..."],
+    "suggested_interventions": ["Intervention 1", "..."],
+    "priority_actions": ["Action 1", "..."],
+    "generated_at": "2025-12-01T10:30:00Z"
+  }
+}
+```
+
+**CapDev Insights Status:**
+
+| Status | Description |
+|--------|-------------|
+| `pending` | Insights generation queued |
+| `generating` | AI is currently generating insights |
+| `completed` | Insights generated successfully |
+| `failed` | Generation failed (can be retried) |
+
+---
+
+## Notification Types
+
+The system supports the following notification types for workflow events:
+
+| Type | Trigger | Recipients |
+|------|---------|------------|
+| `NEW_SUBMISSION` | BLGU submits assessment | All Assessors |
+| `REWORK_REQUESTED` | Assessor requests rework | BLGU |
+| `REWORK_RESUBMITTED` | BLGU resubmits after rework | All Assessors |
+| `READY_FOR_VALIDATION` | Assessor finalizes | Validator(s) |
+| `CALIBRATION_REQUESTED` | Validator requests calibration | BLGU |
+| `CALIBRATION_RESUBMITTED` | BLGU resubmits calibration | Same Validator |
+| `VALIDATION_COMPLETED` | Validator completes validation | MLGOO and BLGU |
+| `READY_FOR_MLGOO_APPROVAL` | All validators done | MLGOO |
+| `MLGOO_RECALIBRATION_REQUESTED` | MLGOO requests RE-calibration | BLGU |
+| `ASSESSMENT_APPROVED` | MLGOO approves assessment | BLGU |
+| `DEADLINE_EXPIRED_LOCKED` | Grace period expired | BLGU (locked), MLGOO |
+| `GRACE_PERIOD_WARNING` | Grace period expiring soon | BLGU |
+
+---
+
 ## Notes
 
-- All diagrams reflect the actual SINAG database schema as of November 2025
+- All diagrams reflect the actual SINAG database schema as of December 2025
 - Schema supports multi-tenancy through `barangay_id` and `validator_area_id` isolation
-- JSONB fields (`form_schema`, `mapping_rules`) enable dynamic, schema-less data storage
+- Five user roles: MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER, KATUPARAN_CENTER_USER
+- JSONB fields (`form_schema`, `mapping_rules`, `capdev_insights`) enable dynamic, schema-less data storage
 - Soft deletes used for `indicators` (`is_active`), `mov_files` (`deleted_at`), and `bbis` (`is_active`)
 - Audit trail maintained via `audit_logs` table for all administrative actions
 - Performance optimized with strategic indexes on high-cardinality columns and common JOIN paths
 - Versioning system for indicators ensures historical assessment data integrity
+- BBI functionality uses 3-tier rating system per DILG MC 2024-417
+- Calibration workflow supports both Validator calibration and MLGOO RE-calibration
+
+*Last updated: December 2025*

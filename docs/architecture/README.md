@@ -9,7 +9,8 @@ SINAG is a monorepo-based full-stack application built with:
 - **Backend**: FastAPI (Python 3.13+) with SQLAlchemy
 - **Database**: PostgreSQL (via Supabase)
 - **Background Tasks**: Celery with Redis
-- **AI Integration**: Google Gemini API
+- **AI Integration**: Google Gemini API for CapDev insights
+- **Reverse Proxy**: Nginx for rate limiting, compression, and routing
 - **Monorepo**: Turborepo with pnpm workspaces
 
 ## Architecture Documents
@@ -55,9 +56,36 @@ Single repository with independent, deployable applications sharing types and ut
 
 ## Design Patterns
 
-> **TODO**: Document key patterns used:
-> - Repository pattern (if applicable)
-> - Dependency injection
-> - Service layer pattern
-> - React composition patterns
-> - State management patterns
+### Implemented Patterns
+
+- **Service Layer Pattern**: Business logic encapsulated in service classes, routers remain thin
+- **Dependency Injection**: FastAPI's `Depends()` for database sessions, auth, and role-based access
+- **Repository Pattern**: Services interact with database through SQLAlchemy ORM
+- **React Composition**: Feature components composed from shared and UI primitives
+- **State Management**: Zustand for global state, TanStack Query for server state
+
+## User Roles
+
+The system implements five user roles with distinct access levels:
+
+| Role | Access Level | Assignment |
+|------|-------------|------------|
+| `MLGOO_DILG` | System-wide admin, final approval authority | No assignment required |
+| `VALIDATOR` | Area-specific validation, calibration requests | Requires `validator_area_id` |
+| `ASSESSOR` | Flexible barangay assessment review | No assignment required |
+| `BLGU_USER` | Barangay-specific assessment submission | Requires `barangay_id` |
+| `KATUPARAN_CENTER_USER` | Read-only aggregated analytics for research | No assignment required |
+
+## Recent Updates (December 2025)
+
+- **MLGOO Final Approval**: New `AWAITING_MLGOO_APPROVAL` status and approval workflow
+- **Calibration Workflow**: Validators can request calibration, routing back to same Validator
+- **Parallel Calibration**: Multiple validators can calibrate different areas simultaneously
+- **MLGOO RE-calibration**: Distinct from Validator calibration, unlocks specific indicators
+- **BBI 3-Tier Rating**: HIGHLY_FUNCTIONAL, MODERATELY_FUNCTIONAL, LOW_FUNCTIONAL per DILG MC 2024-417
+- **MOV Annotations**: Interactive PDF and image annotations for assessors
+- **CapDev Insights**: AI-generated capacity development recommendations
+- **Grace Period & Auto-Lock**: Deadline management with automatic assessment locking
+- **Nginx Reverse Proxy**: Rate limiting, compression, and security headers
+
+*Last updated: December 2025*

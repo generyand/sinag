@@ -114,11 +114,13 @@ graph TB
 
     DASHBOARD --> ASSESSOR[assessor/<br/><br/>Assessor Dashboard<br/>- Flexible Barangay Selection<br/>- Assessment Review<br/>- Rework Requests]
 
-    DASHBOARD --> MLGOO[mlgoo/<br/><br/>MLGOO-DILG Admin<br/>- Analytics Dashboard<br/>- User Management<br/>- System Settings]
+    DASHBOARD --> MLGOO[mlgoo/<br/><br/>MLGOO-DILG Admin<br/>- Analytics Dashboard<br/>- User Management<br/>- Final Approval]
 
     DASHBOARD --> ADMIN[admin/<br/><br/>Administrative Features<br/>- Indicator Builder<br/>- BBI Management<br/>- Deadline Configuration]
 
-    APP_GROUP --> ANALYTICS[analytics/<br/><br/>Analytics & Reporting<br/>- Dashboard Stats<br/>- Export (CSV, PDF, PNG)]
+    APP_GROUP --> ANALYTICS[analytics/<br/><br/>Internal Analytics<br/>- Dashboard Stats<br/>- Export (CSV, PDF, PNG)]
+
+    APP_GROUP --> EXTERNAL[external-analytics/<br/><br/>External Research Access<br/>- Aggregated Data Only<br/>- KATUPARAN_CENTER_USER]
 
     APP_GROUP --> USER_MGMT[user-management/<br/><br/>User CRUD<br/>- Create Users<br/>- Assign Roles<br/>- Manage Barangays]
 
@@ -131,6 +133,7 @@ graph TB
     style VALIDATOR fill:#3498DB,stroke:#2980B9,stroke-width:2px,color:#fff
     style ASSESSOR fill:#FFB84D,stroke:#E69938,stroke-width:2px,color:#000
     style BLGU fill:#2ECC71,stroke:#27AE60,stroke-width:2px,color:#fff
+    style EXTERNAL fill:#F39C12,stroke:#D68910,stroke-width:2px,color:#fff
 ```
 
 **Route Group Pattern:**
@@ -685,6 +688,9 @@ export function LoginForm() {
           case "MLGOO_DILG":
             router.push("/mlgoo");
             break;
+          case "KATUPARAN_CENTER_USER":
+            router.push("/external-analytics");
+            break;
         }
       },
       onError: (error) => {
@@ -974,7 +980,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
 ## Notes
 
-- All diagrams reflect the actual SINAG frontend implementation as of November 2025
+- All diagrams reflect the actual SINAG frontend implementation as of December 2025
 - App Router pattern provides file-system based routing with route groups for RBAC
 - Type generation from OpenAPI ensures compile-time type safety across frontend/backend
 - TanStack Query handles server state with automatic caching and invalidation
@@ -982,3 +988,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 - Server Components optimize initial load performance and SEO
 - shadcn/ui provides accessible, customizable component primitives
 - Tailwind CSS enables rapid UI development with consistent design system
+- Five user roles with dedicated routes: MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER, KATUPARAN_CENTER_USER
+- External analytics route provides read-only aggregated data access for research
+
+*Last updated: December 2025*

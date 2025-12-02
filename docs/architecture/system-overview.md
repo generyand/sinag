@@ -115,7 +115,7 @@ graph TB
 1. **Separation of Concerns**: Frontend handles presentation, backend manages business logic, services encapsulate domain operations
 2. **Type Safety**: Pydantic schemas generate TypeScript types via Orval for end-to-end type safety
 3. **Asynchronous Processing**: Long-running AI operations (classification, intelligence) run in Celery workers
-4. **Role-Based Access Control**: Four user roles (MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER) with different permissions
+4. **Role-Based Access Control**: Five user roles (MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER, KATUPARAN_CENTER_USER) with different permissions
 
 ---
 
@@ -126,6 +126,10 @@ This diagram illustrates the Docker-based development environment with service o
 ```mermaid
 graph TB
     subgraph "Docker Network: sinag-network (172.25.0.0/16)"
+        subgraph "Reverse Proxy (172.25.0.50)"
+            NGINX_CONTAINER[sinag-nginx<br/>Port 80<br/><br/>Nginx Reverse Proxy<br/>Rate Limiting: 30 req/s<br/>Gzip Compression]
+        end
+
         subgraph "Frontend Container (172.25.0.40)"
             WEB_CONTAINER[sinag-web<br/>Port 3000<br/><br/>Next.js Dev Server<br/>Turbopack<br/>Hot Module Reload]
         end
@@ -152,7 +156,8 @@ graph TB
         DEV[Development Tools<br/><br/>- VS Code / Cursor<br/>- Docker Desktop<br/>- pnpm CLI]
     end
 
-    WEB_CONTAINER -->|API Requests<br/>http://api:8000| API_CONTAINER
+    NGINX_CONTAINER -->|/api/* routes<br/>http://api:8000| API_CONTAINER
+    NGINX_CONTAINER -->|/ routes<br/>http://web:3000| WEB_CONTAINER
     API_CONTAINER -->|Enqueue Jobs| REDIS_CONTAINER
     WORKER_CONTAINER -->|Fetch Tasks| REDIS_CONTAINER
     WORKER_CONTAINER -->|Update Status| REDIS_CONTAINER
@@ -163,14 +168,17 @@ graph TB
     API_CONTAINER -->|Upload Files<br/>HTTPS| SUPABASE_EXT
     WORKER_CONTAINER -->|AI Generation<br/>HTTPS| GEMINI_EXT
 
+    DEV -->|docker compose up| NGINX_CONTAINER
     DEV -->|docker compose up| WEB_CONTAINER
     DEV -->|docker compose up| API_CONTAINER
     DEV -->|docker compose up| WORKER_CONTAINER
     DEV -->|docker compose up| REDIS_CONTAINER
 
-    DEV -.->|Access Frontend<br/>localhost:3000| WEB_CONTAINER
-    DEV -.->|Access API Docs<br/>localhost:8000/docs| API_CONTAINER
+    DEV -.->|Access via Nginx<br/>localhost:80| NGINX_CONTAINER
+    DEV -.->|Direct Frontend<br/>localhost:3000| WEB_CONTAINER
+    DEV -.->|Direct API Docs<br/>localhost:8000/docs| API_CONTAINER
 
+    style NGINX_CONTAINER fill:#009639,stroke:#006B28,stroke-width:3px,color:#fff
     style WEB_CONTAINER fill:#61DAFB,stroke:#2A9FCF,stroke-width:2px,color:#000
     style API_CONTAINER fill:#009688,stroke:#006B5F,stroke-width:2px,color:#fff
     style WORKER_CONTAINER fill:#37B247,stroke:#258A33,stroke-width:2px,color:#fff
@@ -181,10 +189,19 @@ graph TB
 
 **Deployment Configuration:**
 
+- **Nginx Reverse Proxy**: Entry point on port 80, routes `/api/*` to FastAPI, `/` to Next.js
 - **Networking**: Custom bridge network with static IP assignments for predictable inter-container communication
 - **Volumes**: Redis data persistence, Next.js build cache (.next/), Turbopack cache (.turbo/)
 - **Health Checks**: API container health endpoint (`/health`), Redis ping checks
 - **Environment Variables**: Loaded from `apps/api/.env` and `apps/web/.env.local`
+
+**Nginx Features:**
+
+- **Rate Limiting**: 30 requests/second per IP (burst 50)
+- **Gzip Compression**: Enabled for text-based content
+- **Upload Size Limit**: 100MB (for MOV files)
+- **Proxy Timeout**: 5 minutes (for AI/classification tasks)
+- **Security Headers**: X-Frame-Options, XSS protection, etc.
 
 **Development Commands:**
 
@@ -514,11 +531,13 @@ graph TB
     subgraph "User Roles"
         BLGU_USER[BLGU_USER<br/><br/>- Submit Assessments<br/>- Upload MOVs<br/>- View Own Data<br/><br/>Required: barangay_id]
 
-        VALIDATOR[VALIDATOR<br/><br/>- Validate Area Assessments<br/>- MOV Checklist Verification<br/>- Area-Specific Access<br/><br/>Required: validator_area_id]
+        VALIDATOR[VALIDATOR<br/><br/>- Validate Area Assessments<br/>- MOV Checklist Verification<br/>- Request Calibration<br/><br/>Required: validator_area_id]
 
-        ASSESSOR[ASSESSOR<br/><br/>- Validate Any Barangay<br/>- Request Rework<br/>- Flexible Assignment<br/><br/>Optional: validator_area_id]
+        ASSESSOR[ASSESSOR<br/><br/>- Validate Any Barangay<br/>- Request Rework<br/>- Flexible Assignment<br/><br/>No Assignment Required]
 
-        MLGOO[MLGOO_DILG<br/><br/>- System Administration<br/>- User Management<br/>- Analytics Access<br/>- Indicator/BBI Creation<br/><br/>No Assignment Required]
+        MLGOO[MLGOO_DILG<br/><br/>- System Administration<br/>- User Management<br/>- Final Approval<br/>- RE-calibration<br/><br/>No Assignment Required]
+
+        KATUPARAN[KATUPARAN_CENTER_USER<br/><br/>- Read-Only Analytics<br/>- Aggregated Data Only<br/>- Research Access<br/><br/>No Assignment Required]
     end
 
     subgraph "API Layer - Dependency Injection"
@@ -527,6 +546,7 @@ graph TB
         ADMIN_DEP[get_current_admin_user<br/>Require MLGOO_DILG]
         VALIDATOR_DEP[get_current_validator_user<br/>Require VALIDATOR + Area]
         ASSESSOR_DEP[get_current_assessor_or_validator<br/>Accept Both Roles]
+        EXTERNAL_DEP[get_current_external_user<br/>Require KATUPARAN_CENTER_USER]
     end
 
     subgraph "Protected Endpoints"
@@ -534,28 +554,34 @@ graph TB
         ASSESSOR_EP[/api/v1/assessor/validate<br/>POST, PUT]
         VALIDATOR_EP[/api/v1/assessor/barangays<br/>GET - Area Filtered]
         ADMIN_EP[/api/v1/admin/indicators<br/>POST, PUT, DELETE]
+        EXTERNAL_EP[/api/v1/external/analytics<br/>GET - Aggregated Only]
     end
 
     BLGU_USER -.->|JWT Bearer Token| AUTH_DEP
     VALIDATOR -.->|JWT Bearer Token| AUTH_DEP
     ASSESSOR -.->|JWT Bearer Token| AUTH_DEP
     MLGOO -.->|JWT Bearer Token| AUTH_DEP
+    KATUPARAN -.->|JWT Bearer Token| AUTH_DEP
 
     AUTH_DEP --> ACTIVE_DEP
     ACTIVE_DEP --> ADMIN_DEP
     ACTIVE_DEP --> VALIDATOR_DEP
     ACTIVE_DEP --> ASSESSOR_DEP
+    ACTIVE_DEP --> EXTERNAL_DEP
 
     ACTIVE_DEP -.->|BLGU_USER Role| BLGU_EP
     ASSESSOR_DEP -.->|ASSESSOR/VALIDATOR| ASSESSOR_EP
     VALIDATOR_DEP -.->|VALIDATOR Only| VALIDATOR_EP
     ADMIN_DEP -.->|MLGOO_DILG Only| ADMIN_EP
+    EXTERNAL_DEP -.->|KATUPARAN Only| EXTERNAL_EP
 
     style MLGOO fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#fff
     style VALIDATOR fill:#3498DB,stroke:#2980B9,stroke-width:2px,color:#fff
     style ASSESSOR fill:#9B59B6,stroke:#8E44AD,stroke-width:2px,color:#fff
     style BLGU_USER fill:#2ECC71,stroke:#27AE60,stroke-width:2px,color:#fff
+    style KATUPARAN fill:#F39C12,stroke:#D68910,stroke-width:2px,color:#fff
     style ADMIN_DEP fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#fff
+    style EXTERNAL_DEP fill:#F39C12,stroke:#D68910,stroke-width:2px,color:#fff
 ```
 
 **Authentication Flow:**
@@ -584,3 +610,7 @@ graph TB
 - Type generation ensures frontend/backend contracts stay synchronized
 - Monorepo structure enables shared tooling and consistent development standards
 - Docker development environment mirrors production deployment patterns
+- Nginx reverse proxy handles rate limiting, compression, and security headers
+- Five user roles provide granular access control across all system features
+
+*Last updated: December 2025*

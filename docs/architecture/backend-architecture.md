@@ -43,18 +43,23 @@ graph TB
         ROUTER_ASSESSOR[assessor.py<br/>Validation workflow]
         ROUTER_USERS[users.py<br/>User management]
         ROUTER_AUTH[auth.py<br/>Authentication]
-        ROUTER_ANALYTICS[analytics.py<br/>Reporting]
+        ROUTER_ANALYTICS[analytics.py<br/>Internal Reporting]
+        ROUTER_EXTERNAL[external_analytics.py<br/>External Research Access]
         ROUTER_SYSTEM[system.py<br/>Health, lookups]
+        ROUTER_ADMIN[admin.py<br/>Cycles, Audit logs]
     end
 
     subgraph "services/ - Business Logic (Fat)"
         SVC_ASSESS[assessment_service.py<br/>Assessment operations]
         SVC_ASSESSOR[assessor_service.py<br/>Validation logic]
-        SVC_INTELLIGENCE[intelligence_service.py<br/>AI classification]
+        SVC_INTELLIGENCE[intelligence_service.py<br/>AI classification & CapDev]
         SVC_USER[user_service.py<br/>User CRUD]
-        SVC_BBI[bbi_service.py<br/>BBI calculation]
+        SVC_BBI[bbi_service.py<br/>BBI 3-tier calculation]
         SVC_INDICATOR[indicator_service.py<br/>Indicator management]
         SVC_STORAGE[storage_service.py<br/>File uploads]
+        SVC_ANNOTATION[annotation_service.py<br/>MOV annotations]
+        SVC_EXTERNAL[external_analytics_service.py<br/>Aggregated research data]
+        SVC_DEADLINE[deadline_service.py<br/>Grace period & auto-lock]
     end
 
     subgraph "db/models/ - SQLAlchemy ORM"
@@ -328,6 +333,8 @@ graph TB
         GET_VALIDATOR[get_current_validator_user<br/><br/>Requires VALIDATOR role<br/>Requires validator_area_id<br/><br/>Depends: get_current_active_user]
 
         GET_ASSESSOR[get_current_assessor_or_validator<br/><br/>Accepts ASSESSOR or VALIDATOR<br/>Validates area assignment<br/><br/>Depends: get_current_active_user]
+
+        GET_EXTERNAL[get_current_external_user<br/><br/>Requires KATUPARAN_CENTER_USER<br/>Read-only access<br/><br/>Depends: get_current_active_user]
     end
 
     subgraph "Endpoint Usage"
@@ -338,6 +345,8 @@ graph TB
         EP_ASSESSOR[POST /assessor/validate<br/><br/>Depends: get_current_assessor_or_validator<br/>Accept: both roles]
 
         EP_ADMIN[POST /admin/indicators<br/><br/>Depends: get_current_admin_user<br/>Require: MLGOO_DILG only]
+
+        EP_EXTERNAL[GET /external/analytics<br/><br/>Depends: get_current_external_user<br/>Aggregated data only]
     end
 
     GET_DB -.->|Session| GET_CURRENT
@@ -347,17 +356,20 @@ graph TB
     GET_ACTIVE --> GET_ADMIN
     GET_ACTIVE --> GET_VALIDATOR
     GET_ACTIVE --> GET_ASSESSOR
+    GET_ACTIVE --> GET_EXTERNAL
 
     GET_ACTIVE -.->|User object| EP_BLGU
     GET_VALIDATOR -.->|User with area| EP_VALIDATOR
     GET_ASSESSOR -.->|User (flexible)| EP_ASSESSOR
     GET_ADMIN -.->|Admin user| EP_ADMIN
+    GET_EXTERNAL -.->|External user| EP_EXTERNAL
 
     style GET_DB fill:#4A90E2,stroke:#2E5C8A,stroke-width:2px,color:#fff
     style GET_CURRENT fill:#51CF66,stroke:#3BAF4D,stroke-width:2px,color:#fff
     style GET_ADMIN fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#fff
     style GET_VALIDATOR fill:#3498DB,stroke:#2980B9,stroke-width:2px,color:#fff
     style GET_ASSESSOR fill:#9B59B6,stroke:#8E44AD,stroke-width:2px,color:#fff
+    style GET_EXTERNAL fill:#F39C12,stroke:#D68910,stroke-width:2px,color:#fff
 ```
 
 **Dependency Injection Code Example:**
@@ -873,6 +885,8 @@ def get_assessment(
 | `POST /api/v1/auth/login` | `auth` | `endpoints/auth/`, `schemas/auth/` |
 | `GET /api/v1/assessor/barangays` | `assessor` | `endpoints/assessor/`, `schemas/assessor/` |
 | `GET /api/v1/analytics/dashboard` | `analytics` | `endpoints/analytics/`, `schemas/analytics/` |
+| `GET /api/v1/external/analytics` | `external-analytics` | `endpoints/external-analytics/`, `schemas/external-analytics/` |
+| `GET /api/v1/admin/audit-logs` | `admin` | `endpoints/admin/`, `schemas/admin/` |
 
 ---
 
@@ -1075,9 +1089,13 @@ class AssessmentService:
 
 ## Notes
 
-- All diagrams reflect the actual SINAG implementation as of November 2025
+- All diagrams reflect the actual SINAG implementation as of December 2025
 - Service layer pattern enforces separation of concerns and testability
 - Dependency injection provides clean, reusable authentication and session management
 - Celery handles long-running AI operations without blocking HTTP requests
 - Consistent error handling ensures predictable API behavior for frontend consumers
 - Type generation from Pydantic schemas ensures frontend/backend contract synchronization
+- Five user roles with dedicated dependency functions for access control
+- External analytics endpoint provides aggregated, anonymized data for research
+
+*Last updated: December 2025*
