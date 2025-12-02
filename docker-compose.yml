@@ -50,7 +50,7 @@ services:
 
     networks:
       sinag-network:
-        ipv4_address: 172.25.0.10
+        ipv4_address: 172.28.0.10
 
   # ============================================================================
   # FastAPI Backend
@@ -120,7 +120,7 @@ services:
 
     networks:
       sinag-network:
-        ipv4_address: 172.25.0.20
+        ipv4_address: 172.28.0.20
 
   # ============================================================================
   # Celery Worker - Background Task Processor
@@ -197,7 +197,7 @@ services:
 
     networks:
       sinag-network:
-        ipv4_address: 172.25.0.30
+        ipv4_address: 172.28.0.30
 
   # ============================================================================
   # Celery Beat - Periodic Task Scheduler (Optional)
@@ -237,7 +237,7 @@ services:
   #
   #   networks:
   #     sinag-network:
-  #       ipv4_address: 172.25.0.31
+  #       ipv4_address: 172.28.0.31
 
   # ============================================================================
   # Next.js Frontend
@@ -301,7 +301,7 @@ services:
 
     networks:
       sinag-network:
-        ipv4_address: 172.25.0.40
+        ipv4_address: 172.28.0.40
 
   # ============================================================================
   # Nginx Reverse Proxy
@@ -356,7 +356,7 @@ services:
 
     networks:
       sinag-network:
-        ipv4_address: 172.25.0.50
+        ipv4_address: 172.28.0.50
 
 # ==============================================================================
 # Networks
@@ -368,8 +368,8 @@ networks:
     ipam:
       driver: default
       config:
-        - subnet: 172.25.0.0/16
-          gateway: 172.25.0.1
+        - subnet: 172.28.0.0/16
+          gateway: 172.28.0.1
 
 # ==============================================================================
 # Volumes
