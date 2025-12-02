@@ -92,9 +92,9 @@ INDICATOR_3_2 = Indicator(
                 "- (PHYSICAL or/and FINANCIAL) Accomplishment Report with the status of implementation of target activities and utilization of funds "
                 "submitted to the C/M POC with received stamp of the DILG City Director or C/MLGOO"
             ),
-            validation_rule="ALL_ITEMS_REQUIRED",  # Single upload field required
+            validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # OR logic: Physical OR Financial
             checklist_items=[
-                # Single shared upload field for PHYSICAL or/and FINANCIAL
+                # Single shared upload field for PHYSICAL or/and FINANCIAL (ungrouped - always required)
                 ChecklistItem(
                     id="3_2_3_upload",
                     label="(PHYSICAL or/and FINANCIAL) Accomplishment Report with the status of implementation of target activities and utilization of funds submitted to the C/M POC with received stamp of the DILG City Director or C/MLGOO",
@@ -110,7 +110,8 @@ INDICATOR_3_2 = Indicator(
                     mov_description="Checkbox for physical accomplishment option",
                     item_type="assessment_field",
                     required=False,
-                    display_order=2
+                    display_order=2,
+                    option_group="Option A"
                 ),
                 ChecklistItem(
                     id="3_2_3_physical_accomplished",
@@ -118,7 +119,8 @@ INDICATOR_3_2 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=3
+                    display_order=3,
+                    option_group="Option A"
                 ),
                 ChecklistItem(
                     id="3_2_3_physical_reflected",
@@ -126,7 +128,8 @@ INDICATOR_3_2 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=4
+                    display_order=4,
+                    option_group="Option A"
                 ),
 
                 # OR Separator (info_text)
@@ -146,15 +149,8 @@ INDICATOR_3_2 = Indicator(
                     mov_description="Checkbox for financial accomplishment option",
                     item_type="assessment_field",
                     required=False,
-                    display_order=6
-                ),
-                ChecklistItem(
-                    id="3_2_3_financial_utilized",
-                    label="Total amount utilized (as of Dec. 31, 2023)",
-                    mov_description="Please supply the required information:",
-                    item_type="calculation_field",
-                    required=False,
-                    display_order=8.1
+                    display_order=6,
+                    option_group="Option B"
                 ),
                 ChecklistItem(
                     id="3_2_3_financial_allocated",
@@ -162,7 +158,17 @@ INDICATOR_3_2 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=8.2
+                    display_order=7,
+                    option_group="Option B"
+                ),
+                ChecklistItem(
+                    id="3_2_3_financial_utilized",
+                    label="Total amount utilized (as of Dec. 31, 2023)",
+                    mov_description="Please supply the required information:",
+                    item_type="calculation_field",
+                    required=False,
+                    display_order=8,
+                    option_group="Option B"
                 ),
             ]
         ),

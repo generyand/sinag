@@ -182,7 +182,7 @@ INDICATOR_4_5 = Indicator(
                 "Upload:\n"
                 "- (PHYSICAL or/and FINANCIAL) Approved Accomplishment Report on BCPC AWFP for CY 2023 with received stamp by the City/Municipality Inter-Agency Monitoring Task Force (IMTF)"
             ),
-            validation_rule="ALL_ITEMS_REQUIRED",  # Single upload field required
+            validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # OR logic: Physical OR Financial
             checklist_items=[
                 # Single shared upload field for PHYSICAL or/and FINANCIAL
                 ChecklistItem(
@@ -200,7 +200,8 @@ INDICATOR_4_5 = Indicator(
                     mov_description="Assessment for physical accomplishment option",
                     item_type="assessment_field",
                     required=False,
-                    display_order=3
+                    display_order=3,
+                    option_group="Option A"
                 ),
                 ChecklistItem(
                     id="4_5_6_physical_accomplished",
@@ -208,7 +209,8 @@ INDICATOR_4_5 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=4.1
+                    display_order=4.1,
+                    option_group="Option A"
                 ),
                 ChecklistItem(
                     id="4_5_6_physical_reflected",
@@ -216,7 +218,8 @@ INDICATOR_4_5 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=4.2
+                    display_order=4.2,
+                    option_group="Option A"
                 ),
                 # OR separator (info_text)
                 ChecklistItem(
@@ -234,7 +237,8 @@ INDICATOR_4_5 = Indicator(
                     mov_description="Assessment for fund utilization option",
                     item_type="assessment_field",
                     required=False,
-                    display_order=6
+                    display_order=6,
+                    option_group="Option B"
                 ),
                 ChecklistItem(
                     id="4_5_6_financial_utilized",
@@ -242,7 +246,8 @@ INDICATOR_4_5 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=7.1
+                    display_order=7.1,
+                    option_group="Option B"
                 ),
                 ChecklistItem(
                     id="4_5_6_financial_allocated",
@@ -250,7 +255,8 @@ INDICATOR_4_5 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=7.2
+                    display_order=7.2,
+                    option_group="Option B"
                 ),
             ]
         ),

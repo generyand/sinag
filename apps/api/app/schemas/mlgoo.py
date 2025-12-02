@@ -112,6 +112,18 @@ class ApprovalQueueResponse(BaseModel):
     assessments: List[ApprovalQueueItem]
 
 
+class MOVFileItem(BaseModel):
+    """MOV file details for indicator review."""
+
+    id: int
+    file_name: str
+    file_url: str
+    file_type: str
+    file_size: int
+    field_id: Optional[str] = None
+    uploaded_at: Optional[str] = None
+
+
 class IndicatorDetailItem(BaseModel):
     """Indicator details within a governance area."""
 
@@ -122,6 +134,7 @@ class IndicatorDetailItem(BaseModel):
     validation_status: Optional[str]
     assessor_remarks: Optional[str]
     is_recalibration_target: bool
+    mov_files: List[MOVFileItem] = Field(default_factory=list)
 
 
 class GovernanceAreaDetailItem(BaseModel):

@@ -82,10 +82,11 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
         // Load validation_status from database if it exists
         const validationStatus = resp.validation_status;
         if (validationStatus) {
-          // Map database status to form status
-          const status = validationStatus === 'Pass' ? 'Pass'
-            : validationStatus === 'Fail' ? 'Fail'
-            : validationStatus === 'Conditional' ? 'Conditional'
+          // Map database status (uppercase: PASS, FAIL, CONDITIONAL) to form status (title case: Pass, Fail, Conditional)
+          const upperStatus = String(validationStatus).toUpperCase();
+          const status = upperStatus === 'PASS' ? 'Pass'
+            : upperStatus === 'FAIL' ? 'Fail'
+            : upperStatus === 'CONDITIONAL' ? 'Conditional'
             : undefined;
 
           // Load public comment from feedback_comments (latest validation comment)
@@ -111,6 +112,37 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       }
     }
   }, [data, form]);
+
+  // Initialize checklist state from database response_data when data loads
+  useEffect(() => {
+    if (data && Object.keys(checklistState).length === 0) {
+      const assessment: AnyRecord = (data as unknown as AnyRecord) ?? {};
+      const core = (assessment.assessment as AnyRecord) ?? assessment;
+      const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
+
+      const initialChecklistState: Record<string, any> = {};
+
+      for (const resp of responses) {
+        const responseId = resp.id;
+        const responseData = resp.response_data || {};
+
+        // Load validator checklist data (validator_val_ prefix)
+        Object.keys(responseData).forEach(key => {
+          if (key.startsWith('validator_val_')) {
+            // Convert to checklist format: validator_val_item_123 → checklist_{responseId}_item_123
+            const fieldName = key.replace('validator_val_', '');
+            const checklistKey = `checklist_${responseId}_${fieldName}`;
+            initialChecklistState[checklistKey] = responseData[key];
+          }
+        });
+      }
+
+      if (Object.keys(initialChecklistState).length > 0) {
+        console.log('[Validator] Loading saved checklist state:', initialChecklistState);
+        setChecklistState(initialChecklistState);
+      }
+    }
+  }, [data, checklistState]);
 
   if (isLoading) {
     return (
@@ -167,13 +199,16 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       const indicator = resp.indicator || {};
       const area = indicator.governance_area || {};
       const areaId = String(area.id || 'unknown');
+      const areaName = area.name || 'Unknown Area';
+      // Generate 2-letter code from area name for logo lookup (e.g., "Financial Administration" -> "FI")
+      const areaCode = areaName.substring(0, 2).toUpperCase();
 
       let existingArea = acc.find((a: any) => a.id === areaId);
       if (!existingArea) {
         existingArea = {
           id: areaId,
-          code: area.code || '',
-          name: area.name || 'Unknown Area',
+          code: areaCode,
+          name: areaName,
           indicators: [],
         };
         acc.push(existingArea);
@@ -210,9 +245,37 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   }).length;
 
   const onSaveDraft = async () => {
+    // Build payloads that include both validation status AND checklist data
     const payloads = responses
-      .map((r) => ({ id: r.id as number, v: form[r.id] }))
-      .filter((x) => x.v && x.v.status) as { id: number; v: { status: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string } }[];
+      .map((r) => {
+        const responseId = r.id as number;
+        const formData = form[responseId];
+
+        // Extract checklist data for this response
+        const responseChecklistData: Record<string, any> = {};
+        Object.keys(checklistState).forEach(key => {
+          if (key.startsWith(`checklist_${responseId}_`)) {
+            // Convert to validator_val_ prefix for storage
+            const fieldName = key.replace(`checklist_${responseId}_`, '');
+            const prefixedFieldName = `validator_val_${fieldName}`;
+            responseChecklistData[prefixedFieldName] = checklistState[key];
+          }
+        });
+
+        const hasStatus = formData && formData.status;
+        const hasChecklistData = Object.keys(responseChecklistData).length > 0;
+
+        // Include in payload if has status OR has checklist data
+        if (hasStatus || hasChecklistData) {
+          return {
+            id: responseId,
+            v: formData,
+            checklistData: responseChecklistData,
+          };
+        }
+        return null;
+      })
+      .filter((x): x is { id: number; v: { status?: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string } | undefined; checklistData: Record<string, any> } => x !== null);
 
     if (payloads.length === 0) {
       console.warn('No validation decisions to save');
@@ -230,12 +293,16 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
           validateMut.mutateAsync({
             responseId: p.id,
             data: {
-              validation_status: p.v.status!,
-              public_comment: p.v.publicComment ?? null,
+              // Convert to uppercase to match backend ValidationStatus enum (PASS, FAIL, CONDITIONAL)
+              validation_status: p.v?.status ? p.v.status.toUpperCase() as 'PASS' | 'FAIL' | 'CONDITIONAL' : undefined,
+              public_comment: p.v?.publicComment ?? null,
+              // Include checklist data in response_data
+              response_data: Object.keys(p.checklistData).length > 0 ? p.checklistData : undefined,
             },
           })
         )
       );
+      // Invalidate all queries to force refetch with updated response_data
       await qc.invalidateQueries();
       console.log('Validation saved successfully');
 

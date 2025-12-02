@@ -2564,6 +2564,9 @@ class AssessmentService:
                     if assessment.updated_at
                     else None,
                     "validators": validators,
+                    # MLGOO RE-calibration flags
+                    "is_mlgoo_recalibration": assessment.is_mlgoo_recalibration,
+                    "mlgoo_recalibration_count": assessment.mlgoo_recalibration_count,
                 }
             )
 

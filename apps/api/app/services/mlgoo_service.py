@@ -1,6 +1,7 @@
 # 🛠️ MLGOO Service
 # Business logic for MLGOO (Municipal Local Government Operations Officer) features
 # Handles final approval workflow, RE-calibration, and grace period management
+# Updated: Added MOV files to assessment details for recalibration review
 
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
@@ -12,6 +13,7 @@ from app.db.enums import AssessmentStatus, NotificationType, ValidationStatus
 from app.db.models.assessment import (
     Assessment,
     AssessmentResponse,
+    MOVFile,
 )
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
@@ -28,6 +30,21 @@ class MLGOOService:
     def __init__(self):
         """Initialize the MLGOO service."""
         self.logger = logging.getLogger(__name__)
+
+    def _parse_indicator_code(self, code: str) -> tuple:
+        """
+        Parse indicator code for natural sorting.
+
+        Converts "1.2.3" to (1, 2, 3) and "1.6.1.1" to (1, 6, 1, 1)
+        for proper numeric sorting instead of lexicographic sorting.
+        """
+        if not code:
+            return (999,)  # Put empty codes at the end
+        try:
+            parts = code.split(".")
+            return tuple(int(p) for p in parts)
+        except (ValueError, AttributeError):
+            return (999,)  # Put invalid codes at the end
 
     def get_approval_queue(
         self,
@@ -74,11 +91,13 @@ class MLGOOService:
             for response in assessment.responses:
                 if response.validation_status:
                     status_val = response.validation_status.value if hasattr(response.validation_status, 'value') else response.validation_status
-                    if status_val == "Pass":
+                    # ValidationStatus enum uses uppercase: PASS, FAIL, CONDITIONAL
+                    status_upper = status_val.upper() if isinstance(status_val, str) else status_val
+                    if status_upper == "PASS":
                         pass_count += 1
-                    elif status_val == "Fail":
+                    elif status_upper == "FAIL":
                         fail_count += 1
-                    elif status_val == "Conditional":
+                    elif status_upper == "CONDITIONAL":
                         conditional_count += 1
 
             # Calculate overall score from pass/total ratio
@@ -393,6 +412,41 @@ class MLGOOService:
         if assessment.blgu_user and assessment.blgu_user.barangay:
             barangay_name = assessment.blgu_user.barangay.name
 
+        # Get all MOV files for this assessment (grouped by indicator_id)
+        # For recalibration targets, only show files uploaded AFTER recalibration was requested
+        recalibration_requested_at = assessment.mlgoo_recalibration_requested_at
+        recalibration_indicator_ids = set(assessment.mlgoo_recalibration_indicator_ids or [])
+
+        mov_files_query = (
+            db.query(MOVFile)
+            .filter(
+                MOVFile.assessment_id == assessment_id,
+                MOVFile.deleted_at.is_(None)  # Only non-deleted files
+            )
+            .all()
+        )
+
+        # Group MOV files by indicator_id
+        # For recalibration targets, filter to only show newly uploaded files
+        mov_files_by_indicator: Dict[int, List[Dict[str, Any]]] = {}
+        for mov_file in mov_files_query:
+            # For recalibration target indicators, only include files uploaded after recalibration request
+            if mov_file.indicator_id in recalibration_indicator_ids and recalibration_requested_at:
+                if mov_file.uploaded_at and mov_file.uploaded_at < recalibration_requested_at:
+                    continue  # Skip files uploaded before recalibration request
+
+            if mov_file.indicator_id not in mov_files_by_indicator:
+                mov_files_by_indicator[mov_file.indicator_id] = []
+            mov_files_by_indicator[mov_file.indicator_id].append({
+                "id": mov_file.id,
+                "file_name": mov_file.file_name,
+                "file_url": mov_file.file_url,
+                "file_type": mov_file.file_type,
+                "file_size": mov_file.file_size,
+                "field_id": mov_file.field_id,
+                "uploaded_at": mov_file.uploaded_at.isoformat() if mov_file.uploaded_at else None,
+            })
+
         # Group responses by governance area
         areas_data = {}
         for response in assessment.responses:
@@ -417,11 +471,13 @@ class MLGOOService:
             # Count statuses
             if response.validation_status:
                 status_val = response.validation_status.value if hasattr(response.validation_status, 'value') else response.validation_status
-                if status_val == "Pass":
+                # ValidationStatus enum uses uppercase: PASS, FAIL, CONDITIONAL
+                status_upper = status_val.upper() if isinstance(status_val, str) else status_val
+                if status_upper == "PASS":
                     areas_data[area_id]["pass_count"] += 1
-                elif status_val == "Fail":
+                elif status_upper == "FAIL":
                     areas_data[area_id]["fail_count"] += 1
-                elif status_val == "Conditional":
+                elif status_upper == "CONDITIONAL":
                     areas_data[area_id]["conditional_count"] += 1
 
             areas_data[area_id]["indicators"].append({
@@ -435,7 +491,14 @@ class MLGOOService:
                     assessment.mlgoo_recalibration_indicator_ids and
                     response.indicator_id in assessment.mlgoo_recalibration_indicator_ids
                 ),
+                "mov_files": mov_files_by_indicator.get(response.indicator_id, []),
             })
+
+        # Sort indicators in each governance area by indicator_code
+        for area_id in areas_data:
+            areas_data[area_id]["indicators"].sort(
+                key=lambda x: self._parse_indicator_code(x.get("indicator_code", ""))
+            )
 
         # Calculate overall score from governance area data
         total_pass = sum(area["pass_count"] for area in areas_data.values())
@@ -613,9 +676,10 @@ class MLGOOService:
 
             response = response_map[indicator_id]
 
-            # Convert string status to enum
+            # Convert string status to enum (handle both Title Case and uppercase)
             try:
-                new_status = ValidationStatus(new_status_str)
+                # Try uppercase first (enum values are PASS, FAIL, CONDITIONAL)
+                new_status = ValidationStatus(new_status_str.upper())
             except ValueError:
                 raise ValueError(f"Invalid validation status: {new_status_str}. Must be Pass, Fail, or Conditional")
 
