@@ -1,3 +1,5 @@
+'use client';
+
 import { BarChartData, PieChartData, TrendData } from "@sinag/shared";
 import {
   Bar,
@@ -15,6 +17,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { AnalyticsEmptyState } from '@/components/features/analytics';
 
 // Color constants for consistent theming
 const COLORS = {
@@ -70,8 +73,8 @@ export function AreaBreakdownBarChart({ data }: AreaBreakdownBarChartProps) {
   // Handle empty data
   if (!data || data.length === 0) {
     return (
-      <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-        <p className="text-sm">No data available for chart</p>
+      <div className="h-[300px] flex items-center justify-center">
+        <AnalyticsEmptyState variant="no-assessments" compact description="No assessment data available for chart" />
       </div>
     );
   }
@@ -199,8 +202,8 @@ export function ComplianceStatusPieChart({ data }: ComplianceStatusPieChartProps
   // Handle empty data
   if (!data || data.length === 0) {
     return (
-      <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-        <p className="text-sm">No data available for chart</p>
+      <div className="h-[300px] flex items-center justify-center">
+        <AnalyticsEmptyState variant="no-assessments" compact description="No status data available for chart" />
       </div>
     );
   }
@@ -269,8 +272,8 @@ export function TrendLineChart({ data }: TrendLineChartProps) {
   // Handle empty data
   if (!data || data.length === 0) {
     return (
-      <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-        <p className="text-sm">No trend data available</p>
+      <div className="h-[300px] flex items-center justify-center">
+        <AnalyticsEmptyState variant="no-assessments" compact description="No trend data available yet" />
       </div>
     );
   }

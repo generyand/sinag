@@ -19,11 +19,6 @@ import {
   RefreshCw,
   Filter,
   BarChart3,
-  Map,
-  Table2,
-  PieChart,
-  Layers,
-  Building2,
 } from "lucide-react";
 import { useDashboardAnalytics } from "@/hooks/useDashboardAnalytics";
 import {
@@ -34,7 +29,6 @@ import {
   BBIFunctionalityWidget,
 } from "@/components/features/dashboard-analytics";
 import {
-  FilterControls,
   VisualizationGrid,
   ExportControls,
 } from "@/components/features/reports";
@@ -45,18 +39,12 @@ import {
   AggregatedCapDevCard,
   BarangayStatusTable,
 } from "@/components/features/municipal-overview";
-
-// Tab definitions with icons
-const TABS = [
-  { id: "overview", label: "Overview", icon: Building2 },
-  { id: "kpis", label: "KPIs", icon: BarChart3 },
-  { id: "charts", label: "Charts", icon: PieChart },
-  { id: "map", label: "Geographic", icon: Map },
-  { id: "table", label: "Detailed Results", icon: Table2 },
-  { id: "bbi", label: "BBI Status", icon: Layers },
-] as const;
-
-type TabId = (typeof TABS)[number]["id"];
+import {
+  useAnalyticsFilters,
+  ActiveFilterPills,
+  ANALYTICS_TABS,
+  type AnalyticsTabId,
+} from "@/components/features/analytics";
 
 export default function AnalyticsPage() {
   const router = useRouter();
@@ -64,24 +52,20 @@ export default function AnalyticsPage() {
   const { user, setUser, isAuthenticated } = useAuthStore();
 
   // Get initial tab from URL or default to "overview"
-  const initialTab = (searchParams.get("tab") as TabId) || "overview";
-  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
+  const initialTab = (searchParams.get("tab") as AnalyticsTabId) || "overview";
+  const [activeTab, setActiveTab] = useState<AnalyticsTabId>(initialTab);
 
-  const [selectedCycle, setSelectedCycle] = useState<number | null>(null);
-  const [selectedPhase, setSelectedPhase] = useState<"phase1" | "phase2" | "all">("all");
-
-  // Filter state for reports
-  const [filters, setFilters] = useState({
-    cycle_id: undefined as number | undefined,
-    start_date: undefined as string | undefined,
-    end_date: undefined as string | undefined,
-    governance_area: undefined as string[] | undefined,
-    barangay_id: undefined as number[] | undefined,
-    status: undefined as string | undefined,
-    phase: undefined as "phase1" | "phase2" | undefined,
-    page: 1,
-    page_size: 50,
-  });
+  // Use the centralized filter hook
+  const {
+    selectedCycle,
+    selectedPhase,
+    filters,
+    setSelectedCycle,
+    setSelectedPhase,
+    clearAllFilters,
+    hasActiveFilters,
+    activeFilterLabels,
+  } = useAnalyticsFilters();
 
   // Auto-generated hook to fetch current user data
   const userQuery = useGetUsersMe();
@@ -129,17 +113,15 @@ export default function AnalyticsPage() {
   };
 
   // Update URL when tab changes
-  const handleTabChange = (tab: TabId) => {
+  const handleTabChange = (tab: AnalyticsTabId) => {
     setActiveTab(tab);
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", tab);
     router.push(`/analytics?${params.toString()}`, { scroll: false });
   };
 
-  // Handle filter changes
-  const handleFilterChange = (newFilters: typeof filters) => {
-    setFilters(newFilters);
-  };
+  // Get cycle name for display in filter pills
+  const selectedCycleName = cyclesData?.find(c => c.id === selectedCycle)?.name;
 
   // Redirect unauthenticated users to login
   useEffect(() => {
@@ -287,17 +269,18 @@ export default function AnalyticsPage() {
 
           {/* Tab Navigation */}
           <div className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-2">
-            <Tabs value={activeTab} onValueChange={(v) => handleTabChange(v as TabId)}>
+            <Tabs value={activeTab} onValueChange={(v) => handleTabChange(v as AnalyticsTabId)}>
               <TabsList className="w-full flex flex-wrap gap-1 bg-transparent h-auto p-0">
-                {TABS.map((tab) => {
+                {ANALYTICS_TABS.map((tab) => {
                   const Icon = tab.icon;
                   return (
                     <TabsTrigger
                       key={tab.id}
                       value={tab.id}
                       className="flex items-center gap-2 px-4 py-2.5 rounded-sm data-[state=active]:bg-[var(--cityscape-yellow)] data-[state=active]:text-[var(--foreground)] data-[state=active]:shadow-sm transition-all"
+                      aria-label={tab.label}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" aria-hidden="true" />
                       <span className="hidden sm:inline">{tab.label}</span>
                     </TabsTrigger>
                   );
@@ -309,7 +292,7 @@ export default function AnalyticsPage() {
           {/* Global Filters */}
           <div className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-6">
             <div className="flex items-center gap-3 mb-4">
-              <Filter className="h-5 w-5" style={{ color: "var(--cityscape-yellow)" }} />
+              <Filter className="h-5 w-5" style={{ color: "var(--cityscape-yellow)" }} aria-hidden="true" />
               <h2 className="text-lg font-semibold text-[var(--foreground)]">
                 Global Filters
               </h2>
@@ -319,24 +302,23 @@ export default function AnalyticsPage() {
             <div className="flex flex-col sm:flex-row gap-3">
               {/* Cycle Selector */}
               <div className="w-full sm:w-64">
-                <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1 uppercase tracking-wide">
+                <label
+                  htmlFor="cycle-select"
+                  className="block text-xs font-medium text-[var(--text-secondary)] mb-1 uppercase tracking-wide"
+                >
                   Assessment Cycle
                 </label>
                 <Select
                   value={selectedCycle?.toString() || "all"}
                   onValueChange={(value) => {
-                    if (value === "all") {
-                      setSelectedCycle(null);
-                      setFilters((prev) => ({ ...prev, cycle_id: undefined }));
-                    } else {
-                      const cycleId = parseInt(value);
-                      setSelectedCycle(cycleId);
-                      setFilters((prev) => ({ ...prev, cycle_id: cycleId }));
-                    }
+                    setSelectedCycle(value === "all" ? null : parseInt(value));
                   }}
                   disabled={isCyclesLoading}
                 >
-                  <SelectTrigger className="w-full bg-[var(--background)] border-[var(--border)] rounded-sm">
+                  <SelectTrigger
+                    id="cycle-select"
+                    className="w-full bg-[var(--background)] border-[var(--border)] rounded-sm"
+                  >
                     <SelectValue placeholder={isCyclesLoading ? "Loading cycles..." : "Select cycle"} />
                   </SelectTrigger>
                   <SelectContent className="bg-[var(--card)] border border-[var(--border)] shadow-xl rounded-sm z-50">
@@ -370,7 +352,10 @@ export default function AnalyticsPage() {
 
               {/* Phase Selector */}
               <div className="w-full sm:w-64">
-                <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1 uppercase tracking-wide">
+                <label
+                  htmlFor="phase-select"
+                  className="block text-xs font-medium text-[var(--text-secondary)] mb-1 uppercase tracking-wide"
+                >
                   Assessment Phase
                 </label>
                 <Select
@@ -379,7 +364,10 @@ export default function AnalyticsPage() {
                     setSelectedPhase(value);
                   }}
                 >
-                  <SelectTrigger className="w-full bg-[var(--background)] border-[var(--border)] rounded-sm">
+                  <SelectTrigger
+                    id="phase-select"
+                    className="w-full bg-[var(--background)] border-[var(--border)] rounded-sm"
+                  >
                     <SelectValue placeholder="Select phase" />
                   </SelectTrigger>
                   <SelectContent className="bg-[var(--card)] border border-[var(--border)] shadow-xl rounded-sm z-50">
@@ -405,36 +393,15 @@ export default function AnalyticsPage() {
                 </Select>
               </div>
             </div>
-
-            {/* Phase Badge Indicator */}
-            {selectedPhase !== "all" && (
-              <div className="flex items-center gap-2 mt-4">
-                <div
-                  className={`inline-flex items-center px-3 py-1 rounded-sm text-xs font-medium border ${
-                    selectedPhase === "phase1"
-                      ? "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800"
-                      : "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-800"
-                  }`}
-                >
-                  {selectedPhase === "phase1" ? (
-                    <>
-                      Phase 1: Table Assessment
-                      <span className="ml-2 text-blue-600 dark:text-blue-400 font-normal">
-                        (Assessor Role)
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      Phase 2: Table Validation
-                      <span className="ml-2 text-purple-600 dark:text-purple-400 font-normal">
-                        (Validator Role)
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
+
+          {/* Active Filter Pills */}
+          <ActiveFilterPills
+            filterLabels={activeFilterLabels}
+            cycleName={selectedCycleName}
+            onClearAll={clearAllFilters}
+            hasActiveFilters={hasActiveFilters}
+          />
 
           {/* Tab Content */}
           <div className="space-y-6">

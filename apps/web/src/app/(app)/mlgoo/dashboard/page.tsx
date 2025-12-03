@@ -115,10 +115,10 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background)]">
+    <main className="min-h-screen bg-[var(--background)]" role="main" aria-label="MLGOO Dashboard">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Section */}
-        <section className="mb-6">
+        <header className="mb-6">
           <DashboardHeader
             municipality={dashboardData.municipality}
             performanceYear={dashboardData.performanceYear}
@@ -127,15 +127,15 @@ export default function AdminDashboardPage() {
               console.log('Year changed:', year);
             }}
           />
-        </section>
+        </header>
 
         {/* KPI Cards Section */}
-        <section className="mb-6">
+        <section className="mb-6" aria-label="Key Performance Indicators">
           <KPICards data={dashboardData.kpiData} />
         </section>
 
         {/* Main Content: Progress Chart + Sidebar */}
-        <section className="mb-6">
+        <section className="mb-6" aria-label="Municipal Progress and Status">
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
             {/* Municipal Progress Chart - 8 columns */}
             <div className="xl:col-span-8">
@@ -146,70 +146,79 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Sidebar - 4 columns */}
-            <div className="xl:col-span-4 flex flex-col gap-6">
+            <aside className="xl:col-span-4 flex flex-col gap-6" aria-label="Dashboard sidebar">
               {/* System Status Card */}
-              <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-sm p-5">
-                <h3 className="text-base font-semibold text-[var(--foreground)] mb-4">
+              <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-sm p-5" role="region" aria-labelledby="system-status-title">
+                <h3 id="system-status-title" className="text-base font-semibold text-[var(--foreground)] mb-4">
                   System Status
                 </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 rounded-sm bg-[var(--muted)]/20 border border-[var(--border)]">
+                <ul className="space-y-3" role="list" aria-label="System status indicators">
+                  <li className="flex items-center justify-between p-3 rounded-sm bg-[var(--muted)]/20 border border-[var(--border)]">
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full animate-pulse bg-[var(--cityscape-yellow)]" />
+                      <div className="w-2 h-2 rounded-full animate-pulse bg-[var(--cityscape-yellow)]" aria-hidden="true" />
                       <span className="text-sm font-medium text-[var(--foreground)]">Live Data</span>
                     </div>
-                    <span className="text-xs font-semibold text-[var(--cityscape-yellow)]">
+                    <span className="text-xs font-semibold text-[var(--cityscape-yellow)]" aria-label="Status: Active">
                       ACTIVE
                     </span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 rounded-sm bg-[var(--muted)]/20 border border-[var(--border)]">
+                  </li>
+                  <li className="flex items-center justify-between p-3 rounded-sm bg-[var(--muted)]/20 border border-[var(--border)]">
                     <span className="text-sm font-medium text-[var(--foreground)]">Last Updated</span>
                     <span className="text-xs text-[var(--muted-foreground)]">
                       {new Date().toLocaleTimeString()}
                     </span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 rounded-sm bg-[var(--muted)]/20 border border-[var(--border)]">
+                  </li>
+                  <li className="flex items-center justify-between p-3 rounded-sm bg-[var(--muted)]/20 border border-[var(--border)]">
                     <span className="text-sm font-medium text-[var(--foreground)]">Auto-refresh</span>
                     <span className="text-xs font-semibold text-[var(--text-secondary)]">30s</span>
-                  </div>
-                </div>
+                  </li>
+                </ul>
               </div>
 
               {/* Quick Actions Card */}
-              <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-sm p-5 flex-1">
-                <h3 className="text-base font-semibold text-[var(--foreground)] mb-4">
+              <nav className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-sm p-5 flex-1" aria-labelledby="quick-actions-title">
+                <h3 id="quick-actions-title" className="text-base font-semibold text-[var(--foreground)] mb-4">
                   Quick Actions
                 </h3>
-                <div className="space-y-3">
-                  <button
-                    onClick={() => router.push('/mlgoo/submissions')}
-                    className="w-full text-left p-3 rounded-sm border border-[var(--border)] bg-[var(--muted)]/20 hover:bg-[var(--cityscape-yellow)]/10 hover:border-[var(--cityscape-yellow)] transition-all duration-200"
-                  >
-                    <div className="font-medium text-[var(--foreground)] text-sm">Review Submissions</div>
-                    <div className="text-xs text-[var(--text-secondary)]">Check pending assessments</div>
-                  </button>
-                  <button
-                    onClick={() => router.push('/mlgoo/reports')}
-                    className="w-full text-left p-3 rounded-sm border border-[var(--border)] bg-[var(--muted)]/20 hover:bg-[var(--cityscape-yellow)]/10 hover:border-[var(--cityscape-yellow)] transition-all duration-200"
-                  >
-                    <div className="font-medium text-[var(--foreground)] text-sm">Generate Reports</div>
-                    <div className="text-xs text-[var(--text-secondary)]">View analytics & insights</div>
-                  </button>
-                  <button
-                    onClick={() => router.push('/user-management')}
-                    className="w-full text-left p-3 rounded-sm border border-[var(--border)] bg-[var(--muted)]/20 hover:bg-[var(--cityscape-yellow)]/10 hover:border-[var(--cityscape-yellow)] transition-all duration-200"
-                  >
-                    <div className="font-medium text-[var(--foreground)] text-sm">Manage Users</div>
-                    <div className="text-xs text-[var(--text-secondary)]">User accounts & permissions</div>
-                  </button>
-                </div>
-              </div>
-            </div>
+                <ul className="space-y-3" role="list">
+                  <li>
+                    <button
+                      onClick={() => router.push('/mlgoo/submissions')}
+                      className="w-full text-left p-3 rounded-sm border border-[var(--border)] bg-[var(--muted)]/20 hover:bg-[var(--cityscape-yellow)]/10 hover:border-[var(--cityscape-yellow)] transition-all duration-200"
+                      aria-label="Review Submissions - Check pending assessments"
+                    >
+                      <div className="font-medium text-[var(--foreground)] text-sm">Review Submissions</div>
+                      <div className="text-xs text-[var(--text-secondary)]">Check pending assessments</div>
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={() => router.push('/mlgoo/reports')}
+                      className="w-full text-left p-3 rounded-sm border border-[var(--border)] bg-[var(--muted)]/20 hover:bg-[var(--cityscape-yellow)]/10 hover:border-[var(--cityscape-yellow)] transition-all duration-200"
+                      aria-label="Generate Reports - View analytics and insights"
+                    >
+                      <div className="font-medium text-[var(--foreground)] text-sm">Generate Reports</div>
+                      <div className="text-xs text-[var(--text-secondary)]">View analytics & insights</div>
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={() => router.push('/user-management')}
+                      className="w-full text-left p-3 rounded-sm border border-[var(--border)] bg-[var(--muted)]/20 hover:bg-[var(--cityscape-yellow)]/10 hover:border-[var(--cityscape-yellow)] transition-all duration-200"
+                      aria-label="Manage Users - User accounts and permissions"
+                    >
+                      <div className="font-medium text-[var(--foreground)] text-sm">Manage Users</div>
+                      <div className="text-xs text-[var(--text-secondary)]">User accounts & permissions</div>
+                    </button>
+                  </li>
+                </ul>
+              </nav>
+            </aside>
           </div>
         </section>
 
         {/* Governance Area & Rework Stats */}
-        <section className="mb-6">
+        <section className="mb-6" aria-label="Governance Area Breakdown and Rework Statistics">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <GovernanceAreaBreakdown data={dashboardData.areaBreakdown} />
             <ReworkStatsCard data={dashboardData.reworkStats} />
@@ -217,20 +226,20 @@ export default function AdminDashboardPage() {
         </section>
 
         {/* BBI Analytics Section */}
-        <section className="mb-6">
+        <section className="mb-6" aria-label="BBI Analytics">
           <BBIAnalyticsCard
             data={(dashboardData as any).bbiAnalytics as BBIAnalyticsData}
           />
         </section>
 
         {/* Failed Indicators - Full Width */}
-        <section>
+        <section aria-label="Failed Indicators">
           <FailedIndicators
             data={dashboardData.failedIndicators}
             totalBarangays={dashboardData.totalBarangays}
           />
         </section>
       </div>
-    </div>
+    </main>
   );
 }

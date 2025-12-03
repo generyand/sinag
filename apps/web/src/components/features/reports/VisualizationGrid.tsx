@@ -1,6 +1,6 @@
 import { SulopBarangayMapIntegrated } from "@/components/features/analytics";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ReportsDataResponse } from "@sinag/shared";
 import {
@@ -65,9 +65,10 @@ export function VisualizationGrid({ data, isLoading, showOnly }: VisualizationGr
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Bar Chart Card */}
             {shouldShow("bar") && (
-              <Card>
+              <Card className="rounded-sm" role="region" aria-labelledby="bar-chart-title">
                 <CardHeader>
-                  <CardTitle>Assessment Results by Area</CardTitle>
+                  <CardTitle id="bar-chart-title">Assessment Results by Area</CardTitle>
+                  <CardDescription>Pass/fail breakdown for each governance area</CardDescription>
                 </CardHeader>
                 <CardContent id="bar-chart-container">
                   <AreaBreakdownBarChart data={data.chart_data.bar_chart || []} />
@@ -77,9 +78,10 @@ export function VisualizationGrid({ data, isLoading, showOnly }: VisualizationGr
 
             {/* Pie Chart Card */}
             {shouldShow("pie") && (
-              <Card>
+              <Card className="rounded-sm" role="region" aria-labelledby="pie-chart-title">
                 <CardHeader>
-                  <CardTitle>Status Distribution</CardTitle>
+                  <CardTitle id="pie-chart-title">Status Distribution</CardTitle>
+                  <CardDescription>Overall assessment completion status</CardDescription>
                 </CardHeader>
                 <CardContent id="pie-chart-container">
                   <ComplianceStatusPieChart data={data.chart_data.pie_chart || []} />
@@ -89,9 +91,10 @@ export function VisualizationGrid({ data, isLoading, showOnly }: VisualizationGr
 
             {/* Line Chart Card - Full width on mobile, spans 2 columns on desktop */}
             {shouldShow("line") && (
-              <Card className="md:col-span-2">
+              <Card className="md:col-span-2 rounded-sm" role="region" aria-labelledby="line-chart-title">
                 <CardHeader>
-                  <CardTitle>Trends Over Time</CardTitle>
+                  <CardTitle id="line-chart-title">Trends Over Time</CardTitle>
+                  <CardDescription>Historical pass rate across assessment cycles</CardDescription>
                 </CardHeader>
                 <CardContent id="line-chart-container">
                   <TrendLineChart data={data.chart_data.line_chart || []} />
@@ -138,9 +141,10 @@ export function VisualizationGrid({ data, isLoading, showOnly }: VisualizationGr
       {shouldShow("table") && (
         <section className="space-y-4">
           {!showOnly && <h2 className="text-2xl font-semibold">Detailed Results</h2>}
-          <Card>
+          <Card className="rounded-sm" role="region" aria-labelledby="table-title">
             <CardHeader>
-              <CardTitle>Assessment Data</CardTitle>
+              <CardTitle id="table-title">Assessment Data</CardTitle>
+              <CardDescription>Detailed assessment results for all barangays</CardDescription>
             </CardHeader>
             <CardContent>
               <AssessmentDataTable data={data.table_data || []} />

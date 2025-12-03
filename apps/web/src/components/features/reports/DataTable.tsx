@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { TableData, AssessmentRow } from "@sinag/shared";
 import { ChevronUp, ChevronDown, ChevronsUpDown, Search } from "lucide-react";
+import { AnalyticsEmptyState } from "@/components/features/analytics";
 
 interface AssessmentDataTableProps {
   data: TableData;
@@ -32,11 +33,19 @@ interface AssessmentDataTableProps {
 // Helper function to get status badge color
 const getStatusColor = (status: string): string => {
   const normalizedStatus = status.toLowerCase();
-  if (normalizedStatus.includes("pass")) return "text-green-600 bg-green-50";
-  if (normalizedStatus.includes("fail")) return "text-red-600 bg-red-50";
+  if (normalizedStatus.includes("pass")) return "text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30";
+  if (normalizedStatus.includes("fail")) return "text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/30";
   if (normalizedStatus.includes("progress"))
-    return "text-amber-600 bg-amber-50";
-  return "text-slate-600 bg-slate-50";
+    return "text-amber-700 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/30";
+  return "text-slate-700 bg-slate-100 dark:text-slate-300 dark:bg-slate-800";
+};
+
+// Helper function to get score color based on value
+const getScoreColor = (score: number | null | undefined): string => {
+  if (score === null || score === undefined) return "text-[var(--muted-foreground)]";
+  if (score >= 70) return "text-green-600 dark:text-green-400";
+  if (score >= 50) return "text-yellow-600 dark:text-yellow-400";
+  return "text-red-600 dark:text-red-400";
 };
 
 export function AssessmentDataTable({
@@ -74,7 +83,7 @@ export function AssessmentDataTable({
         const status = row.getValue("status") as string;
         return (
           <div
-            className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${getStatusColor(
+            className={`inline-flex items-center px-2.5 py-1 rounded-sm text-xs font-medium ${getStatusColor(
               status
             )}`}
           >
@@ -90,7 +99,7 @@ export function AssessmentDataTable({
       cell: ({ row }) => {
         const score = row.getValue("score") as number | null | undefined;
         return (
-          <div className="text-sm font-mono">
+          <div className={`text-sm font-semibold ${getScoreColor(score)}`}>
             {score !== null && score !== undefined
               ? `${score.toFixed(1)}%`
               : "N/A"}
@@ -129,34 +138,33 @@ export function AssessmentDataTable({
   // Handle empty data - render after hooks are called
   if (rows.length === 0) {
     return (
-      <div className="border-2 border-gray-200 rounded p-8 shadow-sm">
-        <p className="text-center text-muted-foreground">
-          No assessment data available
-        </p>
+      <div className="border border-[var(--border)] rounded-sm p-8">
+        <AnalyticsEmptyState variant="no-assessments" compact />
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" role="region" aria-label="Assessment data table">
       {/* Search Input */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-4 flex-wrap">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[var(--muted-foreground)]" aria-hidden="true" />
           <Input
             placeholder="Search barangays..."
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
-            className="pl-9"
+            className="pl-9 rounded-sm"
+            aria-label="Search barangays"
           />
         </div>
-        <div className="text-sm text-muted-foreground">
+        <div className="text-sm text-[var(--muted-foreground)]">
           Showing {startRow}-{endRow} of {data.total_count} results
         </div>
       </div>
 
       {/* Table */}
-      <div className="rounded border-2 border-gray-200 shadow-sm overflow-hidden">
+      <div className="rounded-sm border border-[var(--border)] overflow-hidden">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -228,16 +236,18 @@ export function AssessmentDataTable({
 
       {/* Pagination Controls */}
       <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
+        <div className="text-sm text-[var(--muted-foreground)]">
           Page {table.getState().pagination.pageIndex + 1} of{" "}
           {table.getPageCount()}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" role="navigation" aria-label="Table pagination">
           <Button
             variant="outline"
             size="sm"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
+            className="rounded-sm"
+            aria-label="Previous page"
           >
             Previous
           </Button>
@@ -246,6 +256,8 @@ export function AssessmentDataTable({
             size="sm"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
+            className="rounded-sm"
+            aria-label="Next page"
           >
             Next
           </Button>

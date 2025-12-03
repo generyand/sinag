@@ -128,9 +128,9 @@ export default function UserListSection() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" role="main" aria-label="User management">
       {/* Enhanced Header Section */}
-      <div className="relative overflow-hidden bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-8">
+      <header className="relative overflow-hidden bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-8">
         {/* Decorative background elements */}
         <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-blue-100/40 to-indigo-100/20 rounded-full -translate-y-20 translate-x-20"></div>
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-purple-100/30 to-pink-100/20 rounded-full translate-y-16 -translate-x-16"></div>
@@ -178,14 +178,14 @@ export default function UserListSection() {
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Enhanced User Table with Search and Pagination */}
-      <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg overflow-hidden">
+      <section className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg overflow-hidden" aria-labelledby="user-accounts-heading">
         <div className="p-6 border-b border-[var(--border)]">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
-              <h2 className="text-xl font-bold text-[var(--foreground)]">
+              <h2 id="user-accounts-heading" className="text-xl font-bold text-[var(--foreground)]">
                 User Accounts
               </h2>
               <p className="text-[var(--text-secondary)] mt-1 text-sm">
@@ -205,6 +205,7 @@ export default function UserListSection() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 pr-4 py-2 w-full bg-[var(--background)] border-[var(--border)] rounded-sm focus:border-[var(--cityscape-yellow)] focus:ring-[var(--cityscape-yellow)]/20 transition-all duration-200"
+                  aria-label="Search users by name, email, or role"
                 />
               </div>
               <Button
@@ -374,7 +375,7 @@ export default function UserListSection() {
             </div>
           )}
         </div>
-      </div>
+      </section>
 
       <MemoizedUserForm
         open={isFormOpen}
