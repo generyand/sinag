@@ -1,3 +1,5 @@
+'use client';
+
 import { BarChartData, PieChartData, TrendData } from "@sinag/shared";
 import {
   Bar,
@@ -15,6 +17,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { AnalyticsEmptyState } from '@/components/features/analytics';
 
 // Color constants for consistent theming
 const COLORS = {
@@ -39,7 +42,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string> 
     const passRate = total > 0 ? ((passed / total) * 100).toFixed(1) : 0;
 
     return (
-      <div className="bg-card rounded p-3 shadow-lg border border-gray-200">
+      <div className="bg-white dark:bg-gray-800 rounded-sm p-3 shadow-lg border border-border">
         <p className="font-semibold text-sm mb-2">{label}</p>
         <div className="space-y-1 text-xs">
           <div className="flex items-center gap-2">
@@ -70,8 +73,8 @@ export function AreaBreakdownBarChart({ data }: AreaBreakdownBarChartProps) {
   // Handle empty data
   if (!data || data.length === 0) {
     return (
-      <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-        <p className="text-sm">No data available for chart</p>
+      <div className="h-[300px] flex items-center justify-center">
+        <AnalyticsEmptyState variant="no-assessments" compact description="No assessment data available for chart" />
       </div>
     );
   }
@@ -183,7 +186,7 @@ const PieTooltip = ({ active, payload }: TooltipProps<number, string> & { payloa
   if (active && payload && payload.length) {
     const data = payload[0].payload as PieChartData;
     return (
-      <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
+      <div className="bg-white dark:bg-gray-800 border border-border rounded-sm p-3 shadow-lg">
         <p className="font-semibold text-sm mb-1">{data.status}</p>
         <div className="space-y-1 text-xs">
           <p>Count: {data.count}</p>
@@ -199,8 +202,8 @@ export function ComplianceStatusPieChart({ data }: ComplianceStatusPieChartProps
   // Handle empty data
   if (!data || data.length === 0) {
     return (
-      <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-        <p className="text-sm">No data available for chart</p>
+      <div className="h-[300px] flex items-center justify-center">
+        <AnalyticsEmptyState variant="no-assessments" compact description="No status data available for chart" />
       </div>
     );
   }
@@ -251,7 +254,7 @@ const TrendTooltip = ({ active, payload }: TooltipProps<number, string> & { payl
   if (active && payload && payload.length) {
     const data = payload[0].payload as TrendData;
     return (
-      <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
+      <div className="bg-white dark:bg-gray-800 border border-border rounded-sm p-3 shadow-lg">
         <p className="font-semibold text-sm mb-1">{data.cycle_name}</p>
         <div className="space-y-1 text-xs">
           <p>Pass Rate: {data.pass_rate.toFixed(1)}%</p>
@@ -269,8 +272,8 @@ export function TrendLineChart({ data }: TrendLineChartProps) {
   // Handle empty data
   if (!data || data.length === 0) {
     return (
-      <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-        <p className="text-sm">No trend data available</p>
+      <div className="h-[300px] flex items-center justify-center">
+        <AnalyticsEmptyState variant="no-assessments" compact description="No trend data available yet" />
       </div>
     );
   }

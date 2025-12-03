@@ -130,7 +130,9 @@ class CapDevInsightsResponse(BaseModel):
     available_languages: List[str] = Field(
         default_factory=list, description="Languages available (e.g., ['ceb', 'en'])"
     )
-    insights: Optional[Dict[str, CapDevInsightsContent]] = Field(
+    # Use Dict[str, Any] instead of Dict[str, CapDevInsightsContent] to accept
+    # flexible AI-generated content structures (strings, objects, etc.)
+    insights: Optional[Dict[str, Any]] = Field(
         None, description="Insights keyed by language code"
     )
 
@@ -143,7 +145,8 @@ class CapDevInsightsByLanguage(BaseModel):
     assessment_id: int
     barangay_name: str
     language: str = Field(..., description="Language code: ceb, en, fil")
-    content: Optional[CapDevInsightsContent] = None
+    # Use Any instead of CapDevInsightsContent to accept flexible AI-generated content
+    content: Optional[Any] = None
     status: str = Field(
         ..., description="Status: pending, generating, completed, failed, not_available"
     )

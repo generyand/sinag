@@ -3,7 +3,20 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Lightbulb, Users, Target, Wrench } from 'lucide-react';
-import type { AggregatedCapDevSummary, AggregatedCapDevSummaryTopRecommendationsItem, AggregatedCapDevSummaryPriorityInterventionsItem } from '@sinag/shared';
+import type { AggregatedCapDevSummary } from '@sinag/shared';
+
+// Type for aggregated recommendation items returned by the API
+interface AggregatedRecommendation {
+  title?: string;
+  governance_area?: string;
+  frequency?: number;
+}
+
+// Type for aggregated intervention items returned by the API
+interface AggregatedIntervention {
+  title?: string;
+  frequency?: number;
+}
 
 interface AggregatedCapDevCardProps {
   data: AggregatedCapDevSummary;
@@ -30,21 +43,24 @@ export function AggregatedCapDevCard({ data }: AggregatedCapDevCardProps) {
               Most Common Recommendations
             </h4>
             <div className="space-y-2">
-              {data.top_recommendations.slice(0, 5).map((rec: AggregatedCapDevSummaryTopRecommendationsItem, idx: number) => (
-                <div key={idx} className="flex items-center justify-between p-2 bg-blue-50 rounded">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{rec.title}</p>
-                    {rec.governance_area && (
-                      <Badge variant="outline" className="text-xs mt-1">
-                        {rec.governance_area}
-                      </Badge>
-                    )}
+              {data.top_recommendations.slice(0, 5).map((recItem, idx: number) => {
+                const rec = recItem as AggregatedRecommendation;
+                return (
+                  <div key={idx} className="flex items-center justify-between p-2 bg-blue-50 rounded">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{rec.title ?? 'Untitled'}</p>
+                      {rec.governance_area && (
+                        <Badge variant="outline" className="text-xs mt-1">
+                          {rec.governance_area}
+                        </Badge>
+                      )}
+                    </div>
+                    <Badge className="bg-blue-600">
+                      {rec.frequency ?? 0} barangays
+                    </Badge>
                   </div>
-                  <Badge className="bg-blue-600">
-                    {rec.frequency} barangays
-                  </Badge>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -79,14 +95,17 @@ export function AggregatedCapDevCard({ data }: AggregatedCapDevCardProps) {
               Priority Interventions
             </h4>
             <div className="space-y-2">
-              {data.priority_interventions.slice(0, 5).map((intervention: AggregatedCapDevSummaryPriorityInterventionsItem, idx: number) => (
-                <div key={idx} className="flex items-center justify-between p-2 bg-purple-50 rounded">
-                  <p className="text-sm">{intervention.title}</p>
-                  <Badge variant="outline" className="text-purple-700">
-                    {intervention.frequency}x suggested
-                  </Badge>
-                </div>
-              ))}
+              {data.priority_interventions.slice(0, 5).map((interventionItem, idx: number) => {
+                const intervention = interventionItem as AggregatedIntervention;
+                return (
+                  <div key={idx} className="flex items-center justify-between p-2 bg-purple-50 rounded">
+                    <p className="text-sm">{intervention.title ?? 'Untitled'}</p>
+                    <Badge variant="outline" className="text-purple-700">
+                      {intervention.frequency ?? 0}x suggested
+                    </Badge>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

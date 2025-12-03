@@ -132,6 +132,11 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   , [core.responses]);
 
   const reworkCount: number = core.rework_count ?? 0;
+
+  // Get timestamps for MOV file separation (new vs old files)
+  // For assessors: rework_requested_at shows files uploaded after assessor's previous rework request
+  const reworkRequestedAt: string | null = (core?.rework_requested_at ?? null) as string | null;
+
   const barangayName: string = (core?.blgu_user?.barangay?.name
     ?? core?.barangay?.name
     ?? core?.barangay_name
@@ -190,13 +195,16 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       const indicator = resp.indicator || {};
       const area = indicator.governance_area || {};
       const areaId = String(area.id || 'unknown');
+      const areaName = area.name || 'Unknown Area';
+      // Generate 2-letter code from area name for logo lookup (e.g., "Financial Administration" -> "FI")
+      const areaCode = areaName.substring(0, 2).toUpperCase();
 
       let existingArea = acc.find((a: any) => a.id === areaId);
       if (!existingArea) {
         existingArea = {
           id: areaId,
-          code: area.code || '',
-          name: area.name || 'Unknown Area',
+          code: areaCode,
+          name: areaName,
           indicators: [],
         };
         acc.push(existingArea);
@@ -458,7 +466,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         });
 
         const payloadData = {
-          validation_status: isValidator ? (formData?.status ?? undefined) : undefined,  // ONLY validators set status
+          // Convert to uppercase to match backend ValidationStatus enum (PASS, FAIL, CONDITIONAL)
+          validation_status: isValidator && formData?.status ? formData.status.toUpperCase() as 'PASS' | 'FAIL' | 'CONDITIONAL' : undefined,
           public_comment: formData?.publicComment ?? null,
           response_data: Object.keys(responseChecklistData).length > 0 ? responseChecklistData : undefined,
         };
@@ -650,6 +659,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               <MiddleMovFilesPanel
                 assessment={data as any}
                 expandedId={expandedId ?? undefined}
+                reworkRequestedAt={reworkRequestedAt}
+                separationLabel="After Rework"
               />
             </div>
 

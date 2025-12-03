@@ -23,44 +23,46 @@ const ImageAnnotator = dynamic(() => import('@/components/shared/ImageAnnotator'
 interface MiddleMovFilesPanelProps {
   assessment: AssessmentDetailsResponse;
   expandedId?: number | null;
-  /** Optional: Timestamp when calibration was requested, used to separate old vs new files */
+  /** Optional: Timestamp when calibration was requested (Validator calibration) */
   calibrationRequestedAt?: string | null;
+  /** Optional: Timestamp when rework was requested (Assessor rework) */
+  reworkRequestedAt?: string | null;
+  /** Optional: Label for the separation section (e.g., "After Calibration" or "After Rework") */
+  separationLabel?: string;
 }
 
 type AnyRecord = Record<string, any>;
 
-export function MiddleMovFilesPanel({ assessment, expandedId, calibrationRequestedAt }: MiddleMovFilesPanelProps) {
+export function MiddleMovFilesPanel({ assessment, expandedId, calibrationRequestedAt, reworkRequestedAt, separationLabel = "After Calibration" }: MiddleMovFilesPanelProps) {
   const data: AnyRecord = (assessment as unknown as AnyRecord) ?? {};
   const core = (data.assessment as AnyRecord) ?? data;
   const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
-
-  // Debug: Log the assessment data structure
-  console.log('[MiddleMovFilesPanel] Raw assessment data:', assessment);
-  console.log('[MiddleMovFilesPanel] Extracted responses count:', responses.length);
-  if (responses.length > 0) {
-    console.log('[MiddleMovFilesPanel] First response sample:', responses[0]);
-  }
 
   // Find the currently selected response
   const selectedResponse = responses.find((r) => r.id === expandedId);
   const indicator = (selectedResponse?.indicator as AnyRecord) ?? {};
   const indicatorName = indicator?.name || 'Select an indicator';
 
-  // Debug logging
-  console.log('[MiddleMovFilesPanel] Debug:', {
-    expandedId,
-    selectedResponse: selectedResponse ? 'found' : 'not found',
-    responseId: selectedResponse?.id,
-    indicatorName,
-    hasMOVs: selectedResponse?.movs ? 'yes' : 'no',
-    movCount: selectedResponse?.movs?.length || 0,
-  });
+  // Determine the appropriate timestamp for file separation based on indicator context
+  // - If indicator was calibrated (validation_status is null AND calibration happened), use calibrationRequestedAt
+  // - Otherwise, use reworkRequestedAt for assessor rework separation
+  const { effectiveTimestamp, effectiveLabel } = React.useMemo(() => {
+    if (!selectedResponse) {
+      return { effectiveTimestamp: null, effectiveLabel: separationLabel };
+    }
 
-  // Additional debug: log the full selectedResponse structure
-  if (selectedResponse) {
-    console.log('[MiddleMovFilesPanel] Full selectedResponse:', selectedResponse);
-    console.log('[MiddleMovFilesPanel] Keys in selectedResponse:', Object.keys(selectedResponse));
-  }
+    // Check if this indicator was part of calibration (validation_status was cleared)
+    // If calibrationRequestedAt exists and this indicator has null validation_status, it was likely calibrated
+    const wasCalibrated = calibrationRequestedAt && selectedResponse.validation_status === null;
+
+    if (wasCalibrated) {
+      return { effectiveTimestamp: calibrationRequestedAt, effectiveLabel: "After Calibration" };
+    } else if (reworkRequestedAt) {
+      return { effectiveTimestamp: reworkRequestedAt, effectiveLabel: "After Rework" };
+    }
+
+    return { effectiveTimestamp: null, effectiveLabel: separationLabel };
+  }, [selectedResponse, calibrationRequestedAt, reworkRequestedAt, separationLabel]);
 
   // Get MOV files from the selected response with isNew flag for calibration separation
   const movFiles = React.useMemo(() => {
@@ -69,11 +71,8 @@ export function MiddleMovFilesPanel({ assessment, expandedId, calibrationRequest
     // MOV files are in the 'movs' array according to the backend schema
     const files = (selectedResponse.movs as AnyRecord[]) ?? [];
 
-    console.log('[MiddleMovFilesPanel] Raw MOVs from response:', files);
-    console.log('[MiddleMovFilesPanel] calibrationRequestedAt:', calibrationRequestedAt);
-
-    // Parse calibration timestamp for comparison
-    const calibrationDate = calibrationRequestedAt ? new Date(calibrationRequestedAt) : null;
+    // Parse effective timestamp for comparison
+    const separationDate = effectiveTimestamp ? new Date(effectiveTimestamp) : null;
 
     // Transform backend MOV format to FileList component format
     // Backend sends: { id, filename, original_filename, file_size, content_type, storage_path, status, uploaded_at }
@@ -81,10 +80,10 @@ export function MiddleMovFilesPanel({ assessment, expandedId, calibrationRequest
       const uploadedAt = mov.uploaded_at || new Date().toISOString();
       const uploadDate = new Date(uploadedAt);
 
-      // File is "new" if it was uploaded AFTER the calibration request
-      const isNew = calibrationDate ? uploadDate > calibrationDate : false;
+      // File is "new" if it was uploaded AFTER the separation timestamp
+      const isNew = separationDate ? uploadDate > separationDate : false;
 
-      const transformed = {
+      return {
         id: mov.id,
         assessment_id: selectedResponse.assessment_id,
         indicator_id: selectedResponse.indicator_id,
@@ -98,24 +97,20 @@ export function MiddleMovFilesPanel({ assessment, expandedId, calibrationRequest
         field_id: mov.field_id || null,
         isNew, // Flag for visual separation in UI
       };
-
-      console.log('[MiddleMovFilesPanel] Transformed MOV:', { original: mov, transformed, isNew });
-
-      return transformed;
     });
-  }, [selectedResponse, calibrationRequestedAt]);
+  }, [selectedResponse, effectiveTimestamp, effectiveLabel]);
 
-  // Separate files into new (after calibration) and old (before calibration)
+  // Separate files into new (after rework/calibration) and old (before)
   const { newFiles, oldFiles } = React.useMemo(() => {
-    if (!calibrationRequestedAt) {
-      // No calibration - all files are treated as "old" (normal view)
+    if (!effectiveTimestamp) {
+      // No separation timestamp - all files are treated as "old" (normal view)
       return { newFiles: [], oldFiles: movFiles };
     }
     return {
       newFiles: movFiles.filter((f) => f.isNew),
       oldFiles: movFiles.filter((f) => !f.isNew),
     };
-  }, [movFiles, calibrationRequestedAt]);
+  }, [movFiles, effectiveTimestamp]);
 
   // State for PDF annotation modal
   const [selectedFile, setSelectedFile] = React.useState<any | null>(null);
@@ -236,8 +231,8 @@ export function MiddleMovFilesPanel({ assessment, expandedId, calibrationRequest
               There are no files uploaded for this indicator yet
             </p>
           </div>
-        ) : calibrationRequestedAt ? (
-          /* Calibration/Rework mode: Show files in two sections */
+        ) : effectiveTimestamp ? (
+          /* Calibration/Rework mode: Show files in two sections based on effective timestamp */
           <div className="space-y-4">
             {/* New Files Section - Highlighted (only show if there are new files) */}
             {newFiles.length > 0 && (
@@ -245,7 +240,7 @@ export function MiddleMovFilesPanel({ assessment, expandedId, calibrationRequest
                 <div className="flex items-center gap-2 mb-3">
                   <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
                   <span className="text-xs font-semibold text-green-700 uppercase tracking-wide">
-                    New Files (After Calibration)
+                    New Files ({effectiveLabel})
                   </span>
                   <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
                     {newFiles.length} file{newFiles.length !== 1 ? 's' : ''}

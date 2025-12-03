@@ -2059,7 +2059,8 @@ DETAILED AREA ANALYSIS:
             if analysis["failed_indicators"]:
                 prompt += "  - Failed Indicator Details:\n"
                 for ind in analysis["failed_indicators"]:
-                    prompt += f"    • {ind['name']}: {ind['description'][:100]}...\n"
+                    desc = ind['description'] or "No description available"
+                    prompt += f"    • {ind['name']}: {desc[:100]}...\n"
 
             if analysis["assessor_feedback"]:
                 prompt += "  - Key Assessor Feedback:\n"

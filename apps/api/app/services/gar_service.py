@@ -253,12 +253,13 @@ class GARService:
             )
 
             # Count validation statuses (only for leaf indicators)
+            # Note: ValidationStatus enum values are uppercase (PASS, FAIL, CONDITIONAL)
             if not is_header and validation_status:
-                if validation_status == "Pass":
+                if validation_status == "PASS":
                     met_count += 1
-                elif validation_status == "Conditional":
+                elif validation_status == "CONDITIONAL":
                     considered_count += 1
-                elif validation_status == "Fail":
+                elif validation_status == "FAIL":
                     unmet_count += 1
 
         # Post-process: Calculate validation status for header indicators from their children
@@ -268,15 +269,16 @@ class GARService:
 
         # Determine overall area result
         # Area passes if ALL leaf indicators have Pass or Conditional status
+        # Note: ValidationStatus enum values are uppercase (PASS, FAIL, CONDITIONAL)
         overall_result = None
         leaf_indicators = [i for i in gar_indicators if not i.is_header]
         if leaf_indicators:
             all_passed = all(
-                i.validation_status in ["Pass", "Conditional"]
+                i.validation_status in ["PASS", "CONDITIONAL"]
                 for i in leaf_indicators
                 if i.validation_status is not None
             )
-            has_any_fail = any(i.validation_status == "Fail" for i in leaf_indicators)
+            has_any_fail = any(i.validation_status == "FAIL" for i in leaf_indicators)
 
             if has_any_fail:
                 overall_result = "Failed"
@@ -597,10 +599,10 @@ class GARService:
         This method looks at ALL indicators (including hidden depth-4+ ones) to
         calculate the parent status correctly.
 
-        Rules:
-        - If ANY child has "Fail" -> parent is "Fail"
-        - If ANY child has "Conditional" (and no Fail) -> parent is "Conditional"
-        - If ALL children have "Pass" -> parent is "Pass"
+        Rules (using ValidationStatus enum values - uppercase):
+        - If ANY child has "FAIL" -> parent is "FAIL"
+        - If ANY child has "CONDITIONAL" (and no FAIL) -> parent is "CONDITIONAL"
+        - If ALL children have "PASS" -> parent is "PASS"
         - If no children have status -> parent remains None
         """
         # Build a map of GAR indicator codes for quick lookup
@@ -634,13 +636,13 @@ class GARService:
             if not child_statuses:
                 continue
 
-            # Calculate combined status
-            if "Fail" in child_statuses:
-                gar_indicator.validation_status = "Fail"
-            elif "Conditional" in child_statuses:
-                gar_indicator.validation_status = "Conditional"
-            elif all(s == "Pass" for s in child_statuses):
-                gar_indicator.validation_status = "Pass"
+            # Calculate combined status (using ValidationStatus enum values - uppercase)
+            if "FAIL" in child_statuses:
+                gar_indicator.validation_status = "FAIL"
+            elif "CONDITIONAL" in child_statuses:
+                gar_indicator.validation_status = "CONDITIONAL"
+            elif all(s == "PASS" for s in child_statuses):
+                gar_indicator.validation_status = "PASS"
 
     def _sort_key_for_indicator_code(self, indicator_code: str) -> tuple:
         """

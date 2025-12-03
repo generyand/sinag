@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { useGetAssessmentsList, useGetCapdevAssessmentsAssessmentId, AssessmentStatus } from '@sinag/shared';
+import { useGetAssessmentsList, useGetCapdevAssessmentsAssessmentId, getGetCapdevAssessmentsAssessmentIdQueryKey, AssessmentStatus } from '@sinag/shared';
+import type { CapDevInsightsContent } from '@/types/capdev';
 
 // Type for assessment list items (the API returns Dict[str, Any])
 interface AssessmentListItem {
@@ -49,6 +50,7 @@ export function AIRecommendationsWidget({ barangayIds }: AIRecommendationsWidget
     assessmentIdNum,
     {
       query: {
+        queryKey: getGetCapdevAssessmentsAssessmentIdQueryKey(assessmentIdNum),
         enabled: !!selectedAssessmentId && !isNaN(assessmentIdNum),
       }
     }
@@ -67,7 +69,9 @@ export function AIRecommendationsWidget({ barangayIds }: AIRecommendationsWidget
 
   const hasInsights = capdevData?.status === 'completed' && capdevData?.insights;
   const defaultLanguage = capdevData?.available_languages?.[0] || 'en';
-  const insights = hasInsights && capdevData.insights ? capdevData.insights[defaultLanguage] : null;
+  const insightsRaw = hasInsights && capdevData.insights ? capdevData.insights[defaultLanguage] : null;
+  // Cast insights to proper type for type-safe access
+  const insights = insightsRaw as CapDevInsightsContent | null;
 
   return (
     <Card className="col-span-2">
@@ -172,24 +176,35 @@ export function AIRecommendationsWidget({ barangayIds }: AIRecommendationsWidget
                 <div>
                   <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Governance Weaknesses</h4>
                   <div className="space-y-2">
-                    {insights.governance_weaknesses.map((weakness, index) => (
-                      <div key={index} className="flex items-start space-x-2">
-                        <Badge
-                          variant="outline"
-                          className={`mt-1 flex-shrink-0 ${
-                            weakness.severity === 'high' ? 'border-red-500 text-red-700 dark:text-red-300' :
-                            weakness.severity === 'medium' ? 'border-yellow-500 text-yellow-700 dark:text-yellow-300' :
-                            'border-gray-500 text-gray-700 dark:text-gray-300'
-                          }`}
-                        >
-                          {weakness.severity}
-                        </Badge>
-                        <div>
-                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{weakness.area_name}</p>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{weakness.description}</p>
+                    {insights.governance_weaknesses.map((weakness, index) => {
+                      // Handle both string and object formats
+                      if (typeof weakness === 'string') {
+                        return (
+                          <div key={index} className="flex items-start space-x-2">
+                            <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{weakness}</p>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div key={index} className="flex items-start space-x-2">
+                          <Badge
+                            variant="outline"
+                            className={`mt-1 flex-shrink-0 ${
+                              weakness.severity === 'high' ? 'border-red-500 text-red-700 dark:text-red-300' :
+                              weakness.severity === 'medium' ? 'border-yellow-500 text-yellow-700 dark:text-yellow-300' :
+                              'border-gray-500 text-gray-700 dark:text-gray-300'
+                            }`}
+                          >
+                            {weakness.severity}
+                          </Badge>
+                          <div>
+                            <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{weakness.area_name}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{weakness.description}</p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -199,32 +214,47 @@ export function AIRecommendationsWidget({ barangayIds }: AIRecommendationsWidget
                 <div>
                   <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Recommendations</h4>
                   <div className="space-y-3">
-                    {insights.recommendations.map((rec, index) => (
-                      <div key={index} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge variant="outline" className="flex-shrink-0">
-                            {index + 1}
-                          </Badge>
-                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{rec.title}</p>
-                          {rec.priority && (
-                            <Badge
-                              variant="secondary"
-                              className={`text-xs ${
-                                rec.priority === 'high' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
-                                rec.priority === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
-                                'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                              }`}
-                            >
-                              {rec.priority}
+                    {insights.recommendations.map((rec, index) => {
+                      // Handle both string and object formats
+                      if (typeof rec === 'string') {
+                        return (
+                          <div key={index} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge variant="outline" className="flex-shrink-0">
+                                {index + 1}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{rec}</p>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div key={index} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant="outline" className="flex-shrink-0">
+                              {index + 1}
                             </Badge>
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{rec.title}</p>
+                            {rec.priority && (
+                              <Badge
+                                variant="secondary"
+                                className={`text-xs ${
+                                  rec.priority === 'high' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
+                                  rec.priority === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
+                                  'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                                }`}
+                              >
+                                {rec.priority}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{rec.description}</p>
+                          {rec.governance_area && (
+                            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Area: {rec.governance_area}</p>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{rec.description}</p>
-                        {rec.governance_area && (
-                          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Area: {rec.governance_area}</p>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -234,15 +264,20 @@ export function AIRecommendationsWidget({ barangayIds }: AIRecommendationsWidget
                 <div>
                   <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Capacity Development Needs</h4>
                   <div className="space-y-2">
-                    {insights.capacity_development_needs.map((need, index) => (
-                      <div key={index} className="flex items-start space-x-2">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{need.area}</p>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{need.current_gap}</p>
+                    {insights.capacity_development_needs.map((need, index) => {
+                      // Handle AI format with category vs standard format with area
+                      const areaOrCategory = 'category' in (need as object) ? (need as { category: string }).category : (need as { area: string }).area;
+                      const gapOrDesc = 'description' in (need as object) ? (need as { description: string }).description : (need as { current_gap: string }).current_gap;
+                      return (
+                        <div key={index} className="flex items-start space-x-2">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{areaOrCategory}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{gapOrDesc}</p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -252,15 +287,25 @@ export function AIRecommendationsWidget({ barangayIds }: AIRecommendationsWidget
                 <div>
                   <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Priority Actions</h4>
                   <div className="space-y-2">
-                    {insights.priority_actions.map((action, index) => (
-                      <div key={index} className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                        <p className="text-sm font-medium text-green-900 dark:text-green-300">{action.action}</p>
-                        <div className="flex gap-4 mt-1 text-xs text-green-700 dark:text-green-400">
-                          <span>Responsible: {action.responsible_party}</span>
-                          <span>Timeline: {action.timeline}</span>
+                    {insights.priority_actions.map((action, index) => {
+                      // Handle both string and object formats
+                      if (typeof action === 'string') {
+                        return (
+                          <div key={index} className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                            <p className="text-sm font-medium text-green-900 dark:text-green-300">{action}</p>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div key={index} className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                          <p className="text-sm font-medium text-green-900 dark:text-green-300">{action.action}</p>
+                          <div className="flex gap-4 mt-1 text-xs text-green-700 dark:text-green-400">
+                            <span>Responsible: {action.responsible_party}</span>
+                            <span>Timeline: {action.timeline}</span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}

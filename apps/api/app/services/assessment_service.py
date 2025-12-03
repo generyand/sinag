@@ -2488,10 +2488,15 @@ class AssessmentService:
             List of dictionaries with assessment details including compliance status
         """
         # Query assessments with related user and barangay data
+        # Also eagerly load reviewer and calibration_validator for the validators list
         query = (
             db.query(Assessment)
             .join(User, Assessment.blgu_user_id == User.id)
-            .options(joinedload(Assessment.blgu_user).joinedload(User.barangay))
+            .options(
+                joinedload(Assessment.blgu_user).joinedload(User.barangay),
+                joinedload(Assessment.reviewer),
+                joinedload(Assessment.calibration_validator),
+            )
         )
 
         # Filter by status if provided (otherwise return all assessments)
@@ -2515,9 +2520,36 @@ class AssessmentService:
                 ):
                     barangay_name = assessment.blgu_user.barangay.name
 
-            # Get validators who worked on this assessment
+            # Get validators/assessors who worked on this assessment
+            # Include: reviewed_by (assessor), calibration_validator_id (validator),
+            # and users who left feedback comments
             try:
-                validators_query = (
+                validators_dict = {}  # Use dict to avoid duplicates by user ID
+
+                # 1. Add the assessor who reviewed (if any)
+                if assessment.reviewed_by and assessment.reviewer:
+                    reviewer = assessment.reviewer
+                    validators_dict[reviewer.id] = {
+                        "id": reviewer.id,
+                        "name": reviewer.name,
+                        "email": reviewer.email,
+                        "initials": "".join([word[0].upper() for word in reviewer.name.split()[:2]]) if reviewer.name else "A",
+                        "role": "assessor"
+                    }
+
+                # 2. Add the validator who calibrated (if any)
+                if assessment.calibration_validator_id and assessment.calibration_validator:
+                    validator = assessment.calibration_validator
+                    validators_dict[validator.id] = {
+                        "id": validator.id,
+                        "name": validator.name,
+                        "email": validator.email,
+                        "initials": "".join([word[0].upper() for word in validator.name.split()[:2]]) if validator.name else "V",
+                        "role": "validator"
+                    }
+
+                # 3. Add users who left feedback comments (existing logic)
+                feedback_users = (
                     db.query(User.id, User.name, User.email)
                     .join(FeedbackComment, FeedbackComment.assessor_id == User.id)
                     .join(AssessmentResponse, AssessmentResponse.id == FeedbackComment.response_id)
@@ -2528,16 +2560,16 @@ class AssessmentService:
                     .all()
                 )
 
-                # Format validators list
-                validators = [
-                    {
-                        "id": v.id,
-                        "name": v.name,
-                        "email": v.email,
-                        "initials": "".join([word[0].upper() for word in v.name.split()[:2]]) if v.name else "?"
-                    }
-                    for v in validators_query
-                ]
+                for v in feedback_users:
+                    if v.id not in validators_dict:
+                        validators_dict[v.id] = {
+                            "id": v.id,
+                            "name": v.name,
+                            "email": v.email,
+                            "initials": "".join([word[0].upper() for word in v.name.split()[:2]]) if v.name else "?"
+                        }
+
+                validators = list(validators_dict.values())
             except Exception as e:
                 print(f"ERROR getting validators for assessment {assessment.id}: {str(e)}")
                 import traceback
@@ -2564,6 +2596,9 @@ class AssessmentService:
                     if assessment.updated_at
                     else None,
                     "validators": validators,
+                    # MLGOO RE-calibration flags
+                    "is_mlgoo_recalibration": assessment.is_mlgoo_recalibration,
+                    "mlgoo_recalibration_count": assessment.mlgoo_recalibration_count,
                 }
             )
 

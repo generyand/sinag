@@ -13,6 +13,11 @@ import {
   Loader2,
   RotateCcw,
   Lightbulb,
+  File,
+  ExternalLink,
+  Download,
+  X,
+  Eye,
 } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
@@ -28,6 +33,7 @@ import {
   usePatchMlgooAssessmentsAssessmentIdRecalibrationValidation,
   useGetCapdevAssessmentsAssessmentId,
   usePostCapdevAssessmentsAssessmentIdRegenerate,
+  getGetCapdevAssessmentsAssessmentIdQueryKey,
 } from "@sinag/shared";
 import {
   Select,
@@ -57,6 +63,13 @@ export default function SubmissionDetailsPage() {
     [indicatorId: number]: { status: string; remarks: string };
   }>({});
 
+  // State for file preview modal
+  const [previewFile, setPreviewFile] = React.useState<{
+    file_name: string;
+    file_url: string;
+    file_type: string;
+  } | null>(null);
+
   // Fetch assessment details from API
   const { data, isLoading, isError, error } = useGetMlgooAssessmentsAssessmentId(assessmentId);
 
@@ -76,6 +89,7 @@ export default function SubmissionDetailsPage() {
     refetch: refetchCapdev,
   } = useGetCapdevAssessmentsAssessmentId(assessmentId, {
     query: {
+      queryKey: getGetCapdevAssessmentsAssessmentIdQueryKey(assessmentId),
       enabled: !!(assessmentId && data && (data as any)?.status === "COMPLETED"),
     },
   });
@@ -196,7 +210,7 @@ export default function SubmissionDetailsPage() {
     const initialUpdates: { [id: number]: { status: string; remarks: string } } = {};
     recalibrationTargetIndicators.forEach((ind) => {
       initialUpdates[ind.indicator_id] = {
-        status: ind.validation_status || "Fail",
+        status: ind.validation_status || "FAIL",
         remarks: "",
       };
     });
@@ -282,6 +296,23 @@ export default function SubmissionDetailsPage() {
 
   // Show error state
   if (isError || !data) {
+    // Check if it's a 403 forbidden error (user doesn't have MLGOO_DILG role)
+    const errorResponse = (error as any)?.response;
+    const isForbidden = errorResponse?.status === 403;
+    const isUnauthorized = errorResponse?.status === 401;
+
+    const errorTitle = isForbidden
+      ? "Access Denied"
+      : isUnauthorized
+      ? "Authentication Required"
+      : "Failed to load assessment";
+
+    const errorMessage = isForbidden
+      ? "You need MLGOO/DILG admin privileges to access this page. Please log in with an admin account (e.g., admin@sinag.com)."
+      : isUnauthorized
+      ? "Please log in to access this page."
+      : (error as any)?.message || "Please try again later.";
+
     return (
       <div className="min-h-screen bg-[var(--background)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -293,13 +324,13 @@ export default function SubmissionDetailsPage() {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Submissions
           </Button>
-          <Card className="bg-red-50 border-red-200">
+          <Card className={`${isForbidden ? "bg-yellow-50 border-yellow-200" : "bg-red-50 border-red-200"}`}>
             <CardContent className="pt-6">
-              <div className="flex items-center gap-3 text-red-700">
+              <div className={`flex items-center gap-3 ${isForbidden ? "text-yellow-700" : "text-red-700"}`}>
                 <AlertCircle className="h-6 w-6" />
                 <div>
-                  <p className="font-semibold">Failed to load assessment</p>
-                  <p className="text-sm">{(error as any)?.message || "Please try again later."}</p>
+                  <p className="font-semibold">{errorTitle}</p>
+                  <p className="text-sm">{errorMessage}</p>
                 </div>
               </div>
             </CardContent>
@@ -322,10 +353,12 @@ export default function SubmissionDetailsPage() {
   const overallScore = assessment.overall_score ?? (totalIndicators > 0 ? Math.round((totalPass / totalIndicators) * 100) : 0);
 
   // Get all failed/conditional indicators for recalibration selection
+  // Note: validation_status from backend is uppercase (PASS, FAIL, CONDITIONAL)
   const failedIndicators: { id: number; name: string; code: string; areaName: string; status: string }[] = [];
   governanceAreas.forEach((ga: any) => {
     (ga.indicators || []).forEach((ind: any) => {
-      if (ind.validation_status === "Fail" || ind.validation_status === "Conditional") {
+      const statusUpper = ind.validation_status?.toUpperCase();
+      if (statusUpper === "FAIL" || statusUpper === "CONDITIONAL") {
         failedIndicators.push({
           id: ind.indicator_id,
           name: ind.indicator_name,
@@ -339,7 +372,14 @@ export default function SubmissionDetailsPage() {
 
   // Get recalibration target indicators (for review after BLGU resubmission)
   const recalibrationTargetIds = new Set(assessment.mlgoo_recalibration_indicator_ids || []);
-  const recalibrationTargetIndicators: { indicator_id: number; indicator_name: string; indicator_code: string; areaName: string; validation_status: string }[] = [];
+  const recalibrationTargetIndicators: {
+    indicator_id: number;
+    indicator_name: string;
+    indicator_code: string;
+    areaName: string;
+    validation_status: string;
+    mov_files: { id: number; file_name: string; file_url: string; file_type: string; file_size: number }[];
+  }[] = [];
   governanceAreas.forEach((ga: any) => {
     (ga.indicators || []).forEach((ind: any) => {
       if (recalibrationTargetIds.has(ind.indicator_id)) {
@@ -349,6 +389,7 @@ export default function SubmissionDetailsPage() {
           indicator_code: ind.indicator_code,
           areaName: ga.name,
           validation_status: ind.validation_status,
+          mov_files: ind.mov_files || [],
         });
       }
     });
@@ -496,7 +537,7 @@ export default function SubmissionDetailsPage() {
                         </div>
                         <span
                           className={`text-xs px-2 py-0.5 rounded ${
-                            ind.status === "Fail"
+                            ind.status?.toUpperCase() === "FAIL"
                               ? "bg-red-100 text-red-700"
                               : "bg-yellow-100 text-yellow-700"
                           }`}
@@ -579,73 +620,142 @@ export default function SubmissionDetailsPage() {
                   {recalibrationTargetIndicators.map((ind) => (
                     <div
                       key={ind.indicator_id}
-                      className="p-3 bg-purple-50 rounded border border-purple-100 space-y-3"
+                      className="bg-white rounded-lg border border-purple-200 shadow-sm overflow-hidden"
                     >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <p className="font-medium text-sm text-gray-900">
-                            {ind.indicator_code} - {ind.indicator_name}
-                          </p>
-                          <p className="text-xs text-gray-500">{ind.areaName}</p>
-                          <p className="text-xs text-gray-600 mt-1">
-                            Current status:{" "}
-                            <span
-                              className={`font-medium ${
-                                ind.validation_status === "Pass"
-                                  ? "text-green-600"
-                                  : ind.validation_status === "Fail"
-                                  ? "text-red-600"
-                                  : "text-yellow-600"
-                              }`}
+                      {/* Header */}
+                      <div className="bg-purple-50 px-4 py-3 border-b border-purple-100">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded">
+                                {ind.indicator_code}
+                              </span>
+                              <span
+                                className={`text-xs font-medium px-2 py-0.5 rounded ${
+                                  ind.validation_status?.toUpperCase() === "PASS"
+                                    ? "bg-green-100 text-green-700"
+                                    : ind.validation_status?.toUpperCase() === "FAIL"
+                                    ? "bg-red-100 text-red-700"
+                                    : "bg-yellow-100 text-yellow-700"
+                                }`}
+                              >
+                                Current: {ind.validation_status}
+                              </span>
+                            </div>
+                            <p className="font-medium text-sm text-gray-900">
+                              {ind.indicator_name}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-0.5">{ind.areaName}</p>
+                          </div>
+                          <div className="w-44">
+                            <label className="text-xs font-medium text-purple-700 mb-1.5 block">
+                              Update Status
+                            </label>
+                            <Select
+                              value={validationUpdates[ind.indicator_id]?.status || ind.validation_status}
+                              onValueChange={(value) => updateIndicatorStatus(ind.indicator_id, value)}
                             >
-                              {ind.validation_status}
-                            </span>
-                          </p>
-                        </div>
-                        <div className="w-40">
-                          <label className="text-xs text-gray-600 mb-1 block">
-                            New Status
-                          </label>
-                          <Select
-                            value={validationUpdates[ind.indicator_id]?.status || ind.validation_status}
-                            onValueChange={(value) => updateIndicatorStatus(ind.indicator_id, value)}
-                          >
-                            <SelectTrigger className="h-9">
-                              <SelectValue placeholder="Select status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Pass">
-                                <span className="flex items-center gap-2">
-                                  <CheckCircle className="h-3 w-3 text-green-600" />
-                                  Pass
-                                </span>
-                              </SelectItem>
-                              <SelectItem value="Conditional">
-                                <span className="flex items-center gap-2">
-                                  <AlertCircle className="h-3 w-3 text-yellow-600" />
-                                  Conditional
-                                </span>
-                              </SelectItem>
-                              <SelectItem value="Fail">
-                                <span className="flex items-center gap-2">
-                                  <XCircle className="h-3 w-3 text-red-600" />
-                                  Fail
-                                </span>
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
+                              <SelectTrigger className="h-10 bg-white border-purple-300 focus:ring-purple-500">
+                                <SelectValue placeholder="Select status" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="PASS">
+                                  <span className="flex items-center gap-2">
+                                    <CheckCircle className="h-4 w-4 text-green-600" />
+                                    Pass
+                                  </span>
+                                </SelectItem>
+                                <SelectItem value="CONDITIONAL">
+                                  <span className="flex items-center gap-2">
+                                    <AlertCircle className="h-4 w-4 text-yellow-600" />
+                                    Conditional
+                                  </span>
+                                </SelectItem>
+                                <SelectItem value="FAIL">
+                                  <span className="flex items-center gap-2">
+                                    <XCircle className="h-4 w-4 text-red-600" />
+                                    Fail
+                                  </span>
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                       </div>
-                      <div>
-                        <label className="text-xs text-gray-600 mb-1 block">
-                          Remarks (optional)
-                        </label>
-                        <Textarea
-                          value={validationUpdates[ind.indicator_id]?.remarks || ""}
-                          onChange={(e) => updateIndicatorRemarks(ind.indicator_id, e.target.value)}
-                          placeholder="Add remarks for this indicator..."
-                          className="min-h-16 text-sm border-purple-200"
-                        />
+
+                      {/* Body */}
+                      <div className="p-4 space-y-4">
+                        {/* MOV Files Section */}
+                        {ind.mov_files && ind.mov_files.length > 0 ? (
+                          <div className="bg-green-50 rounded-lg border border-green-200 p-3">
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className="bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded">
+                                NEW
+                              </div>
+                              <p className="text-sm font-medium text-green-800">
+                                {ind.mov_files.length} file{ind.mov_files.length > 1 ? 's' : ''} uploaded after recalibration
+                              </p>
+                            </div>
+                            <div className="space-y-2">
+                              {ind.mov_files.map((file: any) => (
+                                <div
+                                  key={file.id}
+                                  className="flex items-center justify-between p-3 bg-white rounded-lg border border-green-100 hover:border-green-300 transition-colors"
+                                >
+                                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                                      <FileText className="h-5 w-5 text-green-600" />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="text-sm font-medium text-gray-900 truncate">{file.file_name}</p>
+                                      <p className="text-xs text-gray-500">
+                                        {Math.round(file.file_size / 1024)} KB
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setPreviewFile({
+                                      file_name: file.file_name,
+                                      file_url: file.file_url,
+                                      file_type: file.file_type,
+                                    })}
+                                    className="border-green-300 text-green-700 hover:bg-green-50 hover:text-green-800"
+                                  >
+                                    <Eye className="h-4 w-4 mr-1" />
+                                    Preview
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="bg-amber-50 rounded-lg border border-amber-200 p-4">
+                            <div className="flex items-start gap-3">
+                              <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-amber-800">No new files uploaded</p>
+                                <p className="text-xs text-amber-600 mt-0.5">
+                                  BLGU has not uploaded new MOV files since recalibration was requested
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Remarks Section */}
+                        <div>
+                          <label className="text-sm font-medium text-gray-700 mb-1.5 block">
+                            Remarks (optional)
+                          </label>
+                          <Textarea
+                            value={validationUpdates[ind.indicator_id]?.remarks || ""}
+                            onChange={(e) => updateIndicatorRemarks(ind.indicator_id, e.target.value)}
+                            placeholder="Add remarks explaining your decision..."
+                            className="min-h-20 text-sm border-gray-200 focus:border-purple-300 focus:ring-purple-200"
+                          />
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -750,7 +860,7 @@ export default function SubmissionDetailsPage() {
                 {governanceAreas.map((ga: any) => (
                   <div
                     key={ga.id}
-                    className="flex items-center justify-between p-4 bg-gray-50 rounded-sm border"
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-sm border border-gray-200"
                   >
                     <div className="flex-1">
                       <h4 className="font-medium text-gray-900">{ga.name}</h4>
@@ -824,18 +934,18 @@ export default function SubmissionDetailsPage() {
                         </div>
                         <span
                           className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
-                            indicator.validation_status === "Pass"
+                            indicator.validation_status?.toUpperCase() === "PASS"
                               ? "bg-green-100 text-green-700"
-                              : indicator.validation_status === "Fail"
+                              : indicator.validation_status?.toUpperCase() === "FAIL"
                               ? "bg-red-100 text-red-700"
-                              : indicator.validation_status === "Conditional"
+                              : indicator.validation_status?.toUpperCase() === "CONDITIONAL"
                               ? "bg-yellow-100 text-yellow-700"
                               : "bg-gray-100 text-gray-700"
                           }`}
                         >
-                          {indicator.validation_status === "Pass" && <CheckCircle className="h-3 w-3" />}
-                          {indicator.validation_status === "Fail" && <XCircle className="h-3 w-3" />}
-                          {indicator.validation_status === "Conditional" && <AlertCircle className="h-3 w-3" />}
+                          {indicator.validation_status?.toUpperCase() === "PASS" && <CheckCircle className="h-3 w-3" />}
+                          {indicator.validation_status?.toUpperCase() === "FAIL" && <XCircle className="h-3 w-3" />}
+                          {indicator.validation_status?.toUpperCase() === "CONDITIONAL" && <AlertCircle className="h-3 w-3" />}
                           {indicator.validation_status || "Pending"}
                         </span>
                       </div>
@@ -937,6 +1047,72 @@ export default function SubmissionDetailsPage() {
           )}
         </div>
       </div>
+
+      {/* File Preview Modal */}
+      {previewFile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-lg shadow-xl w-[80vw] h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <div>
+                <h2 className="text-lg font-semibold">{previewFile.file_name}</h2>
+                <p className="text-sm text-muted-foreground">
+                  {previewFile.file_type === 'application/pdf' ? 'PDF Document' : 'Image File'}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(previewFile.file_url, "_blank")}
+                >
+                  <ExternalLink className="h-4 w-4 mr-1" />
+                  Open in New Tab
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setPreviewFile(null)}
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 p-4 overflow-auto">
+              {previewFile.file_type === 'application/pdf' ? (
+                <iframe
+                  src={previewFile.file_url}
+                  className="w-full h-full rounded border border-gray-200"
+                  title={previewFile.file_name}
+                />
+              ) : previewFile.file_type?.startsWith('image/') ? (
+                <div className="flex items-center justify-center h-full">
+                  <img
+                    src={previewFile.file_url}
+                    alt={previewFile.file_name}
+                    className="max-w-full max-h-full object-contain rounded"
+                  />
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                  <File className="h-16 w-16 text-muted-foreground/50 mb-4" />
+                  <p className="text-muted-foreground mb-4">
+                    Preview not available for this file type
+                  </p>
+                  <Button
+                    onClick={() => window.open(previewFile.file_url, "_blank")}
+                    variant="outline"
+                  >
+                    Open in New Tab
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

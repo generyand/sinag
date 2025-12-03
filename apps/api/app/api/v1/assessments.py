@@ -29,7 +29,7 @@ from app.schemas.assessment import (
     SubmissionStatusResponse,
     ReworkSummaryResponse,
 )
-from app.db.models.assessment import MOV as MOVModel, Assessment
+from app.db.models.assessment import MOV as MOVModel, Assessment, FeedbackComment
 from app.services.assessment_service import assessment_service
 from app.services.submission_validation_service import submission_validation_service
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -1556,6 +1556,15 @@ def submit_for_calibration_review(
     for response in rework_responses:
         response.requires_rework = False
         response.validation_status = None  # Reset so Validator can re-validate
+
+    # CRITICAL: Delete old feedback comments for calibrated responses
+    # When BLGU resubmits for calibration, validator's old comments should be cleared
+    # so they can provide fresh feedback on the new submission
+    rework_response_ids = [r.id for r in rework_responses]
+    if rework_response_ids:
+        db.query(FeedbackComment).filter(
+            FeedbackComment.response_id.in_(rework_response_ids)
+        ).delete(synchronize_session='fetch')
 
     # Store legacy validator_id before clearing (we need it for notification)
     legacy_validator_id = assessment.calibration_validator_id

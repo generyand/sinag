@@ -163,7 +163,7 @@ def test_complete_versioning_workflow(
                     ]
                 }
             ],
-            "output_status_on_pass": "Pass"
+            "output_status_on_pass": "PASS"
         }
     }
 
@@ -238,7 +238,7 @@ def test_version_history_preserves_all_fields(
                     ]
                 }
             ],
-            "output_status_on_pass": "Pass"
+            "output_status_on_pass": "PASS"
         },
         "remark_schema": {"type": "string"},
         "technical_notes_text": "Original technical notes",

@@ -99,9 +99,9 @@ class CalculationEngineService:
 
             # Return appropriate status based on evaluation result
             if all_groups_pass:
-                return ValidationStatus.PASS if schema_obj.output_status_on_pass == "Pass" else ValidationStatus.FAIL
+                return ValidationStatus.PASS if schema_obj.output_status_on_pass == "PASS" else ValidationStatus.FAIL
             else:
-                return ValidationStatus.FAIL if schema_obj.output_status_on_fail == "Fail" else ValidationStatus.PASS
+                return ValidationStatus.FAIL if schema_obj.output_status_on_fail == "FAIL" else ValidationStatus.PASS
 
         except Exception as e:
             self.logger.error(f"Error executing calculation schema: {str(e)}", exc_info=True)
@@ -413,7 +413,7 @@ class CalculationEngineService:
             return None
 
         # Map ValidationStatus enum to remark schema keys
-        status_key = status.value  # "Pass", "Fail", or "Conditional"
+        status_key = status.value  # "PASS", "FAIL", or "CONDITIONAL"
 
         return remark_schema.get(status_key)
 

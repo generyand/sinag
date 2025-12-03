@@ -81,7 +81,8 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
       const govArea = (indicator.governance_area as AnyRecord) ?? {};
       const areaId = String(govArea.id || 0);
       const areaName = govArea.name || 'Unknown Area';
-      const areaCode = govArea.code || '';
+      // Generate 2-letter code from area name for logo lookup (e.g., "Financial Administration" -> "FI")
+      const areaCode = areaName.substring(0, 2).toUpperCase();
 
       // Create governance area if not exists
       if (!areaMap[areaId]) {

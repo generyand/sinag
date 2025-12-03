@@ -237,22 +237,24 @@ export function SulopBarangayMapIntegrated({
   }, [barangays]);
 
   return (
-    <Card className="w-full">
+    <Card className="w-full rounded-sm" role="region" aria-label={title}>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
 
         {/* Status Legend */}
-        <div className="flex flex-wrap gap-2 pt-2">
+        <div className="flex flex-wrap gap-2 pt-2" role="list" aria-label="Assessment status legend">
           {Object.entries(STATUS_COLORS).map(([status, color]) => (
             <Badge
               key={status}
               variant="outline"
               className="flex items-center gap-2 border-0"
+              role="listitem"
             >
               <div
                 className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: color }}
+                aria-hidden="true"
               />
               <span className="text-xs">
                 {STATUS_LABELS[status as keyof typeof STATUS_LABELS]} (
@@ -271,18 +273,24 @@ export function SulopBarangayMapIntegrated({
               showDetailsPanel ? 'w-2/3' : 'w-full'
             }`}
           >
-            <div className="relative w-full aspect-[2.15/1] bg-gray-50 dark:bg-gray-900 rounded overflow-hidden border-2 border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="relative w-full aspect-[2.15/1] bg-gray-50 dark:bg-gray-900 rounded-sm overflow-hidden border-2 border-gray-200 dark:border-gray-700 shadow-sm">
               <svg
                 viewBox="0 0 1920 892"
                 className="w-full h-full"
                 xmlns="http://www.w3.org/2000/svg"
+                role="img"
+                aria-label="Interactive map of Sulop barangays showing assessment status. Click on a barangay to view details."
               >
+                <title>Sulop Barangay Assessment Map</title>
+                <desc>Interactive map showing the assessment status of all 25 barangays in Sulop, Davao del Sur. Colors indicate: green for passed, red for failed, orange for in progress, and gray for not started.</desc>
+
                 {/* Background - Click to close details panel */}
                 <rect
                   width="1920"
                   height="892"
                   className="fill-gray-50 dark:fill-gray-900 cursor-pointer"
                   onClick={() => setSelectedBarangay(null)}
+                  aria-hidden="true"
                 />
 
                 {/* Title */}
@@ -291,30 +299,45 @@ export function SulopBarangayMapIntegrated({
                   y="30"
                   textAnchor="middle"
                   className="text-2xl font-semibold fill-gray-900 dark:fill-gray-100"
+                  aria-hidden="true"
                 >
                   Sulop, Davao del Sur
                 </text>
 
                 {/* Barangay Paths - High Quality SVG with Bezier Curves */}
-                {Object.entries(BARANGAY_PATHS).map(([svgId, pathData]) => (
-                  <path
-                    key={svgId}
-                    id={svgId}
-                    d={pathData}
-                    fill={getBarangayColor(svgId)}
-                    stroke={selectedBarangay === svgId ? getBarangayStrokeColor(svgId) : 'none'}
-                    strokeWidth={selectedBarangay === svgId ? 4 : 0}
-                    className="cursor-pointer transition-all duration-200 hover:brightness-110"
-                    onClick={() => handleBarangayClick(svgId)}
-                    onMouseEnter={() => setHoveredBarangay(svgId)}
-                    onMouseLeave={() => setHoveredBarangay(null)}
-                  />
-                ))}
+                {Object.entries(BARANGAY_PATHS).map(([svgId, pathData]) => {
+                  const brgy = svgIdToBarangayMap.get(svgId);
+                  const displayName = brgy?.name || getDisplayName(svgId);
+                  const statusLabel = brgy ? STATUS_LABELS[brgy.status] : 'Not Started';
+                  return (
+                    <path
+                      key={svgId}
+                      id={svgId}
+                      d={pathData}
+                      fill={getBarangayColor(svgId)}
+                      stroke={selectedBarangay === svgId ? getBarangayStrokeColor(svgId) : 'none'}
+                      strokeWidth={selectedBarangay === svgId ? 4 : 0}
+                      className="cursor-pointer transition-all duration-200 hover:brightness-110"
+                      onClick={() => handleBarangayClick(svgId)}
+                      onMouseEnter={() => setHoveredBarangay(svgId)}
+                      onMouseLeave={() => setHoveredBarangay(null)}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`${displayName}: ${statusLabel}${brgy?.compliance_rate !== undefined ? `, ${brgy.compliance_rate.toFixed(1)}% compliance` : ''}`}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleBarangayClick(svgId);
+                        }
+                      }}
+                    />
+                  );
+                })}
               </svg>
 
               {/* Hover Tooltip */}
               {hoveredBarangay && displayedBarangay && !showDetailsPanel && (
-                <div className="absolute top-2 left-2 bg-white shadow-lg rounded-lg p-3 border pointer-events-none z-10">
+                <div className="absolute top-2 left-2 bg-white shadow-lg rounded-sm p-3 border pointer-events-none z-10" role="tooltip" aria-live="polite">
                   <div className="text-sm font-semibold">{displayedBarangay.name}</div>
                   <div className="text-xs text-gray-600 mt-1">
                     Status:{' '}
@@ -337,20 +360,22 @@ export function SulopBarangayMapIntegrated({
           </div>
 
           {/* Details Panel - Slides in from right when barangay is selected */}
-          <div
+          <aside
             className={`transition-all duration-500 ease-in-out overflow-hidden ${
               showDetailsPanel ? 'w-1/3 opacity-100' : 'w-0 opacity-0'
             }`}
+            aria-label="Barangay details panel"
+            aria-hidden={!showDetailsPanel}
           >
-            <div className="bg-gray-50 rounded p-4 border-2 border-gray-200 shadow-sm h-full min-w-[280px]">
+            <div className="bg-gray-50 rounded-sm p-4 border-2 border-gray-200 shadow-sm h-full min-w-[280px]">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold">Barangay Details</h3>
+                <h3 className="text-sm font-semibold" id="details-panel-heading">Barangay Details</h3>
                 <button
                   onClick={() => setSelectedBarangay(null)}
                   className="p-1 hover:bg-gray-200 rounded-full transition-colors"
                   aria-label="Close details panel"
                 >
-                  <X className="w-4 h-4 text-gray-500" />
+                  <X className="w-4 h-4 text-gray-500" aria-hidden="true" />
                 </button>
               </div>
 
@@ -358,15 +383,15 @@ export function SulopBarangayMapIntegrated({
                 displayedBarangay.status === 'not_started' ? (
                   /* Empty state for barangays without assessment */
                   <div className="flex flex-col items-center justify-center py-6 text-center">
-                    <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-                      <ClipboardList className="w-8 h-8 text-gray-400" />
+                    <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4" aria-hidden="true">
+                      <ClipboardList className="w-8 h-8 text-gray-400" aria-hidden="true" />
                     </div>
                     <div className="text-lg font-bold text-gray-900 mb-1">
                       {displayedBarangay.name}
                     </div>
                     <Badge
                       variant="secondary"
-                      className="mb-4 bg-gray-200 text-gray-600"
+                      className="mb-4 bg-gray-200 text-gray-600 rounded-sm"
                     >
                       No Assessment Yet
                     </Badge>
@@ -423,7 +448,7 @@ export function SulopBarangayMapIntegrated({
                 </div>
               )}
             </div>
-          </div>
+          </aside>
         </div>
       </CardContent>
     </Card>

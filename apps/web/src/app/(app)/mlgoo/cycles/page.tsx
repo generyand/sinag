@@ -88,8 +88,12 @@ export default function CyclesPage() {
     );
   }
 
-  // Show error state
-  if (activeCycleError) {
+  // Handle error state - but 404 means no active cycle, which is valid
+  // Only show error for non-404 errors
+  const isNotFoundError = activeCycleError &&
+    (activeCycleError as any)?.response?.status === 404;
+
+  if (activeCycleError && !isNotFoundError) {
     return (
       <div className="min-h-screen bg-[var(--background)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -106,6 +110,9 @@ export default function CyclesPage() {
     );
   }
 
+  // Treat 404 as "no active cycle" (valid state)
+  const hasNoCycle = !activeCycle || isNotFoundError;
+
   // Format date for display
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return "Not set";
@@ -119,14 +126,14 @@ export default function CyclesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--background)]">
+    <main className="min-h-screen bg-[var(--background)]" role="main" aria-label="Assessment Cycles Management">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="space-y-6">
           {/* Enhanced Header Section */}
-          <div className="relative overflow-hidden bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-8">
+          <header className="relative overflow-hidden bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-8">
             {/* Decorative background elements */}
-            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-blue-100/40 to-indigo-100/20 rounded-full -translate-y-20 translate-x-20"></div>
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-purple-100/30 to-pink-100/20 rounded-full translate-y-16 -translate-x-16"></div>
+            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-blue-100/40 to-indigo-100/20 rounded-full -translate-y-20 translate-x-20" aria-hidden="true"></div>
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-purple-100/30 to-pink-100/20 rounded-full translate-y-16 -translate-x-16" aria-hidden="true"></div>
 
             <div className="relative z-10">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
@@ -143,9 +150,9 @@ export default function CyclesPage() {
                 </div>
 
                 {/* Quick Stats */}
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-6" role="group" aria-label="Cycle statistics">
                   <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)]">
-                    <div className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                    <div className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent" aria-label={`${activeCycle ? "1" : "0"} active cycle`}>
                       {activeCycle ? "1" : "0"}
                     </div>
                     <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
@@ -154,7 +161,7 @@ export default function CyclesPage() {
                   </div>
                   {activeCycle && (
                     <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)]">
-                      <div className="text-3xl font-bold text-[var(--foreground)]">
+                      <div className="text-3xl font-bold text-[var(--foreground)]" aria-label={`Current year: ${activeCycle.year}`}>
                         {activeCycle.year}
                       </div>
                       <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
@@ -165,29 +172,31 @@ export default function CyclesPage() {
                 </div>
               </div>
             </div>
-          </div>
+          </header>
 
           {/* Tab Navigation */}
-          <div className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-2">
+          <nav className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-2" aria-label="Assessment cycle tabs">
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabId)}>
               <TabsList className="w-full flex gap-1 bg-transparent h-auto p-0">
                 <TabsTrigger
                   value="settings"
-                  className="flex items-center gap-2 px-6 py-3 rounded data-[state=active]:bg-[var(--cityscape-yellow)] data-[state=active]:text-[var(--foreground)] data-[state=active]:shadow-sm transition-all"
+                  className="flex items-center gap-2 px-6 py-3 rounded-sm data-[state=active]:bg-[var(--cityscape-yellow)] data-[state=active]:text-[var(--foreground)] data-[state=active]:shadow-sm transition-all"
+                  aria-label="Cycle Settings tab"
                 >
-                  <Settings className="h-4 w-4" />
+                  <Settings className="h-4 w-4" aria-hidden="true" />
                   Cycle Settings
                 </TabsTrigger>
                 <TabsTrigger
                   value="monitoring"
-                  className="flex items-center gap-2 px-6 py-3 rounded data-[state=active]:bg-[var(--cityscape-yellow)] data-[state=active]:text-[var(--foreground)] data-[state=active]:shadow-sm transition-all"
+                  className="flex items-center gap-2 px-6 py-3 rounded-sm data-[state=active]:bg-[var(--cityscape-yellow)] data-[state=active]:text-[var(--foreground)] data-[state=active]:shadow-sm transition-all"
+                  aria-label="Deadline Monitoring tab"
                 >
-                  <Users className="h-4 w-4" />
+                  <Users className="h-4 w-4" aria-hidden="true" />
                   Deadline Monitoring
                 </TabsTrigger>
               </TabsList>
             </Tabs>
-          </div>
+          </nav>
 
           {/* Tab Content */}
           {activeTab === "settings" && (
@@ -202,7 +211,7 @@ export default function CyclesPage() {
                     </span>
                   </div>
                 </div>
-              ) : activeCycle ? (
+              ) : !hasNoCycle && activeCycle ? (
                 <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg">
                   {/* Cycle Header */}
                   <div className="p-6 border-b border-[var(--border)]">
@@ -225,14 +234,14 @@ export default function CyclesPage() {
                   {/* Deadlines Grid */}
                   <div className="p-6">
                     <h3 className="text-lg font-semibold text-[var(--foreground)] mb-4 flex items-center">
-                      <Calendar className="w-5 h-5 mr-2 text-[var(--cityscape-yellow)]" />
+                      <Calendar className="w-5 h-5 mr-2 text-[var(--cityscape-yellow)]" aria-hidden="true" />
                       Submission Deadlines
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" role="list" aria-label="Deadline phases">
                       {/* Phase 1 */}
-                      <div className="p-4 bg-[var(--background)] rounded-sm border border-[var(--border)]">
+                      <article className="p-4 bg-[var(--background)] rounded-sm border border-[var(--border)]" role="listitem" aria-label="Phase 1 deadline">
                         <div className="flex items-center gap-2 mb-2">
-                          <Clock className="w-4 h-4 text-blue-500" />
+                          <Clock className="w-4 h-4 text-blue-500" aria-hidden="true" />
                           <h4 className="font-semibold text-[var(--foreground)]">Phase 1</h4>
                         </div>
                         <p className="text-sm text-[var(--muted-foreground)]">
@@ -241,12 +250,12 @@ export default function CyclesPage() {
                         <p className="text-sm font-medium text-[var(--foreground)] mt-2">
                           {formatDate(activeCycle.phase1_deadline)}
                         </p>
-                      </div>
+                      </article>
 
                       {/* Rework */}
-                      <div className="p-4 bg-[var(--background)] rounded-sm border border-[var(--border)]">
+                      <article className="p-4 bg-[var(--background)] rounded-sm border border-[var(--border)]" role="listitem" aria-label="Rework deadline">
                         <div className="flex items-center gap-2 mb-2">
-                          <Clock className="w-4 h-4 text-yellow-500" />
+                          <Clock className="w-4 h-4 text-yellow-500" aria-hidden="true" />
                           <h4 className="font-semibold text-[var(--foreground)]">Rework</h4>
                         </div>
                         <p className="text-sm text-[var(--muted-foreground)]">
@@ -255,12 +264,12 @@ export default function CyclesPage() {
                         <p className="text-sm font-medium text-[var(--foreground)] mt-2">
                           {formatDate(activeCycle.rework_deadline)}
                         </p>
-                      </div>
+                      </article>
 
                       {/* Phase 2 */}
-                      <div className="p-4 bg-[var(--background)] rounded-sm border border-[var(--border)]">
+                      <article className="p-4 bg-[var(--background)] rounded-sm border border-[var(--border)]" role="listitem" aria-label="Phase 2 deadline">
                         <div className="flex items-center gap-2 mb-2">
-                          <Clock className="w-4 h-4 text-purple-500" />
+                          <Clock className="w-4 h-4 text-purple-500" aria-hidden="true" />
                           <h4 className="font-semibold text-[var(--foreground)]">Phase 2</h4>
                         </div>
                         <p className="text-sm text-[var(--muted-foreground)]">
@@ -269,12 +278,12 @@ export default function CyclesPage() {
                         <p className="text-sm font-medium text-[var(--foreground)] mt-2">
                           {formatDate(activeCycle.phase2_deadline)}
                         </p>
-                      </div>
+                      </article>
 
                       {/* Calibration */}
-                      <div className="p-4 bg-[var(--background)] rounded-sm border border-[var(--border)]">
+                      <article className="p-4 bg-[var(--background)] rounded-sm border border-[var(--border)]" role="listitem" aria-label="Calibration deadline">
                         <div className="flex items-center gap-2 mb-2">
-                          <Clock className="w-4 h-4 text-green-500" />
+                          <Clock className="w-4 h-4 text-green-500" aria-hidden="true" />
                           <h4 className="font-semibold text-[var(--foreground)]">Calibration</h4>
                         </div>
                         <p className="text-sm text-[var(--muted-foreground)]">
@@ -283,7 +292,7 @@ export default function CyclesPage() {
                         <p className="text-sm font-medium text-[var(--foreground)] mt-2">
                           {formatDate(activeCycle.calibration_deadline)}
                         </p>
-                      </div>
+                      </article>
                     </div>
                   </div>
 
@@ -308,7 +317,7 @@ export default function CyclesPage() {
               ) : (
                 <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm p-12">
                   <div className="text-center">
-                    <Calendar className="w-16 h-16 text-[var(--muted-foreground)] mx-auto mb-4 opacity-50" />
+                    <Calendar className="w-16 h-16 text-[var(--muted-foreground)] mx-auto mb-4 opacity-50" aria-hidden="true" />
                     <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">
                       No Active Assessment Cycle
                     </h3>
@@ -317,9 +326,10 @@ export default function CyclesPage() {
                     </p>
                     <Button
                       onClick={() => setShowCreateForm(true)}
-                      className="bg-[var(--cityscape-yellow)] hover:bg-[var(--cityscape-yellow-dark)] text-white"
+                      className="bg-[var(--cityscape-yellow)] hover:bg-[var(--cityscape-yellow-dark)] text-white rounded-sm"
+                      aria-label="Create new assessment cycle"
                     >
-                      <Plus className="w-4 h-4 mr-2" />
+                      <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
                       Create Assessment Cycle
                     </Button>
                   </div>
@@ -349,13 +359,14 @@ export default function CyclesPage() {
               )}
 
               {/* Show Create Button when there's an active cycle */}
-              {activeCycle && !showCreateForm && (
+              {!hasNoCycle && activeCycle && !showCreateForm && (
                 <div className="flex justify-center">
                   <Button
                     onClick={() => setShowCreateForm(true)}
-                    className="bg-[var(--cityscape-yellow)] hover:bg-[var(--cityscape-yellow-dark)] text-white"
+                    className="bg-[var(--cityscape-yellow)] hover:bg-[var(--cityscape-yellow-dark)] text-white rounded-sm"
+                    aria-label="Create new cycle to replace active one"
                   >
-                    <Plus className="w-4 h-4 mr-2" />
+                    <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
                     Create New Cycle (Replaces Active)
                   </Button>
                 </div>
@@ -365,10 +376,12 @@ export default function CyclesPage() {
 
           {/* Deadline Monitoring Tab */}
           {activeTab === "monitoring" && (
-            <DeadlineStatusDashboard />
+            <section aria-label="Deadline monitoring dashboard">
+              <DeadlineStatusDashboard />
+            </section>
           )}
         </div>
       </div>
-    </div>
+    </main>
   );
 }

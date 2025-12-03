@@ -22,7 +22,6 @@ import type { GovernanceAreaPerformanceList } from '../governanceareaperformance
 import type { TopFailingIndicatorsList } from '../indicators';
 import type { AggregatedCapDevSummary } from '../capdev';
 import type { MunicipalOverviewDashboardAssessmentCycle } from '../assessments';
-import type { PriorityActionSuccessIndicator } from '../indicators';
 import type { ConditionalRemark } from '../conditionalremark';
 import type { ReorderRequestIndicatorsItem } from '../indicators';
 import type { AssessmentRow } from '../assessments';
@@ -344,9 +343,9 @@ export interface CalculationSchema {
    * @minItems 1
    */
   condition_groups: ConditionGroup[];
-  /** Status to assign when conditions are met */
+  /** Status to assign when conditions are met (matches ValidationStatus enum) */
   output_status_on_pass?: CalculationSchemaOutputStatusOnPass;
-  /** Status to assign when conditions are not met */
+  /** Status to assign when conditions are not met (matches ValidationStatus enum) */
   output_status_on_fail?: CalculationSchemaOutputStatusOnFail;
 }
 
@@ -359,8 +358,8 @@ export type CalculationSchemaOutputStatusOnFail = typeof CalculationSchemaOutput
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const CalculationSchemaOutputStatusOnFail = {
-  Pass: 'Pass',
-  Fail: 'Fail',
+  PASS: 'PASS',
+  FAIL: 'FAIL',
 } as const;
 
 
@@ -372,8 +371,8 @@ export type CalculationSchemaOutputStatusOnPass = typeof CalculationSchemaOutput
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const CalculationSchemaOutputStatusOnPass = {
-  Pass: 'Pass',
-  Fail: 'Fail',
+  PASS: 'PASS',
+  FAIL: 'FAIL',
 } as const;
 
 
@@ -748,19 +747,6 @@ export interface GovernanceAreaProgress {
 
 
 /**
- * GovernanceWeakness
- */
-export interface GovernanceWeakness {
-  /** Name of the governance area */
-  area_name: string;
-  /** Description of the weakness */
-  description: string;
-  /** Severity level: high, medium, low */
-  severity: string;
-}
-
-
-/**
  * InfoTextFieldHelpText
  */
 export type InfoTextFieldHelpText = string | null;
@@ -976,21 +962,6 @@ export interface PieChartData {
 
 
 /**
- * PriorityAction
- */
-export interface PriorityAction {
-  /** Specific action to be taken */
-  action: string;
-  /** Who is responsible for this action */
-  responsible_party: string;
-  /** Suggested timeline (immediate, short-term, medium-term) */
-  timeline: string;
-  /** How to measure success */
-  success_indicator?: PriorityActionSuccessIndicator;
-}
-
-
-/**
  * ProgressSummary
  */
 export interface ProgressSummary {
@@ -1131,37 +1102,6 @@ export interface StatusDistributionItem {
    */
   percentage: number;
 }
-
-
-/**
- * SuggestedIntervention
- */
-export interface SuggestedIntervention {
-  /** Type: training, workshop, mentoring, etc. */
-  intervention_type: string;
-  /** Title of the intervention */
-  title: string;
-  /** Detailed description */
-  description: string;
-  /** Who should participate */
-  target_audience: string;
-  /** Estimated duration (e.g., '2 days', '1 week') */
-  estimated_duration?: SuggestedInterventionEstimatedDuration;
-  /** Resources required for the intervention */
-  resources_needed?: SuggestedInterventionResourcesNeeded;
-}
-
-
-/**
- * SuggestedInterventionEstimatedDuration
- */
-export type SuggestedInterventionEstimatedDuration = string | null;
-
-
-/**
- * SuggestedInterventionResourcesNeeded
- */
-export type SuggestedInterventionResourcesNeeded = string[] | null;
 
 
 /**

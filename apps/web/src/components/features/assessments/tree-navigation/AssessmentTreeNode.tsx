@@ -177,8 +177,8 @@ export function AssessmentTreeNode({
       <div className="flex-1 min-w-0 flex items-baseline gap-2">
         {type === "area" ? (
           <>
-            <span className="truncate text-sm">
-              {(item as GovernanceArea).code}
+            <span className="truncate text-sm" title={(item as GovernanceArea).name}>
+              {(item as GovernanceArea).name}
             </span>
             {progress && (
               <span className={`text-xs ${isActive ? "text-[var(--foreground)]/70" : "text-[var(--text-secondary)]"} flex-shrink-0 ml-auto`}>

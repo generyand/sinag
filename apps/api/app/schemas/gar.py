@@ -31,7 +31,7 @@ class GARIndicator(BaseModel):
     indicator_code: str = Field(..., description="Indicator code (e.g., '1.1', '1.1.1')")
     indicator_name: str = Field(..., description="Indicator name/description")
     validation_status: Optional[str] = Field(
-        None, description="Overall validation status: 'Pass', 'Fail', 'Conditional', or null"
+        None, description="Overall validation status: 'PASS', 'FAIL', 'CONDITIONAL', or null"
     )
     checklist_items: List[GARChecklistItem] = Field(
         default_factory=list, description="List of checklist items under this indicator"

@@ -64,8 +64,8 @@ export interface FormSchema {
  * Calculation schema interface
  */
 export interface CalculationSchema {
-  outputStatusOnPass?: 'Pass' | 'Fail' | 'N/A';
-  outputStatusOnFail?: 'Pass' | 'Fail' | 'N/A';
+  outputStatusOnPass?: 'PASS' | 'FAIL' | 'N/A';
+  outputStatusOnFail?: 'PASS' | 'FAIL' | 'N/A';
   rules?: any[];
   formula?: string;
   [key: string]: any;
@@ -299,7 +299,7 @@ export function validateCalculationSchema(
       severity: 'error',
     });
   } else {
-    const validStatuses = ['Pass', 'Fail', 'N/A'];
+    const validStatuses = ['PASS', 'FAIL', 'N/A'];
     if (!validStatuses.includes(calculationSchema.outputStatusOnPass)) {
       errors.push({
         field: 'calculation',
@@ -317,7 +317,7 @@ export function validateCalculationSchema(
       severity: 'error',
     });
   } else {
-    const validStatuses = ['Pass', 'Fail', 'N/A'];
+    const validStatuses = ['PASS', 'FAIL', 'N/A'];
     if (!validStatuses.includes(calculationSchema.outputStatusOnFail)) {
       errors.push({
         field: 'calculation',

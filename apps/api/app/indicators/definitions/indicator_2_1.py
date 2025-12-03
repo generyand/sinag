@@ -141,7 +141,7 @@ INDICATOR_2_1 = Indicator(
                 "- Certification on the submission and correctness of fund utilization report signed by the C/MDRRMO\n\n"
                 "Note: Choose either Option A (Physical) OR Option B (Financial). Only ONE option is required."
             ),
-            validation_rule="ANY_ITEM_REQUIRED",  # Only ONE option (A or B) is required
+            validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # Only ONE option (A or B) is required
             checklist_items=[
                 # Option A: Physical Accomplishment (with YES/NO assessment)
                 ChecklistItem(
@@ -150,7 +150,8 @@ INDICATOR_2_1 = Indicator(
                     mov_description="Assessment for physical accomplishment option",
                     item_type="assessment_field",
                     required=False,
-                    display_order=2
+                    display_order=2,
+                    option_group="Option A"
                 ),
                 ChecklistItem(
                     id="2_1_4_upload_1",
@@ -158,7 +159,8 @@ INDICATOR_2_1 = Indicator(
                     mov_description="Verification of uploaded Accomplishment Report (Option A - Physical)",
                     item_type="checkbox",
                     required=False,
-                    display_order=3
+                    display_order=3,
+                    option_group="Option A"
                 ),
                 ChecklistItem(
                     id="2_1_4_upload_2",
@@ -166,7 +168,8 @@ INDICATOR_2_1 = Indicator(
                     mov_description="Verification of uploaded Certification (Option A - Physical)",
                     item_type="checkbox",
                     required=False,
-                    display_order=4
+                    display_order=4,
+                    option_group="Option A"
                 ),
                 ChecklistItem(
                     id="2_1_4_physical_accomplished",
@@ -174,7 +177,8 @@ INDICATOR_2_1 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=5.1
+                    display_order=5.1,
+                    option_group="Option A"
                 ),
                 ChecklistItem(
                     id="2_1_4_physical_reflected",
@@ -182,7 +186,8 @@ INDICATOR_2_1 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=5.2
+                    display_order=5.2,
+                    option_group="Option A"
                 ),
 
                 # OR Separator (informational)
@@ -202,7 +207,8 @@ INDICATOR_2_1 = Indicator(
                     mov_description="Assessment for fund utilization option",
                     item_type="assessment_field",
                     required=False,
-                    display_order=7
+                    display_order=7,
+                    option_group="Option B"
                 ),
                 ChecklistItem(
                     id="2_1_4_upload_3",
@@ -210,7 +216,8 @@ INDICATOR_2_1 = Indicator(
                     mov_description="Verification of uploaded Annual LDRRMF Utilization Report (Option B - Financial)",
                     item_type="checkbox",
                     required=False,
-                    display_order=8
+                    display_order=8,
+                    option_group="Option B"
                 ),
                 ChecklistItem(
                     id="2_1_4_upload_4",
@@ -218,7 +225,8 @@ INDICATOR_2_1 = Indicator(
                     mov_description="Verification of uploaded Certification (Option B - Financial)",
                     item_type="checkbox",
                     required=False,
-                    display_order=9
+                    display_order=9,
+                    option_group="Option B"
                 ),
                 ChecklistItem(
                     id="2_1_4_financial_utilized",
@@ -226,7 +234,8 @@ INDICATOR_2_1 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=10.1
+                    display_order=10.1,
+                    option_group="Option B"
                 ),
                 ChecklistItem(
                     id="2_1_4_financial_allocated",
@@ -234,7 +243,8 @@ INDICATOR_2_1 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=10.2
+                    display_order=10.2,
+                    option_group="Option B"
                 ),
             ]
         ),

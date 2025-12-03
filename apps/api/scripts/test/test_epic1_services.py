@@ -45,8 +45,8 @@ def test_calculation_engine():
                 ]
             }
         ],
-        "output_status_on_pass": "Pass",
-        "output_status_on_fail": "Fail"
+        "output_status_on_pass": "PASS",
+        "output_status_on_fail": "FAIL"
     }
 
     # Test Case 1: Both conditions met (should PASS)
@@ -82,9 +82,9 @@ def test_calculation_engine():
     # Test remark generation
     print("\n📝 Test Case 3: Remark generation")
     remark_schema = {
-        "Pass": "✅ All requirements met. Excellent work!",
-        "Fail": "❌ Requirements not met. Please review and resubmit.",
-        "Conditional": "⚠️ Partially compliant. Additional review needed."
+        "PASS": "✅ All requirements met. Excellent work!",
+        "FAIL": "❌ Requirements not met. Please review and resubmit.",
+        "CONDITIONAL": "⚠️ Partially compliant. Additional review needed."
     }
 
     remark = calculation_engine_service.get_remark_for_status(

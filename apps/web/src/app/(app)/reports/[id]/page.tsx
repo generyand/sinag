@@ -8,7 +8,7 @@ import {
 } from '@/components/features/reports';
 import { PageHeader } from '@/components/shared';
 import { useIntelligence } from '@/hooks';
-import { useGetMlgooAssessmentsAssessmentId, useGetCapdevAssessmentsAssessmentId } from '@sinag/shared';
+import { useGetMlgooAssessmentsAssessmentId, useGetCapdevAssessmentsAssessmentId, getGetCapdevAssessmentsAssessmentIdQueryKey, getGetMlgooAssessmentsAssessmentIdQueryKey } from '@sinag/shared';
 import { useParams } from 'next/navigation';
 import { useMemo } from 'react';
 
@@ -24,6 +24,7 @@ export default function ReportDetailsPage() {
     refetch: refetchAssessment
   } = useGetMlgooAssessmentsAssessmentId(assessmentId, {
     query: {
+      queryKey: getGetMlgooAssessmentsAssessmentIdQueryKey(assessmentId),
       enabled: !isNaN(assessmentId),
     }
   });
@@ -35,6 +36,7 @@ export default function ReportDetailsPage() {
     refetch: refetchCapdev
   } = useGetCapdevAssessmentsAssessmentId(assessmentId, {
     query: {
+      queryKey: getGetCapdevAssessmentsAssessmentIdQueryKey(assessmentId),
       enabled: !isNaN(assessmentId) && assessmentData?.status === 'COMPLETED',
     }
   });
@@ -125,14 +127,34 @@ export default function ReportDetailsPage() {
 
     // Get the first available language's insights
     const defaultLang = capdevData.available_languages?.[0] || 'en';
-    const langInsights = capdevData.insights[defaultLang];
+    const langInsights = capdevData.insights[defaultLang] as Record<string, unknown> | null;
     if (!langInsights) return null;
 
-    return {
-      summary: langInsights.summary || '',
-      recommendations: langInsights.recommendations?.map(r => r.title || r.description || '') || [],
-      capacity_development_needs: langInsights.capacity_development_needs?.map(n => n.area || n.current_gap || '') || [],
-    };
+    // Handle flexible AI-generated content structure
+    const summary = typeof langInsights.summary === 'string' ? langInsights.summary : '';
+
+    const recommendations = Array.isArray(langInsights.recommendations)
+      ? langInsights.recommendations.map((r: unknown) => {
+          if (typeof r === 'string') return r;
+          if (typeof r === 'object' && r !== null) {
+            return (r as { title?: string; description?: string }).title || (r as { description?: string }).description || '';
+          }
+          return '';
+        })
+      : [];
+
+    const capacity_development_needs = Array.isArray(langInsights.capacity_development_needs)
+      ? langInsights.capacity_development_needs.map((n: unknown) => {
+          if (typeof n === 'string') return n;
+          if (typeof n === 'object' && n !== null) {
+            const obj = n as { area?: string; current_gap?: string; category?: string; description?: string };
+            return obj.area || obj.current_gap || obj.category || obj.description || '';
+          }
+          return '';
+        })
+      : [];
+
+    return { summary, recommendations, capacity_development_needs };
   }, [hasCapdevInsights, capdevData?.insights, capdevData?.available_languages]);
 
   return (

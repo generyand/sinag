@@ -29,7 +29,9 @@ class Assessment(Base):
         default=AssessmentStatus.DRAFT,
     )
 
-    # Rework tracking (Epic 5.0)
+    # Rework tracking (Epic 5.0) - Assessor stage
+    # rework_requested_at is used to identify MOV files uploaded after rework request
+    # Files uploaded AFTER this timestamp are shown as "New Files (After Rework)" in Assessor view
     rework_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     rework_requested_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     rework_requested_by: Mapped[int | None] = mapped_column(
@@ -44,9 +46,13 @@ class Assessment(Base):
     calibration_validator_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )  # Legacy: single validator (kept for backward compatibility)
+    # calibration_requested_at is used to identify MOV files uploaded after calibration request
+    # Files uploaded AFTER this timestamp are shown as "New Files (After Calibration)" in Validator view
+    # IMPORTANT: In Validator view, use calibration_requested_at for calibrated indicators (validation_status=null),
+    # and rework_requested_at for non-calibrated indicators (to show files from Assessor rework stage)
     calibration_requested_at: Mapped[datetime | None] = mapped_column(
         DateTime, nullable=True
-    )  # When calibration was requested - used to identify new MOV uploads
+    )
     calibration_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)  # Legacy: global count (deprecated)
     # Track calibration per governance area - stores list of area IDs that have been calibrated
     # Each area can only be calibrated once (max 1 per area)

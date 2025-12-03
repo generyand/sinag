@@ -68,16 +68,35 @@ export function ReworkIndicatorsPanel({
   const failedIndicators = useMemo<FailedIndicator[]>(() => {
     const indicatorMap = new Map<number, FailedIndicator>();
 
-    // Helper function to find indicator in governance areas
+    // Helper function to find indicator in governance areas (including children)
     const findIndicator = (indicatorId: number) => {
+      // Recursive search through indicator tree
+      const searchIndicators = (indicators: any[], areaId: number, areaName: string): any | null => {
+        for (const indicator of indicators) {
+          if (indicator.indicator_id === indicatorId) {
+            return {
+              ...indicator,
+              governance_area_id: areaId,
+              governance_area_name: areaName,
+            };
+          }
+          // Search in children if present
+          if (indicator.children && indicator.children.length > 0) {
+            const found = searchIndicators(indicator.children, areaId, areaName);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+
       for (const area of dashboardData.governance_areas) {
-        const indicator = area.indicators.find((i: any) => i.indicator_id === indicatorId);
+        const indicator = searchIndicators(
+          area.indicators,
+          area.governance_area_id,
+          area.governance_area_name
+        );
         if (indicator) {
-          return {
-            ...indicator,
-            governance_area_id: area.governance_area_id,
-            governance_area_name: area.governance_area_name,
-          };
+          return indicator;
         }
       }
       return null;
@@ -284,12 +303,19 @@ export function ReworkIndicatorsPanel({
   }, [failedIndicators]);
 
   // Auto-expand all governance areas on mount for better UX
-  useEffect(() => {
-    const allAreaIds = Array.from(failedByArea.keys());
-    if (allAreaIds.length > 0) {
-      setExpandedAreas(new Set(allAreaIds));
-    }
+  // Use a stable dependency (stringified area IDs) to prevent infinite loops
+  const areaIdsKey = useMemo(() => {
+    return Array.from(failedByArea.keys()).sort().join(',');
   }, [failedByArea]);
+
+  useEffect(() => {
+    if (areaIdsKey) {
+      const allAreaIds = areaIdsKey.split(',').filter(Boolean).map(Number);
+      if (allAreaIds.length > 0) {
+        setExpandedAreas(new Set(allAreaIds));
+      }
+    }
+  }, [areaIdsKey]);
 
   const toggleArea = (areaId: number) => {
     setExpandedAreas((prev) => {

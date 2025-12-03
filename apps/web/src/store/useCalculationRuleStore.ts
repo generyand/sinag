@@ -63,10 +63,10 @@ interface CalculationRuleBuilderState {
   deleteRuleFromGroup: (groupIndex: number, ruleIndex: number) => void;
 
   /** Set output status on pass */
-  setOutputStatusOnPass: (status: 'Pass' | 'Fail') => void;
+  setOutputStatusOnPass: (status: 'PASS' | 'FAIL') => void;
 
   /** Set output status on fail */
-  setOutputStatusOnFail: (status: 'Pass' | 'Fail') => void;
+  setOutputStatusOnFail: (status: 'PASS' | 'FAIL') => void;
 
   /** Select a rule for editing */
   selectRule: (ruleId: string | null) => void;
@@ -105,8 +105,8 @@ export const useCalculationRuleStore = create<CalculationRuleBuilderState>((set,
     set({
       schema: {
         condition_groups: [],
-        output_status_on_pass: 'Pass',
-        output_status_on_fail: 'Fail',
+        output_status_on_pass: 'PASS',
+        output_status_on_fail: 'FAIL',
       },
       selectedRuleId: null,
       isDirty: false,
@@ -240,7 +240,7 @@ export const useCalculationRuleStore = create<CalculationRuleBuilderState>((set,
     });
   },
 
-  setOutputStatusOnPass: (status: 'Pass' | 'Fail') => {
+  setOutputStatusOnPass: (status: 'PASS' | 'FAIL') => {
     set((state) => {
       if (!state.schema) return state;
 
@@ -254,7 +254,7 @@ export const useCalculationRuleStore = create<CalculationRuleBuilderState>((set,
     });
   },
 
-  setOutputStatusOnFail: (status: 'Pass' | 'Fail') => {
+  setOutputStatusOnFail: (status: 'PASS' | 'FAIL') => {
     set((state) => {
       if (!state.schema) return state;
 

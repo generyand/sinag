@@ -249,7 +249,7 @@ function AssessorChecklistHistoryModal({ response, indicator }: AssessorChecklis
           className="gap-2"
         >
           <FileTextIcon className="h-4 w-4" />
-          View Assessor's Checklist
+          View Assessor's History
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col bg-white dark:bg-gray-900 rounded-sm">
@@ -563,13 +563,20 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
     }
 
     return obj as ResponsesForm;
-  }, [responses, isValidator]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [responses, isValidator, JSON.stringify(responses.map(r => (r as AnyRecord).response_data))]);
 
-  const { control, register, formState, setValue } = useForm<ResponsesForm>({
+  const { control, register, formState, setValue, reset } = useForm<ResponsesForm>({
     resolver: zodResolver(ResponsesSchema),
     defaultValues,
     mode: 'onChange',
   });
+
+  // Reset form when defaultValues change (e.g., after save and refetch)
+  // This ensures the form reflects the latest data from the API
+  React.useEffect(() => {
+    reset(defaultValues);
+  }, [defaultValues, reset]);
 
   // Helper function to check if an item is filled/checked
   const isItemFilled = (item: any, itemKey: string, checklistData: Record<string, any>): boolean => {
@@ -682,12 +689,13 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
     if (validationRule === 'ALL_ITEMS_REQUIRED') {
       // All required items must be checked
       return checkedCount >= totalRequired ? 'Pass' : 'Fail';
-    } else if (validationRule === 'ANY_ITEM_REQUIRED') {
+    } else if (validationRule === 'ANY_ITEM_REQUIRED' || validationRule === 'OR_LOGIC_AT_LEAST_1_REQUIRED') {
       // At least one item must be checked
       return checkedCount > 0 ? 'Pass' : 'Fail';
     }
 
-    return null;
+    // Default: if at least one item is checked, pass
+    return checkedCount > 0 ? 'Pass' : null;
   }, [responses]);
 
   // Track manual overrides separately

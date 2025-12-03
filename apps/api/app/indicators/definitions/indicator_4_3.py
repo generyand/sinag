@@ -130,9 +130,9 @@ INDICATOR_4_3 = Indicator(
                 "Upload:\n"
                 "- (PHYSICAL or/and FINANCIAL) CY 2023 Accomplishment Report with received stamp by the C/MPDC"
             ),
-            validation_rule="ALL_ITEMS_REQUIRED",  # Single upload field required
+            validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # OR logic: Physical OR Financial
             checklist_items=[
-                # Single shared upload field for PHYSICAL or/and FINANCIAL
+                # Single shared upload field for PHYSICAL or/and FINANCIAL (ungrouped - always required)
                 ChecklistItem(
                     id="4_3_4_upload",
                     label="(PHYSICAL or/and FINANCIAL) CY 2023 Accomplishment Report with received stamp by the C/MPDC",
@@ -157,15 +157,8 @@ INDICATOR_4_3 = Indicator(
                     mov_description="Verification that at least 50% of physical targets are accomplished",
                     item_type="assessment_field",
                     required=False,
-                    display_order=3
-                ),
-                ChecklistItem(
-                    id="4_3_4_physical_accomplished",
-                    label="Total number of activities/projects accomplished",
-                    mov_description="Please supply the required information:",
-                    item_type="calculation_field",
-                    required=False,
-                    display_order=4.1
+                    display_order=3,
+                    option_group="Option A"
                 ),
                 ChecklistItem(
                     id="4_3_4_physical_reflected",
@@ -173,7 +166,17 @@ INDICATOR_4_3 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=4.2
+                    display_order=4,
+                    option_group="Option A"
+                ),
+                ChecklistItem(
+                    id="4_3_4_physical_accomplished",
+                    label="Total number of activities/projects accomplished",
+                    mov_description="Please supply the required information:",
+                    item_type="calculation_field",
+                    required=False,
+                    display_order=5,
+                    option_group="Option A"
                 ),
                 # OR separator
                 ChecklistItem(
@@ -182,7 +185,7 @@ INDICATOR_4_3 = Indicator(
                     mov_description="OR",
                     item_type="info_text",
                     required=False,
-                    display_order=5
+                    display_order=6
                 ),
                 # OPTION B: YES/NO assessment first, then calculations
                 ChecklistItem(
@@ -191,15 +194,8 @@ INDICATOR_4_3 = Indicator(
                     mov_description="Verification that at least 50% of BDP Budget is utilized",
                     item_type="assessment_field",
                     required=False,
-                    display_order=6
-                ),
-                ChecklistItem(
-                    id="4_3_4_financial_utilized",
-                    label="Total amount utilized (as of Dec 31, 2023)",
-                    mov_description="Please supply the required information:",
-                    item_type="calculation_field",
-                    required=False,
-                    display_order=7.1
+                    display_order=7,
+                    option_group="Option B"
                 ),
                 ChecklistItem(
                     id="4_3_4_financial_allocated",
@@ -207,7 +203,17 @@ INDICATOR_4_3 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=7.2
+                    display_order=8,
+                    option_group="Option B"
+                ),
+                ChecklistItem(
+                    id="4_3_4_financial_utilized",
+                    label="Total amount utilized (as of Dec 31, 2023)",
+                    mov_description="Please supply the required information:",
+                    item_type="calculation_field",
+                    required=False,
+                    display_order=9,
+                    option_group="Option B"
                 ),
             ]
         ),
