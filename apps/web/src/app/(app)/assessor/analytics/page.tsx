@@ -86,7 +86,7 @@ export default function AssessorAnalyticsPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <main className="space-y-8" role="main" aria-label="Assessor Analytics Dashboard">
       <GlobalFilter data={assessorData} />
 
       <div className="mt-6 space-y-6">
@@ -101,6 +101,6 @@ export default function AssessorAnalyticsPage() {
         isOpen={showWeaknessModal}
         onClose={handleCloseModal}
       />
-    </div>
+    </main>
   );
 }

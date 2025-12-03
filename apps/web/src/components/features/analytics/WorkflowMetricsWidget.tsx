@@ -8,9 +8,13 @@ interface WorkflowMetricsWidgetProps {
 
 export function WorkflowMetricsWidget({ data }: WorkflowMetricsWidgetProps) {
   return (
-    <div className="bg-[var(--card)] rounded-sm border border-[var(--border)] p-8 shadow-sm hover:shadow-md transition-shadow duration-200">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-[var(--foreground)]">
+    <section
+      className="bg-[var(--card)] rounded-sm border border-[var(--border)] p-8 shadow-sm hover:shadow-md transition-shadow duration-200"
+      aria-labelledby="workflow-metrics-title"
+      role="region"
+    >
+      <header className="flex items-center justify-between mb-6">
+        <h3 id="workflow-metrics-title" className="text-xl font-bold text-[var(--foreground)]">
           Your Assessment Workflow Metrics
         </h3>
         <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
@@ -19,6 +23,7 @@ export function WorkflowMetricsWidget({ data }: WorkflowMetricsWidgetProps) {
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
+            aria-hidden="true"
           >
             <path
               strokeLinecap="round"
@@ -29,15 +34,16 @@ export function WorkflowMetricsWidget({ data }: WorkflowMetricsWidgetProps) {
           </svg>
           <span>Performance Overview</span>
         </div>
-      </div>
+      </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Enhanced Efficiency Metrics */}
-        <div>
-          <h4 className="text-lg font-semibold text-[var(--foreground)] mb-4 flex items-center gap-2">
-            <div 
-              className="w-2 h-2 rounded-full" 
+        <div role="group" aria-labelledby="efficiency-metrics-title">
+          <h4 id="efficiency-metrics-title" className="text-lg font-semibold text-[var(--foreground)] mb-4 flex items-center gap-2">
+            <div
+              className="w-2 h-2 rounded-sm"
               style={{ backgroundColor: 'var(--kpi-blue-accent)' }}
+              aria-hidden="true"
             ></div>
             Efficiency Metrics
           </h4>
@@ -95,11 +101,12 @@ export function WorkflowMetricsWidget({ data }: WorkflowMetricsWidgetProps) {
         </div>
 
         {/* Enhanced Outcomes */}
-        <div>
-          <h4 className="text-lg font-semibold text-[var(--foreground)] mb-4 flex items-center gap-2">
-            <div 
-              className="w-2 h-2 rounded-full" 
+        <div role="group" aria-labelledby="outcomes-title">
+          <h4 id="outcomes-title" className="text-lg font-semibold text-[var(--foreground)] mb-4 flex items-center gap-2">
+            <div
+              className="w-2 h-2 rounded-sm"
               style={{ backgroundColor: 'var(--analytics-success)' }}
+              aria-hidden="true"
             ></div>
             Outcomes
           </h4>
@@ -160,6 +167,6 @@ export function WorkflowMetricsWidget({ data }: WorkflowMetricsWidgetProps) {
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 } 

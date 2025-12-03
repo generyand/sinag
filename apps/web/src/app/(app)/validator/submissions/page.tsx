@@ -153,54 +153,63 @@ export default function ValidatorSubmissionsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <main className="space-y-6" role="main" aria-label="Validator Submissions Dashboard">
       {/* KPI Row with enhanced styling */}
-      <div className="bg-gradient-to-r from-[var(--card)] to-[var(--card)] border border-[var(--border)] rounded-sm p-6 shadow-sm">
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold text-[var(--foreground)] mb-1">
+      <section
+        className="bg-gradient-to-r from-[var(--card)] to-[var(--card)] border border-[var(--border)] rounded-sm p-6 shadow-sm"
+        aria-labelledby="validation-overview-title"
+      >
+        <header className="mb-4">
+          <h2 id="validation-overview-title" className="text-lg font-semibold text-[var(--foreground)] mb-1">
             Validation Overview
           </h2>
           <p className="text-sm text-[var(--text-secondary)]">
             Your current validation workload and progress summary
           </p>
-        </div>
+        </header>
         <KPICards kpi={submissionsData.kpi} />
-      </div>
+      </section>
 
       {/* Enhanced Filtering & Search Bar */}
-      <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm p-6 shadow-sm">
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold text-[var(--foreground)] mb-1">
+      <section
+        className="bg-[var(--card)] border border-[var(--border)] rounded-sm p-6 shadow-sm"
+        aria-labelledby="filter-search-title"
+      >
+        <header className="mb-4">
+          <h2 id="filter-search-title" className="text-lg font-semibold text-[var(--foreground)] mb-1">
             Filter & Search
           </h2>
           <p className="text-sm text-[var(--text-secondary)]">
             Find specific submissions quickly
           </p>
-        </div>
+        </header>
         <SubmissionsFilters
           filters={filters}
           onFiltersChange={handleFiltersChange}
         />
-      </div>
+      </section>
 
       {/* Enhanced Main Submissions Data Table */}
-      <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-[var(--border)] bg-gradient-to-r from-[var(--card)] to-[var(--muted)]">
+      <section
+        className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-sm overflow-hidden"
+        aria-labelledby="submissions-table-title"
+      >
+        <header className="px-6 py-4 border-b border-[var(--border)] bg-gradient-to-r from-[var(--card)] to-[var(--muted)]">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-[var(--foreground)]">
+              <h2 id="submissions-table-title" className="text-lg font-semibold text-[var(--foreground)]">
                 Barangay Submissions
               </h2>
               <p className="text-sm text-[var(--text-secondary)]">
                 {filteredSubmissions.length} submission{filteredSubmissions.length !== 1 ? 's' : ''} found
               </p>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <div className="flex items-center space-x-2" role="status" aria-live="polite">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" aria-hidden="true"></div>
               <span className="text-xs text-[var(--text-muted)]">Live updates</span>
             </div>
           </div>
-        </div>
+        </header>
 
         {filteredSubmissions.length > 0 ? (
           <SubmissionsTable
@@ -208,13 +217,14 @@ export default function ValidatorSubmissionsPage() {
             onSubmissionClick={handleSubmissionClick}
           />
         ) : (
-          <div className="text-center py-16 px-6">
-            <div className="mx-auto h-16 w-16 text-[var(--text-muted)] mb-6 bg-[var(--muted)] rounded-full flex items-center justify-center">
+          <div className="text-center py-16 px-6" role="status" aria-label="No submissions found">
+            <div className="mx-auto h-16 w-16 text-[var(--text-muted)] mb-6 bg-[var(--muted)] rounded-sm flex items-center justify-center" aria-hidden="true">
               <svg
                 className="h-8 w-8"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"
@@ -236,13 +246,19 @@ export default function ValidatorSubmissionsPage() {
               <button
                 onClick={() => handleFiltersChange({ search: '', status: [] })}
                 className="mt-4 px-4 py-2 text-sm bg-[var(--cityscape-yellow)] text-[var(--cityscape-accent-foreground)] rounded-sm hover:bg-[var(--cityscape-yellow-dark)] transition-colors duration-200"
+                aria-label="Clear all search filters"
               >
                 Clear all filters
               </button>
             )}
           </div>
         )}
+      </section>
+
+      {/* Live region for accessibility announcements */}
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        Showing {filteredSubmissions.length} of {submissionsData.submissions.length} submissions
       </div>
-    </div>
+    </main>
   );
 }

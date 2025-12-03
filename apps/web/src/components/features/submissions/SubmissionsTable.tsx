@@ -75,9 +75,10 @@ export function SubmissionsTable({ submissions, onSubmissionClick }: Submissions
             e.stopPropagation();
             onSubmissionClick(submission);
           }}
-          className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+          className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 rounded-sm"
+          aria-label={`Start review for ${submission.barangayName}`}
         >
-          <Play className="h-4 w-4 mr-2" />
+          <Play className="h-4 w-4 mr-2" aria-hidden="true" />
           Start Review
         </Button>
       );
@@ -92,9 +93,10 @@ export function SubmissionsTable({ submissions, onSubmissionClick }: Submissions
             e.stopPropagation();
             onSubmissionClick(submission);
           }}
-          className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 hover:border-blue-700 hover:text-blue-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+          className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 hover:border-blue-700 hover:text-blue-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105 rounded-sm"
+          aria-label={`Continue review for ${submission.barangayName}`}
         >
-          <Clock className="h-4 w-4 mr-2" />
+          <Clock className="h-4 w-4 mr-2" aria-hidden="true" />
           Continue Review
         </Button>
       );
@@ -108,9 +110,10 @@ export function SubmissionsTable({ submissions, onSubmissionClick }: Submissions
           e.stopPropagation();
           onSubmissionClick(submission);
         }}
-        className="text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--hover)] transition-all duration-200 transform hover:scale-105"
+        className="text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--hover)] transition-all duration-200 transform hover:scale-105 rounded-sm"
+        aria-label={`View submission for ${submission.barangayName}`}
       >
-        <Eye className="h-4 w-4 mr-2" />
+        <Eye className="h-4 w-4 mr-2" aria-hidden="true" />
         View Submission
       </Button>
     );
@@ -134,42 +137,45 @@ export function SubmissionsTable({ submissions, onSubmissionClick }: Submissions
   return (
     <div className="overflow-hidden">
       <div className="overflow-x-auto">
-        <Table>
+        <Table role="table" aria-label="Barangay submissions table">
+          <caption className="sr-only">
+            List of barangay submissions with their progress, status, and available actions
+          </caption>
           <TableHeader>
-            <TableRow className="border-[var(--border)] bg-gradient-to-r from-[var(--muted)] to-[var(--card)]">
-              <TableHead className="text-[var(--foreground)] font-semibold text-sm py-4 px-6">
+            <TableRow className="border-[var(--border)] bg-gradient-to-r from-[var(--muted)] to-[var(--card)]" role="row">
+              <TableHead className="text-[var(--foreground)] font-semibold text-sm py-4 px-6" role="columnheader">
                 <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full" aria-hidden="true"></div>
                   <span>Barangay Name</span>
                 </div>
               </TableHead>
-              <TableHead className="text-[var(--foreground)] font-semibold text-sm py-4 px-6">
+              <TableHead className="text-[var(--foreground)] font-semibold text-sm py-4 px-6" role="columnheader">
                 <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-green-500 rounded-full" aria-hidden="true"></div>
                   <span>Progress (in this Area)</span>
                 </div>
               </TableHead>
-              <TableHead className="text-[var(--foreground)] font-semibold text-sm py-4 px-6">
+              <TableHead className="text-[var(--foreground)] font-semibold text-sm py-4 px-6" role="columnheader">
                 <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full" aria-hidden="true"></div>
                   <span>Status (in this Area)</span>
                 </div>
               </TableHead>
-              <TableHead className="text-[var(--foreground)] font-semibold text-sm py-4 px-6">
+              <TableHead className="text-[var(--foreground)] font-semibold text-sm py-4 px-6" role="columnheader">
                 <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-purple-500 rounded-full" aria-hidden="true"></div>
                   <span>Overall Status</span>
                 </div>
               </TableHead>
-              <TableHead className="text-[var(--foreground)] font-semibold text-sm py-4 px-6">
+              <TableHead className="text-[var(--foreground)] font-semibold text-sm py-4 px-6" role="columnheader">
                 <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-gray-500 rounded-full" aria-hidden="true"></div>
                   <span>Last Updated</span>
                 </div>
               </TableHead>
-              <TableHead className="text-[var(--foreground)] font-semibold text-sm py-4 px-6 text-center">
+              <TableHead className="text-[var(--foreground)] font-semibold text-sm py-4 px-6 text-center" role="columnheader">
                 <div className="flex items-center justify-center space-x-2">
-                  <div className="w-2 h-2 bg-[var(--cityscape-yellow)] rounded-full"></div>
+                  <div className="w-2 h-2 bg-[var(--cityscape-yellow)] rounded-full" aria-hidden="true"></div>
                   <span>Actions</span>
                 </div>
               </TableHead>
@@ -177,16 +183,17 @@ export function SubmissionsTable({ submissions, onSubmissionClick }: Submissions
           </TableHeader>
           <TableBody>
             {submissions.map((submission, index) => (
-              <TableRow 
-                key={submission.id} 
+              <TableRow
+                key={submission.id}
                 className={`border-[var(--border)] hover:bg-gradient-to-r hover:from-[var(--hover)] hover:to-[var(--muted)] transition-all duration-200 cursor-pointer ${
                   index % 2 === 0 ? 'bg-[var(--card)]' : 'bg-[var(--muted)]'
                 }`}
                 onClick={() => onSubmissionClick(submission)}
+                role="row"
               >
-                <TableCell className="font-semibold text-[var(--foreground)] py-4 px-6">
+                <TableCell className="font-semibold text-[var(--foreground)] py-4 px-6" role="cell">
                   <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] rounded-full flex items-center justify-center text-[var(--cityscape-accent-foreground)] text-sm font-bold">
+                    <div className="w-8 h-8 bg-gradient-to-br from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] rounded-sm flex items-center justify-center text-[var(--cityscape-accent-foreground)] text-sm font-bold" aria-hidden="true">
                       {submission.barangayName.charAt(0)}
                     </div>
                     <div>
@@ -201,19 +208,20 @@ export function SubmissionsTable({ submissions, onSubmissionClick }: Submissions
                     </div>
                   </div>
                 </TableCell>
-                <TableCell className="py-4 px-6">
+                <TableCell className="py-4 px-6" role="cell">
                   <div className="flex items-center space-x-3">
                     <div className="flex-1">
-                      <Progress 
-                        value={submission.areaProgress} 
+                      <Progress
+                        value={submission.areaProgress}
                         className="h-2 bg-[var(--muted)]"
+                        aria-label={`Progress: ${submission.areaProgress}%`}
                       />
                     </div>
                     <span className="text-sm font-semibold text-[var(--foreground)] min-w-[3rem] text-right">
                       {submission.areaProgress}%
                     </span>
                   </div>
-                  <div className="mt-1 text-xs text-[var(--text-muted)]">
+                  <div className="mt-1 text-xs text-[var(--text-muted)]" aria-label="Progress description">
                     {submission.areaProgress < 25 && 'Just started'}
                     {submission.areaProgress >= 25 && submission.areaProgress < 50 && 'In progress'}
                     {submission.areaProgress >= 50 && submission.areaProgress < 75 && 'Nearly complete'}
@@ -221,19 +229,19 @@ export function SubmissionsTable({ submissions, onSubmissionClick }: Submissions
                     {submission.areaProgress === 100 && 'Complete'}
                   </div>
                 </TableCell>
-                <TableCell className="py-4 px-6">
+                <TableCell className="py-4 px-6" role="cell">
                   {getStatusBadge(submission.areaStatus)}
                 </TableCell>
-                <TableCell className="py-4 px-6">
+                <TableCell className="py-4 px-6" role="cell">
                   {getOverallStatusBadge(submission.overallStatus)}
                 </TableCell>
-                <TableCell className="text-[var(--text-secondary)] text-sm py-4 px-6">
+                <TableCell className="text-[var(--text-secondary)] text-sm py-4 px-6" role="cell">
                   <div className="flex items-center space-x-2">
-                    <div className="w-1 h-1 bg-[var(--text-muted)] rounded-full"></div>
+                    <div className="w-1 h-1 bg-[var(--text-muted)] rounded-full" aria-hidden="true"></div>
                     <span>{formatDate(submission.lastUpdated)}</span>
                   </div>
                 </TableCell>
-                <TableCell className="py-4 px-6">
+                <TableCell className="py-4 px-6" role="cell">
                   <div className="flex justify-center">
                     {getActionButton(submission)}
                   </div>

@@ -12,28 +12,37 @@ export function PerformanceOverviewWidget({ data }: PerformanceOverviewWidgetPro
   const failedPercentage = (performance.failed / performance.totalAssessed) * 100;
 
   return (
-    <div className="bg-[var(--card)] rounded-sm border border-[var(--border)] p-8 shadow-sm hover:shadow-md transition-shadow duration-200">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-[var(--foreground)]">
+    <section
+      className="bg-[var(--card)] rounded-sm border border-[var(--border)] p-8 shadow-sm hover:shadow-md transition-shadow duration-200"
+      aria-labelledby="performance-overview-title"
+      role="region"
+    >
+      <header className="flex items-center justify-between mb-6">
+        <h3 id="performance-overview-title" className="text-xl font-bold text-[var(--foreground)]">
           Official Performance in {data.name}
         </h3>
-        <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
-          <div 
-            className="w-2 h-2 rounded-full" 
+        <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]" role="status" aria-live="polite">
+          <div
+            className="w-2 h-2 rounded-full animate-pulse"
             style={{ backgroundColor: 'var(--analytics-success)' }}
+            aria-hidden="true"
           ></div>
           <span>Live Data</span>
         </div>
-      </div>
+      </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Enhanced Donut Chart */}
-        <div className="flex flex-col items-center">
+        <figure className="flex flex-col items-center" aria-label="Pass/Fail distribution chart">
           <div className="relative w-56 h-56 mb-6">
             <svg
               className="w-56 h-56 transform -rotate-90"
               viewBox="0 0 36 36"
+              role="img"
+              aria-label={`Donut chart showing ${performance.passed} passed and ${performance.failed} failed out of ${performance.totalAssessed} total assessments`}
             >
+              <title>Assessment Results Chart</title>
+              <desc>A donut chart displaying the pass/fail distribution for barangay assessments</desc>
               {/* Background circle */}
               <path
                 stroke="var(--analytics-neutral-border)"
@@ -62,7 +71,7 @@ export function PerformanceOverviewWidget({ data }: PerformanceOverviewWidgetPro
                 d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
               />
             </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
               <div className="text-center">
                 <div className="text-3xl font-bold text-[var(--foreground)] mb-1">
                   {performance.passed} / {performance.totalAssessed}
@@ -73,31 +82,33 @@ export function PerformanceOverviewWidget({ data }: PerformanceOverviewWidgetPro
           </div>
 
           {/* Legend */}
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <div 
-                className="w-3 h-3 rounded-full" 
+          <figcaption className="flex items-center gap-6" role="list" aria-label="Chart legend">
+            <div className="flex items-center gap-2" role="listitem">
+              <div
+                className="w-3 h-3 rounded-sm"
                 style={{ backgroundColor: 'var(--analytics-success)' }}
+                aria-hidden="true"
               ></div>
               <span className="text-sm text-[var(--text-primary)]">
                 Passed ({performance.passed})
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <div 
-                className="w-3 h-3 rounded-full" 
+            <div className="flex items-center gap-2" role="listitem">
+              <div
+                className="w-3 h-3 rounded-sm"
                 style={{ backgroundColor: 'var(--analytics-danger)' }}
+                aria-hidden="true"
               ></div>
               <span className="text-sm text-[var(--text-primary)]">
                 Failed ({performance.failed})
               </span>
             </div>
-          </div>
-        </div>
+          </figcaption>
+        </figure>
 
         {/* Enhanced Key Data Points */}
-        <div className="space-y-4">
-          <div 
+        <ul className="space-y-4" role="list" aria-label="Performance metrics">
+          <li
             className="rounded-sm p-4 border hover:opacity-90 transition-all duration-200"
             style={{
               backgroundColor: 'var(--analytics-neutral-bg)',
@@ -108,13 +119,13 @@ export function PerformanceOverviewWidget({ data }: PerformanceOverviewWidgetPro
               <span className="font-medium" style={{ color: 'var(--analytics-neutral-text)' }}>
                 Total Barangays Assessed
               </span>
-              <span className="text-2xl font-bold text-[var(--foreground)]">
+              <span className="text-2xl font-bold text-[var(--foreground)]" aria-label={`${performance.totalAssessed} barangays assessed`}>
                 {performance.totalAssessed}
               </span>
             </div>
-          </div>
+          </li>
 
-          <div 
+          <li
             className="rounded-sm p-4 border hover:opacity-90 transition-all duration-200"
             style={{
               backgroundColor: 'var(--analytics-success-bg)',
@@ -126,14 +137,14 @@ export function PerformanceOverviewWidget({ data }: PerformanceOverviewWidgetPro
                 Pass Rate for this Area
               </span>
               <div className="text-right">
-                <span className="text-2xl font-bold" style={{ color: 'var(--analytics-success-text-light)' }}>
+                <span className="text-2xl font-bold" style={{ color: 'var(--analytics-success-text-light)' }} aria-label={`${performance.passRate} percent pass rate`}>
                   {performance.passRate}%
                 </span>
               </div>
             </div>
-          </div>
+          </li>
 
-          <div 
+          <li
             className="rounded-sm p-4 border hover:opacity-90 transition-all duration-200"
             style={{
               backgroundColor: 'var(--analytics-danger-bg)',
@@ -144,13 +155,13 @@ export function PerformanceOverviewWidget({ data }: PerformanceOverviewWidgetPro
               <span className="font-medium" style={{ color: 'var(--analytics-danger-text)' }}>
                 Failed Barangays
               </span>
-              <span className="text-2xl font-bold" style={{ color: 'var(--analytics-danger-text-light)' }}>
+              <span className="text-2xl font-bold" style={{ color: 'var(--analytics-danger-text-light)' }} aria-label={`${performance.failed} barangays failed`}>
                 {performance.failed}
               </span>
             </div>
-          </div>
-        </div>
+          </li>
+        </ul>
       </div>
-    </div>
+    </section>
   );
 } 
