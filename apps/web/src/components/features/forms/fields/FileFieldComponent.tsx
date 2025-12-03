@@ -398,6 +398,30 @@ export function FileFieldComponent({
         )}
       </div>
 
+      {/* Field-level Notes (shown between label and upload area) */}
+      {(field as any).field_notes && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/30 p-4">
+          <div className="flex items-start gap-3">
+            <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+            <div className="space-y-2">
+              <p className="font-semibold text-blue-900 dark:text-blue-100">
+                {(field as any).field_notes.title}
+              </p>
+              <ul className="space-y-1.5 text-sm text-blue-800 dark:text-blue-200">
+                {(field as any).field_notes.items?.map((item: any, index: number) => (
+                  <li key={index} className="flex gap-2">
+                    {item.label && (
+                      <span className="font-medium flex-shrink-0">{item.label}</span>
+                    )}
+                    <span>{item.text}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Rework Alert (show if there are annotations on uploaded files) */}
       {hasAnnotations && (normalizedStatus === 'REWORK' || normalizedStatus === 'NEEDS_REWORK') && (
         <Alert className="border-orange-200 bg-orange-50" role="alert">

@@ -13,12 +13,12 @@ import {
 } from "@/lib/forms/formSchemaParser";
 import { generateValidationSchema } from "@/lib/forms/generateValidationSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { FormSchema, FormSchemaFieldsItem } from "@sinag/shared";
+import type { FormSchema, FormSchemaFieldsItem, FormNotes } from "@sinag/shared";
 import {
     useGetAssessmentsAssessmentIdAnswers,
     usePostAssessmentsAssessmentIdAnswers,
 } from "@sinag/shared";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Info } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { Control, FieldValues, FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -204,6 +204,11 @@ export function DynamicFormRenderer({
           indicatorId={indicatorId}
         />
 
+        {/* Notes Section - Display before form fields so users see requirements before uploading */}
+        {formSchema && 'notes' in formSchema && formSchema.notes && (
+          <NotesSection notes={formSchema.notes as FormNotes} />
+        )}
+
         {/* Form Sections */}
         {sections.map((section) => (
           <SectionRenderer
@@ -219,6 +224,11 @@ export function DynamicFormRenderer({
             movAnnotations={movAnnotations}
           />
         ))}
+
+        {/* Secondary Notes Section - Display after form fields */}
+        {formSchema && 'secondary_notes' in formSchema && formSchema.secondary_notes && (
+          <NotesSection notes={formSchema.secondary_notes as FormNotes} />
+        )}
 
         {/* Navigation Footer */}
         {showNavigation && (
@@ -448,4 +458,67 @@ function FieldRenderer({ field, control, error, assessmentId, indicatorId, isLoc
         </Alert>
       );
   }
+}
+
+// ============================================================================
+// Notes Section Component
+// ============================================================================
+
+interface NotesSectionProps {
+  notes: FormNotes;
+}
+
+function NotesSection({ notes }: NotesSectionProps) {
+  // Helper to determine indentation level based on label prefix spaces
+  const getIndentLevel = (label?: string): number => {
+    if (!label) return 0;
+    const leadingSpaces = label.match(/^(\s*)/)?.[1]?.length || 0;
+    // Every 3 spaces = 1 indent level
+    return Math.floor(leadingSpaces / 3);
+  };
+
+  // Helper to check if this is a section header (like "Minimum Composition of the BADAC Committees:")
+  const isSectionHeader = (item: { label?: string; text: string }): boolean => {
+    return !item.label && item.text.length > 0 && item.text.endsWith(':');
+  };
+
+  return (
+    <div className="rounded-lg border border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/30 p-4">
+      <div className="flex items-start gap-3">
+        <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+        <div className="space-y-2">
+          <p className="font-semibold text-blue-900 dark:text-blue-100">
+            {notes.title}
+          </p>
+          <ul className="space-y-1.5 text-sm text-blue-800 dark:text-blue-200">
+            {notes.items.map((item, index) => {
+              const indentLevel = getIndentLevel(item.label);
+              const trimmedLabel = item.label?.trim();
+              const isHeader = isSectionHeader(item);
+
+              // Empty line spacer
+              if (!item.label && !item.text) {
+                return <li key={index} className="h-2" />;
+              }
+
+              return (
+                <li
+                  key={index}
+                  className="flex gap-2"
+                  style={{ marginLeft: `${indentLevel * 1.5}rem` }}
+                >
+                  {trimmedLabel && (
+                    <span className="font-medium flex-shrink-0">{trimmedLabel}</span>
+                  )}
+                  <span className={isHeader ? 'font-semibold mt-2' : ''}>
+                    {item.text}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
 }

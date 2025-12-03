@@ -183,6 +183,18 @@ FormField = Annotated[
 ]
 
 
+class NoteItem(BaseModel):
+    """Single note item with optional label prefix"""
+    label: Optional[str] = Field(None, max_length=50, description="Optional label prefix (e.g., 'a)', '1.')")
+    text: str = Field(..., min_length=1, max_length=1000, description="Note text content")
+
+
+class FormNotes(BaseModel):
+    """Notes section for the form with title and items"""
+    title: str = Field(default="Note:", max_length=200, description="Title for the notes section")
+    items: List[NoteItem] = Field(..., min_length=1, description="List of note items")
+
+
 class FormSchema(BaseModel):
     """
     Root model for form schema containing a list of form fields.
@@ -192,6 +204,14 @@ class FormSchema(BaseModel):
         ...,
         min_length=1,
         description="List of form fields in the schema"
+    )
+    notes: Optional[FormNotes] = Field(
+        None,
+        description="Optional notes section displayed above the form fields"
+    )
+    secondary_notes: Optional[FormNotes] = Field(
+        None,
+        description="Optional secondary notes section displayed after form fields"
     )
 
     @field_validator("fields")
