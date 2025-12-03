@@ -387,20 +387,21 @@ export function FileFieldComponent({
     <div className="space-y-4">
       {/* Field Label and Help Text */}
       <div className="space-y-1">
-        <Label className="text-sm font-medium text-[var(--text-primary)]">
+        <Label htmlFor={`file-upload-${field.field_id}`} className="text-sm font-medium text-[var(--text-primary)]">
           {field.label}
-          {field.required && <span className="text-red-500 ml-1">*</span>}
+          {field.required && <span className="text-red-500 ml-1" aria-hidden="true">*</span>}
+          {field.required && <span className="sr-only">(required)</span>}
         </Label>
 
         {field.help_text && (
-          <p className="text-sm text-[var(--text-secondary)] whitespace-pre-line">{field.help_text}</p>
+          <p id={`file-help-${field.field_id}`} className="text-sm text-[var(--text-secondary)] whitespace-pre-line">{field.help_text}</p>
         )}
       </div>
 
       {/* Rework Alert (show if there are annotations on uploaded files) */}
       {hasAnnotations && (normalizedStatus === 'REWORK' || normalizedStatus === 'NEEDS_REWORK') && (
-        <Alert className="border-orange-200 bg-orange-50">
-          <AlertCircle className="h-4 w-4 text-orange-600" />
+        <Alert className="border-orange-200 bg-orange-50" role="alert">
+          <AlertCircle className="h-4 w-4 text-orange-600" aria-hidden="true" />
           <AlertDescription className="text-orange-900">
             <p className="font-medium mb-1">Assessor feedback on your files</p>
             <p className="text-sm">
@@ -423,8 +424,8 @@ export function FileFieldComponent({
 
       {/* Permission Info (show if upload is disabled) */}
       {uploadDisabledReason && (
-        <Alert className="border-blue-200 bg-blue-50">
-          <Info className="h-4 w-4 text-blue-600" />
+        <Alert className="border-blue-200 bg-blue-50" role="status">
+          <Info className="h-4 w-4 text-blue-600" aria-hidden="true" />
           <AlertDescription className="text-blue-900">{uploadDisabledReason}</AlertDescription>
         </Alert>
       )}
@@ -444,8 +445,8 @@ export function FileFieldComponent({
 
       {/* Queue Status (show when files are queued) */}
       {(currentUpload || queue.length > 0) && currentUpload?.fieldId === field.field_id && (
-        <Alert className="border-blue-200 bg-blue-50">
-          <Info className="h-4 w-4 text-blue-600" />
+        <Alert className="border-blue-200 bg-blue-50" role="status" aria-live="polite">
+          <Info className="h-4 w-4 text-blue-600" aria-hidden="true" />
           <AlertDescription className="text-blue-900">
             {uploadMutation.isPending
               ? `Uploading...`
@@ -457,9 +458,9 @@ export function FileFieldComponent({
 
       {/* Upload Progress Indicator */}
       {uploadMutation.isPending && (
-        <div className="space-y-2">
+        <div className="space-y-2" role="status" aria-live="polite">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
             <span>Uploading {selectedFile?.name}...</span>
           </div>
           <Progress value={uploadProgress} className="h-2" />
@@ -471,8 +472,8 @@ export function FileFieldComponent({
 
       {/* Success Indicator */}
       {showSuccess && (
-        <Alert className="border-green-500 bg-green-50">
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
+        <Alert className="border-green-500 bg-green-50" role="status" aria-live="polite">
+          <CheckCircle2 className="h-4 w-4 text-green-600" aria-hidden="true" />
           <AlertDescription className="text-green-700">
             File uploaded successfully! The file will appear in the list below.
           </AlertDescription>
@@ -481,12 +482,12 @@ export function FileFieldComponent({
 
       {/* Uploaded Files List (New files during rework, or all files in other statuses) */}
       {files.length > 0 && (
-        <div className="space-y-4 mt-6">
-          <div className="flex items-center gap-2 text-sm font-medium mb-3">
-            {isReworkStatus && <CheckCircle2 className="h-4 w-4 text-green-600" />}
+        <section className="space-y-4 mt-6" aria-labelledby={`uploaded-files-${field.field_id}`}>
+          <h4 id={`uploaded-files-${field.field_id}`} className="flex items-center gap-2 text-sm font-medium mb-3">
+            {isReworkStatus && <CheckCircle2 className="h-4 w-4 text-green-600" aria-hidden="true" />}
             <span className={isReworkStatus ? 'text-green-600' : ''}>Uploaded Files</span>
             <span className="text-muted-foreground font-normal">({files.length} file{files.length !== 1 ? 's' : ''} uploaded)</span>
-          </div>
+          </h4>
           <FileListWithDelete
             files={files}
             onPreview={handlePreview}
@@ -497,16 +498,16 @@ export function FileFieldComponent({
             movAnnotations={movAnnotations}
             hideHeader={true}
           />
-        </div>
+        </section>
       )}
 
       {/* Previous Files (Old files from before rework + deleted files - shown as reference during rework) */}
       {showPreviousFilesAsReference && previousFiles.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm text-orange-600 font-medium">
-            <AlertCircle className="h-4 w-4" />
+        <section className="space-y-2" aria-labelledby={`previous-files-${field.field_id}`}>
+          <h4 id={`previous-files-${field.field_id}`} className="flex items-center gap-2 text-sm text-orange-600 font-medium">
+            <AlertCircle className="h-4 w-4" aria-hidden="true" />
             <span>Previous Files</span>
-          </div>
+          </h4>
           <div className="border-2 border-orange-200 rounded-md bg-orange-50/30 p-3">
             <FileList
               files={previousFiles}
@@ -522,7 +523,7 @@ export function FileFieldComponent({
               These are files from your previous submission. They are shown here so you can review the assessor's feedback.
             </p>
           </div>
-        </div>
+        </section>
       )}
 
       {/* Show message if delete is disabled for submitted/validated assessments */}
@@ -533,8 +534,8 @@ export function FileFieldComponent({
           normalizedStatus === 'VALIDATED' ||
           normalizedStatus === 'SUBMITTED' ||
           normalizedStatus === 'COMPLETED') && (
-          <Alert className="border-blue-200 bg-blue-50">
-            <Info className="h-4 w-4 text-blue-600" />
+          <Alert className="border-blue-200 bg-blue-50" role="status">
+            <Info className="h-4 w-4 text-blue-600" aria-hidden="true" />
             <AlertDescription className="text-blue-900">
               Files cannot be deleted after assessment submission. If you need to
               modify files, request the assessment to be sent back for rework.
@@ -606,7 +607,7 @@ export function FileFieldComponent({
                 ) : (
                   // Unsupported file type
                   <div className="flex flex-col items-center justify-center h-full text-center p-6">
-                    <FileIcon className="h-16 w-16 text-muted-foreground/50 mb-4" />
+                    <FileIcon className="h-16 w-16 text-muted-foreground/50 mb-4" aria-hidden="true" />
                     <p className="text-sm text-muted-foreground mb-4">
                       Preview not available for this file type
                     </p>

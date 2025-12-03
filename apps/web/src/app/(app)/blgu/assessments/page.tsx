@@ -105,12 +105,13 @@ export default function BLGUAssessmentsPage() {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[var(--background)]">
         <div className="text-center bg-[var(--card)] backdrop-blur-sm rounded-sm p-8 shadow-lg border border-[var(--border)]">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-red-100 rounded-sm flex items-center justify-center mx-auto mb-4" aria-hidden="true">
             <svg
               className="w-8 h-8 text-red-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
@@ -142,12 +143,13 @@ export default function BLGUAssessmentsPage() {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[var(--background)]">
         <div className="text-center bg-[var(--card)] backdrop-blur-sm rounded-sm p-8 shadow-lg border border-[var(--border)]">
-          <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-amber-100 rounded-sm flex items-center justify-center mx-auto mb-4" aria-hidden="true">
             <svg
               className="w-8 h-8 text-amber-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
@@ -200,12 +202,12 @@ export default function BLGUAssessmentsPage() {
       : 0;
 
   return (
-    <div className="min-h-screen bg-[var(--background)] flex flex-col">
+    <div className="min-h-screen bg-[var(--background)] flex flex-col" role="application" aria-label="BLGU Assessment Form">
       {/* Enhanced Locked Banner */}
       {isLocked && <AssessmentLockedBanner status={assessment.status} />}
 
       {/* Header (Full Width) */}
-      <div className="border-b border-[var(--border)] bg-[var(--card)]">
+      <header className="border-b border-[var(--border)] bg-[var(--card)]">
         <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <AssessmentHeader
             assessment={assessment}
@@ -214,21 +216,21 @@ export default function BLGUAssessmentsPage() {
             calibrationGovernanceAreaName={(dashboardData as any)?.calibration_governance_area_name}
           />
         </div>
-      </div>
+      </header>
 
       {/* Split Panel Layout */}
       <div className="flex-1 flex overflow-hidden">
         {/* Desktop: Left Sidebar Tree Navigation */}
-        <aside className="hidden lg:block w-48 xl:w-56 flex-shrink-0">
+        <nav className="hidden lg:block w-48 xl:w-56 flex-shrink-0" aria-label="Assessment navigation sidebar">
           <TreeNavigator
             assessment={assessment}
             selectedIndicatorId={selectedIndicatorId}
             onIndicatorSelect={handleIndicatorSelect}
           />
-        </aside>
+        </nav>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-hidden">
+        <main className="flex-1 overflow-hidden" role="main" aria-label="Assessment form content">
           <AssessmentContentPanel
             assessment={assessment}
             selectedIndicator={selectedIndicator}

@@ -77,8 +77,8 @@ export function AssessmentTreeNode({
             />
             {/* Completion badge overlay */}
             {progress && progress.percentage === 100 && (
-              <div className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-green-500 rounded-full border-2 border-[var(--card)]">
-                <CheckCircle className="h-full w-full text-white" />
+              <div className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-green-500 rounded-sm border-2 border-[var(--card)]" aria-hidden="true">
+                <CheckCircle className="h-full w-full text-white" aria-hidden="true" />
               </div>
             )}
           </div>
@@ -86,13 +86,13 @@ export function AssessmentTreeNode({
       }
 
       // Fallback to progress indicator if no logo
-      if (!progress) return <Folder className="h-4 w-4 text-[var(--text-secondary)]" />;
+      if (!progress) return <Folder className="h-4 w-4 text-[var(--text-secondary)]" aria-hidden="true" />;
       if (progress.percentage === 100) {
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className="h-4 w-4 text-green-500" aria-hidden="true" />;
       }
       return (
-        <div className="relative h-4 w-4">
-          <svg className="transform -rotate-90" viewBox="0 0 16 16">
+        <div className="relative h-4 w-4" aria-hidden="true">
+          <svg className="transform -rotate-90" viewBox="0 0 16 16" aria-hidden="true">
             <circle
               cx="8"
               cy="8"
@@ -123,11 +123,11 @@ export function AssessmentTreeNode({
 
     switch (indicator.status) {
       case "completed":
-        return <CheckCircle className="h-3.5 w-3.5 text-green-500" />;
+        return <CheckCircle className="h-3.5 w-3.5 text-green-500" aria-hidden="true" />;
       case "needs_rework":
-        return <AlertCircle className="h-3.5 w-3.5 text-orange-500" />;
+        return <AlertCircle className="h-3.5 w-3.5 text-orange-500" aria-hidden="true" />;
       default:
-        return <Circle className="h-3.5 w-3.5 text-[var(--border)]" />;
+        return <Circle className="h-3.5 w-3.5 text-[var(--border)]" aria-hidden="true" />;
     }
   };
 
@@ -165,8 +165,8 @@ export function AssessmentTreeNode({
 
       {/* Expand/Collapse Chevron (Areas only) */}
       {type === "area" && (
-        <div className="flex-shrink-0 w-4 h-4 flex items-center justify-center transition-transform duration-200" style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>
-          <ChevronRight className={`h-3.5 w-3.5 ${isActive ? "text-[var(--foreground)]" : "text-[var(--text-secondary)]"}`} />
+        <div className="flex-shrink-0 w-4 h-4 flex items-center justify-center transition-transform duration-200" style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }} aria-hidden="true">
+          <ChevronRight className={`h-3.5 w-3.5 ${isActive ? "text-[var(--foreground)]" : "text-[var(--text-secondary)]"}`} aria-hidden="true" />
         </div>
       )}
 

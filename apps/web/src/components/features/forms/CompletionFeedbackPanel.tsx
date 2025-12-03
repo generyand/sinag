@@ -286,26 +286,35 @@ export function CompletionFeedbackPanel({
         {/* Progress Bar */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-medium text-[var(--text-secondary)]">
+            <span id="progress-label" className="font-medium text-[var(--text-secondary)]">
               Overall Progress
             </span>
-            <span className="font-bold text-[var(--foreground)]">{percentage}% Complete</span>
+            <span className="font-bold text-[var(--foreground)]" aria-live="polite">{percentage}% Complete</span>
           </div>
-          <div className="h-2.5 w-full bg-[var(--muted)] rounded-full overflow-hidden">
-            <div 
+          <div
+            className="h-2.5 w-full bg-[var(--muted)] rounded-full overflow-hidden"
+            role="progressbar"
+            aria-valuenow={percentage}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-labelledby="progress-label"
+            aria-label={`Form completion: ${percentage}% complete`}
+          >
+            <div
               className="h-full transition-all duration-500 ease-out rounded-full"
-              style={{ 
+              style={{
                 width: `${percentage}%`,
                 backgroundColor: getProgressColor()
               }}
+              aria-hidden="true"
             />
           </div>
         </div>
 
         {/* Success Message for 100% Completion */}
         {percentage === 100 && (
-          <div className="flex items-start gap-3 p-3 rounded-md bg-green-500/10 border border-green-500/20">
-            <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+          <div className="flex items-start gap-3 p-3 rounded-sm bg-green-500/10 border border-green-500/20" role="status" aria-live="polite">
+            <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" aria-hidden="true" />
             <div>
               <h4 className="text-sm font-bold text-green-700">All set!</h4>
               <p className="text-xs text-green-600/90 mt-0.5">
@@ -317,23 +326,23 @@ export function CompletionFeedbackPanel({
 
         {/* Incomplete Required Fields List */}
         {percentage < 100 && incompleteFields.length > 0 && (
-          <div className="space-y-3 pt-2 border-t border-[var(--border)]">
-            <p className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] flex items-center gap-2">
-              <AlertCircle className="h-3.5 w-3.5" />
+          <section className="space-y-3 pt-2 border-t border-[var(--border)]" aria-labelledby="missing-requirements-title">
+            <h4 id="missing-requirements-title" className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] flex items-center gap-2">
+              <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
               Missing Requirements
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            </h4>
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="list" aria-label="List of missing required fields">
               {incompleteFields.map((field) => (
-                <div
+                <li
                   key={field.field_id}
-                  className="flex items-center gap-2 text-xs text-red-600 bg-red-50 dark:bg-red-900/10 px-2 py-1.5 rounded border border-red-100 dark:border-red-900/20"
+                  className="flex items-center gap-2 text-xs text-red-600 bg-red-50 dark:bg-red-900/10 px-2 py-1.5 rounded-sm border border-red-100 dark:border-red-900/20"
                 >
-                  <div className="h-1.5 w-1.5 rounded-full bg-red-500 flex-shrink-0" />
+                  <div className="h-1.5 w-1.5 rounded-sm bg-red-500 flex-shrink-0" aria-hidden="true" />
                   <span className="truncate" title={field.label}>{field.label}</span>
-                </div>
+                </li>
               ))}
-            </div>
-          </div>
+            </ul>
+          </section>
         )}
       </CardContent>
     </Card>

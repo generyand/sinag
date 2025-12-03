@@ -62,6 +62,9 @@ export function MobileTreeDrawer({
 
       {/* Drawer */}
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mobile-nav-title"
         className={`
           fixed bottom-0 left-0 right-0 z-50 bg-[var(--card)] rounded-t-2xl shadow-2xl
           transition-transform duration-300 ease-out lg:hidden
@@ -72,23 +75,23 @@ export function MobileTreeDrawer({
         }}
       >
         {/* Handle Bar */}
-        <div className="flex items-center justify-center pt-2 pb-1">
-          <div className="w-12 h-1 bg-[var(--border)] rounded-full" />
+        <div className="flex items-center justify-center pt-2 pb-1" aria-hidden="true">
+          <div className="w-12 h-1 bg-[var(--border)] rounded-sm" />
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
-          <h2 className="text-lg font-semibold text-[var(--foreground)]">
+        <header className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
+          <h2 id="mobile-nav-title" className="text-lg font-semibold text-[var(--foreground)]">
             Assessment Navigation
           </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-[var(--hover)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--cityscape-yellow)]"
-            aria-label="Close navigation"
+            className="p-2 rounded-sm hover:bg-[var(--hover)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--cityscape-yellow)]"
+            aria-label="Close navigation drawer"
           >
-            <X className="h-5 w-5 text-[var(--text-secondary)]" />
+            <X className="h-5 w-5 text-[var(--text-secondary)]" aria-hidden="true" />
           </button>
-        </div>
+        </header>
 
         {/* Content */}
         <div
