@@ -318,7 +318,7 @@ sinag/
 │   │   ├── pyproject.toml        # Python dependencies (uv)
 │   │   └── alembic.ini           # Alembic config
 │   │
-│   └── web/                      # Next.js 15 frontend (React 19)
+│   └── web/                      # Next.js 16 frontend (React 19)
 │       ├── public/               # Static assets
 │       │   ├── Assessment_Areas/
 │       │   ├── Scenery/
@@ -473,7 +473,7 @@ sinag/
 
 ### Frontend Architecture (`apps/web`)
 
-**Next.js 15 App Router with React 19**
+**Next.js 16 App Router with React 19**
 
 - **`src/app/`**: App Router pages and layouts
   - `(app)/`: Authenticated pages (dashboard, assessments, reports, user management)
@@ -637,7 +637,7 @@ Background processing via Celery for long-running AI operations.
 - pytest for testing
 
 ### Frontend
-- Next.js 15 (App Router, Turbopack)
+- Next.js 16 (App Router, Turbopack - now default)
 - React 19, TypeScript
 - Tailwind CSS, shadcn/ui
 - TanStack Query (React Query)
@@ -727,6 +727,55 @@ Uses the `get_current_external_user` dependency for authentication.
 ## Recent Feature Implementations
 
 This section tracks major features and enhancements added to the platform (most recent first):
+
+### December 2025 - Next.js 16 Migration
+
+**Framework Upgrade**
+- **Upgraded**: Next.js 15.3.3 → 16.0.7
+- **Turbopack**: Now stable and used by default for both dev and production builds
+- **Node.js Requirement**: 20.9.0+ (current: 24.11.1)
+
+**Breaking Changes Handled**:
+
+1. **Middleware → Proxy Migration**
+   - `middleware.ts` renamed to `proxy.ts`
+   - Function export renamed from `middleware` to `proxy`
+   - Runtime changed from Edge to Node.js (provides full Node.js APIs)
+   - No logic changes required - same authentication and route protection
+
+2. **Async Request APIs**
+   - Server Components with dynamic routes now require `await params`
+   - Updated pattern:
+     ```typescript
+     // Before (Next.js 15)
+     interface PageProps {
+       params: { id: string };
+     }
+     export default function Page({ params }: PageProps) {
+       const id = params.id;
+     }
+
+     // After (Next.js 16)
+     interface PageProps {
+       params: Promise<{ id: string }>;
+     }
+     export default async function Page({ params }: PageProps) {
+       const { id } = await params;
+     }
+     ```
+   - Client Components using `useParams()` hook are unchanged
+
+3. **Configuration Updates**
+   - Added `turbopack: {}` config for Turbopack compatibility
+   - Removed duplicate `next.config.mjs` (using only `.ts`)
+   - Removed deprecated `eslint` config option (use `next lint` CLI options instead)
+
+**Files Modified**:
+- `apps/web/package.json` - Updated dependencies
+- `apps/web/proxy.ts` - Renamed from middleware.ts
+- `apps/web/next.config.ts` - Turbopack configuration
+- `apps/web/src/app/(app)/validator/submissions/[assessmentId]/validation/page.tsx` - Async params
+- `apps/web/src/app/(app)/mlgoo/assessments/[id]/page.tsx` - Async params
 
 ### November 2025 - Calibration Tracking & Assessment Resubmission
 

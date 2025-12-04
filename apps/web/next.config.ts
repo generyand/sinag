@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { resolve, dirname } from "path";
 
 const nextConfig: NextConfig = {
   // Monorepo configuration for Vercel deployment
@@ -7,26 +8,29 @@ const nextConfig: NextConfig = {
   // Ensure proper output configuration
   output: "standalone",
 
+  // Canvas is a native module needed only server-side
+  serverExternalPackages: ["canvas"],
+
   // Handle monorepo dependencies
   experimental: {
     externalDir: true,
   },
 
-  // Allow build to proceed with linting warnings (strict checks in CI/CD)
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-
   typescript: {
     ignoreBuildErrors: true,
   },
-  
-  // Webpack configuration for monorepo
+
+  // Turbopack configuration (Next.js 16 uses Turbopack by default)
+  // Note: transpilePackages handles @sinag/shared resolution in turbopack
+  turbopack: {},
+
+  // Webpack configuration for fallback (when using --webpack flag)
   webpack: (config, { isServer }) => {
     // Handle shared package resolution
     config.resolve.alias = {
       ...config.resolve.alias,
-      "@sinag/shared": require("path").resolve(__dirname, "../../packages/shared/src/generated"),
+      canvas: false,
+      "canvas/node": false,
     };
 
     // Ignore canvas module on client side (it's a server-only native module)
@@ -37,11 +41,19 @@ const nextConfig: NextConfig = {
       };
     }
 
+    // Mark canvas as external to avoid bundling
+    config.externals = config.externals || [];
+    if (Array.isArray(config.externals)) {
+      config.externals.push("canvas");
+    }
+
     return config;
   },
-  
+
   // Environment variables for build
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
   },
 };
+
+export default nextConfig;
