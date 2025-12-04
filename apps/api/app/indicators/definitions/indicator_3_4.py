@@ -8,7 +8,7 @@ Note: This indicator assesses the organization and capacity building of Barangay
 through structure and training compliance.
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
+from app.indicators.base import Indicator, SubIndicator, ChecklistItem, FormNotes, NoteItem
 
 
 # Indicator 3.4: Organization and Strengthening Capacities of Barangay Tanod
@@ -28,10 +28,6 @@ INDICATOR_3_4 = Indicator(
                 "Upload the following:\n\n"
                 "1. EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) "
                 "on the organization of the Barangay Tanod covering January to October 2023\n\n"
-                "The Barangay Tanod must include the following composition:\n"
-                "- Chief Tanod/Executive Officer\n"
-                "- Team Leaders\n"
-                "- Team Members\n\n"
                 "Please also supply the required information:\n"
                 "Date of approval"
             ),
@@ -50,11 +46,19 @@ INDICATOR_3_4 = Indicator(
                     id="3_4_1_date",
                     label="Date of approval",
                     mov_description="Please supply the required information:",
-                    item_type="document_count",
+                    item_type="date_input",
                     required=False,
                     display_order=2
                 ),
-            ]
+            ],
+            notes=FormNotes(
+                title="Composition of the Barangay Tanod:",
+                items=[
+                    NoteItem(label="1.", text="Chief Tanod/Executive Officer"),
+                    NoteItem(label="2.", text="Team Leaders"),
+                    NoteItem(label="3.", text="Team Members"),
+                ]
+            )
         ),
 
         # Sub-Indicator 3.4.2: Trainings

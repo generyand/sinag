@@ -8,7 +8,7 @@ Note: This indicator assesses whether the barangay has properly allocated funds
 for mandatory statutory programs as required by law.
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
+from app.indicators.base import Indicator, SubIndicator, ChecklistItem, FormNotes, NoteItem
 
 
 # Indicator 1.4: Allocation for Statutory Programs
@@ -43,9 +43,9 @@ INDICATOR_1_4 = Indicator(
                 ChecklistItem(
                     id="1_4_1_date_of_approval",
                     label="Date of Approval",
-                    mov_description="Date of Approval for the Barangay Appropriation Ordinance",
+                    mov_description="Please supply the required information",
                     required=True,
-                    requires_document_count=True,  # This is a text input field, not a checkbox
+                    item_type="date_input",
                     display_order=2
                 ),
 
@@ -108,7 +108,18 @@ INDICATOR_1_4 = Indicator(
                     required=True,
                     display_order=10
                 ),
-            ]
+            ],
+            notes=FormNotes(
+                title="Allocated funds for:",
+                items=[
+                    NoteItem(label="a)", text="At least 20% of the NTA is allocated for development programs;"),
+                    NoteItem(label="b)", text="Not less than five percent (5%) shall be set aside as the Local Disaster Risk Reduction and Management Fund;"),
+                    NoteItem(label="c)", text="Gender and Development;"),
+                    NoteItem(label="d)", text="Senior Citizens and Persons with Disabilities;"),
+                    NoteItem(label="e)", text="Implementation of the programs of the Local Councils for the Protection of Children; and"),
+                    NoteItem(label="f)", text="Ten percent (10%) for the Sangguniang Kabataan"),
+                ]
+            )
         ),
     ]
 )

@@ -59,9 +59,10 @@ INDICATOR_4_4 = Indicator(
                 ),
                 ChecklistItem(
                     id="4_4_2_count",
-                    label="Number of Kasambahay Reports submitted",
+                    label="Kasambahay reports were submitted",
+                    mov_description="Please supply the number of documents submitted:",
+                    item_type="document_count",
                     required=True,
-                    requires_document_count=True,  # Requires numeric input
                     display_order=2
                 ),
             ]

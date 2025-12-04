@@ -19,7 +19,7 @@ HIERARCHICAL STRUCTURE:
       └─ 1.6.2.2 If 4 or fewer SK Officials
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
+from app.indicators.base import Indicator, SubIndicator, ChecklistItem, FormNotes, NoteItem, FieldNotes
 
 
 # Indicator 1.6: Release of SK Funds
@@ -46,8 +46,7 @@ INDICATOR_1_6 = Indicator(
                     upload_instructions=(
                         "Upload the following documents:\n"
                         "1. Copy of the written agreement\n"
-                        "2. Proof of deposit reflecting the Account No./Name of Barangay SK and the total allocated amount for the 2023 SK funds\n\n"
-                        "Consideration: In the absence of deposit slips, bank statements will be considered, provided that it shows the transaction date, and that the total 10% of the SK Fund has been transferred."
+                        "2. Proof of deposit reflecting the Account No./Name of Barangay SK and the total allocated amount for the 2023 SK funds"
                     ),
                     validation_rule="ALL_ITEMS_REQUIRED",
                     checklist_items=[
@@ -61,9 +60,15 @@ INDICATOR_1_6 = Indicator(
                         ChecklistItem(
                             id="1_6_1_1_b",
                             label="b) Proof of deposit reflecting the Account No./Name of Barangay SK and the total allocated amount for the 2023 SK funds",
-                            mov_description="Proof of deposit with Account No./Name and total 2023 SK funds amount. Consideration: In the absence of deposit slips, bank statements showing transaction date and full 10% transfer will be accepted",
+                            mov_description="Proof of deposit with Account No./Name and total 2023 SK funds amount",
                             required=True,
-                            display_order=2
+                            display_order=2,
+                            field_notes=FieldNotes(
+                                title="CONSIDERATION:",
+                                items=[
+                                    NoteItem(text="In the absence of deposit slips, bank statements will be considered, provided that it shows the transaction date, and that the total 10% of the SK Fund has been transferred."),
+                                ]
+                            )
                         ),
                     ]
                 ),
@@ -73,17 +78,22 @@ INDICATOR_1_6 = Indicator(
                     code="1.6.1.2",
                     name="The barangay does not have Barangay-SK Agreement but with current account",
                     upload_instructions=(
-                        "Upload: Deposit slips reflecting the Account No./Name of Barangay SK and the total allocated amount for the 2023 SK funds\n\n"
-                        "Consideration: In the absence of deposit slips, bank statements will be considered, provided that it shows the transaction date, and that the total 10% of the SK Fund has been transferred."
+                        "Upload: Deposit slips reflecting the Account No./Name of Barangay SK and the total allocated amount for the 2023 SK funds"
                     ),
                     validation_rule="ALL_ITEMS_REQUIRED",
                     checklist_items=[
                         ChecklistItem(
                             id="1_6_1_2_deposit",
                             label="Deposit slips reflecting the Account No./Name of Barangay SK and the total allocated amount for the 2023 SK funds",
-                            mov_description="Deposit slips with Account No./Name and total 2023 SK funds. Consideration: In the absence of deposit slips, bank statements showing transaction date and full 10% transfer will be accepted",
+                            mov_description="Deposit slips with Account No./Name and total 2023 SK funds",
                             required=True,
-                            display_order=1
+                            display_order=1,
+                            field_notes=FieldNotes(
+                                title="CONSIDERATION:",
+                                items=[
+                                    NoteItem(text="In the absence of deposit slips, bank statements will be considered, provided that it shows the transaction date, and that the total 10% of the SK Fund has been transferred."),
+                                ]
+                            )
                         ),
                     ]
                 ),
@@ -113,12 +123,18 @@ INDICATOR_1_6 = Indicator(
                             required=False,
                             display_order=2
                         ),
-                    ]
+                    ],
+                    notes=FormNotes(
+                        title="Note:",
+                        items=[
+                            NoteItem(text="SK Resolution authorizing the barangay to utilize the SK Funds if the SK has no bank account yet shall not be considered as MOV under the indicator."),
+                        ]
+                    )
                 ),
             ]
         ),
 
-        # === 1.6.2 Single Indicator with Conditional Logic ===
+        # === 1.6.2 Single Indicator with Conditional Logic (OR between 5+ and 4-below) ===
         SubIndicator(
             code="1.6.2",
             name="Presence of Approved Annual Barangay Youth Investment Program (ABYIP) for 2023",
@@ -128,28 +144,57 @@ INDICATOR_1_6 = Indicator(
                 "2. (If 5+ SK Officials) An Approved 2023 ABYIP signed by the SK Chairperson and its members\n"
                 "3. (If 4 or fewer SK Officials) Certification from the C/MLGOO on number of SK officials"
             ),
-            validation_rule="ALL_ITEMS_REQUIRED",  # Conditional validation handled by assessor
+            validation_rule="ANY_ITEM_REQUIRED",  # OR logic between the two option groups
             checklist_items=[
+                # Option A: 5 and above SK Officials
+                ChecklistItem(
+                    id="1_6_2_5above_header",
+                    label="If the barangay has 5 and above SK Officials:",
+                    item_type="info_text",
+                    required=False,
+                    display_order=1,
+                    option_group="Option A"
+                ),
                 ChecklistItem(
                     id="1_6_2_5above_a",
-                    label="If the barangay has 5 and above SK Officials: Approved Resolution approving the 2023 SK Annual/Supplemental Budget",
+                    label="Approved Resolution approving the 2023 SK Annual/Supplemental Budget",
                     mov_description="Approved Resolution for 2023 SK Annual/Supplemental Budget (Required if 5+ SK officials)",
                     required=False,  # Conditionally required
-                    display_order=1
+                    display_order=2,
+                    option_group="Option A"
                 ),
                 ChecklistItem(
                     id="1_6_2_5above_b",
-                    label="If the barangay has 5 and above SK Officials: An Approved 2023 ABYIP signed by the SK Chairperson and its members",
+                    label="An Approved 2023 ABYIP signed by the SK Chairperson and its members",
                     mov_description="Approved 2023 ABYIP with signatures of SK Chairperson and members (Required if 5+ SK officials)",
                     required=False,  # Conditionally required
-                    display_order=2
+                    display_order=3,
+                    option_group="Option A"
+                ),
+                # OR separator (visual indicator)
+                ChecklistItem(
+                    id="1_6_2_or_separator",
+                    label="OR",
+                    item_type="info_text",
+                    required=False,
+                    display_order=4
+                ),
+                # Option B: 4 and below SK Officials
+                ChecklistItem(
+                    id="1_6_2_4below_header",
+                    label="If the barangay has 4 and below SK Officials:",
+                    item_type="info_text",
+                    required=False,
+                    display_order=5,
+                    option_group="Option B"
                 ),
                 ChecklistItem(
                     id="1_6_2_4below_cert",
-                    label="If the barangay has 4 and below SK Officials: Certification from the C/MLGOO on number of SK officials",
+                    label="Certification from the C/MLGOO on number of SK officials",
                     mov_description="Certification from City/Municipal LGOO confirming number of SK officials (Required if 4 or fewer SK officials)",
                     required=False,  # Conditionally required
-                    display_order=3
+                    display_order=6,
+                    option_group="Option B"
                 ),
             ]
         ),

@@ -35,6 +35,76 @@ export interface AISummaryIndicator {
 
 
 /**
+ * AppSchemasBbiSubIndicatorResult
+ */
+export interface AppSchemasBbiSubIndicatorResult {
+  /** Sub-indicator code (e.g., '2.1.1') */
+  code: string;
+  /** Sub-indicator name (e.g., 'Structure') */
+  name: string;
+  /** Whether the sub-indicator passed */
+  passed: boolean;
+  /** Validation rule used (ALL_ITEMS_REQUIRED or ANY_ITEM_REQUIRED) */
+  validation_rule?: AppSchemasBbiSubIndicatorResultValidationRule;
+  /** Summary of checklist item results */
+  checklist_summary?: AppSchemasBbiSubIndicatorResultChecklistSummary;
+}
+
+
+/**
+ * AppSchemasBbiSubIndicatorResultChecklistSummary
+ */
+export type AppSchemasBbiSubIndicatorResultChecklistSummary = AppSchemasBbiSubIndicatorResultChecklistSummaryAnyOf | null;
+
+
+/**
+ * AppSchemasBbiSubIndicatorResultChecklistSummaryAnyOf
+ */
+export type AppSchemasBbiSubIndicatorResultChecklistSummaryAnyOf = { [key: string]: unknown };
+
+
+/**
+ * AppSchemasBbiSubIndicatorResultValidationRule
+ */
+export type AppSchemasBbiSubIndicatorResultValidationRule = string | null;
+
+
+/**
+ * AppSchemasBlguDashboardSubIndicatorResult
+ */
+export interface AppSchemasBlguDashboardSubIndicatorResult {
+  /** Sub-indicator code */
+  code: string;
+  /** Sub-indicator name */
+  name: string;
+  /** Whether the sub-indicator passed */
+  passed: boolean;
+  /** Validation rule applied */
+  validation_rule?: AppSchemasBlguDashboardSubIndicatorResultValidationRule;
+  /** Summary of checklist items if applicable */
+  checklist_summary?: AppSchemasBlguDashboardSubIndicatorResultChecklistSummary;
+}
+
+
+/**
+ * AppSchemasBlguDashboardSubIndicatorResultChecklistSummary
+ */
+export type AppSchemasBlguDashboardSubIndicatorResultChecklistSummary = AppSchemasBlguDashboardSubIndicatorResultChecklistSummaryAnyOf | null;
+
+
+/**
+ * AppSchemasBlguDashboardSubIndicatorResultChecklistSummaryAnyOf
+ */
+export type AppSchemasBlguDashboardSubIndicatorResultChecklistSummaryAnyOf = { [key: string]: unknown };
+
+
+/**
+ * AppSchemasBlguDashboardSubIndicatorResultValidationRule
+ */
+export type AppSchemasBlguDashboardSubIndicatorResultValidationRule = string | null;
+
+
+/**
  * BBIResultResponseSubIndicatorResults
  */
 export type BBIResultResponseSubIndicatorResults = BBIResultResponseSubIndicatorResultsAnyOfItem[] | null;
@@ -1127,41 +1197,6 @@ export type SimplifiedIndicatorResponseGovernanceArea = GovernanceAreaNested | n
  * SimplifiedIndicatorResponseParentId
  */
 export type SimplifiedIndicatorResponseParentId = number | null;
-
-
-/**
- * SubIndicatorResult
- */
-export interface SubIndicatorResult {
-  /** Sub-indicator code (e.g., '2.1.1') */
-  code: string;
-  /** Sub-indicator name (e.g., 'Structure') */
-  name: string;
-  /** Whether the sub-indicator passed */
-  passed: boolean;
-  /** Validation rule used (ALL_ITEMS_REQUIRED or ANY_ITEM_REQUIRED) */
-  validation_rule?: SubIndicatorResultValidationRule;
-  /** Summary of checklist item results */
-  checklist_summary?: SubIndicatorResultChecklistSummary;
-}
-
-
-/**
- * SubIndicatorResultChecklistSummary
- */
-export type SubIndicatorResultChecklistSummary = SubIndicatorResultChecklistSummaryAnyOf | null;
-
-
-/**
- * SubIndicatorResultChecklistSummaryAnyOf
- */
-export type SubIndicatorResultChecklistSummaryAnyOf = { [key: string]: unknown };
-
-
-/**
- * SubIndicatorResultValidationRule
- */
-export type SubIndicatorResultValidationRule = string | null;
 
 
 /**

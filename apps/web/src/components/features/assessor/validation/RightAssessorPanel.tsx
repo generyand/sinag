@@ -369,7 +369,9 @@ function ChecklistItemHistory({ item, responseData }: ChecklistItemHistoryProps)
     const valueKey = `assessor_val_${itemId}`;
     const value = responseData[valueKey];
 
-    if (value && String(value).trim() !== '') {
+    // Filter out empty values and boolean false (which may be stored as string "false")
+    const isValidValue = value && String(value).trim() !== '' && String(value).trim() !== 'false' && value !== false;
+    if (isValidValue) {
       displayValue = (
         <span className="inline-flex items-center px-2 py-1 rounded-sm text-sm font-medium bg-blue-50 text-blue-900 dark:bg-blue-950/30 dark:text-blue-200 border border-blue-200 dark:border-blue-800">
           {String(value)}
@@ -529,9 +531,11 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
             const noKey = `validator_val_${item.item_id}_no`;
             obj[`${itemKey}_yes`] = responseData[yesKey] ?? false;
             obj[`${itemKey}_no`] = responseData[noKey] ?? false;
-          } else if (item.item_type === 'document_count' || item.requires_document_count) {
-            // Input fields - start empty
-            obj[itemKey] = responseData[`validator_val_${item.item_id}`] ?? '';
+          } else if (item.item_type === 'document_count' || item.item_type === 'calculation_field' || item.item_type === 'date_input' || item.requires_document_count) {
+            // Input fields (document count, calculation, or date) - start empty
+            // Convert false/boolean to empty string (legacy data may have false stored)
+            const rawValue = responseData[`validator_val_${item.item_id}`];
+            obj[itemKey] = (rawValue === false || rawValue === 'false' || rawValue == null) ? '' : rawValue;
           } else if (item.item_type !== 'info_text') {
             // Regular checkboxes - start unchecked
             obj[itemKey] = responseData[`validator_val_${item.item_id}`] ?? false;
@@ -551,9 +555,11 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
             const noKey = `assessor_val_${item.item_id}_no`;
             obj[`${itemKey}_yes`] = responseData[yesKey] ?? false;
             obj[`${itemKey}_no`] = responseData[noKey] ?? false;
-          } else if (item.item_type === 'document_count' || item.requires_document_count) {
-            // Input fields
-            obj[itemKey] = responseData[`assessor_val_${item.item_id}`] ?? '';
+          } else if (item.item_type === 'document_count' || item.item_type === 'calculation_field' || item.item_type === 'date_input' || item.requires_document_count) {
+            // Input fields (document count, calculation, or date)
+            // Convert false/boolean to empty string (legacy data may have false stored)
+            const rawValue = responseData[`assessor_val_${item.item_id}`];
+            obj[itemKey] = (rawValue === false || rawValue === 'false' || rawValue == null) ? '' : rawValue;
           } else if (item.item_type !== 'info_text') {
             // Regular checkboxes
             obj[itemKey] = responseData[`assessor_val_${item.item_id}`] ?? false;
@@ -779,6 +785,8 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
             const indicator = (r.indicator as AnyRecord) ?? {};
             const indicatorLabel = indicator?.name || `Indicator #${r.indicator_id ?? idx + 1}`;
             const techNotes = indicator?.technical_notes || indicator?.notes || null;
+            // Get notes from form_schema (used for composition notes, considerations, etc.)
+            const formSchemaNotes = (indicator?.form_schema as AnyRecord)?.notes as { title?: string; items?: Array<{ label?: string; text?: string }> } | null;
             const key = String(r.id);
             const errorsFor = (formState.errors as AnyRecord)?.[key]?.publicComment;
 
@@ -797,6 +805,43 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                       <div className="whitespace-pre-wrap">{String(techNotes)}</div>
                     </div>
                   ) : null}
+
+                  {/* Form Schema Notes (composition notes, considerations, etc.) */}
+                  {formSchemaNotes && formSchemaNotes.items && formSchemaNotes.items.length > 0 && (
+                    <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-sm p-3">
+                      <div className="text-xs font-semibold text-amber-900 dark:text-amber-200 mb-2">
+                        {formSchemaNotes.title || 'Note:'}
+                      </div>
+                      <div className="space-y-0.5">
+                        {formSchemaNotes.items.map((noteItem, noteIdx) => {
+                          // Check if this is a sub-item (label starts with spaces)
+                          const isSubItem = noteItem.label?.startsWith('   ');
+                          // Check if this is a section header (no label, bold text)
+                          const isSectionHeader = !noteItem.label && noteItem.text && !noteItem.text.match(/^\d+\./);
+                          // Check if empty line (spacer)
+                          const isEmpty = !noteItem.label && !noteItem.text;
+
+                          if (isEmpty) {
+                            return <div key={noteIdx} className="h-2" />;
+                          }
+
+                          return (
+                            <div
+                              key={noteIdx}
+                              className={`text-xs text-amber-800 dark:text-amber-300 ${isSubItem ? 'pl-4' : ''} ${isSectionHeader ? 'font-semibold mt-2' : ''}`}
+                            >
+                              {noteItem.label && (
+                                <span className="font-medium mr-1">
+                                  {noteItem.label.trim()}
+                                </span>
+                              )}
+                              {noteItem.text}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Checklist Items with Interactive Controls */}
                   {(() => {
@@ -843,7 +888,39 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                   </div>
                                 )}
 
-                                {(item.item_type === 'document_count' || item.requires_document_count) ? (
+                                {item.item_type === 'date_input' ? (
+                                  // Date input field for approval dates
+                                  <div className="space-y-2">
+                                    {item.mov_description && (
+                                      <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded px-3 py-2">
+                                        <div className="text-xs text-orange-800 dark:text-orange-300 italic">
+                                          {item.mov_description}
+                                        </div>
+                                      </div>
+                                    )}
+                                    <div className="flex items-start gap-2">
+                                      <Controller
+                                        name={itemKey as any}
+                                        control={control}
+                                        render={({ field }) => (
+                                          <Input
+                                            id={itemKey}
+                                            type="date"
+                                            value={field.value as any}
+                                            onChange={field.onChange}
+                                            onBlur={field.onBlur}
+                                            name={field.name}
+                                            ref={field.ref}
+                                            className="h-9 text-sm w-40 flex-shrink-0"
+                                          />
+                                        )}
+                                      />
+                                      <span className="text-xs text-foreground leading-relaxed">
+                                        {item.label}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ) : (item.item_type === 'document_count' || item.requires_document_count) ? (
                                   // Document count input item (no checkbox, just description + input)
                                   <div className="space-y-2">
                                     {item.mov_description && (
@@ -861,7 +938,7 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                           <Input
                                             id={itemKey}
                                             type="text"
-                                            placeholder="Enter count"
+                                            placeholder={item.label?.toLowerCase().includes('hazard') ? 'Enter Type of Hazard' : 'Enter count'}
                                             value={field.value as any}
                                             onChange={field.onChange}
                                             onBlur={field.onBlur}
@@ -878,12 +955,22 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                   </div>
                                 ) : item.item_type === 'info_text' ? (
                                   // Instructional text (no input control)
-                                  <div className="text-xs text-blue-800 dark:text-blue-200 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-700 rounded px-3 py-2">
-                                    {item.label}
-                                    {item.mov_description && item.mov_description !== item.label && (
-                                      <div className="text-[11px] text-blue-700 dark:text-blue-300 italic mt-1">{item.mov_description}</div>
-                                    )}
-                                  </div>
+                                  item.label === 'OR' ? (
+                                    // OR separator - special styling
+                                    <div className="flex items-center gap-3 my-2">
+                                      <div className="flex-1 h-px bg-orange-300 dark:bg-orange-700" />
+                                      <span className="text-sm font-bold text-orange-600 dark:text-orange-400 px-2">OR</span>
+                                      <div className="flex-1 h-px bg-orange-300 dark:bg-orange-700" />
+                                    </div>
+                                  ) : (
+                                    // Regular info text
+                                    <div className="text-xs text-blue-800 dark:text-blue-200 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-700 rounded px-3 py-2">
+                                      {item.label}
+                                      {item.mov_description && item.mov_description !== item.label && (
+                                        <div className="text-[11px] text-blue-700 dark:text-blue-300 italic mt-1">{item.mov_description}</div>
+                                      )}
+                                    </div>
+                                  )
                                 ) : item.item_type === 'assessment_field' ? (
                                   // YES/NO radio buttons for validator assessment (mutually exclusive)
                                   (() => {
@@ -981,28 +1068,37 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                     );
                                   })()
                                 ) : item.item_type === 'calculation_field' ? (
-                                  // Calculation/input field - no redundant mov_description box
-                                  <div className="space-y-1">
-                                    <Label htmlFor={itemKey} className="text-xs font-medium text-foreground">
-                                      {item.label}
-                                    </Label>
-                                    <Controller
-                                      name={itemKey as any}
-                                      control={control}
-                                      render={({ field }) => (
-                                        <Input
-                                          id={itemKey}
-                                          type="text"
-                                          placeholder="Enter value"
-                                          value={field.value as any}
-                                          onChange={field.onChange}
-                                          onBlur={field.onBlur}
-                                          name={field.name}
-                                          ref={field.ref}
-                                          className="h-9 text-sm"
-                                        />
-                                      )}
-                                    />
+                                  // Calculation/input field with optional mov_description box
+                                  <div className="space-y-2">
+                                    {item.mov_description && (
+                                      <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded px-3 py-2">
+                                        <div className="text-xs text-orange-800 dark:text-orange-300 italic">
+                                          {item.mov_description}
+                                        </div>
+                                      </div>
+                                    )}
+                                    <div className="flex items-start gap-2">
+                                      <Controller
+                                        name={itemKey as any}
+                                        control={control}
+                                        render={({ field }) => (
+                                          <Input
+                                            id={itemKey}
+                                            type="text"
+                                            placeholder="Enter value"
+                                            value={field.value as any}
+                                            onChange={field.onChange}
+                                            onBlur={field.onBlur}
+                                            name={field.name}
+                                            ref={field.ref}
+                                            className="h-9 text-sm w-24 flex-shrink-0"
+                                          />
+                                        )}
+                                      />
+                                      <span className="text-xs text-foreground leading-relaxed">
+                                        {item.label}
+                                      </span>
+                                    </div>
                                   </div>
                                 ) : (
                                   // Regular checkbox item

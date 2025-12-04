@@ -4,8 +4,8 @@
 // 🏷️  Based on FastAPI tag: "assessments"
 
 import type { NotificationResult } from '../notifications';
-import type { BBIComplianceResult } from '../bbis';
-import type { BBIComplianceSummary } from '../bbis';
+import type { AppSchemasBbiBBIComplianceResult } from '../bbis';
+import type { AppSchemasBbiBBIComplianceSummary } from '../bbis';
 import type { ProgressSummary } from '../common';
 import type { GovernanceAreaProgress } from '../common';
 import type { GovernanceAreaDetailItem } from '../common';
@@ -51,9 +51,9 @@ export interface AssessmentBBIComplianceResponse {
   /** Barangay name */
   barangay_name?: AssessmentBBIComplianceResponseBarangayName;
   /** Compliance results for each BBI */
-  bbi_results: BBIComplianceResult[];
+  bbi_results: AppSchemasBbiBBIComplianceResult[];
   /** Summary statistics for BBI compliance */
-  summary: BBIComplianceSummary;
+  summary: AppSchemasBbiBBIComplianceSummary;
   /** When the compliance was calculated */
   calculated_at: string;
 }

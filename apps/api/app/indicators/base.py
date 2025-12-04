@@ -10,6 +10,23 @@ from typing import List, Optional
 
 
 @dataclass
+class FieldNotes:
+    """
+    Notes that appear below a specific checklist item field.
+
+    Example:
+        FieldNotes(
+            title="Note:",
+            items=[
+                NoteItem(text="The CIR contains data protected by the Data Privacy Act...")
+            ]
+        )
+    """
+    items: List['NoteItem']  # List of note items
+    title: str = "Note:"  # Title for the notes section
+
+
+@dataclass
 class ChecklistItem:
     """
     Represents a single checklist item within an indicator's MOV checklist.
@@ -24,6 +41,7 @@ class ChecklistItem:
     - assessment_field: YES/NO radio buttons for validator assessment
     - document_count: Number input for document counting
     - calculation_field: Input field for calculated values (amount, percentage, etc.)
+    - date_input: Date picker input for approval dates, etc.
     """
     id: str  # Unique identifier (e.g., "1_1_1_a")
     label: str  # Display text (e.g., "a. Barangay Financial Report")
@@ -34,6 +52,38 @@ class ChecklistItem:
     requires_document_count: bool = False  # DEPRECATED: Use item_type="document_count" instead
     display_order: int = 0  # Sort order within indicator
     option_group: Optional[str] = None  # Option group for OR logic (e.g., "Option A", "Option B")
+    field_notes: Optional[FieldNotes] = None  # Notes displayed below this field
+
+
+@dataclass
+class NoteItem:
+    """
+    Represents a single note item with optional label prefix.
+
+    Examples:
+    - NoteItem(label="a)", text="Barangay Financial Report")
+    - NoteItem(text="Some note without a label")
+    """
+    text: str  # Note text content
+    label: Optional[str] = None  # Optional label prefix (e.g., "a)", "1.")
+
+
+@dataclass
+class FormNotes:
+    """
+    Notes section for the form with title and items.
+
+    Example:
+        FormNotes(
+            title="Note:",
+            items=[
+                NoteItem(label="a)", text="Barangay Financial Report"),
+                NoteItem(label="b)", text="Barangay Budget"),
+            ]
+        )
+    """
+    items: List[NoteItem]  # List of note items
+    title: str = "Note:"  # Title for the notes section
 
 
 @dataclass
@@ -56,6 +106,7 @@ class SubIndicator:
     children: List['SubIndicator'] = field(default_factory=list)  # Nested sub-indicators (for containers)
     upload_instructions: Optional[str] = None  # Instructions for BLGUs on what to upload (only for leaf nodes)
     validation_rule: Optional[str] = "ALL_ITEMS_REQUIRED"  # ALL_ITEMS_REQUIRED, ANY_ITEM_REQUIRED, CUSTOM (only for leaf nodes)
+    notes: Optional[FormNotes] = None  # Optional notes section displayed below form fields
 
 
 @dataclass

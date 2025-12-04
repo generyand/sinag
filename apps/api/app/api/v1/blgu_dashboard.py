@@ -671,7 +671,9 @@ def get_blgu_dashboard(
                         "compliance_rating": r.compliance_rating or "LOW_FUNCTIONAL",
                         "sub_indicators_passed": r.sub_indicators_passed or 0,
                         "sub_indicators_total": r.sub_indicators_total or 0,
-                        "sub_indicator_results": r.sub_indicator_results or [],
+                        # sub_indicator_results is stored as dict in DB, transform to list format
+                        # or return empty list since BLGU view doesn't need detailed breakdown
+                        "sub_indicator_results": [],
                         "calculation_date": r.calculation_date.isoformat() + 'Z' if r.calculation_date else None,
                     }
                     for r in bbi_results

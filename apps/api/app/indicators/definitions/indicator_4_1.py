@@ -60,7 +60,7 @@ IMPORTANT NOTES FOR PHASE 9 (VALIDATION SERVICE):
    - Failing means VAW Desk is "Non-Functional"
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
+from app.indicators.base import Indicator, SubIndicator, ChecklistItem, FormNotes, NoteItem
 
 
 # Indicator 4.1: Functionality of Barangay Violence Against Women (VAW) Desk
@@ -157,8 +157,8 @@ INDICATOR_4_1 = Indicator(
                 # Text Input Field
                 ChecklistItem(
                     id="4_1_4_count",
-                    label="Please supply the number of documents submitted:\n_____ Quarterly Accomplishment Reports were submitted",
-                    mov_description="Input field for number of quarterly accomplishment reports submitted",
+                    label="Quarterly Accomplishment Reports were submitted",
+                    mov_description="Please supply the number of documents submitted:",
                     required=True,
                     requires_document_count=True,  # This is a text input field
                     display_order=2
@@ -191,37 +191,46 @@ INDICATOR_4_1 = Indicator(
                 # Text Input Fields
                 ChecklistItem(
                     id="4_1_5_total_cases",
-                    label="Please supply the number of documents submitted:\nTotal number of VAW cases received",
-                    mov_description="Input field for total number of VAW cases received",
+                    label="Total number of VAW cases received",
+                    mov_description="Please supply the number of documents submitted:",
                     required=True,
                     requires_document_count=True,  # This is a text input field
                     display_order=2
                 ),
                 ChecklistItem(
                     id="4_1_5_ra_9262",
-                    label="Total number of cases documented for violating RA 9262",
-                    mov_description="Input field for total number of cases documented for violating RA 9262",
+                    label="Number of cases documented for violating RA 9262",
+                    mov_description=None,
                     required=True,
                     requires_document_count=True,  # This is a text input field
                     display_order=3
                 ),
                 ChecklistItem(
                     id="4_1_5_other_laws",
-                    label="Total number of cases documented for violating other VAW-related laws",
-                    mov_description="Input field for total number of cases documented for violating other VAW-related laws",
+                    label="Number of cases documented for violating other VAW-related laws",
+                    mov_description=None,
                     required=True,
                     requires_document_count=True,  # This is a text input field
                     display_order=4
                 ),
                 ChecklistItem(
                     id="4_1_5_assistance",
-                    label="Total number of assistance provided to victim-survivors",
-                    mov_description="Input field for total number of assistance provided to victim-survivors",
+                    label="Assistance provided to victim-survivors",
+                    mov_description=None,
                     required=True,
                     requires_document_count=True,  # This is a text input field
                     display_order=5
                 ),
-            ]
+            ],
+            notes=FormNotes(
+                title="Minimum Information:",
+                items=[
+                    NoteItem(label="a.", text="Total number of VAW cases received"),
+                    NoteItem(label="", text="i. Number of cases documented for violating RA 9262"),
+                    NoteItem(label="", text="ii. Number of cases documented for violating other VAW-related laws"),
+                    NoteItem(label="b.", text="Assistance provided to victim-survivors"),
+                ]
+            )
         ),
 
         # Sub-Indicator 4.1.6

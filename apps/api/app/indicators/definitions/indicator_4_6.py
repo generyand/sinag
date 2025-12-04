@@ -41,9 +41,9 @@ INDICATOR_4_6 = Indicator(
                 ChecklistItem(
                     id="4_6_1_date_of_approval",
                     label="Date of approval",
-                    mov_description="Date of approval for the GAD Focal Point System",
+                    mov_description="Please supply the required information:",
+                    item_type="date_input",
                     required=True,
-                    requires_document_count=True,
                     display_order=2
                 ),
             ]

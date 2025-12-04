@@ -9,7 +9,7 @@ through its organizational structure, approved plan, performance in reducing mal
 and accomplishment reporting.
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
+from app.indicators.base import Indicator, SubIndicator, ChecklistItem, FormNotes, NoteItem
 
 
 # Indicator 4.8: Functionality of the Barangay Nutrition Committee (BNC)
@@ -52,7 +52,25 @@ INDICATOR_4_8 = Indicator(
                     required=True,
                     display_order=1
                 ),
-            ]
+            ],
+            notes=FormNotes(
+                title="Minimum Composition of the BNC:",
+                items=[
+                    NoteItem(label="1.", text="Barangay Captain (as chair)"),
+                    NoteItem(label="2.", text="President of the Rural Improvement Club (RIC)"),
+                    NoteItem(label="3.", text="President, Parent Teacher Child Association (PTCA)"),
+                    NoteItem(label="4.", text="Head/President, local organization"),
+                    NoteItem(label="5.", text="Sangguniang Members on Health"),
+                    NoteItem(label="6.", text="SK Chairperson"),
+                    NoteItem(label="7.", text="Barangay Nutrition Scholar (BNS)"),
+                    NoteItem(label="8.", text="Day Care Worker"),
+                    NoteItem(label="9.", text="Barangay Nutrition Action Association (BNAO)"),
+                    NoteItem(label="10.", text="School Principal"),
+                    NoteItem(label="11.", text="Agriculture Technicians"),
+                    NoteItem(label="12.", text="Rural Health Midwife (RHM)"),
+                    NoteItem(label="13.", text="Other as may be identified"),
+                ]
+            )
         ),
 
         # Sub-Indicator 4.8.2: Plan - Presence of approved CY 2023 BNAP
@@ -127,7 +145,15 @@ INDICATOR_4_8 = Indicator(
                     required=False,
                     display_order=6
                 ),
-            ]
+            ],
+            notes=FormNotes(
+                title="Categories:",
+                items=[
+                    NoteItem(label="1.", text="Underweight and Severe Underweight"),
+                    NoteItem(label="2.", text="Stunting and Severe Stunting; and"),
+                    NoteItem(label="3.", text="Moderate Wasting and Severe Wasting"),
+                ]
+            )
         ),
 
         # Sub-Indicator 4.8.4: Accomplishment Report

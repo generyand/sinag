@@ -9,7 +9,7 @@ the presence of health facilities, appointment of health personnel, and availabi
 of essential health services.
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
+from app.indicators.base import Indicator, SubIndicator, ChecklistItem, FormNotes, NoteItem
 
 
 # Indicator 4.2: Access to Health and Social Welfare Services in the Barangay
@@ -79,30 +79,45 @@ INDICATOR_4_2 = Indicator(
             code="4.2.2",
             name="Appointment of the following Barangay Health Personnel (FOR PROFILING)",
             upload_instructions=(
-                "Upload EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the Appointment of BHW and/or BHO or BHAsst covering January to October 2023:\n\n"
-                "1. Accredited Barangay Health Worker (BHW); AND/OR\n"
-                "2. Barangay Health Officer (BHO) or Barangay Health Assistant (BHAsst)\n\n"
-                "Note: At least ONE of the above is required"
+                "Upload EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the Appointment of BHW and/or BHO or BHAsst covering January to October 2023"
             ),
-            validation_rule="ANY_ITEM_REQUIRED",  # At least one of the two personnel types
+            validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # At least one of the two personnel types
             checklist_items=[
                 ChecklistItem(
                     id="4_2_2_bhw",
-                    label="Accredited Barangay Health Worker (BHW); AND/OR",
-                    mov_description="Verification of uploaded EO/issuance for BHW appointment (Option 1)",
+                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the Appointment of BHW covering January to October 2023",
+                    mov_description=None,
                     required=False,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
+                    option_group="option_a"
+                ),
+                # AND/OR Separator
+                ChecklistItem(
+                    id="4_2_2_and_or_separator",
+                    label="AND/OR",
+                    item_type="info_text",
+                    required=False,
+                    display_order=2
                 ),
                 ChecklistItem(
                     id="4_2_2_bho",
-                    label="Barangay Health Officer (BHO) or Barangay Health Assistant (BHAsst)",
-                    mov_description="Verification of uploaded EO/issuance for BHO/BHAsst appointment (Option 2)",
+                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the Appointment of BHO or BHAsst covering January to October 2023",
+                    mov_description=None,
                     required=False,
                     requires_document_count=False,
-                    display_order=2
+                    display_order=3,
+                    option_group="option_b"
                 ),
-            ]
+            ],
+            notes=FormNotes(
+                title="Barangay Personnel can be:",
+                items=[
+                    NoteItem(label="1.", text="Accredited Barangay Health Worker (BHW);"),
+                    NoteItem(text="AND/OR"),
+                    NoteItem(label="2.", text="Barangay Health Officer (BHO) or Barangay Health Assistant (BHAsst)"),
+                ]
+            )
         ),
 
         # Sub-Indicator 4.2.3: Appointment of a Barangay Nutrition Scholar (BNS)

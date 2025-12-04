@@ -11,6 +11,31 @@ const statusColorMap: Record<string, { color: string; bgColor: string }> = {
   'Completed': { color: 'text-green-600', bgColor: 'bg-green-100' },
 };
 
+// BBI Analytics types (matching backend schema)
+export interface BBIAnalyticsItem {
+  bbi_id: number;
+  bbi_name: string;
+  bbi_abbreviation: string;
+  average_compliance: number;
+  highly_functional_count: number;
+  moderately_functional_count: number;
+  low_functional_count: number;
+  total_barangays: number;
+}
+
+export interface BBIAnalyticsSummary {
+  total_assessments: number;
+  overall_average_compliance: number;
+  total_highly_functional: number;
+  total_moderately_functional: number;
+  total_low_functional: number;
+}
+
+export interface BBIAnalyticsData {
+  summary: BBIAnalyticsSummary;
+  bbi_breakdown: BBIAnalyticsItem[];
+}
+
 // Types for the administrator dashboard (frontend-friendly format)
 export interface AdminDashboardData {
   kpiData: {
@@ -49,6 +74,7 @@ export interface AdminDashboardData {
     assessmentsWithCalibration: number;
     calibrationRate: number;
   };
+  bbiAnalytics?: BBIAnalyticsData;
   municipality: string;
   performanceYear: string;
   assessmentYear: string;
@@ -111,6 +137,9 @@ function transformDashboardData(apiData: DashboardKPIResponse): AdminDashboardDa
     calibration_rate: 0,
   };
 
+  // Transform BBI analytics (pass through as-is since it matches our interface)
+  const bbiAnalytics = apiData.bbi_analytics || undefined;
+
   return {
     kpiData: {
       barangaySubmissions: {
@@ -131,6 +160,7 @@ function transformDashboardData(apiData: DashboardKPIResponse): AdminDashboardDa
       assessmentsWithCalibration: reworkStats.assessments_with_calibration,
       calibrationRate: reworkStats.calibration_rate,
     },
+    bbiAnalytics,
     municipality: 'Municipality of Sulop', // Could be fetched from user context
     performanceYear: '2023',
     assessmentYear: new Date().getFullYear().toString(),

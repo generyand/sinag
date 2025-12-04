@@ -12,6 +12,91 @@ from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field
 
 
+# ============================================================================
+# BBI (Barangay-Based Institutions) Compliance Schemas
+# Based on DILG MC 2024-417 guidelines
+# ============================================================================
+
+
+class SubIndicatorResult(BaseModel):
+    """Individual sub-indicator result within a BBI."""
+
+    code: str = Field(..., description="Sub-indicator code")
+    name: str = Field(..., description="Sub-indicator name")
+    passed: bool = Field(..., description="Whether the sub-indicator passed")
+    validation_rule: Optional[str] = Field(None, description="Validation rule applied")
+    checklist_summary: Optional[Dict[str, Any]] = Field(
+        None, description="Summary of checklist items if applicable"
+    )
+
+
+class BBIComplianceResult(BaseModel):
+    """
+    Individual BBI compliance result.
+
+    Compliance ratings per DILG MC 2024-417:
+    - HIGHLY_FUNCTIONAL: 75-100%
+    - MODERATELY_FUNCTIONAL: 50-74%
+    - LOW_FUNCTIONAL: <50%
+    """
+
+    bbi_id: int = Field(..., description="BBI ID")
+    bbi_name: str = Field(..., description="Full BBI name")
+    bbi_abbreviation: str = Field(..., description="BBI abbreviation (e.g., BDRRMC, BCPC)")
+    governance_area_id: int = Field(..., description="Associated governance area ID")
+    governance_area_name: Optional[str] = Field(None, description="Governance area name")
+    assessment_id: int = Field(..., description="Assessment ID")
+    compliance_percentage: float = Field(
+        ..., description="Compliance percentage (0-100)"
+    )
+    compliance_rating: str = Field(
+        ...,
+        description="Rating: HIGHLY_FUNCTIONAL, MODERATELY_FUNCTIONAL, or LOW_FUNCTIONAL",
+    )
+    sub_indicators_passed: int = Field(..., description="Number of sub-indicators passed")
+    sub_indicators_total: int = Field(..., description="Total number of sub-indicators")
+    sub_indicator_results: List[SubIndicatorResult] = Field(
+        default_factory=list, description="Detailed results for each sub-indicator"
+    )
+    calculation_date: str = Field(..., description="Date when calculation was performed (ISO format)")
+
+
+class BBIComplianceSummary(BaseModel):
+    """Summary statistics for BBI compliance."""
+
+    total_bbis: int = Field(..., description="Total number of BBIs evaluated")
+    highly_functional_count: int = Field(
+        ..., description="Number of BBIs rated as Highly Functional (75%+)"
+    )
+    moderately_functional_count: int = Field(
+        ..., description="Number of BBIs rated as Moderately Functional (50-74%)"
+    )
+    low_functional_count: int = Field(
+        ..., description="Number of BBIs rated as Low Functional (<50%)"
+    )
+    average_compliance_percentage: float = Field(
+        ..., description="Average compliance percentage across all BBIs"
+    )
+
+
+class BBIComplianceData(BaseModel):
+    """
+    Complete BBI compliance data for a BLGU assessment.
+
+    Contains individual BBI results and summary statistics.
+    Only populated when assessment status is COMPLETED.
+    """
+
+    assessment_id: int = Field(..., description="Assessment ID")
+    barangay_id: Optional[int] = Field(None, description="Barangay ID")
+    barangay_name: Optional[str] = Field(None, description="Barangay name")
+    bbi_results: List[BBIComplianceResult] = Field(
+        default_factory=list, description="Individual BBI compliance results"
+    )
+    summary: BBIComplianceSummary = Field(..., description="Summary statistics")
+    calculated_at: str = Field(..., description="Timestamp when data was calculated (ISO format)")
+
+
 class AISummaryIndicator(BaseModel):
     """Individual indicator summary within an AI-generated summary."""
 
@@ -269,6 +354,13 @@ class BLGUDashboardResponse(BaseModel):
         None,
         description="AI-generated CapDev recommendations grouped by governance area. "
         "Only populated when status is COMPLETED."
+    )
+
+    # BBI Compliance - ONLY populated when status is COMPLETED
+    bbi_compliance: Optional[BBIComplianceData] = Field(
+        None,
+        description="BBI (Barangay-Based Institutions) compliance data with individual "
+        "results and summary statistics. Only populated when status is COMPLETED."
     )
 
     class Config:

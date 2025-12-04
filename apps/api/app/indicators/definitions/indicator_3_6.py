@@ -40,8 +40,8 @@ INDICATOR_3_6 = Indicator(
                 # Text Input Field
                 ChecklistItem(
                     id="3_6_1_count",
-                    label="Please supply the number of documents submitted:\n_____ Monthly BaRCo Reports were submitted",
-                    mov_description="Input field for number of Monthly BaRCo Reports submitted",
+                    label="Monthly BaRCo Reports were submitted",
+                    mov_description="Please supply the number of documents submitted:",
                     required=True,
                     requires_document_count=True,  # This is a text input field
                     display_order=2

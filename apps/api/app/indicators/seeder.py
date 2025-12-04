@@ -9,7 +9,7 @@ from typing import List, Dict, Any
 from sqlalchemy.orm import Session
 from datetime import datetime
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem as ChecklistItemDef
+from app.indicators.base import Indicator, SubIndicator, ChecklistItem as ChecklistItemDef, FormNotes
 from app.db.models.governance_area import Indicator as IndicatorModel, ChecklistItem as ChecklistItemModel
 
 
@@ -302,7 +302,7 @@ def _parse_upload_sections_from_instructions(upload_instructions: str) -> List[D
     return upload_sections
 
 
-def _generate_form_schema_from_checklist(checklist_items: List[ChecklistItemDef], upload_instructions: str = None, validation_rule: str = "ALL_ITEMS_REQUIRED") -> Dict[str, Any]:
+def _generate_form_schema_from_checklist(checklist_items: List[ChecklistItemDef], upload_instructions: str = None, validation_rule: str = "ALL_ITEMS_REQUIRED", notes: FormNotes = None) -> Dict[str, Any]:
     """
     Generate a form schema JSON from checklist items.
 
@@ -313,6 +313,7 @@ def _generate_form_schema_from_checklist(checklist_items: List[ChecklistItemDef]
         checklist_items: List of ChecklistItem definitions (for assessor validation)
         upload_instructions: Upload instructions that define BLGU upload sections
         validation_rule: Validation strategy (ALL_ITEMS_REQUIRED or ANY_ITEM_REQUIRED)
+        notes: Optional notes section to display below form fields
 
     Returns:
         Dictionary containing the form schema structure
@@ -322,6 +323,20 @@ def _generate_form_schema_from_checklist(checklist_items: List[ChecklistItemDef]
 
     # Parse upload sections from instructions for BLGU users
     fields = _parse_upload_sections_from_instructions(upload_instructions)
+
+    # Add field_notes from checklist items to corresponding fields
+    # Match by order (first checklist item with field_notes -> first field, etc.)
+    if checklist_items:
+        items_with_notes = [(i, item) for i, item in enumerate(sorted(checklist_items, key=lambda x: x.display_order)) if item.field_notes]
+        for idx, item in items_with_notes:
+            if idx < len(fields):
+                fields[idx]["field_notes"] = {
+                    "title": item.field_notes.title,
+                    "items": [
+                        {"label": note_item.label, "text": note_item.text} if note_item.label else {"text": note_item.text}
+                        for note_item in item.field_notes.items
+                    ]
+                }
 
     # Build complete form schema
     schema = {
@@ -367,6 +382,16 @@ def _generate_form_schema_from_checklist(checklist_items: List[ChecklistItemDef]
         "fields": assessor_fields
     }
 
+    # Add notes section if provided
+    if notes:
+        schema["notes"] = {
+            "title": notes.title,
+            "items": [
+                {"label": item.label, "text": item.text} if item.label else {"text": item.text}
+                for item in notes.items
+            ]
+        }
+
     return schema
 
 
@@ -396,7 +421,8 @@ def _seed_sub_indicator(
         form_schema = _generate_form_schema_from_checklist(
             sub_def.checklist_items,
             sub_def.upload_instructions,
-            sub_def.validation_rule
+            sub_def.validation_rule,
+            sub_def.notes
         )
 
     # Create this sub-indicator with sort_order
@@ -416,6 +442,17 @@ def _seed_sub_indicator(
 
     # If this sub-indicator has checklist items, create them (it's a leaf node)
     for item_def in sub_def.checklist_items:
+        # Convert field_notes to dict if present
+        field_notes_dict = None
+        if item_def.field_notes:
+            field_notes_dict = {
+                "title": item_def.field_notes.title,
+                "items": [
+                    {"label": item.label, "text": item.text} if item.label else {"text": item.text}
+                    for item in item_def.field_notes.items
+                ]
+            }
+
         checklist_item = ChecklistItemModel(
             indicator_id=sub_indicator.id,
             item_id=item_def.id,
@@ -427,6 +464,7 @@ def _seed_sub_indicator(
             requires_document_count=item_def.requires_document_count,
             display_order=item_def.display_order,
             option_group=item_def.option_group,
+            field_notes=field_notes_dict,
         )
         db.add(checklist_item)
 
