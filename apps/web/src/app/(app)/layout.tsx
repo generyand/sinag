@@ -457,7 +457,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       }`}>
         <div className="flex-1 flex flex-col min-h-0 bg-[var(--card)] backdrop-blur-sm shadow-xl border-r border-[var(--border)] transition-colors duration-300">
           <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
-            <div className={`flex items-center flex-shrink-0 px-6 mb-8 ${sidebarCollapsed ? 'justify-center' : ''}`}>
+            <div className={`flex flex-shrink-0 px-4 mb-8 ${sidebarCollapsed ? 'flex-col items-center gap-3' : 'items-center justify-between'}`}>
               <div className={`flex items-center ${sidebarCollapsed ? 'flex-col' : ''}`}>
                 <Image
                   src="/logo/logo.webp"
@@ -485,6 +485,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   </div>
                 )}
               </div>
+              {/* Collapse/Expand toggle button */}
+              <button
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="flex items-center justify-center h-8 w-8 rounded-md transition-all duration-200 text-[var(--text-secondary)] hover:bg-[var(--hover)] hover:text-[var(--cityscape-yellow)]"
+                title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                aria-expanded={!sidebarCollapsed}
+              >
+                {sidebarCollapsed ? (
+                  <ChevronRight className="w-5 h-5" />
+                ) : (
+                  <ChevronLeft className="w-5 h-5" />
+                )}
+              </button>
             </div>
             <nav className="flex-1 px-2 space-y-2">
               {navigation.map((item) => (
@@ -507,26 +521,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </Link>
               ))}
             </nav>
-
-            {/* Collapse/Expand toggle button */}
-            <div className="px-2 pt-4 border-t border-[var(--border)]">
-              <button
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className={`group flex items-center ${sidebarCollapsed ? 'justify-center px-2' : 'px-4'} w-full py-3 text-left rounded-sm transition-all duration-200 text-[var(--foreground)] hover:bg-[var(--hover)] hover:text-[var(--cityscape-yellow)]`}
-                title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              >
-                <div className="flex-shrink-0">
-                  {sidebarCollapsed ? (
-                    <ChevronRight className="w-5 h-5" />
-                  ) : (
-                    <ChevronLeft className="w-5 h-5" />
-                  )}
-                </div>
-                {!sidebarCollapsed && (
-                  <span className="ml-3 font-medium">Collapse</span>
-                )}
-              </button>
-            </div>
           </div>
         </div>
       </div>
