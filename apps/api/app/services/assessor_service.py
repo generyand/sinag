@@ -574,26 +574,23 @@ class AssessorService:
         """
         # Get the assessment with all related data
         # PERFORMANCE FIX: Eager load assessor on feedback_comments to prevent N+1
+        # NOTE: Use a single selectinload for responses with subqueryload for nested relations
         assessment = (
             db.query(Assessment)
             .options(
                 joinedload(Assessment.blgu_user).joinedload(User.barangay),
-                joinedload(Assessment.responses)
-                .joinedload(AssessmentResponse.indicator)
-                .joinedload(Indicator.governance_area),
-                joinedload(Assessment.responses)
-                .joinedload(AssessmentResponse.indicator)
-                .joinedload(Indicator.checklist_items),
-                joinedload(Assessment.responses)
-                .joinedload(AssessmentResponse.indicator)
-                .joinedload(Indicator.children),
+                # Single selectinload for responses, then branch out with subqueryload
+                selectinload(Assessment.responses).options(
+                    selectinload(AssessmentResponse.indicator).options(
+                        selectinload(Indicator.governance_area),
+                        selectinload(Indicator.checklist_items),
+                        selectinload(Indicator.children),
+                    ),
+                    selectinload(AssessmentResponse.feedback_comments)
+                    .selectinload(FeedbackComment.assessor),
+                ),
                 # Epic 4.0: Load MOV files from the new mov_files table
-                # Use selectinload for better performance with many files
                 selectinload(Assessment.mov_files),
-                # Eager load feedback_comments with assessor to prevent N+1
-                selectinload(Assessment.responses)
-                .selectinload(AssessmentResponse.feedback_comments)
-                .joinedload(FeedbackComment.assessor),
             )
             .filter(Assessment.id == assessment_id)
             .first()
