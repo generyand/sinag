@@ -52,13 +52,14 @@ if settings.DATABASE_URL:
     if not is_local_db:
         connect_args["sslmode"] = "require"
 
-    # Create database engine
+    # Create database engine with optimized connection pool
+    # PERFORMANCE FIX: Increased pool_size and max_overflow for better concurrency
     engine = create_engine(
         settings.DATABASE_URL,
-        pool_pre_ping=True,
-        pool_recycle=300,
-        pool_size=10,
-        max_overflow=20,
+        pool_pre_ping=True,  # Validates connections before use
+        pool_recycle=300,    # Recycles connections every 5 min (prevents stale connections)
+        pool_size=20,        # Increased from 10 - base number of connections to keep
+        max_overflow=40,     # Increased from 20 - additional connections under load (max 60 total)
         connect_args=connect_args,
     )
 

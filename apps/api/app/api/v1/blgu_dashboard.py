@@ -15,7 +15,7 @@ from datetime import datetime
 from typing import Dict, List, Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api import deps
 from app.db.enums import AssessmentStatus, UserRole
@@ -59,9 +59,26 @@ def get_blgu_dashboard(
             detail="Only BLGU users can access the dashboard",
         )
 
-    # Retrieve assessment - PERFORMANCE: Simplified query to avoid timeout
-    # We'll fetch related data separately with targeted queries
-    assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+    # Retrieve assessment with eager loading to prevent N+1 queries
+    # PERFORMANCE FIX: Load all related data upfront in a single query
+    from app.db.models.assessment import FeedbackComment, MOVFile
+
+    assessment = (
+        db.query(Assessment)
+        .options(
+            # Eager load responses with their indicators and feedback comments
+            selectinload(Assessment.responses)
+                .joinedload(AssessmentResponse.indicator)
+                .joinedload(Indicator.governance_area),
+            selectinload(Assessment.responses)
+                .selectinload(AssessmentResponse.feedback_comments)
+                .joinedload(FeedbackComment.assessor),
+            # Eager load MOV files for annotation processing
+            selectinload(Assessment.mov_files),
+        )
+        .filter(Assessment.id == assessment_id)
+        .first()
+    )
 
     if not assessment:
         raise HTTPException(

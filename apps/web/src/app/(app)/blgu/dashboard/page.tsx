@@ -65,9 +65,10 @@ export default function BLGUDashboardPage() {
   } = useGetAssessmentsMyAssessment({
     query: {
       enabled: isBLGU, // Only fetch for BLGU users
-      refetchOnWindowFocus: true,
-      refetchOnMount: true,
-      staleTime: 0, // Always treat as stale to ensure fresh data
+      refetchOnWindowFocus: false, // Only refetch when explicitly invalidated
+      refetchOnMount: false, // Trust cache on remount
+      staleTime: 2 * 60 * 1000, // 2 minutes - data is fresh for this duration
+      gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
     } as any,
   });
 
@@ -87,9 +88,10 @@ export default function BLGUDashboardPage() {
   }, {
     query: {
       enabled: !!assessmentId,
-      refetchOnWindowFocus: true,
-      refetchOnMount: true,
-      staleTime: 0, // Always treat as stale to ensure fresh data (important for rework status updates)
+      refetchOnWindowFocus: false, // Only refetch when explicitly invalidated
+      refetchOnMount: false, // Trust cache on remount
+      staleTime: 2 * 60 * 1000, // 2 minutes - data is fresh for this duration
+      gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
     } as any,
   });
 

@@ -19,7 +19,7 @@ from app.schemas.analytics import (
     TrendData,
 )
 from sqlalchemy import case, desc, func
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 
 @dataclass
@@ -180,15 +180,23 @@ class AnalyticsService:
         Returns:
             List of AreaBreakdown schemas, one per governance area
         """
-        # Get all governance areas
-        governance_areas = db.query(GovernanceArea).all()
+        # Get all governance areas with eager loaded indicators
+        # PERFORMANCE FIX: Eager load indicators to prevent N+1 queries
+        governance_areas = (
+            db.query(GovernanceArea)
+            .options(selectinload(GovernanceArea.indicators))
+            .all()
+        )
 
         if not governance_areas:
             return []
 
-        # Get validated assessments
-        assessment_query = db.query(Assessment).filter(
-            Assessment.final_compliance_status.isnot(None)
+        # Get validated assessments with eager loaded responses
+        # PERFORMANCE FIX: Eager load responses to prevent N+1 queries
+        assessment_query = (
+            db.query(Assessment)
+            .options(selectinload(Assessment.responses))
+            .filter(Assessment.final_compliance_status.isnot(None))
         )
 
         # TODO: Add cycle_id filter
@@ -655,8 +663,13 @@ class AnalyticsService:
         if not assessments:
             return []
 
-        # Get all governance areas
-        governance_areas = db.query(GovernanceArea).all()
+        # Get all governance areas with eager loaded indicators
+        # PERFORMANCE FIX: Eager load indicators to prevent N+1 queries
+        governance_areas = (
+            db.query(GovernanceArea)
+            .options(selectinload(GovernanceArea.indicators))
+            .all()
+        )
 
         if not governance_areas:
             return []

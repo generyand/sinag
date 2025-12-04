@@ -44,14 +44,17 @@ class AssessorService:
 
         Includes barangay name, submission date, status, and last updated.
         """
-        # Base query
+        # Base query with eager loading to prevent N+1 queries
+        # PERFORMANCE FIX: Load governance_area to avoid lazy loading in loop
         query = (
             db.query(Assessment)
             .join(AssessmentResponse, AssessmentResponse.assessment_id == Assessment.id)
             .join(Indicator, Indicator.id == AssessmentResponse.indicator_id)
             .options(
                 joinedload(Assessment.blgu_user).joinedload(User.barangay),
-                selectinload(Assessment.responses).joinedload(AssessmentResponse.indicator)
+                selectinload(Assessment.responses)
+                    .joinedload(AssessmentResponse.indicator)
+                    .joinedload(Indicator.governance_area),
             )
         )
 
@@ -176,12 +179,15 @@ class AssessorService:
             return 0
 
         # Query assessments that are either awaiting validation or completed
+        # PERFORMANCE FIX: Add governance_area eager loading
         assessments = (
             db.query(Assessment)
             .join(AssessmentResponse, AssessmentResponse.assessment_id == Assessment.id)
             .join(Indicator, Indicator.id == AssessmentResponse.indicator_id)
             .options(
-                selectinload(Assessment.responses).joinedload(AssessmentResponse.indicator)
+                selectinload(Assessment.responses)
+                    .joinedload(AssessmentResponse.indicator)
+                    .joinedload(Indicator.governance_area)
             )
             .filter(
                 Indicator.governance_area_id == validator.validator_area_id,
@@ -567,6 +573,7 @@ class AssessorService:
             dict: Assessment details or error information
         """
         # Get the assessment with all related data
+        # PERFORMANCE FIX: Eager load assessor on feedback_comments to prevent N+1
         assessment = (
             db.query(Assessment)
             .options(
@@ -580,12 +587,13 @@ class AssessorService:
                 joinedload(Assessment.responses)
                 .joinedload(AssessmentResponse.indicator)
                 .joinedload(Indicator.children),
-                # Epic 4.0: Load MOV files from the new mov_files table (removed old movs table loading)
+                # Epic 4.0: Load MOV files from the new mov_files table
                 # Use selectinload for better performance with many files
-                joinedload(Assessment.responses).joinedload(
-                    AssessmentResponse.feedback_comments
-                ),
                 selectinload(Assessment.mov_files),
+                # Eager load feedback_comments with assessor to prevent N+1
+                selectinload(Assessment.responses)
+                .selectinload(AssessmentResponse.feedback_comments)
+                .joinedload(FeedbackComment.assessor),
             )
             .filter(Assessment.id == assessment_id)
             .first()
