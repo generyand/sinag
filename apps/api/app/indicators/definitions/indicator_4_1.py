@@ -291,7 +291,6 @@ INDICATOR_4_1 = Indicator(
                 ChecklistItem(
                     id="4_1_6_physical_reflected",
                     label="Total number of activities/projects reflected in the Plan",
-                    mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
                     display_order=7,
@@ -337,7 +336,6 @@ INDICATOR_4_1 = Indicator(
                 ChecklistItem(
                     id="4_1_6_financial_allocated",
                     label="Total amount allocated for PPAs in the GAD Plan",
-                    mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
                     display_order=12,

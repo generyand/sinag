@@ -214,7 +214,6 @@ INDICATOR_4_8 = Indicator(
                 ChecklistItem(
                     id="4_8_4_physical_reflected",
                     label="Total number of activities/projects reflected in the Plan",
-                    mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
                     display_order=5,
@@ -260,7 +259,6 @@ INDICATOR_4_8 = Indicator(
                 ChecklistItem(
                     id="4_8_4_financial_allocated",
                     label="Total amount allocated for PPAs in the BNAP",
-                    mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
                     display_order=10,

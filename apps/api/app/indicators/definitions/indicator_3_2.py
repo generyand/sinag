@@ -138,7 +138,7 @@ INDICATOR_3_2 = Indicator(
                 ChecklistItem(
                     id="3_2_3_physical_reflected",
                     label="Total number of activities/projects reflected in the Plan",
-                    mov_description="Please supply the required information:",
+                    mov_description=None,  # Removed - only first field in each option needs label
                     item_type="calculation_field",
                     required=False,
                     display_order=4,
@@ -168,7 +168,7 @@ INDICATOR_3_2 = Indicator(
                 ChecklistItem(
                     id="3_2_3_financial_allocated",
                     label="Total amount allocated for FPAs in the BPOPS Plan for CY 2023",
-                    mov_description="Please supply the required information:",
+                    mov_description=None,  # Removed - only first field in each option needs label
                     item_type="calculation_field",
                     required=False,
                     display_order=7,

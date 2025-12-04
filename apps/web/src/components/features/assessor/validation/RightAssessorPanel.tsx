@@ -1130,6 +1130,25 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                     </div>
                                   </div>
                                 )}
+
+                                {/* Field Notes (CONSIDERATION, etc.) - rendered below each checklist item */}
+                                {item.field_notes && item.field_notes.items && item.field_notes.items.length > 0 && (
+                                  <div className="ml-6 mt-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-sm p-3">
+                                    <div className="text-xs font-semibold text-amber-900 dark:text-amber-200 mb-1">
+                                      {item.field_notes.title || 'Note:'}
+                                    </div>
+                                    <div className="space-y-1">
+                                      {item.field_notes.items.map((noteItem: any, noteIdx: number) => (
+                                        <div key={noteIdx} className="text-xs text-amber-800 dark:text-amber-300">
+                                          {noteItem.label && (
+                                            <span className="font-medium mr-1">{noteItem.label}</span>
+                                          )}
+                                          {noteItem.text}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
 
                               {/* Computed % Allocation for BDRRMF (Indicator 2.1.3) */}

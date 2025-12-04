@@ -141,15 +141,6 @@ INDICATOR_4_3 = Indicator(
                     required=True,
                     display_order=1
                 ),
-                # Important note (info_text)
-                ChecklistItem(
-                    id="4_3_4_important",
-                    label="IMPORTANT: Only ONE (1) of the options below is required",
-                    mov_description="Instruction item - informational only",
-                    item_type="info_text",
-                    required=False,
-                    display_order=2
-                ),
                 # OPTION A: YES/NO assessment first, then calculation
                 ChecklistItem(
                     id="4_3_4_option_a",
@@ -163,7 +154,6 @@ INDICATOR_4_3 = Indicator(
                 ChecklistItem(
                     id="4_3_4_physical_reflected",
                     label="Total number of activities/projects reflected in the Plan",
-                    mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
                     display_order=4,
@@ -200,7 +190,6 @@ INDICATOR_4_3 = Indicator(
                 ChecklistItem(
                     id="4_3_4_financial_allocated",
                     label="Total amount allocated for PPAs in the BDP",
-                    mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
                     display_order=8,

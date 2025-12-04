@@ -117,11 +117,18 @@ INDICATOR_1_6 = Indicator(
                             display_order=1
                         ),
                         ChecklistItem(
+                            id="1_6_1_3_or",
+                            label="OR",
+                            item_type="info_text",
+                            required=False,
+                            display_order=2
+                        ),
+                        ChecklistItem(
                             id="1_6_1_3_b",
                             label="b) Proof of transfer or corresponding legal forms/documents issued by the city/municipal treasurer if the barangay opted that the corresponding SK fund be kept as trust fund in the custody of the C/M treasurer",
                             mov_description="Legal forms/documents from city/municipal treasurer if SK fund kept as trust fund in C/M custody",
                             required=False,
-                            display_order=2
+                            display_order=3
                         ),
                     ],
                     notes=FormNotes(

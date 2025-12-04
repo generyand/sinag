@@ -215,7 +215,6 @@ INDICATOR_4_5 = Indicator(
                 ChecklistItem(
                     id="4_5_6_physical_reflected",
                     label="Total number of activities/projects reflected in the Plan",
-                    mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
                     display_order=4.2,
@@ -252,7 +251,6 @@ INDICATOR_4_5 = Indicator(
                 ChecklistItem(
                     id="4_5_6_financial_allocated",
                     label="Total amount allocated for PPAs in the BCPC AWFP",
-                    mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
                     display_order=7.2,

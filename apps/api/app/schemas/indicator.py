@@ -338,6 +338,7 @@ class ChecklistItemResponse(BaseModel):
     requires_document_count: bool = Field(..., description="Needs document count input from validator")
     display_order: int = Field(..., description="Sort order within indicator")
     option_group: Optional[str] = Field(None, description="Option group for OR logic (e.g., 'Option A', 'Option B')")
+    field_notes: Optional[dict] = Field(None, description="Notes displayed below this field (e.g., CONSIDERATION)")
 
 
 class SimplifiedIndicatorResponse(BaseModel):

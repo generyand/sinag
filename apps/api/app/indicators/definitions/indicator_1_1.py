@@ -105,7 +105,7 @@ INDICATOR_1_1 = Indicator(
                 ChecklistItem(
                     id="1_1_1_f_count",
                     label="List of Notices of Award were submitted",
-                    mov_description=None,
+                    mov_description="Please supply the number of documents submitted",
                     item_type="document_count",
                     required=True,
                     display_order=10
@@ -122,7 +122,7 @@ INDICATOR_1_1 = Indicator(
                 ChecklistItem(
                     id="1_1_1_g_count",
                     label="Itemized Monthly Collections and Disbursements were submitted",
-                    mov_description=None,
+                    mov_description="Please supply the number of documents submitted",
                     item_type="document_count",
                     required=True,
                     display_order=12

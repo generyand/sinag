@@ -192,7 +192,6 @@ INDICATOR_2_1 = Indicator(
                 ChecklistItem(
                     id="2_1_4_physical_reflected",
                     label="Total number of activities/projects reflected in the Plan",
-                    mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
                     display_order=5.2,
@@ -249,7 +248,6 @@ INDICATOR_2_1 = Indicator(
                 ChecklistItem(
                     id="2_1_4_financial_allocated",
                     label="Total amount allocated for PPAs in the BDRRM Plan for CY 2023",
-                    mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
                     display_order=10.2,

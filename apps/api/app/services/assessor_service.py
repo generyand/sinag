@@ -791,6 +791,7 @@ class AssessorService:
                             "requires_document_count": item.requires_document_count,
                             "display_order": item.display_order,
                             "option_group": item.option_group,
+                            "field_notes": item.field_notes,
                         }
                         for item in sorted(response.indicator.checklist_items, key=lambda x: x.display_order)
                     ],
