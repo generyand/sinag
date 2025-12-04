@@ -2,11 +2,12 @@ import { ValidatorValidationClient } from '@/components/features/validator';
 import { notFound } from 'next/navigation';
 
 interface PageProps {
-  params: { assessmentId: string };
+  params: Promise<{ assessmentId: string }>;
 }
 
 export default async function ValidatorValidationPage({ params }: PageProps) {
-  const numericId = Number(params.assessmentId);
+  const { assessmentId } = await params;
+  const numericId = Number(assessmentId);
   if (!Number.isFinite(numericId)) {
     notFound();
   }

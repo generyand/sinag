@@ -2,15 +2,18 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 /**
- * Next.js middleware for route protection
- * 
- * This middleware protects all routes inside the (app) group by checking
+ * Next.js proxy for route protection (Next.js 16+)
+ *
+ * This proxy protects all routes inside the (app) group by checking
  * authentication status. Unauthenticated users are redirected to /login.
- * 
- * The middleware checks for authentication by looking for the auth token
+ *
+ * The proxy checks for authentication by looking for the auth token
  * in cookies (set by the auth store).
+ *
+ * Note: In Next.js 16, middleware.ts was renamed to proxy.ts and runs
+ * on Node.js runtime instead of Edge runtime.
  */
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   // Get the pathname from the request
   const { pathname } = request.nextUrl;
   
@@ -228,10 +231,10 @@ export function middleware(request: NextRequest) {
 }
 
 /**
- * Configure which routes the middleware should run on
- * 
- * This ensures the middleware only runs on the routes we want to protect,
- * improving performance by avoiding unnecessary middleware execution.
+ * Configure which routes the proxy should run on
+ *
+ * This ensures the proxy only runs on the routes we want to protect,
+ * improving performance by avoiding unnecessary proxy execution.
  */
 export const config = {
   matcher: [
