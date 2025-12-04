@@ -636,9 +636,32 @@ export type FileUploadFieldOptionGroup = string | null;
 
 
 /**
+ * FormNotes
+ */
+export interface FormNotes {
+  /**
+   * Title for the notes section
+   * @maxLength 200
+   */
+  title?: string;
+  /**
+   * List of note items
+   * @minItems 1
+   */
+  items: NoteItem[];
+}
+
+
+/**
  * FormSchemaFieldsItem
  */
 export type FormSchemaFieldsItem = CheckboxGroupField | RadioButtonField | NumberInputField | TextInputField | TextAreaField | DatePickerField | FileUploadField | SectionHeaderField | InfoTextField;
+
+
+/**
+ * FormSchemaNotes
+ */
+export type FormSchemaNotes = FormNotes | null;
 
 
 /**
@@ -818,6 +841,27 @@ export interface MunicipalOverviewDashboard {
   /** Assessment cycle filter if applied */
   assessment_cycle?: MunicipalOverviewDashboardAssessmentCycle;
 }
+
+
+/**
+ * NoteItem
+ */
+export interface NoteItem {
+  /** Optional label prefix (e.g., 'a)', '1.') */
+  label?: NoteItemLabel;
+  /**
+   * Note text content
+   * @minLength 1
+   * @maxLength 1000
+   */
+  text: string;
+}
+
+
+/**
+ * NoteItemLabel
+ */
+export type NoteItemLabel = string | null;
 
 
 /**

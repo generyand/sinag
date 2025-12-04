@@ -60,9 +60,9 @@ INDICATOR_6_3 = Indicator(
                 ChecklistItem(
                     id="6_3_1_date_of_approval",
                     label="Date of approval",
-                    mov_description="Date of approval for the ordinance/resolution",
+                    mov_description="Please supply the required information:",
+                    item_type="date_input",
                     required=True,
-                    requires_document_count=True,
                     display_order=2
                 ),
             ]

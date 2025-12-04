@@ -187,8 +187,8 @@ INDICATOR_4_5 = Indicator(
                 # Single shared upload field for PHYSICAL or/and FINANCIAL
                 ChecklistItem(
                     id="4_5_6_upload",
-                    label="(PHYSICAL or/and FINANCIAL) Approved Accomplishment Report on BCPC AWFP for CY 2023 with received stamp by the City/Municipality Inter-Agency Monitoring Task Force (IMTF)",
-                    mov_description="Verification of uploaded Accomplishment Report (PHYSICAL or/and FINANCIAL)",
+                    label="Approved Accomplishment Report on BCPC AWFP for CY 2023 with received stamp by the City/Municipality Inter-Agency Monitoring Task Force (IMTF)",
+                    mov_description="Verification of uploaded Accomplishment Report with received stamp by IMTF",
                     item_type="checkbox",
                     required=True,
                     display_order=1

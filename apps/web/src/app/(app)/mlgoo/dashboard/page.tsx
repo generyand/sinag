@@ -13,7 +13,6 @@ import {
   FailedIndicators,
   AdminDashboardSkeleton,
   BBIAnalyticsCard,
-  type BBIAnalyticsData,
 } from '@/components/features/dashboard';
 import { useAdminDashboard } from '@/hooks/useAdminDashboard';
 
@@ -228,7 +227,7 @@ export default function AdminDashboardPage() {
         {/* BBI Analytics Section */}
         <section className="mb-6" aria-label="BBI Analytics">
           <BBIAnalyticsCard
-            data={(dashboardData as any).bbiAnalytics as BBIAnalyticsData}
+            data={dashboardData.bbiAnalytics}
           />
         </section>
 

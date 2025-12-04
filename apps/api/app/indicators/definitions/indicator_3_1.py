@@ -43,7 +43,7 @@ IMPORTANT NOTES FOR PHASE 9 (VALIDATION SERVICE):
    - Failing means BADAC is "Non-Functional"
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
+from app.indicators.base import Indicator, SubIndicator, ChecklistItem, FormNotes, NoteItem, FieldNotes
 
 
 # Indicator 3.1: Functionality of the Barangay Anti-Drug Abuse Council (BADAC)
@@ -71,7 +71,6 @@ INDICATOR_3_1 = Indicator(
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
-                # Simplified checklist - only 1 checkbox for the main requirement
                 ChecklistItem(
                     id="3_1_1_upload",
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) creating the BADAC with its composition and appropriate committees, covering January to October 2023",
@@ -84,11 +83,37 @@ INDICATOR_3_1 = Indicator(
                     id="3_1_1_date",
                     label="Date of approval",
                     mov_description="Please supply the required information:",
-                    item_type="document_count",
-                    required=False,
+                    item_type="date_input",
+                    required=True,
                     display_order=2
                 ),
-            ]
+            ],
+            notes=FormNotes(
+                title="Minimum Composition of the BADAC:",
+                items=[
+                    NoteItem(label="1.", text="Punong Barangay"),
+                    NoteItem(label="2.", text="SBM"),
+                    NoteItem(label="3.", text="SK Chairperson"),
+                    NoteItem(label="4.", text="Public School Principal/Representative"),
+                    NoteItem(label="5.", text="Chief Tanod/ Executive Officer"),
+                    NoteItem(label="6.", text="At least 2 representatives of NGOs/CSOs"),
+                    NoteItem(label="7.", text="Representative of Faith-Based Organization"),
+                    NoteItem(label="8.", text="C/M Chief of Police or Representative"),
+                    NoteItem(text=""),
+                    NoteItem(text="Minimum Composition of the BADAC Committees:"),
+                    NoteItem(label="A.", text="Committee on Operations"),
+                    NoteItem(label="   1.", text="SBM"),
+                    NoteItem(label="   2.", text="Executive Officer/Chief Tanod"),
+                    NoteItem(label="   3.", text="BADAC Auxiliary Team (BAT)"),
+                    NoteItem(text=""),
+                    NoteItem(label="B.", text="Committee on Advocacy"),
+                    NoteItem(label="   1.", text="SBM"),
+                    NoteItem(label="   2.", text="SK Chairperson"),
+                    NoteItem(label="   3.", text="Public School Principal/Representative"),
+                    NoteItem(label="   4.", text="At least 2 representatives of NGOs/CSOs"),
+                    NoteItem(label="   5.", text="Representative of Faith-Based Organization"),
+                ]
+            )
         ),
 
         # Sub-Indicator 3.1.2
@@ -112,8 +137,9 @@ INDICATOR_3_1 = Indicator(
                 ChecklistItem(
                     id="3_1_2_date",
                     label="Date of approval",
+                    mov_description="Please supply the required information:",
+                    item_type="date_input",
                     required=True,
-                    requires_document_count=True,  # Date input field
                     display_order=2
                 ),
             ]
@@ -140,8 +166,9 @@ INDICATOR_3_1 = Indicator(
                 ChecklistItem(
                     id="3_1_3_date",
                     label="Date of approval",
+                    mov_description="Please supply the required information:",
+                    item_type="date_input",
                     required=True,
-                    requires_document_count=True,  # Date input field
                     display_order=2
                 ),
             ]
@@ -168,8 +195,9 @@ INDICATOR_3_1 = Indicator(
                 ChecklistItem(
                     id="3_1_4_date",
                     label="Date of approval",
+                    mov_description="Please supply the required information:",
+                    item_type="date_input",
                     required=True,
-                    requires_document_count=True,  # Date input field
                     display_order=2
                 ),
             ]
@@ -285,23 +313,36 @@ INDICATOR_3_1 = Indicator(
                     label="Three (3) Transmittals of CIR, covering the 1st to 3rd quarter, received by CADAC/MADAC and Local PNP Unit",
                     required=True,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
+                    field_notes=FieldNotes(
+                        title="Note:",
+                        items=[
+                            NoteItem(text="The CIR contains data protected by the Data Privacy Act of 2012. Hence, we recommend submitting only the transmittal.")
+                        ]
+                    )
+                ),
+                ChecklistItem(
+                    id="3_1_8_count",
+                    label="Number of CIR transmittals submitted",
+                    mov_description="Please supply the number of documents submitted:",
+                    item_type="document_count",
+                    required=True,
+                    display_order=2
                 ),
                 ChecklistItem(
                     id="3_1_8_b",
                     label="Certification on the submitted CIR signed by the CADAC/MADAC and Local PNP Unit",
                     required=True,
                     requires_document_count=False,
-                    display_order=2
-                ),
-                ChecklistItem(
-                    id="3_1_8_count",
-                    label="Number of CIR transmittals submitted",
-                    required=True,
-                    requires_document_count=True,  # Number input field
                     display_order=3
                 ),
-            ]
+            ],
+            notes=FormNotes(
+                title="Note:",
+                items=[
+                    NoteItem(text="Drug-unaffected barangays shall also submit updated CIR, stating in the report that there is absence of illegal drug-related activities in the barangays. The same applies to drug-free and drug-cleared barangays."),
+                ]
+            )
         ),
 
         # Sub-Indicator 3.1.9
@@ -344,8 +385,9 @@ INDICATOR_3_1 = Indicator(
                 ChecklistItem(
                     id="3_1_10_count",
                     label="Number of BADAC monthly minutes submitted",
+                    mov_description="Please supply the number of documents submitted:",
+                    item_type="document_count",
                     required=True,
-                    requires_document_count=True,  # Number input field
                     display_order=2
                 ),
             ]

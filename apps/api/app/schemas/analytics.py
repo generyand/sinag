@@ -78,6 +78,50 @@ class ReworkStats(BaseModel):
     calibration_rate: float = Field(..., description="Percentage of assessments that needed calibration", ge=0, le=100)
 
 
+# ============================================================================
+# BBI Analytics Schemas (DILG MC 2024-417)
+# ============================================================================
+
+
+class BBIAnalyticsItem(BaseModel):
+    """BBI compliance analytics for a single BBI type."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    bbi_id: int = Field(..., description="Unique identifier for the BBI")
+    bbi_name: str = Field(..., description="Full name of the BBI")
+    bbi_abbreviation: str = Field(..., description="BBI abbreviation (e.g., BDC, BDRRMC)")
+    average_compliance: float = Field(..., description="Average compliance percentage across all barangays", ge=0, le=100)
+    highly_functional_count: int = Field(..., description="Number of barangays with 75%+ compliance", ge=0)
+    moderately_functional_count: int = Field(..., description="Number of barangays with 50-74% compliance", ge=0)
+    low_functional_count: int = Field(..., description="Number of barangays with <50% compliance", ge=0)
+    total_barangays: int = Field(..., description="Total barangays assessed for this BBI", ge=0)
+
+
+class BBIAnalyticsSummary(BaseModel):
+    """Summary statistics for all BBI analytics."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    total_assessments: int = Field(..., description="Total assessments with BBI results", ge=0)
+    overall_average_compliance: float = Field(..., description="Overall average compliance across all BBIs", ge=0, le=100)
+    total_highly_functional: int = Field(..., description="Total highly functional ratings", ge=0)
+    total_moderately_functional: int = Field(..., description="Total moderately functional ratings", ge=0)
+    total_low_functional: int = Field(..., description="Total low functional ratings", ge=0)
+
+
+class BBIAnalyticsData(BaseModel):
+    """Complete BBI analytics data for the dashboard."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    summary: BBIAnalyticsSummary = Field(..., description="Summary statistics for all BBIs")
+    bbi_breakdown: List[BBIAnalyticsItem] = Field(
+        default_factory=list,
+        description="Per-BBI compliance breakdown"
+    )
+
+
 class BarangayRanking(BaseModel):
     """Barangay ranking by compliance score."""
 
@@ -121,6 +165,10 @@ class DashboardKPIResponse(BaseModel):
     rework_stats: ReworkStats = Field(
         ...,
         description="Rework and calibration usage statistics"
+    )
+    bbi_analytics: Optional[BBIAnalyticsData] = Field(
+        None,
+        description="BBI compliance analytics per DILG MC 2024-417"
     )
     total_barangays: int = Field(..., description="Total number of barangays in the municipality")
 

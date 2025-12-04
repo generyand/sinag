@@ -119,15 +119,15 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   const core = (assessment.assessment as AnyRecord) ?? assessment;
   const responses: AnyRecord[] = useMemo(() =>
     ((core.responses as AnyRecord[]) ?? []).sort((a: any, b: any) => {
-      // Sort by governance_area.id first, then by indicator.id
+      // Sort by governance_area.id first, then by indicator_code
       const areaA = a.indicator?.governance_area?.id || 999;
       const areaB = b.indicator?.governance_area?.id || 999;
       if (areaA !== areaB) return areaA - areaB;
 
-      // Within same area, sort by indicator.id
-      const indA = a.indicator?.id || 999;
-      const indB = b.indicator?.id || 999;
-      return indA - indB;
+      // Within same area, sort by indicator_code (e.g., "3.2.1", "3.2.2", "3.2.3")
+      const codeA = a.indicator?.indicator_code || '';
+      const codeB = b.indicator?.indicator_code || '';
+      return codeA.localeCompare(codeB, undefined, { numeric: true, sensitivity: 'base' });
     })
   , [core.responses]);
 
@@ -296,8 +296,10 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       return Number(a.id) - Number(b.id);
     })
     .map((area: any) => {
-      // Sort indicators by indicator_id (ascending order)
-      area.indicators.sort((a: any, b: any) => a.indicator_id - b.indicator_id);
+      // Sort indicators by code (e.g., "3.2.1", "3.2.2", "3.2.3") for proper ordering
+      area.indicators.sort((a: any, b: any) =>
+        a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: 'base' })
+      );
       return area;
     }),
     };

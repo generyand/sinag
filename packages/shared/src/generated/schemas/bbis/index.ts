@@ -3,7 +3,8 @@
 // 📁 Bbis-related types
 // 🏷️  Based on FastAPI tag: "bbis"
 
-import type { SubIndicatorResult } from '../indicators';
+import type { AppSchemasBbiSubIndicatorResult } from '../indicators';
+import type { AppSchemasBlguDashboardSubIndicatorResult } from '../indicators';
 import type { BBIResultResponseSubIndicatorsPassed } from '../indicators';
 import type { BBIResultResponseSubIndicatorsTotal } from '../indicators';
 import type { BBIResultResponseSubIndicatorResults } from '../indicators';
@@ -12,9 +13,9 @@ import type { AssessmentBBIComplianceResponse } from '../assessments';
 import type { TestBBICalculationRequestIndicatorStatuses } from '../indicators';
 
 /**
- * BBIComplianceResult
+ * AppSchemasBbiBBIComplianceResult
  */
-export interface BBIComplianceResult {
+export interface AppSchemasBbiBBIComplianceResult {
   /** BBI ID */
   bbi_id: number;
   /** BBI name */
@@ -24,7 +25,7 @@ export interface BBIComplianceResult {
   /** Governance area ID */
   governance_area_id: number;
   /** Governance area name */
-  governance_area_name?: BBIComplianceResultGovernanceAreaName;
+  governance_area_name?: AppSchemasBbiBBIComplianceResultGovernanceAreaName;
   /** Assessment ID */
   assessment_id: number;
   /** Compliance rate 0-100% */
@@ -36,21 +37,21 @@ export interface BBIComplianceResult {
   /** Total number of sub-indicators evaluated */
   sub_indicators_total: number;
   /** Detailed pass/fail results for each sub-indicator */
-  sub_indicator_results: SubIndicatorResult[];
+  sub_indicator_results: AppSchemasBbiSubIndicatorResult[];
   calculation_date: string;
 }
 
 
 /**
- * BBIComplianceResultGovernanceAreaName
+ * AppSchemasBbiBBIComplianceResultGovernanceAreaName
  */
-export type BBIComplianceResultGovernanceAreaName = string | null;
+export type AppSchemasBbiBBIComplianceResultGovernanceAreaName = string | null;
 
 
 /**
- * BBIComplianceSummary
+ * AppSchemasBbiBBIComplianceSummary
  */
-export interface BBIComplianceSummary {
+export interface AppSchemasBbiBBIComplianceSummary {
   /** Total number of BBIs evaluated */
   total_bbis: number;
   /** Number of BBIs with HIGHLY_FUNCTIONAL rating */
@@ -62,6 +63,91 @@ export interface BBIComplianceSummary {
   /** Average compliance percentage across all BBIs */
   average_compliance_percentage: number;
 }
+
+
+/**
+ * AppSchemasBlguDashboardBBIComplianceResult
+ */
+export interface AppSchemasBlguDashboardBBIComplianceResult {
+  /** BBI ID */
+  bbi_id: number;
+  /** Full BBI name */
+  bbi_name: string;
+  /** BBI abbreviation (e.g., BDRRMC, BCPC) */
+  bbi_abbreviation: string;
+  /** Associated governance area ID */
+  governance_area_id: number;
+  /** Governance area name */
+  governance_area_name?: AppSchemasBlguDashboardBBIComplianceResultGovernanceAreaName;
+  /** Assessment ID */
+  assessment_id: number;
+  /** Compliance percentage (0-100) */
+  compliance_percentage: number;
+  /** Rating: HIGHLY_FUNCTIONAL, MODERATELY_FUNCTIONAL, or LOW_FUNCTIONAL */
+  compliance_rating: string;
+  /** Number of sub-indicators passed */
+  sub_indicators_passed: number;
+  /** Total number of sub-indicators */
+  sub_indicators_total: number;
+  /** Detailed results for each sub-indicator */
+  sub_indicator_results?: AppSchemasBlguDashboardSubIndicatorResult[];
+  /** Date when calculation was performed (ISO format) */
+  calculation_date: string;
+}
+
+
+/**
+ * AppSchemasBlguDashboardBBIComplianceResultGovernanceAreaName
+ */
+export type AppSchemasBlguDashboardBBIComplianceResultGovernanceAreaName = string | null;
+
+
+/**
+ * AppSchemasBlguDashboardBBIComplianceSummary
+ */
+export interface AppSchemasBlguDashboardBBIComplianceSummary {
+  /** Total number of BBIs evaluated */
+  total_bbis: number;
+  /** Number of BBIs rated as Highly Functional (75%+) */
+  highly_functional_count: number;
+  /** Number of BBIs rated as Moderately Functional (50-74%) */
+  moderately_functional_count: number;
+  /** Number of BBIs rated as Low Functional (<50%) */
+  low_functional_count: number;
+  /** Average compliance percentage across all BBIs */
+  average_compliance_percentage: number;
+}
+
+
+/**
+ * BBIComplianceData
+ */
+export interface BBIComplianceData {
+  /** Assessment ID */
+  assessment_id: number;
+  /** Barangay ID */
+  barangay_id?: BBIComplianceDataBarangayId;
+  /** Barangay name */
+  barangay_name?: BBIComplianceDataBarangayName;
+  /** Individual BBI compliance results */
+  bbi_results?: AppSchemasBlguDashboardBBIComplianceResult[];
+  /** Summary statistics */
+  summary: AppSchemasBlguDashboardBBIComplianceSummary;
+  /** Timestamp when data was calculated (ISO format) */
+  calculated_at: string;
+}
+
+
+/**
+ * BBIComplianceDataBarangayId
+ */
+export type BBIComplianceDataBarangayId = number | null;
+
+
+/**
+ * BBIComplianceDataBarangayName
+ */
+export type BBIComplianceDataBarangayName = string | null;
 
 
 /**
@@ -333,6 +419,12 @@ export type BBIWithGovernanceAreaMappingRules = BBIWithGovernanceAreaMappingRule
  * BBIWithGovernanceAreaMappingRulesAnyOf
  */
 export type BBIWithGovernanceAreaMappingRulesAnyOf = { [key: string]: unknown };
+
+
+/**
+ * BLGUDashboardResponseBbiCompliance
+ */
+export type BLGUDashboardResponseBbiCompliance = BBIComplianceData | null;
 
 
 /**

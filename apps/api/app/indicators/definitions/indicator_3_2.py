@@ -8,7 +8,7 @@ Note: This indicator assesses the functionality of the BPOC based on three crite
 structure, plan, and accomplishment reports.
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
+from app.indicators.base import Indicator, SubIndicator, ChecklistItem, FormNotes, NoteItem
 
 
 # Indicator 3.2: BPOC Functionality (BBI)
@@ -43,7 +43,6 @@ INDICATOR_3_2 = Indicator(
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
-                # Simplified checklist - only 1 checkbox for the main EO requirement
                 ChecklistItem(
                     id="3_2_1_upload",
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) indicating correct membership in accordance to the EO 366 s. of 1996, covering January to October 2023",
@@ -56,11 +55,25 @@ INDICATOR_3_2 = Indicator(
                     id="3_2_1_date_of_approval",
                     label="Date of approval for the EO or similar issuance",
                     mov_description="Please supply the required information:",
-                    item_type="document_count",
-                    required=False,
+                    item_type="date_input",
+                    required=True,
                     display_order=2
                 ),
-            ]
+            ],
+            notes=FormNotes(
+                title="Minimum composition of the BPOC:",
+                items=[
+                    NoteItem(label="1.", text="Punong Barangay"),
+                    NoteItem(label="2.", text="Sangguniang Kabataan Chairperson"),
+                    NoteItem(label="3.", text="A member of the Lupon Tagapamayapa"),
+                    NoteItem(label="4.", text="A Public School Teacher"),
+                    NoteItem(label="5.", text="PNP Officer"),
+                    NoteItem(label="6.", text="A representative of the Interfaith Group"),
+                    NoteItem(label="7.", text="A Senior Citizen"),
+                    NoteItem(label="8.", text="At least three (3) members of the existing Barangay-Based Anti-Crime or Neighborhood Watch Groups or an NGO representative"),
+                    NoteItem(label="9.", text="A Barangay Tanod"),
+                ]
+            )
         ),
 
         # Sub-Indicator 3.2.2: Plan

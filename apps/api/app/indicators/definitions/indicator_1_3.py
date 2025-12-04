@@ -67,17 +67,9 @@ INDICATOR_1_3 = Indicator(
                 ChecklistItem(
                     id="1_3_1_date_approval",
                     label="Date of Approval",
-                    mov_description=(
-                        "Input the Date of Approval from the ordinance.\n"
-                        "Primary deadline: On or before December 31, 2022\n"
-                        "Grace period: Approval until March 31, 2023\n\n"
-                        "Compliance determination:\n"
-                        "- On or before Dec 31, 2022: PASSED\n"
-                        "- Jan 1 - Mar 31, 2023: CONSIDERED\n"
-                        "- After Mar 31, 2023: FAILED"
-                    ),
+                    mov_description="CONSIDERATION: Approval until March 31, 2023",
                     required=True,
-                    requires_document_count=True,  # Indicates this is a date/text input field
+                    item_type="date_input",
                     display_order=2
                 ),
             ]

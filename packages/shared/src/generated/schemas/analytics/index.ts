@@ -48,6 +48,95 @@ export type AppSchemasExternalAnalyticsGovernanceAreaPerformanceIndicatorsBreakd
 
 
 /**
+ * BBIAnalyticsData
+ */
+export interface BBIAnalyticsData {
+  /** Summary statistics for all BBIs */
+  summary: BBIAnalyticsSummary;
+  /** Per-BBI compliance breakdown */
+  bbi_breakdown?: BBIAnalyticsItem[];
+}
+
+
+/**
+ * BBIAnalyticsItem
+ */
+export interface BBIAnalyticsItem {
+  /** Unique identifier for the BBI */
+  bbi_id: number;
+  /** Full name of the BBI */
+  bbi_name: string;
+  /** BBI abbreviation (e.g., BDC, BDRRMC) */
+  bbi_abbreviation: string;
+  /**
+   * Average compliance percentage across all barangays
+   * @minimum 0
+   * @maximum 100
+   */
+  average_compliance: number;
+  /**
+   * Number of barangays with 75%+ compliance
+   * @minimum 0
+   */
+  highly_functional_count: number;
+  /**
+   * Number of barangays with 50-74% compliance
+   * @minimum 0
+   */
+  moderately_functional_count: number;
+  /**
+   * Number of barangays with <50% compliance
+   * @minimum 0
+   */
+  low_functional_count: number;
+  /**
+   * Total barangays assessed for this BBI
+   * @minimum 0
+   */
+  total_barangays: number;
+}
+
+
+/**
+ * BBIAnalyticsSummary
+ */
+export interface BBIAnalyticsSummary {
+  /**
+   * Total assessments with BBI results
+   * @minimum 0
+   */
+  total_assessments: number;
+  /**
+   * Overall average compliance across all BBIs
+   * @minimum 0
+   * @maximum 100
+   */
+  overall_average_compliance: number;
+  /**
+   * Total highly functional ratings
+   * @minimum 0
+   */
+  total_highly_functional: number;
+  /**
+   * Total moderately functional ratings
+   * @minimum 0
+   */
+  total_moderately_functional: number;
+  /**
+   * Total low functional ratings
+   * @minimum 0
+   */
+  total_low_functional: number;
+}
+
+
+/**
+ * DashboardKPIResponseBbiAnalytics
+ */
+export type DashboardKPIResponseBbiAnalytics = BBIAnalyticsData | null;
+
+
+/**
  * ExternalAnalyticsDashboardResponse
  */
 export interface ExternalAnalyticsDashboardResponse {

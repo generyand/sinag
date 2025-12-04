@@ -8,7 +8,7 @@ Note: This indicator assesses the extent of preparedness through the presence of
 evacuation centers and disaster supplies/equipment.
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
+from app.indicators.base import Indicator, SubIndicator, ChecklistItem, FormNotes, NoteItem
 
 
 # Indicator 2.3: Extent of Preparedness for Effective Response and Recovery
@@ -126,7 +126,18 @@ INDICATOR_2_3 = Indicator(
                     required=False,
                     display_order=8
                 ),
-            ]
+            ],
+            notes=FormNotes(
+                title="Disaster supplies/equipment:",
+                items=[
+                    NoteItem(label="a)", text="Communication equipment (i.e., 2 way radio mobile phone)"),
+                    NoteItem(label="b)", text="Rescue vehicle/Barangay patrol"),
+                    NoteItem(label="c)", text="Generator set/alternative sources of energy"),
+                    NoteItem(label="d)", text="First aid kit"),
+                    NoteItem(label="e)", text="Flashlight with batteries"),
+                    NoteItem(label="f)", text="Personal Protective Equipment (PPE)"),
+                ]
+            )
         ),
     ]
 )

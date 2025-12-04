@@ -57,7 +57,19 @@ export function CompletionFeedbackPanel({
 
   // Calculate completion metrics
   const completionMetrics = useMemo(() => {
-    if (!formSchema || !("fields" in formSchema) || !Array.isArray(formSchema.fields)) {
+    // Extract fields from either root-level "fields" or nested "sections[].fields"
+    let fields: FormSchemaFieldsItem[] = [];
+
+    if (formSchema && "fields" in formSchema && Array.isArray(formSchema.fields)) {
+      // Root-level fields (newer format: type: mov_checklist)
+      fields = formSchema.fields as FormSchemaFieldsItem[];
+    } else if (formSchema && "sections" in formSchema && Array.isArray((formSchema as any).sections)) {
+      // Sections format (older format: sections[].fields)
+      const sections = (formSchema as any).sections as Array<{ fields?: FormSchemaFieldsItem[] }>;
+      fields = sections.flatMap(section => section.fields || []);
+    }
+
+    if (fields.length === 0) {
       return {
         totalRequired: 0,
         completed: 0,
@@ -65,8 +77,6 @@ export function CompletionFeedbackPanel({
         incompleteFields: [],
       };
     }
-
-    const fields = formSchema.fields as FormSchemaFieldsItem[];
     const validationRule = (formSchema as any).validation_rule || "ALL_ITEMS_REQUIRED";
 
     // For OR-logic indicators, treat all file_upload fields as "required" for completion purposes

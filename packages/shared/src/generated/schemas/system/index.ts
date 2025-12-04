@@ -12,6 +12,7 @@ import type { GovernanceAreaGroup } from '../common';
 import type { BLGUDashboardResponseMovAnnotationsByIndicator } from '../indicators';
 import type { BLGUDashboardResponseMlgooRecalibrationIndicatorIds } from '../indicators';
 import type { BLGUDashboardResponseMlgooRecalibrationComments } from '../mlgoo';
+import type { BLGUDashboardResponseBbiCompliance } from '../bbis';
 import type { AISummary } from '../common';
 import type { ReworkComment } from '../common';
 import type { IndicatorSummary } from '../indicators';
@@ -24,6 +25,7 @@ import type { TrendData } from '../common';
 import type { BarangayRanking } from '../common';
 import type { StatusDistributionItem } from '../common';
 import type { ReworkStats } from '../common';
+import type { DashboardKPIResponseBbiAnalytics } from '../analytics';
 import type { DeadlineOverrideResponse } from '../deadlineoverride';
 import type { OverallComplianceResponseAssessmentCycle } from '../assessments';
 import type { ChartData } from '../common';
@@ -221,6 +223,8 @@ export interface BLGUDashboardResponse {
   area_results?: BLGUDashboardResponseAreaResults;
   /** AI-generated CapDev recommendations grouped by governance area. Only populated when status is COMPLETED. */
   ai_recommendations?: BLGUDashboardResponseAiRecommendations;
+  /** BBI (Barangay-Based Institutions) compliance data with individual results and summary statistics. Only populated when status is COMPLETED. */
+  bbi_compliance?: BLGUDashboardResponseBbiCompliance;
 }
 
 
@@ -479,6 +483,8 @@ export interface DashboardKPIResponse {
   status_distribution?: StatusDistributionItem[];
   /** Rework and calibration usage statistics */
   rework_stats: ReworkStats;
+  /** BBI compliance analytics per DILG MC 2024-417 */
+  bbi_analytics?: DashboardKPIResponseBbiAnalytics;
   /** Total number of barangays in the municipality */
   total_barangays: number;
 }

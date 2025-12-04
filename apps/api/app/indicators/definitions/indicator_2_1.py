@@ -8,7 +8,7 @@ Note: This indicator assesses the functionality of the BDRRMC based on four crit
 structure, plan, budget allocation, and accomplishment reports.
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
+from app.indicators.base import Indicator, SubIndicator, ChecklistItem, FormNotes, NoteItem
 
 
 # Indicator 2.1: BDRRMC Functionality (BBI)
@@ -45,11 +45,19 @@ INDICATOR_2_1 = Indicator(
                 ChecklistItem(
                     id="2_1_1_date",
                     label="Date of approval",
+                    item_type="date_input",
                     required=True,
-                    requires_document_count=True,  # Date input field
                     display_order=2
                 ),
-            ]
+            ],
+            notes=FormNotes(
+                title="Minimum Composition of the BDRRMC:",
+                items=[
+                    NoteItem(label="1.", text="Punong Barangay;"),
+                    NoteItem(label="2.", text="A Representative from the Sangguniang Barangay; and"),
+                    NoteItem(label="3.", text="2 CSO representatives from the existing and active community-based people's organizations representing the most vulnerable and marginalized groups in the barangay (Item 5.7. of NDRRMC, DILG, DBM, and CSC JMC No. 2014-01)"),
+                ]
+            )
         ),
 
         # Sub-Indicator 2.1.2: Plan
@@ -112,6 +120,7 @@ INDICATOR_2_1 = Indicator(
                 ChecklistItem(
                     id="2_1_3_estimated_revenue",
                     label="Estimated revenue from regular sources",
+                    mov_description="Please supply the required information",
                     required=True,
                     requires_document_count=True,  # Amount input
                     display_order=2
@@ -147,7 +156,7 @@ INDICATOR_2_1 = Indicator(
                 ChecklistItem(
                     id="2_1_4_option_a",
                     label="a. At least 50% accomplishment of the physical targets in the BDRRM Plan",
-                    mov_description="Assessment for physical accomplishment option",
+                    mov_description="Option A label - informational only",
                     item_type="assessment_field",
                     required=False,
                     display_order=2,
@@ -155,8 +164,8 @@ INDICATOR_2_1 = Indicator(
                 ),
                 ChecklistItem(
                     id="2_1_4_upload_1",
-                    label="Accomplishment Report",
-                    mov_description="Verification of uploaded Accomplishment Report (Option A - Physical)",
+                    label="Accomplishment Report, and",
+                    mov_description="Verification of uploaded Accomplishment Report",
                     item_type="checkbox",
                     required=False,
                     display_order=3,
@@ -165,7 +174,7 @@ INDICATOR_2_1 = Indicator(
                 ChecklistItem(
                     id="2_1_4_upload_2",
                     label="Certification on the submission and correctness of Accomplishment Report signed by the C/MDRRMO",
-                    mov_description="Verification of uploaded Certification (Option A - Physical)",
+                    mov_description="Verification of uploaded Certification on the submission and correctness of Accomplishment Report",
                     item_type="checkbox",
                     required=False,
                     display_order=4,
@@ -204,7 +213,7 @@ INDICATOR_2_1 = Indicator(
                 ChecklistItem(
                     id="2_1_4_option_b",
                     label="b. At least 50% fund utilization of the 70% component of CY 2023 BDRRMF - Preparedness component as of December 31, 2023",
-                    mov_description="Assessment for fund utilization option",
+                    mov_description="Option B label - informational only",
                     item_type="assessment_field",
                     required=False,
                     display_order=7,
@@ -212,8 +221,8 @@ INDICATOR_2_1 = Indicator(
                 ),
                 ChecklistItem(
                     id="2_1_4_upload_3",
-                    label="Annual LDRRMF Utilization Report",
-                    mov_description="Verification of uploaded Annual LDRRMF Utilization Report (Option B - Financial)",
+                    label="Annual LDRRMF Utilization Report, and",
+                    mov_description="Verification of uploaded Annual LDRRMF Utilization Report",
                     item_type="checkbox",
                     required=False,
                     display_order=8,
@@ -222,7 +231,7 @@ INDICATOR_2_1 = Indicator(
                 ChecklistItem(
                     id="2_1_4_upload_4",
                     label="Certification on the submission and correctness of fund utilization report signed by the C/MDRRMO",
-                    mov_description="Verification of uploaded Certification (Option B - Financial)",
+                    mov_description="Verification of uploaded Certification on the submission and correctness of fund utilization report",
                     item_type="checkbox",
                     required=False,
                     display_order=9,

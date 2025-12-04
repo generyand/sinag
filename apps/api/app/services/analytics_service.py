@@ -5,11 +5,15 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import List, Optional
 
-from app.db.enums import AssessmentStatus, ComplianceStatus, UserRole, ValidationStatus
+from app.db.enums import AssessmentStatus, BBIStatus, ComplianceStatus, UserRole, ValidationStatus
 from app.db.models import Assessment, AssessmentResponse, Barangay, GovernanceArea, Indicator, User
+from app.db.models.bbi import BBI, BBIResult
 from app.schemas.analytics import (
     AreaBreakdown,
     BarangayRanking,
+    BBIAnalyticsData,
+    BBIAnalyticsItem,
+    BBIAnalyticsSummary,
     ComplianceRate,
     DashboardKPIResponse,
     FailedIndicator,
@@ -62,6 +66,7 @@ class AnalyticsService:
         barangay_rankings = self._calculate_barangay_rankings(db, cycle_id)
         status_distribution = self._calculate_status_distribution(db, cycle_id)
         rework_stats = self._calculate_rework_stats(db, cycle_id)
+        bbi_analytics = self._calculate_bbi_analytics(db, cycle_id)
         total_barangays = self._get_total_barangays(db)
 
         return DashboardKPIResponse(
@@ -73,6 +78,7 @@ class AnalyticsService:
             barangay_rankings=barangay_rankings,
             status_distribution=status_distribution,
             rework_stats=rework_stats,
+            bbi_analytics=bbi_analytics,
             total_barangays=total_barangays,
         )
 
@@ -546,6 +552,141 @@ class AnalyticsService:
             Total count of barangays
         """
         return db.query(Barangay).count()
+
+    def _calculate_bbi_analytics(
+        self, db: Session, cycle_id: Optional[int] = None
+    ) -> Optional[BBIAnalyticsData]:
+        """
+        Calculate BBI (Barangay-based Institutions) compliance analytics.
+
+        Aggregates BBI results across all assessments to provide:
+        - Summary statistics (overall averages, tier counts)
+        - Per-BBI breakdown with functional status distribution
+
+        Per DILG MC 2024-417:
+        - 75%+: HIGHLY_FUNCTIONAL
+        - 50-74%: MODERATELY_FUNCTIONAL
+        - <50%: LOW_FUNCTIONAL
+
+        Args:
+            db: Database session
+            cycle_id: Optional assessment cycle ID
+
+        Returns:
+            BBIAnalyticsData or None if no BBI data available
+        """
+        # Get all BBI results with their BBI metadata
+        query = (
+            db.query(BBIResult)
+            .options(joinedload(BBIResult.bbi))
+            .join(Assessment, BBIResult.assessment_id == Assessment.id)
+        )
+
+        # TODO: Add cycle_id filter when implemented
+        # if cycle_id is not None:
+        #     query = query.filter(Assessment.cycle_id == cycle_id)
+
+        bbi_results = query.all()
+
+        if not bbi_results:
+            return None
+
+        # Group results by BBI
+        bbi_data: dict = {}
+        for result in bbi_results:
+            if not result.bbi:
+                continue
+
+            bbi_id = result.bbi_id
+            if bbi_id not in bbi_data:
+                bbi_data[bbi_id] = {
+                    "bbi": result.bbi,
+                    "results": [],
+                }
+            bbi_data[bbi_id]["results"].append(result)
+
+        if not bbi_data:
+            return None
+
+        # Calculate per-BBI analytics
+        bbi_breakdown = []
+        total_highly = 0
+        total_moderately = 0
+        total_low = 0
+        total_compliance_sum = 0.0
+        total_result_count = 0
+
+        for bbi_id, data in bbi_data.items():
+            bbi = data["bbi"]
+            results = data["results"]
+
+            # Count by tier
+            highly_count = sum(
+                1 for r in results
+                if r.status == BBIStatus.HIGHLY_FUNCTIONAL
+            )
+            moderately_count = sum(
+                1 for r in results
+                if r.status == BBIStatus.MODERATELY_FUNCTIONAL
+            )
+            low_count = sum(
+                1 for r in results
+                if r.status == BBIStatus.LOW_FUNCTIONAL
+            )
+
+            # Calculate average compliance for this BBI
+            compliance_values = [
+                r.compliance_percentage for r in results
+                if r.compliance_percentage is not None
+            ]
+            avg_compliance = (
+                sum(compliance_values) / len(compliance_values)
+                if compliance_values else 0.0
+            )
+
+            total_barangays = len(results)
+
+            bbi_breakdown.append(
+                BBIAnalyticsItem(
+                    bbi_id=bbi.id,
+                    bbi_name=bbi.name,
+                    bbi_abbreviation=bbi.abbreviation or bbi.name[:5].upper(),
+                    average_compliance=round(avg_compliance, 2),
+                    highly_functional_count=highly_count,
+                    moderately_functional_count=moderately_count,
+                    low_functional_count=low_count,
+                    total_barangays=total_barangays,
+                )
+            )
+
+            # Accumulate for summary
+            total_highly += highly_count
+            total_moderately += moderately_count
+            total_low += low_count
+            total_compliance_sum += sum(compliance_values)
+            total_result_count += len(compliance_values)
+
+        # Calculate overall summary
+        overall_avg = (
+            total_compliance_sum / total_result_count
+            if total_result_count > 0 else 0.0
+        )
+
+        # Count unique assessments with BBI results
+        unique_assessments = len(set(r.assessment_id for r in bbi_results))
+
+        summary = BBIAnalyticsSummary(
+            total_assessments=unique_assessments,
+            overall_average_compliance=round(overall_avg, 2),
+            total_highly_functional=total_highly,
+            total_moderately_functional=total_moderately,
+            total_low_functional=total_low,
+        )
+
+        return BBIAnalyticsData(
+            summary=summary,
+            bbi_breakdown=bbi_breakdown,
+        )
 
     def get_reports_data(
         self,

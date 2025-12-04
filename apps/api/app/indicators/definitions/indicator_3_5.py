@@ -78,7 +78,7 @@ INDICATOR_3_5 = Indicator(
                     id="3_5_1_date_of_approval",
                     label="Date of approval for the EO or similar issuance",
                     mov_description="Please supply the required information:",
-                    item_type="document_count",
+                    item_type="date_input",
                     required=False,
                     display_order=2
                 ),
@@ -105,7 +105,16 @@ INDICATOR_3_5 = Indicator(
                     mov_description="Verification of uploaded photos showing poster or tarpaulin with contact numbers (Option 1)",
                     required=False,  # OR logic - only one option is required
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
+                    option_group="Option A"
+                ),
+                # OR Separator
+                ChecklistItem(
+                    id="3_5_2_or_separator",
+                    label="OR",
+                    item_type="info_text",
+                    required=False,
+                    display_order=2
                 ),
                 # Option B: Social Media Screenshot
                 ChecklistItem(
@@ -114,7 +123,8 @@ INDICATOR_3_5 = Indicator(
                     mov_description="Verification of uploaded screenshot showing social media posting with contact information and date covering CY 2023 (Option 2)",
                     required=False,  # OR logic - only one option is required
                     requires_document_count=False,
-                    display_order=2
+                    display_order=3,
+                    option_group="Option B"
                 ),
             ]
         ),

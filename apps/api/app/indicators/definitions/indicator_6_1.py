@@ -75,8 +75,9 @@ INDICATOR_6_1 = Indicator(
                 ChecklistItem(
                     id="6_1_1_date",
                     label="Date of approval",
+                    mov_description="Please supply the required information:",
+                    item_type="date_input",
                     required=True,
-                    requires_document_count=True,  # Date input field
                     display_order=2
                 ),
             ]
@@ -126,8 +127,7 @@ INDICATOR_6_1 = Indicator(
             name="Accomplishment Reports: Physical accomplishment OR fund utilization (only 1 of the below reports is required)",
             upload_instructions=(
                 "Upload:\n"
-                "- (PHYSICAL or/and FINANCIAL) Three (3) Monthly Accomplishment Reports covering July-September 2023\n\n"
-                "Please supply the number of documents submitted: _____ Monthly Accomplishment Reports were submitted\n\n"
+                "- Three (3) Monthly Accomplishment Reports covering July-September 2023\n\n"
                 "OPTION A - PHYSICAL:\n"
                 "To compute Physical Accomplishment Rate:\n"
                 "(Total number of activities/projects accomplished / Total number of activities/projects reflected in the BESWMP) × 100\n\n"
@@ -143,18 +143,18 @@ INDICATOR_6_1 = Indicator(
                 # Document checkbox
                 ChecklistItem(
                     id="6_1_4_upload",
-                    label="(PHYSICAL or/and FINANCIAL) Three (3) Monthly Accomplishment Reports covering July-September 2023",
+                    label="Three (3) Monthly Accomplishment Reports covering July-September 2023",
                     item_type="checkbox",
-                    mov_description="Verification of uploaded Monthly Accomplishment Reports (PHYSICAL or/and FINANCIAL)",
+                    mov_description=None,
                     required=False,
                     display_order=1
                 ),
                 # INPUT FIELD for report count (BEFORE YES/NO)
                 ChecklistItem(
                     id="6_1_4_report_count",
-                    label="Number of Monthly Accomplishment Reports submitted",
+                    label="Monthly Accomplishment Reports were submitted",
                     item_type="calculation_field",
-                    mov_description="Please supply the number of documents submitted:",
+                    mov_description="Please supply the number of documents submitted",
                     required=False,
                     display_order=2
                 ),
@@ -172,7 +172,7 @@ INDICATOR_6_1 = Indicator(
                     id="6_1_4_physical_accomplished",
                     label="Total number of activities/projects accomplished",
                     item_type="calculation_field",
-                    mov_description="Please supply the required information:",
+                    mov_description=None,
                     required=False,
                     display_order=4.1,
                     option_group="Option A"
@@ -181,7 +181,7 @@ INDICATOR_6_1 = Indicator(
                     id="6_1_4_physical_reflected",
                     label="Total number of activities/projects reflected in the BESWMP",
                     item_type="calculation_field",
-                    mov_description="Please supply the required information:",
+                    mov_description=None,
                     required=False,
                     display_order=4.2,
                     option_group="Option A"
@@ -209,7 +209,7 @@ INDICATOR_6_1 = Indicator(
                     id="6_1_4_financial_utilized",
                     label="Total amount utilized (as of Dec 31, 2023)",
                     item_type="calculation_field",
-                    mov_description="Please supply the required information:",
+                    mov_description=None,
                     required=False,
                     display_order=7.1,
                     option_group="Option B"
@@ -218,7 +218,7 @@ INDICATOR_6_1 = Indicator(
                     id="6_1_4_financial_allocated",
                     label="Total amount allocated for PPAs in the BESWM Plan",
                     item_type="calculation_field",
-                    mov_description="Please supply the required information:",
+                    mov_description=None,
                     required=False,
                     display_order=7.2,
                     option_group="Option B"

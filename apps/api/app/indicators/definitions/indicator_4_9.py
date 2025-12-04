@@ -94,9 +94,9 @@ INDICATOR_4_9 = Indicator(
                 ChecklistItem(
                     id="4_9_2_date_of_approval",
                     label="Date of approval",
-                    mov_description="Date of approval for the ordinance",
+                    mov_description="Please supply the required information:",
+                    item_type="date_input",
                     required=False,  # Profiling only
-                    requires_document_count=True,
                     display_order=2
                 ),
             ]
@@ -123,9 +123,9 @@ INDICATOR_4_9 = Indicator(
                 ChecklistItem(
                     id="4_9_3_date_of_approval",
                     label="Date of approval",
-                    mov_description="Date of approval for the EO/issuance",
+                    mov_description="Please supply the required information:",
+                    item_type="date_input",
                     required=False,  # Profiling only
-                    requires_document_count=True,
                     display_order=2
                 ),
             ]
@@ -171,9 +171,9 @@ INDICATOR_4_9 = Indicator(
                 ChecklistItem(
                     id="4_9_5_date_of_approval",
                     label="Date of approval",
-                    mov_description="Date of approval for the EO/issuance",
+                    mov_description="Please supply the required information:",
+                    item_type="date_input",
                     required=False,  # Profiling only
-                    requires_document_count=True,
                     display_order=2
                 ),
             ]
