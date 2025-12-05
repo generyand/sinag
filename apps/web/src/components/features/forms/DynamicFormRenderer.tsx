@@ -18,6 +18,7 @@ import {
     useGetAssessmentsAssessmentIdAnswers,
     usePostAssessmentsAssessmentIdAnswers,
 } from "@sinag/shared";
+import { classifyError } from "@/lib/error-utils";
 import { AlertCircle, Info } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { Control, FieldValues, FormProvider, useForm } from "react-hook-form";
@@ -148,7 +149,26 @@ export function DynamicFormRenderer({
       toast.success("Responses saved successfully");
       onSaveSuccess?.();
     } catch (error) {
-      toast.error("Failed to save responses. Please try again.");
+      const errorInfo = classifyError(error);
+
+      // Show appropriate error message based on error type
+      if (errorInfo.type === "network") {
+        toast.error("Unable to save responses", {
+          description: "Check your internet connection and try again. Your work is still here.",
+        });
+      } else if (errorInfo.type === "validation") {
+        toast.error("Could not save responses", {
+          description: errorInfo.message || "Please check your entries and try again.",
+        });
+      } else if (errorInfo.type === "auth") {
+        toast.error("Session expired", {
+          description: "Please log in again to save your work.",
+        });
+      } else {
+        toast.error("Failed to save responses", {
+          description: "Please try again. If the problem persists, contact your MLGOO-DILG.",
+        });
+      }
       console.error("Save error:", error);
     }
   };

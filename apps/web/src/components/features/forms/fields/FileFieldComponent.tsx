@@ -25,6 +25,7 @@ import { AlertCircle, CheckCircle2, FileIcon, Info, Loader2, X } from "lucide-re
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { classifyError } from "@/lib/error-utils";
 
 // Dynamically import annotators to avoid SSR issues
 const PdfAnnotator = dynamic(() => import('@/components/shared/PdfAnnotator'), {
@@ -169,15 +170,13 @@ export function FileFieldComponent({
             clearInterval(context.progressInterval);
           }
 
-          const errorMessage =
-            error?.response?.data?.detail?.message ||
-            error?.response?.data?.detail ||
-            error?.message ||
-            "Failed to upload file";
-          setUploadError(errorMessage);
+          const errorInfo = classifyError(error);
+          const displayMessage = `${errorInfo.title}: ${errorInfo.message}`;
+
+          setUploadError(displayMessage);
           setUploadProgress(0);
           setSelectedFile(null);
-          toast.error(errorMessage);
+          toast.error(displayMessage);
 
           // Tell global queue this upload failed, move to next
           completeCurrentUpload();
@@ -260,7 +259,8 @@ export function FileFieldComponent({
       toast.success("File downloaded successfully");
     } catch (error) {
       console.error("Download error:", error);
-      toast.error("Failed to download file");
+      const errorInfo = classifyError(error);
+      toast.error(`${errorInfo.title}: ${errorInfo.message}`);
     }
   };
 

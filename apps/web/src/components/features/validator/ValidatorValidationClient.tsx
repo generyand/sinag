@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useGetAssessorAssessmentsAssessmentId, usePostAssessorAssessmentResponsesResponseIdValidate, usePostAssessorAssessmentsAssessmentIdCalibrate, usePostAssessorAssessmentsAssessmentIdFinalize } from '@sinag/shared';
 import { useQueryClient } from '@tanstack/react-query';
+import { classifyError } from '@/lib/error-utils';
 import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -152,12 +153,17 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   }
 
   if (isError || !data) {
+    const errorInfo = classifyError(error);
+    const isNetworkError = errorInfo.type === 'network';
+
     return (
       <div className="mx-auto max-w-7xl px-6 py-10 text-sm">
-        <div className="rounded-md border p-4">
-          <div className="font-medium mb-1">Unable to load assessment</div>
-          <div className="text-muted-foreground break-words">
-            {String((error as any)?.message || 'Please verify access and try again.')}
+        <div className={`rounded-md border p-4 ${isNetworkError ? 'border-orange-200 bg-orange-50' : 'border-red-200 bg-red-50'}`}>
+          <div className={`font-medium mb-1 ${isNetworkError ? 'text-orange-700' : 'text-red-700'}`}>
+            {errorInfo.title}
+          </div>
+          <div className={`${isNetworkError ? 'text-orange-600' : 'text-red-600'}`}>
+            {errorInfo.message}
           </div>
         </div>
       </div>
@@ -312,7 +318,24 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     } catch (error) {
       console.error('Error saving validation:', error);
       toast.dismiss('save-draft-toast');
-      toast.error('Failed to save draft. Please try again.', { duration: 4000 });
+
+      const errorInfo = classifyError(error);
+      if (errorInfo.type === 'network') {
+        toast.error('Unable to save draft', {
+          description: 'Check your internet connection and try again.',
+          duration: 5000,
+        });
+      } else if (errorInfo.type === 'auth') {
+        toast.error('Session expired', {
+          description: 'Please log in again to save your work.',
+          duration: 5000,
+        });
+      } else {
+        toast.error('Failed to save draft', {
+          description: 'Please try again. If the problem persists, contact your MLGOO-DILG.',
+          duration: 5000,
+        });
+      }
       throw error;
     }
   };
@@ -369,14 +392,30 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       router.push('/validator/submissions');
     } catch (error: any) {
       console.error('Finalization error:', error);
-
-      // Dismiss loading toast and show error
       toast.dismiss('finalize-toast');
 
-      const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to finalize assessment';
-      toast.error(`Finalization failed: ${errorMessage}`, {
-        duration: 6000,
-      });
+      const errorInfo = classifyError(error);
+      if (errorInfo.type === 'network') {
+        toast.error('Unable to finalize validation', {
+          description: 'Check your internet connection and try again. Your progress has been saved.',
+          duration: 6000,
+        });
+      } else if (errorInfo.type === 'auth') {
+        toast.error('Session expired', {
+          description: 'Please log in again to complete finalization.',
+          duration: 6000,
+        });
+      } else if (errorInfo.type === 'validation') {
+        toast.error('Cannot finalize validation', {
+          description: errorInfo.message,
+          duration: 6000,
+        });
+      } else {
+        toast.error('Finalization failed', {
+          description: 'Please try again. If the problem persists, contact your MLGOO-DILG.',
+          duration: 6000,
+        });
+      }
     }
   };
 
@@ -410,14 +449,30 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       router.push('/validator/submissions');
     } catch (error: any) {
       console.error('Calibration error:', error);
-
-      // Dismiss loading toast and show error
       toast.dismiss('calibrate-toast');
 
-      const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to submit for calibration';
-      toast.error(`Calibration failed: ${errorMessage}`, {
-        duration: 6000,
-      });
+      const errorInfo = classifyError(error);
+      if (errorInfo.type === 'network') {
+        toast.error('Unable to submit for calibration', {
+          description: 'Check your internet connection and try again.',
+          duration: 6000,
+        });
+      } else if (errorInfo.type === 'auth') {
+        toast.error('Session expired', {
+          description: 'Please log in again to submit for calibration.',
+          duration: 6000,
+        });
+      } else if (errorInfo.type === 'validation') {
+        toast.error('Cannot submit for calibration', {
+          description: errorInfo.message,
+          duration: 6000,
+        });
+      } else {
+        toast.error('Calibration request failed', {
+          description: 'Please try again. If the problem persists, contact your MLGOO-DILG.',
+          duration: 6000,
+        });
+      }
     }
   };
 

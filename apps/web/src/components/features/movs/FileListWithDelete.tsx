@@ -16,6 +16,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import toast from "react-hot-toast";
+import { classifyError } from "@/lib/error-utils";
 
 interface FileListWithDeleteProps {
   files: MOVFileResponse[];
@@ -84,13 +85,9 @@ export function FileListWithDelete({
         onDeleteSuccess?.(variables.fileId);
       },
       onError: (error: any, variables) => {
-        // Show error toast
-        const errorMessage =
-          error?.response?.data?.detail ||
-          error?.message ||
-          "Failed to delete file";
-
-        toast.error(errorMessage);
+        // Show error toast with proper classification
+        const errorInfo = classifyError(error);
+        toast.error(`${errorInfo.title}: ${errorInfo.message}`);
 
         // Reset loading state
         setDeletingFileId(null);

@@ -28,7 +28,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { User, Mail, MapPin, Shield, Info, Lock, Key, CheckCircle, Save, Phone } from 'lucide-react';
 import { User as UserType } from '@sinag/shared';
+import { classifyError } from '@/lib/error-utils';
 
 // Password change form schema
 const passwordChangeSchema = z.object({
@@ -93,13 +94,17 @@ export function ProfileForm({ user }: ProfileFormProps) {
       // Show logout dialog to inform user they will be logged out
       setShowLogoutDialog(true);
     } catch (error: unknown) {
-      if (error && typeof error === 'object' && 'response' in error && error.response && typeof error.response === 'object' && 'status' in error.response && error.response.status === 401) {
+      const errorInfo = classifyError(error);
+
+      // If it's an auth error (401), show specific error on the current password field
+      if (errorInfo.type === 'auth') {
         form.setError('currentPassword', {
           type: 'manual',
           message: 'The current password you entered is incorrect.',
         });
       } else {
-        toast.error('Failed to update password. Please try again.');
+        // For other errors, show a toast with detailed error info
+        toast.error(`${errorInfo.title}: ${errorInfo.message}`);
       }
     }
   };

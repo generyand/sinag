@@ -43,6 +43,7 @@ import {
   usePostAssessmentsAssessmentIdResubmit,
   usePostAssessmentsAssessmentIdSubmitForCalibration,
 } from "@sinag/shared";
+import { classifyError } from "@/lib/error-utils";
 
 interface ResubmitAssessmentButtonProps {
   assessmentId: number;
@@ -79,15 +80,11 @@ export function ResubmitAssessmentButton({
         onSuccess?.();
       },
       onError: (error: any) => {
-        const rawError =
-          error?.response?.data?.detail || error?.message || "Failed to resubmit assessment";
-        const errorMessage = typeof rawError === 'object'
-          ? rawError.message || JSON.stringify(rawError)
-          : rawError;
+        const errorInfo = classifyError(error);
 
         toast({
-          title: "Resubmission Failed",
-          description: String(errorMessage),
+          title: errorInfo.title,
+          description: errorInfo.message,
           variant: "destructive",
         });
 
@@ -114,15 +111,11 @@ export function ResubmitAssessmentButton({
         onSuccess?.();
       },
       onError: (error: any) => {
-        const rawError =
-          error?.response?.data?.detail || error?.message || "Failed to submit for calibration";
-        const errorMessage = typeof rawError === 'object'
-          ? rawError.message || JSON.stringify(rawError)
-          : rawError;
+        const errorInfo = classifyError(error);
 
         toast({
-          title: "Calibration Submission Failed",
-          description: String(errorMessage),
+          title: errorInfo.title,
+          description: errorInfo.message,
           variant: "destructive",
         });
 

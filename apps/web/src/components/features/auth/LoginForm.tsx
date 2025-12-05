@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useGetUsersMe, usePostAuthLogin } from "@sinag/shared";
 import { getGetUsersMeQueryKey } from "@sinag/shared/src/generated/endpoints/users";
-import { Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { AlertTriangle, Eye, EyeOff, Lock, Mail, ServerCrash, WifiOff } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -79,10 +79,41 @@ export default function LoginForm({ isDarkMode = false }: LoginFormProps) {
         // Trigger user data fetch
         setShouldFetchUser(true);
       },
-      onError: () => {
-        // Show error toast with specific message
-        toast.error("Wrong email or password", {
-          duration: 3000,
+      onError: (error) => {
+        // Determine error type for appropriate message
+        const err = error as {
+          response?: { status?: number };
+          message?: string;
+          code?: string;
+        };
+
+        let toastMessage = "Wrong email or password";
+        let toastIcon = "🔒";
+
+        // Network/connection errors
+        if (
+          err.message === "Network Error" ||
+          err.message?.includes("Failed to fetch") ||
+          err.message?.includes("fetch failed") ||
+          err.code === "ERR_NETWORK" ||
+          err.code === "ECONNREFUSED"
+        ) {
+          toastMessage = "Unable to connect to server";
+          toastIcon = "🔌";
+        }
+        // Server errors
+        else if (err.response?.status && err.response.status >= 500) {
+          toastMessage = "Server error - please try again later";
+          toastIcon = "⚠️";
+        }
+        // Rate limiting
+        else if (err.response?.status === 429) {
+          toastMessage = "Too many attempts - please wait";
+          toastIcon = "⏳";
+        }
+
+        toast.error(`${toastIcon} ${toastMessage}`, {
+          duration: 4000,
           style: {
             background: isDarkMode ? "#1a1f2e" : "#ffffff",
             color: isDarkMode ? "#ffffff" : "#1a1f2e",
@@ -93,8 +124,6 @@ export default function LoginForm({ isDarkMode = false }: LoginFormProps) {
             fontWeight: "500",
           },
         });
-
-        // Error handled successfully - no navigation needed
       },
       retry: false, // Disable retry to prevent multiple requests
     },
@@ -205,44 +234,78 @@ export default function LoginForm({ isDarkMode = false }: LoginFormProps) {
     loginMutation.mutate({ data: credentials });
   };
 
-  // Get error message for display
-  const getErrorMessage = () => {
+  // Error info structure for better UX
+  interface ErrorInfo {
+    type: "network" | "server" | "auth" | "unknown";
+    title: string;
+    message: string;
+  }
+
+  // Get structured error info for display
+  const getErrorInfo = (): ErrorInfo | null => {
     if (!loginMutation.error) return null;
 
-    // Handle different error types
-    if (loginMutation.error instanceof Error) {
-      // Check if it's a 401 error and provide user-friendly message
-      if (loginMutation.error.message.includes("401")) {
-        return "Incorrect email or password. Please try again.";
-      }
-      return loginMutation.error.message;
-    }
+    const error = loginMutation.error as {
+      response?: { data?: { detail?: string }; status?: number };
+      message?: string;
+      code?: string;
+    };
 
-    // Handle API error responses
+    // Network/Server unreachable - check various network error signatures
     if (
-      typeof loginMutation.error === "object" &&
-      loginMutation.error !== null
+      error.message === "Network Error" ||
+      error.message?.includes("Failed to fetch") ||
+      error.message?.includes("fetch failed") ||
+      error.code === "ERR_NETWORK" ||
+      error.code === "ECONNREFUSED"
     ) {
-      const apiError = loginMutation.error as {
-        response?: { data?: { detail?: string }; status?: number };
-        message?: string;
+      return {
+        type: "network",
+        title: "Unable to connect to server",
+        message:
+          "The server may be down or unreachable. Please check your connection and try again.",
       };
-
-      // Check for 401 status code
-      if (apiError.response?.status === 401) {
-        return "Incorrect email or password. Please try again.";
-      }
-
-      if (apiError.response?.data?.detail) {
-        return apiError.response.data.detail;
-      }
-      if (apiError.message) {
-        return apiError.message;
-      }
     }
 
-    return "Incorrect email or password. Please try again.";
+    // Server error (500+)
+    if (error.response?.status && error.response.status >= 500) {
+      return {
+        type: "server",
+        title: "Server error",
+        message: "Something went wrong on our end. Please try again later.",
+      };
+    }
+
+    // Auth failure (401)
+    if (
+      error.response?.status === 401 ||
+      error.message?.includes("401")
+    ) {
+      return {
+        type: "auth",
+        title: "Login failed",
+        message: "Incorrect email or password. Please try again.",
+      };
+    }
+
+    // Rate limited (429)
+    if (error.response?.status === 429) {
+      return {
+        type: "server",
+        title: "Too many attempts",
+        message: "Please wait a moment before trying again.",
+      };
+    }
+
+    // Default fallback
+    return {
+      type: "unknown",
+      title: "Something went wrong",
+      message: error.response?.data?.detail || "Please try again.",
+    };
   };
+
+  const errorInfo = getErrorInfo();
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -412,40 +475,70 @@ export default function LoginForm({ isDarkMode = false }: LoginFormProps) {
             </div>
           </div>
           {/* Error Display */}
-          {loginMutation.error && (
+          {errorInfo && (
             <div
               className={`
-                rounded-md p-4 mt-4 
+                rounded-md p-4 mt-4
                 transition-colors duration-200
                 ${
-                  isDarkMode
-                    ? "bg-red-900/10 border border-red-500/20"
-                    : "bg-red-50 border border-red-200"
+                  errorInfo.type === "network"
+                    ? isDarkMode
+                      ? "bg-orange-900/10 border border-orange-500/20"
+                      : "bg-orange-50 border border-orange-200"
+                    : isDarkMode
+                      ? "bg-red-900/10 border border-red-500/20"
+                      : "bg-red-50 border border-red-200"
                 }
-                flex items-center gap-3
+                flex items-start gap-3
               `}
             >
-              <svg
-                className={`w-5 h-5 ${
-                  isDarkMode ? "text-red-400" : "text-red-500"
-                }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              {/* Icon based on error type */}
+              {errorInfo.type === "network" ? (
+                <WifiOff
+                  className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                    isDarkMode ? "text-orange-400" : "text-orange-500"
+                  }`}
                 />
-              </svg>
-              <div
-                className={`text-sm font-medium ${
-                  isDarkMode ? "text-red-400" : "text-red-700"
-                }`}
-              >
-                {getErrorMessage()}
+              ) : errorInfo.type === "server" ? (
+                <ServerCrash
+                  className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                    isDarkMode ? "text-red-400" : "text-red-500"
+                  }`}
+                />
+              ) : (
+                <AlertTriangle
+                  className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                    isDarkMode ? "text-red-400" : "text-red-500"
+                  }`}
+                />
+              )}
+              <div className="flex flex-col gap-0.5">
+                <div
+                  className={`text-sm font-semibold ${
+                    errorInfo.type === "network"
+                      ? isDarkMode
+                        ? "text-orange-400"
+                        : "text-orange-700"
+                      : isDarkMode
+                        ? "text-red-400"
+                        : "text-red-700"
+                  }`}
+                >
+                  {errorInfo.title}
+                </div>
+                <div
+                  className={`text-sm ${
+                    errorInfo.type === "network"
+                      ? isDarkMode
+                        ? "text-orange-300/80"
+                        : "text-orange-600"
+                      : isDarkMode
+                        ? "text-red-300/80"
+                        : "text-red-600"
+                  }`}
+                >
+                  {errorInfo.message}
+                </div>
               </div>
             </div>
           )}

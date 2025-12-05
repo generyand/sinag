@@ -14,6 +14,7 @@ import {
     usePostAssessmentsAssessmentIdResubmit,
     usePostAssessmentsAssessmentIdSubmitForCalibration,
 } from "@sinag/shared";
+import { classifyError } from "@/lib/error-utils";
 import {
     AlertCircle,
     CheckCircle,
@@ -54,11 +55,25 @@ export function AssessmentHeader({
         }, 1500);
       },
       onError: (error: any) => {
-        const errorMessage =
-          error?.response?.data?.detail || error?.message || "Failed to submit assessment";
+        const errorInfo = classifyError(error);
+
+        let title = "Submission Failed";
+        let description = "Please try again. If the problem persists, contact your MLGOO-DILG.";
+
+        if (errorInfo.type === "network") {
+          title = "Unable to submit";
+          description = "Check your internet connection and try again. Your work has been saved.";
+        } else if (errorInfo.type === "auth") {
+          title = "Session expired";
+          description = "Please log in again to submit your assessment.";
+        } else if (errorInfo.type === "validation") {
+          title = "Cannot submit assessment";
+          description = errorInfo.message;
+        }
+
         toast({
-          title: "Submission Failed",
-          description: typeof errorMessage === 'object' ? errorMessage.message || JSON.stringify(errorMessage) : errorMessage,
+          title,
+          description,
           variant: "destructive",
         });
       },
@@ -81,10 +96,25 @@ export function AssessmentHeader({
         }, 1500);
       },
       onError: (error: any) => {
-        const errorMessage = error?.response?.data?.detail || error?.message || "Failed to resubmit";
+        const errorInfo = classifyError(error);
+
+        let title = "Resubmission Failed";
+        let description = "Please try again. If the problem persists, contact your MLGOO-DILG.";
+
+        if (errorInfo.type === "network") {
+          title = "Unable to resubmit";
+          description = "Check your internet connection and try again. Your work has been saved.";
+        } else if (errorInfo.type === "auth") {
+          title = "Session expired";
+          description = "Please log in again to resubmit your assessment.";
+        } else if (errorInfo.type === "validation") {
+          title = "Cannot resubmit assessment";
+          description = errorInfo.message;
+        }
+
         toast({
-          title: "Resubmission Failed",
-          description: typeof errorMessage === 'object' ? errorMessage.message || JSON.stringify(errorMessage) : errorMessage,
+          title,
+          description,
           variant: "destructive",
         });
       },
@@ -107,10 +137,25 @@ export function AssessmentHeader({
         }, 1500);
       },
       onError: (error: any) => {
-        const errorMessage = error?.response?.data?.detail || error?.message || "Failed to submit calibration";
+        const errorInfo = classifyError(error);
+
+        let title = "Calibration Submission Failed";
+        let description = "Please try again. If the problem persists, contact your MLGOO-DILG.";
+
+        if (errorInfo.type === "network") {
+          title = "Unable to submit calibration";
+          description = "Check your internet connection and try again. Your work has been saved.";
+        } else if (errorInfo.type === "auth") {
+          title = "Session expired";
+          description = "Please log in again to submit your calibration.";
+        } else if (errorInfo.type === "validation") {
+          title = "Cannot submit calibration";
+          description = errorInfo.message;
+        }
+
         toast({
-          title: "Calibration Submission Failed",
-          description: typeof errorMessage === 'object' ? errorMessage.message || JSON.stringify(errorMessage) : errorMessage,
+          title,
+          description,
           variant: "destructive",
         });
       },
