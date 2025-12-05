@@ -18,6 +18,7 @@
 "use client";
 
 import { useState } from "react";
+import { classifyError } from "@/lib/error-utils";
 import { Loader2, AlertTriangle, MessageSquare, RotateCcw } from "lucide-react";
 import {
   AlertDialog,
@@ -77,17 +78,32 @@ export function RequestReworkForm({
         onSuccess?.();
       },
       onError: (error: any) => {
-        const errorMessage =
-          error?.response?.data?.detail || error?.message || "Failed to request rework";
+        const errorInfo = classifyError(error);
+        const errorMessage = error?.response?.data?.detail || error?.message || "";
 
-        // Check for rework limit error
+        // Check for rework limit error (specific business rule)
         const isReworkLimitError = errorMessage.toLowerCase().includes("rework limit");
 
+        let title = "Request Failed";
+        let description = "Please try again. If the problem persists, contact your MLGOO-DILG.";
+
+        if (isReworkLimitError) {
+          title = "Rework Limit Reached";
+          description = "This assessment has already used its one rework cycle.";
+        } else if (errorInfo.type === "network") {
+          title = "Unable to connect";
+          description = "Check your internet connection and try again.";
+        } else if (errorInfo.type === "auth") {
+          title = "Session expired";
+          description = "Please log in again to request rework.";
+        } else if (errorInfo.type === "validation") {
+          title = "Cannot request rework";
+          description = errorInfo.message;
+        }
+
         toast({
-          title: "Request Failed",
-          description: isReworkLimitError
-            ? "This assessment has already used its one rework cycle."
-            : errorMessage,
+          title,
+          description,
           variant: "destructive",
         });
 

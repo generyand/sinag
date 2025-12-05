@@ -38,6 +38,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { usePostAssessmentsAssessmentIdSubmit } from "@sinag/shared";
 import type { SubmissionValidationResult } from "@sinag/shared";
+import { classifyError } from "@/lib/error-utils";
 
 interface SubmitAssessmentButtonProps {
   assessmentId: number;
@@ -70,16 +71,11 @@ export function SubmitAssessmentButton({
         onSuccess?.();
       },
       onError: (error: any) => {
-        const rawError =
-          error?.response?.data?.detail || error?.message || "Failed to submit assessment";
-        // Handle case where error detail is an object (FastAPI validation errors)
-        const errorMessage = typeof rawError === 'object'
-          ? rawError.message || JSON.stringify(rawError)
-          : rawError;
+        const errorInfo = classifyError(error);
 
         toast({
-          title: "Submission Failed",
-          description: String(errorMessage),
+          title: errorInfo.title,
+          description: errorInfo.message,
           variant: "destructive",
         });
 

@@ -25,7 +25,7 @@ import { UserRole, UserAdminCreate, UserAdminUpdate, Barangay, GovernanceArea, U
 import { usePostUsers, usePutUsersUserId, getGetUsersQueryKey } from '@sinag/shared/src/generated/endpoints/users';
 import { useGetLookupsRoles } from '@sinag/shared/src/generated/endpoints/lookups';
 import { useQueryClient } from '@tanstack/react-query';
-import { AxiosError } from 'axios';
+import { classifyError } from '@/lib/error-utils';
 
 interface UserFormProps {
   open: boolean;
@@ -44,25 +44,6 @@ interface UserFormProps {
     must_change_password?: boolean;
   };
   isEditing?: boolean;
-}
-
-// Helper function to extract error message from API response
-function getErrorMessage(error: unknown): string {
-  if (error instanceof AxiosError) {
-    // Try to get the detail from the response
-    const detail = error.response?.data?.detail;
-    if (typeof detail === 'string') {
-      return detail;
-    }
-    // Handle validation errors (array of objects)
-    if (Array.isArray(detail)) {
-      return detail.map((err: { msg?: string }) => err.msg || 'Validation error').join(', ');
-    }
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return 'An unexpected error occurred';
 }
 
 export function UserForm({ open, onOpenChange, initialValues, isEditing = false }: UserFormProps) {
@@ -259,10 +240,10 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
             onOpenChange(false);
           },
           onError: (error) => {
-            const errorMessage = getErrorMessage(error);
+            const errorInfo = classifyError(error);
             toast({
-              title: 'Update Failed',
-              description: errorMessage,
+              title: errorInfo.title,
+              description: errorInfo.message,
               variant: 'destructive',
             });
           },
@@ -295,10 +276,10 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
             onOpenChange(false);
           },
           onError: (error) => {
-            const errorMessage = getErrorMessage(error);
+            const errorInfo = classifyError(error);
             toast({
-              title: 'Creation Failed',
-              description: errorMessage,
+              title: errorInfo.title,
+              description: errorInfo.message,
               variant: 'destructive',
             });
           },
