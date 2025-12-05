@@ -430,7 +430,21 @@ export interface ChecklistItemResponse {
   display_order: number;
   /** Option group for OR logic (e.g., 'Option A', 'Option B') */
   option_group?: ChecklistItemResponseOptionGroup;
+  /** Notes displayed below this field (e.g., CONSIDERATION) */
+  field_notes?: ChecklistItemResponseFieldNotes;
 }
+
+
+/**
+ * ChecklistItemResponseFieldNotes
+ */
+export type ChecklistItemResponseFieldNotes = ChecklistItemResponseFieldNotesAnyOf | null;
+
+
+/**
+ * ChecklistItemResponseFieldNotesAnyOf
+ */
+export type ChecklistItemResponseFieldNotesAnyOf = { [key: string]: unknown };
 
 
 /**

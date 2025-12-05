@@ -8,23 +8,23 @@ const statusBadgeVariants = cva(
   {
     variants: {
       variant: {
-        // Original variants
-        'Not Started': 'border-gray-200 bg-gray-100 text-gray-700',
-        'In Progress': 'border-blue-200 bg-blue-100 text-blue-700',
-        'Submitted for Review': 'border-yellow-200 bg-yellow-100 text-yellow-700',
-        'Needs Rework': 'border-orange-200 bg-orange-100 text-orange-700',
-        'Validated': 'border-green-200 bg-green-100 text-green-700',
-        'Finalized': 'border-purple-200 bg-purple-100 text-purple-700',
-        // New submission status variants
-        'awaiting_review': 'border-blue-200 bg-blue-100 text-blue-700',
-        'in_progress': 'border-yellow-200 bg-yellow-100 text-yellow-700',
-        'needs_rework': 'border-orange-200 bg-orange-100 text-orange-700',
-        'validated': 'border-green-200 bg-green-100 text-green-700',
-        // Overall status variants
-        'draft': 'border-gray-200 bg-gray-100 text-gray-700',
-        'submitted': 'border-blue-200 bg-blue-100 text-blue-700',
-        'under_review': 'border-yellow-200 bg-yellow-100 text-yellow-700',
-        'completed': 'border-purple-200 bg-purple-100 text-purple-700',
+        // Original variants - with dark mode support
+        'Not Started': 'border-gray-200 bg-gray-100 text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300',
+        'In Progress': 'border-blue-200 bg-blue-100 text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300',
+        'Submitted for Review': 'border-yellow-200 bg-yellow-100 text-yellow-700 dark:border-yellow-800 dark:bg-yellow-950/50 dark:text-yellow-300',
+        'Needs Rework': 'border-orange-200 bg-orange-100 text-orange-700 dark:border-orange-800 dark:bg-orange-950/50 dark:text-orange-300',
+        'Validated': 'border-green-200 bg-green-100 text-green-700 dark:border-green-800 dark:bg-green-950/50 dark:text-green-300',
+        'Finalized': 'border-purple-200 bg-purple-100 text-purple-700 dark:border-purple-800 dark:bg-purple-950/50 dark:text-purple-300',
+        // New submission status variants - with dark mode support
+        'awaiting_review': 'border-blue-200 bg-blue-100 text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300',
+        'in_progress': 'border-yellow-200 bg-yellow-100 text-yellow-700 dark:border-yellow-800 dark:bg-yellow-950/50 dark:text-yellow-300',
+        'needs_rework': 'border-orange-200 bg-orange-100 text-orange-700 dark:border-orange-800 dark:bg-orange-950/50 dark:text-orange-300',
+        'validated': 'border-green-200 bg-green-100 text-green-700 dark:border-green-800 dark:bg-green-950/50 dark:text-green-300',
+        // Overall status variants - with dark mode support
+        'draft': 'border-gray-200 bg-gray-100 text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300',
+        'submitted': 'border-blue-200 bg-blue-100 text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300',
+        'under_review': 'border-yellow-200 bg-yellow-100 text-yellow-700 dark:border-yellow-800 dark:bg-yellow-950/50 dark:text-yellow-300',
+        'completed': 'border-purple-200 bg-purple-100 text-purple-700 dark:border-purple-800 dark:bg-purple-950/50 dark:text-purple-300',
       },
     },
     defaultVariants: {

@@ -9,6 +9,16 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/*
+ * Tailwind CSS v4 Dark Mode Configuration
+ * This enables the dark: variant to respond to the .dark class on <html>
+ * which is set by our ThemeProvider (supports 'light', 'dark', 'system' modes)
+ *
+ * The 'system' mode automatically detects OS preference via matchMedia
+ * and applies the appropriate class, so both manual toggle and OS detection work.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Theme-aware background styling - no forced overrides */
 
 

@@ -2,6 +2,12 @@
 
 import { FileList } from '@/components/features/movs/FileList';
 import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useMovAnnotations } from '@/hooks/useMovAnnotations';
 import type { AssessmentDetailsResponse } from '@sinag/shared';
 import { FileIcon, X } from 'lucide-react';
@@ -312,9 +318,18 @@ export function MiddleMovFilesPanel({ assessment, expandedId, calibrationRequest
             {/* Left: File Viewer */}
             <div className="flex-1 flex flex-col">
               {/* Header */}
-              <div className="flex items-center justify-between pb-3 border-b border-gray-200 mb-3">
-                <div className="flex-1">
-                  <h2 className="text-base font-semibold">{selectedFile.file_name}</h2>
+              <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-700 mb-3">
+                <div className="flex-1 min-w-0 mr-4">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <h2 className="text-base font-semibold text-[var(--foreground)] truncate cursor-default">{selectedFile.file_name}</h2>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-[500px] break-words">
+                        <p>{selectedFile.file_name}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                   <p className="text-xs text-muted-foreground">
                     {selectedFile.file_type === 'application/pdf'
                       ? 'Select text to add highlight and comment'

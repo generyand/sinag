@@ -366,15 +366,15 @@ function FieldRenderer({ field, control, error, assessmentId, indicatorId, isLoc
       );
 
     case "info_text":
-      // Render info text (e.g., "OR" separator)
+      // Render info text (e.g., "OR" separator) with full-width lines
       return (
-        <div className="flex items-center justify-center py-3">
-          <div className="flex items-center gap-3">
-            <div className="h-px w-12 bg-[var(--border)]" />
-            <span className="text-sm font-medium text-[var(--text-secondary)] uppercase">
+        <div className="flex items-center justify-center py-4 my-2">
+          <div className="flex items-center gap-4 w-full">
+            <div className="h-px flex-1 bg-orange-500" />
+            <span className="text-sm font-semibold text-orange-500 uppercase px-2">
               {field.label}
             </span>
-            <div className="h-px w-12 bg-[var(--border)]" />
+            <div className="h-px flex-1 bg-orange-500" />
           </div>
         </div>
       );

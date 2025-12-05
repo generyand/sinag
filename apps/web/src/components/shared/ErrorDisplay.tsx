@@ -3,6 +3,7 @@
  *
  * Reusable component for displaying errors with proper styling and icons.
  * Follows the pattern established in LoginForm for consistent error UX.
+ * Automatically adapts to light/dark mode using Tailwind's dark: variant.
  */
 
 "use client";
@@ -14,6 +15,7 @@ import { cn } from "@/lib/utils";
 interface ErrorDisplayProps {
   error: unknown;
   className?: string;
+  /** @deprecated No longer needed - component auto-detects dark mode via Tailwind */
   isDarkMode?: boolean;
 }
 
@@ -40,40 +42,57 @@ function getIconComponent(errorType: ErrorInfo["type"]) {
 }
 
 /**
- * ErrorDisplay component shows structured error information with appropriate styling
+ * Get styling classes based on error type with dark mode support
+ */
+function getErrorStyles(errorType: ErrorInfo["type"]) {
+  switch (errorType) {
+    case "network":
+      return {
+        container: "bg-orange-50 border-orange-200 dark:bg-orange-950/30 dark:border-orange-800",
+        icon: "text-orange-500 dark:text-orange-400",
+        title: "text-orange-700 dark:text-orange-300",
+        message: "text-orange-600 dark:text-orange-400/80",
+      };
+    case "validation":
+      return {
+        container: "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800",
+        icon: "text-amber-500 dark:text-amber-400",
+        title: "text-amber-700 dark:text-amber-300",
+        message: "text-amber-600 dark:text-amber-400/80",
+      };
+    default:
+      return {
+        container: "bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800",
+        icon: "text-red-500 dark:text-red-400",
+        title: "text-red-700 dark:text-red-300",
+        message: "text-red-600 dark:text-red-400/80",
+      };
+  }
+}
+
+/**
+ * ErrorDisplay component shows structured error information with appropriate styling.
+ * Automatically adapts to light/dark mode.
  *
  * @example
  * ```tsx
  * <ErrorDisplay error={mutationError} />
  * ```
  */
-export function ErrorDisplay({ error, className, isDarkMode = false }: ErrorDisplayProps) {
+export function ErrorDisplay({ error, className }: ErrorDisplayProps) {
   if (!error) return null;
 
   const errorInfo = classifyError(error);
   const Icon = getIconComponent(errorInfo.type);
-
-  // Network errors get orange color, all others get red
-  const isNetworkError = errorInfo.type === "network";
-  const isValidationError = errorInfo.type === "validation";
+  const styles = getErrorStyles(errorInfo.type);
 
   return (
     <div
       className={cn(
-        "rounded-md p-4",
+        "rounded-md p-4 border",
         "transition-colors duration-200",
         "flex items-start gap-3",
-        isNetworkError
-          ? isDarkMode
-            ? "bg-orange-900/10 border border-orange-500/20"
-            : "bg-orange-50 border border-orange-200"
-          : isValidationError
-            ? isDarkMode
-              ? "bg-amber-900/10 border border-amber-500/20"
-              : "bg-amber-50 border border-amber-200"
-            : isDarkMode
-              ? "bg-red-900/10 border border-red-500/20"
-              : "bg-red-50 border border-red-200",
+        styles.container,
         className
       )}
       role="alert"
@@ -81,59 +100,16 @@ export function ErrorDisplay({ error, className, isDarkMode = false }: ErrorDisp
     >
       {/* Icon based on error type */}
       <Icon
-        className={cn(
-          "w-5 h-5 flex-shrink-0 mt-0.5",
-          isNetworkError
-            ? isDarkMode
-              ? "text-orange-400"
-              : "text-orange-500"
-            : isValidationError
-              ? isDarkMode
-                ? "text-amber-400"
-                : "text-amber-500"
-              : isDarkMode
-                ? "text-red-400"
-                : "text-red-500"
-        )}
+        className={cn("w-5 h-5 flex-shrink-0 mt-0.5", styles.icon)}
         aria-hidden="true"
       />
 
       {/* Error content */}
       <div className="flex flex-col gap-0.5">
-        <div
-          className={cn(
-            "text-sm font-semibold",
-            isNetworkError
-              ? isDarkMode
-                ? "text-orange-400"
-                : "text-orange-700"
-              : isValidationError
-                ? isDarkMode
-                  ? "text-amber-400"
-                  : "text-amber-700"
-                : isDarkMode
-                  ? "text-red-400"
-                  : "text-red-700"
-          )}
-        >
+        <div className={cn("text-sm font-semibold", styles.title)}>
           {errorInfo.title}
         </div>
-        <div
-          className={cn(
-            "text-sm",
-            isNetworkError
-              ? isDarkMode
-                ? "text-orange-300/80"
-                : "text-orange-600"
-              : isValidationError
-                ? isDarkMode
-                  ? "text-amber-300/80"
-                  : "text-amber-600"
-                : isDarkMode
-                  ? "text-red-300/80"
-                  : "text-red-600"
-          )}
-        >
+        <div className={cn("text-sm", styles.message)}>
           {errorInfo.message}
         </div>
       </div>

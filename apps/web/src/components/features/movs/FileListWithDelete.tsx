@@ -15,6 +15,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import toast from "react-hot-toast";
 import { classifyError } from "@/lib/error-utils";
 
@@ -137,12 +143,23 @@ export function FileListWithDelete({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete File</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete{" "}
-              <span className="font-medium text-gray-900">
-                {fileToDeleteData?.file_name}
-              </span>
-              ? This action cannot be undone.
+            <AlertDialogDescription asChild>
+              <div>
+                Are you sure you want to delete{" "}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="font-medium text-[var(--foreground)] inline-block max-w-[250px] truncate align-bottom cursor-default">
+                        {fileToDeleteData?.file_name}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[400px] break-words">
+                      <p>{fileToDeleteData?.file_name}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                ? This action cannot be undone.
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

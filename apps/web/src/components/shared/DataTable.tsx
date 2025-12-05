@@ -55,7 +55,7 @@ export default function DataTable<T extends Record<string, unknown>>({
 
   if (loading) {
     return (
-      <div className="bg-white shadow rounded-lg">
+      <div className="bg-white dark:bg-[var(--card)] shadow rounded-lg">
         <div>
           {/* Skeleton header */}
           <div className="flex">
@@ -77,16 +77,16 @@ export default function DataTable<T extends Record<string, unknown>>({
   }
 
   return (
-    <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+    <div className="bg-white dark:bg-[var(--card)] shadow overflow-hidden sm:rounded-lg">
+      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead className="bg-gray-50 dark:bg-gray-800/50">
           <tr>
             {columns.map((column) => (
               <th
                 key={String(column.key)}
                 scope="col"
-                className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
-                  column.sortable ? 'cursor-pointer hover:bg-gray-100' : ''
+                className={`px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider ${
+                  column.sortable ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50' : ''
                 }`}
                 onClick={() => column.sortable && handleSort(column.key)}
               >
@@ -96,8 +96,8 @@ export default function DataTable<T extends Record<string, unknown>>({
                     <svg
                       className={`w-4 h-4 ${
                         sortConfig?.key === column.key
-                          ? 'text-gray-900'
-                          : 'text-gray-400'
+                          ? 'text-gray-900 dark:text-gray-100'
+                          : 'text-gray-400 dark:text-gray-500'
                       }`}
                       fill="none"
                       stroke="currentColor"
@@ -120,12 +120,12 @@ export default function DataTable<T extends Record<string, unknown>>({
             ))}
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-white dark:bg-[var(--card)] divide-y divide-gray-200 dark:divide-gray-700">
           {sortedData.length === 0 ? (
             <tr>
               <td
                 colSpan={columns.length}
-                className="px-6 py-12 text-center text-sm text-gray-500"
+                className="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400"
               >
                 {emptyMessage}
               </td>
@@ -136,7 +136,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                 key={index}
                 className={`${
                   onRowClick
-                    ? 'hover:bg-gray-50 cursor-pointer'
+                    ? 'hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer'
                     : ''
                 } transition-colors duration-150`}
                 onClick={() => onRowClick?.(row)}
@@ -144,7 +144,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                 {columns.map((column) => (
                   <td
                     key={String(column.key)}
-                    className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                    className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100"
                   >
                     {column.render
                       ? column.render(row[column.key], row)

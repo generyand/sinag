@@ -77,11 +77,11 @@ INDICATOR_3_3 = Indicator(
             code="3.3.2",
             name="System: Systematic maintenance of records of cases",
             upload_instructions=(
-                "Upload ONE of the following (only 1 required):\n\n"
-                "1. For barangays of cities: Two (2) photos with caption of the computer database with searchable information "
-                "(Photo Requirements: One photo with Distant View and one photo with Close-up View. "
-                "Note: Photos of the computer database using MS Excel and such are acceptable)\n"
-                "2. For barangays of municipalities: One (1) photo with caption on the manual record (Case Record Book) OR digital file (scanned copy of KP files)"
+                "OPTION A - For barangays of cities:\n"
+                "- Two (2) photos with caption of the computer database with searchable information\n\n"
+                "OR\n\n"
+                "OPTION B - For barangays of municipalities:\n"
+                "- One (1) photo with caption on the manual record (Case Record Book) OR digital file (scanned copy of KP files)"
             ),
             validation_rule="ANY_ITEM_REQUIRED",  # OR logic: either cities OR municipalities option
             checklist_items=[

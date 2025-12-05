@@ -60,14 +60,7 @@ INDICATOR_3_1 = Indicator(
             code="3.1.1",
             name="Organized BADAC with its composition and appropriate committees (Committees on Operations and on Advocacy) compliant to DILG-DDB JMC No. 2018-01",
             upload_instructions=(
-                "Upload the following document:\n\n"
-                "EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) creating the BADAC with its composition and appropriate committees, covering January to October 2023\n\n"
-                "The BADAC must include:\n"
-                "- Minimum Composition: Punong Barangay, SBM, SK Chairperson, Public School Principal/Representative, Chief Tanod/Executive Officer, At least 2 representatives of NGOs/CSOs, Representative of Faith-Based Organization, C/M Chief of Police or Representative\n"
-                "- Committee on Operations: SBM, Executive Officer/Chief Tanod, BADAC Auxiliary Team (BAT)\n"
-                "- Committee on Advocacy: SBM, SK Chairperson, Public School Principal/Representative, At least 2 representatives of NGOs/CSOs, Representative of Faith-Based Organization\n\n"
-                "Please also supply the required information:\n"
-                "Date of approval"
+                "1. EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) creating the BADAC with its composition and appropriate committees, covering January to October 2023"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
@@ -99,13 +92,13 @@ INDICATOR_3_1 = Indicator(
                     NoteItem(label="6.", text="At least 2 representatives of NGOs/CSOs"),
                     NoteItem(label="7.", text="Representative of Faith-Based Organization"),
                     NoteItem(label="8.", text="C/M Chief of Police or Representative"),
-                    NoteItem(text=""),
+                    NoteItem(text=" "),
                     NoteItem(text="Minimum Composition of the BADAC Committees:"),
                     NoteItem(label="A.", text="Committee on Operations"),
                     NoteItem(label="   1.", text="SBM"),
                     NoteItem(label="   2.", text="Executive Officer/Chief Tanod"),
                     NoteItem(label="   3.", text="BADAC Auxiliary Team (BAT)"),
-                    NoteItem(text=""),
+                    NoteItem(text=" "),
                     NoteItem(label="B.", text="Committee on Advocacy"),
                     NoteItem(label="   1.", text="SBM"),
                     NoteItem(label="   2.", text="SK Chairperson"),

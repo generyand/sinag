@@ -34,7 +34,7 @@ INDICATOR_1_1 = Indicator(
                 # Top-level MOV items - BFDP Form checkbox
                 ChecklistItem(
                     id="1_1_1_bfdp_form",
-                    label="BFDP Monitoring Form A of the DILG Advisory covering the 1st to 3rd quarter monitoring data signed by the City/Municipal C/MLGOO, Punong Barangay and Barangay Secretary",
+                    label="Three (3) BFDP Monitoring Form A of the DILG Advisory covering the 1st to 3rd quarter monitoring data signed by the City Director/C/MLGOO, Punong Barangay and Barangay Secretary",
                     mov_description=None,
                     required=True,
                     display_order=1

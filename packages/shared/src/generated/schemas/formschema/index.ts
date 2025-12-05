@@ -5,6 +5,7 @@
 
 import type { FormSchemaFieldsItem } from '../common';
 import type { FormSchemaNotes } from '../common';
+import type { FormSchemaSecondaryNotes } from '../common';
 import type { FormSchemaResponseFormSchema } from '../system';
 import type { FormSchemaMetadata } from '../formschemametadata';
 
@@ -17,8 +18,10 @@ export interface FormSchema {
    * @minItems 1
    */
   fields: FormSchemaFieldsItem[];
-  /** Optional notes section displayed below the form fields */
+  /** Optional notes section displayed above the form fields */
   notes?: FormSchemaNotes;
+  /** Optional secondary notes section displayed after form fields */
+  secondary_notes?: FormSchemaSecondaryNotes;
 }
 
 
