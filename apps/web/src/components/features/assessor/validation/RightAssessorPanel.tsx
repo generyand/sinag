@@ -1365,7 +1365,7 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
 
                   <div className="space-y-1">
                     <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                      {isValidator ? "Validator's Findings (Visible to BLGU)" : "Assessor's Notes (Visible to BLGU)"}
+                      {isValidator ? "Validator's Findings" : "Assessor's Notes"}
                     </div>
                     <Textarea
                       {...register(`${key}.publicComment` as const)}
