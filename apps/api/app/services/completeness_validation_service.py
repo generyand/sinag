@@ -123,6 +123,9 @@ class CompletenessValidationService:
                     fields.extend(section.get("fields", []))
                 form_schema = {**form_schema, "fields": fields}
 
+            # Sanitize form schema to handle data quality issues (e.g., empty note texts)
+            form_schema = self._sanitize_form_schema(form_schema)
+
             # Parse and validate the form schema using Pydantic
             schema_obj = FormSchema(**form_schema)
 
@@ -339,6 +342,56 @@ class CompletenessValidationService:
             return "No data provided"
 
         return "Field is incomplete"
+
+    def _sanitize_form_schema(self, form_schema: dict[str, Any]) -> dict[str, Any]:
+        """
+        Sanitize form schema to handle data quality issues.
+
+        This method cleans up the form schema to handle cases where the data
+        stored in the database doesn't strictly comply with the Pydantic schema
+        validation rules (e.g., empty note texts).
+
+        Args:
+            form_schema: The raw form schema dict from the database
+
+        Returns:
+            Sanitized form schema dict
+        """
+        sanitized = dict(form_schema)
+
+        # Sanitize notes - filter out items with empty text
+        if "notes" in sanitized and sanitized["notes"]:
+            notes = sanitized["notes"]
+            if isinstance(notes, dict) and "items" in notes:
+                # Filter out note items with empty or whitespace-only text
+                filtered_items = [
+                    item for item in notes.get("items", [])
+                    if isinstance(item, dict)
+                    and item.get("text")
+                    and str(item.get("text", "")).strip()
+                ]
+                if filtered_items:
+                    sanitized["notes"] = {**notes, "items": filtered_items}
+                else:
+                    # No valid items left, remove notes entirely
+                    sanitized["notes"] = None
+
+        # Sanitize secondary_notes similarly
+        if "secondary_notes" in sanitized and sanitized["secondary_notes"]:
+            secondary_notes = sanitized["secondary_notes"]
+            if isinstance(secondary_notes, dict) and "items" in secondary_notes:
+                filtered_items = [
+                    item for item in secondary_notes.get("items", [])
+                    if isinstance(item, dict)
+                    and item.get("text")
+                    and str(item.get("text", "")).strip()
+                ]
+                if filtered_items:
+                    sanitized["secondary_notes"] = {**secondary_notes, "items": filtered_items}
+                else:
+                    sanitized["secondary_notes"] = None
+
+        return sanitized
 
     def _validate_grouped_or_fields(
         self,
