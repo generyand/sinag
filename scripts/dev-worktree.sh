@@ -114,7 +114,7 @@ start_all() {
     # Export ports for subprocesses
     export API_PORT WEB_PORT
 
-    npx concurrently \
+    pnpm exec concurrently \
         -n "API,WEB,CELERY" \
         -c "blue,green,yellow" \
         "cd apps/api && uv run uvicorn main:app --reload --host 0.0.0.0 --port ${API_PORT}" \
@@ -156,7 +156,7 @@ start_no_celery() {
 
     cd "$PROJECT_ROOT"
 
-    npx concurrently \
+    pnpm exec concurrently \
         -n "API,WEB" \
         -c "blue,green" \
         "cd apps/api && uv run uvicorn main:app --reload --host 0.0.0.0 --port ${API_PORT}" \
