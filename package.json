@@ -13,7 +13,6 @@
     "dev:no-celery": "./scripts/dev-worktree.sh no-celery",
     "dev:ports": "./scripts/dev-worktree.sh ports",
     "celery": "cd apps/api && pnpm dev:celery",
-    "celery:run": "cd apps/api && pnpm dev:celery",
     "celery:logs": "docker compose logs -f celery-worker",
     "lint": "turbo lint",
     "type-check": "turbo type-check",
