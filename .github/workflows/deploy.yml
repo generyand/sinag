@@ -100,11 +100,24 @@ jobs:
           GITHUB_REPOSITORY=${{ github.repository }}
           IMAGE_TAG=${{ needs.setup.outputs.image_tag }}
 
+          # Environment
+          ENVIRONMENT=${{ vars.ENVIRONMENT || 'staging' }}
+
+          # Security
           SECRET_KEY=${{ secrets.SECRET_KEY }}
+          FIRST_SUPERUSER_PASSWORD=${{ secrets.FIRST_SUPERUSER_PASSWORD }}
+          EXTERNAL_USER_DEFAULT_PASSWORD=${{ secrets.EXTERNAL_USER_DEFAULT_PASSWORD }}
+
+          # CORS
+          BACKEND_CORS_ORIGINS=${{ vars.BACKEND_CORS_ORIGINS }}
+
+          # Database & Supabase
           DATABASE_URL=${{ secrets.DATABASE_URL }}
           SUPABASE_URL=${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+          # AI
           GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
           EOF
 
@@ -192,11 +205,24 @@ jobs:
           GITHUB_REPOSITORY=${{ github.repository }}
           IMAGE_TAG=${{ needs.setup.outputs.image_tag }}
 
+          # Environment
+          ENVIRONMENT=${{ vars.ENVIRONMENT || 'production' }}
+
+          # Security
           SECRET_KEY=${{ secrets.SECRET_KEY }}
+          FIRST_SUPERUSER_PASSWORD=${{ secrets.FIRST_SUPERUSER_PASSWORD }}
+          EXTERNAL_USER_DEFAULT_PASSWORD=${{ secrets.EXTERNAL_USER_DEFAULT_PASSWORD }}
+
+          # CORS
+          BACKEND_CORS_ORIGINS=${{ vars.BACKEND_CORS_ORIGINS }}
+
+          # Database & Supabase
           DATABASE_URL=${{ secrets.DATABASE_URL }}
           SUPABASE_URL=${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+          # AI
           GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
           EOF
 
