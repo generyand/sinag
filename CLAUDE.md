@@ -486,6 +486,7 @@ sinag/
 
 - **`src/lib/`**: Utilities and configurations
   - `api.ts`: Axios instance with auth & error handling (used by Orval)
+  - `error-utils.ts`: Error classification utilities (`classifyError()`, `getErrorMessage()`)
   - `utils.ts`: Helper functions
 
 - **`src/hooks/`**: Custom React hooks for data fetching
@@ -968,7 +969,16 @@ See `apps/api/app/api/v1/users.py` for complete documentation.
 - **Tasks**: `tasks/` - Implementation task lists
 - **Cursor Rules**: `.cursor/rules/` - Development guidelines
 
-Key rule files:
+### Development Guides
+
+Located in `docs/guides/`:
+- `error-handling.md` - Frontend error classification and display patterns
+- `service-layer-pattern.md` - Backend service layer best practices
+- `type-generation.md` - Orval type generation workflow
+- `database-migrations.md` - Alembic migration guidelines
+- `nginx-reverse-proxy-setup.md` - Nginx configuration for development
+
+Key Cursor rule files:
 - `@project-structure.mdc`: File organization
 - `@api-endpoint-creation.mdc`: Backend endpoint workflow
 - `@service-layer-pattern.mdc`: Service layer best practices
