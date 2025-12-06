@@ -2,6 +2,7 @@
 
 import { TreeNavigator } from '@/components/features/assessments/tree-navigation';
 import { StatusBadge } from '@/components/shared';
+import { ValidationPanelSkeleton } from '@/components/shared/skeletons';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -12,10 +13,19 @@ import {
 } from '@sinag/shared';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MiddleMovFilesPanel } from './MiddleMovFilesPanel';
-import { RightAssessorPanel } from './RightAssessorPanel';
+
+// Lazy load heavy RightAssessorPanel component (1400+ LOC)
+const RightAssessorPanel = dynamic(
+  () => import('./RightAssessorPanel').then(mod => ({ default: mod.RightAssessorPanel })),
+  {
+    loading: () => <ValidationPanelSkeleton />,
+    ssr: false,
+  }
+);
 
 interface AssessorValidationClientProps {
   assessmentId: number;
