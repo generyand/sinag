@@ -64,7 +64,7 @@ export default function GARPage() {
     if (format === 'excel') setExportingExcel(true);
     if (format === 'pdf') setExportingPdf(true);
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_V1_URL || 'http://localhost:8000/api/v1';
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/api/v1` : 'http://localhost:8000/api/v1';
     const areaParam = selectedAreaId === 'all' ? '' : `?governance_area_id=${selectedAreaId}`;
     const url = `${baseUrl}/gar/${selectedAssessmentId}/export/${format}${areaParam}`;
 

@@ -15,8 +15,7 @@ const getBaseURL = () => {
   
   // Client-side (browser) - use the public environment variable
   // This is exposed by NEXT_PUBLIC_ prefix and accessible to the browser
-  // Browser needs localhost because it runs on the host machine, not in Docker
-  return process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 };
 
 const axiosInstance = axios.create({
