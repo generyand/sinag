@@ -60,8 +60,8 @@ async function loginUser(page: Page, email: string, password: string) {
   await expect(page).toHaveURL(/\/login/);
 
   // Fill in credentials
-  await page.fill('input[name="email"]', email);
-  await page.fill('input[name="password"]', password);
+  await page.fill('#email', email);
+  await page.fill('#password', password);
 
   // Submit login form
   await page.click('button[type="submit"]');
@@ -107,8 +107,8 @@ test.describe('Authentication Flow - Login', () => {
 
   test('should show login page when not authenticated', async ({ page }) => {
     await expect(page).toHaveURL(/\/login/);
-    await expect(page.locator('input[name="email"]')).toBeVisible();
-    await expect(page.locator('input[name="password"]')).toBeVisible();
+    await expect(page.locator('#email')).toBeVisible();
+    await expect(page.locator('#password')).toBeVisible();
     await expect(page.locator('button[type="submit"]')).toBeVisible();
   });
 
@@ -119,8 +119,8 @@ test.describe('Authentication Flow - Login', () => {
   });
 
   test('should display error message with invalid credentials', async ({ page }) => {
-    await page.fill('input[name="email"]', 'invalid@example.com');
-    await page.fill('input[name="password"]', 'wrongpassword');
+    await page.fill('#email', 'invalid@example.com');
+    await page.fill('#password', 'wrongpassword');
     await page.click('button[type="submit"]');
 
     // Wait for error message (adjust selector based on your UI)

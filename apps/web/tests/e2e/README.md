@@ -35,18 +35,41 @@ The E2E tests cover multiple epics and user workflows:
 
 ### Test Commands
 
+You can run tests from either the **project root** or the **apps/web** directory:
+
+**From project root (recommended for CI/monorepo workflows):**
 ```bash
 # Run all E2E tests (headless mode)
-npm run test:e2e
+pnpm exec playwright test
 
 # Run with Playwright UI (recommended for debugging)
-npm run test:e2e:ui
+pnpm exec playwright test --ui
 
 # Run in headed mode (see browser)
-npm run test:e2e:headed
+pnpm exec playwright test --headed
+
+# Run specific test file
+pnpm exec playwright test authentication.spec.ts
+
+# Run only Chromium (faster)
+pnpm exec playwright test --project=chromium
+```
+
+**From apps/web directory (uses pnpm scripts):**
+```bash
+cd apps/web
+
+# Run all E2E tests (headless mode)
+pnpm test:e2e
+
+# Run with Playwright UI (recommended for debugging)
+pnpm test:e2e:ui
+
+# Run in headed mode (see browser)
+pnpm test:e2e:headed
 
 # Debug mode (step through tests)
-npm run test:e2e:debug
+pnpm test:e2e:debug
 ```
 
 ## Test Files
@@ -161,12 +184,18 @@ The Epic 5 tests use fixtures from the `fixtures/` directory. Test users require
 
 ## Configuration
 
-E2E test configuration is in `playwright.config.ts`:
+E2E test configuration is in the **root** `playwright.config.ts` (not in `apps/web/`):
+- **Test Directory**: `./apps/web/tests/e2e` - All E2E tests are here
 - **Base URL**: `http://localhost:3000` (configurable via `NEXT_PUBLIC_APP_URL`)
-- **Browser**: Chromium (Desktop Chrome)
+- **Auto-start**: Playwright automatically starts Next.js dev server before running tests
+- **Browsers**:
+  - **CI**: Chromium only (faster)
+  - **Local**: Chromium, Firefox, and WebKit (run `--project=chromium` for faster local runs)
 - **Retries**: 0 locally, 2 in CI
 - **Screenshots**: Only on failure
 - **Trace**: On first retry
+
+The configuration has been consolidated to the root level for the entire monorepo. There is no separate `apps/web/playwright.config.ts`.
 
 ## Selectors and Data Attributes
 
