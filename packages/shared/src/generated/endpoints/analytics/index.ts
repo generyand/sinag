@@ -55,7 +55,7 @@ export const getAnalyticsDashboard = (
       
       
       return mutator<DashboardKPIResponse>(
-      {url: `http://localhost:8000/api/v1/analytics/dashboard`, method: 'GET',
+      {url: `/api/v1/analytics/dashboard`, method: 'GET',
         params, signal
     },
       options);
@@ -63,7 +63,7 @@ export const getAnalyticsDashboard = (
   
 
 export const getGetAnalyticsDashboardQueryKey = (params?: GetAnalyticsDashboardParams,) => {
-    return [`http://localhost:8000/api/v1/analytics/dashboard`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/analytics/dashboard`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -142,7 +142,7 @@ export const getAnalyticsReports = (
       
       
       return mutator<ReportsDataResponse>(
-      {url: `http://localhost:8000/api/v1/analytics/reports`, method: 'GET',
+      {url: `/api/v1/analytics/reports`, method: 'GET',
         params, signal
     },
       options);
@@ -150,7 +150,7 @@ export const getAnalyticsReports = (
   
 
 export const getGetAnalyticsReportsQueryKey = (params?: GetAnalyticsReportsParams,) => {
-    return [`http://localhost:8000/api/v1/analytics/reports`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/analytics/reports`, ...(params ? [params]: [])] as const;
     }
 
     

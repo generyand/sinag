@@ -53,7 +53,7 @@ export const getMunicipalOverviewDashboard = (
       
       
       return mutator<MunicipalOverviewDashboard>(
-      {url: `http://localhost:8000/api/v1/municipal-overview/dashboard`, method: 'GET',
+      {url: `/api/v1/municipal-overview/dashboard`, method: 'GET',
         params, signal
     },
       options);
@@ -61,7 +61,7 @@ export const getMunicipalOverviewDashboard = (
   
 
 export const getGetMunicipalOverviewDashboardQueryKey = (params?: GetMunicipalOverviewDashboardParams,) => {
-    return [`http://localhost:8000/api/v1/municipal-overview/dashboard`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/municipal-overview/dashboard`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -118,7 +118,7 @@ export const getMunicipalOverviewComplianceSummary = (
       
       
       return mutator<MunicipalComplianceSummary>(
-      {url: `http://localhost:8000/api/v1/municipal-overview/compliance-summary`, method: 'GET',
+      {url: `/api/v1/municipal-overview/compliance-summary`, method: 'GET',
         params, signal
     },
       options);
@@ -126,7 +126,7 @@ export const getMunicipalOverviewComplianceSummary = (
   
 
 export const getGetMunicipalOverviewComplianceSummaryQueryKey = (params?: GetMunicipalOverviewComplianceSummaryParams,) => {
-    return [`http://localhost:8000/api/v1/municipal-overview/compliance-summary`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/municipal-overview/compliance-summary`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -183,7 +183,7 @@ export const getMunicipalOverviewGovernanceAreas = (
       
       
       return mutator<GovernanceAreaPerformanceList>(
-      {url: `http://localhost:8000/api/v1/municipal-overview/governance-areas`, method: 'GET',
+      {url: `/api/v1/municipal-overview/governance-areas`, method: 'GET',
         params, signal
     },
       options);
@@ -191,7 +191,7 @@ export const getMunicipalOverviewGovernanceAreas = (
   
 
 export const getGetMunicipalOverviewGovernanceAreasQueryKey = (params?: GetMunicipalOverviewGovernanceAreasParams,) => {
-    return [`http://localhost:8000/api/v1/municipal-overview/governance-areas`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/municipal-overview/governance-areas`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -248,7 +248,7 @@ export const getMunicipalOverviewTopFailingIndicators = (
       
       
       return mutator<TopFailingIndicatorsList>(
-      {url: `http://localhost:8000/api/v1/municipal-overview/top-failing-indicators`, method: 'GET',
+      {url: `/api/v1/municipal-overview/top-failing-indicators`, method: 'GET',
         params, signal
     },
       options);
@@ -256,7 +256,7 @@ export const getMunicipalOverviewTopFailingIndicators = (
   
 
 export const getGetMunicipalOverviewTopFailingIndicatorsQueryKey = (params?: GetMunicipalOverviewTopFailingIndicatorsParams,) => {
-    return [`http://localhost:8000/api/v1/municipal-overview/top-failing-indicators`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/municipal-overview/top-failing-indicators`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -313,7 +313,7 @@ export const getMunicipalOverviewCapdevSummary = (
       
       
       return mutator<AggregatedCapDevSummary>(
-      {url: `http://localhost:8000/api/v1/municipal-overview/capdev-summary`, method: 'GET',
+      {url: `/api/v1/municipal-overview/capdev-summary`, method: 'GET',
         params, signal
     },
       options);
@@ -321,7 +321,7 @@ export const getMunicipalOverviewCapdevSummary = (
   
 
 export const getGetMunicipalOverviewCapdevSummaryQueryKey = (params?: GetMunicipalOverviewCapdevSummaryParams,) => {
-    return [`http://localhost:8000/api/v1/municipal-overview/capdev-summary`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/municipal-overview/capdev-summary`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -378,7 +378,7 @@ export const getMunicipalOverviewBarangayStatuses = (
       
       
       return mutator<BarangayStatusList>(
-      {url: `http://localhost:8000/api/v1/municipal-overview/barangay-statuses`, method: 'GET',
+      {url: `/api/v1/municipal-overview/barangay-statuses`, method: 'GET',
         params, signal
     },
       options);
@@ -386,7 +386,7 @@ export const getMunicipalOverviewBarangayStatuses = (
   
 
 export const getGetMunicipalOverviewBarangayStatusesQueryKey = (params?: GetMunicipalOverviewBarangayStatusesParams,) => {
-    return [`http://localhost:8000/api/v1/municipal-overview/barangay-statuses`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/municipal-overview/barangay-statuses`, ...(params ? [params]: [])] as const;
     }
 
     

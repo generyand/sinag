@@ -32,59 +32,62 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 /**
- * Root endpoint - welcome message for the API.
- * @summary Root
+ * Get metrics summary as JSON. Requires MLGOO_DILG admin role.
+
+Returns request counts, latencies, and error rates per endpoint.
+Useful for dashboards and debugging.
+ * @summary Metrics Summary
  */
-export const getSystem = (
+export const getSystemMetrics = (
     
  options?: SecondParameter<typeof mutator>,signal?: AbortSignal
 ) => {
       
       
-      return mutator<ApiResponse>(
-      {url: `http://localhost:8000/api/v1/system/`, method: 'GET', signal
+      return mutator<unknown>(
+      {url: `/api/v1/system/metrics`, method: 'GET', signal
     },
       options);
     }
   
 
-export const getGetSystemQueryKey = () => {
-    return [`http://localhost:8000/api/v1/system/`] as const;
+export const getGetSystemMetricsQueryKey = () => {
+    return [`/api/v1/system/metrics`] as const;
     }
 
     
-export const getGetSystemQueryOptions = <TData = Awaited<ReturnType<typeof getSystem>>, TError = unknown>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSystem>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export const getGetSystemMetricsQueryOptions = <TData = Awaited<ReturnType<typeof getSystemMetrics>>, TError = unknown>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSystemMetrics>>, TError, TData>, request?: SecondParameter<typeof mutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetSystemQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetSystemMetricsQueryKey();
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSystem>>> = ({ signal }) => getSystem(requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSystemMetrics>>> = ({ signal }) => getSystemMetrics(requestOptions, signal);
 
       
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSystem>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSystemMetrics>>, TError, TData> & { queryKey: QueryKey }
 }
 
-export type GetSystemQueryResult = NonNullable<Awaited<ReturnType<typeof getSystem>>>
-export type GetSystemQueryError = unknown
+export type GetSystemMetricsQueryResult = NonNullable<Awaited<ReturnType<typeof getSystemMetrics>>>
+export type GetSystemMetricsQueryError = unknown
 
 
 /**
- * @summary Root
+ * @summary Metrics Summary
  */
 
-export function useGetSystem<TData = Awaited<ReturnType<typeof getSystem>>, TError = unknown>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSystem>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export function useGetSystemMetrics<TData = Awaited<ReturnType<typeof getSystemMetrics>>, TError = unknown>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSystemMetrics>>, TError, TData>, request?: SecondParameter<typeof mutator>}
   
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetSystemQueryOptions(options)
+  const queryOptions = getGetSystemMetricsQueryOptions(options)
 
   const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -111,14 +114,14 @@ export const getSystemHealth = (
       
       
       return mutator<HealthCheck>(
-      {url: `http://localhost:8000/api/v1/system/health`, method: 'GET', signal
+      {url: `/api/v1/system/health`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetSystemHealthQueryKey = () => {
-    return [`http://localhost:8000/api/v1/system/health`] as const;
+    return [`/api/v1/system/health`] as const;
     }
 
     
@@ -165,6 +168,70 @@ export function useGetSystemHealth<TData = Awaited<ReturnType<typeof getSystemHe
 
 
 /**
+ * Root endpoint - welcome message for the API.
+ * @summary Root
+ */
+export const getSystem = (
+    
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<ApiResponse>(
+      {url: `/api/v1/system/`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+export const getGetSystemQueryKey = () => {
+    return [`/api/v1/system/`] as const;
+    }
+
+    
+export const getGetSystemQueryOptions = <TData = Awaited<ReturnType<typeof getSystem>>, TError = unknown>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSystem>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSystemQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSystem>>> = ({ signal }) => getSystem(requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSystem>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSystemQueryResult = NonNullable<Awaited<ReturnType<typeof getSystem>>>
+export type GetSystemQueryError = unknown
+
+
+/**
+ * @summary Root
+ */
+
+export function useGetSystem<TData = Awaited<ReturnType<typeof getSystem>>, TError = unknown>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSystem>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSystemQueryOptions(options)
+
+  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
  * Detailed database connectivity status for debugging.
 
 Returns detailed information about:
@@ -180,14 +247,14 @@ export const getSystemDbStatus = (
       
       
       return mutator<unknown>(
-      {url: `http://localhost:8000/api/v1/system/db-status`, method: 'GET', signal
+      {url: `/api/v1/system/db-status`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetSystemDbStatusQueryKey = () => {
-    return [`http://localhost:8000/api/v1/system/db-status`] as const;
+    return [`/api/v1/system/db-status`] as const;
     }
 
     
@@ -244,14 +311,14 @@ export const getSystemHello = (
       
       
       return mutator<ApiResponse>(
-      {url: `http://localhost:8000/api/v1/system/hello`, method: 'GET', signal
+      {url: `/api/v1/system/hello`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetSystemHelloQueryKey = () => {
-    return [`http://localhost:8000/api/v1/system/hello`] as const;
+    return [`/api/v1/system/hello`] as const;
     }
 
     

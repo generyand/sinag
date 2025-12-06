@@ -88,7 +88,7 @@ export const postIndicators = (
       
       
       return mutator<IndicatorResponse>(
-      {url: `http://localhost:8000/api/v1/indicators/`, method: 'POST',
+      {url: `/api/v1/indicators/`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: indicatorCreate, signal
     },
@@ -163,7 +163,7 @@ export const getIndicators = (
       
       
       return mutator<IndicatorResponse[]>(
-      {url: `http://localhost:8000/api/v1/indicators/`, method: 'GET',
+      {url: `/api/v1/indicators/`, method: 'GET',
         params, signal
     },
       options);
@@ -171,7 +171,7 @@ export const getIndicators = (
   
 
 export const getGetIndicatorsQueryKey = (params?: GetIndicatorsParams,) => {
-    return [`http://localhost:8000/api/v1/indicators/`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/indicators/`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -250,7 +250,7 @@ export const postIndicatorsValidateFormSchema = (
       
       
       return mutator<PostIndicatorsValidateFormSchema200>(
-      {url: `http://localhost:8000/api/v1/indicators/validate-form-schema`, method: 'POST',
+      {url: `/api/v1/indicators/validate-form-schema`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: formSchema, signal
     },
@@ -339,7 +339,7 @@ export const postIndicatorsValidateCalculationSchema = (
       
       
       return mutator<PostIndicatorsValidateCalculationSchema200>(
-      {url: `http://localhost:8000/api/v1/indicators/validate-calculation-schema`, method: 'POST',
+      {url: `/api/v1/indicators/validate-calculation-schema`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: calculationSchema, signal
     },
@@ -458,7 +458,7 @@ export const postIndicatorsTestCalculation = (
       
       
       return mutator<PostIndicatorsTestCalculation200>(
-      {url: `http://localhost:8000/api/v1/indicators/test-calculation`, method: 'POST',
+      {url: `/api/v1/indicators/test-calculation`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: bodyTestCalculationApiV1IndicatorsTestCalculationPost, signal
     },
@@ -533,14 +533,14 @@ export const getIndicators$IndicatorId = (
       
       
       return mutator<IndicatorResponse>(
-      {url: `http://localhost:8000/api/v1/indicators/${indicatorId}`, method: 'GET', signal
+      {url: `/api/v1/indicators/${indicatorId}`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetIndicatorsIndicatorIdQueryKey = (indicatorId: number,) => {
-    return [`http://localhost:8000/api/v1/indicators/${indicatorId}`] as const;
+    return [`/api/v1/indicators/${indicatorId}`] as const;
     }
 
     
@@ -627,7 +627,7 @@ export const putIndicators$IndicatorId = (
       
       
       return mutator<IndicatorResponse>(
-      {url: `http://localhost:8000/api/v1/indicators/${indicatorId}`, method: 'PUT',
+      {url: `/api/v1/indicators/${indicatorId}`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
       data: indicatorUpdate
     },
@@ -702,7 +702,7 @@ export const deleteIndicators$IndicatorId = (
       
       
       return mutator<IndicatorResponse>(
-      {url: `http://localhost:8000/api/v1/indicators/${indicatorId}`, method: 'DELETE'
+      {url: `/api/v1/indicators/${indicatorId}`, method: 'DELETE'
     },
       options);
     }
@@ -775,14 +775,14 @@ export const getIndicators$IndicatorIdHistory = (
       
       
       return mutator<IndicatorHistoryResponse[]>(
-      {url: `http://localhost:8000/api/v1/indicators/${indicatorId}/history`, method: 'GET', signal
+      {url: `/api/v1/indicators/${indicatorId}/history`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetIndicatorsIndicatorIdHistoryQueryKey = (indicatorId: number,) => {
-    return [`http://localhost:8000/api/v1/indicators/${indicatorId}/history`] as const;
+    return [`/api/v1/indicators/${indicatorId}/history`] as const;
     }
 
     
@@ -851,14 +851,14 @@ export const getIndicators$IndicatorIdFormSchema = (
       
       
       return mutator<FormSchemaResponse>(
-      {url: `http://localhost:8000/api/v1/indicators/${indicatorId}/form-schema`, method: 'GET', signal
+      {url: `/api/v1/indicators/${indicatorId}/form-schema`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetIndicatorsIndicatorIdFormSchemaQueryKey = (indicatorId: number,) => {
-    return [`http://localhost:8000/api/v1/indicators/${indicatorId}/form-schema`] as const;
+    return [`/api/v1/indicators/${indicatorId}/form-schema`] as const;
     }
 
     
@@ -955,14 +955,14 @@ export const getIndicatorsTree$GovernanceAreaId = (
       
       
       return mutator<GetIndicatorsTreeGovernanceAreaId200Item[]>(
-      {url: `http://localhost:8000/api/v1/indicators/tree/${governanceAreaId}`, method: 'GET', signal
+      {url: `/api/v1/indicators/tree/${governanceAreaId}`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetIndicatorsTreeGovernanceAreaIdQueryKey = (governanceAreaId: number,) => {
-    return [`http://localhost:8000/api/v1/indicators/tree/${governanceAreaId}`] as const;
+    return [`/api/v1/indicators/tree/${governanceAreaId}`] as const;
     }
 
     
@@ -1047,7 +1047,7 @@ export const postIndicatorsRecalculateCodes$GovernanceAreaId = (
       
       
       return mutator<IndicatorResponse[]>(
-      {url: `http://localhost:8000/api/v1/indicators/recalculate-codes/${governanceAreaId}`, method: 'POST', signal
+      {url: `/api/v1/indicators/recalculate-codes/${governanceAreaId}`, method: 'POST', signal
     },
       options);
     }
@@ -1128,7 +1128,7 @@ export const postIndicatorsBulk = (
       
       
       return mutator<BulkIndicatorResponse>(
-      {url: `http://localhost:8000/api/v1/indicators/bulk`, method: 'POST',
+      {url: `/api/v1/indicators/bulk`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: bulkIndicatorCreate, signal
     },
@@ -1204,7 +1204,7 @@ export const postIndicatorsReorder = (
       
       
       return mutator<IndicatorResponse[]>(
-      {url: `http://localhost:8000/api/v1/indicators/reorder`, method: 'POST',
+      {url: `/api/v1/indicators/reorder`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: reorderRequest, signal
     },
@@ -1283,7 +1283,7 @@ export const postIndicatorsDrafts = (
       
       
       return mutator<IndicatorDraftResponse>(
-      {url: `http://localhost:8000/api/v1/indicators/drafts`, method: 'POST',
+      {url: `/api/v1/indicators/drafts`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: indicatorDraftCreate, signal
     },
@@ -1356,7 +1356,7 @@ export const getIndicatorsDrafts = (
       
       
       return mutator<IndicatorDraftSummary[]>(
-      {url: `http://localhost:8000/api/v1/indicators/drafts`, method: 'GET',
+      {url: `/api/v1/indicators/drafts`, method: 'GET',
         params, signal
     },
       options);
@@ -1364,7 +1364,7 @@ export const getIndicatorsDrafts = (
   
 
 export const getGetIndicatorsDraftsQueryKey = (params?: GetIndicatorsDraftsParams,) => {
-    return [`http://localhost:8000/api/v1/indicators/drafts`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/indicators/drafts`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -1432,14 +1432,14 @@ export const getIndicatorsDrafts$DraftId = (
       
       
       return mutator<IndicatorDraftResponse>(
-      {url: `http://localhost:8000/api/v1/indicators/drafts/${draftId}`, method: 'GET', signal
+      {url: `/api/v1/indicators/drafts/${draftId}`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetIndicatorsDraftsDraftIdQueryKey = (draftId: string,) => {
-    return [`http://localhost:8000/api/v1/indicators/drafts/${draftId}`] as const;
+    return [`/api/v1/indicators/drafts/${draftId}`] as const;
     }
 
     
@@ -1521,7 +1521,7 @@ export const putIndicatorsDrafts$DraftId = (
       
       
       return mutator<IndicatorDraftResponse>(
-      {url: `http://localhost:8000/api/v1/indicators/drafts/${draftId}`, method: 'PUT',
+      {url: `/api/v1/indicators/drafts/${draftId}`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
       data: indicatorDraftUpdate
     },
@@ -1596,7 +1596,7 @@ export const deleteIndicatorsDrafts$DraftId = (
       
       
       return mutator<void>(
-      {url: `http://localhost:8000/api/v1/indicators/drafts/${draftId}`, method: 'DELETE'
+      {url: `/api/v1/indicators/drafts/${draftId}`, method: 'DELETE'
     },
       options);
     }
@@ -1703,7 +1703,7 @@ export const postIndicatorsDrafts$DraftIdDelta = (
       
       
       return mutator<IndicatorDraftResponse>(
-      {url: `http://localhost:8000/api/v1/indicators/drafts/${draftId}/delta`, method: 'POST',
+      {url: `/api/v1/indicators/drafts/${draftId}/delta`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: indicatorDraftDeltaUpdate, signal
     },
@@ -1780,7 +1780,7 @@ export const postIndicatorsDrafts$DraftIdReleaseLock = (
       
       
       return mutator<IndicatorDraftResponse>(
-      {url: `http://localhost:8000/api/v1/indicators/drafts/${draftId}/release-lock`, method: 'POST', signal
+      {url: `/api/v1/indicators/drafts/${draftId}/release-lock`, method: 'POST', signal
     },
       options);
     }
@@ -1917,7 +1917,7 @@ export const postIndicatorsValidateTree = (
       
       
       return mutator<IndicatorValidationResponse>(
-      {url: `http://localhost:8000/api/v1/indicators/validate-tree`, method: 'POST',
+      {url: `/api/v1/indicators/validate-tree`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: indicatorValidationRequest, signal
     },
@@ -1998,14 +1998,14 @@ export const getIndicatorsCode$IndicatorCode = (
       
       
       return mutator<SimplifiedIndicatorResponse>(
-      {url: `http://localhost:8000/api/v1/indicators/code/${indicatorCode}`, method: 'GET', signal
+      {url: `/api/v1/indicators/code/${indicatorCode}`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetIndicatorsCodeIndicatorCodeQueryKey = (indicatorCode: string,) => {
-    return [`http://localhost:8000/api/v1/indicators/code/${indicatorCode}`] as const;
+    return [`/api/v1/indicators/code/${indicatorCode}`] as const;
     }
 
     
@@ -2083,14 +2083,14 @@ export const getIndicatorsCode$IndicatorCodeTree = (
       
       
       return mutator<IndicatorTreeResponse>(
-      {url: `http://localhost:8000/api/v1/indicators/code/${indicatorCode}/tree`, method: 'GET', signal
+      {url: `/api/v1/indicators/code/${indicatorCode}/tree`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetIndicatorsCodeIndicatorCodeTreeQueryKey = (indicatorCode: string,) => {
-    return [`http://localhost:8000/api/v1/indicators/code/${indicatorCode}/tree`] as const;
+    return [`/api/v1/indicators/code/${indicatorCode}/tree`] as const;
     }
 
     

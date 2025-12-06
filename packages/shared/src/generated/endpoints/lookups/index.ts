@@ -44,14 +44,14 @@ export const getLookupsGovernanceAreas = (
       
       
       return mutator<GovernanceArea[]>(
-      {url: `http://localhost:8000/api/v1/lookups/governance-areas`, method: 'GET', signal
+      {url: `/api/v1/lookups/governance-areas`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetLookupsGovernanceAreasQueryKey = () => {
-    return [`http://localhost:8000/api/v1/lookups/governance-areas`] as const;
+    return [`/api/v1/lookups/governance-areas`] as const;
     }
 
     
@@ -109,14 +109,14 @@ export const getLookupsBarangays = (
       
       
       return mutator<Barangay[]>(
-      {url: `http://localhost:8000/api/v1/lookups/barangays`, method: 'GET', signal
+      {url: `/api/v1/lookups/barangays`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetLookupsBarangaysQueryKey = () => {
-    return [`http://localhost:8000/api/v1/lookups/barangays`] as const;
+    return [`/api/v1/lookups/barangays`] as const;
     }
 
     
@@ -175,14 +175,14 @@ export const getLookupsRoles = (
       
       
       return mutator<UserRoleOption[]>(
-      {url: `http://localhost:8000/api/v1/lookups/roles`, method: 'GET', signal
+      {url: `/api/v1/lookups/roles`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetLookupsRolesQueryKey = () => {
-    return [`http://localhost:8000/api/v1/lookups/roles`] as const;
+    return [`/api/v1/lookups/roles`] as const;
     }
 
     

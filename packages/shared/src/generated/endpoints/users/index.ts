@@ -57,14 +57,14 @@ export const getUsersMe = (
       
       
       return mutator<User>(
-      {url: `http://localhost:8000/api/v1/users/me`, method: 'GET', signal
+      {url: `/api/v1/users/me`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetUsersMeQueryKey = () => {
-    return [`http://localhost:8000/api/v1/users/me`] as const;
+    return [`/api/v1/users/me`] as const;
     }
 
     
@@ -122,7 +122,7 @@ export const putUsersMe = (
       
       
       return mutator<User>(
-      {url: `http://localhost:8000/api/v1/users/me`, method: 'PUT',
+      {url: `/api/v1/users/me`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
       data: userUpdate
     },
@@ -200,7 +200,7 @@ export const patchUsersMeLanguage = (
       
       
       return mutator<User>(
-      {url: `http://localhost:8000/api/v1/users/me/language`, method: 'PATCH',
+      {url: `/api/v1/users/me/language`, method: 'PATCH',
         params
     },
       options);
@@ -266,7 +266,7 @@ export const getUsers = (
       
       
       return mutator<UserListResponse>(
-      {url: `http://localhost:8000/api/v1/users/`, method: 'GET',
+      {url: `/api/v1/users/`, method: 'GET',
         params, signal
     },
       options);
@@ -274,7 +274,7 @@ export const getUsers = (
   
 
 export const getGetUsersQueryKey = (params?: GetUsersParams,) => {
-    return [`http://localhost:8000/api/v1/users/`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/users/`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -341,7 +341,7 @@ export const postUsers = (
       
       
       return mutator<User>(
-      {url: `http://localhost:8000/api/v1/users/`, method: 'POST',
+      {url: `/api/v1/users/`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: userAdminCreate, signal
     },
@@ -408,14 +408,14 @@ export const getUsers$UserId = (
       
       
       return mutator<User>(
-      {url: `http://localhost:8000/api/v1/users/${userId}`, method: 'GET', signal
+      {url: `/api/v1/users/${userId}`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetUsersUserIdQueryKey = (userId: number,) => {
-    return [`http://localhost:8000/api/v1/users/${userId}`] as const;
+    return [`/api/v1/users/${userId}`] as const;
     }
 
     
@@ -483,7 +483,7 @@ export const putUsers$UserId = (
       
       
       return mutator<User>(
-      {url: `http://localhost:8000/api/v1/users/${userId}`, method: 'PUT',
+      {url: `/api/v1/users/${userId}`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
       data: userAdminUpdate
     },
@@ -549,7 +549,7 @@ export const deleteUsers$UserId = (
       
       
       return mutator<User>(
-      {url: `http://localhost:8000/api/v1/users/${userId}`, method: 'DELETE'
+      {url: `/api/v1/users/${userId}`, method: 'DELETE'
     },
       options);
     }
@@ -614,7 +614,7 @@ export const postUsers$UserIdActivate = (
       
       
       return mutator<User>(
-      {url: `http://localhost:8000/api/v1/users/${userId}/activate`, method: 'POST', signal
+      {url: `/api/v1/users/${userId}/activate`, method: 'POST', signal
     },
       options);
     }
@@ -687,7 +687,7 @@ export const postUsers$UserIdResetPassword = (
       
       
       return mutator<PostUsersUserIdResetPassword200>(
-      {url: `http://localhost:8000/api/v1/users/${userId}/reset-password`, method: 'POST',
+      {url: `/api/v1/users/${userId}/reset-password`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: passwordResetRequest, signal
     },
@@ -754,14 +754,14 @@ export const getUsersStatsDashboard = (
       
       
       return mutator<GetUsersStatsDashboard200>(
-      {url: `http://localhost:8000/api/v1/users/stats/dashboard`, method: 'GET', signal
+      {url: `/api/v1/users/stats/dashboard`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetUsersStatsDashboardQueryKey = () => {
-    return [`http://localhost:8000/api/v1/users/stats/dashboard`] as const;
+    return [`/api/v1/users/stats/dashboard`] as const;
     }
 
     

@@ -60,7 +60,7 @@ export const getMlgooApprovalQueue = (
       
       
       return mutator<ApprovalQueueResponse>(
-      {url: `http://localhost:8000/api/v1/mlgoo/approval-queue`, method: 'GET',
+      {url: `/api/v1/mlgoo/approval-queue`, method: 'GET',
         params, signal
     },
       options);
@@ -68,7 +68,7 @@ export const getMlgooApprovalQueue = (
   
 
 export const getGetMlgooApprovalQueueQueryKey = (params?: GetMlgooApprovalQueueParams,) => {
-    return [`http://localhost:8000/api/v1/mlgoo/approval-queue`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/mlgoo/approval-queue`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -129,14 +129,14 @@ export const getMlgooAssessments$AssessmentId = (
       
       
       return mutator<AssessmentDetailResponse>(
-      {url: `http://localhost:8000/api/v1/mlgoo/assessments/${assessmentId}`, method: 'GET', signal
+      {url: `/api/v1/mlgoo/assessments/${assessmentId}`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetMlgooAssessmentsAssessmentIdQueryKey = (assessmentId: number,) => {
-    return [`http://localhost:8000/api/v1/mlgoo/assessments/${assessmentId}`] as const;
+    return [`/api/v1/mlgoo/assessments/${assessmentId}`] as const;
     }
 
     
@@ -202,7 +202,7 @@ export const postMlgooAssessments$AssessmentIdApprove = (
       
       
       return mutator<ApproveAssessmentResponse>(
-      {url: `http://localhost:8000/api/v1/mlgoo/assessments/${assessmentId}/approve`, method: 'POST',
+      {url: `/api/v1/mlgoo/assessments/${assessmentId}/approve`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: postMlgooAssessmentsAssessmentIdApproveBody, signal
     },
@@ -278,7 +278,7 @@ export const postMlgooAssessments$AssessmentIdRecalibrate = (
       
       
       return mutator<RecalibrationResponse>(
-      {url: `http://localhost:8000/api/v1/mlgoo/assessments/${assessmentId}/recalibrate`, method: 'POST',
+      {url: `/api/v1/mlgoo/assessments/${assessmentId}/recalibrate`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: recalibrationRequest, signal
     },
@@ -352,7 +352,7 @@ export const postMlgooAssessments$AssessmentIdUnlock = (
       
       
       return mutator<UnlockAssessmentResponse>(
-      {url: `http://localhost:8000/api/v1/mlgoo/assessments/${assessmentId}/unlock`, method: 'POST',
+      {url: `/api/v1/mlgoo/assessments/${assessmentId}/unlock`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: postMlgooAssessmentsAssessmentIdUnlockBody, signal
     },
@@ -426,7 +426,7 @@ export const patchMlgooAssessments$AssessmentIdRecalibrationValidation = (
       
       
       return mutator<UpdateRecalibrationValidationResponse>(
-      {url: `http://localhost:8000/api/v1/mlgoo/assessments/${assessmentId}/recalibration-validation`, method: 'PATCH',
+      {url: `/api/v1/mlgoo/assessments/${assessmentId}/recalibration-validation`, method: 'PATCH',
       headers: {'Content-Type': 'application/json', },
       data: updateRecalibrationValidationRequest
     },

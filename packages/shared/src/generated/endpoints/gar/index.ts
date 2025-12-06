@@ -49,14 +49,14 @@ export const getGarAssessments = (
       
       
       return mutator<GARAssessmentListResponse>(
-      {url: `http://localhost:8000/api/v1/gar/assessments`, method: 'GET', signal
+      {url: `/api/v1/gar/assessments`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetGarAssessmentsQueryKey = () => {
-    return [`http://localhost:8000/api/v1/gar/assessments`] as const;
+    return [`/api/v1/gar/assessments`] as const;
     }
 
     
@@ -127,7 +127,7 @@ export const getGar$AssessmentId = (
       
       
       return mutator<GARResponse>(
-      {url: `http://localhost:8000/api/v1/gar/${assessmentId}`, method: 'GET',
+      {url: `/api/v1/gar/${assessmentId}`, method: 'GET',
         params, signal
     },
       options);
@@ -136,7 +136,7 @@ export const getGar$AssessmentId = (
 
 export const getGetGarAssessmentIdQueryKey = (assessmentId: number,
     params?: GetGarAssessmentIdParams,) => {
-    return [`http://localhost:8000/api/v1/gar/${assessmentId}`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/gar/${assessmentId}`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -201,7 +201,7 @@ export const getGar$AssessmentIdExportExcel = (
       
       
       return mutator<unknown>(
-      {url: `http://localhost:8000/api/v1/gar/${assessmentId}/export/excel`, method: 'GET',
+      {url: `/api/v1/gar/${assessmentId}/export/excel`, method: 'GET',
         params, signal
     },
       options);
@@ -210,7 +210,7 @@ export const getGar$AssessmentIdExportExcel = (
 
 export const getGetGarAssessmentIdExportExcelQueryKey = (assessmentId: number,
     params?: GetGarAssessmentIdExportExcelParams,) => {
-    return [`http://localhost:8000/api/v1/gar/${assessmentId}/export/excel`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/gar/${assessmentId}/export/excel`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -275,7 +275,7 @@ export const getGar$AssessmentIdExportPdf = (
       
       
       return mutator<unknown>(
-      {url: `http://localhost:8000/api/v1/gar/${assessmentId}/export/pdf`, method: 'GET',
+      {url: `/api/v1/gar/${assessmentId}/export/pdf`, method: 'GET',
         params, signal
     },
       options);
@@ -284,7 +284,7 @@ export const getGar$AssessmentIdExportPdf = (
 
 export const getGetGarAssessmentIdExportPdfQueryKey = (assessmentId: number,
     params?: GetGarAssessmentIdExportPdfParams,) => {
-    return [`http://localhost:8000/api/v1/gar/${assessmentId}/export/pdf`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/gar/${assessmentId}/export/pdf`, ...(params ? [params]: [])] as const;
     }
 
     

@@ -22,6 +22,7 @@ import {
   Shield,
   AlertCircle,
   CheckCircle,
+  XCircle,
   ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -49,6 +50,32 @@ export default function ChangePasswordPage() {
     confirm_password?: string;
     general?: string;
   }>({});
+
+  // Password requirements checker
+  const passwordRequirements = [
+    {
+      label: "At least 12 characters",
+      met: formData.new_password.length >= 12,
+    },
+    {
+      label: "One uppercase letter",
+      met: /[A-Z]/.test(formData.new_password),
+    },
+    {
+      label: "One lowercase letter",
+      met: /[a-z]/.test(formData.new_password),
+    },
+    {
+      label: "One number",
+      met: /\d/.test(formData.new_password),
+    },
+    {
+      label: "One special character",
+      met: /[!@#$%^&*(),.?":{}|<>\-_=+\[\]\\;'`~]/.test(formData.new_password),
+    },
+  ];
+
+  const allRequirementsMet = passwordRequirements.every((req) => req.met);
 
   // Add change-password-page class to html and body for CSS targeting
   useEffect(() => {
@@ -126,9 +153,21 @@ export default function ChangePasswordPage() {
 
     if (!formData.new_password) {
       newErrors.new_password = "New password is required";
-    } else if (formData.new_password.length < 8) {
+    } else if (formData.new_password.length < 12) {
       newErrors.new_password =
-        "New password must be at least 8 characters long";
+        "New password must be at least 12 characters long";
+    } else if (!/[A-Z]/.test(formData.new_password)) {
+      newErrors.new_password =
+        "Password must contain at least one uppercase letter";
+    } else if (!/[a-z]/.test(formData.new_password)) {
+      newErrors.new_password =
+        "Password must contain at least one lowercase letter";
+    } else if (!/\d/.test(formData.new_password)) {
+      newErrors.new_password =
+        "Password must contain at least one digit";
+    } else if (!/[!@#$%^&*(),.?":{}|<>\-_=+\[\]\\;'`~]/.test(formData.new_password)) {
+      newErrors.new_password =
+        "Password must contain at least one special character";
     }
 
     if (!formData.confirm_password) {
@@ -318,9 +357,29 @@ export default function ChangePasswordPage() {
                           {errors.new_password}
                         </p>
                       )}
-                      <div className="flex items-center space-x-2 text-sm text-[var(--text-secondary)]">
-                        <CheckCircle className="h-4 w-4" />
-                        <span>Password must be at least 8 characters long</span>
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        {passwordRequirements.map((req, index) => (
+                          <div
+                            key={index}
+                            className={cn(
+                              "flex items-center space-x-2 text-sm transition-colors duration-200",
+                              formData.new_password.length === 0
+                                ? "text-[var(--text-secondary)]"
+                                : req.met
+                                  ? "text-green-600 dark:text-green-400"
+                                  : "text-red-500 dark:text-red-400"
+                            )}
+                          >
+                            {formData.new_password.length === 0 ? (
+                              <CheckCircle className="h-4 w-4 flex-shrink-0" />
+                            ) : req.met ? (
+                              <CheckCircle className="h-4 w-4 flex-shrink-0" />
+                            ) : (
+                              <XCircle className="h-4 w-4 flex-shrink-0" />
+                            )}
+                            <span>{req.label}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
 
@@ -348,6 +407,27 @@ export default function ChangePasswordPage() {
                           <AlertCircle className="h-4 w-4 mr-2" />
                           {errors.confirm_password}
                         </p>
+                      )}
+                      {formData.confirm_password.length > 0 && !errors.confirm_password && (
+                        <div
+                          className={cn(
+                            "flex items-center space-x-2 text-sm transition-colors duration-200",
+                            formData.new_password === formData.confirm_password
+                              ? "text-green-600 dark:text-green-400"
+                              : "text-red-500 dark:text-red-400"
+                          )}
+                        >
+                          {formData.new_password === formData.confirm_password ? (
+                            <CheckCircle className="h-4 w-4 flex-shrink-0" />
+                          ) : (
+                            <XCircle className="h-4 w-4 flex-shrink-0" />
+                          )}
+                          <span>
+                            {formData.new_password === formData.confirm_password
+                              ? "Passwords match"
+                              : "Passwords do not match"}
+                          </span>
+                        </div>
                       )}
                     </div>
 
@@ -421,19 +501,19 @@ export default function ChangePasswordPage() {
                     <div className="flex items-start space-x-3">
                       <div className="w-2 h-2 bg-[var(--cityscape-yellow)] rounded-full mt-2 flex-shrink-0"></div>
                       <p className="text-sm text-[var(--foreground)]">
-                        Use a combination of letters, numbers, and symbols
+                        At least 12 characters long
                       </p>
                     </div>
                     <div className="flex items-start space-x-3">
                       <div className="w-2 h-2 bg-[var(--cityscape-yellow)] rounded-full mt-2 flex-shrink-0"></div>
                       <p className="text-sm text-[var(--foreground)]">
-                        Avoid using personal information like birthdays
+                        Include uppercase and lowercase letters
                       </p>
                     </div>
                     <div className="flex items-start space-x-3">
                       <div className="w-2 h-2 bg-[var(--cityscape-yellow)] rounded-full mt-2 flex-shrink-0"></div>
                       <p className="text-sm text-[var(--foreground)]">
-                        Make it at least 8 characters long
+                        Include at least one number and special character
                       </p>
                     </div>
                     <div className="flex items-start space-x-3">

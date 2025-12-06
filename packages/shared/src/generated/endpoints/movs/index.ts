@@ -66,7 +66,7 @@ if(bodyUploadMovFileApiV1MovsAssessmentsAssessmentIdIndicatorsIndicatorIdUploadP
  }
 
       return mutator<MOVFileResponse>(
-      {url: `http://localhost:8000/api/v1/movs/assessments/${assessmentId}/indicators/${indicatorId}/upload`, method: 'POST',
+      {url: `/api/v1/movs/assessments/${assessmentId}/indicators/${indicatorId}/upload`, method: 'POST',
       headers: {'Content-Type': 'multipart/form-data', },
        data: formData, signal
     },
@@ -138,7 +138,7 @@ export const getMovsAssessments$AssessmentIdIndicators$IndicatorIdFiles = (
       
       
       return mutator<MOVFileListResponse>(
-      {url: `http://localhost:8000/api/v1/movs/assessments/${assessmentId}/indicators/${indicatorId}/files`, method: 'GET', signal
+      {url: `/api/v1/movs/assessments/${assessmentId}/indicators/${indicatorId}/files`, method: 'GET', signal
     },
       options);
     }
@@ -146,7 +146,7 @@ export const getMovsAssessments$AssessmentIdIndicators$IndicatorIdFiles = (
 
 export const getGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFilesQueryKey = (assessmentId: number,
     indicatorId: number,) => {
-    return [`http://localhost:8000/api/v1/movs/assessments/${assessmentId}/indicators/${indicatorId}/files`] as const;
+    return [`/api/v1/movs/assessments/${assessmentId}/indicators/${indicatorId}/files`] as const;
     }
 
     
@@ -211,7 +211,7 @@ export const deleteMovsFiles$FileId = (
       
       
       return mutator<MOVFileResponse>(
-      {url: `http://localhost:8000/api/v1/movs/files/${fileId}`, method: 'DELETE'
+      {url: `/api/v1/movs/files/${fileId}`, method: 'DELETE'
     },
       options);
     }
