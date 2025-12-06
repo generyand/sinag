@@ -87,7 +87,7 @@ export interface MOVCheckboxItem extends MOVItemBase {
  * Logical grouping with OR logic support.
  *
  * Used to group related items where only some need to pass (OR logic).
- * Example: "Posted CY 2023 financial documents (any 5 of 7)"
+ * Example: "Posted financial documents (any 5 of 7)"
  */
 export interface MOVGroupItem extends MOVItemBase {
   type: 'group';

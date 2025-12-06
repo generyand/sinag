@@ -1,5 +1,7 @@
 "use client";
 
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -9,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuthStore } from '@/store/useAuthStore';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { AssessmentDetailsResponse } from '@sinag/shared';
-import { FileTextIcon } from 'lucide-react';
+import { FileTextIcon, Info } from 'lucide-react';
 import * as React from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
@@ -75,7 +77,7 @@ function AccomplishmentAutoCalculator({
 
   // Plan name mapping for indicator-specific formulas
   const planNameMap: Record<string, { physical: string; financial: string }> = {
-    '2.1.4': { physical: 'BDRRMP', financial: '70% component of CY 2023 BDRRMF' },
+    '2.1.4': { physical: 'BDRRMP', financial: '70% component of BDRRMF' },
     '3.2.3': { physical: 'BPOPS Plan', financial: 'BPOPS Plan' },
     '4.1.6': { physical: 'GAD Plan', financial: 'GAD Plan' },
     '4.3.4': { physical: 'BDP', financial: 'BDP' },
@@ -647,20 +649,40 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
         }
       }
 
-      // For OR logic: at least ONE option group must have ALL its items filled
+      // For OR logic: at least ONE option group must be complete
+      // Option 1 & 2: ALL items in group must be filled
+      // Option 3: ANY item in group must be filled (internal OR logic)
       const groupNames = Object.keys(groups);
       if (groupNames.length > 0) {
         let anyGroupComplete = false;
 
         for (const groupName of groupNames) {
           const groupItems = groups[groupName];
-          let groupComplete = true;
 
-          for (const item of groupItems) {
-            const itemKey = `checklist_${responseId}_${item.item_id}`;
-            if (!isItemFilled(item, itemKey, checklistData)) {
-              groupComplete = false;
-              break;
+          // Check if this group has internal OR logic (Option 3)
+          // Option 3 typically has multiple file upload items where either one satisfies
+          const hasInternalOr = groupName.includes('Option 3') || groupName.includes('OPTION 3');
+
+          let groupComplete = false;
+
+          if (hasInternalOr) {
+            // Internal OR: ANY item filled = group complete
+            for (const item of groupItems) {
+              const itemKey = `checklist_${responseId}_${item.item_id}`;
+              if (isItemFilled(item, itemKey, checklistData)) {
+                groupComplete = true;
+                break;
+              }
+            }
+          } else {
+            // Standard: ALL items must be filled
+            groupComplete = true;
+            for (const item of groupItems) {
+              const itemKey = `checklist_${responseId}_${item.item_id}`;
+              if (!isItemFilled(item, itemKey, checklistData)) {
+                groupComplete = false;
+                break;
+              }
             }
           }
 
@@ -847,8 +869,369 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                   {(() => {
                     const checklistItems = (indicator?.checklist_items as any[]) || [];
                     const validationRule = indicator?.validation_rule || 'ALL_ITEMS_REQUIRED';
+                    const indicatorCode = indicator?.indicator_code || indicator?.code || '';
 
                     if (checklistItems.length === 0) return null;
+
+                    // Helper to render a single checklist item
+                    const renderChecklistItem = (item: any, itemIdx: number) => {
+                      const itemKey = `checklist_${r.id}_${item.item_id}`;
+                      const prevItem = itemIdx > 0 ? checklistItems[itemIdx - 1] : null;
+                      const showGroupHeader = item.group_name && item.group_name !== prevItem?.group_name;
+
+                      return (
+                        <React.Fragment key={item.id || itemIdx}>
+                        <div className="space-y-2">
+                          {/* Group Header (only for non-accordion mode) */}
+                          {showGroupHeader && !item.option_group && (
+                            <div className="text-xs font-semibold uppercase tracking-wide text-foreground mt-3 mb-1 pb-1 border-b border-border">
+                              {item.group_name}
+                            </div>
+                          )}
+
+                          {item.item_type === 'section_header' ? (
+                            // Section header - skip in accordion mode (handled by accordion title)
+                            null
+                          ) : item.item_type === 'date_input' ? (
+                            // Date input field for approval dates
+                            <div className="space-y-2">
+                              {item.mov_description && (
+                                <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded px-3 py-2">
+                                  <div className="text-xs text-orange-800 dark:text-orange-300 italic">
+                                    {item.mov_description}
+                                  </div>
+                                </div>
+                              )}
+                              <div className="flex items-start gap-2">
+                                <Controller
+                                  name={itemKey as any}
+                                  control={control}
+                                  render={({ field }) => (
+                                    <Input
+                                      id={itemKey}
+                                      type="date"
+                                      value={field.value as any}
+                                      onChange={field.onChange}
+                                      onBlur={field.onBlur}
+                                      name={field.name}
+                                      ref={field.ref}
+                                      className="h-9 text-sm w-40 flex-shrink-0"
+                                    />
+                                  )}
+                                />
+                                <span className="text-xs text-foreground leading-relaxed">
+                                  {item.label}
+                                </span>
+                              </div>
+                            </div>
+                          ) : (item.item_type === 'document_count' || item.requires_document_count) ? (
+                            // Document count input item (no checkbox, just description + input)
+                            <div className="space-y-2">
+                              {item.mov_description && (
+                                <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded px-3 py-2">
+                                  <div className="text-xs text-orange-800 dark:text-orange-300 italic">
+                                    {item.mov_description}
+                                  </div>
+                                </div>
+                              )}
+                              <div className="flex items-start gap-2">
+                                <Controller
+                                  name={itemKey as any}
+                                  control={control}
+                                  render={({ field }) => (
+                                    <Input
+                                      id={itemKey}
+                                      type="text"
+                                      placeholder={item.label?.toLowerCase().includes('hazard') ? 'Enter Type of Hazard' : 'Enter count'}
+                                      value={field.value as any}
+                                      onChange={field.onChange}
+                                      onBlur={field.onBlur}
+                                      name={field.name}
+                                      ref={field.ref}
+                                      className="h-9 text-sm w-32 flex-shrink-0"
+                                    />
+                                  )}
+                                />
+                                <span className="text-xs text-foreground leading-relaxed">
+                                  {item.label}
+                                </span>
+                              </div>
+                            </div>
+                          ) : item.item_type === 'info_text' ? (
+                            // Instructional text (no input control)
+                            item.label === 'OR' ? (
+                              // OR separator - special styling
+                              <div className="flex items-center gap-3 my-2">
+                                <div className="flex-1 h-px bg-orange-300 dark:bg-orange-700" />
+                                <span className="text-sm font-bold text-orange-600 dark:text-orange-400 px-2">OR</span>
+                                <div className="flex-1 h-px bg-orange-300 dark:bg-orange-700" />
+                              </div>
+                            ) : (
+                              // Regular info text
+                              <div className="text-xs text-blue-800 dark:text-blue-200 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-700 rounded px-3 py-2">
+                                {item.label}
+                                {item.mov_description && item.mov_description !== item.label && (
+                                  <div className="text-[11px] text-blue-700 dark:text-blue-300 italic mt-1">{item.mov_description}</div>
+                                )}
+                              </div>
+                            )
+                          ) : item.item_type === 'assessment_field' ? (
+                            // YES/NO radio buttons for validator assessment (mutually exclusive)
+                            (() => {
+                              // Check if this is an auto-calculated field that should be read-only
+                              const autoCalcIndicators = ['2.1.4', '3.2.3', '4.1.6', '4.3.4', '4.5.6', '4.8.4', '6.1.4'];
+                              const autoCalcFieldIds = [
+                                // Physical option fields
+                                '2_1_4_option_a', '3_2_3_option_a', '4_1_6_option_a', '4_3_4_option_a',
+                                '4_5_6_a', '4_8_4_option_a_check', '6_1_4_option_a',
+                                // Financial option fields
+                                '2_1_4_option_b', '3_2_3_option_b', '4_1_6_option_b', '4_3_4_option_b',
+                                '4_5_6_b', '4_8_4_option_b_check', '6_1_4_option_b',
+                              ];
+                              const isAutoCalculated = autoCalcIndicators.includes(indicatorCode) &&
+                                autoCalcFieldIds.includes(item.item_id);
+
+                              return (
+                                <div className="space-y-2">
+                                  <div className="flex items-start gap-3">
+                                    <div className="flex gap-4">
+                                      <Controller
+                                        name={`${itemKey}_yes` as any}
+                                        control={control}
+                                        render={({ field }) => (
+                                          <div className="flex items-center gap-1">
+                                            <Checkbox
+                                              id={`${itemKey}_yes`}
+                                              checked={field.value as any}
+                                              disabled={isAutoCalculated}
+                                              onCheckedChange={(checked) => {
+                                                if (isAutoCalculated) return; // Prevent manual change
+                                                field.onChange(checked);
+                                                // If YES is checked, uncheck NO (mutually exclusive)
+                                                if (checked) {
+                                                  setValue(`${itemKey}_no` as any, false as any);
+                                                }
+                                              }}
+                                              className={isAutoCalculated ? 'opacity-60' : ''}
+                                            />
+                                            <Label
+                                              htmlFor={`${itemKey}_yes`}
+                                              className={`text-xs font-medium ${isAutoCalculated ? 'text-muted-foreground' : 'cursor-pointer'}`}
+                                            >
+                                              YES
+                                            </Label>
+                                          </div>
+                                        )}
+                                      />
+                                      <Controller
+                                        name={`${itemKey}_no` as any}
+                                        control={control}
+                                        render={({ field }) => (
+                                          <div className="flex items-center gap-1">
+                                            <Checkbox
+                                              id={`${itemKey}_no`}
+                                              checked={field.value as any}
+                                              disabled={isAutoCalculated}
+                                              onCheckedChange={(checked) => {
+                                                if (isAutoCalculated) return; // Prevent manual change
+                                                field.onChange(checked);
+                                                // If NO is checked, uncheck YES (mutually exclusive)
+                                                if (checked) {
+                                                  setValue(`${itemKey}_yes` as any, false as any);
+                                                }
+                                              }}
+                                              className={isAutoCalculated ? 'opacity-60' : ''}
+                                            />
+                                            <Label
+                                              htmlFor={`${itemKey}_no`}
+                                              className={`text-xs font-medium ${isAutoCalculated ? 'text-muted-foreground' : 'cursor-pointer'}`}
+                                            >
+                                              NO
+                                            </Label>
+                                          </div>
+                                        )}
+                                      />
+                                    </div>
+                                    <div className="flex-1">
+                                      <div className="text-xs font-medium text-foreground">
+                                        {item.label}
+                                        {isAutoCalculated && (
+                                          <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-normal">
+                                            Auto-calculated
+                                          </span>
+                                        )}
+                                      </div>
+                                      {/* MOV descriptions removed - redundant with label */}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()
+                          ) : item.item_type === 'calculation_field' ? (
+                            // Calculation/input field with optional mov_description box
+                            <div className="space-y-2">
+                              {item.mov_description && (
+                                <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded px-3 py-2">
+                                  <div className="text-xs text-orange-800 dark:text-orange-300 italic">
+                                    {item.mov_description}
+                                  </div>
+                                </div>
+                              )}
+                              <div className="flex items-start gap-2">
+                                <Controller
+                                  name={itemKey as any}
+                                  control={control}
+                                  render={({ field }) => (
+                                    <Input
+                                      id={itemKey}
+                                      type="text"
+                                      placeholder="Enter value"
+                                      value={field.value as any}
+                                      onChange={field.onChange}
+                                      onBlur={field.onBlur}
+                                      name={field.name}
+                                      ref={field.ref}
+                                      className="h-9 text-sm w-24 flex-shrink-0"
+                                    />
+                                  )}
+                                />
+                                <span className="text-xs text-foreground leading-relaxed">
+                                  {item.label}
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            // Regular checkbox item
+                            <div className="flex items-start gap-2">
+                              <Controller
+                                name={itemKey as any}
+                                control={control}
+                                render={({ field }) => (
+                                  <Checkbox
+                                    id={itemKey}
+                                    checked={field.value as any}
+                                    onCheckedChange={field.onChange}
+                                    className="mt-0.5"
+                                  />
+                                )}
+                              />
+                              <div className="flex-1">
+                                <Label htmlFor={itemKey} className="text-xs font-medium text-foreground cursor-pointer leading-relaxed">
+                                  {item.required && validationRule === 'ALL_ITEMS_REQUIRED' && (
+                                    <span className="text-red-600 mr-1">*</span>
+                                  )}
+                                  {item.label}
+                                </Label>
+                                {/* MOV descriptions removed - redundant with label */}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Field Notes (CONSIDERATION, etc.) - rendered below each checklist item */}
+                          {item.field_notes && item.field_notes.items && item.field_notes.items.length > 0 && (
+                            <div className="ml-6 mt-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-sm p-3">
+                              <div className="text-xs font-semibold text-amber-900 dark:text-amber-200 mb-1">
+                                {item.field_notes.title || 'Note:'}
+                              </div>
+                              <div className="space-y-1">
+                                {item.field_notes.items.map((noteItem: any, noteIdx: number) => (
+                                  <div key={noteIdx} className="text-xs text-amber-800 dark:text-amber-300">
+                                    {noteItem.label && (
+                                      <span className="font-medium mr-1">{noteItem.label}</span>
+                                    )}
+                                    {noteItem.text}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Computed % Allocation for BDRRMF (Indicator 2.1.3) */}
+                        {indicatorCode === '2.1.3' && item.item_id === '2_1_3_bdrrmf_amount' && (
+                          <ComputedBDRRMFPercentage
+                            responseId={r.id}
+                            watched={watched}
+                          />
+                        )}
+
+                        {/* Auto-calculated Physical/Financial Accomplishment for specific indicators */}
+                        {/* Physical: show after physical_reflected field */}
+                        {['2.1.4', '3.2.3', '4.1.6', '4.3.4', '4.5.6', '4.8.4', '6.1.4'].includes(indicatorCode) &&
+                          item.item_id?.endsWith('_physical_reflected') && (
+                          <AccomplishmentAutoCalculator
+                            responseId={r.id}
+                            watched={watched}
+                            indicatorCode={indicatorCode}
+                            subIndicatorCode={indicatorCode}
+                            type="physical"
+                            setValue={setValue}
+                          />
+                        )}
+
+                        {/* Financial: show after financial_allocated field */}
+                        {['2.1.4', '3.2.3', '4.1.6', '4.3.4', '4.5.6', '4.8.4', '6.1.4'].includes(indicatorCode) &&
+                          item.item_id?.endsWith('_financial_allocated') && (
+                          <AccomplishmentAutoCalculator
+                            responseId={r.id}
+                            watched={watched}
+                            indicatorCode={indicatorCode}
+                            subIndicatorCode={indicatorCode}
+                            type="financial"
+                            setValue={setValue}
+                          />
+                        )}
+                        </React.Fragment>
+                      );
+                    };
+
+                    // Check if this indicator uses option groups (for accordion rendering)
+                    const hasOptionGroups = checklistItems.some((item: any) => item.option_group);
+
+                    // Group items by option_group for accordion rendering
+                    interface OptionGroupData {
+                      name: string;
+                      label: string;
+                      items: any[];
+                    }
+
+                    const groupedByOptionGroup = (): OptionGroupData[] | null => {
+                      if (!hasOptionGroups) return null;
+
+                      const groups: OptionGroupData[] = [];
+                      let currentGroup: OptionGroupData | null = null;
+
+                      for (const item of checklistItems) {
+                        // Skip OR separators between option groups (accordion handles this visually)
+                        if (item.item_type === 'info_text' && item.label === 'OR' && !item.option_group) {
+                          continue;
+                        }
+
+                        if (item.option_group) {
+                          // Check if we need to start a new group
+                          if (!currentGroup || currentGroup.name !== item.option_group) {
+                            // Find the section header for this group to use as label
+                            const sectionHeader = checklistItems.find(
+                              (i: any) => i.option_group === item.option_group && i.item_type === 'section_header'
+                            );
+                            currentGroup = {
+                              name: item.option_group,
+                              label: sectionHeader?.label || item.option_group,
+                              items: []
+                            };
+                            groups.push(currentGroup);
+                          }
+                          // Add item to current group (excluding section headers from content)
+                          if (item.item_type !== 'section_header') {
+                            currentGroup.items.push(item);
+                          }
+                        }
+                      }
+
+                      return groups.length > 0 ? groups : null;
+                    };
+
+                    const optionGroups = groupedByOptionGroup();
 
                     return (
                       <div className="border border-[var(--border)] rounded-sm bg-card">
@@ -856,7 +1239,7 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                           <div className="flex items-center justify-between">
                             <div className="text-xs font-semibold uppercase tracking-wide text-foreground">
                               Validation Checklist
-                              {validationRule === 'ANY_ITEM_REQUIRED' && (
+                              {(validationRule === 'ANY_ITEM_REQUIRED' || validationRule === 'ANY_OPTION_GROUP_REQUIRED') && (
                                 <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-800 font-normal normal-case dark:bg-yellow-900/30 dark:text-yellow-200">
                                   OR Logic: At least 1 required
                                 </span>
@@ -871,316 +1254,43 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                             )}
                           </div>
                         </div>
-                        <div className="p-3 space-y-3">
-                          {checklistItems.map((item: any, itemIdx: number) => {
-                            const itemKey = `checklist_${r.id}_${item.item_id}`;
-                            const prevItem = itemIdx > 0 ? checklistItems[itemIdx - 1] : null;
-                            const showGroupHeader = item.group_name && item.group_name !== prevItem?.group_name;
-                            const indicatorCode = indicator?.indicator_code || indicator?.code || '';
 
-                            return (
-                              <React.Fragment key={item.id || itemIdx}>
-                              <div className="space-y-2">
-                                {/* Group Header */}
-                                {showGroupHeader && (
-                                  <div className="text-xs font-semibold uppercase tracking-wide text-foreground mt-3 mb-1 pb-1 border-b border-border">
-                                    {item.group_name}
-                                  </div>
-                                )}
+                        {/* Option Groups with Accordion */}
+                        {optionGroups ? (
+                          <div className="p-3">
+                            {/* Info alert */}
+                            <Alert className="mb-4 border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
+                              <Info className="h-4 w-4 text-blue-600" />
+                              <AlertDescription className="text-xs text-blue-800 dark:text-blue-200">
+                                <strong>Choose ONE option</strong> that applies to your barangay's situation. You only need to validate one option.
+                              </AlertDescription>
+                            </Alert>
 
-                                {item.item_type === 'date_input' ? (
-                                  // Date input field for approval dates
-                                  <div className="space-y-2">
-                                    {item.mov_description && (
-                                      <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded px-3 py-2">
-                                        <div className="text-xs text-orange-800 dark:text-orange-300 italic">
-                                          {item.mov_description}
-                                        </div>
+                            <Accordion type="single" collapsible className="space-y-3">
+                              {optionGroups.map((group) => (
+                                  <AccordionItem
+                                    key={group.name}
+                                    value={group.name}
+                                    className="border border-gray-200 rounded-lg overflow-hidden bg-card"
+                                  >
+                                    <AccordionTrigger className="px-3 py-2.5 hover:no-underline hover:bg-muted/50 [&[data-state=open]]:bg-muted/30">
+                                      <span className="font-medium text-sm text-left">{group.label}</span>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="px-3 pt-3 pb-4">
+                                      <div className="space-y-3">
+                                        {group.items.map((item: any, idx: number) => renderChecklistItem(item, idx))}
                                       </div>
-                                    )}
-                                    <div className="flex items-start gap-2">
-                                      <Controller
-                                        name={itemKey as any}
-                                        control={control}
-                                        render={({ field }) => (
-                                          <Input
-                                            id={itemKey}
-                                            type="date"
-                                            value={field.value as any}
-                                            onChange={field.onChange}
-                                            onBlur={field.onBlur}
-                                            name={field.name}
-                                            ref={field.ref}
-                                            className="h-9 text-sm w-40 flex-shrink-0"
-                                          />
-                                        )}
-                                      />
-                                      <span className="text-xs text-foreground leading-relaxed">
-                                        {item.label}
-                                      </span>
-                                    </div>
-                                  </div>
-                                ) : (item.item_type === 'document_count' || item.requires_document_count) ? (
-                                  // Document count input item (no checkbox, just description + input)
-                                  <div className="space-y-2">
-                                    {item.mov_description && (
-                                      <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded px-3 py-2">
-                                        <div className="text-xs text-orange-800 dark:text-orange-300 italic">
-                                          {item.mov_description}
-                                        </div>
-                                      </div>
-                                    )}
-                                    <div className="flex items-start gap-2">
-                                      <Controller
-                                        name={itemKey as any}
-                                        control={control}
-                                        render={({ field }) => (
-                                          <Input
-                                            id={itemKey}
-                                            type="text"
-                                            placeholder={item.label?.toLowerCase().includes('hazard') ? 'Enter Type of Hazard' : 'Enter count'}
-                                            value={field.value as any}
-                                            onChange={field.onChange}
-                                            onBlur={field.onBlur}
-                                            name={field.name}
-                                            ref={field.ref}
-                                            className="h-9 text-sm w-32 flex-shrink-0"
-                                          />
-                                        )}
-                                      />
-                                      <span className="text-xs text-foreground leading-relaxed">
-                                        {item.label}
-                                      </span>
-                                    </div>
-                                  </div>
-                                ) : item.item_type === 'info_text' ? (
-                                  // Instructional text (no input control)
-                                  item.label === 'OR' ? (
-                                    // OR separator - special styling
-                                    <div className="flex items-center gap-3 my-2">
-                                      <div className="flex-1 h-px bg-orange-300 dark:bg-orange-700" />
-                                      <span className="text-sm font-bold text-orange-600 dark:text-orange-400 px-2">OR</span>
-                                      <div className="flex-1 h-px bg-orange-300 dark:bg-orange-700" />
-                                    </div>
-                                  ) : (
-                                    // Regular info text
-                                    <div className="text-xs text-blue-800 dark:text-blue-200 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-700 rounded px-3 py-2">
-                                      {item.label}
-                                      {item.mov_description && item.mov_description !== item.label && (
-                                        <div className="text-[11px] text-blue-700 dark:text-blue-300 italic mt-1">{item.mov_description}</div>
-                                      )}
-                                    </div>
-                                  )
-                                ) : item.item_type === 'assessment_field' ? (
-                                  // YES/NO radio buttons for validator assessment (mutually exclusive)
-                                  (() => {
-                                    // Check if this is an auto-calculated field that should be read-only
-                                    const autoCalcIndicators = ['2.1.4', '3.2.3', '4.1.6', '4.3.4', '4.5.6', '4.8.4', '6.1.4'];
-                                    const autoCalcFieldIds = [
-                                      // Physical option fields
-                                      '2_1_4_option_a', '3_2_3_option_a', '4_1_6_option_a', '4_3_4_option_a',
-                                      '4_5_6_a', '4_8_4_option_a_check', '6_1_4_option_a',
-                                      // Financial option fields
-                                      '2_1_4_option_b', '3_2_3_option_b', '4_1_6_option_b', '4_3_4_option_b',
-                                      '4_5_6_b', '4_8_4_option_b_check', '6_1_4_option_b',
-                                    ];
-                                    const isAutoCalculated = autoCalcIndicators.includes(indicatorCode) &&
-                                      autoCalcFieldIds.includes(item.item_id);
-
-                                    return (
-                                      <div className="space-y-2">
-                                        <div className="flex items-start gap-3">
-                                          <div className="flex gap-4">
-                                            <Controller
-                                              name={`${itemKey}_yes` as any}
-                                              control={control}
-                                              render={({ field }) => (
-                                                <div className="flex items-center gap-1">
-                                                  <Checkbox
-                                                    id={`${itemKey}_yes`}
-                                                    checked={field.value as any}
-                                                    disabled={isAutoCalculated}
-                                                    onCheckedChange={(checked) => {
-                                                      if (isAutoCalculated) return; // Prevent manual change
-                                                      field.onChange(checked);
-                                                      // If YES is checked, uncheck NO (mutually exclusive)
-                                                      if (checked) {
-                                                        setValue(`${itemKey}_no` as any, false as any);
-                                                      }
-                                                    }}
-                                                    className={isAutoCalculated ? 'opacity-60' : ''}
-                                                  />
-                                                  <Label
-                                                    htmlFor={`${itemKey}_yes`}
-                                                    className={`text-xs font-medium ${isAutoCalculated ? 'text-muted-foreground' : 'cursor-pointer'}`}
-                                                  >
-                                                    YES
-                                                  </Label>
-                                                </div>
-                                              )}
-                                            />
-                                            <Controller
-                                              name={`${itemKey}_no` as any}
-                                              control={control}
-                                              render={({ field }) => (
-                                                <div className="flex items-center gap-1">
-                                                  <Checkbox
-                                                    id={`${itemKey}_no`}
-                                                    checked={field.value as any}
-                                                    disabled={isAutoCalculated}
-                                                    onCheckedChange={(checked) => {
-                                                      if (isAutoCalculated) return; // Prevent manual change
-                                                      field.onChange(checked);
-                                                      // If NO is checked, uncheck YES (mutually exclusive)
-                                                      if (checked) {
-                                                        setValue(`${itemKey}_yes` as any, false as any);
-                                                      }
-                                                    }}
-                                                    className={isAutoCalculated ? 'opacity-60' : ''}
-                                                  />
-                                                  <Label
-                                                    htmlFor={`${itemKey}_no`}
-                                                    className={`text-xs font-medium ${isAutoCalculated ? 'text-muted-foreground' : 'cursor-pointer'}`}
-                                                  >
-                                                    NO
-                                                  </Label>
-                                                </div>
-                                              )}
-                                            />
-                                          </div>
-                                          <div className="flex-1">
-                                            <div className="text-xs font-medium text-foreground">
-                                              {item.label}
-                                              {isAutoCalculated && (
-                                                <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-normal">
-                                                  Auto-calculated
-                                                </span>
-                                              )}
-                                            </div>
-                                            {/* MOV descriptions removed - redundant with label */}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    );
-                                  })()
-                                ) : item.item_type === 'calculation_field' ? (
-                                  // Calculation/input field with optional mov_description box
-                                  <div className="space-y-2">
-                                    {item.mov_description && (
-                                      <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded px-3 py-2">
-                                        <div className="text-xs text-orange-800 dark:text-orange-300 italic">
-                                          {item.mov_description}
-                                        </div>
-                                      </div>
-                                    )}
-                                    <div className="flex items-start gap-2">
-                                      <Controller
-                                        name={itemKey as any}
-                                        control={control}
-                                        render={({ field }) => (
-                                          <Input
-                                            id={itemKey}
-                                            type="text"
-                                            placeholder="Enter value"
-                                            value={field.value as any}
-                                            onChange={field.onChange}
-                                            onBlur={field.onBlur}
-                                            name={field.name}
-                                            ref={field.ref}
-                                            className="h-9 text-sm w-24 flex-shrink-0"
-                                          />
-                                        )}
-                                      />
-                                      <span className="text-xs text-foreground leading-relaxed">
-                                        {item.label}
-                                      </span>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  // Regular checkbox item
-                                  <div className="flex items-start gap-2">
-                                    <Controller
-                                      name={itemKey as any}
-                                      control={control}
-                                      render={({ field }) => (
-                                        <Checkbox
-                                          id={itemKey}
-                                          checked={field.value as any}
-                                          onCheckedChange={field.onChange}
-                                          className="mt-0.5"
-                                        />
-                                      )}
-                                    />
-                                    <div className="flex-1">
-                                      <Label htmlFor={itemKey} className="text-xs font-medium text-foreground cursor-pointer leading-relaxed">
-                                        {item.required && validationRule === 'ALL_ITEMS_REQUIRED' && (
-                                          <span className="text-red-600 mr-1">*</span>
-                                        )}
-                                        {item.label}
-                                      </Label>
-                                      {/* MOV descriptions removed - redundant with label */}
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Field Notes (CONSIDERATION, etc.) - rendered below each checklist item */}
-                                {item.field_notes && item.field_notes.items && item.field_notes.items.length > 0 && (
-                                  <div className="ml-6 mt-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-sm p-3">
-                                    <div className="text-xs font-semibold text-amber-900 dark:text-amber-200 mb-1">
-                                      {item.field_notes.title || 'Note:'}
-                                    </div>
-                                    <div className="space-y-1">
-                                      {item.field_notes.items.map((noteItem: any, noteIdx: number) => (
-                                        <div key={noteIdx} className="text-xs text-amber-800 dark:text-amber-300">
-                                          {noteItem.label && (
-                                            <span className="font-medium mr-1">{noteItem.label}</span>
-                                          )}
-                                          {noteItem.text}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Computed % Allocation for BDRRMF (Indicator 2.1.3) */}
-                              {indicatorCode === '2.1.3' && item.item_id === '2_1_3_bdrrmf_amount' && (
-                                <ComputedBDRRMFPercentage
-                                  responseId={r.id}
-                                  watched={watched}
-                                />
-                              )}
-
-                              {/* Auto-calculated Physical/Financial Accomplishment for specific indicators */}
-                              {/* Physical: show after physical_reflected field */}
-                              {['2.1.4', '3.2.3', '4.1.6', '4.3.4', '4.5.6', '4.8.4', '6.1.4'].includes(indicatorCode) &&
-                                item.item_id?.endsWith('_physical_reflected') && (
-                                <AccomplishmentAutoCalculator
-                                  responseId={r.id}
-                                  watched={watched}
-                                  indicatorCode={indicatorCode}
-                                  subIndicatorCode={indicatorCode}
-                                  type="physical"
-                                  setValue={setValue}
-                                />
-                              )}
-
-                              {/* Financial: show after financial_allocated field */}
-                              {['2.1.4', '3.2.3', '4.1.6', '4.3.4', '4.5.6', '4.8.4', '6.1.4'].includes(indicatorCode) &&
-                                item.item_id?.endsWith('_financial_allocated') && (
-                                <AccomplishmentAutoCalculator
-                                  responseId={r.id}
-                                  watched={watched}
-                                  indicatorCode={indicatorCode}
-                                  subIndicatorCode={indicatorCode}
-                                  type="financial"
-                                  setValue={setValue}
-                                />
-                              )}
-                              </React.Fragment>
-                            );
-                          })}
-                        </div>
+                                    </AccordionContent>
+                                  </AccordionItem>
+                              ))}
+                            </Accordion>
+                          </div>
+                        ) : (
+                          // Default flat rendering (no option groups)
+                          <div className="p-3 space-y-3">
+                            {checklistItems.map((item: any, itemIdx: number) => renderChecklistItem(item, itemIdx))}
+                          </div>
+                        )}
                       </div>
                     );
                   })()}

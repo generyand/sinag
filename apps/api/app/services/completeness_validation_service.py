@@ -132,16 +132,18 @@ class CompletenessValidationService:
             # Check for grouped OR validation (e.g., indicator 2.1.4, 6.2.1)
             validation_rule = form_schema.get("validation_rule", "ALL_ITEMS_REQUIRED")
 
-            if validation_rule in ("ANY_ITEM_REQUIRED", "OR_LOGIC_AT_LEAST_1_REQUIRED"):
+            if validation_rule in ('ANY_ITEM_REQUIRED', 'OR_LOGIC_AT_LEAST_1_REQUIRED', 'ANY_OPTION_GROUP_REQUIRED'):
                 # For OR-logic, get ALL file_upload fields (not just required=True)
                 # because individual fields have required=False but completing one option group is required
+                # ANY_OPTION_GROUP_REQUIRED: Used for indicators like 1.6.1 where user must complete
+                # any ONE of several option groups (Option 1 OR Option 2 OR Option 3)
                 or_fields = [
                     field for field in schema_obj.fields if isinstance(field, FileUploadField)
                 ]
-                logger.info(
-                    f"[OR LOGIC] Found {len(or_fields)} file_upload fields for OR validation"
+                logger.info(f"[OR LOGIC] Found {len(or_fields)} file_upload fields for OR validation (rule: {validation_rule})")
+                return self._validate_grouped_or_fields(
+                    or_fields, response_data, uploaded_movs
                 )
-                return self._validate_grouped_or_fields(or_fields, response_data, uploaded_movs)
 
             if validation_rule == "SHARED_PLUS_OR_LOGIC":
                 # SHARED+OR validation: SHARED fields (required) + (OPTION A OR OPTION B)
@@ -400,11 +402,16 @@ class CompletenessValidationService:
         uploaded_movs: list[Any],
     ) -> dict[str, Any]:
         """
-        Validate fields with grouped OR logic (e.g., indicator 2.1.4).
+        Validate fields with grouped OR logic (e.g., indicator 2.1.4, 1.6.1).
 
-        For indicators like 2.1.4 with validation_rule="ANY_ITEM_REQUIRED",
-        fields are grouped (e.g., upload_1 & upload_2 = Group A), and at least
-        one complete group must be filled.
+        For indicators with validation_rule="ANY_ITEM_REQUIRED" or "ANY_OPTION_GROUP_REQUIRED",
+        fields are grouped by option_group, and at least one complete group must be filled.
+
+        Group completion rules:
+        - Option 1 (e.g., "has agreement"): ALL fields in group must be filled (opt1_a AND opt1_b)
+        - Option 2 (e.g., "has account"): Single field in group must be filled
+        - Option 3 (e.g., "no SK officials"): ANY field in group satisfies it (internal OR logic)
+          - Detected by checking if group has "_or" separator field_ids between file fields
 
         Args:
             required_fields: List of required fields to validate
@@ -425,7 +432,11 @@ class CompletenessValidationService:
         incomplete_groups = []
 
         for group_name, group_fields in groups.items():
-            # Check if all fields in this group are filled
+            # Check if this group has internal OR logic (e.g., Option 3 with opt3_a OR opt3_b)
+            # Internal OR is indicated by field_ids containing "_or" pattern between file fields
+            has_internal_or = self._group_has_internal_or_logic(group_name, group_fields)
+
+            # Check fields in this group
             group_missing = []
             group_filled = []
             for field in group_fields:
@@ -435,25 +446,46 @@ class CompletenessValidationService:
                 else:
                     group_filled.append(field)
 
-            if len(group_missing) == 0:
-                # This group is complete
-                complete_groups.append(group_name)
-                logger.info(
-                    f"[GROUPED OR] Group '{group_name}' is COMPLETE (all {len(group_fields)} fields filled). "
-                    f"Filled fields: {[f.field_id for f in group_filled]}"
-                )
+            # Determine if group is complete based on internal logic
+            if has_internal_or:
+                # Internal OR: at least ONE field filled = group complete
+                group_complete = len(group_filled) > 0
+                if group_complete:
+                    complete_groups.append(group_name)
+                    logger.info(
+                        f"[GROUPED OR] Group '{group_name}' is COMPLETE (internal OR: {len(group_filled)} of {len(group_fields)} filled). "
+                        f"Filled fields: {[f.field_id for f in group_filled]}"
+                    )
+                else:
+                    incomplete_groups.append({
+                        "group_name": group_name,
+                        "missing_fields": group_fields,  # All fields shown as options
+                        "total_fields": len(group_fields),
+                        "internal_or": True
+                    })
+                    logger.info(
+                        f"[GROUPED OR] Group '{group_name}' is INCOMPLETE (internal OR: need at least 1 of {len(group_fields)} fields)"
+                    )
             else:
-                incomplete_groups.append(
-                    {
+                # Standard AND: ALL fields must be filled
+                if len(group_missing) == 0:
+                    # This group is complete
+                    complete_groups.append(group_name)
+                    logger.info(
+                        f"[GROUPED OR] Group '{group_name}' is COMPLETE (all {len(group_fields)} fields filled). "
+                        f"Filled fields: {[f.field_id for f in group_filled]}"
+                    )
+                else:
+                    incomplete_groups.append({
                         "group_name": group_name,
                         "missing_fields": group_missing,
                         "total_fields": len(group_fields),
-                    }
-                )
-                logger.info(
-                    f"[GROUPED OR] Group '{group_name}' is INCOMPLETE ({len(group_missing)}/{len(group_fields)} missing). "
-                    f"Missing: {[f.field_id for f in group_missing]}, Filled: {[f.field_id for f in group_filled]}"
-                )
+                        "internal_or": False
+                    })
+                    logger.info(
+                        f"[GROUPED OR] Group '{group_name}' is INCOMPLETE ({len(group_missing)}/{len(group_fields)} missing). "
+                        f"Missing: {[f.field_id for f in group_missing]}, Filled: {[f.field_id for f in group_filled]}"
+                    )
 
         # At least one group must be complete for OR logic
         is_complete = len(complete_groups) > 0
@@ -487,6 +519,38 @@ class CompletenessValidationService:
             "required_field_count": required_count,
             "filled_field_count": filled_count,
         }
+
+    def _group_has_internal_or_logic(self, group_name: str, group_fields: List[FormField]) -> bool:
+        """
+        Detect if a group has internal OR logic (e.g., Option 3 where opt3_a OR opt3_b satisfies it).
+
+        Internal OR is detected by:
+        1. Group name containing "Option 3" (known pattern for 1.6.1)
+        2. Field IDs containing "_or" pattern indicating OR separator between fields
+        3. Multiple file fields in the same option group with field_ids suggesting alternatives
+
+        Args:
+            group_name: Name of the option group
+            group_fields: List of fields in the group
+
+        Returns:
+            True if group has internal OR logic, False otherwise
+        """
+        # Known groups with internal OR logic
+        if "Option 3" in group_name:
+            # Check if there are multiple file upload fields (indicating OR between them)
+            file_fields = [f for f in group_fields if hasattr(f, 'field_type') and f.field_type == 'file_upload']
+            if len(file_fields) > 1:
+                return True
+
+        # Check for "_or" pattern in field_ids which indicates OR separator was between fields
+        field_ids = [f.field_id for f in group_fields]
+        has_or_separator_pattern = any('_or' in fid.lower() or 'opt3_a' in fid or 'opt3_b' in fid for fid in field_ids)
+
+        if has_or_separator_pattern and len(group_fields) >= 2:
+            return True
+
+        return False
 
     def _validate_shared_plus_or_fields(
         self,

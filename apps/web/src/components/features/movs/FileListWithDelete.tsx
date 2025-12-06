@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useDeleteMovsFilesFileId, MOVFileResponse } from "@sinag/shared";
-import { getGetAssessmentsMyAssessmentQueryKey } from "@sinag/shared/src/generated/endpoints/assessments";
+import { useDeleteMovsFilesFileId, MOVFileResponse, getGetAssessmentsMyAssessmentQueryKey } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { FileList } from "./FileList";
 import {
@@ -85,6 +84,43 @@ export function FileListWithDelete({
         // Force immediate refetch
         queryClient.refetchQueries({
           queryKey: getGetAssessmentsMyAssessmentQueryKey(),
+        });
+
+        // CRITICAL: Invalidate and REFETCH all MOV files queries to update progress indicators
+        queryClient.invalidateQueries({
+          predicate: (query) => {
+            const key = query.queryKey;
+            // Match any query that looks like a MOV files query
+            return Array.isArray(key) && key.some(
+              (k) => typeof k === 'string' && k.includes('/movs/') && k.includes('/files')
+            );
+          },
+        });
+        queryClient.refetchQueries({
+          predicate: (query) => {
+            const key = query.queryKey;
+            return Array.isArray(key) && key.some(
+              (k) => typeof k === 'string' && k.includes('/movs/') && k.includes('/files')
+            );
+          },
+        });
+
+        // CRITICAL: Invalidate and REFETCH BLGU dashboard queries to update the COMPLETE badge
+        queryClient.invalidateQueries({
+          predicate: (query) => {
+            const key = query.queryKey;
+            return Array.isArray(key) && key.some(
+              (k) => typeof k === 'string' && k.includes('/blgu-dashboard/')
+            );
+          },
+        });
+        queryClient.refetchQueries({
+          predicate: (query) => {
+            const key = query.queryKey;
+            return Array.isArray(key) && key.some(
+              (k) => typeof k === 'string' && k.includes('/blgu-dashboard/')
+            );
+          },
         });
 
         // Notify parent component
