@@ -10,6 +10,7 @@ import {
   useUploadMOV,
 } from "@/hooks/useAssessment";
 import { cn } from "@/lib/utils";
+import { showError } from "@/lib/toast";
 import { ComplianceAnswer, Indicator } from "@/types/assessment";
 import { AlertTriangle, FileText, Trash2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
@@ -48,13 +49,17 @@ export function IndicatorForm({ indicator, isLocked }: IndicatorFormProps) {
         "image/png",
       ];
       if (!allowedTypes.includes(file.type)) {
-        alert("Please upload only PDF, DOC, DOCX, JPG, or PNG files.");
+        showError("Invalid file type", {
+          description: "Please upload only PDF, DOC, DOCX, JPG, or PNG files.",
+        });
         return;
       }
 
       // Validate file size (10MB limit)
       if (file.size > 10 * 1024 * 1024) {
-        alert("File size must be less than 10MB.");
+        showError("File too large", {
+          description: "File size must be less than 10MB.",
+        });
         return;
       }
 

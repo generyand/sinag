@@ -16,6 +16,7 @@ import {
 import { GARReportDisplay } from '@/components/features/gar/GARReportDisplay';
 import { GARSkeleton } from '@/components/features/gar/GARSkeleton';
 import { getApiV1URL } from '@/lib/api';
+import { showError, showWarning } from '@/lib/toast';
 
 export default function GARPage() {
   const router = useRouter();
@@ -70,7 +71,9 @@ export default function GARPage() {
     const url = `${baseUrl}/gar/${selectedAssessmentId}/export/${format}${areaParam}`;
 
     if (!token) {
-      alert('Authentication required. Please log in again.');
+      showWarning('Authentication required', {
+        description: 'Please log in again.',
+      });
       if (format === 'excel') setExportingExcel(false);
       if (format === 'pdf') setExportingPdf(false);
       return;
@@ -99,7 +102,9 @@ export default function GARPage() {
       document.body.removeChild(a);
     } catch (error) {
       console.error('Export failed:', error);
-      alert('Export failed. Please try again.');
+      showError('Export failed', {
+        description: 'Please try again.',
+      });
     } finally {
       // Reset loading state
       if (format === 'excel') setExportingExcel(false);

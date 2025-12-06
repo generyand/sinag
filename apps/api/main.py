@@ -13,6 +13,7 @@ from app.api.v1 import api_router as api_router_v1
 
 # Import from our restructured modules
 from app.core.config import settings
+from app.core.exception_handlers import register_exception_handlers
 from app.middleware import (
     CacheHeadersMiddleware,
     MetricsMiddleware,
@@ -70,6 +71,10 @@ app = FastAPI(
     redoc_url="/redoc",
     lifespan=lifespan,
 )
+
+# Register global exception handlers
+# This ensures all errors return consistent, user-friendly responses
+register_exception_handlers(app)
 
 # Configure CORS middleware using settings
 app.add_middleware(

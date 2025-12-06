@@ -12,6 +12,7 @@ import { Download, FileText, Image, Loader2, ChevronDown } from "lucide-react";
 import { exportToCSV } from "@/lib/csv-export";
 import { exportToPNG } from "@/lib/png-export";
 import { exportReportToPDF, FilterState } from "@/lib/pdf-export";
+import { showError, showWarning } from "@/lib/toast";
 import { AssessmentRow, ReportsDataResponse } from "@sinag/shared";
 
 interface ExportControlsProps {
@@ -31,7 +32,7 @@ export function ExportControls({
   // Handle CSV export
   const handleCSVExport = () => {
     if (!tableData || tableData.length === 0) {
-      alert("No data available to export");
+      showWarning("No data available to export");
       return;
     }
 
@@ -50,7 +51,9 @@ export function ExportControls({
       exportToCSV(csvData, "assessment_report");
     } catch (error) {
       console.error("CSV export failed:", error);
-      alert("Failed to export CSV. Please try again.");
+      showError("Failed to export CSV", {
+        description: "Please try again.",
+      });
     } finally {
       setIsExporting(false);
       setExportType(null);
@@ -66,7 +69,9 @@ export function ExportControls({
       await exportToPNG(elementId, `${chartType}_chart`);
     } catch (error) {
       console.error("PNG export failed:", error);
-      alert("Failed to export PNG. Please try again.");
+      showError("Failed to export PNG", {
+        description: "Please try again.",
+      });
     } finally {
       setIsExporting(false);
       setExportType(null);
@@ -76,7 +81,7 @@ export function ExportControls({
   // Handle PDF export with DILG branding
   const handlePDFExport = async () => {
     if (!reportsData) {
-      alert("No report data available to export");
+      showWarning("No report data available to export");
       return;
     }
 
@@ -99,7 +104,9 @@ export function ExportControls({
       );
     } catch (error) {
       console.error("PDF export failed:", error);
-      alert("Failed to export PDF. Please try again.");
+      showError("Failed to export PDF", {
+        description: "Please try again.",
+      });
     } finally {
       setIsExporting(false);
       setExportType(null);
