@@ -2,7 +2,7 @@
 
 The Assessors API provides endpoints for DILG assessors and validators to manage their submission queue, validate assessment responses, request rework from BLGUs, request calibration (validators only), manage MOV annotations, and perform table assessments. This API supports the complete assessor workflow from initial review through final validation.
 
-**Last Updated**: 2025-11-27
+**Last Updated**: 2025-12-06
 
 ## Overview
 
@@ -120,7 +120,7 @@ Get detailed assessment data for assessor review.
           "budget_amount": 500000
         },
         "is_completed": true,
-        "validation_status": "PASSED",
+        "validation_status": "PASS",
         "assessor_remarks": "Budget documentation is comprehensive",
         "movs": [
           {
@@ -174,7 +174,7 @@ Validate an assessment response.
 **Request Body**:
 ```json
 {
-  "validation_status": "PASSED",
+  "validation_status": "PASS",
   "public_comment": "Budget documentation is comprehensive and meets all requirements. Well organized.",
   "internal_note": "Cross-checked with municipal records - amounts match. BLGU is well-prepared.",
   "assessor_remarks": "All budget transparency requirements satisfied. Supporting documents are complete."
@@ -182,11 +182,9 @@ Validate an assessment response.
 ```
 
 **Validation Status Options**:
-- `PASSED`: Indicator fully complies with requirements
-- `FAILED`: Indicator does not meet requirements
-- `CONDITIONAL_PASS`: Indicator meets requirements with minor issues
-- `NOT_APPLICABLE`: Indicator does not apply to this barangay
-- `PENDING`: Validation not yet complete
+- `PASS`: Indicator fully complies with requirements
+- `FAIL`: Indicator does not meet requirements
+- `CONDITIONAL`: Indicator meets requirements with minor issues (conditional pass)
 
 **Response** (200 OK):
 ```json
@@ -194,7 +192,7 @@ Validate an assessment response.
   "success": true,
   "message": "Assessment response validated successfully",
   "assessment_response_id": 789,
-  "validation_status": "PASSED"
+  "validation_status": "PASS"
 }
 ```
 
@@ -342,11 +340,13 @@ Finalize assessment validation, permanently locking it.
 
 **Workflow Stage**: Stage 2 → Stage 3 Transition (Finalization)
 
-**Description**: Changes the assessment status to 'VALIDATED', permanently locking the assessment from further edits by either the BLGU or the Assessor. This action can only be performed if all assessment responses have been reviewed (have a validation status). The assessor must have permission to review assessments in their governance area.
+**Description**: For **Assessors**: Changes the assessment status to `AWAITING_FINAL_VALIDATION`, forwarding to validators. For **Validators**: Changes status to `AWAITING_MLGOO_APPROVAL` (or `COMPLETED` if MLGOO approval is not required), permanently locking the assessment. This action can only be performed if all assessment responses have been reviewed (have a validation status). The user must have permission to review assessments in their governance area.
 
 **Business Rules**:
-- All assessment responses must have a validation status (PASSED, FAILED, CONDITIONAL_PASS, NOT_APPLICABLE)
-- Assessment is permanently locked after finalization
+- All assessment responses must have a validation status (PASS, FAIL, CONDITIONAL)
+- Assessor finalization: Status → `AWAITING_FINAL_VALIDATION`
+- Validator finalization: Status → `AWAITING_MLGOO_APPROVAL` or `COMPLETED`
+- Assessment is permanently locked after final completion
 - Triggers classification algorithm (3+1 rule) automatically
 - Sets validated_at timestamp
 
@@ -361,7 +361,7 @@ Finalize assessment validation, permanently locking it.
   "success": true,
   "message": "Assessment finalized successfully",
   "assessment_id": 123,
-  "status": "VALIDATED",
+  "status": "AWAITING_MLGOO_APPROVAL",
   "validated_at": "2025-01-15T16:00:00Z",
   "final_compliance_status": "PASSED"
 }
@@ -704,7 +704,9 @@ Get analytics data for the assessor's governance area.
       "SUBMITTED": 15,
       "IN_REVIEW": 5,
       "REWORK": 8,
-      "VALIDATED": 12
+      "AWAITING_FINAL_VALIDATION": 7,
+      "AWAITING_MLGOO_APPROVAL": 3,
+      "COMPLETED": 12
     }
   }
 }
@@ -721,12 +723,12 @@ Get analytics data for the assessor's governance area.
 ### ValidationStatus Enum
 
 ```python
-PASSED = "PASSED"                          # Fully complies
-FAILED = "FAILED"                          # Does not meet requirements
-CONDITIONAL_PASS = "CONDITIONAL_PASS"      # Meets with minor issues
-NOT_APPLICABLE = "NOT_APPLICABLE"          # Does not apply
-PENDING = "PENDING"                        # Not yet validated
+PASS = "PASS"                              # Fully complies
+FAIL = "FAIL"                              # Does not meet requirements
+CONDITIONAL = "CONDITIONAL"                # Meets with minor issues (conditional pass)
 ```
+
+**Note**: The actual enum values in code are `PASS`, `FAIL`, and `CONDITIONAL` (not `PASSED`/`FAILED`/`CONDITIONAL_PASS`). Ensure API requests use the correct values.
 
 ### AssessmentStatus Enum
 
@@ -735,8 +737,15 @@ DRAFT = "DRAFT"                            # Initial BLGU state
 SUBMITTED = "SUBMITTED"                    # Submitted for review
 IN_REVIEW = "IN_REVIEW"                    # Under assessor review
 REWORK = "REWORK"                          # Sent back for corrections
-VALIDATED = "VALIDATED"                    # Final validated state
+AWAITING_FINAL_VALIDATION = "AWAITING_FINAL_VALIDATION"  # Assessor finalized, awaiting validator
+AWAITING_MLGOO_APPROVAL = "AWAITING_MLGOO_APPROVAL"      # Validators done, awaiting MLGOO approval
+COMPLETED = "COMPLETED"                    # Final validated and approved state
 ```
+
+**Legacy Status Mappings** (for backward compatibility):
+- `SUBMITTED_FOR_REVIEW` → `SUBMITTED`
+- `NEEDS_REWORK` → `REWORK`
+- `VALIDATED` → `COMPLETED`
 
 ### ComplianceStatus Enum
 
@@ -816,7 +825,7 @@ Automatic on finalization:
 ### Validation Completeness
 
 - All assessment responses must have a validation status before finalization
-- Validation status options: PASSED, FAILED, CONDITIONAL_PASS, NOT_APPLICABLE, PENDING
+- Validation status options: `PASS`, `FAIL`, `CONDITIONAL`
 - System checks completeness before allowing finalization
 
 ### Comment Visibility

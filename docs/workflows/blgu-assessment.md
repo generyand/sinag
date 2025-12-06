@@ -4,7 +4,7 @@
 
 The **BLGU Assessment Workflow** is the first stage of the SGLGB (Seal of Good Local Governance for Barangays) assessment process. This workflow enables Barangay Local Government Unit (BLGU) users to complete their self-assessment by providing responses to governance indicators and uploading Means of Verification (MOVs) as evidence.
 
-**Last Updated:** 2025-11-27
+**Last Updated:** 2025-12-06
 
 ### SGLGB Stage
 
@@ -43,6 +43,7 @@ flowchart TD
     CheckStatus -->|REWORK| ReviewFeedback[Review Assessor Feedback]
     CheckStatus -->|SUBMITTED| ViewOnly[View Read-Only Assessment]
     CheckStatus -->|AWAITING_FINAL_VALIDATION| ViewOnly
+    CheckStatus -->|AWAITING_MLGOO_APPROVAL| ViewOnly
     CheckStatus -->|COMPLETED| ViewOnly
 
     FillForm --> SelectArea[Select Governance Area]
@@ -96,7 +97,10 @@ stateDiagram-v2
     REWORK --> SUBMITTED: BLGU Resubmits (After Rework)
 
     AWAITING_FINAL_VALIDATION --> REWORK: Validator Requests Calibration
-    AWAITING_FINAL_VALIDATION --> COMPLETED: Validator Finalizes
+    AWAITING_FINAL_VALIDATION --> AWAITING_MLGOO_APPROVAL: Validators Finalize
+
+    AWAITING_MLGOO_APPROVAL --> REWORK: MLGOO Requests RE-calibration
+    AWAITING_MLGOO_APPROVAL --> COMPLETED: MLGOO Approves
 
     COMPLETED --> [*]
 
@@ -119,7 +123,7 @@ stateDiagram-v2
         Assessment is partially editable
         Only flagged indicators unlocked
         One-time rework (Assessor) or
-        Calibration (Validator) opportunity
+        Calibration (Validator/MLGOO) opportunity
     end note
 
     note right of AWAITING_FINAL_VALIDATION
@@ -128,10 +132,17 @@ stateDiagram-v2
         Validator may request calibration
     end note
 
+    note right of AWAITING_MLGOO_APPROVAL
+        All validators completed
+        Awaiting MLGOO final approval
+        MLGOO may request RE-calibration
+    end note
+
     note right of COMPLETED
         Final state
         Fully locked
         Classification complete
+        MLGOO approved
     end note
 ```
 
@@ -654,9 +665,10 @@ The dashboard provides AI-generated summaries to help BLGU users:
 | `IN_PROGRESS` | User has started filling out the form | ✅ Yes | BLGU | `SUBMITTED` |
 | `SUBMITTED` | BLGU submitted, awaiting assessor assignment | ❌ No (Locked) | BLGU, Assessors | `IN_REVIEW`, `REWORK` |
 | `IN_REVIEW` | Assessor is actively reviewing the submission | ❌ No (Locked) | BLGU, Assigned Assessor | `REWORK`, `AWAITING_FINAL_VALIDATION` |
-| `REWORK` | Assessor requested changes, specific indicators unlocked | ⚠️ Partially (Flagged indicators only) | BLGU, Assigned Assessor | `SUBMITTED` (after resubmit) |
-| `AWAITING_FINAL_VALIDATION` | Assessor finalized, awaiting validator final check | ❌ No (Locked) | BLGU, Validators | `COMPLETED` |
-| `COMPLETED` | Final validation complete, classification run | ❌ No (Locked) | BLGU, All DILG users | None (Terminal state) |
+| `REWORK` | Assessor/Validator/MLGOO requested changes, specific indicators unlocked | ⚠️ Partially (Flagged indicators only) | BLGU, Assigned Assessor/Validator | `SUBMITTED` (after resubmit) |
+| `AWAITING_FINAL_VALIDATION` | Assessor finalized, awaiting validator final check | ❌ No (Locked) | BLGU, Validators | `REWORK` (calibration), `AWAITING_MLGOO_APPROVAL` |
+| `AWAITING_MLGOO_APPROVAL` | Validators finalized, awaiting MLGOO final approval | ❌ No (Locked) | BLGU, MLGOO | `REWORK` (RE-calibration), `COMPLETED` |
+| `COMPLETED` | Final validation complete, MLGOO approved, classification run | ❌ No (Locked) | BLGU, All DILG users | None (Terminal state) |
 
 ### Legacy Status Mappings
 

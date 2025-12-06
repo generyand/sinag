@@ -148,19 +148,3 @@ Always add a test for your new endpoint.
 -   **Action:** Write a test case using `httpx.AsyncClient` to call the endpoint and assert the response.
 
 See `@testing.mdc` for detailed examples.
-
--   **Location:** `apps/api/tests/api/v1/test_[domain].py`
--   **Action:** Write a test case using `httpx.AsyncClient` to call the endpoint and assert the response.
-
-See `@testing.mdc` for detailed examples.
-Always add a test for your new endpoint.
-
--   **Location:** `apps/api/tests/api/v1/test_[domain].py`
--   **Action:** Write a test case using `httpx.AsyncClient` to call the endpoint and assert the response.
-
-See `@testing.mdc` for detailed examples.
-
--   **Location:** `apps/api/tests/api/v1/test_[domain].py`
--   **Action:** Write a test case using `httpx.AsyncClient` to call the endpoint and assert the response.
-
-See `@testing.mdc` for detailed examples.

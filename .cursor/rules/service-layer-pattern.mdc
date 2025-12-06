@@ -93,8 +93,3 @@ def create_project(
 -   Services should accept Pydantic schemas as input and generally return SQLAlchemy models.
 -   Services are responsible for all database session operations (`db.add()`, `db.commit()`, `db.refresh()`).
 -   Inject the database session (`db: Session`) into service methods from the router layer. This keeps the services flexible for testing.
-## Best Practices
-
--   Services should accept Pydantic schemas as input and generally return SQLAlchemy models.
--   Services are responsible for all database session operations (`db.add()`, `db.commit()`, `db.refresh()`).
--   Inject the database session (`db: Session`) into service methods from the router layer. This keeps the services flexible for testing.

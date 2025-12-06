@@ -2,7 +2,7 @@
 
 This document describes the validation workflow for both Assessors and Validators in the SINAG SGLGB assessment system, including the calibration workflow introduced in Phase 2.
 
-**Last Updated:** 2025-11-27
+**Last Updated:** 2025-12-06
 
 ---
 
@@ -37,7 +37,7 @@ This document describes the validation workflow for both Assessors and Validator
 
 ## Workflow Overview
 
-### Main Workflow (Including Calibration)
+### Main Workflow (Including Calibration and MLGOO Approval)
 
 ```mermaid
 graph TD
@@ -59,7 +59,16 @@ graph TD
     O --> J
     K -->|All Good| P[Validator Determines Pass/Fail]
     P --> Q[Validator Finalizes]
-    Q --> R[Status: COMPLETED]
+    Q --> R[Status: AWAITING_MLGOO_APPROVAL]
+    R --> S[MLGOO Reviews]
+    S --> T{MLGOO Decision}
+    T -->|Issues Found| U[Request RE-calibration]
+    U --> V[Status: REWORK + is_mlgoo_recalibration=true]
+    V --> W[BLGU Addresses RE-calibration]
+    W --> X[BLGU Resubmits]
+    X --> R
+    T -->|Approved| Y[MLGOO Approves]
+    Y --> Z[Status: COMPLETED]
 ```
 
 ### Parallel Calibration Flow
@@ -246,7 +255,85 @@ The dashboard displays:
 ### 6. Finalize Validation
 - **Condition:** All indicators have Met/Unmet/Considered status
 - **Action:** "Finalize Validation" button
-- **Result:** Status changes to `COMPLETED`
+- **Result:** Status changes to `AWAITING_MLGOO_APPROVAL`
+
+---
+
+## MLGOO Final Approval Workflow
+
+After all Validators have completed their reviews, assessments enter the `AWAITING_MLGOO_APPROVAL` status. The MLGOO (Municipal Local Government Operations Officer) performs the final review and approval.
+
+### 1. MLGOO Queue
+
+- MLGOO users see all assessments in `AWAITING_MLGOO_APPROVAL` status
+- Queue shows:
+  - Barangay name
+  - Submission date
+  - All governance area pass/fail results
+  - Validator completion timestamps
+
+### 2. Reviewing an Assessment
+
+**MLGOO Review Interface:**
+- Summary view of all governance area results
+- Access to validator findings and feedback
+- Full MOV file access with annotations
+- Classification results preview (3+1 rule)
+
+**What MLGOO Can Do:**
+- Review all validator determinations
+- View classification algorithm results
+- Approve the assessment (final seal of approval)
+- Request RE-calibration for specific indicators
+
+### 3. MLGOO RE-Calibration
+
+If MLGOO identifies issues after validator review, they can request RE-calibration:
+
+**RE-Calibration Process:**
+1. **MLGOO Identifies Issues**: During final review, MLGOO finds problems with specific indicators
+2. **Request RE-calibration**: MLGOO clicks "Request RE-calibration" button
+3. **System Updates Assessment**:
+   - Sets `is_mlgoo_recalibration = true`
+   - Records `mlgoo_recalibration_requested_by` (FK to MLGOO user)
+   - Stores `mlgoo_recalibration_requested_at` timestamp
+   - Records `mlgoo_recalibration_indicator_ids` (specific indicators to address)
+   - Stores `mlgoo_recalibration_comments` (guidance for BLGU)
+4. **BLGU Receives Notification**: Dashboard shows RE-calibration details
+5. **BLGU Addresses Issues**: Only specified indicators are unlocked
+6. **BLGU Resubmits**: Assessment returns to `AWAITING_MLGOO_APPROVAL`
+
+**RE-Calibration Limit:**
+- `mlgoo_recalibration_count` tracks RE-calibrations (recommended limit: 1)
+
+### 4. Final Approval
+
+When MLGOO is satisfied with the assessment:
+
+1. **MLGOO Clicks "Approve Assessment"**
+2. **System Updates:**
+   - Sets `mlgoo_approved_by` = MLGOO user ID
+   - Sets `mlgoo_approved_at` = current timestamp
+   - Changes status to `COMPLETED`
+   - Triggers final classification and CapDev insights generation
+3. **BLGU Receives Notification**: Assessment approved, results available
+
+### 5. MLGOO Workflow Summary
+
+| Action | Trigger | Result |
+|--------|---------|--------|
+| Approve | MLGOO clicks "Approve" | Status → `COMPLETED`, assessment finalized |
+| RE-calibrate | MLGOO clicks "Request RE-calibration" | Status → `REWORK`, specific indicators unlocked for BLGU |
+
+### MLGOO vs Validator Comparison
+
+| Aspect | Validator | MLGOO |
+|--------|-----------|-------|
+| **Scope** | Own governance area only | All governance areas |
+| **Pass/Fail** | Sets indicator status | Reviews overall results |
+| **Calibration** | Requests calibration (per area) | Requests RE-calibration (final) |
+| **Final Decision** | Forwards to MLGOO | Approves or RE-calibrates |
+| **Access Level** | Area-specific | System-wide |
 
 ---
 
@@ -259,39 +346,44 @@ The dashboard displays:
 | `IN_REVIEW` | Assessor reviewing | Assessors | Continue review |
 | `REWORK` | Needs revision | BLGU, Assessors/Validators | BLGU revises and resubmits |
 | `REWORK` + `is_calibration_rework=true` | Calibration needed | BLGU, Validator | BLGU addresses specific area, submits to Validator |
+| `REWORK` + `is_mlgoo_recalibration=true` | MLGOO RE-calibration | BLGU, MLGOO | BLGU addresses MLGOO issues, resubmits |
 | `AWAITING_FINAL_VALIDATION` | Ready for validator | Validators | Determine Pass/Fail, Calibrate, or Finalize |
-| `COMPLETED` | Validation complete | All | View final results |
+| `AWAITING_MLGOO_APPROVAL` | Validators done, awaiting MLGOO | MLGOO, BLGU | MLGOO approves or requests RE-calibration |
+| `COMPLETED` | Validation complete, MLGOO approved | All | View final results |
 
-### Calibration vs. Rework
+### Calibration vs. Rework vs. RE-Calibration
 
-| Aspect | Rework (Assessor) | Calibration (Validator) |
-|--------|-------------------|-------------------------|
-| **Who triggers** | Assessor | Validator |
-| **When triggered** | During initial review | During final validation |
-| **Scope** | Any indicators | Only Validator's governance area |
-| **Returns to** | All Assessors | Same Validator |
-| **Limit** | 1 per assessment | 1 per governance area |
-| **AI Summary** | Yes (rework_summary) | Yes (calibration_summary per area) |
-| **Field flag** | `rework_count = 1` | `is_calibration_rework = true` |
+| Aspect | Rework (Assessor) | Calibration (Validator) | RE-Calibration (MLGOO) |
+|--------|-------------------|-------------------------|------------------------|
+| **Who triggers** | Assessor | Validator | MLGOO |
+| **When triggered** | During initial review | During final validation | During MLGOO approval |
+| **Scope** | Any indicators | Only Validator's governance area | Any indicators (MLGOO selected) |
+| **Returns to** | All Assessors | Same Validator | MLGOO |
+| **Limit** | 1 per assessment | 1 per governance area | 1 per assessment |
+| **AI Summary** | Yes (rework_summary) | Yes (calibration_summary per area) | No (uses comments) |
+| **Field flag** | `rework_count = 1` | `is_calibration_rework = true` | `is_mlgoo_recalibration = true` |
+| **Status before** | `IN_REVIEW` | `AWAITING_FINAL_VALIDATION` | `AWAITING_MLGOO_APPROVAL` |
 
 ---
 
-## Key Differences: Assessor vs Validator
+## Key Differences: Assessor vs Validator vs MLGOO
 
-| Feature | Assessor | Validator |
-|---------|----------|-----------|
-| **Access** | All barangays | Assigned governance area only |
-| **Review MOVs** | Yes | Yes |
-| **Leave Comments** | Yes | Yes |
-| **Set Pass/Fail Status** | No | Yes |
-| **See Automatic Result** | No | Yes |
-| **Override Automatic Result** | No | Yes |
-| **Send for Rework** | Yes (once) | No |
-| **Request Calibration** | No | Yes (per area) |
-| **Final Validation** | Forward to Validator | Mark as COMPLETED |
-| **View Assessor Remarks** | N/A | Yes (read-only) |
-| **Write Assessor Remarks** | Yes | No |
-| **Create MOV Annotations** | Yes | Yes |
+| Feature | Assessor | Validator | MLGOO |
+|---------|----------|-----------|-------|
+| **Access** | All barangays | Assigned governance area only | All barangays |
+| **Review MOVs** | Yes | Yes | Yes |
+| **Leave Comments** | Yes | Yes | Yes |
+| **Set Pass/Fail Status** | No | Yes | No (reviews only) |
+| **See Automatic Result** | No | Yes | Yes |
+| **Override Automatic Result** | No | Yes | No |
+| **Send for Rework** | Yes (once) | No | No |
+| **Request Calibration** | No | Yes (per area) | No |
+| **Request RE-Calibration** | No | No | Yes |
+| **Final Validation** | Forward to Validator | Forward to MLGOO | Mark as COMPLETED |
+| **View Assessor Remarks** | N/A | Yes (read-only) | Yes (read-only) |
+| **Write Assessor Remarks** | Yes | No | No |
+| **Create MOV Annotations** | Yes | Yes | Yes |
+| **Final Approval** | No | No | Yes |
 
 ---
 

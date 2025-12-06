@@ -75,8 +75,3 @@ alembic upgrade head
   ```bash
   alembic downgrade -1
   ```
-
-- **Downgrade a Migration:** To revert the last applied migration.
-  ```bash
-  alembic downgrade -1
-  ```
