@@ -5,15 +5,15 @@ Revises: 1c08cc4ff099
 Create Date: 2025-11-17 03:11:33.363106
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '99c48749bb2a'
-down_revision: Union[str, Sequence[str], None] = '1c08cc4ff099'
+revision: str = "99c48749bb2a"
+down_revision: Union[str, Sequence[str], None] = "1c08cc4ff099"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -46,8 +46,12 @@ def upgrade() -> None:
         seed_indicators(ALL_INDICATORS, session)
 
         print("\n✅ Successfully fixed indicators!")
-        print("   - 4.5.5: Now shows 3 upload fields (Flow Chart, Intervention Program, CAR/CICL registry)")
-        print("   - 4.8.1: Now shows 1 upload field with 13 composition checklist items for assessor")
+        print(
+            "   - 4.5.5: Now shows 3 upload fields (Flow Chart, Intervention Program, CAR/CICL registry)"
+        )
+        print(
+            "   - 4.8.1: Now shows 1 upload field with 13 composition checklist items for assessor"
+        )
         print("   - 4.8.3: Now shows 2 upload fields with 3 category checklist items for assessor")
         print("=" * 70)
 

@@ -58,7 +58,9 @@ class AssessmentStatus(str, enum.Enum):
     IN_REVIEW = "IN_REVIEW"
     REWORK = "REWORK"
     AWAITING_FINAL_VALIDATION = "AWAITING_FINAL_VALIDATION"
-    AWAITING_MLGOO_APPROVAL = "AWAITING_MLGOO_APPROVAL"  # NEW: After validators finalize, awaits MLGOO final approval
+    AWAITING_MLGOO_APPROVAL = (
+        "AWAITING_MLGOO_APPROVAL"  # NEW: After validators finalize, awaits MLGOO final approval
+    )
     COMPLETED = "COMPLETED"
 
     # Legacy states (backward compatibility)

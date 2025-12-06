@@ -2,16 +2,17 @@
 Tests for authentication API endpoints (app/api/v1/auth.py)
 """
 
-import pytest
 import uuid
+from datetime import UTC
+
+import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
 from passlib.context import CryptContext
+from sqlalchemy.orm import Session
 
-from app.db.models.user import User
-from app.db.enums import UserRole
 from app.api import deps
-
+from app.db.enums import UserRole
+from app.db.models.user import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -85,6 +86,7 @@ def user_must_change_password(db_session: Session):
 
 def _override_user_and_db(client, user: User, db_session: Session):
     """Override authentication and database dependencies for testing"""
+
     def _override_current_active_user():
         return user
 
@@ -100,6 +102,7 @@ def _override_user_and_db(client, user: User, db_session: Session):
 
 def _override_db(client, db_session: Session):
     """Override database dependency for testing"""
+
     def _override_get_db():
         try:
             yield db_session
@@ -294,7 +297,9 @@ def test_change_password_resets_must_change_password_flag(
     assert user_must_change_password.must_change_password is False
 
 
-def test_change_password_with_missing_fields(client: TestClient, db_session: Session, test_user: User):
+def test_change_password_with_missing_fields(
+    client: TestClient, db_session: Session, test_user: User
+):
     """Test password change validation errors"""
     _override_user_and_db(client, test_user, db_session)
 
@@ -380,8 +385,10 @@ def test_token_contains_user_information(client: TestClient, db_session: Session
 
 def test_expired_token_rejected(client: TestClient, db_session: Session, test_user: User):
     """Test that expired tokens are rejected"""
+    from datetime import datetime, timedelta
+
     import jwt
-    from datetime import datetime, timedelta, timezone
+
     from app.core.config import settings
 
     # Create an expired token manually
@@ -389,13 +396,11 @@ def test_expired_token_rejected(client: TestClient, db_session: Session, test_us
         "sub": str(test_user.id),
         "role": test_user.role.value,
         "must_change_password": False,
-        "exp": datetime.now(timezone.utc) - timedelta(days=1),  # Expired yesterday
-        "iat": datetime.now(timezone.utc) - timedelta(days=2),
+        "exp": datetime.now(UTC) - timedelta(days=1),  # Expired yesterday
+        "iat": datetime.now(UTC) - timedelta(days=2),
     }
 
-    expired_token = jwt.encode(
-        expired_payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM
-    )
+    expired_token = jwt.encode(expired_payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
     _override_db(client, db_session)
 

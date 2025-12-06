@@ -2,11 +2,18 @@
 # Business logic for SGLGB compliance classification and AI-powered insights
 
 import json
+import re
+import threading
+import time
 from datetime import UTC, datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import google.generativeai as genai
 from loguru import logger
+from prometheus_client import Counter, Gauge, Histogram
+from pybreaker import CircuitBreaker, CircuitBreakerError
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.core.config import settings
 from app.db.enums import ComplianceStatus, ValidationStatus
@@ -23,8 +30,130 @@ from app.schemas.calculation_schema import (
     OrAnyRule,
     PercentageThresholdRule,
 )
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy.orm.attributes import flag_modified
+
+# ========================================
+# OBSERVABILITY METRICS (Prometheus)
+# ========================================
+
+# Counter for total Gemini API requests
+gemini_requests_total = Counter(
+    "gemini_api_requests_total",
+    "Total Gemini API requests",
+    ["status", "language", "operation"],
+)
+
+# Histogram for API latency
+gemini_latency_seconds = Histogram(
+    "gemini_api_duration_seconds",
+    "Gemini API call duration in seconds",
+    ["operation"],
+    buckets=[0.5, 1, 2, 5, 10, 20, 30, 60],
+)
+
+# Counter for cache operations
+cache_operations_total = Counter(
+    "intelligence_cache_operations_total",
+    "Cache hit/miss counter",
+    ["operation", "result"],  # operation: insights/rework/capdev, result: hit/miss
+)
+
+# Gauge for circuit breaker state
+circuit_breaker_state = Gauge(
+    "gemini_circuit_breaker_state",
+    "Circuit breaker state (0=closed, 1=open, 2=half-open)",
+)
+
+# Counter for rate limit events
+rate_limit_events = Counter(
+    "intelligence_rate_limit_events_total",
+    "Rate limit events",
+    ["action"],  # allowed, denied
+)
+
+# ========================================
+# CIRCUIT BREAKER CONFIGURATION
+# ========================================
+
+# Circuit breaker for Gemini API calls
+# Opens after 5 consecutive failures, stays open for 60 seconds
+gemini_circuit_breaker = CircuitBreaker(
+    fail_max=5,
+    reset_timeout=60,
+    name="gemini_api",
+)
+
+# ========================================
+# RATE LIMITER (Token Bucket Algorithm)
+# ========================================
+
+
+class RateLimiter:
+    """
+    Thread-safe token bucket rate limiter for Gemini API calls.
+
+    Default: 10 requests per minute per operation type.
+    This prevents API quota exhaustion and provides cost control.
+    """
+
+    def __init__(self, max_requests: int = 10, window_seconds: int = 60):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self._requests: dict[str, list[float]] = {}
+        self._lock = threading.Lock()
+
+    def acquire(self, key: str = "default") -> bool:
+        """
+        Try to acquire a rate limit token.
+
+        Args:
+            key: Identifier for rate limiting (e.g., user_id, operation_type)
+
+        Returns:
+            True if request is allowed, False if rate limited
+        """
+        with self._lock:
+            now = time.time()
+            window_start = now - self.window_seconds
+
+            # Initialize or clean up old requests
+            if key not in self._requests:
+                self._requests[key] = []
+
+            # Remove requests outside the window
+            self._requests[key] = [t for t in self._requests[key] if t > window_start]
+
+            # Check if we're within the limit
+            if len(self._requests[key]) >= self.max_requests:
+                rate_limit_events.labels(action="denied").inc()
+                return False
+
+            # Record this request
+            self._requests[key].append(now)
+            rate_limit_events.labels(action="allowed").inc()
+            return True
+
+    def get_remaining(self, key: str = "default") -> int:
+        """Get remaining requests in the current window."""
+        with self._lock:
+            now = time.time()
+            window_start = now - self.window_seconds
+
+            if key not in self._requests:
+                return self.max_requests
+
+            # Count requests in window
+            active_requests = [t for t in self._requests[key] if t > window_start]
+            return max(0, self.max_requests - len(active_requests))
+
+
+# Global rate limiter instance (10 requests per minute)
+gemini_rate_limiter = RateLimiter(max_requests=10, window_seconds=60)
+
+# ========================================
+# SUPPORTED LANGUAGES
+# ========================================
+
+SUPPORTED_LANGUAGES = {"ceb", "en", "fil"}
 
 # Core governance areas (must all pass for compliance)
 CORE_AREAS = [
@@ -43,11 +172,14 @@ ESSENTIAL_AREAS = [
 # Language instructions for AI-generated summaries
 LANGUAGE_INSTRUCTIONS = {
     "ceb": """
-IMPORTANTE: Isulat ang TANAN nga output sa Binisaya (Cebuano). Gamita ang natural nga
-Binisaya nga dali masabtan sa mga opisyal sa barangay sa Sugbo. Ayaw gamita ang
-English gawas lang sa mga technical nga pulong nga walay direktang Binisaya nga
-katumbas (sama sa "MOV" o "SGLGB"). Ang JSON keys kinahanglan magpabilin sa English,
-pero ang mga values kinahanglan sa Binisaya.
+IMPORTANTE: Isulat ang TANAN nga output sa Binisaya (Cebuano). Gamita ang casual ug moderno
+nga Binisaya nga ginagamit sa adlaw-adlaw nga pakigpulong - ang klase nga Binisaya nga
+dali masabtan sa ordinaryo nga tawo ug mga opisyal sa barangay. Ayaw gamita ang deep o
+formal nga Binisaya. Gamita lang ang simple, casual nga Binisaya nga parehas sa
+ginagamit sa mga tawo karon. Ayaw gamita ang English gawas lang sa mga technical nga
+pulong nga walay direktang Binisaya nga katumbas (sama sa "MOV" o "SGLGB"). Ang JSON
+keys kinahanglan magpabilin sa English, pero ang mga values kinahanglan sa casual nga
+Binisaya.
 """,
     "fil": """
 IMPORTANTE: Isulat ang LAHAT ng output sa Tagalog (Filipino). Gumamit ng natural na
@@ -68,12 +200,273 @@ DEFAULT_LANGUAGES = ["ceb", "en"]
 
 class IntelligenceService:
     # ========================================
+    # HELPER METHODS (Security, Validation, Utilities)
+    # ========================================
+
+    def _sanitize_for_prompt(self, text: str, max_length: int = 500) -> str:
+        """
+        Sanitize user-supplied text before including in AI prompts.
+
+        Prevents prompt injection attacks by:
+        - Removing potential instruction override patterns
+        - Limiting text length to prevent token abuse
+        - Removing control characters
+
+        Args:
+            text: User-supplied text to sanitize
+            max_length: Maximum allowed length (default 500 chars)
+
+        Returns:
+            Sanitized text safe for inclusion in prompts
+        """
+        if not text:
+            return ""
+
+        # Convert to string if needed
+        text = str(text)
+
+        # Remove common prompt injection patterns (case-insensitive)
+        injection_patterns = [
+            r"(?i)ignore\s+(all\s+)?previous\s+instructions?",
+            r"(?i)you\s+are\s+now",
+            r"(?i)new\s+instructions?:",
+            r"(?i)system\s*:",
+            r"(?i)assistant\s*:",
+            r"(?i)user\s*:",
+            r"(?i)forget\s+(everything|all)",
+            r"(?i)disregard\s+(all|previous)",
+            r"(?i)override\s+instructions?",
+        ]
+
+        for pattern in injection_patterns:
+            text = re.sub(pattern, "[FILTERED]", text)
+
+        # Remove markdown code block delimiters that could confuse JSON parsing
+        text = text.replace("```", "")
+
+        # Remove control characters except newlines and tabs
+        text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", text)
+
+        # Truncate to max length
+        if len(text) > max_length:
+            text = text[: max_length - 3] + "..."
+
+        return text.strip()
+
+    def _validate_language(self, language: str) -> str:
+        """
+        Validate and normalize language code.
+
+        Args:
+            language: Language code to validate
+
+        Returns:
+            Validated language code
+
+        Raises:
+            ValueError: If language is not supported
+        """
+        if language not in SUPPORTED_LANGUAGES:
+            raise ValueError(
+                f"Unsupported language: {language}. "
+                f"Must be one of: {', '.join(sorted(SUPPORTED_LANGUAGES))}"
+            )
+        return language
+
+    def _extract_json_from_response(self, response_text: str) -> str:
+        """
+        Extract JSON from Gemini API response, handling markdown code blocks.
+
+        Args:
+            response_text: Raw response text from Gemini API
+
+        Returns:
+            Extracted JSON string
+        """
+        if "```json" in response_text:
+            # Extract JSON from ```json code block
+            start = response_text.find("```json") + 7
+            end = response_text.find("```", start)
+            if end == -1:
+                # No closing delimiter, take rest of string
+                return response_text[start:].strip()
+            return response_text[start:end].strip()
+        elif "```" in response_text:
+            # Extract from generic code block
+            start = response_text.find("```") + 3
+            end = response_text.find("```", start)
+            if end == -1:
+                return response_text[start:].strip()
+            return response_text[start:end].strip()
+        else:
+            # Assume entire response is JSON
+            return response_text.strip()
+
+    def _handle_gemini_error(self, e: Exception, context: str, assessment_id: int) -> Exception:
+        """
+        Convert Gemini API errors to user-friendly exceptions.
+
+        Categorizes errors and logs appropriately without exposing
+        sensitive information like API keys.
+
+        Args:
+            e: Original exception
+            context: Description of operation that failed
+            assessment_id: ID of the assessment being processed
+
+        Returns:
+            User-friendly exception to raise
+        """
+        error_message = str(e).lower()
+
+        if "quota" in error_message or "rate limit" in error_message:
+            logger.warning(
+                f"Gemini API quota/rate limit hit for assessment {assessment_id}: {context}"
+            )
+            return Exception("Gemini API quota exceeded or rate limit hit. Please try again later.")
+        elif "network" in error_message or "connection" in error_message:
+            logger.error(
+                f"Network error calling Gemini API for assessment {assessment_id}: {context}"
+            )
+            return Exception(
+                "Network error connecting to Gemini API. Please check your internet connection."
+            )
+        elif "permission" in error_message or "unauthorized" in error_message:
+            logger.error(
+                f"Gemini API authentication failed for assessment {assessment_id}: {context}"
+            )
+            return Exception("Gemini API authentication failed. Please check your API key.")
+        else:
+            logger.error(
+                f"Gemini API call failed for assessment {assessment_id} ({context}): {str(e)}"
+            )
+            return Exception(f"Gemini API call failed: {context}")
+
+    def _check_rate_limit(self, operation: str) -> None:
+        """
+        Check if rate limit allows the operation, raise if not.
+
+        Args:
+            operation: Name of the operation (for rate limit bucketing)
+
+        Raises:
+            Exception: If rate limit exceeded
+        """
+        if not gemini_rate_limiter.acquire(operation):
+            remaining = gemini_rate_limiter.get_remaining(operation)
+            logger.warning(f"Rate limit exceeded for operation: {operation}")
+            raise Exception(
+                f"Rate limit exceeded for AI operations. "
+                f"Please wait before retrying. Remaining: {remaining}"
+            )
+
+    def _call_gemini_with_circuit_breaker(
+        self,
+        prompt: str,
+        operation: str,
+        language: str,
+        max_output_tokens: int = 8192,
+    ) -> str:
+        """
+        Call Gemini API with circuit breaker and rate limiting protection.
+
+        This is the core protected API call method that all AI operations should use.
+
+        Args:
+            prompt: The prompt to send to Gemini
+            operation: Name of operation for metrics/logging
+            language: Language code for metrics
+            max_output_tokens: Maximum output tokens (default 8192)
+
+        Returns:
+            Raw response text from Gemini
+
+        Raises:
+            Exception: If API call fails, circuit breaker is open, or rate limited
+        """
+        # Check rate limit first
+        self._check_rate_limit(operation)
+
+        # Update circuit breaker state metric
+        if gemini_circuit_breaker.current_state == "open":
+            circuit_breaker_state.set(1)
+        elif gemini_circuit_breaker.current_state == "half-open":
+            circuit_breaker_state.set(2)
+        else:
+            circuit_breaker_state.set(0)
+
+        # Check if circuit breaker is open
+        if gemini_circuit_breaker.current_state == "open":
+            logger.warning(f"Circuit breaker is OPEN for Gemini API - skipping {operation}")
+            gemini_requests_total.labels(
+                status="circuit_breaker_open", language=language, operation=operation
+            ).inc()
+            raise Exception(
+                "Gemini API is temporarily unavailable due to repeated failures. "
+                "Please try again in a few minutes."
+            )
+
+        # Configure Gemini
+        genai.configure(api_key=settings.GEMINI_API_KEY)  # type: ignore
+        model = genai.GenerativeModel("gemini-2.5-flash")  # type: ignore
+
+        generation_config = {
+            "temperature": 0.7,
+            "max_output_tokens": max_output_tokens,
+        }
+
+        start_time = time.time()
+
+        try:
+            # Make the API call within circuit breaker context
+            @gemini_circuit_breaker
+            def _protected_call():
+                return model.generate_content(
+                    prompt,
+                    generation_config=generation_config,  # type: ignore
+                )
+
+            response = _protected_call()
+
+            # Record success metrics
+            duration = time.time() - start_time
+            gemini_latency_seconds.labels(operation=operation).observe(duration)
+            gemini_requests_total.labels(
+                status="success", language=language, operation=operation
+            ).inc()
+
+            # Validate response
+            if not response or not hasattr(response, "text") or not response.text:
+                raise Exception("Gemini API returned empty or invalid response")
+
+            return response.text
+
+        except CircuitBreakerError:
+            # Circuit breaker triggered
+            circuit_breaker_state.set(1)
+            gemini_requests_total.labels(
+                status="circuit_breaker_triggered",
+                language=language,
+                operation=operation,
+            ).inc()
+            raise Exception(
+                "Gemini API circuit breaker triggered due to repeated failures. "
+                "Service will recover automatically."
+            )
+        except Exception:
+            # Record failure metrics
+            duration = time.time() - start_time
+            gemini_latency_seconds.labels(operation=operation).observe(duration)
+            gemini_requests_total.labels(
+                status="error", language=language, operation=operation
+            ).inc()
+            raise
+
+    # ========================================
     # CALCULATION RULE ENGINE
     # ========================================
 
-    def evaluate_rule(
-        self, rule: CalculationRule, assessment_data: Dict[str, Any]
-    ) -> bool:
+    def evaluate_rule(self, rule: CalculationRule, assessment_data: dict[str, Any]) -> bool:
         """
         Recursively evaluate a calculation rule against assessment data.
 
@@ -123,9 +516,7 @@ class IntelligenceService:
         else:
             raise ValueError(f"Unknown rule type: {type(rule).__name__}")
 
-    def _evaluate_and_all_rule(
-        self, rule: AndAllRule, assessment_data: Dict[str, Any]
-    ) -> bool:
+    def _evaluate_and_all_rule(self, rule: AndAllRule, assessment_data: dict[str, Any]) -> bool:
         """
         Evaluate AND_ALL rule: all nested conditions must be true.
 
@@ -141,9 +532,7 @@ class IntelligenceService:
                 return False
         return True
 
-    def _evaluate_or_any_rule(
-        self, rule: OrAnyRule, assessment_data: Dict[str, Any]
-    ) -> bool:
+    def _evaluate_or_any_rule(self, rule: OrAnyRule, assessment_data: dict[str, Any]) -> bool:
         """
         Evaluate OR_ANY rule: at least one nested condition must be true.
 
@@ -160,7 +549,7 @@ class IntelligenceService:
         return False
 
     def _evaluate_percentage_threshold_rule(
-        self, rule: PercentageThresholdRule, assessment_data: Dict[str, Any]
+        self, rule: PercentageThresholdRule, assessment_data: dict[str, Any]
     ) -> bool:
         """
         Evaluate PERCENTAGE_THRESHOLD rule: check if number field meets threshold.
@@ -187,9 +576,7 @@ class IntelligenceService:
         try:
             numeric_value = float(field_value)
         except (TypeError, ValueError):
-            raise ValueError(
-                f"Field '{rule.field_id}' has non-numeric value: {field_value}"
-            )
+            raise ValueError(f"Field '{rule.field_id}' has non-numeric value: {field_value}")
 
         # Apply the comparison operator
         if rule.operator == ">=":
@@ -206,7 +593,7 @@ class IntelligenceService:
             raise ValueError(f"Unknown operator: {rule.operator}")
 
     def _evaluate_count_threshold_rule(
-        self, rule: CountThresholdRule, assessment_data: Dict[str, Any]
+        self, rule: CountThresholdRule, assessment_data: dict[str, Any]
     ) -> bool:
         """
         Evaluate COUNT_THRESHOLD rule: check if checkbox count meets threshold.
@@ -256,7 +643,7 @@ class IntelligenceService:
             raise ValueError(f"Unknown operator: {rule.operator}")
 
     def _evaluate_match_value_rule(
-        self, rule: MatchValueRule, assessment_data: Dict[str, Any]
+        self, rule: MatchValueRule, assessment_data: dict[str, Any]
     ) -> bool:
         """
         Evaluate MATCH_VALUE rule: check if field value matches expected value.
@@ -308,7 +695,7 @@ class IntelligenceService:
             raise ValueError(f"Unknown operator: {rule.operator}")
 
     def _evaluate_bbi_functionality_check_rule(
-        self, rule: BBIFunctionalityCheckRule, assessment_data: Dict[str, Any]
+        self, rule: BBIFunctionalityCheckRule, assessment_data: dict[str, Any]
     ) -> bool:
         """
         Evaluate BBI_FUNCTIONALITY_CHECK rule: check if BBI is Functional.
@@ -345,7 +732,7 @@ class IntelligenceService:
     def evaluate_calculation_schema(
         self,
         calculation_schema: CalculationSchema,
-        assessment_data: Dict[str, Any],
+        assessment_data: dict[str, Any],
     ) -> bool:
         """
         Evaluate a complete calculation schema against assessment data.
@@ -370,8 +757,8 @@ class IntelligenceService:
         self,
         db: Session,
         indicator_id: int,
-        assessment_data: Dict[str, Any],
-    ) -> Optional[str]:
+        assessment_data: dict[str, Any],
+    ) -> str | None:
         """
         Evaluate an indicator's calculation schema if is_auto_calculable is True.
 
@@ -413,9 +800,7 @@ class IntelligenceService:
         try:
             calculation_schema = CalculationSchema(**indicator.calculation_schema)
         except Exception as e:
-            raise ValueError(
-                f"Invalid calculation_schema for indicator {indicator_id}: {str(e)}"
-            )
+            raise ValueError(f"Invalid calculation_schema for indicator {indicator_id}: {str(e)}")
 
         # Evaluate the schema
         evaluation_result = self.evaluate_calculation_schema(
@@ -433,8 +818,8 @@ class IntelligenceService:
         self,
         db: Session,
         indicator_id: int,
-        assessment_data: Dict[str, Any],
-    ) -> Optional[str]:
+        assessment_data: dict[str, Any],
+    ) -> str | None:
         """
         Alias for evaluate_indicator_calculation for backwards compatibility.
 
@@ -443,7 +828,7 @@ class IntelligenceService:
         return self.evaluate_indicator_calculation(db, indicator_id, assessment_data)
 
     def _evaluate_condition_group(
-        self, group: ConditionGroup, assessment_data: Dict[str, Any]
+        self, group: ConditionGroup, assessment_data: dict[str, Any]
     ) -> bool:
         """
         Evaluate a condition group with its logical operator (AND/OR).
@@ -478,9 +863,9 @@ class IntelligenceService:
         self,
         db: Session,
         indicator_id: int,
-        indicator_status: Optional[str],
-        assessment_data: Dict[str, Any],
-    ) -> Optional[str]:
+        indicator_status: str | None,
+        assessment_data: dict[str, Any],
+    ) -> str | None:
         """
         Generate a remark for an indicator based on its remark_schema.
 
@@ -501,6 +886,7 @@ class IntelligenceService:
             ValueError: If indicator not found or template rendering fails
         """
         from jinja2 import Template, TemplateSyntaxError, UndefinedError
+
         from app.schemas.remark_schema import RemarkSchema
 
         # Get the indicator with its remark schema
@@ -590,9 +976,7 @@ class IntelligenceService:
 
         return area_responses
 
-    def determine_area_compliance(
-        self, db: Session, assessment_id: int, area_name: str
-    ) -> bool:
+    def determine_area_compliance(self, db: Session, assessment_id: int, area_name: str) -> bool:
         """
         Determine if a governance area has passed (all LEAF indicators within that area must pass).
 
@@ -615,9 +999,7 @@ class IntelligenceService:
         if not area:
             return False
 
-        all_indicators = (
-            db.query(Indicator).filter(Indicator.governance_area_id == area.id).all()
-        )
+        all_indicators = db.query(Indicator).filter(Indicator.governance_area_id == area.id).all()
 
         if not all_indicators:
             return False  # No indicators = failed area
@@ -631,23 +1013,34 @@ class IntelligenceService:
         if not leaf_indicators:
             return False  # No leaf indicators = failed area
 
-        # Check all responses for leaf indicators only
-        for indicator in leaf_indicators:
-            response = (
-                db.query(AssessmentResponse)
-                .filter(
-                    AssessmentResponse.assessment_id == assessment_id,
-                    AssessmentResponse.indicator_id == indicator.id,
-                )
-                .first()
+        # OPTIMIZATION: Batch query all responses for leaf indicators at once
+        # This fixes the N+1 query problem by fetching all responses in a single query
+        leaf_indicator_ids = [ind.id for ind in leaf_indicators]
+        responses = (
+            db.query(AssessmentResponse)
+            .filter(
+                AssessmentResponse.assessment_id == assessment_id,
+                AssessmentResponse.indicator_id.in_(leaf_indicator_ids),
             )
+            .all()
+        )
+
+        # Build a map of indicator_id -> response for O(1) lookup
+        response_map = {r.indicator_id: r for r in responses}
+
+        # Check all leaf indicators against the response map
+        for indicator in leaf_indicators:
+            response = response_map.get(indicator.id)
 
             # If no response exists, the area fails
             # PASS and CONDITIONAL both count as passing (SGLGB rule: Conditional = Considered = Pass)
             # Only FAIL status causes the area to fail
             if not response:
                 return False
-            if response.validation_status not in (ValidationStatus.PASS, ValidationStatus.CONDITIONAL):
+            if response.validation_status not in (
+                ValidationStatus.PASS,
+                ValidationStatus.CONDITIONAL,
+            ):
                 return False
 
         return True
@@ -714,9 +1107,7 @@ class IntelligenceService:
                 return True
         return False
 
-    def determine_compliance_status(
-        self, db: Session, assessment_id: int
-    ) -> ComplianceStatus:
+    def determine_compliance_status(self, db: Session, assessment_id: int) -> ComplianceStatus:
         """
         Determine overall compliance status using the "3+1" SGLGB rule.
 
@@ -739,9 +1130,7 @@ class IntelligenceService:
         all_core_passed = self.check_core_areas_compliance(db, assessment_id)
 
         # Check Essential areas compliance
-        at_least_one_essential_passed = self.check_essential_areas_compliance(
-            db, assessment_id
-        )
+        at_least_one_essential_passed = self.check_essential_areas_compliance(db, assessment_id)
 
         # Apply "3+1" rule
         if all_core_passed and at_least_one_essential_passed:
@@ -794,16 +1183,14 @@ class IntelligenceService:
             "area_results": area_results,
         }
 
-    def build_gemini_prompt(
-        self, db: Session, assessment_id: int, language: str = "ceb"
-    ) -> str:
+    def build_gemini_prompt(self, db: Session, assessment_id: int, language: str = "ceb") -> str:
         """
         Build a structured prompt for Gemini API from failed indicators.
 
         Creates a comprehensive prompt that includes:
         - Barangay name and assessment year
         - Failed indicators with governance area context
-        - Assessor comments and feedback
+        - Assessor comments and feedback (sanitized for security)
         - Overall compliance status
 
         Args:
@@ -815,8 +1202,11 @@ class IntelligenceService:
             Formatted prompt string for Gemini API
 
         Raises:
-            ValueError: If assessment not found
+            ValueError: If assessment not found or language not supported
         """
+        # Validate language
+        self._validate_language(language)
+
         # Get assessment with all relationships
         from app.db.models.user import User
 
@@ -827,9 +1217,7 @@ class IntelligenceService:
                 joinedload(Assessment.responses)
                 .joinedload(AssessmentResponse.indicator)
                 .joinedload(Indicator.governance_area),
-                joinedload(Assessment.responses).joinedload(
-                    AssessmentResponse.feedback_comments
-                ),
+                joinedload(Assessment.responses).joinedload(AssessmentResponse.feedback_comments),
             )
             .filter(Assessment.id == assessment_id)
             .first()
@@ -838,10 +1226,12 @@ class IntelligenceService:
         if not assessment:
             raise ValueError(f"Assessment {assessment_id} not found")
 
-        # Get barangay name
+        # Get barangay name (sanitize to prevent injection)
         barangay_name = "Unknown"
         if assessment.blgu_user and assessment.blgu_user.barangay:
-            barangay_name = assessment.blgu_user.barangay.name
+            barangay_name = self._sanitize_for_prompt(
+                assessment.blgu_user.barangay.name, max_length=100
+            )
 
         # Get assessment year
         assessment_year = "2024"  # Default
@@ -855,17 +1245,22 @@ class IntelligenceService:
                 indicator = response.indicator
                 governance_area = indicator.governance_area
 
-                # Get assessor comments
+                # Get assessor comments (sanitized for security)
                 comments = []
                 for comment in response.feedback_comments:
-                    comments.append(
-                        f"{comment.assessor.name if comment.assessor else 'Assessor'}: {comment.comment}"
+                    sanitized_comment = self._sanitize_for_prompt(comment.comment, max_length=300)
+                    assessor_name = self._sanitize_for_prompt(
+                        comment.assessor.name if comment.assessor else "Assessor",
+                        max_length=50,
                     )
+                    comments.append(f"{assessor_name}: {sanitized_comment}")
 
                 failed_indicators.append(
                     {
-                        "indicator_name": indicator.name,
-                        "description": indicator.description,
+                        "indicator_name": self._sanitize_for_prompt(indicator.name, max_length=200),
+                        "description": self._sanitize_for_prompt(
+                            indicator.description or "", max_length=500
+                        ),
                         "governance_area": governance_area.name,
                         "area_type": governance_area.area_type.value,
                         "assessor_comments": comments,
@@ -880,9 +1275,7 @@ class IntelligenceService:
         )
 
         # Get language instruction
-        lang_instruction = LANGUAGE_INSTRUCTIONS.get(
-            language, LANGUAGE_INSTRUCTIONS["ceb"]
-        )
+        lang_instruction = LANGUAGE_INSTRUCTIONS.get(language, LANGUAGE_INSTRUCTIONS["ceb"])
 
         # Build the prompt
         prompt = f"""{lang_instruction}
@@ -942,8 +1335,9 @@ Focus on:
         """
         Call Gemini API with the prompt and parse the JSON response.
 
-        Builds the prompt from failed indicators, calls Gemini API,
-        and returns the structured JSON response.
+        Builds the prompt from failed indicators, calls Gemini API with
+        circuit breaker and rate limiting protection, and returns the
+        structured JSON response.
 
         Args:
             db: Database session
@@ -955,57 +1349,29 @@ Focus on:
 
         Raises:
             ValueError: If assessment not found or API key not configured
-            Exception: If API call fails or response parsing fails
+            Exception: If API call fails, rate limited, or response parsing fails
         """
         # Check if API key is configured
         if not settings.GEMINI_API_KEY:
             raise ValueError("GEMINI_API_KEY not configured in environment")
 
+        # Validate language
+        self._validate_language(language)
+
         # Build the prompt with language instruction
         prompt = self.build_gemini_prompt(db, assessment_id, language)
 
-        # Configure Gemini
-        genai.configure(api_key=settings.GEMINI_API_KEY)  # type: ignore
-
-        # Initialize the model
-        # Using Gemini 2.5 Flash (latest stable as of Oct 2025)
-        # Supports up to 1M input tokens and 65K output tokens
-        model = genai.GenerativeModel("gemini-2.5-flash")  # type: ignore
-
         try:
-            # Call the API with generation configuration
-            # Using type: ignore due to incomplete type stubs in google-generativeai
-            generation_config = {
-                "temperature": 0.7,
-                "max_output_tokens": 8192,
-            }
-
-            response = model.generate_content(
-                prompt,
-                generation_config=generation_config,  # type: ignore
+            # Call Gemini API with circuit breaker and rate limiting protection
+            response_text = self._call_gemini_with_circuit_breaker(
+                prompt=prompt,
+                operation="insights",
+                language=language,
+                max_output_tokens=8192,
             )
 
-            # Parse the response text
-            if not response or not hasattr(response, "text") or not response.text:
-                raise Exception("Gemini API returned empty or invalid response")
-
-            response_text = response.text
-
-            # Try to extract JSON from the response
-            # The response might be wrapped in markdown code blocks
-            if "```json" in response_text:
-                # Extract JSON from code block
-                start = response_text.find("```json") + 7
-                end = response_text.find("```", start)
-                json_str = response_text[start:end].strip()
-            elif "```" in response_text:
-                # Extract JSON from code block (without json tag)
-                start = response_text.find("```") + 3
-                end = response_text.find("```", start)
-                json_str = response_text[start:end].strip()
-            else:
-                # Assume the entire response is JSON
-                json_str = response_text.strip()
+            # Extract JSON from response using helper method
+            json_str = self._extract_json_from_response(response_text)
 
             # Parse the JSON
             parsed_response = json.loads(json_str)
@@ -1023,33 +1389,18 @@ Focus on:
             return parsed_response
 
         except json.JSONDecodeError as e:
-            raise Exception(
-                f"Failed to parse Gemini API response as JSON: {response_text}"
-            ) from e
+            logger.error(
+                f"Failed to parse Gemini API response as JSON for assessment {assessment_id}"
+            )
+            raise Exception("Failed to parse Gemini API response as JSON") from e
         except TimeoutError as e:
-            raise Exception(
-                "Gemini API request timed out after waiting for response"
-            ) from e
+            raise Exception("Gemini API request timed out after waiting for response") from e
         except ValueError:
             # Re-raise ValueError as-is (for invalid response structure)
             raise
         except Exception as e:
-            # Handle various API errors
-            error_message = str(e).lower()
-            if "quota" in error_message or "rate limit" in error_message:
-                raise Exception(
-                    "Gemini API quota exceeded or rate limit hit. Please try again later."
-                ) from e
-            elif "network" in error_message or "connection" in error_message:
-                raise Exception(
-                    "Network error connecting to Gemini API. Please check your internet connection."
-                ) from e
-            elif "permission" in error_message or "unauthorized" in error_message:
-                raise Exception(
-                    "Gemini API authentication failed. Please check your API key."
-                ) from e
-            else:
-                raise Exception(f"Gemini API call failed: {str(e)}") from e
+            # Use helper method for error handling
+            raise self._handle_gemini_error(e, "insights generation", assessment_id) from e
 
     def get_insights_with_caching(
         self, db: Session, assessment_id: int, language: str = "ceb"
@@ -1072,9 +1423,12 @@ Focus on:
             Dictionary with 'summary', 'recommendations', 'capacity_development_needs', and 'language' keys
 
         Raises:
-            ValueError: If assessment not found
+            ValueError: If assessment not found or language not supported
             Exception: If API call fails or response parsing fails
         """
+        # Validate language
+        self._validate_language(language)
+
         # Get assessment to check for cached recommendations
         assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
         if not assessment:
@@ -1085,12 +1439,19 @@ Focus on:
             # New format: keyed by language
             if isinstance(assessment.ai_recommendations, dict):
                 if language in assessment.ai_recommendations:
+                    cache_operations_total.labels(operation="insights", result="hit").inc()
+                    logger.debug(f"Cache HIT for insights assessment {assessment_id} ({language})")
                     return assessment.ai_recommendations[language]
                 # Legacy format check: if 'summary' key exists, it's old single-language format
                 elif "summary" in assessment.ai_recommendations:
                     # Return legacy format as-is (it's in English)
                     if language == "en":
+                        cache_operations_total.labels(operation="insights", result="hit").inc()
                         return assessment.ai_recommendations
+
+        # Cache miss - need to call API
+        cache_operations_total.labels(operation="insights", result="miss").inc()
+        logger.debug(f"Cache MISS for insights assessment {assessment_id} ({language})")
 
         # No cached data for this language, call Gemini API
         insights = self.call_gemini_api(db, assessment_id, language)
@@ -1115,7 +1476,7 @@ Focus on:
 
     def build_rework_summary_prompt(
         self, db: Session, assessment_id: int, language: str = "ceb"
-    ) -> tuple[str, List[Dict[str, Any]]]:
+    ) -> tuple[str, list[dict[str, Any]]]:
         """
         Build a structured prompt for Gemini API from rework feedback.
 
@@ -1147,9 +1508,7 @@ Focus on:
                 joinedload(Assessment.responses)
                 .joinedload(AssessmentResponse.indicator)
                 .joinedload(Indicator.governance_area),
-                joinedload(Assessment.responses).joinedload(
-                    AssessmentResponse.feedback_comments
-                ),
+                joinedload(Assessment.responses).joinedload(AssessmentResponse.feedback_comments),
                 joinedload(Assessment.responses).joinedload(AssessmentResponse.movs),
             )
             .filter(Assessment.id == assessment_id)
@@ -1176,9 +1535,7 @@ Focus on:
             # Get public comments (exclude internal notes)
             public_comments = [
                 {
-                    "assessor": (
-                        comment.assessor.name if comment.assessor else "Assessor"
-                    ),
+                    "assessor": (comment.assessor.name if comment.assessor else "Assessor"),
                     "comment": comment.comment,
                 }
                 for comment in response.feedback_comments
@@ -1191,9 +1548,7 @@ Focus on:
             for mov in response.movs:
                 # Query annotations for this MOV file
                 annotations = (
-                    db.query(MOVAnnotation)
-                    .filter(MOVAnnotation.mov_file_id == mov.id)
-                    .all()
+                    db.query(MOVAnnotation).filter(MOVAnnotation.mov_file_id == mov.id).all()
                 )
                 for annotation in annotations:
                     mov_annotations.append(
@@ -1218,14 +1573,10 @@ Focus on:
             )
 
         if not indicator_data:
-            raise ValueError(
-                f"Assessment {assessment_id} has no indicators requiring rework"
-            )
+            raise ValueError(f"Assessment {assessment_id} has no indicators requiring rework")
 
         # Get language instruction
-        lang_instruction = LANGUAGE_INSTRUCTIONS.get(
-            language, LANGUAGE_INSTRUCTIONS["ceb"]
-        )
+        lang_instruction = LANGUAGE_INSTRUCTIONS.get(language, LANGUAGE_INSTRUCTIONS["ceb"])
 
         # Build the prompt
         prompt = f"""{lang_instruction}
@@ -1258,12 +1609,10 @@ INDICATORS REQUIRING REWORK:
             if indicator["mov_annotations"]:
                 prompt += "   - Document Issues (MOV Annotations):\n"
                 for annotation in indicator["mov_annotations"]:
-                    page_info = (
-                        f"(Page {annotation['page']})"
-                        if annotation["page"]
-                        else ""
+                    page_info = f"(Page {annotation['page']})" if annotation["page"] else ""
+                    prompt += (
+                        f"     • {annotation['filename']} {page_info}: {annotation['comment']}\n"
                     )
-                    prompt += f"     • {annotation['filename']} {page_info}: {annotation['comment']}\n"
 
         prompt += """
 
@@ -1310,13 +1659,14 @@ GUIDELINES:
 
     def generate_rework_summary(
         self, db: Session, assessment_id: int, language: str = "ceb"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate AI-powered rework summary from assessor feedback.
 
         Builds a comprehensive prompt from all rework feedback (comments and
-        annotations), calls Gemini API, and returns a structured summary that
-        helps BLGU users understand what needs to be fixed.
+        annotations), calls Gemini API with circuit breaker and rate limiting
+        protection, and returns a structured summary that helps BLGU users
+        understand what needs to be fixed.
 
         This method does NOT cache results - it generates a fresh summary each time.
         Caching is handled by the background worker that stores results in
@@ -1332,52 +1682,29 @@ GUIDELINES:
 
         Raises:
             ValueError: If assessment not found, API key not configured, or no rework data
-            Exception: If API call fails or response parsing fails
+            Exception: If API call fails, rate limited, or response parsing fails
         """
         # Check if API key is configured
         if not settings.GEMINI_API_KEY:
             raise ValueError("GEMINI_API_KEY not configured in environment")
 
+        # Validate language
+        self._validate_language(language)
+
         # Build the prompt with language instruction
-        prompt, indicator_data = self.build_rework_summary_prompt(
-            db, assessment_id, language
-        )
-
-        # Configure Gemini
-        genai.configure(api_key=settings.GEMINI_API_KEY)  # type: ignore
-
-        # Initialize the model
-        model = genai.GenerativeModel("gemini-2.5-flash")  # type: ignore
+        prompt, indicator_data = self.build_rework_summary_prompt(db, assessment_id, language)
 
         try:
-            # Call the API with generation configuration
-            generation_config = {
-                "temperature": 0.7,  # Slightly creative but still factual
-                "max_output_tokens": 8192,
-            }
-
-            response = model.generate_content(
-                prompt,
-                generation_config=generation_config,  # type: ignore
+            # Call Gemini API with circuit breaker and rate limiting protection
+            response_text = self._call_gemini_with_circuit_breaker(
+                prompt=prompt,
+                operation="rework_summary",
+                language=language,
+                max_output_tokens=8192,
             )
 
-            # Parse the response text
-            if not response or not hasattr(response, "text") or not response.text:
-                raise Exception("Gemini API returned empty or invalid response")
-
-            response_text = response.text
-
-            # Extract JSON from the response (handle markdown code blocks)
-            if "```json" in response_text:
-                start = response_text.find("```json") + 7
-                end = response_text.find("```", start)
-                json_str = response_text[start:end].strip()
-            elif "```" in response_text:
-                start = response_text.find("```") + 3
-                end = response_text.find("```", start)
-                json_str = response_text[start:end].strip()
-            else:
-                json_str = response_text.strip()
+            # Extract JSON from response using helper method
+            json_str = self._extract_json_from_response(response_text)
 
             # Parse the JSON
             parsed_response = json.loads(json_str)
@@ -1408,54 +1735,27 @@ GUIDELINES:
                 else:
                     parsed_response["estimated_time"] = "2-3 hours"
 
-            logger.info(
-                f"Successfully generated rework summary for assessment {assessment_id}"
-            )
+            logger.info(f"Successfully generated rework summary for assessment {assessment_id}")
 
             return parsed_response
 
         except json.JSONDecodeError as e:
             logger.error(
-                f"Failed to parse Gemini API response as JSON for assessment {assessment_id}: {response_text}"
+                f"Failed to parse Gemini API response as JSON for assessment {assessment_id}"
             )
-            raise Exception(
-                f"Failed to parse Gemini API response as JSON: {response_text}"
-            ) from e
+            raise Exception("Failed to parse Gemini API response as JSON") from e
         except TimeoutError as e:
-            logger.error(
-                f"Gemini API request timed out for assessment {assessment_id}"
-            )
-            raise Exception(
-                "Gemini API request timed out after waiting for response"
-            ) from e
+            raise Exception("Gemini API request timed out after waiting for response") from e
         except ValueError:
             # Re-raise ValueError as-is
             raise
         except Exception as e:
-            # Handle various API errors with specific messages
-            error_message = str(e).lower()
-            if "quota" in error_message or "rate limit" in error_message:
-                logger.error(f"Gemini API quota/rate limit hit: {str(e)}")
-                raise Exception(
-                    "Gemini API quota exceeded or rate limit hit. Please try again later."
-                ) from e
-            elif "network" in error_message or "connection" in error_message:
-                logger.error(f"Network error calling Gemini API: {str(e)}")
-                raise Exception(
-                    "Network error connecting to Gemini API. Please check your internet connection."
-                ) from e
-            elif "permission" in error_message or "unauthorized" in error_message:
-                logger.error(f"Gemini API authentication failed: {str(e)}")
-                raise Exception(
-                    "Gemini API authentication failed. Please check your API key."
-                ) from e
-            else:
-                logger.error(f"Gemini API call failed: {str(e)}")
-                raise Exception(f"Gemini API call failed: {str(e)}") from e
+            # Use helper method for error handling
+            raise self._handle_gemini_error(e, "rework summary generation", assessment_id) from e
 
     def generate_default_language_summaries(
         self, db: Session, assessment_id: int
-    ) -> Dict[str, Dict[str, Any]]:
+    ) -> dict[str, dict[str, Any]]:
         """
         Generate rework summaries in default languages (Bisaya + English).
 
@@ -1474,9 +1774,7 @@ GUIDELINES:
         summaries = {}
         for lang in DEFAULT_LANGUAGES:
             try:
-                logger.info(
-                    f"Generating {lang} rework summary for assessment {assessment_id}"
-                )
+                logger.info(f"Generating {lang} rework summary for assessment {assessment_id}")
                 summaries[lang] = self.generate_rework_summary(db, assessment_id, lang)
             except Exception as e:
                 logger.error(
@@ -1487,7 +1785,7 @@ GUIDELINES:
 
     def generate_single_language_summary(
         self, db: Session, assessment_id: int, language: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate rework summary for a specific language (on-demand).
 
@@ -1509,8 +1807,12 @@ GUIDELINES:
     # ========================================
 
     def build_calibration_summary_prompt(
-        self, db: Session, assessment_id: int, governance_area_id: int, language: str = "ceb"
-    ) -> tuple[str, List[Dict[str, Any]]]:
+        self,
+        db: Session,
+        assessment_id: int,
+        governance_area_id: int,
+        language: str = "ceb",
+    ) -> tuple[str, list[dict[str, Any]]]:
         """
         Build a structured prompt for Gemini API from calibration feedback.
 
@@ -1543,9 +1845,7 @@ GUIDELINES:
                 joinedload(Assessment.responses)
                 .joinedload(AssessmentResponse.indicator)
                 .joinedload(Indicator.governance_area),
-                joinedload(Assessment.responses).joinedload(
-                    AssessmentResponse.feedback_comments
-                ),
+                joinedload(Assessment.responses).joinedload(AssessmentResponse.feedback_comments),
                 joinedload(Assessment.responses).joinedload(AssessmentResponse.movs),
             )
             .filter(Assessment.id == assessment_id)
@@ -1557,9 +1857,7 @@ GUIDELINES:
 
         # Get the governance area name
         governance_area = (
-            db.query(GovernanceArea)
-            .filter(GovernanceArea.id == governance_area_id)
-            .first()
+            db.query(GovernanceArea).filter(GovernanceArea.id == governance_area_id).first()
         )
         governance_area_name = governance_area.name if governance_area else "Unknown"
 
@@ -1582,9 +1880,7 @@ GUIDELINES:
             # Get public comments (exclude internal notes)
             public_comments = [
                 {
-                    "assessor": (
-                        comment.assessor.name if comment.assessor else "Validator"
-                    ),
+                    "assessor": (comment.assessor.name if comment.assessor else "Validator"),
                     "comment": comment.comment,
                 }
                 for comment in response.feedback_comments
@@ -1597,9 +1893,7 @@ GUIDELINES:
             for mov in response.movs:
                 # Query annotations for this MOV file
                 annotations = (
-                    db.query(MOVAnnotation)
-                    .filter(MOVAnnotation.mov_file_id == mov.id)
-                    .all()
+                    db.query(MOVAnnotation).filter(MOVAnnotation.mov_file_id == mov.id).all()
                 )
                 for annotation in annotations:
                     mov_annotations.append(
@@ -1629,9 +1923,7 @@ GUIDELINES:
             )
 
         # Get language instruction
-        lang_instruction = LANGUAGE_INSTRUCTIONS.get(
-            language, LANGUAGE_INSTRUCTIONS["ceb"]
-        )
+        lang_instruction = LANGUAGE_INSTRUCTIONS.get(language, LANGUAGE_INSTRUCTIONS["ceb"])
 
         # Build the prompt (similar to rework but emphasizing calibration context)
         prompt = f"""{lang_instruction}
@@ -1667,12 +1959,10 @@ INDICATORS REQUIRING CALIBRATION:
             if indicator["mov_annotations"]:
                 prompt += "   - Document Issues (MOV Annotations):\n"
                 for annotation in indicator["mov_annotations"]:
-                    page_info = (
-                        f"(Page {annotation['page']})"
-                        if annotation["page"]
-                        else ""
+                    page_info = f"(Page {annotation['page']})" if annotation["page"] else ""
+                    prompt += (
+                        f"     • {annotation['filename']} {page_info}: {annotation['comment']}\n"
                     )
-                    prompt += f"     • {annotation['filename']} {page_info}: {annotation['comment']}\n"
 
         prompt += f"""
 
@@ -1720,15 +2010,19 @@ GUIDELINES:
         return prompt, indicator_data
 
     def generate_calibration_summary(
-        self, db: Session, assessment_id: int, governance_area_id: int, language: str = "ceb"
-    ) -> Dict[str, Any]:
+        self,
+        db: Session,
+        assessment_id: int,
+        governance_area_id: int,
+        language: str = "ceb",
+    ) -> dict[str, Any]:
         """
         Generate AI-powered calibration summary from validator feedback.
 
         Builds a comprehensive prompt from calibration feedback (comments and
-        annotations) for the specified governance area, calls Gemini API, and
-        returns a structured summary that helps BLGU users understand what
-        needs to be fixed.
+        annotations) for the specified governance area, calls Gemini API with
+        circuit breaker and rate limiting protection, and returns a structured
+        summary that helps BLGU users understand what needs to be fixed.
 
         This method does NOT cache results - it generates a fresh summary each time.
         Caching is handled by the background worker that stores results in
@@ -1745,52 +2039,31 @@ GUIDELINES:
 
         Raises:
             ValueError: If assessment not found, API key not configured, or no calibration data
-            Exception: If API call fails or response parsing fails
+            Exception: If API call fails, rate limited, or response parsing fails
         """
         # Check if API key is configured
         if not settings.GEMINI_API_KEY:
             raise ValueError("GEMINI_API_KEY not configured in environment")
+
+        # Validate language
+        self._validate_language(language)
 
         # Build the prompt with language instruction
         prompt, indicator_data = self.build_calibration_summary_prompt(
             db, assessment_id, governance_area_id, language
         )
 
-        # Configure Gemini
-        genai.configure(api_key=settings.GEMINI_API_KEY)  # type: ignore
-
-        # Initialize the model
-        model = genai.GenerativeModel("gemini-2.5-flash")  # type: ignore
-
         try:
-            # Call the API with generation configuration
-            generation_config = {
-                "temperature": 0.7,  # Slightly creative but still factual
-                "max_output_tokens": 8192,
-            }
-
-            response = model.generate_content(
-                prompt,
-                generation_config=generation_config,  # type: ignore
+            # Call Gemini API with circuit breaker and rate limiting protection
+            response_text = self._call_gemini_with_circuit_breaker(
+                prompt=prompt,
+                operation="calibration_summary",
+                language=language,
+                max_output_tokens=8192,
             )
 
-            # Parse the response text
-            if not response or not hasattr(response, "text") or not response.text:
-                raise Exception("Gemini API returned empty or invalid response")
-
-            response_text = response.text
-
-            # Extract JSON from the response (handle markdown code blocks)
-            if "```json" in response_text:
-                start = response_text.find("```json") + 7
-                end = response_text.find("```", start)
-                json_str = response_text[start:end].strip()
-            elif "```" in response_text:
-                start = response_text.find("```") + 3
-                end = response_text.find("```", start)
-                json_str = response_text[start:end].strip()
-            else:
-                json_str = response_text.strip()
+            # Extract JSON from response using helper method
+            json_str = self._extract_json_from_response(response_text)
 
             # Parse the JSON
             parsed_response = json.loads(json_str)
@@ -1831,46 +2104,23 @@ GUIDELINES:
 
         except json.JSONDecodeError as e:
             logger.error(
-                f"Failed to parse Gemini API response as JSON for assessment {assessment_id}: {response_text}"
+                f"Failed to parse Gemini API response as JSON for assessment {assessment_id}"
             )
-            raise Exception(
-                f"Failed to parse Gemini API response as JSON: {response_text}"
-            ) from e
+            raise Exception("Failed to parse Gemini API response as JSON") from e
         except TimeoutError as e:
-            logger.error(
-                f"Gemini API request timed out for assessment {assessment_id}"
-            )
-            raise Exception(
-                "Gemini API request timed out after waiting for response"
-            ) from e
+            raise Exception("Gemini API request timed out after waiting for response") from e
         except ValueError:
             # Re-raise ValueError as-is
             raise
         except Exception as e:
-            # Handle various API errors with specific messages
-            error_message = str(e).lower()
-            if "quota" in error_message or "rate limit" in error_message:
-                logger.error(f"Gemini API quota/rate limit hit: {str(e)}")
-                raise Exception(
-                    "Gemini API quota exceeded or rate limit hit. Please try again later."
-                ) from e
-            elif "network" in error_message or "connection" in error_message:
-                logger.error(f"Network error calling Gemini API: {str(e)}")
-                raise Exception(
-                    "Network error connecting to Gemini API. Please check your internet connection."
-                ) from e
-            elif "permission" in error_message or "unauthorized" in error_message:
-                logger.error(f"Gemini API authentication failed: {str(e)}")
-                raise Exception(
-                    "Gemini API authentication failed. Please check your API key."
-                ) from e
-            else:
-                logger.error(f"Gemini API call failed: {str(e)}")
-                raise Exception(f"Gemini API call failed: {str(e)}") from e
+            # Use helper method for error handling
+            raise self._handle_gemini_error(
+                e, "calibration summary generation", assessment_id
+            ) from e
 
     def generate_default_language_calibration_summaries(
         self, db: Session, assessment_id: int, governance_area_id: int
-    ) -> Dict[str, Dict[str, Any]]:
+    ) -> dict[str, dict[str, Any]]:
         """
         Generate calibration summaries in default languages (Bisaya + English).
 
@@ -1906,7 +2156,7 @@ GUIDELINES:
 
     def generate_single_language_calibration_summary(
         self, db: Session, assessment_id: int, governance_area_id: int, language: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate calibration summary for a specific language (on-demand).
 
@@ -1929,9 +2179,7 @@ GUIDELINES:
     # Generated after MLGOO approval for approved assessments
     # ========================================
 
-    def build_capdev_prompt(
-        self, db: Session, assessment_id: int, language: str = "ceb"
-    ) -> str:
+    def build_capdev_prompt(self, db: Session, assessment_id: int, language: str = "ceb") -> str:
         """
         Build a comprehensive prompt for CapDev insights generation.
 
@@ -1962,9 +2210,7 @@ GUIDELINES:
                 joinedload(Assessment.responses)
                 .joinedload(AssessmentResponse.indicator)
                 .joinedload(Indicator.governance_area),
-                joinedload(Assessment.responses).joinedload(
-                    AssessmentResponse.feedback_comments
-                ),
+                joinedload(Assessment.responses).joinedload(AssessmentResponse.feedback_comments),
             )
             .filter(Assessment.id == assessment_id)
             .first()
@@ -2012,13 +2258,18 @@ GUIDELINES:
                     "assessor_feedback": [],
                 }
 
-            if response.validation_status in (ValidationStatus.PASS, ValidationStatus.CONDITIONAL):
+            if response.validation_status in (
+                ValidationStatus.PASS,
+                ValidationStatus.CONDITIONAL,
+            ):
                 area_analysis[area_name]["passed_indicators"].append(indicator.name)
             else:
-                area_analysis[area_name]["failed_indicators"].append({
-                    "name": indicator.name,
-                    "description": indicator.description,
-                })
+                area_analysis[area_name]["failed_indicators"].append(
+                    {
+                        "name": indicator.name,
+                        "description": indicator.description,
+                    }
+                )
 
                 # Collect feedback for failed indicators
                 for comment in response.feedback_comments:
@@ -2026,9 +2277,7 @@ GUIDELINES:
                         area_analysis[area_name]["assessor_feedback"].append(comment.comment)
 
         # Get language instruction
-        lang_instruction = LANGUAGE_INSTRUCTIONS.get(
-            language, LANGUAGE_INSTRUCTIONS["ceb"]
-        )
+        lang_instruction = LANGUAGE_INSTRUCTIONS.get(language, LANGUAGE_INSTRUCTIONS["ceb"])
 
         # Build the prompt
         prompt = f"""{lang_instruction}
@@ -2059,7 +2308,7 @@ DETAILED AREA ANALYSIS:
             if analysis["failed_indicators"]:
                 prompt += "  - Failed Indicator Details:\n"
                 for ind in analysis["failed_indicators"]:
-                    desc = ind['description'] or "No description available"
+                    desc = ind["description"] or "No description available"
                     prompt += f"    • {ind['name']}: {desc[:100]}...\n"
 
             if analysis["assessor_feedback"]:
@@ -2153,12 +2402,13 @@ GUIDELINES:
 
     def generate_capdev_insights(
         self, db: Session, assessment_id: int, language: str = "ceb"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate AI-powered CapDev insights for an approved assessment.
 
-        Builds a comprehensive prompt from assessment data, calls Gemini API,
-        and returns structured CapDev insights including:
+        Builds a comprehensive prompt from assessment data, calls Gemini API
+        with circuit breaker and rate limiting protection, and returns structured
+        CapDev insights including:
         - Summary of governance weaknesses
         - Actionable recommendations
         - Categorized capacity development needs
@@ -2174,50 +2424,30 @@ GUIDELINES:
 
         Raises:
             ValueError: If assessment not found, not approved, or API key not configured
-            Exception: If API call fails or response parsing fails
+            Exception: If API call fails, rate limited, or response parsing fails
         """
         # Check if API key is configured
         if not settings.GEMINI_API_KEY:
             raise ValueError("GEMINI_API_KEY not configured in environment")
 
+        # Validate language
+        self._validate_language(language)
+
         # Build the prompt
         prompt = self.build_capdev_prompt(db, assessment_id, language)
 
-        # Configure Gemini
-        genai.configure(api_key=settings.GEMINI_API_KEY)  # type: ignore
-
-        # Initialize the model
-        model = genai.GenerativeModel("gemini-2.5-flash")  # type: ignore
-
         try:
-            # Call the API with generation configuration
-            generation_config = {
-                "temperature": 0.7,
-                "max_output_tokens": 16384,  # Larger output for comprehensive CapDev
-            }
-
-            response = model.generate_content(
-                prompt,
-                generation_config=generation_config,  # type: ignore
+            # Call Gemini API with circuit breaker and rate limiting protection
+            # CapDev uses larger output tokens for comprehensive insights
+            response_text = self._call_gemini_with_circuit_breaker(
+                prompt=prompt,
+                operation="capdev_insights",
+                language=language,
+                max_output_tokens=16384,  # Larger output for comprehensive CapDev
             )
 
-            # Parse the response text
-            if not response or not hasattr(response, "text") or not response.text:
-                raise Exception("Gemini API returned empty or invalid response")
-
-            response_text = response.text
-
-            # Extract JSON from the response
-            if "```json" in response_text:
-                start = response_text.find("```json") + 7
-                end = response_text.find("```", start)
-                json_str = response_text[start:end].strip()
-            elif "```" in response_text:
-                start = response_text.find("```") + 3
-                end = response_text.find("```", start)
-                json_str = response_text[start:end].strip()
-            else:
-                json_str = response_text.strip()
+            # Extract JSON from response using helper method
+            json_str = self._extract_json_from_response(response_text)
 
             # Parse the JSON
             parsed_response = json.loads(json_str)
@@ -2249,44 +2479,20 @@ GUIDELINES:
 
         except json.JSONDecodeError as e:
             logger.error(
-                f"Failed to parse Gemini API response as JSON for assessment {assessment_id}: {response_text}"
+                f"Failed to parse Gemini API response as JSON for assessment {assessment_id}"
             )
-            raise Exception(
-                f"Failed to parse Gemini API response as JSON"
-            ) from e
+            raise Exception("Failed to parse Gemini API response as JSON") from e
         except TimeoutError as e:
-            logger.error(
-                f"Gemini API request timed out for assessment {assessment_id}"
-            )
-            raise Exception(
-                "Gemini API request timed out after waiting for response"
-            ) from e
+            raise Exception("Gemini API request timed out after waiting for response") from e
         except ValueError:
             raise
         except Exception as e:
-            error_message = str(e).lower()
-            if "quota" in error_message or "rate limit" in error_message:
-                logger.error(f"Gemini API quota/rate limit hit: {str(e)}")
-                raise Exception(
-                    "Gemini API quota exceeded or rate limit hit. Please try again later."
-                ) from e
-            elif "network" in error_message or "connection" in error_message:
-                logger.error(f"Network error calling Gemini API: {str(e)}")
-                raise Exception(
-                    "Network error connecting to Gemini API."
-                ) from e
-            elif "permission" in error_message or "unauthorized" in error_message:
-                logger.error(f"Gemini API authentication failed: {str(e)}")
-                raise Exception(
-                    "Gemini API authentication failed. Please check your API key."
-                ) from e
-            else:
-                logger.error(f"Gemini API call failed: {str(e)}")
-                raise Exception(f"Gemini API call failed: {str(e)}") from e
+            # Use helper method for error handling
+            raise self._handle_gemini_error(e, "CapDev insights generation", assessment_id) from e
 
     def generate_default_language_capdev_insights(
         self, db: Session, assessment_id: int
-    ) -> Dict[str, Dict[str, Any]]:
+    ) -> dict[str, dict[str, Any]]:
         """
         Generate CapDev insights in default languages (Bisaya + English).
 
@@ -2304,9 +2510,7 @@ GUIDELINES:
         insights = {}
         for lang in DEFAULT_LANGUAGES:
             try:
-                logger.info(
-                    f"Generating {lang} CapDev insights for assessment {assessment_id}"
-                )
+                logger.info(f"Generating {lang} CapDev insights for assessment {assessment_id}")
                 insights[lang] = self.generate_capdev_insights(db, assessment_id, lang)
             except Exception as e:
                 logger.error(
@@ -2317,7 +2521,7 @@ GUIDELINES:
 
     def get_capdev_insights_with_caching(
         self, db: Session, assessment_id: int, language: str = "ceb"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get CapDev insights with language-aware caching.
 
@@ -2334,9 +2538,12 @@ GUIDELINES:
             Dictionary with CapDev insights
 
         Raises:
-            ValueError: If assessment not found or not approved
+            ValueError: If assessment not found, not approved, or language not supported
             Exception: If API call fails
         """
+        # Validate language
+        self._validate_language(language)
+
         # Get assessment to check for cached insights
         assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
         if not assessment:
@@ -2349,10 +2556,15 @@ GUIDELINES:
         if assessment.capdev_insights:
             if isinstance(assessment.capdev_insights, dict):
                 if language in assessment.capdev_insights:
-                    logger.info(
-                        f"Returning cached CapDev insights for assessment {assessment_id} in {language}"
+                    cache_operations_total.labels(operation="capdev", result="hit").inc()
+                    logger.debug(
+                        f"Cache HIT for CapDev insights assessment {assessment_id} ({language})"
                     )
                     return assessment.capdev_insights[language]
+
+        # Cache miss - need to call API
+        cache_operations_total.labels(operation="capdev", result="miss").inc()
+        logger.debug(f"Cache MISS for CapDev insights assessment {assessment_id} ({language})")
 
         # No cached data for this language, generate new insights
         insights = self.generate_capdev_insights(db, assessment_id, language)

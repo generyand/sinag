@@ -1,7 +1,6 @@
 # Notifications API Routes
 # Endpoints for notification management
 
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -168,9 +167,7 @@ async def get_notification(
     # Add assessment barangay name if available
     if notification.assessment and notification.assessment.blgu_user:
         if notification.assessment.blgu_user.barangay:
-            response.assessment_barangay_name = (
-                notification.assessment.blgu_user.barangay.name
-            )
+            response.assessment_barangay_name = notification.assessment.blgu_user.barangay.name
 
     # Add governance area name if available
     if notification.governance_area:

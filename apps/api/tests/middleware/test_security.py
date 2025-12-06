@@ -1,9 +1,7 @@
 # 🧪 Security Middleware Tests
 # Tests for security headers, rate limiting, and request tracking
 
-import time
 
-import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
@@ -32,9 +30,7 @@ class TestSecurityHeaders:
         assert "default-src 'self'" in response.headers["Content-Security-Policy"]
 
         assert "Referrer-Policy" in response.headers
-        assert (
-            response.headers["Referrer-Policy"] == "strict-origin-when-cross-origin"
-        )
+        assert response.headers["Referrer-Policy"] == "strict-origin-when-cross-origin"
 
         assert "Permissions-Policy" in response.headers
 
@@ -113,9 +109,7 @@ class TestCORS:
 
     def test_cors_headers_present(self, client: TestClient):
         """Test that CORS headers are present for cross-origin requests."""
-        response = client.get(
-            "/health", headers={"Origin": "http://localhost:3000"}
-        )
+        response = client.get("/health", headers={"Origin": "http://localhost:3000"})
 
         # CORS headers should be present
         assert "access-control-allow-origin" in response.headers

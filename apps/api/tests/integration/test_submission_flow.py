@@ -20,12 +20,11 @@ Tests the integration of:
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
-from typing import Dict
 
+from app.db.enums import AssessmentStatus
 from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.governance_area import Indicator
 from app.db.models.user import User
-from app.db.enums import AssessmentStatus
 
 
 class TestCompleteAssessmentSubmissionFlow:
@@ -36,7 +35,7 @@ class TestCompleteAssessmentSubmissionFlow:
     def test_create_assessment_for_blgu_user(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_blgu_user: User,
         db_session: Session,
     ):
@@ -48,10 +47,7 @@ class TestCompleteAssessmentSubmissionFlow:
         - Assessment is in DRAFT status initially
         - Assessment belongs to the BLGU user
         """
-        response = client.get(
-            "/api/v1/assessments/my-assessment",
-            headers=auth_headers_blgu
-        )
+        response = client.get("/api/v1/assessments/my-assessment", headers=auth_headers_blgu)
 
         assert response.status_code == 200
         data = response.json()
@@ -63,9 +59,7 @@ class TestCompleteAssessmentSubmissionFlow:
         assert data["assessment"]["blgu_user_id"] == test_blgu_user.id
 
         # Verify assessment exists in database
-        assessment = db_session.query(Assessment).filter_by(
-            blgu_user_id=test_blgu_user.id
-        ).first()
+        assessment = db_session.query(Assessment).filter_by(blgu_user_id=test_blgu_user.id).first()
         assert assessment is not None
         assert assessment.status == AssessmentStatus.DRAFT
         assert assessment.rework_count == 0
@@ -73,7 +67,7 @@ class TestCompleteAssessmentSubmissionFlow:
     def test_create_response_for_indicator(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
         db_session: Session,
@@ -92,14 +86,14 @@ class TestCompleteAssessmentSubmissionFlow:
             "response_data": {
                 "test_text_field": "Integration test response",
                 "test_number_field": 85,
-                "test_select_field": "Option A"
-            }
+                "test_select_field": "Option A",
+            },
         }
 
         response = client.post(
             "/api/v1/assessments/responses",
             headers=auth_headers_blgu,
-            json=response_data
+            json=response_data,
         )
 
         assert response.status_code in [200, 201]
@@ -113,17 +107,18 @@ class TestCompleteAssessmentSubmissionFlow:
         assert data["response_data"]["test_number_field"] == 85
 
         # Verify response exists in database
-        db_response = db_session.query(AssessmentResponse).filter_by(
-            assessment_id=test_draft_assessment.id,
-            indicator_id=test_indicator.id
-        ).first()
+        db_response = (
+            db_session.query(AssessmentResponse)
+            .filter_by(assessment_id=test_draft_assessment.id, indicator_id=test_indicator.id)
+            .first()
+        )
         assert db_response is not None
         assert db_response.response_data["test_text_field"] == "Integration test response"
 
     def test_update_response_data(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_assessment_with_responses: Assessment,
         db_session: Session,
     ):
@@ -142,14 +137,14 @@ class TestCompleteAssessmentSubmissionFlow:
             "response_data": {
                 "test_text_field": "Updated response text",
                 "test_number_field": 95,
-                "test_select_field": "Option C"
+                "test_select_field": "Option C",
             }
         }
 
         response = client.put(
             f"/api/v1/assessments/responses/{assessment_response.id}",
             headers=auth_headers_blgu,
-            json=updated_data
+            json=updated_data,
         )
 
         assert response.status_code == 200
@@ -168,7 +163,7 @@ class TestCompleteAssessmentSubmissionFlow:
     def test_validate_completeness_before_submission(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_assessment_with_responses: Assessment,
     ):
         """
@@ -181,7 +176,7 @@ class TestCompleteAssessmentSubmissionFlow:
         """
         response = client.get(
             f"/api/v1/assessments/{test_assessment_with_responses.id}/submission-status",
-            headers=auth_headers_blgu
+            headers=auth_headers_blgu,
         )
 
         assert response.status_code == 200
@@ -204,7 +199,7 @@ class TestCompleteAssessmentSubmissionFlow:
     def test_submit_complete_assessment(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_assessment_with_responses: Assessment,
         db_session: Session,
     ):
@@ -219,7 +214,7 @@ class TestCompleteAssessmentSubmissionFlow:
         """
         response = client.post(
             f"/api/v1/assessments/{test_assessment_with_responses.id}/submit",
-            headers=auth_headers_blgu
+            headers=auth_headers_blgu,
         )
 
         # Note: This may fail if validation requires MOVs
@@ -249,7 +244,7 @@ class TestCompleteAssessmentSubmissionFlow:
             # Verify locked state via submission-status endpoint
             status_response = client.get(
                 f"/api/v1/assessments/{test_assessment_with_responses.id}/submission-status",
-                headers=auth_headers_blgu
+                headers=auth_headers_blgu,
             )
             assert status_response.status_code == 200
             status_data = status_response.json()
@@ -261,7 +256,7 @@ class TestCompleteAssessmentSubmissionFlow:
     def test_cannot_submit_incomplete_assessment(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator,  # Need indicator in DB for validation to work
     ):
@@ -275,7 +270,7 @@ class TestCompleteAssessmentSubmissionFlow:
         """
         response = client.post(
             f"/api/v1/assessments/{test_draft_assessment.id}/submit",
-            headers=auth_headers_blgu
+            headers=auth_headers_blgu,
         )
 
         # Should fail because assessment has no responses
@@ -288,7 +283,7 @@ class TestCompleteAssessmentSubmissionFlow:
     def test_blgu_cannot_submit_other_users_assessment(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         db_session: Session,
         test_blgu_user: User,
         test_assessor_user: User,
@@ -303,7 +298,9 @@ class TestCompleteAssessmentSubmissionFlow:
         """
         # Create another BLGU user
         import uuid
+
         from passlib.context import CryptContext
+
         from app.db.enums import UserRole
         from app.db.models.user import User
 
@@ -336,7 +333,7 @@ class TestCompleteAssessmentSubmissionFlow:
         # This test uses the same client/session as the rest of the test class
         response = client.post(
             f"/api/v1/assessments/{other_assessment.id}/submit",
-            headers=auth_headers_blgu
+            headers=auth_headers_blgu,
         )
 
         # Should be forbidden
@@ -347,7 +344,7 @@ class TestCompleteAssessmentSubmissionFlow:
     def test_submission_sets_correct_timestamps(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_assessment_with_responses: Assessment,
         db_session: Session,
     ):
@@ -367,7 +364,7 @@ class TestCompleteAssessmentSubmissionFlow:
         # Attempt submission
         response = client.post(
             f"/api/v1/assessments/{test_assessment_with_responses.id}/submit",
-            headers=auth_headers_blgu
+            headers=auth_headers_blgu,
         )
 
         # If submission succeeds (validation passes)
@@ -387,7 +384,7 @@ class TestCompleteAssessmentSubmissionFlow:
     def test_locked_assessment_cannot_be_edited(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_submitted_assessment: Assessment,
         test_indicator: Indicator,
         db_session: Session,
@@ -412,14 +409,14 @@ class TestCompleteAssessmentSubmissionFlow:
             "response_data": {
                 "test_text_field": "Test",
                 "test_number_field": 75,
-                "test_select_field": "Option A"
-            }
+                "test_select_field": "Option A",
+            },
         }
 
         create_response = client.post(
             "/api/v1/assessments/responses",
             headers=auth_headers_blgu,
-            json=response_data
+            json=response_data,
         )
 
         if create_response.status_code in [200, 201]:
@@ -437,9 +434,9 @@ class TestCompleteAssessmentSubmissionFlow:
                     "response_data": {
                         "test_text_field": "Updated text",
                         "test_number_field": 85,
-                        "test_select_field": "Option B"
+                        "test_select_field": "Option B",
                     }
-                }
+                },
             )
 
             # Should fail because assessment is SUBMITTED (locked)

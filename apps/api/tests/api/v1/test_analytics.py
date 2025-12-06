@@ -4,16 +4,25 @@ Tests for analytics API endpoints - authentication, RBAC, and response structure
 """
 
 import pytest
-from app.api import deps
-from app.db.enums import AssessmentStatus, ComplianceStatus, UserRole, AreaType
-from app.db.models import Assessment, AssessmentResponse, GovernanceArea, Indicator, User, Barangay
 from sqlalchemy.orm import Session
+
+from app.api import deps
+from app.db.enums import AreaType, ComplianceStatus, UserRole
+from app.db.models import (
+    Assessment,
+    AssessmentResponse,
+    Barangay,
+    GovernanceArea,
+    Indicator,
+    User,
+)
 
 
 @pytest.fixture
 def mlgoo_dilg_user(db_session: Session):
     """Create a MLGOO-DILG user for testing"""
     import uuid
+
     from passlib.context import CryptContext
 
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -36,6 +45,7 @@ def mlgoo_dilg_user(db_session: Session):
 def blgu_user(db_session: Session):
     """Create a BLGU user for testing"""
     import uuid
+
     from passlib.context import CryptContext
 
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -65,6 +75,7 @@ def blgu_user(db_session: Session):
 def assessor_user(db_session: Session):
     """Create an Area Assessor user for testing"""
     import uuid
+
     from passlib.context import CryptContext
 
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -88,8 +99,8 @@ def test_data(db_session: Session):
     """Create test data for analytics tests"""
     # Create governance areas
     areas = [
-        GovernanceArea(id=1, name="Financial Administration", area_type=AreaType.CORE),
-        GovernanceArea(id=2, name="Disaster Preparedness", area_type=AreaType.CORE),
+        GovernanceArea(id=1, code="T1", name="Financial Administration", area_type=AreaType.CORE),
+        GovernanceArea(id=2, code="T2", name="Disaster Preparedness", area_type=AreaType.CORE),
     ]
     for area in areas:
         db_session.add(area)
@@ -103,7 +114,7 @@ def test_data(db_session: Session):
         for j in range(2):  # 2 indicators per area
             ind = Indicator(
                 id=(i * 2) + j + 1,
-                name=f"{area.name} Indicator {j+1}",
+                name=f"{area.name} Indicator {j + 1}",
                 description=f"Test indicator for {area.name}",
                 form_schema={"type": "object", "properties": {}},
                 governance_area_id=area.id,
@@ -119,15 +130,15 @@ def test_data(db_session: Session):
 
     for i in range(3):
         # Create barangay
-        barangay = Barangay(name=f"Test Barangay {i+1}")
+        barangay = Barangay(name=f"Test Barangay {i + 1}")
         db_session.add(barangay)
         db_session.commit()
         db_session.refresh(barangay)
 
         # Create user for barangay
         user = User(
-            email=f"testblgu{i+1}@test.com",
-            name=f"Test BLGU User {i+1}",
+            email=f"testblgu{i + 1}@test.com",
+            name=f"Test BLGU User {i + 1}",
             hashed_password="hashed",
             role=UserRole.BLGU_USER,
             barangay_id=barangay.id,
@@ -175,13 +186,13 @@ def _override_user_and_db(client, user: User, db_session: Session):
         finally:
             pass
 
-    client.app.dependency_overrides[deps.get_current_active_user] = (
-        _override_current_active_user
-    )
+    client.app.dependency_overrides[deps.get_current_active_user] = _override_current_active_user
     client.app.dependency_overrides[deps.get_db] = _override_get_db
 
 
-def test_get_dashboard_success_with_mlgoo_dilg(client, db_session: Session, mlgoo_dilg_user, test_data):
+def test_get_dashboard_success_with_mlgoo_dilg(
+    client, db_session: Session, mlgoo_dilg_user, test_data
+):
     """Test GET /api/v1/analytics/dashboard returns 200 with MLGOO-DILG user"""
     _override_user_and_db(client, mlgoo_dilg_user, db_session)
 
@@ -235,7 +246,9 @@ def test_get_dashboard_forbidden_with_blgu_user(client, db_session: Session, blg
     client.app.dependency_overrides.clear()
 
 
-def test_get_dashboard_forbidden_with_assessor_user(client, db_session: Session, assessor_user, test_data):
+def test_get_dashboard_forbidden_with_assessor_user(
+    client, db_session: Session, assessor_user, test_data
+):
     """Test GET /api/v1/analytics/dashboard returns 403 with Assessor user"""
     _override_user_and_db(client, assessor_user, db_session)
 
@@ -249,7 +262,9 @@ def test_get_dashboard_forbidden_with_assessor_user(client, db_session: Session,
     client.app.dependency_overrides.clear()
 
 
-def test_get_dashboard_with_cycle_id_parameter(client, db_session: Session, mlgoo_dilg_user, test_data):
+def test_get_dashboard_with_cycle_id_parameter(
+    client, db_session: Session, mlgoo_dilg_user, test_data
+):
     """Test GET /api/v1/analytics/dashboard accepts cycle_id query parameter"""
     _override_user_and_db(client, mlgoo_dilg_user, db_session)
 
@@ -266,7 +281,9 @@ def test_get_dashboard_with_cycle_id_parameter(client, db_session: Session, mlgo
     client.app.dependency_overrides.clear()
 
 
-def test_get_dashboard_response_structure_matches_schema(client, db_session: Session, mlgoo_dilg_user, test_data):
+def test_get_dashboard_response_structure_matches_schema(
+    client, db_session: Session, mlgoo_dilg_user, test_data
+):
     """Test response structure matches DashboardKPIResponse schema completely"""
     _override_user_and_db(client, mlgoo_dilg_user, db_session)
 
@@ -289,7 +306,9 @@ def test_get_dashboard_response_structure_matches_schema(client, db_session: Ses
     # Verify ComplianceRate structure (overall_compliance_rate)
     compliance_rate_fields = ["total_barangays", "passed", "failed", "pass_percentage"]
     for field in compliance_rate_fields:
-        assert field in data["overall_compliance_rate"], f"Missing field in overall_compliance_rate: {field}"
+        assert field in data["overall_compliance_rate"], (
+            f"Missing field in overall_compliance_rate: {field}"
+        )
         assert isinstance(data["overall_compliance_rate"][field], (int, float))
 
     # Verify ComplianceRate structure (completion_status)
@@ -302,14 +321,23 @@ def test_get_dashboard_response_structure_matches_schema(client, db_session: Ses
     if len(data["area_breakdown"]) > 0:
         area_fields = ["area_code", "area_name", "passed", "failed", "percentage"]
         for field in area_fields:
-            assert field in data["area_breakdown"][0], f"Missing field in area_breakdown item: {field}"
+            assert field in data["area_breakdown"][0], (
+                f"Missing field in area_breakdown item: {field}"
+            )
 
     # Verify top_failed_indicators is a list
     assert isinstance(data["top_failed_indicators"], list)
     if len(data["top_failed_indicators"]) > 0:
-        indicator_fields = ["indicator_id", "indicator_name", "failure_count", "percentage"]
+        indicator_fields = [
+            "indicator_id",
+            "indicator_name",
+            "failure_count",
+            "percentage",
+        ]
         for field in indicator_fields:
-            assert field in data["top_failed_indicators"][0], f"Missing field in top_failed_indicators item: {field}"
+            assert field in data["top_failed_indicators"][0], (
+                f"Missing field in top_failed_indicators item: {field}"
+            )
 
     # Verify trends is a list
     assert isinstance(data["trends"], list)
@@ -346,7 +374,9 @@ def test_get_dashboard_with_no_data(client, db_session: Session, mlgoo_dilg_user
 # =============================================================================
 
 
-def test_get_reports_success_with_valid_jwt(client, db_session: Session, mlgoo_dilg_user, test_data):
+def test_get_reports_success_with_valid_jwt(
+    client, db_session: Session, mlgoo_dilg_user, test_data
+):
     """Test GET /api/v1/analytics/reports returns 200 with valid JWT"""
     _override_user_and_db(client, mlgoo_dilg_user, db_session)
 
@@ -364,7 +394,9 @@ def test_get_reports_success_with_valid_jwt(client, db_session: Session, mlgoo_d
     client.app.dependency_overrides.clear()
 
 
-def test_get_reports_with_cycle_id_parameter(client, db_session: Session, mlgoo_dilg_user, test_data):
+def test_get_reports_with_cycle_id_parameter(
+    client, db_session: Session, mlgoo_dilg_user, test_data
+):
     """Test GET /api/v1/analytics/reports with cycle_id query parameter"""
     _override_user_and_db(client, mlgoo_dilg_user, db_session)
 
@@ -397,8 +429,12 @@ def test_get_reports_with_status_parameter(client, db_session: Session, mlgoo_di
     client.app.dependency_overrides.clear()
 
 
-@pytest.mark.skip(reason="Governance area filtering has a bug in _build_filtered_query (line 903) - dict has no .class_ attribute")
-def test_get_reports_with_single_governance_area(client, db_session: Session, mlgoo_dilg_user, test_data):
+@pytest.mark.skip(
+    reason="Governance area filtering has a bug in _build_filtered_query (line 903) - dict has no .class_ attribute"
+)
+def test_get_reports_with_single_governance_area(
+    client, db_session: Session, mlgoo_dilg_user, test_data
+):
     """Test GET /api/v1/analytics/reports with single governance_area parameter"""
     _override_user_and_db(client, mlgoo_dilg_user, db_session)
 
@@ -507,7 +543,9 @@ def test_get_reports_unauthorized_without_token(client, db_session: Session, tes
     assert response.status_code in [401, 403]
 
 
-def test_get_reports_response_structure_matches_schema(client, db_session: Session, mlgoo_dilg_user, test_data):
+def test_get_reports_response_structure_matches_schema(
+    client, db_session: Session, mlgoo_dilg_user, test_data
+):
     """Test response structure matches ReportsDataResponse schema"""
     _override_user_and_db(client, mlgoo_dilg_user, db_session)
 
@@ -586,13 +624,13 @@ def test_get_reports_response_structure_matches_schema(client, db_session: Sessi
     client.app.dependency_overrides.clear()
 
 
-def test_get_reports_with_date_range_parameters(client, db_session: Session, mlgoo_dilg_user, test_data):
+def test_get_reports_with_date_range_parameters(
+    client, db_session: Session, mlgoo_dilg_user, test_data
+):
     """Test GET /api/v1/analytics/reports with date range parameters"""
     _override_user_and_db(client, mlgoo_dilg_user, db_session)
 
-    response = client.get(
-        "/api/v1/analytics/reports?start_date=2024-01-01&end_date=2024-12-31"
-    )
+    response = client.get("/api/v1/analytics/reports?start_date=2024-01-01&end_date=2024-12-31")
 
     assert response.status_code == 200
     data = response.json()

@@ -2,10 +2,9 @@
 # Pydantic models for admin-specific API requests and responses
 
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
-
 
 # ============================================================================
 # Audit Log Schemas
@@ -15,17 +14,19 @@ from pydantic import BaseModel, ConfigDict, Field
 class AuditLogBase(BaseModel):
     """Base audit log schema with common fields."""
 
-    entity_type: str = Field(..., description="Type of entity (indicator, bbi, deadline_override, etc.)")
-    entity_id: Optional[int] = Field(None, description="ID of the entity (null for bulk operations)")
+    entity_type: str = Field(
+        ..., description="Type of entity (indicator, bbi, deadline_override, etc.)"
+    )
+    entity_id: int | None = Field(None, description="ID of the entity (null for bulk operations)")
     action: str = Field(..., description="Action performed (create, update, delete, deactivate)")
-    changes: Optional[Dict[str, Any]] = Field(None, description="JSON diff of changes")
+    changes: dict[str, Any] | None = Field(None, description="JSON diff of changes")
 
 
 class AuditLogCreate(AuditLogBase):
     """Schema for creating an audit log entry (internal use)."""
 
     user_id: int
-    ip_address: Optional[str] = None
+    ip_address: str | None = None
 
 
 class AuditLogResponse(AuditLogBase):
@@ -33,12 +34,12 @@ class AuditLogResponse(AuditLogBase):
 
     id: int
     user_id: int
-    ip_address: Optional[str]
+    ip_address: str | None
     created_at: datetime
 
     # User details (will be joined from User table)
-    user_email: Optional[str] = None
-    user_name: Optional[str] = None
+    user_email: str | None = None
+    user_name: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -55,12 +56,12 @@ class AuditLogListResponse(BaseModel):
 class AuditLogFilters(BaseModel):
     """Schema for audit log filtering parameters."""
 
-    user_id: Optional[int] = None
-    entity_type: Optional[str] = None
-    entity_id: Optional[int] = None
-    action: Optional[str] = None
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
+    user_id: int | None = None
+    entity_type: str | None = None
+    entity_id: int | None = None
+    action: str | None = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
     skip: int = 0
     limit: int = 100
 
@@ -73,14 +74,14 @@ class AuditLogFilters(BaseModel):
 class JsonDiffItem(BaseModel):
     """Schema for a single field change in JSON diff."""
 
-    before: Optional[Any] = None
-    after: Optional[Any] = None
+    before: Any | None = None
+    after: Any | None = None
 
 
 class JsonDiff(BaseModel):
     """Schema for JSON diff (field-level changes)."""
 
-    changes: Dict[str, JsonDiffItem]
+    changes: dict[str, JsonDiffItem]
 
 
 # ============================================================================
@@ -93,7 +94,7 @@ class AdminSuccessResponse(BaseModel):
 
     success: bool = True
     message: str
-    data: Optional[Dict[str, Any]] = None
+    data: dict[str, Any] | None = None
 
 
 class AdminErrorResponse(BaseModel):
@@ -101,7 +102,7 @@ class AdminErrorResponse(BaseModel):
 
     success: bool = False
     error: str
-    detail: Optional[str] = None
+    detail: str | None = None
 
 
 # ============================================================================
@@ -122,18 +123,21 @@ class AssessmentCycleBase(BaseModel):
 
 class AssessmentCycleCreate(AssessmentCycleBase):
     """Schema for creating a new assessment cycle."""
+
     pass
 
 
 class AssessmentCycleUpdate(BaseModel):
     """Schema for updating an assessment cycle (all fields optional)."""
 
-    name: Optional[str] = Field(None, description="Cycle name")
-    year: Optional[int] = Field(None, description="Assessment year")
-    phase1_deadline: Optional[datetime] = Field(None, description="Initial submission deadline")
-    rework_deadline: Optional[datetime] = Field(None, description="Rework submission deadline")
-    phase2_deadline: Optional[datetime] = Field(None, description="Final submission deadline")
-    calibration_deadline: Optional[datetime] = Field(None, description="Calibration/validation deadline")
+    name: str | None = Field(None, description="Cycle name")
+    year: int | None = Field(None, description="Assessment year")
+    phase1_deadline: datetime | None = Field(None, description="Initial submission deadline")
+    rework_deadline: datetime | None = Field(None, description="Rework submission deadline")
+    phase2_deadline: datetime | None = Field(None, description="Final submission deadline")
+    calibration_deadline: datetime | None = Field(
+        None, description="Calibration/validation deadline"
+    )
 
 
 class AssessmentCycleResponse(AssessmentCycleBase):
@@ -163,7 +167,11 @@ class DeadlineOverrideBase(BaseModel):
     """Base deadline override schema with common fields."""
 
     new_deadline: datetime = Field(..., description="Extended deadline (must be in future)")
-    reason: str = Field(..., min_length=10, description="Justification for extension (minimum 10 characters)")
+    reason: str = Field(
+        ...,
+        min_length=10,
+        description="Justification for extension (minimum 10 characters)",
+    )
 
 
 class DeadlineOverrideCreate(DeadlineOverrideBase):
@@ -186,10 +194,10 @@ class DeadlineOverrideResponse(DeadlineOverrideBase):
     created_at: datetime
 
     # Related entity details (will be joined)
-    cycle_name: Optional[str] = None
-    barangay_name: Optional[str] = None
-    indicator_name: Optional[str] = None
-    creator_email: Optional[str] = None
+    cycle_name: str | None = None
+    barangay_name: str | None = None
+    indicator_name: str | None = None
+    creator_email: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -204,9 +212,9 @@ class DeadlineOverrideListResponse(BaseModel):
 class DeadlineOverrideFilters(BaseModel):
     """Schema for deadline override filtering parameters."""
 
-    cycle_id: Optional[int] = None
-    barangay_id: Optional[int] = None
-    indicator_id: Optional[int] = None
+    cycle_id: int | None = None
+    barangay_id: int | None = None
+    indicator_id: int | None = None
 
 
 # ============================================================================
@@ -217,9 +225,14 @@ class DeadlineOverrideFilters(BaseModel):
 class PhaseStatusResponse(BaseModel):
     """Schema for a single phase's deadline status."""
 
-    status: str = Field(..., description="Status: submitted_on_time, submitted_late, pending, or overdue")
+    status: str = Field(
+        ...,
+        description="Status: submitted_on_time, submitted_late, pending, or overdue",
+    )
     deadline: str = Field(..., description="Deadline in ISO format")
-    submitted_at: Optional[str] = Field(None, description="Submission timestamp in ISO format (if submitted)")
+    submitted_at: str | None = Field(
+        None, description="Submission timestamp in ISO format (if submitted)"
+    )
 
 
 class BarangayDeadlineStatusResponse(BaseModel):

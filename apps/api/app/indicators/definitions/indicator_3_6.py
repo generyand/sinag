@@ -8,8 +8,7 @@ Note: This indicator assesses the conduct of monthly Barangay Road Clearing Oper
 through submission of monthly BaRCO reports.
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
-
+from app.indicators.base import ChecklistItem, Indicator, SubIndicator
 
 # Indicator 3.6: Conduct of Monthly Barangay Road Clearing Operations (BaRCO)
 INDICATOR_3_6 = Indicator(
@@ -35,7 +34,7 @@ INDICATOR_3_6 = Indicator(
                     label="Monthly BaRCo Reports",
                     mov_description="Verification of uploaded Monthly BaRCo Reports",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
                 # Text Input Field
                 ChecklistItem(
@@ -44,9 +43,9 @@ INDICATOR_3_6 = Indicator(
                     mov_description="Please supply the number of documents submitted:",
                     required=True,
                     requires_document_count=True,  # This is a text input field
-                    display_order=2
+                    display_order=2,
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

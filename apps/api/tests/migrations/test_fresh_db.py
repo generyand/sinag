@@ -5,9 +5,6 @@ Tests that all migrations apply correctly on a fresh database.
 Verifies schema matches expected state after full migration.
 """
 
-import pytest
-from sqlalchemy import inspect, text
-
 
 class TestFreshDatabaseMigration:
     """
@@ -34,8 +31,13 @@ class TestFreshDatabaseMigration:
         indicators, mov_files, barangays, governance_areas, etc.
         """
         expected_tables = [
-            'users', 'assessments', 'assessment_responses',
-            'indicators', 'mov_files', 'barangays', 'governance_areas'
+            "users",
+            "assessments",
+            "assessment_responses",
+            "indicators",
+            "mov_files",
+            "barangays",
+            "governance_areas",
         ]
         assert len(expected_tables) > 0
 
@@ -62,5 +64,5 @@ class TestFreshDatabaseMigration:
 
         Verifies enums: UserRole, AssessmentStatus, ValidationStatus, etc.
         """
-        expected_enums = ['userrole', 'assessmentstatus', 'validationstatus']
+        expected_enums = ["userrole", "assessmentstatus", "validationstatus"]
         assert len(expected_enums) > 0

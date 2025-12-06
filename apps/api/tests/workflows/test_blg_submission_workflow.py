@@ -2,10 +2,19 @@
 # Covers POST /api/v1/assessments/{id}/submit and resubmission after rework
 
 import pytest
+from sqlalchemy.orm import Session
+
 from app.api import deps
 from app.db.enums import AreaType, AssessmentStatus, UserRole
-from app.db.models import Assessment, AssessmentResponse, Barangay, GovernanceArea, Indicator, MOV, User
-from sqlalchemy.orm import Session
+from app.db.models import (
+    MOV,
+    Assessment,
+    AssessmentResponse,
+    Barangay,
+    GovernanceArea,
+    Indicator,
+    User,
+)
 
 
 def _create_base_graph(db_session: Session, *, with_mov: bool) -> dict:
@@ -19,7 +28,7 @@ def _create_base_graph(db_session: Session, *, with_mov: bool) -> dict:
     db_session.commit()
     db_session.refresh(barangay)
 
-    ga = GovernanceArea(name=f"Gov Area Submit {ts}", area_type=AreaType.CORE)
+    ga = GovernanceArea(name=f"Gov Area Submit {ts}", code=f"G{ts % 100:02d}"[:2].upper(), area_type=AreaType.CORE)
     db_session.add(ga)
     db_session.commit()
     db_session.refresh(ga)
@@ -29,9 +38,7 @@ def _create_base_graph(db_session: Session, *, with_mov: bool) -> dict:
         description="Submission test indicator",
         form_schema={
             "type": "object",
-            "properties": {
-                "answer": {"type": "string", "enum": ["YES", "NO", "N/A"]}
-            },
+            "properties": {"answer": {"type": "string", "enum": ["YES", "NO", "N/A"]}},
             "required": ["answer"],
         },
         governance_area_id=ga.id,
@@ -114,9 +121,7 @@ def _override_user_and_db(client, blgu_user: User, db_session: Session):
         finally:
             pass
 
-    client.app.dependency_overrides[deps.get_current_active_user] = (
-        _override_current_active_user
-    )
+    client.app.dependency_overrides[deps.get_current_active_user] = _override_current_active_user
     client.app.dependency_overrides[deps.get_db] = _override_get_db
 
 
@@ -180,5 +185,3 @@ def test_resubmission_after_rework(client, db_session: Session, blgu_context_wit
     assert assessment.status == AssessmentStatus.SUBMITTED_FOR_REVIEW
 
     client.app.dependency_overrides.clear()
-
-

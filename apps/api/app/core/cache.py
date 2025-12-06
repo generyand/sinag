@@ -2,14 +2,16 @@
 # Implements caching strategy for analytics and query results with configurable TTL
 # PERFORMANCE: Dedicated Redis instance for caching, separate from Celery queue
 
-import json
 import hashlib
+import json
 import logging
 import time
-from dataclasses import dataclass, field
-from threading import Lock
-from typing import Optional, Any, Callable, Dict
+from collections.abc import Callable
+from dataclasses import dataclass
 from functools import wraps
+from threading import Lock
+from typing import Any
+
 import redis
 from redis.exceptions import RedisError
 
@@ -19,15 +21,16 @@ logger = logging.getLogger(__name__)
 
 # Cache TTL configuration (in seconds)
 CACHE_TTL_EXTERNAL_ANALYTICS = 3600  # 1 hour for external analytics (longer than internal)
-CACHE_TTL_INTERNAL_ANALYTICS = 900   # 15 minutes for internal analytics
-CACHE_TTL_DASHBOARD = 1800           # 30 minutes for dashboard data
-CACHE_TTL_LOOKUP = 3600              # 1 hour for lookup/reference data
-CACHE_TTL_SHORT = 300                # 5 minutes for frequently changing data
+CACHE_TTL_INTERNAL_ANALYTICS = 900  # 15 minutes for internal analytics
+CACHE_TTL_DASHBOARD = 1800  # 30 minutes for dashboard data
+CACHE_TTL_LOOKUP = 3600  # 1 hour for lookup/reference data
+CACHE_TTL_SHORT = 300  # 5 minutes for frequently changing data
 
 
 @dataclass
 class CacheMetrics:
     """Track cache hit/miss statistics for monitoring."""
+
     hits: int = 0
     misses: int = 0
     errors: int = 0
@@ -50,7 +53,7 @@ class CacheMetrics:
         """Average time for cache misses (includes computation)."""
         return (self.total_miss_time_ms / self.misses) if self.misses > 0 else 0.0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for API responses."""
         return {
             "hits": self.hits,
@@ -74,7 +77,7 @@ class RedisCache:
 
     def __init__(self):
         """Initialize Redis connection."""
-        self._client: Optional[redis.Redis] = None
+        self._client: redis.Redis | None = None
         self._is_available = False
         self._metrics = CacheMetrics()
         self._metrics_lock = Lock()  # Thread safety for metrics updates
@@ -85,7 +88,7 @@ class RedisCache:
         try:
             # Use dedicated cache Redis URL (separate from Celery broker)
             # Format: redis://localhost:6380/0
-            cache_url = getattr(settings, 'REDIS_CACHE_URL', None) or settings.CELERY_BROKER_URL
+            cache_url = getattr(settings, "REDIS_CACHE_URL", None) or settings.CELERY_BROKER_URL
 
             # Parse Redis URL
             if cache_url.startswith("redis://"):
@@ -131,7 +134,7 @@ class RedisCache:
         """Get cache metrics for monitoring."""
         return self._metrics
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """Get cache metrics as dictionary for API responses (thread-safe)."""
         with self._metrics_lock:
             return self._metrics.to_dict()
@@ -177,7 +180,7 @@ class RedisCache:
 
         return f"{prefix}:{params_hash}"
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """
         Get value from cache.
 
@@ -311,8 +314,8 @@ class RedisCache:
 def cached(
     prefix: str,
     ttl: int = CACHE_TTL_EXTERNAL_ANALYTICS,
-    key_builder: Optional[Callable] = None,
-    skip_none: bool = True
+    key_builder: Callable | None = None,
+    skip_none: bool = True,
 ):
     """
     Decorator for caching function results with metrics tracking.
@@ -332,6 +335,7 @@ def cached(
         def get_dashboard_stats(db, user_id: int):
             return compute_stats(db, user_id)
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -346,10 +350,7 @@ def cached(
                 cache_key = key_builder(*args, **kwargs)
             else:
                 # Default key builder: use function name and kwargs
-                cache_key = cache._generate_cache_key(
-                    prefix=f"{prefix}:{func.__name__}",
-                    **kwargs
-                )
+                cache_key = cache._generate_cache_key(prefix=f"{prefix}:{func.__name__}", **kwargs)
 
             # Try to get from cache
             cached_result = cache.get(cache_key)
@@ -377,13 +378,11 @@ def cached(
         wrapper._cache_ttl = ttl
 
         return wrapper
+
     return decorator
 
 
-def cache_query_result(
-    ttl: int = CACHE_TTL_DASHBOARD,
-    key_prefix: str = "query"
-):
+def cache_query_result(ttl: int = CACHE_TTL_DASHBOARD, key_prefix: str = "query"):
     """
     Decorator for caching database query results.
 
@@ -423,7 +422,7 @@ def invalidate_cache_pattern(pattern: str) -> int:
     return cache.delete_pattern(pattern)
 
 
-def get_cache_stats() -> Dict[str, Any]:
+def get_cache_stats() -> dict[str, Any]:
     """
     Get cache statistics for monitoring endpoints.
 

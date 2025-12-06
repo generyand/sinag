@@ -431,7 +431,7 @@ Runs a preliminary compliance check before submission:
 - Sets submission timestamp
 
 Returns validation results with any errors or warnings.
- * @summary Submit Assessment
+ * @summary Submit Current User Assessment
  */
 export const postAssessmentsSubmit = (
     
@@ -477,7 +477,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type PostAssessmentsSubmitMutationError = unknown
 
     /**
- * @summary Submit Assessment
+ * @summary Submit Current User Assessment
  */
 export const usePostAssessmentsSubmit = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessmentsSubmit>>, TError,void, TContext>, request?: SecondParameter<typeof mutator>}

@@ -5,6 +5,7 @@ Revises: 184511477e6d
 Create Date: 2025-12-03 21:50:00.000000
 
 """
+
 from typing import Sequence, Union
 import json
 
@@ -13,8 +14,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '7f4420e1e7b0'
-down_revision: Union[str, Sequence[str], None] = '184511477e6d'
+revision: str = "7f4420e1e7b0"
+down_revision: Union[str, Sequence[str], None] = "184511477e6d"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -40,7 +41,7 @@ def upgrade() -> None:
     form_schema = row[0]
 
     # Fix the fields array - should only have 1 upload field
-    form_schema['fields'] = [
+    form_schema["fields"] = [
         {
             "field_id": "upload_section_1",
             "field_type": "file_upload",
@@ -49,18 +50,18 @@ def upgrade() -> None:
             "required": True,
             "accept": ".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.mp4",
             "multiple": True,
-            "max_size": 50
+            "max_size": 50,
         }
     ]
 
     # Fix assessor_validation to match
-    form_schema['assessor_validation']['fields'] = [
+    form_schema["assessor_validation"]["fields"] = [
         {
             "type": "upload_section_checkbox",
             "field_id": "upload_section_1",
             "label": UPLOAD_LABEL,
             "description": UPLOAD_LABEL,
-            "requires_document_count": False
+            "requires_document_count": False,
         },
         {
             "type": "checklist_item_checkbox",
@@ -70,7 +71,7 @@ def upgrade() -> None:
             "description": "Verification of uploaded database report or screenshot showing VAW cases and assistance provided",
             "required": True,
             "requires_document_count": False,
-            "display_order": 1
+            "display_order": 1,
         },
         {
             "type": "checklist_item_checkbox",
@@ -80,7 +81,7 @@ def upgrade() -> None:
             "description": "Input field for total number of VAW cases received",
             "required": True,
             "requires_document_count": True,
-            "display_order": 2
+            "display_order": 2,
         },
         {
             "type": "checklist_item_checkbox",
@@ -90,7 +91,7 @@ def upgrade() -> None:
             "description": "Input field for total number of cases documented for violating RA 9262",
             "required": True,
             "requires_document_count": True,
-            "display_order": 3
+            "display_order": 3,
         },
         {
             "type": "checklist_item_checkbox",
@@ -100,7 +101,7 @@ def upgrade() -> None:
             "description": "Input field for total number of cases documented for violating other VAW-related laws",
             "required": True,
             "requires_document_count": True,
-            "display_order": 4
+            "display_order": 4,
         },
         {
             "type": "checklist_item_checkbox",
@@ -110,8 +111,8 @@ def upgrade() -> None:
             "description": "Input field for total number of assistance provided to victim-survivors",
             "required": True,
             "requires_document_count": True,
-            "display_order": 5
-        }
+            "display_order": 5,
+        },
     ]
 
     # Save back to database
@@ -121,7 +122,7 @@ def upgrade() -> None:
             SET form_schema = CAST(:form_schema AS json)
             WHERE indicator_code = '4.1.5'
         """),
-        {"form_schema": json.dumps(form_schema)}
+        {"form_schema": json.dumps(form_schema)},
     )
 
 

@@ -4,20 +4,20 @@ Tests for Admin Deadline Management API endpoints (app/api/v1/admin.py)
 Focus on deadline override CSV export endpoint.
 """
 
-import pytest
 import uuid
-from datetime import datetime, timedelta, timezone
-from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
-from passlib.context import CryptContext
+from datetime import UTC, datetime, timedelta
 
-from app.db.models.user import User
+import pytest
+from fastapi.testclient import TestClient
+from passlib.context import CryptContext
+from sqlalchemy.orm import Session
+
+from app.api import deps
+from app.db.enums import UserRole
+from app.db.models.admin import AssessmentCycle, DeadlineOverride
 from app.db.models.barangay import Barangay
 from app.db.models.governance_area import GovernanceArea, Indicator
-from app.db.models.admin import AssessmentCycle, DeadlineOverride
-from app.db.enums import UserRole
-from app.api import deps
-
+from app.db.models.user import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -36,6 +36,7 @@ def clear_user_overrides(client):
 
 def setup_admin_auth(client: TestClient, admin_user: User, db_session: Session):
     """Helper function to set up authentication for admin user and database session"""
+
     def override_get_current_user():
         return admin_user
 
@@ -103,8 +104,11 @@ def barangay(db_session: Session):
 def governance_area(db_session: Session):
     """Create a governance area for testing"""
     from app.db.enums import AreaType
+
+    unique_code = uuid.uuid4().hex[:2].upper()
     area = GovernanceArea(
         name=f"Test Governance Area {uuid.uuid4().hex[:8]}",
+        code=unique_code,
         area_type=AreaType.CORE,
     )
     db_session.add(area)
@@ -130,7 +134,7 @@ def indicator(db_session: Session, governance_area: GovernanceArea):
 @pytest.fixture
 def assessment_cycle(db_session: Session):
     """Create an assessment cycle for testing"""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     cycle = AssessmentCycle(
         name=f"Test Cycle {uuid.uuid4().hex[:8]}",
         year=2025,
@@ -161,7 +165,7 @@ def deadline_override(
         indicator_id=indicator.id,
         created_by=admin_user.id,
         original_deadline=assessment_cycle.phase2_deadline,
-        new_deadline=datetime.now(timezone.utc) + timedelta(days=100),
+        new_deadline=datetime.now(UTC) + timedelta(days=100),
         reason="Test override for CSV export",
     )
     db_session.add(override)
@@ -240,9 +244,7 @@ def test_export_deadline_overrides_csv_with_barangay_filter(
     setup_admin_auth(client, admin_user, db_session)
 
     # Make request with barangay filter
-    response = client.get(
-        f"/api/v1/admin/deadlines/overrides/export?barangay_id={barangay.id}"
-    )
+    response = client.get(f"/api/v1/admin/deadlines/overrides/export?barangay_id={barangay.id}")
 
     # Assertions
     assert response.status_code == 200
@@ -261,9 +263,7 @@ def test_export_deadline_overrides_csv_with_indicator_filter(
     setup_admin_auth(client, admin_user, db_session)
 
     # Make request with indicator filter
-    response = client.get(
-        f"/api/v1/admin/deadlines/overrides/export?indicator_id={indicator.id}"
-    )
+    response = client.get(f"/api/v1/admin/deadlines/overrides/export?indicator_id={indicator.id}")
 
     # Assertions
     assert response.status_code == 200
@@ -326,6 +326,7 @@ def test_export_deadline_overrides_csv_unauthorized(
     non_admin_user: User,
 ):
     """Test that non-admin users cannot export CSV"""
+
     # Override with non-admin user (should fail auth check)
     def override_get_current_user():
         return non_admin_user

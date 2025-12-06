@@ -9,7 +9,7 @@ responses maintain correct version references.
 import pytest
 from sqlalchemy.orm import Session
 
-from app.db.models.governance_area import Indicator, IndicatorHistory
+from app.db.models.governance_area import IndicatorHistory
 from app.db.models.user import User
 from app.services.indicator_service import indicator_service
 
@@ -30,11 +30,7 @@ def test_user(db_session: Session) -> User:
     return user
 
 
-def test_complete_versioning_workflow(
-    db_session: Session,
-    governance_area,
-    test_user: User
-):
+def test_complete_versioning_workflow(db_session: Session, governance_area, test_user: User):
     """
     Test complete workflow: create indicator → update schema → verify new version created.
 
@@ -60,7 +56,7 @@ def test_complete_versioning_workflow(
                     "field_id": "field1",
                     "field_type": "text_input",
                     "label": "Field 1",
-                    "required": True
+                    "required": True,
                 }
             ]
         },
@@ -69,9 +65,7 @@ def test_complete_versioning_workflow(
     }
 
     indicator = indicator_service.create_indicator(
-        db=db_session,
-        data=indicator_data,
-        user_id=test_user.id
+        db=db_session, data=indicator_data, user_id=test_user.id
     )
 
     assert indicator.version == 1
@@ -94,7 +88,7 @@ def test_complete_versioning_workflow(
         db=db_session,
         indicator_id=indicator_id,
         data=metadata_update,
-        user_id=test_user.id
+        user_id=test_user.id,
     )
 
     assert indicator.version == 1  # Version should NOT change
@@ -113,14 +107,14 @@ def test_complete_versioning_workflow(
                     "field_id": "field1",
                     "field_type": "text_input",
                     "label": "Field 1",
-                    "required": True
+                    "required": True,
                 },
                 {
                     "field_id": "field2",
                     "field_type": "number_input",
                     "label": "Field 2",
-                    "required": False
-                }
+                    "required": False,
+                },
             ]
         }
     }
@@ -129,7 +123,7 @@ def test_complete_versioning_workflow(
         db=db_session,
         indicator_id=indicator_id,
         data=schema_update_1,
-        user_id=test_user.id
+        user_id=test_user.id,
     )
 
     assert indicator.version == 2  # Version should increment
@@ -158,12 +152,12 @@ def test_complete_versioning_workflow(
                             "rule_type": "MATCH_VALUE",
                             "field_id": "field1",
                             "operator": "!=",
-                            "expected_value": ""
+                            "expected_value": "",
                         }
-                    ]
+                    ],
                 }
             ],
-            "output_status_on_pass": "PASS"
+            "output_status_on_pass": "PASS",
         }
     }
 
@@ -171,7 +165,7 @@ def test_complete_versioning_workflow(
         db=db_session,
         indicator_id=indicator_id,
         data=schema_update_2,
-        user_id=test_user.id
+        user_id=test_user.id,
     )
 
     assert indicator.version == 3  # Version should increment again
@@ -199,9 +193,7 @@ def test_complete_versioning_workflow(
 
 
 def test_version_history_preserves_all_fields(
-    db_session: Session,
-    governance_area,
-    test_user: User
+    db_session: Session, governance_area, test_user: User
 ):
     """
     Test that version history preserves all indicator fields correctly.
@@ -220,7 +212,7 @@ def test_version_history_preserves_all_fields(
                     "field_id": "test_field",
                     "field_type": "text_input",
                     "label": "Test Field",
-                    "required": True
+                    "required": True,
                 }
             ]
         },
@@ -233,21 +225,19 @@ def test_version_history_preserves_all_fields(
                             "rule_type": "MATCH_VALUE",
                             "field_id": "test_field",
                             "operator": "!=",
-                            "expected_value": ""
+                            "expected_value": "",
                         }
-                    ]
+                    ],
                 }
             ],
-            "output_status_on_pass": "PASS"
+            "output_status_on_pass": "PASS",
         },
         "remark_schema": {"type": "string"},
         "technical_notes_text": "Original technical notes",
     }
 
     indicator = indicator_service.create_indicator(
-        db=db_session,
-        data=indicator_data,
-        user_id=test_user.id
+        db=db_session, data=indicator_data, user_id=test_user.id
     )
 
     indicator_id = indicator.id
@@ -260,14 +250,14 @@ def test_version_history_preserves_all_fields(
                     "field_id": "test_field",
                     "field_type": "text_input",
                     "label": "Test Field",
-                    "required": True
+                    "required": True,
                 },
                 {
                     "field_id": "new_field",
                     "field_type": "number_input",
                     "label": "New Field",
-                    "required": False
-                }
+                    "required": False,
+                },
             ]
         }
     }
@@ -276,7 +266,7 @@ def test_version_history_preserves_all_fields(
         db=db_session,
         indicator_id=indicator_id,
         data=schema_update,
-        user_id=test_user.id
+        user_id=test_user.id,
     )
 
     # Verify history preserves all original fields
@@ -298,11 +288,7 @@ def test_version_history_preserves_all_fields(
     assert archived_version.archived_by == test_user.id
 
 
-def test_multiple_schema_changes_in_sequence(
-    db_session: Session,
-    governance_area,
-    test_user: User
-):
+def test_multiple_schema_changes_in_sequence(db_session: Session, governance_area, test_user: User):
     """
     Test that multiple schema changes create correct version history.
     """
@@ -317,16 +303,14 @@ def test_multiple_schema_changes_in_sequence(
                     "field_type": "number_input",
                     "label": "Version",
                     "required": True,
-                    "default_value": 1
+                    "default_value": 1,
                 }
             ]
         },
     }
 
     indicator = indicator_service.create_indicator(
-        db=db_session,
-        data=indicator_data,
-        user_id=test_user.id
+        db=db_session, data=indicator_data, user_id=test_user.id
     )
 
     indicator_id = indicator.id
@@ -341,16 +325,13 @@ def test_multiple_schema_changes_in_sequence(
                         "field_type": "number_input",
                         "label": "Version",
                         "required": True,
-                        "default_value": i
+                        "default_value": i,
                     }
                 ]
             }
         }
         indicator_service.update_indicator(
-            db=db_session,
-            indicator_id=indicator_id,
-            data=update,
-            user_id=test_user.id
+            db=db_session, indicator_id=indicator_id, data=update, user_id=test_user.id
         )
 
     # Verify current version is 6
@@ -369,11 +350,7 @@ def test_multiple_schema_changes_in_sequence(
         assert archived.form_schema["fields"][0]["default_value"] == expected_version
 
 
-def test_version_uniqueness_constraint(
-    db_session: Session,
-    governance_area,
-    test_user: User
-):
+def test_version_uniqueness_constraint(db_session: Session, governance_area, test_user: User):
     """
     Test that the unique constraint on (indicator_id, version) is enforced.
     """
@@ -392,17 +369,15 @@ def test_version_uniqueness_constraint(
                     "required": True,
                     "options": [
                         {"label": "Yes", "value": "yes"},
-                        {"label": "No", "value": "no"}
-                    ]
+                        {"label": "No", "value": "no"},
+                    ],
                 }
             ]
         },
     }
 
     indicator = indicator_service.create_indicator(
-        db=db_session,
-        data=indicator_data,
-        user_id=test_user.id
+        db=db_session, data=indicator_data, user_id=test_user.id
     )
 
     # Update to create version history
@@ -419,13 +394,13 @@ def test_version_uniqueness_constraint(
                         "required": True,
                         "options": [
                             {"label": "Option 1", "value": "opt1"},
-                            {"label": "Option 2", "value": "opt2"}
-                        ]
+                            {"label": "Option 2", "value": "opt2"},
+                        ],
                     }
                 ]
             }
         },
-        user_id=test_user.id
+        user_id=test_user.id,
     )
 
     # Try to manually insert duplicate version (should fail)
@@ -448,11 +423,7 @@ def test_version_uniqueness_constraint(
     db_session.rollback()
 
 
-def test_archived_by_user_relationship(
-    db_session: Session,
-    governance_area,
-    test_user: User
-):
+def test_archived_by_user_relationship(db_session: Session, governance_area, test_user: User):
     """
     Test that the archived_by relationship correctly links to the user who triggered versioning.
     """
@@ -469,17 +440,15 @@ def test_archived_by_user_relationship(
                     "required": True,
                     "options": [
                         {"label": "Yes", "value": "yes"},
-                        {"label": "No", "value": "no"}
-                    ]
+                        {"label": "No", "value": "no"},
+                    ],
                 }
             ]
         },
     }
 
     indicator = indicator_service.create_indicator(
-        db=db_session,
-        data=indicator_data,
-        user_id=test_user.id
+        db=db_session, data=indicator_data, user_id=test_user.id
     )
 
     # Update to create history
@@ -496,13 +465,13 @@ def test_archived_by_user_relationship(
                         "required": True,
                         "options": [
                             {"label": "Option 1", "value": "opt1"},
-                            {"label": "Option 2", "value": "opt2"}
-                        ]
+                            {"label": "Option 2", "value": "opt2"},
+                        ],
                     }
                 ]
             }
         },
-        user_id=test_user.id
+        user_id=test_user.id,
     )
 
     # Get history
@@ -515,6 +484,6 @@ def test_archived_by_user_relationship(
 
     # If the relationship is properly set up, we should be able to access the user
     # Note: This depends on the relationship being defined in the model
-    if hasattr(archived_version, 'archived_by_user'):
+    if hasattr(archived_version, "archived_by_user"):
         assert archived_version.archived_by_user.id == test_user.id
         assert archived_version.archived_by_user.email == test_user.email

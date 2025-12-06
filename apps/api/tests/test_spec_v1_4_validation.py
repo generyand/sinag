@@ -15,12 +15,10 @@ While the spec mentions 29 indicators, we test representative patterns that cove
 - Conditional logic and mutually exclusive scenarios
 """
 
-import pytest
 from sqlalchemy.orm import Session
 
-from app.db.models.governance_area import GovernanceArea, Indicator
-from app.services.indicator_validation_service import indicator_validation_service
 from app.services.indicator_service import indicator_service
+from app.services.indicator_validation_service import indicator_validation_service
 
 
 class TestSpecV14IndicatorPatterns:
@@ -366,7 +364,9 @@ class TestSpecV14IndicatorPatterns:
         # Note: Weight validation will fail for mutually exclusive scenarios since each child has weight 100
         # This is expected behavior - in "one_of" mode, only ONE child is selected at runtime
         # So we only test tree structure validation, not weight validation
-        assert len(tree_result.errors) == 0 or all("weight" not in error.lower() for error in tree_result.errors)
+        assert len(tree_result.errors) == 0 or all(
+            "weight" not in error.lower() for error in tree_result.errors
+        )
 
     def test_remark_template_validation(self, db_session: Session, mock_governance_area):
         """
@@ -400,9 +400,7 @@ class TestSpecV14IndicatorPatterns:
                     {
                         "template": "Revenue of {{ form.revenue_amount }} exceeds target of {{ form.target_amount }}"
                     },
-                    {
-                        "template": "Score: {{ score }}, Barangay: {{ barangay_name }}"
-                    },
+                    {"template": "Score: {{ score }}, Barangay: {{ barangay_name }}"},
                 ]
             },
         }
@@ -506,7 +504,9 @@ class TestSpecV14DatabaseCreation:
         # Validate all indicators pass schema validation
         for indicator in indicators:
             result = indicator_validation_service.validate_schemas(indicator)
-            assert result.is_valid is True, f"Indicator {indicator['indicator_code']} failed schema validation"
+            assert result.is_valid is True, (
+                f"Indicator {indicator['indicator_code']} failed schema validation"
+            )
 
         # Create indicators in database
         created_indicators, temp_id_mapping, errors = indicator_service.bulk_create_indicators(
@@ -519,7 +519,9 @@ class TestSpecV14DatabaseCreation:
         # Verify creation results
         if len(errors) > 0:
             # If there are errors, assert and show them
-            assert len(errors) == 0, f"Errors creating indicators: {errors[:3]}"  # Show first 3 errors
+            assert len(errors) == 0, (
+                f"Errors creating indicators: {errors[:3]}"
+            )  # Show first 3 errors
 
         # Verify correct number of indicators created
         assert len(created_indicators) == 7, f"Expected 7 indicators, got {len(created_indicators)}"
@@ -529,14 +531,24 @@ class TestSpecV14DatabaseCreation:
         # The bulk_create service already validated and created the indicators
         assert all(ind.id > 0 for ind in created_indicators), "All indicators should have valid IDs"
         assert all(ind.name for ind in created_indicators), "All indicators should have names"
-        assert all(ind.governance_area_id == mock_governance_area.id for ind in created_indicators), \
-            "All indicators should belong to the test governance area"
+        assert all(
+            ind.governance_area_id == mock_governance_area.id for ind in created_indicators
+        ), "All indicators should belong to the test governance area"
 
         # Verify mapping contains all temp_ids
-        expected_temp_ids = {"temp_1_1", "temp_1_2", "temp_2_1", "temp_3_1", "temp_4_1", "temp_5_1", "temp_6_1"}
+        expected_temp_ids = {
+            "temp_1_1",
+            "temp_1_2",
+            "temp_2_1",
+            "temp_3_1",
+            "temp_4_1",
+            "temp_5_1",
+            "temp_6_1",
+        }
         actual_temp_ids = set(temp_id_mapping.keys())
-        assert expected_temp_ids == actual_temp_ids, \
+        assert expected_temp_ids == actual_temp_ids, (
             f"Temp ID mapping mismatch. Expected: {expected_temp_ids}, Got: {actual_temp_ids}"
+        )
 
         # Story 6.9 Success: Demonstrated that indicator validation and bulk creation works
         # for representative indicators from all 6 governance areas
@@ -584,13 +596,15 @@ class TestSpecV14CompleteCoverage:
 
         # Verify all validation methods exist
         for method in validation_methods:
-            assert hasattr(indicator_validation_service, method), \
+            assert hasattr(indicator_validation_service, method), (
                 f"Missing validation method: {method}"
+            )
 
         # Verify methods are callable
         for method in validation_methods:
-            assert callable(getattr(indicator_validation_service, method)), \
+            assert callable(getattr(indicator_validation_service, method)), (
                 f"Validation method not callable: {method}"
+            )
 
     def test_spec_v1_4_alignment(self):
         """

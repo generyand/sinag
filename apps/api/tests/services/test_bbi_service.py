@@ -2,18 +2,15 @@
 Tests for BBI service layer (app/services/bbi_service.py)
 """
 
-from typing import List
-
 import pytest
-from sqlalchemy.orm import Session
 from fastapi import HTTPException
+from sqlalchemy.orm import Session
 
+from app.db.enums import AssessmentStatus, BBIStatus, ValidationStatus
+from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.bbi import BBI, BBIResult
 from app.db.models.governance_area import GovernanceArea, Indicator
-from app.db.models.assessment import Assessment, AssessmentResponse
-from app.db.enums import BBIStatus, ValidationStatus, AssessmentStatus
 from app.services.bbi_service import bbi_service
-
 
 # ====================================================================
 # Test Fixtures
@@ -27,6 +24,7 @@ def sample_governance_area(db_session: Session):
 
     area = GovernanceArea(
         name="Test Governance Area",
+        code="TG",
         area_type=AreaType.CORE,
     )
     db_session.add(area)
@@ -210,9 +208,7 @@ def test_list_bbis_filter_by_governance_area(
     db_session: Session, sample_bbi: BBI, sample_governance_area: GovernanceArea
 ):
     """Test listing BBIs filtered by governance area"""
-    result = bbi_service.list_bbis(
-        db_session, governance_area_id=sample_governance_area.id
-    )
+    result = bbi_service.list_bbis(db_session, governance_area_id=sample_governance_area.id)
 
     assert len(result) >= 1
     assert all(b.governance_area_id == sample_governance_area.id for b in result)
@@ -271,9 +267,7 @@ def test_update_bbi_not_found(db_session: Session):
     assert exc_info.value.status_code == 404
 
 
-def test_update_bbi_duplicate_name(
-    db_session: Session, sample_governance_area: GovernanceArea
-):
+def test_update_bbi_duplicate_name(db_session: Session, sample_governance_area: GovernanceArea):
     """Test updating BBI with duplicate name raises exception"""
     # Create two BBIs
     bbi1 = BBI(
@@ -307,9 +301,7 @@ def test_update_bbi_mapping_rules(db_session: Session, sample_bbi: BBI):
         ],
     }
 
-    result = bbi_service.update_bbi(
-        db_session, sample_bbi.id, {"mapping_rules": new_mapping_rules}
-    )
+    result = bbi_service.update_bbi(db_session, sample_bbi.id, {"mapping_rules": new_mapping_rules})
 
     assert result.mapping_rules == new_mapping_rules
     assert result.mapping_rules["operator"] == "OR"
@@ -319,9 +311,7 @@ def test_update_bbi_mapping_rules(db_session: Session, sample_bbi: BBI):
 def test_update_bbi_invalid_mapping_rules(db_session: Session, sample_bbi: BBI):
     """Test updating BBI with invalid mapping rules"""
     with pytest.raises(HTTPException) as exc_info:
-        bbi_service.update_bbi(
-            db_session, sample_bbi.id, {"mapping_rules": "not a dict"}
-        )
+        bbi_service.update_bbi(db_session, sample_bbi.id, {"mapping_rules": "not a dict"})
 
     assert exc_info.value.status_code == 400
     assert "valid JSON object" in str(exc_info.value.detail)
@@ -367,9 +357,7 @@ def test_calculate_bbi_status_functional_and_operator(
         db_session.add(response)
     db_session.commit()
 
-    result = bbi_service.calculate_bbi_status(
-        db_session, sample_bbi.id, sample_assessment.id
-    )
+    result = bbi_service.calculate_bbi_status(db_session, sample_bbi.id, sample_assessment.id)
 
     assert result == BBIStatus.FUNCTIONAL
 
@@ -395,9 +383,7 @@ def test_calculate_bbi_status_non_functional_and_operator(
     db_session.add_all([response1, response2])
     db_session.commit()
 
-    result = bbi_service.calculate_bbi_status(
-        db_session, sample_bbi.id, sample_assessment.id
-    )
+    result = bbi_service.calculate_bbi_status(db_session, sample_bbi.id, sample_assessment.id)
 
     assert result == BBIStatus.NON_FUNCTIONAL
 
@@ -491,9 +477,7 @@ def test_calculate_all_bbi_statuses(
         governance_area_id=sample_governance_area.id,
         mapping_rules={
             "operator": "AND",
-            "conditions": [
-                {"indicator_id": sample_indicators[0].id, "required_status": "Pass"}
-            ],
+            "conditions": [{"indicator_id": sample_indicators[0].id, "required_status": "Pass"}],
         },
         is_active=True,
     )
@@ -503,9 +487,7 @@ def test_calculate_all_bbi_statuses(
         governance_area_id=sample_governance_area.id,
         mapping_rules={
             "operator": "AND",
-            "conditions": [
-                {"indicator_id": sample_indicators[1].id, "required_status": "Pass"}
-            ],
+            "conditions": [{"indicator_id": sample_indicators[1].id, "required_status": "Pass"}],
         },
         is_active=True,
     )
@@ -549,9 +531,7 @@ def test_calculate_all_bbi_statuses_skips_inactive(
         governance_area_id=sample_governance_area.id,
         mapping_rules={
             "operator": "AND",
-            "conditions": [
-                {"indicator_id": sample_indicators[0].id, "required_status": "Pass"}
-            ],
+            "conditions": [{"indicator_id": sample_indicators[0].id, "required_status": "Pass"}],
         },
         is_active=True,
     )
@@ -561,9 +541,7 @@ def test_calculate_all_bbi_statuses_skips_inactive(
         governance_area_id=sample_governance_area.id,
         mapping_rules={
             "operator": "AND",
-            "conditions": [
-                {"indicator_id": sample_indicators[1].id, "required_status": "Pass"}
-            ],
+            "conditions": [{"indicator_id": sample_indicators[1].id, "required_status": "Pass"}],
         },
         is_active=False,
     )
@@ -587,9 +565,7 @@ def test_calculate_all_bbi_statuses_skips_inactive(
     assert bbi_inactive.id not in bbi_ids
 
 
-def test_get_bbi_results(
-    db_session: Session, sample_bbi: BBI, sample_assessment: Assessment
-):
+def test_get_bbi_results(db_session: Session, sample_bbi: BBI, sample_assessment: Assessment):
     """Test getting BBI results for an assessment"""
     # Create a BBI result
     bbi_result = BBIResult(
@@ -857,9 +833,7 @@ class TestCalculateBbiComplianceIntegration:
     """Integration tests for calculate_bbi_compliance with database."""
 
     @pytest.fixture
-    def bbi_indicator(
-        self, db_session: Session, sample_governance_area: GovernanceArea
-    ):
+    def bbi_indicator(self, db_session: Session, sample_governance_area: GovernanceArea):
         """Create a BBI indicator with is_bbi=True"""
         indicator = Indicator(
             name="Barangay Development Council",
@@ -876,7 +850,10 @@ class TestCalculateBbiComplianceIntegration:
 
     @pytest.fixture
     def bbi_sub_indicators(
-        self, db_session: Session, bbi_indicator: Indicator, sample_governance_area: GovernanceArea
+        self,
+        db_session: Session,
+        bbi_indicator: Indicator,
+        sample_governance_area: GovernanceArea,
     ):
         """Create sub-indicators for the BBI indicator"""
         sub_indicators = []
@@ -901,7 +878,7 @@ class TestCalculateBbiComplianceIntegration:
         self,
         db_session: Session,
         bbi_indicator: Indicator,
-        bbi_sub_indicators: List[Indicator],
+        bbi_sub_indicators: list[Indicator],
         sample_assessment: Assessment,
     ):
         """Test 100% compliance when all sub-indicators pass"""
@@ -929,7 +906,7 @@ class TestCalculateBbiComplianceIntegration:
         self,
         db_session: Session,
         bbi_indicator: Indicator,
-        bbi_sub_indicators: List[Indicator],
+        bbi_sub_indicators: list[Indicator],
         sample_assessment: Assessment,
     ):
         """Test ~66% compliance when 2 of 3 sub-indicators pass"""
@@ -957,7 +934,7 @@ class TestCalculateBbiComplianceIntegration:
         self,
         db_session: Session,
         bbi_indicator: Indicator,
-        bbi_sub_indicators: List[Indicator],
+        bbi_sub_indicators: list[Indicator],
         sample_assessment: Assessment,
     ):
         """Test ~33% compliance when 1 of 3 sub-indicators pass"""
@@ -985,7 +962,7 @@ class TestCalculateBbiComplianceIntegration:
         self,
         db_session: Session,
         bbi_indicator: Indicator,
-        bbi_sub_indicators: List[Indicator],
+        bbi_sub_indicators: list[Indicator],
         sample_assessment: Assessment,
     ):
         """Test 0% compliance when all sub-indicators fail"""

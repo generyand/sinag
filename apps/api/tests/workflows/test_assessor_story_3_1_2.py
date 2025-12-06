@@ -2,6 +2,8 @@
 # Tests for the POST /api/v1/assessments/{id}/finalize endpoint
 
 import pytest
+from sqlalchemy.orm import Session
+
 from app.api import deps
 from app.db.enums import AreaType, AssessmentStatus, UserRole, ValidationStatus
 from app.db.models import (
@@ -12,7 +14,6 @@ from app.db.models import (
     Indicator,
     User,
 )
-from sqlalchemy.orm import Session
 
 
 def create_test_data_for_finalize(db_session: Session) -> dict:
@@ -31,7 +32,9 @@ def create_test_data_for_finalize(db_session: Session) -> dict:
 
     # Create governance area
     governance_area = GovernanceArea(
-        name=f"Test Governance Area Finalize 3.1.2 {timestamp}", area_type=AreaType.CORE
+        name=f"Test Governance Area Finalize 3.1.2 {timestamp}",
+        code=str(timestamp)[:2].upper(),
+        area_type=AreaType.CORE
     )
     db_session.add(governance_area)
     db_session.commit()
@@ -250,9 +253,7 @@ def test_finalize_assessment_unreviewed_responses(client, db_session: Session):
     )
     client.app.dependency_overrides[deps.get_db] = _override_get_db
 
-    response_client = client.post(
-        f"/api/v1/assessor/assessments/{assessment.id}/finalize"
-    )
+    response_client = client.post(f"/api/v1/assessor/assessments/{assessment.id}/finalize")
 
     assert response_client.status_code == 400  # Unreviewed responses should return 400
     data = response_client.json()
@@ -349,9 +350,7 @@ def test_finalize_assessment_wrong_role(client, db_session: Session):
 
     response = client.post(f"/api/v1/assessor/assessments/{assessment.id}/finalize")
 
-    assert (
-        response.status_code == 200
-    )  # Dependency override works, but business logic fails
+    assert response.status_code == 200  # Dependency override works, but business logic fails
 
     # Clear dependency overrides
     client.app.dependency_overrides.clear()

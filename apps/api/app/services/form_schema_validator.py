@@ -5,17 +5,16 @@ This module provides reusable validation functions for form schemas.
 These functions are used across the application to ensure form schema integrity.
 """
 
-from typing import List, Set, Dict, Optional
 from app.schemas.form_schema import (
-    FormSchema,
-    FormField,
-    FileUploadField,
     CheckboxGroupField,
+    FileUploadField,
+    FormField,
+    FormSchema,
     RadioButtonField,
 )
 
 
-def validate_field_ids_unique(fields: List[FormField]) -> bool:
+def validate_field_ids_unique(fields: list[FormField]) -> bool:
     """
     Validate that all field_ids are unique within the field list.
 
@@ -32,7 +31,7 @@ def validate_field_ids_unique(fields: List[FormField]) -> bool:
     return len(field_ids) == len(set(field_ids))
 
 
-def validate_no_circular_references(fields: List[FormField]) -> bool:
+def validate_no_circular_references(fields: list[FormField]) -> bool:
     """
     Validate that there are no circular references in field dependencies.
     Checks conditional MOV logic to ensure fields don't create circular dependencies.
@@ -47,7 +46,7 @@ def validate_no_circular_references(fields: List[FormField]) -> bool:
         return True
 
     # Build dependency graph
-    dependencies: Dict[str, Set[str]] = {}
+    dependencies: dict[str, set[str]] = {}
 
     for field in fields:
         dependencies[field.field_id] = set()
@@ -58,7 +57,7 @@ def validate_no_circular_references(fields: List[FormField]) -> bool:
             dependencies[field.field_id].add(referenced_field)
 
     # Detect cycles using DFS
-    def has_cycle(node: str, visited: Set[str], rec_stack: Set[str]) -> bool:
+    def has_cycle(node: str, visited: set[str], rec_stack: set[str]) -> bool:
         """Helper function to detect cycles using depth-first search"""
         visited.add(node)
         rec_stack.add(node)
@@ -74,7 +73,7 @@ def validate_no_circular_references(fields: List[FormField]) -> bool:
         rec_stack.remove(node)
         return False
 
-    visited: Set[str] = set()
+    visited: set[str] = set()
 
     for field_id in dependencies:
         if field_id not in visited:
@@ -84,7 +83,7 @@ def validate_no_circular_references(fields: List[FormField]) -> bool:
     return True
 
 
-def validate_conditional_mov_logic(field: FileUploadField, all_fields: List[FormField]) -> bool:
+def validate_conditional_mov_logic(field: FileUploadField, all_fields: list[FormField]) -> bool:
     """
     Validate conditional MOV logic for a file upload field.
     Ensures the referenced field exists and the logic is valid.
@@ -114,7 +113,7 @@ def validate_conditional_mov_logic(field: FileUploadField, all_fields: List[Form
     return True
 
 
-def detect_circular_references(form_schema: FormSchema) -> List[str]:
+def detect_circular_references(form_schema: FormSchema) -> list[str]:
     """
     Detect circular references in form schema and return error messages.
 
@@ -124,11 +123,11 @@ def detect_circular_references(form_schema: FormSchema) -> List[str]:
     Returns:
         List of error messages describing circular references. Empty list if none found.
     """
-    errors: List[str] = []
+    errors: list[str] = []
     fields = form_schema.fields
 
     # Build dependency graph
-    dependencies: Dict[str, Set[str]] = {}
+    dependencies: dict[str, set[str]] = {}
 
     for field in fields:
         dependencies[field.field_id] = set()
@@ -145,7 +144,7 @@ def detect_circular_references(form_schema: FormSchema) -> List[str]:
                 )
 
     # Detect cycles using DFS and track the path
-    def find_cycle_path(node: str, visited: Set[str], rec_stack: List[str]) -> List[str]:
+    def find_cycle_path(node: str, visited: set[str], rec_stack: list[str]) -> list[str]:
         """Helper function to find and return the cycle path"""
         visited.add(node)
         rec_stack.append(node)
@@ -162,21 +161,19 @@ def detect_circular_references(form_schema: FormSchema) -> List[str]:
 
         return []
 
-    visited: Set[str] = set()
+    visited: set[str] = set()
 
     for field_id in dependencies:
         if field_id not in visited:
             cycle_path = find_cycle_path(field_id, visited, [])
             if cycle_path:
                 cycle_str = " -> ".join(cycle_path)
-                errors.append(
-                    f"Circular reference detected in field dependencies: {cycle_str}"
-                )
+                errors.append(f"Circular reference detected in field dependencies: {cycle_str}")
 
     return errors
 
 
-def generate_validation_errors(schema: FormSchema) -> List[str]:
+def generate_validation_errors(schema: FormSchema) -> list[str]:
     """
     Generate a comprehensive list of validation errors for a form schema.
 
@@ -186,7 +183,7 @@ def generate_validation_errors(schema: FormSchema) -> List[str]:
     Returns:
         List of error messages. Empty list if schema is valid.
     """
-    errors: List[str] = []
+    errors: list[str] = []
 
     # Check if fields list is empty
     if not schema.fields or len(schema.fields) == 0:
@@ -198,9 +195,7 @@ def generate_validation_errors(schema: FormSchema) -> List[str]:
         field_ids = [field.field_id for field in schema.fields]
         duplicates = [fid for fid in field_ids if field_ids.count(fid) > 1]
         unique_duplicates = list(set(duplicates))
-        errors.append(
-            f"Duplicate field_ids found: {', '.join(unique_duplicates)}"
-        )
+        errors.append(f"Duplicate field_ids found: {', '.join(unique_duplicates)}")
 
     # Check for circular references
     circular_errors = detect_circular_references(schema)
@@ -220,7 +215,9 @@ def generate_validation_errors(schema: FormSchema) -> List[str]:
         # Validate checkbox/radio fields have at least one option
         if isinstance(field, (CheckboxGroupField, RadioButtonField)):
             if not field.options or len(field.options) == 0:
-                field_type = "Checkbox group" if isinstance(field, CheckboxGroupField) else "Radio button"
+                field_type = (
+                    "Checkbox group" if isinstance(field, CheckboxGroupField) else "Radio button"
+                )
                 errors.append(
                     f"{field_type} field '{field.field_id}' must have at least one option"
                 )
@@ -229,9 +226,8 @@ def generate_validation_errors(schema: FormSchema) -> List[str]:
 
 
 def validate_calculation_schema_field_references(
-    form_schema: Optional[FormSchema],
-    calculation_schema: Optional[Dict]
-) -> List[str]:
+    form_schema: FormSchema | None, calculation_schema: dict | None
+) -> list[str]:
     """
     Validate that all field_ids referenced in calculation_schema exist in form_schema.
 
@@ -244,7 +240,7 @@ def validate_calculation_schema_field_references(
     Returns:
         List of error messages for invalid field references. Empty list if all valid.
     """
-    errors: List[str] = []
+    errors: list[str] = []
 
     # If no calculation schema or form schema, nothing to validate
     if not calculation_schema or not form_schema:
@@ -254,9 +250,9 @@ def validate_calculation_schema_field_references(
     valid_field_ids = {field.field_id for field in form_schema.fields}
 
     # Extract all field_ids referenced in calculation_schema
-    referenced_field_ids: Set[str] = set()
+    referenced_field_ids: set[str] = set()
 
-    def extract_field_ids_from_group(group: Dict) -> None:
+    def extract_field_ids_from_group(group: dict) -> None:
         """Recursively extract field_ids from condition groups"""
         # Check nested groups
         if "groups" in group and group["groups"]:
@@ -269,7 +265,11 @@ def validate_calculation_schema_field_references(
                 rule_type = rule.get("rule_type")
 
                 # Rules that reference field_ids
-                if rule_type in ["PERCENTAGE_THRESHOLD", "COUNT_THRESHOLD", "MATCH_VALUE"]:
+                if rule_type in [
+                    "PERCENTAGE_THRESHOLD",
+                    "COUNT_THRESHOLD",
+                    "MATCH_VALUE",
+                ]:
                     field_id = rule.get("field_id")
                     if field_id:
                         referenced_field_ids.add(field_id)

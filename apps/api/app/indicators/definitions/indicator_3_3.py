@@ -40,8 +40,7 @@ IMPORTANT NOTES FOR PHASE 9 (VALIDATION SERVICE):
    - Failing means LT is "Non-Functional"
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
-
+from app.indicators.base import ChecklistItem, Indicator, SubIndicator
 
 # Indicator 3.3: Functionality of the Lupong Tagapamayapa (LT)
 INDICATOR_3_3 = Indicator(
@@ -67,11 +66,10 @@ INDICATOR_3_3 = Indicator(
                     label="At least ten (10) KP Form #5 - Oath of Office of the Lupong Tagapamayapa members, signed by the PB",
                     mov_description="Verification of uploaded KP Form #5 - Oath of Office for at least 10 Lupong Tagapamayapa members",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 3.3.2
         SubIndicator(
             code="3.3.2",
@@ -92,7 +90,7 @@ INDICATOR_3_3 = Indicator(
                     mov_description="Verification of uploaded photos showing computer database with searchable information for barangays of cities (2 photos: Distant View and Close-up View)",
                     required=False,  # OR logic - only one of the two options is required
                     display_order=1,
-                    option_group="Option A"
+                    option_group="Option A",
                 ),
                 # OR Separator
                 ChecklistItem(
@@ -101,7 +99,7 @@ INDICATOR_3_3 = Indicator(
                     mov_description="OR",
                     item_type="info_text",
                     required=False,
-                    display_order=2
+                    display_order=2,
                 ),
                 # Upload Verification for Municipalities (3.3.2.2)
                 ChecklistItem(
@@ -110,11 +108,10 @@ INDICATOR_3_3 = Indicator(
                     mov_description="Verification of uploaded photo showing manual record or digital file for barangays of municipalities (1 photo)",
                     required=False,  # OR logic - only one of the two options is required
                     display_order=3,
-                    option_group="Option B"
+                    option_group="Option B",
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 3.3.3
         SubIndicator(
             code="3.3.3",
@@ -130,11 +127,10 @@ INDICATOR_3_3 = Indicator(
                     label="Copies of minutes of meetings with attendance sheets (at least 3 minutes covering meetings conducted)",
                     mov_description="Verification of uploaded copies of minutes of meetings with attendance sheets for at least 3 monthly meetings",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 3.3.4
         SubIndicator(
             code="3.3.4",
@@ -150,9 +146,9 @@ INDICATOR_3_3 = Indicator(
                     label="At least 1 copy of proof of training such as Certificate of Completion and/or Participation",
                     mov_description="Verification of uploaded proof of training (Certificate of Completion and/or Participation) for KP training or seminar not earlier than CY 2020",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

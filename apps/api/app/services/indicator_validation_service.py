@@ -6,32 +6,33 @@ before publishing. Includes cycle detection, parent-child validation, and
 code format checking.
 """
 
-from typing import Dict, List, Set, Optional, Tuple
-from dataclasses import dataclass
 import re
-from sqlalchemy.orm import Session
+from dataclasses import dataclass
 
 
 @dataclass
 class ValidationResult:
     """Result of tree structure validation"""
+
     is_valid: bool
-    errors: List[str]
-    warnings: List[str]
+    errors: list[str]
+    warnings: list[str]
 
 
 @dataclass
 class SchemaValidationResult:
     """Result of schema validation for a single indicator"""
+
     is_valid: bool
-    errors: Dict[str, List[str]]  # schema_type -> list of errors
+    errors: dict[str, list[str]]  # schema_type -> list of errors
 
 
 @dataclass
 class WeightValidationResult:
     """Result of weight sum validation"""
+
     is_valid: bool
-    errors: Dict[str, str]  # parent_id -> error message
+    errors: dict[str, str]  # parent_id -> error message
 
 
 class IndicatorValidationService:
@@ -47,7 +48,7 @@ class IndicatorValidationService:
     - Weight sums for sibling groups
     """
 
-    def validate_tree_structure(self, indicators: List[dict]) -> ValidationResult:
+    def validate_tree_structure(self, indicators: list[dict]) -> ValidationResult:
         """
         Main validation entry point for tree structure.
 
@@ -77,13 +78,9 @@ class IndicatorValidationService:
         sort_errors = self.validate_sort_order(indicators)
         errors.extend(sort_errors)
 
-        return ValidationResult(
-            is_valid=len(errors) == 0,
-            errors=errors,
-            warnings=warnings
-        )
+        return ValidationResult(is_valid=len(errors) == 0, errors=errors, warnings=warnings)
 
-    def check_circular_references(self, indicators: List[dict]) -> List[str]:
+    def check_circular_references(self, indicators: list[dict]) -> list[str]:
         """
         Detect circular references in indicator tree using DFS.
 
@@ -101,11 +98,11 @@ class IndicatorValidationService:
         # Build adjacency list: child_id -> parent_id
         parent_map = {}
         for ind in indicators:
-            if ind.get('parent_id'):
-                parent_map[ind['id']] = ind['parent_id']
+            if ind.get("parent_id"):
+                parent_map[ind["id"]] = ind["parent_id"]
 
         # Track visited nodes for each DFS traversal
-        def has_cycle(node_id: str, visited: Set[str], path: List[str]) -> Optional[List[str]]:
+        def has_cycle(node_id: str, visited: set[str], path: list[str]) -> list[str] | None:
             """DFS to detect cycle from node_id"""
             if node_id in visited:
                 # Found cycle, return the path
@@ -132,19 +129,17 @@ class IndicatorValidationService:
         # Check each indicator for cycles
         checked = set()
         for ind in indicators:
-            node_id = ind['id']
+            node_id = ind["id"]
             if node_id not in checked:
                 cycle = has_cycle(node_id, set(), [])
                 if cycle:
                     # Get indicator codes for error message
                     cycle_codes = []
                     for nid in cycle:
-                        ind_data = next((i for i in indicators if i['id'] == nid), None)
+                        ind_data = next((i for i in indicators if i["id"] == nid), None)
                         if ind_data:
-                            cycle_codes.append(ind_data.get('indicator_code', str(nid)))
-                    errors.append(
-                        f"Circular reference detected: {' → '.join(cycle_codes)}"
-                    )
+                            cycle_codes.append(ind_data.get("indicator_code", str(nid)))
+                    errors.append(f"Circular reference detected: {' → '.join(cycle_codes)}")
                     # Mark all nodes in cycle as checked to avoid duplicate errors
                     checked.update(cycle)
                 else:
@@ -152,7 +147,7 @@ class IndicatorValidationService:
 
         return errors
 
-    def validate_parent_child_relationships(self, indicators: List[dict]) -> List[str]:
+    def validate_parent_child_relationships(self, indicators: list[dict]) -> list[str]:
         """
         Validate that all parent_id references exist in the indicator tree.
 
@@ -165,19 +160,17 @@ class IndicatorValidationService:
         errors = []
 
         # Build set of all indicator IDs
-        indicator_ids = {ind['id'] for ind in indicators}
+        indicator_ids = {ind["id"] for ind in indicators}
 
         for ind in indicators:
-            parent_id = ind.get('parent_id')
+            parent_id = ind.get("parent_id")
             if parent_id and parent_id not in indicator_ids:
-                code = ind.get('indicator_code', ind['id'])
-                errors.append(
-                    f"Indicator {code} references non-existent parent ID: {parent_id}"
-                )
+                code = ind.get("indicator_code", ind["id"])
+                errors.append(f"Indicator {code} references non-existent parent ID: {parent_id}")
 
         return errors
 
-    def validate_indicator_codes(self, indicators: List[dict]) -> Tuple[List[str], List[str]]:
+    def validate_indicator_codes(self, indicators: list[dict]) -> tuple[list[str], list[str]]:
         """
         Validate indicator code format matches pattern ^\\d+(\\.\\d+)*$
 
@@ -194,20 +187,18 @@ class IndicatorValidationService:
         warnings = []
 
         # Regex pattern for valid indicator codes
-        code_pattern = re.compile(r'^\d+(\.\d+)*$')
+        code_pattern = re.compile(r"^\d+(\.\d+)*$")
 
         # Track used codes for uniqueness check
         used_codes = set()
 
         for ind in indicators:
-            code = ind.get('indicator_code')
-            indicator_id = ind.get('id', 'unknown')
+            code = ind.get("indicator_code")
+            indicator_id = ind.get("id", "unknown")
 
             # Check if code exists
             if not code:
-                warnings.append(
-                    f"Indicator {indicator_id} has no indicator_code set"
-                )
+                warnings.append(f"Indicator {indicator_id} has no indicator_code set")
                 continue
 
             # Check format
@@ -218,14 +209,12 @@ class IndicatorValidationService:
 
             # Check uniqueness
             if code in used_codes:
-                errors.append(
-                    f"Duplicate indicator code: {code}"
-                )
+                errors.append(f"Duplicate indicator code: {code}")
             used_codes.add(code)
 
         return errors, warnings
 
-    def validate_sort_order(self, indicators: List[dict]) -> List[str]:
+    def validate_sort_order(self, indicators: list[dict]) -> list[str]:
         """
         Validate that sibling indicators have sequential sort_order values.
 
@@ -240,9 +229,9 @@ class IndicatorValidationService:
         errors = []
 
         # Group indicators by parent_id
-        by_parent: Dict[Optional[str], List[dict]] = {}
+        by_parent: dict[str | None, list[dict]] = {}
         for ind in indicators:
-            parent_id = ind.get('parent_id')
+            parent_id = ind.get("parent_id")
             if parent_id not in by_parent:
                 by_parent[parent_id] = []
             by_parent[parent_id].append(ind)
@@ -250,13 +239,13 @@ class IndicatorValidationService:
         # Check sort order for each sibling group
         for parent_id, siblings in by_parent.items():
             # Sort by sort_order
-            siblings_sorted = sorted(siblings, key=lambda x: x.get('sort_order', 0))
+            siblings_sorted = sorted(siblings, key=lambda x: x.get("sort_order", 0))
 
             # Check if sort_order is sequential starting from 0
             expected_order = 0
             for ind in siblings_sorted:
-                actual_order = ind.get('sort_order')
-                code = ind.get('indicator_code', ind.get('id'))
+                actual_order = ind.get("sort_order")
+                code = ind.get("indicator_code", ind.get("id"))
 
                 if actual_order != expected_order:
                     parent_desc = f"parent {parent_id}" if parent_id else "root level"
@@ -287,86 +276,79 @@ class IndicatorValidationService:
         errors = {}
 
         # Validate form schema
-        form_errors = self.validate_form_schema(indicator.get('form_schema'))
+        form_errors = self.validate_form_schema(indicator.get("form_schema"))
         if form_errors:
-            errors['form_schema'] = form_errors
+            errors["form_schema"] = form_errors
 
         # Validate MOV checklist
-        mov_errors = self.validate_mov_checklist(indicator.get('mov_checklist_items'))
+        mov_errors = self.validate_mov_checklist(indicator.get("mov_checklist_items"))
         if mov_errors:
-            errors['mov_checklist'] = mov_errors
+            errors["mov_checklist"] = mov_errors
 
         # Validate calculation schema
         calc_errors = self.validate_calculation_schema(
-            indicator.get('calculation_schema'),
-            indicator.get('form_schema')
+            indicator.get("calculation_schema"), indicator.get("form_schema")
         )
         if calc_errors:
-            errors['calculation_schema'] = calc_errors
+            errors["calculation_schema"] = calc_errors
 
         # Validate remark schema
         remark_errors = self.validate_remark_schema(
-            indicator.get('remark_schema'),
-            indicator.get('form_schema')
+            indicator.get("remark_schema"), indicator.get("form_schema")
         )
         if remark_errors:
-            errors['remark_schema'] = remark_errors
+            errors["remark_schema"] = remark_errors
 
-        return SchemaValidationResult(
-            is_valid=len(errors) == 0,
-            errors=errors
-        )
+        return SchemaValidationResult(is_valid=len(errors) == 0, errors=errors)
 
-    def validate_form_schema(self, form_schema: Optional[dict]) -> List[str]:
+    def validate_form_schema(self, form_schema: dict | None) -> list[str]:
         """Validate form schema completeness"""
         errors = []
 
         if not form_schema:
             return errors
 
-        fields = form_schema.get('fields', [])
+        fields = form_schema.get("fields", [])
         for i, field in enumerate(fields):
             # Check required fields
-            if not field.get('label'):
-                field_id = field.get('field_id', f'field_{i}')
+            if not field.get("label"):
+                field_id = field.get("field_id", f"field_{i}")
                 errors.append(f"Field {field_id} missing label")
 
             # Check file upload fields have allowed_types
-            if field.get('field_type') == 'file_upload':
-                if not field.get('allowed_file_types'):
-                    field_id = field.get('field_id', f'field_{i}')
+            if field.get("field_type") == "file_upload":
+                if not field.get("allowed_file_types"):
+                    field_id = field.get("field_id", f"field_{i}")
                     errors.append(f"File upload field {field_id} missing allowed_file_types")
 
         return errors
 
-    def validate_mov_checklist(self, mov_checklist: Optional[dict]) -> List[str]:
+    def validate_mov_checklist(self, mov_checklist: dict | None) -> list[str]:
         """Validate MOV checklist completeness"""
         errors = []
 
         if not mov_checklist:
             return errors
 
-        items = mov_checklist.get('items', [])
+        items = mov_checklist.get("items", [])
         for i, item in enumerate(items):
             # Check required fields
-            if not item.get('label'):
-                item_id = item.get('id', f'item_{i}')
+            if not item.get("label"):
+                item_id = item.get("id", f"item_{i}")
                 errors.append(f"MOV item {item_id} missing label")
 
             # Check groups have children
-            if item.get('type') == 'group':
-                children = item.get('children', [])
+            if item.get("type") == "group":
+                children = item.get("children", [])
                 if not children:
-                    item_id = item.get('id', f'item_{i}')
+                    item_id = item.get("id", f"item_{i}")
                     errors.append(f"MOV group {item_id} has no children")
 
         return errors
 
     def validate_calculation_schema(
-        self,
-        calculation_schema: Optional[dict],
-        form_schema: Optional[dict]
-    ) -> List[str]:
+        self, calculation_schema: dict | None, form_schema: dict | None
+    ) -> list[str]:
         """Validate calculation schema field references"""
         errors = []
 
@@ -376,28 +358,24 @@ class IndicatorValidationService:
         # Extract field IDs from form schema
         form_field_ids = set()
         if form_schema:
-            for field in form_schema.get('fields', []):
-                form_field_ids.add(field.get('field_id'))
+            for field in form_schema.get("fields", []):
+                form_field_ids.add(field.get("field_id"))
 
         # Check calculation rules reference valid fields
         # This is a simplified check - full implementation would recursively check all rules
-        condition_groups = calculation_schema.get('condition_groups', [])
+        condition_groups = calculation_schema.get("condition_groups", [])
         for group in condition_groups:
-            rules = group.get('rules', [])
+            rules = group.get("rules", [])
             for rule in rules:
-                field_id = rule.get('field_id')
+                field_id = rule.get("field_id")
                 if field_id and field_id not in form_field_ids:
-                    errors.append(
-                        f"Calculation rule references non-existent field: {field_id}"
-                    )
+                    errors.append(f"Calculation rule references non-existent field: {field_id}")
 
         return errors
 
     def validate_remark_schema(
-        self,
-        remark_schema: Optional[dict],
-        form_schema: Optional[dict]
-    ) -> List[str]:
+        self, remark_schema: dict | None, form_schema: dict | None
+    ) -> list[str]:
         """Validate remark schema template variables"""
         errors = []
 
@@ -405,30 +383,35 @@ class IndicatorValidationService:
             return errors
 
         # Available variables: barangay_name, indicator_name, score, status, form fields
-        available_vars = {'barangay_name', 'indicator_name', 'indicator_title', 'score', 'status'}
+        available_vars = {
+            "barangay_name",
+            "indicator_name",
+            "indicator_title",
+            "score",
+            "status",
+        }
 
         # Add form field IDs as available variables
         if form_schema:
-            for field in form_schema.get('fields', []):
+            for field in form_schema.get("fields", []):
                 available_vars.add(f"form.{field.get('field_id')}")
 
         # Check template variables (simplified - full implementation would parse Jinja2)
-        templates = remark_schema.get('conditional_remarks', [])
+        templates = remark_schema.get("conditional_remarks", [])
         for template in templates:
-            template_text = template.get('template', '')
+            template_text = template.get("template", "")
             # Simple check for {{ variable }} patterns
             import re
-            var_pattern = re.compile(r'\{\{\s*(\w+(?:\.\w+)?)\s*\}\}')
+
+            var_pattern = re.compile(r"\{\{\s*(\w+(?:\.\w+)?)\s*\}\}")
             for match in var_pattern.finditer(template_text):
                 var_name = match.group(1)
                 if var_name not in available_vars:
-                    errors.append(
-                        f"Remark template references unknown variable: {var_name}"
-                    )
+                    errors.append(f"Remark template references unknown variable: {var_name}")
 
         return errors
 
-    def validate_weights(self, indicators: List[dict]) -> WeightValidationResult:
+    def validate_weights(self, indicators: list[dict]) -> WeightValidationResult:
         """
         Validate that sibling indicator weights sum to 100%.
 
@@ -441,9 +424,9 @@ class IndicatorValidationService:
         errors = {}
 
         # Group indicators by parent_id
-        by_parent: Dict[Optional[str], List[dict]] = {}
+        by_parent: dict[str | None, list[dict]] = {}
         for ind in indicators:
-            parent_id = ind.get('parent_id')
+            parent_id = ind.get("parent_id")
             if parent_id not in by_parent:
                 by_parent[parent_id] = []
             by_parent[parent_id].append(ind)
@@ -451,21 +434,18 @@ class IndicatorValidationService:
         # Check weight sum for each sibling group
         for parent_id, siblings in by_parent.items():
             # Sum weights
-            total_weight = sum(ind.get('weight', 0) for ind in siblings)
+            total_weight = sum(ind.get("weight", 0) for ind in siblings)
 
             # Allow tolerance for floating point precision
             if not (99.9 <= total_weight <= 100.1):
-                codes = [ind.get('indicator_code', ind.get('id')) for ind in siblings]
+                codes = [ind.get("indicator_code", ind.get("id")) for ind in siblings]
                 parent_desc = f"parent {parent_id}" if parent_id else "root level"
                 errors[str(parent_id)] = (
                     f"Weights for indicators {', '.join(codes)} sum to {total_weight}%, "
                     f"must be 100% ({parent_desc})"
                 )
 
-        return WeightValidationResult(
-            is_valid=len(errors) == 0,
-            errors=errors
-        )
+        return WeightValidationResult(is_valid=len(errors) == 0, errors=errors)
 
 
 # Export singleton instance

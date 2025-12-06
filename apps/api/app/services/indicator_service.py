@@ -9,22 +9,21 @@ This service handles:
 """
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastapi import HTTPException, status
 from loguru import logger
 from sqlalchemy.orm import Session, joinedload
 
+from app.core.security import sanitize_rich_text, sanitize_text_input
 from app.db.models.governance_area import GovernanceArea, Indicator, IndicatorHistory
-from app.db.models.user import User
-from app.schemas.form_schema import FormSchema
 from app.schemas.calculation_schema import CalculationSchema
+from app.schemas.form_schema import FormSchema
+from app.services.audit_service import audit_service
 from app.services.form_schema_validator import (
     generate_validation_errors,
     validate_calculation_schema_field_references,
 )
-from app.services.audit_service import audit_service
-from app.core.security import sanitize_rich_text, sanitize_text_input
 
 
 class IndicatorService:
@@ -39,9 +38,7 @@ class IndicatorService:
     # CRUD Operations with Versioning
     # ========================================================================
 
-    def create_indicator(
-        self, db: Session, data: Dict[str, Any], user_id: int
-    ) -> Indicator:
+    def create_indicator(self, db: Session, data: dict[str, Any], user_id: int) -> Indicator:
         """
         Create a new indicator with version 1.
 
@@ -97,8 +94,7 @@ class IndicatorService:
         if calculation_schema:
             # Convert dict to Pydantic model for validation
             try:
-                calculation_schema_obj = CalculationSchema(**calculation_schema)
-                # Pydantic validation already happened, schema structure is valid
+                CalculationSchema(**calculation_schema)  # Validates schema structure
             except Exception as e:
                 raise ValueError(f"Invalid calculation schema format: {str(e)}")
 
@@ -117,7 +113,9 @@ class IndicatorService:
                     # Re-raise our validation errors
                     raise
                 except Exception as e:
-                    raise ValueError(f"Error validating calculation schema field references: {str(e)}")
+                    raise ValueError(
+                        f"Error validating calculation schema field references: {str(e)}"
+                    )
 
         # Sanitize text fields to prevent XSS
         sanitized_description = sanitize_text_input(data.get("description"))
@@ -143,13 +141,11 @@ class IndicatorService:
         db.commit()
         db.refresh(indicator)
 
-        logger.info(
-            f"Created indicator '{indicator.name}' (ID: {indicator.id}) by user {user_id}"
-        )
+        logger.info(f"Created indicator '{indicator.name}' (ID: {indicator.id}) by user {user_id}")
 
         return indicator
 
-    def get_indicator(self, db: Session, indicator_id: int) -> Optional[Indicator]:
+    def get_indicator(self, db: Session, indicator_id: int) -> Indicator | None:
         """
         Get an indicator by ID with relationships loaded.
 
@@ -174,12 +170,12 @@ class IndicatorService:
     def list_indicators(
         self,
         db: Session,
-        governance_area_id: Optional[int] = None,
-        is_active: Optional[bool] = None,
-        search: Optional[str] = None,
+        governance_area_id: int | None = None,
+        is_active: bool | None = None,
+        search: str | None = None,
         skip: int = 0,
         limit: int = 100,
-    ) -> List[Indicator]:
+    ) -> list[Indicator]:
         """
         List indicators with optional filtering and pagination.
 
@@ -194,9 +190,7 @@ class IndicatorService:
         Returns:
             List of Indicator instances
         """
-        query = db.query(Indicator).options(
-            joinedload(Indicator.governance_area)
-        )
+        query = db.query(Indicator).options(joinedload(Indicator.governance_area))
 
         # Apply filters
         if governance_area_id is not None:
@@ -217,7 +211,7 @@ class IndicatorService:
         return indicators
 
     def update_indicator(
-        self, db: Session, indicator_id: int, data: Dict[str, Any], user_id: int
+        self, db: Session, indicator_id: int, data: dict[str, Any], user_id: int
     ) -> Indicator:
         """
         Update an indicator with versioning logic.
@@ -261,8 +255,7 @@ class IndicatorService:
         calculation_schema = data.get("calculation_schema")
         if calculation_schema is not None:
             try:
-                calculation_schema_obj = CalculationSchema(**calculation_schema)
-                # Pydantic validation already happened, schema structure is valid
+                CalculationSchema(**calculation_schema)  # Validates schema structure
             except Exception as e:
                 raise ValueError(f"Invalid calculation schema format: {str(e)}")
 
@@ -283,7 +276,9 @@ class IndicatorService:
                     # Re-raise our validation errors
                     raise
                 except Exception as e:
-                    raise ValueError(f"Error validating calculation schema field references: {str(e)}")
+                    raise ValueError(
+                        f"Error validating calculation schema field references: {str(e)}"
+                    )
 
         # Check if schema fields changed (requiring versioning)
         schema_changed = any(
@@ -353,9 +348,7 @@ class IndicatorService:
 
         return indicator
 
-    def deactivate_indicator(
-        self, db: Session, indicator_id: int, user_id: int
-    ) -> Indicator:
+    def deactivate_indicator(self, db: Session, indicator_id: int, user_id: int) -> Indicator:
         """
         Soft delete an indicator by setting is_active to False.
 
@@ -399,9 +392,7 @@ class IndicatorService:
 
         return indicator
 
-    def get_indicator_history(
-        self, db: Session, indicator_id: int
-    ) -> List[IndicatorHistory]:
+    def get_indicator_history(self, db: Session, indicator_id: int) -> list[IndicatorHistory]:
         """
         Get all historical versions of an indicator.
 
@@ -431,9 +422,7 @@ class IndicatorService:
 
         return history
 
-    def _check_circular_parent(
-        self, db: Session, indicator_id: int, parent_id: int
-    ) -> bool:
+    def _check_circular_parent(self, db: Session, indicator_id: int, parent_id: int) -> bool:
         """
         Helper to recursively check for circular parent relationships.
 
@@ -485,9 +474,9 @@ class IndicatorService:
         self,
         db: Session,
         governance_area_id: int,
-        indicators_data: List[Dict[str, Any]],
-        user_id: int
-    ) -> tuple[List[Indicator], Dict[str, int], List[Dict[str, str]]]:
+        indicators_data: list[dict[str, Any]],
+        user_id: int,
+    ) -> tuple[list[Indicator], dict[str, int], list[dict[str, str]]]:
         """
         Create multiple indicators in bulk with proper dependency ordering.
 
@@ -511,9 +500,7 @@ class IndicatorService:
         """
         # Validate governance area exists
         governance_area = (
-            db.query(GovernanceArea)
-            .filter(GovernanceArea.id == governance_area_id)
-            .first()
+            db.query(GovernanceArea).filter(GovernanceArea.id == governance_area_id).first()
         )
         if not governance_area:
             raise HTTPException(
@@ -521,9 +508,9 @@ class IndicatorService:
                 detail=f"Governance area with ID {governance_area_id} not found",
             )
 
-        created_indicators: List[Indicator] = []
-        temp_id_mapping: Dict[str, int] = {}
-        errors: List[Dict[str, str]] = []
+        created_indicators: list[Indicator] = []
+        temp_id_mapping: dict[str, int] = {}
+        errors: list[dict[str, str]] = []
 
         try:
             # Topological sort by dependency
@@ -580,7 +567,9 @@ class IndicatorService:
             # If any errors occurred, rollback the transaction
             if errors:
                 db.rollback()
-                logger.warning(f"Bulk creation failed with {len(errors)} errors, transaction rolled back")
+                logger.warning(
+                    f"Bulk creation failed with {len(errors)} errors, transaction rolled back"
+                )
                 return [], {}, errors
 
             # Commit transaction
@@ -612,8 +601,8 @@ class IndicatorService:
             )
 
     def _topological_sort_indicators(
-        self, indicators_data: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+        self, indicators_data: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """
         Topologically sort indicators by parent-child dependencies.
 
@@ -627,9 +616,9 @@ class IndicatorService:
             ValueError: If circular dependencies are detected
         """
         # Build adjacency list and in-degree count
-        graph: Dict[str, List[str]] = {}
-        in_degree: Dict[str, int] = {}
-        node_data: Dict[str, Dict[str, Any]] = {}
+        graph: dict[str, list[str]] = {}
+        in_degree: dict[str, int] = {}
+        node_data: dict[str, dict[str, Any]] = {}
 
         # Initialize
         for indicator in indicators_data:
@@ -668,19 +657,14 @@ class IndicatorService:
 
         # Check for circular dependencies
         if len(sorted_nodes) != len(indicators_data):
-            raise ValueError(
-                "Circular dependency detected in indicator hierarchy"
-            )
+            raise ValueError("Circular dependency detected in indicator hierarchy")
 
         # Return sorted indicator data
         return [node_data[temp_id] for temp_id in sorted_nodes]
 
     def reorder_indicators(
-        self,
-        db: Session,
-        reorder_data: List[Dict[str, Any]],
-        user_id: int
-    ) -> List[Indicator]:
+        self, db: Session, reorder_data: list[dict[str, Any]], user_id: int
+    ) -> list[Indicator]:
         """
         Reorder indicators by updating codes and parent_ids in batch.
 
@@ -695,7 +679,7 @@ class IndicatorService:
         Raises:
             HTTPException: If circular references are detected
         """
-        updated_indicators: List[Indicator] = []
+        updated_indicators: list[Indicator] = []
 
         try:
             # Validate no circular references
@@ -735,7 +719,7 @@ class IndicatorService:
             )
 
     def _validate_no_circular_references(
-        self, db: Session, reorder_data: List[Dict[str, Any]]
+        self, db: Session, reorder_data: list[dict[str, Any]]
     ) -> None:
         """
         Validate that the proposed reorder doesn't create circular references.
@@ -748,7 +732,7 @@ class IndicatorService:
             ValueError: If circular references are detected
         """
         # Build parent map from reorder data
-        parent_map: Dict[int, Optional[int]] = {}
+        parent_map: dict[int, int | None] = {}
         for update in reorder_data:
             parent_map[update["id"]] = update.get("parent_id")
 
@@ -759,9 +743,7 @@ class IndicatorService:
 
             while current is not None:
                 if current in visited:
-                    raise ValueError(
-                        f"Circular reference detected: indicator {indicator_id}"
-                    )
+                    raise ValueError(f"Circular reference detected: indicator {indicator_id}")
 
                 visited.add(current)
                 current = parent_map.get(current)
@@ -770,8 +752,8 @@ class IndicatorService:
         self,
         db: Session,
         governance_area_id: int,
-        indicators_data: List[Dict[str, Any]]
-    ) -> List[str]:
+        indicators_data: list[dict[str, Any]],
+    ) -> list[str]:
         """
         Validate indicator tree structure before bulk creation.
 
@@ -788,7 +770,7 @@ class IndicatorService:
         Returns:
             List of validation error messages (empty if valid)
         """
-        errors: List[str] = []
+        errors: list[str] = []
 
         try:
             # Check circular references via topological sort
@@ -809,10 +791,12 @@ class IndicatorService:
                             form_schema_obj, calculation_schema
                         )
                         if field_ref_errors:
-                            errors.extend([
-                                f"Indicator {indicator_data.get('temp_id')}: {err}"
-                                for err in field_ref_errors
-                            ])
+                            errors.extend(
+                                [
+                                    f"Indicator {indicator_data.get('temp_id')}: {err}"
+                                    for err in field_ref_errors
+                                ]
+                            )
                     except Exception as e:
                         errors.append(
                             f"Indicator {indicator_data.get('temp_id')}: Invalid schema - {str(e)}"
@@ -825,11 +809,7 @@ class IndicatorService:
 
         return errors
 
-    def get_indicator_tree(
-        self,
-        db: Session,
-        governance_area_id: int
-    ) -> List[Dict[str, Any]]:
+    def get_indicator_tree(self, db: Session, governance_area_id: int) -> list[dict[str, Any]]:
         """
         Get hierarchical tree structure of indicators for a governance area.
 
@@ -866,14 +846,14 @@ class IndicatorService:
             .options(joinedload(Indicator.children))
             .filter(
                 Indicator.governance_area_id == governance_area_id,
-                Indicator.is_active == True
+                Indicator.is_active == True,
             )
             .order_by(Indicator.sort_order, Indicator.indicator_code)
             .all()
         )
 
         # Build indicator map
-        indicator_map: Dict[int, Dict[str, Any]] = {}
+        indicator_map: dict[int, dict[str, Any]] = {}
         for indicator in indicators:
             indicator_map[indicator.id] = {
                 "id": indicator.id,
@@ -891,13 +871,17 @@ class IndicatorService:
                 "remark_schema": indicator.remark_schema,
                 "mov_checklist_items": indicator.mov_checklist_items,
                 "version": indicator.version,
-                "created_at": indicator.created_at.isoformat() + 'Z' if indicator.created_at else None,
-                "updated_at": indicator.updated_at.isoformat() + 'Z' if indicator.updated_at else None,
-                "children": []
+                "created_at": indicator.created_at.isoformat() + "Z"
+                if indicator.created_at
+                else None,
+                "updated_at": indicator.updated_at.isoformat() + "Z"
+                if indicator.updated_at
+                else None,
+                "children": [],
             }
 
         # Build tree structure
-        root_nodes: List[Dict[str, Any]] = []
+        root_nodes: list[dict[str, Any]] = []
         for indicator_dict in indicator_map.values():
             parent_id = indicator_dict["parent_id"]
             if parent_id is None:
@@ -916,11 +900,8 @@ class IndicatorService:
         return root_nodes
 
     def recalculate_codes(
-        self,
-        db: Session,
-        governance_area_id: int,
-        user_id: int
-    ) -> List[Indicator]:
+        self, db: Session, governance_area_id: int, user_id: int
+    ) -> list[Indicator]:
         """
         Recalculate indicator codes for a governance area after reordering.
 
@@ -943,7 +924,7 @@ class IndicatorService:
             db.query(Indicator)
             .filter(
                 Indicator.governance_area_id == governance_area_id,
-                Indicator.is_active == True
+                Indicator.is_active == True,
             )
             .order_by(Indicator.sort_order, Indicator.indicator_code)
             .all()
@@ -953,7 +934,7 @@ class IndicatorService:
             return []
 
         # Build parent-child map
-        children_map: Dict[Optional[int], List[Indicator]] = {}
+        children_map: dict[int | None, list[Indicator]] = {}
         for indicator in indicators:
             parent_id = indicator.parent_id
             if parent_id not in children_map:
@@ -964,9 +945,9 @@ class IndicatorService:
         for children_list in children_map.values():
             children_list.sort(key=lambda x: x.sort_order or 0)
 
-        updated_indicators: List[Indicator] = []
+        updated_indicators: list[Indicator] = []
 
-        def assign_codes(parent_id: Optional[int], prefix: str = "") -> None:
+        def assign_codes(parent_id: int | None, prefix: str = "") -> None:
             """Recursively assign codes to indicators."""
             if parent_id not in children_map:
                 return
@@ -1015,14 +996,17 @@ class IndicatorService:
         if existing_count > 0:
             return
 
-        sample_indicators: List[Dict[str, Any]] = [
+        sample_indicators: list[dict[str, Any]] = [
             {
                 "name": "Budget Planning and Execution",
                 "description": "Barangay maintains an annual budget plan and tracks execution.",
                 "form_schema": {
                     "type": "object",
                     "properties": {
-                        "has_budget_plan": {"type": "boolean", "title": "Has Budget Plan"},
+                        "has_budget_plan": {
+                            "type": "boolean",
+                            "title": "Has Budget Plan",
+                        },
                         "budget_amount": {"type": "number", "title": "Budget Amount"},
                         "notes": {"type": "string", "title": "Notes"},
                     },
@@ -1049,7 +1033,10 @@ class IndicatorService:
                 "form_schema": {
                     "type": "object",
                     "properties": {
-                        "meets_quarterly": {"type": "boolean", "title": "Meets Quarterly"},
+                        "meets_quarterly": {
+                            "type": "boolean",
+                            "title": "Meets Quarterly",
+                        },
                         "num_meetings": {"type": "number", "title": "Meetings Held"},
                     },
                     "required": ["meets_quarterly"],
@@ -1088,15 +1075,36 @@ class IndicatorService:
                             "type": "object",
                             "title": "1.1.1 Posted CY 2023 financial documents",
                             "properties": {
-                                "barangay_financial_report": {"type": "boolean", "title": "a) Barangay Financial Report"},
-                                "barangay_budget": {"type": "boolean", "title": "b) Barangay Budget"},
-                                "summary_income_exp": {"type": "boolean", "title": "c) Summary of Income and Expenditures"},
-                                "twenty_percent_cout": {"type": "boolean", "title": "d) 20% CoUtilization"},
-                                "annual_proc_plan": {"type": "boolean", "title": "e) Annual Procurement Plan / NTA component List"},
-                                "list_notices_award": {"type": "boolean", "title": "f) List of Notices of Award (1st-3rd Qtr 2023)"},
-                                "itemized_collections": {"type": "boolean", "title": "g) Itemized Monthly Collections & Disbursements (Jan-Sep 2023)"}
+                                "barangay_financial_report": {
+                                    "type": "boolean",
+                                    "title": "a) Barangay Financial Report",
+                                },
+                                "barangay_budget": {
+                                    "type": "boolean",
+                                    "title": "b) Barangay Budget",
+                                },
+                                "summary_income_exp": {
+                                    "type": "boolean",
+                                    "title": "c) Summary of Income and Expenditures",
+                                },
+                                "twenty_percent_cout": {
+                                    "type": "boolean",
+                                    "title": "d) 20% CoUtilization",
+                                },
+                                "annual_proc_plan": {
+                                    "type": "boolean",
+                                    "title": "e) Annual Procurement Plan / NTA component List",
+                                },
+                                "list_notices_award": {
+                                    "type": "boolean",
+                                    "title": "f) List of Notices of Award (1st-3rd Qtr 2023)",
+                                },
+                                "itemized_collections": {
+                                    "type": "boolean",
+                                    "title": "g) Itemized Monthly Collections & Disbursements (Jan-Sep 2023)",
+                                },
                             },
-                            "required": []
+                            "required": [],
                         },
                         "movs_1_1_1": {
                             "type": "array",
@@ -1104,28 +1112,29 @@ class IndicatorService:
                             "items": {"type": "string"},
                             "default": [
                                 "Three (3) BFDP Monitoring Form A (1st-3rd quarter) signed by C/MLGOO, Punong Barangay, Barangay Secretary",
-                                "Two (2) photos of BFDP board with barangay name (1 distant, 1 close-up)"
+                                "Two (2) photos of BFDP board with barangay name (1 distant, 1 close-up)",
                             ],
-                            "readOnly": True
+                            "readOnly": True,
                         },
                         "section_1_1_2": {
                             "type": "object",
                             "title": "1.1.2 Accomplished and signed BFR with received stamp",
                             "properties": {
-                                "bfr_signed": {"type": "boolean", "title": "BFR signed and stamped by C/M Accountant"}
-                            }
+                                "bfr_signed": {
+                                    "type": "boolean",
+                                    "title": "BFR signed and stamped by C/M Accountant",
+                                }
+                            },
                         },
                         "movs_1_1_2": {
                             "type": "array",
                             "title": "Required MOV (1.1.2)",
                             "items": {"type": "string"},
-                            "default": [
-                                "Annex B of DBM-DOF-DILG JMC No. 2018-1"
-                            ],
-                            "readOnly": True
+                            "default": ["Annex B of DBM-DOF-DILG JMC No. 2018-1"],
+                            "readOnly": True,
                         },
-                        "notes": {"type": "string", "title": "Notes / Remarks"}
-                    }
+                        "notes": {"type": "string", "title": "Notes / Remarks"},
+                    },
                 },
                 "governance_area_id": 1,
             },
@@ -1140,7 +1149,7 @@ class IndicatorService:
                     "properties": {
                         "increase_local_resources": {
                             "type": "boolean",
-                            "title": "1.2.1 Increase in local resources in CY 2023"
+                            "title": "1.2.1 Increase in local resources in CY 2023",
                         },
                         "movs": {
                             "type": "array",
@@ -1148,12 +1157,12 @@ class IndicatorService:
                             "items": {"type": "string"},
                             "default": [
                                 "SRE for 2022 and 2023, signed by Barangay Treasurer and Punong Barangay",
-                                "Certification on Increase in Local Resources signed by City/Municipal Treasurer or Budget Officer"
+                                "Certification on Increase in Local Resources signed by City/Municipal Treasurer or Budget Officer",
                             ],
-                            "readOnly": True
+                            "readOnly": True,
                         },
-                        "details": {"type": "string", "title": "Details"}
-                    }
+                        "details": {"type": "string", "title": "Details"},
+                    },
                 },
                 "governance_area_id": 1,
             },
@@ -1168,7 +1177,7 @@ class IndicatorService:
                     "properties": {
                         "ordinance_approved": {
                             "type": "boolean",
-                            "title": "1.3.1 Appropriation Ordinance approved on/before Dec 31, 2022 (or by Mar 31, 2023 consideration)"
+                            "title": "1.3.1 Appropriation Ordinance approved on/before Dec 31, 2022 (or by Mar 31, 2023 consideration)",
                         },
                         "approval_date": {"type": "string", "title": "Approval Date"},
                         "movs": {
@@ -1178,20 +1187,16 @@ class IndicatorService:
                             "default": [
                                 "Approved Barangay Appropriation Ordinance signed by SBMs, SK Chairperson, Barangay Secretary, and Punong Barangay"
                             ],
-                            "readOnly": True
+                            "readOnly": True,
                         },
-                        "notes": {"type": "string", "title": "Notes / Remarks"}
-                    }
+                        "notes": {"type": "string", "title": "Notes / Remarks"},
+                    },
                 },
                 "governance_area_id": 1,
             },
         ]
         # Fetch existing names for Area 1
-        existing = (
-            db.query(Indicator)
-            .filter(Indicator.governance_area_id == 1)
-            .all()
-        )
+        existing = db.query(Indicator).filter(Indicator.governance_area_id == 1).all()
         existing_names = {i.name for i in existing}
 
         created = 0
@@ -1212,101 +1217,141 @@ class IndicatorService:
           canonical names and schemas defined in `seed_area1_financial_indicators`.
         """
         # Build the canonical specs we want to enforce
-        canonical_specs: Dict[str, Dict[str, Any]] = {}
+        canonical_specs: dict[str, dict[str, Any]] = {}
         # Reuse builder from seed method
-        tmp_session_list: List[Dict[str, Any]] = []
+        tmp_session_list: list[dict[str, Any]] = []
         # construct same list as seed
-        tmp_session_list.extend([
-            {
-                "name": "1.1 - Compliance with the Barangay Full Disclosure Policy (BFDP) Board",
-                "description": "Posted CY 2023 financial documents in the BFDP board as per DILG MCs.",
-                "form_schema": {
-                    "type": "object",
-                    "title": "1.1 Minimum Requirements and MOVs",
-                    "properties": {
-                        "section_1_1_1": {
-                            "type": "object",
-                            "title": "1.1.1 Posted CY 2023 financial documents",
-                            "properties": {
-                                "barangay_financial_report": {"type": "boolean", "title": "a) Barangay Financial Report"},
-                                "barangay_budget": {"type": "boolean", "title": "b) Barangay Budget"},
-                                "summary_income_exp": {"type": "boolean", "title": "c) Summary of Income and Expenditures"},
-                                "twenty_percent_cout": {"type": "boolean", "title": "d) 20% CoUtilization"},
-                                "annual_proc_plan": {"type": "boolean", "title": "e) Annual Procurement Plan / NTA component List"},
-                                "list_notices_award": {"type": "boolean", "title": "f) List of Notices of Award (1st-3rd Qtr 2023)"},
-                                "itemized_collections": {"type": "boolean", "title": "g) Itemized Monthly Collections & Disbursements (Jan-Sep 2023)"}
+        tmp_session_list.extend(
+            [
+                {
+                    "name": "1.1 - Compliance with the Barangay Full Disclosure Policy (BFDP) Board",
+                    "description": "Posted CY 2023 financial documents in the BFDP board as per DILG MCs.",
+                    "form_schema": {
+                        "type": "object",
+                        "title": "1.1 Minimum Requirements and MOVs",
+                        "properties": {
+                            "section_1_1_1": {
+                                "type": "object",
+                                "title": "1.1.1 Posted CY 2023 financial documents",
+                                "properties": {
+                                    "barangay_financial_report": {
+                                        "type": "boolean",
+                                        "title": "a) Barangay Financial Report",
+                                    },
+                                    "barangay_budget": {
+                                        "type": "boolean",
+                                        "title": "b) Barangay Budget",
+                                    },
+                                    "summary_income_exp": {
+                                        "type": "boolean",
+                                        "title": "c) Summary of Income and Expenditures",
+                                    },
+                                    "twenty_percent_cout": {
+                                        "type": "boolean",
+                                        "title": "d) 20% CoUtilization",
+                                    },
+                                    "annual_proc_plan": {
+                                        "type": "boolean",
+                                        "title": "e) Annual Procurement Plan / NTA component List",
+                                    },
+                                    "list_notices_award": {
+                                        "type": "boolean",
+                                        "title": "f) List of Notices of Award (1st-3rd Qtr 2023)",
+                                    },
+                                    "itemized_collections": {
+                                        "type": "boolean",
+                                        "title": "g) Itemized Monthly Collections & Disbursements (Jan-Sep 2023)",
+                                    },
+                                },
+                            },
+                            "movs_1_1_1": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "default": [
+                                    "Three (3) BFDP Monitoring Form A (1st-3rd quarter) signed by C/MLGOO, Punong Barangay, Barangay Secretary",
+                                    "Two (2) photos of BFDP board with barangay name (1 distant, 1 close-up)",
+                                ],
+                            },
+                            "section_1_1_2": {
+                                "type": "object",
+                                "title": "1.1.2 Accomplished and signed BFR with received stamp",
+                                "properties": {
+                                    "bfr_signed": {
+                                        "type": "boolean",
+                                        "title": "BFR signed and stamped by C/M Accountant",
+                                    }
+                                },
+                            },
+                            "movs_1_1_2": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "default": ["Annex B of DBM-DOF-DILG JMC No. 2018-1"],
                             },
                         },
-                        "movs_1_1_1": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "default": [
-                                "Three (3) BFDP Monitoring Form A (1st-3rd quarter) signed by C/MLGOO, Punong Barangay, Barangay Secretary",
-                                "Two (2) photos of BFDP board with barangay name (1 distant, 1 close-up)"
-                            ],
-                        },
-                        "section_1_1_2": {
-                            "type": "object",
-                            "title": "1.1.2 Accomplished and signed BFR with received stamp",
-                            "properties": {"bfr_signed": {"type": "boolean", "title": "BFR signed and stamped by C/M Accountant"}},
-                        },
-                        "movs_1_1_2": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "default": ["Annex B of DBM-DOF-DILG JMC No. 2018-1"],
+                    },
+                    "governance_area_id": 1,
+                },
+                {
+                    "name": "1.2 - Innovations on Revenue Generation or Exercise of Corporate Powers",
+                    "description": "Increase in local resources for CY 2023 with supporting certifications.",
+                    "form_schema": {
+                        "type": "object",
+                        "title": "1.2 Minimum Requirement and MOVs",
+                        "properties": {
+                            "increase_local_resources": {
+                                "type": "boolean",
+                                "title": "1.2.1 Increase in local resources in CY 2023",
+                            },
+                            "movs": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "default": [
+                                    "SRE for 2022 and 2023, signed by Barangay Treasurer and Punong Barangay",
+                                    "Certification on Increase in Local Resources signed by City/Municipal Treasurer or Budget Officer",
+                                ],
+                            },
                         },
                     },
+                    "governance_area_id": 1,
                 },
-                "governance_area_id": 1,
-            },
-            {
-                "name": "1.2 - Innovations on Revenue Generation or Exercise of Corporate Powers",
-                "description": "Increase in local resources for CY 2023 with supporting certifications.",
-                "form_schema": {
-                    "type": "object",
-                    "title": "1.2 Minimum Requirement and MOVs",
-                    "properties": {
-                        "increase_local_resources": {"type": "boolean", "title": "1.2.1 Increase in local resources in CY 2023"},
-                        "movs": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "default": [
-                                "SRE for 2022 and 2023, signed by Barangay Treasurer and Punong Barangay",
-                                "Certification on Increase in Local Resources signed by City/Municipal Treasurer or Budget Officer",
-                            ],
+                {
+                    "name": "1.3 - Approval of the Barangay Budget on the Specified Timeframe",
+                    "description": "Barangay Appropriation Ordinance approved on/before Dec 31, 2022 (considerations apply).",
+                    "form_schema": {
+                        "type": "object",
+                        "title": "1.3 Minimum Requirement and MOV",
+                        "properties": {
+                            "ordinance_approved": {
+                                "type": "boolean",
+                                "title": "1.3.1 Appropriation Ordinance approved on/before Dec 31, 2022 (or by Mar 31, 2023 consideration)",
+                            },
+                            "approval_date": {
+                                "type": "string",
+                                "title": "Approval Date",
+                            },
+                            "movs": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "default": [
+                                    "Approved Barangay Appropriation Ordinance signed by SBMs, SK Chairperson, Barangay Secretary, and Punong Barangay",
+                                ],
+                            },
                         },
                     },
+                    "governance_area_id": 1,
                 },
-                "governance_area_id": 1,
-            },
-            {
-                "name": "1.3 - Approval of the Barangay Budget on the Specified Timeframe",
-                "description": "Barangay Appropriation Ordinance approved on/before Dec 31, 2022 (considerations apply).",
-                "form_schema": {
-                    "type": "object",
-                    "title": "1.3 Minimum Requirement and MOV",
-                    "properties": {
-                        "ordinance_approved": {"type": "boolean", "title": "1.3.1 Appropriation Ordinance approved on/before Dec 31, 2022 (or by Mar 31, 2023 consideration)"},
-                        "approval_date": {"type": "string", "title": "Approval Date"},
-                        "movs": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "default": [
-                                "Approved Barangay Appropriation Ordinance signed by SBMs, SK Chairperson, Barangay Secretary, and Punong Barangay",
-                            ],
-                        },
-                    },
-                },
-                "governance_area_id": 1,
-            },
-        ])
+            ]
+        )
         for spec in tmp_session_list:
             canonical_specs[spec["name"]] = spec
 
         # Delete the old sample indicator in area 1 if it exists
         old_sample = (
             db.query(Indicator)
-            .filter(Indicator.governance_area_id == 1, Indicator.name == "Budget Planning and Execution")
+            .filter(
+                Indicator.governance_area_id == 1,
+                Indicator.name == "Budget Planning and Execution",
+            )
             .first()
         )
         if old_sample:
@@ -1319,11 +1364,7 @@ class IndicatorService:
             "Approval of the Barangay Budget on the Specified Timeframe": "1.3 - Approval of the Barangay Budget on the Specified Timeframe",
         }
 
-        area1_existing = (
-            db.query(Indicator)
-            .filter(Indicator.governance_area_id == 1)
-            .all()
-        )
+        area1_existing = db.query(Indicator).filter(Indicator.governance_area_id == 1).all()
         for ind in area1_existing:
             if ind.name in legacy_map:
                 new_name = legacy_map[ind.name]
@@ -1347,11 +1388,7 @@ class IndicatorService:
         }
 
         # Delete any non-canonical indicators in Area 1
-        area1_all = (
-            db.query(Indicator)
-            .filter(Indicator.governance_area_id == 1)
-            .all()
-        )
+        area1_all = db.query(Indicator).filter(Indicator.governance_area_id == 1).all()
         for ind in area1_all:
             if ind.name not in allowed_names:
                 db.delete(ind)
@@ -1367,11 +1404,7 @@ class IndicatorService:
         as sub-sections in `form_schema` (no separate rows in DB).
         """
         # Remove all existing Area 1 indicators first
-        existing = (
-            db.query(Indicator)
-            .filter(Indicator.governance_area_id == 1)
-            .all()
-        )
+        existing = db.query(Indicator).filter(Indicator.governance_area_id == 1).all()
         for ind in existing:
             db.delete(ind)
         db.commit()
@@ -1395,13 +1428,34 @@ class IndicatorService:
                                 "type": "object",
                                 "title": "1.1.1 Posted CY 2023 financial documents",
                                 "properties": {
-                                    "barangay_financial_report": {"type": "boolean", "title": "a) Barangay Financial Report"},
-                                    "barangay_budget": {"type": "boolean", "title": "b) Barangay Budget"},
-                                    "summary_income_exp": {"type": "boolean", "title": "c) Summary of Income and Expenditures"},
-                                    "twenty_percent_cout": {"type": "boolean", "title": "d) 20% CoUtilization"},
-                                    "annual_proc_plan": {"type": "boolean", "title": "e) Annual Procurement Plan / NTA component List"},
-                                    "list_notices_award": {"type": "boolean", "title": "f) List of Notices of Award (1st-3rd Qtr 2023)"},
-                                    "itemized_collections": {"type": "boolean", "title": "g) Itemized Monthly Collections & Disbursements (Jan-Sep 2023)"},
+                                    "barangay_financial_report": {
+                                        "type": "boolean",
+                                        "title": "a) Barangay Financial Report",
+                                    },
+                                    "barangay_budget": {
+                                        "type": "boolean",
+                                        "title": "b) Barangay Budget",
+                                    },
+                                    "summary_income_exp": {
+                                        "type": "boolean",
+                                        "title": "c) Summary of Income and Expenditures",
+                                    },
+                                    "twenty_percent_cout": {
+                                        "type": "boolean",
+                                        "title": "d) 20% CoUtilization",
+                                    },
+                                    "annual_proc_plan": {
+                                        "type": "boolean",
+                                        "title": "e) Annual Procurement Plan / NTA component List",
+                                    },
+                                    "list_notices_award": {
+                                        "type": "boolean",
+                                        "title": "f) List of Notices of Award (1st-3rd Qtr 2023)",
+                                    },
+                                    "itemized_collections": {
+                                        "type": "boolean",
+                                        "title": "g) Itemized Monthly Collections & Disbursements (Jan-Sep 2023)",
+                                    },
                                 },
                             },
                             "movs_1_1_1": {
@@ -1416,7 +1470,12 @@ class IndicatorService:
                             "section_1_1_2": {
                                 "type": "object",
                                 "title": "1.1.2 Accomplished and signed BFR with received stamp",
-                                "properties": {"bfr_signed": {"type": "boolean", "title": "BFR signed and stamped by C/M Accountant"}},
+                                "properties": {
+                                    "bfr_signed": {
+                                        "type": "boolean",
+                                        "title": "BFR signed and stamped by C/M Accountant",
+                                    }
+                                },
                             },
                             "movs_1_1_2": {
                                 "type": "array",
@@ -1431,7 +1490,10 @@ class IndicatorService:
                         "type": "object",
                         "title": "1.2 Innovations on Revenue Generation or Exercise of Corporate Powers",
                         "properties": {
-                            "increase_local_resources": {"type": "boolean", "title": "1.2.1 Increase in local resources in CY 2023"},
+                            "increase_local_resources": {
+                                "type": "boolean",
+                                "title": "1.2.1 Increase in local resources in CY 2023",
+                            },
                             "movs": {
                                 "type": "array",
                                 "items": {"type": "string"},
@@ -1448,8 +1510,14 @@ class IndicatorService:
                         "type": "object",
                         "title": "1.3 Approval of the Barangay Budget on the Specified Timeframe",
                         "properties": {
-                            "ordinance_approved": {"type": "boolean", "title": "1.3.1 Appropriation Ordinance approved on/before Dec 31, 2022 (or by Mar 31, 2023 consideration)"},
-                            "approval_date": {"type": "string", "title": "Approval Date"},
+                            "ordinance_approved": {
+                                "type": "boolean",
+                                "title": "1.3.1 Appropriation Ordinance approved on/before Dec 31, 2022 (or by Mar 31, 2023 consideration)",
+                            },
+                            "approval_date": {
+                                "type": "string",
+                                "title": "Approval Date",
+                            },
                             "movs": {
                                 "type": "array",
                                 "items": {"type": "string"},
@@ -1482,26 +1550,16 @@ class IndicatorService:
         }
 
         for area_id, official_name in mapping.items():
-            ind = (
-                db.query(Indicator)
-                .filter(Indicator.governance_area_id == area_id)
-                .first()
-            )
+            ind = db.query(Indicator).filter(Indicator.governance_area_id == area_id).first()
             if ind:
                 ind.name = official_name
                 if area_id == 1:
-                    ind.description = (
-                        "The barangay has a comprehensive budget plan that is properly executed and monitored."
-                    )
+                    ind.description = "The barangay has a comprehensive budget plan that is properly executed and monitored."
         db.commit()
 
     def ensure_environmental_indicator(self, db: Session) -> None:
         """Ensure Area 6 environmental indicator exists following other format."""
-        exists = (
-            db.query(Indicator)
-            .filter(Indicator.governance_area_id == 6)
-            .first()
-        )
+        exists = db.query(Indicator).filter(Indicator.governance_area_id == 6).first()
         if exists:
             return
 
@@ -1511,9 +1569,15 @@ class IndicatorService:
             form_schema={
                 "type": "object",
                 "properties": {
-                    "has_programs": {"type": "boolean", "title": "Has Environmental Programs"},
+                    "has_programs": {
+                        "type": "boolean",
+                        "title": "Has Environmental Programs",
+                    },
                     "program_types": {"type": "string", "title": "Types of Programs"},
-                    "trees_planted": {"type": "number", "title": "Trees Planted This Year"},
+                    "trees_planted": {
+                        "type": "number",
+                        "title": "Trees Planted This Year",
+                    },
                 },
                 "required": ["has_programs"],
             },
@@ -1526,7 +1590,7 @@ class IndicatorService:
         """
         Seed indicators for governance areas 2-6 following the same pattern as Area 1.
         Each area gets a SINGLE indicator with nested form_schema containing sections.
-        
+
         - Area 2 (Disaster Preparedness): 2.1 -> 2.1.1 - Organized BDRRMC
         - Area 3 (Safety, Peace and Order): 3.1 -> 3.1.1 - Organized BPOC
         - Area 4 (Social Protection): 4.1 -> 4.1.1 - Social Welfare Programs Implementation
@@ -1537,15 +1601,13 @@ class IndicatorService:
         any_deleted = False
         for area_id in range(2, 7):  # Areas 2-6
             existing_indicators = (
-                db.query(Indicator)
-                .filter(Indicator.governance_area_id == area_id)
-                .all()
+                db.query(Indicator).filter(Indicator.governance_area_id == area_id).all()
             )
             if existing_indicators:
                 any_deleted = True
                 for ind in existing_indicators:
                     db.delete(ind)
-        
+
         if any_deleted:
             db.commit()
 
@@ -1754,5 +1816,3 @@ class IndicatorService:
 
 
 indicator_service = IndicatorService()
-
-

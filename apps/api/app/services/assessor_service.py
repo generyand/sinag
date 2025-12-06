@@ -1,13 +1,18 @@
 # 🛠️ Assessor Service
 # Business logic for assessor features
 
-from datetime import datetime, timedelta
-from typing import Any, Dict, List
 import logging
+from datetime import datetime, timedelta
+from typing import Any
+
+from fastapi import UploadFile
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.db.enums import AssessmentStatus, ComplianceStatus, ValidationStatus
 from app.db.models.assessment import (
     MOV as MOVModel,  # SQLAlchemy model - alias to avoid conflict
+)
+from app.db.models.assessment import (
     Assessment,
     AssessmentResponse,
     FeedbackComment,
@@ -16,8 +21,6 @@ from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
 from app.schemas.assessment import MOVCreate  # Pydantic schema
 from app.services.storage_service import storage_service
-from fastapi import UploadFile
-from sqlalchemy.orm import Session, joinedload, selectinload
 
 
 class AssessorService:
@@ -25,7 +28,7 @@ class AssessorService:
         """Initialize the assessor service"""
         self.logger = logging.getLogger(__name__)
 
-    def get_assessor_queue(self, db: Session, assessor: User) -> List[dict]:
+    def get_assessor_queue(self, db: Session, assessor: User) -> list[dict]:
         """
         Return submissions filtered by user role and governance area.
 
@@ -53,8 +56,8 @@ class AssessorService:
             .options(
                 joinedload(Assessment.blgu_user).joinedload(User.barangay),
                 selectinload(Assessment.responses)
-                    .joinedload(AssessmentResponse.indicator)
-                    .joinedload(Indicator.governance_area),
+                .joinedload(AssessmentResponse.indicator)
+                .joinedload(Indicator.governance_area),
             )
         )
 
@@ -65,21 +68,25 @@ class AssessorService:
         if assessor.validator_area_id is not None:
             query = query.filter(
                 Indicator.governance_area_id == assessor.validator_area_id,
-                Assessment.status.in_([
-                    AssessmentStatus.AWAITING_FINAL_VALIDATION,
-                    AssessmentStatus.REWORK,  # Include for parallel calibration
-                ])
+                Assessment.status.in_(
+                    [
+                        AssessmentStatus.AWAITING_FINAL_VALIDATION,
+                        AssessmentStatus.REWORK,  # Include for parallel calibration
+                    ]
+                ),
             )
         # Assessors: Show assessments ready for initial review
         else:
             query = query.filter(
-                Assessment.status.in_([
-                    AssessmentStatus.SUBMITTED,
-                    AssessmentStatus.IN_REVIEW,
-                    AssessmentStatus.REWORK,
-                    AssessmentStatus.SUBMITTED_FOR_REVIEW,  # Legacy status support
-                    AssessmentStatus.NEEDS_REWORK,  # Legacy status support
-                ])
+                Assessment.status.in_(
+                    [
+                        AssessmentStatus.SUBMITTED,
+                        AssessmentStatus.IN_REVIEW,
+                        AssessmentStatus.REWORK,
+                        AssessmentStatus.SUBMITTED_FOR_REVIEW,  # Legacy status support
+                        AssessmentStatus.NEEDS_REWORK,  # Legacy status support
+                    ]
+                )
             )
 
         # Apply remaining filters
@@ -102,7 +109,8 @@ class AssessorService:
                 # If they already requested calibration, don't show until BLGU resubmits
                 pending_calibrations = a.pending_calibrations or []
                 has_pending_calibration = any(
-                    pc.get("governance_area_id") == assessor.validator_area_id and not pc.get("approved", False)
+                    pc.get("governance_area_id") == assessor.validator_area_id
+                    and not pc.get("approved", False)
                     for pc in pending_calibrations
                 )
                 if has_pending_calibration:
@@ -122,7 +130,8 @@ class AssessorService:
 
                 # Get all responses in the validator's governance area for this assessment
                 validator_area_responses = [
-                    r for r in a.responses
+                    r
+                    for r in a.responses
                     if r.indicator and r.indicator.governance_area_id == assessor.validator_area_id
                 ]
 
@@ -130,8 +139,7 @@ class AssessorService:
                 # (the validator has already completed their work on this assessment)
                 if validator_area_responses:
                     all_validated = all(
-                        r.validation_status is not None
-                        for r in validator_area_responses
+                        r.validation_status is not None for r in validator_area_responses
                     )
                     if all_validated:
                         continue  # Skip this assessment - validator already done
@@ -145,7 +153,8 @@ class AssessorService:
             if assessor.validator_area_id is not None:
                 # Validator: progress based on their governance area
                 area_responses = [
-                    r for r in a.responses
+                    r
+                    for r in a.responses
                     if r.indicator and r.indicator.governance_area_id == assessor.validator_area_id
                 ]
                 reviewed_count = sum(1 for r in area_responses if r.validation_status is not None)
@@ -154,7 +163,8 @@ class AssessorService:
                 # Assessor: progress based on all indicators with response_data filled
                 area_responses = a.responses
                 reviewed_count = sum(
-                    1 for r in area_responses
+                    1
+                    for r in area_responses
                     if r.response_data is not None and r.response_data != {}
                 )
                 total_count = len(area_responses)
@@ -166,9 +176,7 @@ class AssessorService:
                     "assessment_id": a.id,
                     "barangay_name": barangay_name,
                     "submission_date": a.submitted_at,
-                    "status": a.status.value
-                    if hasattr(a.status, "value")
-                    else str(a.status),
+                    "status": a.status.value if hasattr(a.status, "value") else str(a.status),
                     "updated_at": a.updated_at,
                     "is_calibration_rework": a.is_calibration_rework,
                     "pending_calibrations_count": pending_count,
@@ -207,16 +215,18 @@ class AssessorService:
             .join(Indicator, Indicator.id == AssessmentResponse.indicator_id)
             .options(
                 selectinload(Assessment.responses)
-                    .joinedload(AssessmentResponse.indicator)
-                    .joinedload(Indicator.governance_area)
+                .joinedload(AssessmentResponse.indicator)
+                .joinedload(Indicator.governance_area)
             )
             .filter(
                 Indicator.governance_area_id == validator.validator_area_id,
-                Assessment.status.in_([
-                    AssessmentStatus.AWAITING_FINAL_VALIDATION,
-                    AssessmentStatus.COMPLETED
-                ]),
-                Assessment.submitted_at.isnot(None)
+                Assessment.status.in_(
+                    [
+                        AssessmentStatus.AWAITING_FINAL_VALIDATION,
+                        AssessmentStatus.COMPLETED,
+                    ]
+                ),
+                Assessment.submitted_at.isnot(None),
             )
             .distinct(Assessment.id)
             .all()
@@ -226,14 +236,14 @@ class AssessorService:
         completed_count = 0
         for assessment in assessments:
             validator_area_responses = [
-                r for r in assessment.responses
+                r
+                for r in assessment.responses
                 if r.indicator and r.indicator.governance_area_id == validator.validator_area_id
             ]
 
             if validator_area_responses:
                 all_validated = all(
-                    r.validation_status is not None
-                    for r in validator_area_responses
+                    r.validation_status is not None for r in validator_area_responses
                 )
                 if all_validated:
                     completed_count += 1
@@ -272,11 +282,7 @@ class AssessorService:
         print(f"response_data: {response_data}")
 
         # Get the assessment response
-        response = (
-            db.query(AssessmentResponse)
-            .filter(AssessmentResponse.id == response_id)
-            .first()
-        )
+        response = db.query(AssessmentResponse).filter(AssessmentResponse.id == response_id).first()
 
         if not response:
             return {
@@ -360,9 +366,7 @@ class AssessorService:
             "validation_status": validation_status,
         }
 
-    def create_mov_for_assessor(
-        self, db: Session, mov_create: MOVCreate, assessor: User
-    ) -> dict:
+    def create_mov_for_assessor(self, db: Session, mov_create: MOVCreate, assessor: User) -> dict:
         """
         Create a MOV (Means of Verification) for an assessment response.
 
@@ -395,9 +399,7 @@ class AssessorService:
         # Verify the assessor has permission to upload MOVs for this response
         # - If assessor has validator_area_id: Check if indicator belongs to that area
         # - If assessor has no validator_area_id: Grant access (system-wide)
-        indicator = (
-            db.query(Indicator).filter(Indicator.id == response.indicator_id).first()
-        )
+        indicator = db.query(Indicator).filter(Indicator.id == response.indicator_id).first()
 
         if not indicator:
             return {
@@ -463,11 +465,7 @@ class AssessorService:
             dict: Success status, MOV details, storage path, and MOV entity
         """
         # Get the assessment response
-        response = (
-            db.query(AssessmentResponse)
-            .filter(AssessmentResponse.id == response_id)
-            .first()
-        )
+        response = db.query(AssessmentResponse).filter(AssessmentResponse.id == response_id).first()
 
         if not response:
             return {
@@ -481,9 +479,7 @@ class AssessorService:
         # Verify the assessor has permission to upload MOVs for this response
         # - If assessor has validator_area_id: Check if indicator belongs to that area
         # - If assessor has no validator_area_id: Grant access (system-wide)
-        indicator = (
-            db.query(Indicator).filter(Indicator.id == response.indicator_id).first()
-        )
+        indicator = db.query(Indicator).filter(Indicator.id == response.indicator_id).first()
 
         if not indicator:
             return {
@@ -507,9 +503,7 @@ class AssessorService:
 
         # Upload file to Supabase Storage via storage_service
         try:
-            upload_result = storage_service.upload_mov(
-                file=file, response_id=response_id, db=db
-            )
+            upload_result = storage_service.upload_mov(file=file, response_id=response_id, db=db)
         except ValueError as e:
             return {
                 "success": False,
@@ -532,7 +526,7 @@ class AssessorService:
         # but we document in comments that this was uploaded by assessor
         stored_filename = upload_result["filename"]
         original_filename = custom_filename or upload_result["original_filename"]
-        
+
         db_mov = MOVModel(  # Use SQLAlchemy model, not Pydantic schema
             filename=stored_filename,
             original_filename=original_filename,
@@ -558,9 +552,11 @@ class AssessorService:
             "file_size": db_mov.file_size,
             "content_type": db_mov.content_type,
             "storage_path": db_mov.storage_path,
-            "status": db_mov.status.value if hasattr(db_mov.status, "value") else str(db_mov.status),
+            "status": db_mov.status.value
+            if hasattr(db_mov.status, "value")
+            else str(db_mov.status),
             "response_id": db_mov.response_id,
-            "uploaded_at": db_mov.uploaded_at.isoformat() + 'Z',
+            "uploaded_at": db_mov.uploaded_at.isoformat() + "Z",
         }
 
         return {
@@ -607,8 +603,9 @@ class AssessorService:
                         selectinload(Indicator.checklist_items),
                         selectinload(Indicator.children),
                     ),
-                    selectinload(AssessmentResponse.feedback_comments)
-                    .selectinload(FeedbackComment.assessor),
+                    selectinload(AssessmentResponse.feedback_comments).selectinload(
+                        FeedbackComment.assessor
+                    ),
                 ),
                 # Epic 4.0: Load MOV files from the new mov_files table
                 selectinload(Assessment.mov_files),
@@ -655,21 +652,21 @@ class AssessorService:
             "assessment": {
                 "id": assessment.id,
                 "status": assessment.status.value,
-                "created_at": assessment.created_at.isoformat() + 'Z',
-                "updated_at": assessment.updated_at.isoformat() + 'Z',
-                "submitted_at": assessment.submitted_at.isoformat() + 'Z'
+                "created_at": assessment.created_at.isoformat() + "Z",
+                "updated_at": assessment.updated_at.isoformat() + "Z",
+                "submitted_at": assessment.submitted_at.isoformat() + "Z"
                 if assessment.submitted_at
                 else None,
-                "validated_at": assessment.validated_at.isoformat() + 'Z'
+                "validated_at": assessment.validated_at.isoformat() + "Z"
                 if assessment.validated_at
                 else None,
-                "rework_requested_at": assessment.rework_requested_at.isoformat() + 'Z'
+                "rework_requested_at": assessment.rework_requested_at.isoformat() + "Z"
                 if assessment.rework_requested_at
                 else None,
                 "rework_count": assessment.rework_count,
                 "calibration_count": assessment.calibration_count,
                 "calibrated_area_ids": assessment.calibrated_area_ids or [],
-                "calibration_requested_at": assessment.calibration_requested_at.isoformat() + 'Z'
+                "calibration_requested_at": assessment.calibration_requested_at.isoformat() + "Z"
                 if assessment.calibration_requested_at
                 else None,
                 "blgu_user": {
@@ -707,7 +704,8 @@ class AssessorService:
                     continue
             # Get all MOV files for this indicator (before filtering)
             all_movs_for_indicator = [
-                mov for mov in assessment.mov_files
+                mov
+                for mov in assessment.mov_files
                 if mov.indicator_id == response.indicator_id and mov.deleted_at is None
             ]
 
@@ -736,7 +734,16 @@ class AssessorService:
                         f"[VALIDATOR FILTER] Indicator {response.indicator_id} (requires_rework=True, status=AWAITING_FINAL_VALIDATION): "
                         f"Showing all {len(filtered_movs)} MOVs (rework cycle complete)"
                     )
-            elif response.requires_rework and assessment.rework_requested_at and assessment.status in [AssessmentStatus.REWORK, AssessmentStatus.SUBMITTED_FOR_REVIEW, AssessmentStatus.SUBMITTED]:
+            elif (
+                response.requires_rework
+                and assessment.rework_requested_at
+                and assessment.status
+                in [
+                    AssessmentStatus.REWORK,
+                    AssessmentStatus.SUBMITTED_FOR_REVIEW,
+                    AssessmentStatus.SUBMITTED,
+                ]
+            ):
                 # Assessor reviewing reworked indicator - show only new files uploaded after rework
                 self.logger.info(
                     f"[ASSESSOR REWORK FILTER] Assessment {assessment.id}, Indicator {response.indicator_id}: "
@@ -752,7 +759,8 @@ class AssessorService:
                     )
 
                 filtered_movs = [
-                    mov for mov in all_movs_for_indicator
+                    mov
+                    for mov in all_movs_for_indicator
                     if mov.uploaded_at >= assessment.rework_requested_at
                 ]
 
@@ -779,8 +787,8 @@ class AssessorService:
                 if response.validation_status
                 else None,
                 "response_data": response.response_data,
-                "created_at": response.created_at.isoformat() + 'Z',
-                "updated_at": response.updated_at.isoformat() + 'Z',
+                "created_at": response.created_at.isoformat() + "Z",
+                "updated_at": response.updated_at.isoformat() + "Z",
                 "indicator": {
                     "id": response.indicator.id,
                     "name": response.indicator.name,
@@ -814,7 +822,10 @@ class AssessorService:
                             "option_group": item.option_group,
                             "field_notes": item.field_notes,
                         }
-                        for item in sorted(response.indicator.checklist_items, key=lambda x: x.display_order)
+                        for item in sorted(
+                            response.indicator.checklist_items,
+                            key=lambda x: x.display_order,
+                        )
                     ],
                 },
                 "movs": [
@@ -826,7 +837,9 @@ class AssessorService:
                         "content_type": mov_file.file_type,
                         "storage_path": mov_file.file_url,
                         "status": "uploaded",  # MOVFile doesn't have status field
-                        "uploaded_at": mov_file.uploaded_at.isoformat() + 'Z' if mov_file.uploaded_at else None,
+                        "uploaded_at": mov_file.uploaded_at.isoformat() + "Z"
+                        if mov_file.uploaded_at
+                        else None,
                         "field_id": mov_file.field_id,
                     }
                     # Use the filtered_movs list created above (already filtered by rework timestamp)
@@ -838,7 +851,7 @@ class AssessorService:
                         "comment": comment.comment,
                         "comment_type": comment.comment_type,
                         "is_internal_note": comment.is_internal_note,
-                        "created_at": comment.created_at.isoformat() + 'Z',
+                        "created_at": comment.created_at.isoformat() + "Z",
                         "assessor": {
                             "id": comment.assessor.id,
                             "name": comment.assessor.name,
@@ -859,9 +872,7 @@ class AssessorService:
 
         return assessment_data
 
-    def send_assessment_for_rework(
-        self, db: Session, assessment_id: int, assessor: User
-    ) -> dict:
+    def send_assessment_for_rework(self, db: Session, assessment_id: int, assessor: User) -> dict:
         """
         Phase 1 (Table Assessment): Send assessment back to BLGU user for rework.
 
@@ -900,20 +911,21 @@ class AssessorService:
 
         # Check if rework is allowed (rework_count must be 0 - only ONE rework cycle)
         if assessment.rework_count != 0:
-            raise ValueError(
-                "Assessment has already been sent for rework. Cannot send again."
-            )
+            raise ValueError("Assessment has already been sent for rework. Cannot send again.")
 
         # Enforce PRD: Only allow rework from Submitted status
         # Accept both SUBMITTED and SUBMITTED_FOR_REVIEW (legacy) statuses
-        if assessment.status not in [AssessmentStatus.SUBMITTED, AssessmentStatus.SUBMITTED_FOR_REVIEW]:
+        if assessment.status not in [
+            AssessmentStatus.SUBMITTED,
+            AssessmentStatus.SUBMITTED_FOR_REVIEW,
+        ]:
             raise ValueError("Rework is only allowed when assessment is Submitted for Review")
 
         # Phase 1 Assessors: Must have at least one indicator with public comments OR MOV annotations to send for rework
         # (Assessors don't set validation_status, only validators do)
         has_comments = any(
             any(
-                fc.comment_type == 'validation' and not fc.is_internal_note and fc.comment
+                fc.comment_type == "validation" and not fc.is_internal_note and fc.comment
                 for fc in response.feedback_comments
             )
             for response in assessment.responses
@@ -925,9 +937,9 @@ class AssessorService:
         mov_file_ids = [mf.id for mf in assessment.mov_files]
         has_annotations = False
         if mov_file_ids:
-            annotation_count = db.query(MOVAnnotation).filter(
-                MOVAnnotation.mov_file_id.in_(mov_file_ids)
-            ).count()
+            annotation_count = (
+                db.query(MOVAnnotation).filter(MOVAnnotation.mov_file_id.in_(mov_file_ids)).count()
+            )
             has_annotations = annotation_count > 0
 
         if not has_comments and not has_annotations:
@@ -950,14 +962,17 @@ class AssessorService:
         annotations_by_indicator = {}
 
         if mov_file_ids:
-            all_annotations = db.query(MOVAnnotation).filter(
-                MOVAnnotation.mov_file_id.in_(mov_file_ids)
-            ).all()
+            all_annotations = (
+                db.query(MOVAnnotation).filter(MOVAnnotation.mov_file_id.in_(mov_file_ids)).all()
+            )
 
             # Group annotations by indicator_id
             for annotation in all_annotations:
                 # Get the MOV file to find its indicator_id
-                mov_file = next((mf for mf in assessment.mov_files if mf.id == annotation.mov_file_id), None)
+                mov_file = next(
+                    (mf for mf in assessment.mov_files if mf.id == annotation.mov_file_id),
+                    None,
+                )
                 if mov_file:
                     indicator_id = mov_file.indicator_id
                     if indicator_id not in annotations_by_indicator:
@@ -968,11 +983,14 @@ class AssessorService:
         # (Assessors don't set validation_status, only validators do in Phase 2)
         for response in assessment.responses:
             has_public_comments = any(
-                fc.comment_type == 'validation' and not fc.is_internal_note and fc.comment
+                fc.comment_type == "validation" and not fc.is_internal_note and fc.comment
                 for fc in response.feedback_comments
             )
 
-            has_mov_annotations = response.indicator_id in annotations_by_indicator and len(annotations_by_indicator[response.indicator_id]) > 0
+            has_mov_annotations = (
+                response.indicator_id in annotations_by_indicator
+                and len(annotations_by_indicator[response.indicator_id]) > 0
+            )
 
             # Mark for rework if assessor provided feedback (comments OR annotations)
             # CRITICAL: Also reset is_completed to False so BLGU must re-complete the indicator
@@ -989,7 +1007,7 @@ class AssessorService:
                     response.response_data = {
                         k: v
                         for k, v in response.response_data.items()
-                        if not k.startswith('assessor_val_')
+                        if not k.startswith("assessor_val_")
                     }
 
                 self.logger.info(
@@ -1042,9 +1060,7 @@ class AssessorService:
             "notification_result": notification_result,
         }
 
-    def submit_for_calibration(
-        self, db: Session, assessment_id: int, validator: User
-    ) -> dict:
+    def submit_for_calibration(self, db: Session, assessment_id: int, validator: User) -> dict:
         """
         Phase 2 (Table Validation): Submit assessment for calibration.
 
@@ -1076,7 +1092,7 @@ class AssessorService:
             db.query(Assessment)
             .options(
                 joinedload(Assessment.blgu_user).joinedload(User.barangay),
-                selectinload(Assessment.responses).joinedload(AssessmentResponse.indicator)
+                selectinload(Assessment.responses).joinedload(AssessmentResponse.indicator),
             )
             .filter(Assessment.id == assessment_id)
             .first()
@@ -1094,7 +1110,10 @@ class AssessorService:
 
         # Must be in AWAITING_FINAL_VALIDATION or REWORK status (REWORK allows parallel calibration)
         # REWORK status means another validator already requested calibration - we can add ours
-        if assessment.status not in [AssessmentStatus.AWAITING_FINAL_VALIDATION, AssessmentStatus.REWORK]:
+        if assessment.status not in [
+            AssessmentStatus.AWAITING_FINAL_VALIDATION,
+            AssessmentStatus.REWORK,
+        ]:
             raise ValueError(
                 "Calibration is only allowed when assessment is in AWAITING_FINAL_VALIDATION or REWORK status"
             )
@@ -1103,7 +1122,8 @@ class AssessorService:
         validator_area_responses = [
             response
             for response in assessment.responses
-            if response.indicator and response.indicator.governance_area_id == validator.validator_area_id
+            if response.indicator
+            and response.indicator.governance_area_id == validator.validator_area_id
         ]
 
         if not validator_area_responses:
@@ -1122,7 +1142,8 @@ class AssessorService:
         # Check if this validator already has a pending calibration for this area
         pending_calibrations = assessment.pending_calibrations or []
         existing_pending = [
-            pc for pc in pending_calibrations
+            pc
+            for pc in pending_calibrations
             if pc.get("governance_area_id") == validator.validator_area_id
         ]
         if existing_pending:
@@ -1134,8 +1155,7 @@ class AssessorService:
         # Validator must have at least one indicator marked as FAIL (Unmet) to submit for calibration
         # Check for FAIL indicators in validator's area responses
         failed_responses = [
-            r for r in validator_area_responses
-            if r.validation_status == ValidationStatus.FAIL
+            r for r in validator_area_responses if r.validation_status == ValidationStatus.FAIL
         ]
 
         if not failed_responses:
@@ -1167,7 +1187,8 @@ class AssessorService:
         assessment.pending_calibrations = assessment.pending_calibrations + [calibration_request]
         # CRITICAL: Flag the JSON column as modified so SQLAlchemy detects the change
         from sqlalchemy.orm.attributes import flag_modified
-        flag_modified(assessment, 'pending_calibrations')
+
+        flag_modified(assessment, "pending_calibrations")
 
         # Update assessment status to REWORK if not already
         # First calibration request changes status, subsequent ones keep it in REWORK
@@ -1192,7 +1213,9 @@ class AssessorService:
         # Track which governance area has been calibrated (per-area limit)
         if assessment.calibrated_area_ids is None:
             assessment.calibrated_area_ids = []
-        assessment.calibrated_area_ids = assessment.calibrated_area_ids + [validator.validator_area_id]
+        assessment.calibrated_area_ids = assessment.calibrated_area_ids + [
+            validator.validator_area_id
+        ]
 
         # Mark ONLY indicators with "Unmet" (FAIL) validation status for rework
         # These are the indicators the BLGU needs to correct and re-upload
@@ -1215,7 +1238,7 @@ class AssessorService:
                     response.response_data = {
                         k: v
                         for k, v in response.response_data.items()
-                        if not k.startswith('assessor_val_')
+                        if not k.startswith("assessor_val_")
                     }
 
                 calibrated_count += 1
@@ -1247,7 +1270,9 @@ class AssessorService:
         # Summary is stored per governance area in calibration_summaries_by_area
         summary_result = {"success": False, "skipped": True}
         try:
-            from app.workers.intelligence_worker import generate_calibration_summary_task
+            from app.workers.intelligence_worker import (
+                generate_calibration_summary_task,
+            )
 
             summary_task = generate_calibration_summary_task.delay(
                 assessment_id, validator.validator_area_id
@@ -1279,9 +1304,7 @@ class AssessorService:
             "summary_result": summary_result,
         }
 
-    def finalize_assessment(
-        self, db: Session, assessment_id: int, assessor: User
-    ) -> dict:
+    def finalize_assessment(self, db: Session, assessment_id: int, assessor: User) -> dict:
         """
         Phase 1 (Assessors): Pass assessment to Phase 2 (Table Validation).
         Phase 2 (Validators): Finalize assessment with final P/F/C statuses.
@@ -1305,7 +1328,7 @@ class AssessorService:
             db.query(Assessment)
             .options(
                 joinedload(Assessment.blgu_user).joinedload(User.barangay),
-                selectinload(Assessment.responses).joinedload(AssessmentResponse.indicator)
+                selectinload(Assessment.responses).joinedload(AssessmentResponse.indicator),
             )
             .filter(Assessment.id == assessment_id)
             .first()
@@ -1340,15 +1363,21 @@ class AssessorService:
             # Must be in AWAITING_FINAL_VALIDATION or REWORK status
             # REWORK status is allowed for parallel calibration: another validator may have
             # requested calibration for their area, but this validator can still finalize their area
-            if assessment.status not in [AssessmentStatus.AWAITING_FINAL_VALIDATION, AssessmentStatus.REWORK]:
-                raise ValueError("Validators can only finalize assessments in AWAITING_FINAL_VALIDATION or REWORK status")
+            if assessment.status not in [
+                AssessmentStatus.AWAITING_FINAL_VALIDATION,
+                AssessmentStatus.REWORK,
+            ]:
+                raise ValueError(
+                    "Validators can only finalize assessments in AWAITING_FINAL_VALIDATION or REWORK status"
+                )
 
             # Validators only review indicators in their assigned governance area
             # Filter responses to only those in validator's governance area
             validator_area_responses = [
                 response
                 for response in assessment.responses
-                if response.indicator and response.indicator.governance_area_id == assessor.validator_area_id
+                if response.indicator
+                and response.indicator.governance_area_id == assessor.validator_area_id
             ]
 
             if not validator_area_responses:
@@ -1371,8 +1400,7 @@ class AssessorService:
             # Check if ALL governance areas have been validated
             # (All responses across all areas should have validation_status)
             all_responses_validated = all(
-                response.validation_status is not None
-                for response in assessment.responses
+                response.validation_status is not None for response in assessment.responses
             )
 
             if all_responses_validated:
@@ -1394,7 +1422,7 @@ class AssessorService:
                 AssessmentStatus.SUBMITTED_FOR_REVIEW,
                 AssessmentStatus.IN_REVIEW,
                 AssessmentStatus.REWORK,
-                AssessmentStatus.SUBMITTED
+                AssessmentStatus.SUBMITTED,
             ):
                 raise ValueError("Cannot finalize assessment in its current status")
 
@@ -1406,8 +1434,7 @@ class AssessorService:
 
                 # Check for assessor validation data (assessor_val_ prefix)
                 has_assessor_checklist = any(
-                    key.startswith('assessor_val_')
-                    for key in response_data.keys()
+                    key.startswith("assessor_val_") for key in response_data.keys()
                 )
 
                 # Check for feedback comments in the feedback_comments relationship
@@ -1446,10 +1473,7 @@ class AssessorService:
 
         # Set validated_at timestamp
         assessment.validated_at = (
-            db.query(Assessment)
-            .filter(Assessment.id == assessment_id)
-            .first()
-            .updated_at
+            db.query(Assessment).filter(Assessment.id == assessment_id).first().updated_at
         )
         # Note: updated_at is automatically handled by SQLAlchemy's onupdate
 
@@ -1460,7 +1484,9 @@ class AssessorService:
         # notify validators for all governance areas in the assessment
         if not is_validator and assessment.status == AssessmentStatus.AWAITING_FINAL_VALIDATION:
             try:
-                from app.workers.notifications import send_ready_for_validation_notification
+                from app.workers.notifications import (
+                    send_ready_for_validation_notification,
+                )
 
                 # Get unique governance areas from assessment responses
                 governance_area_ids = set(
@@ -1484,9 +1510,7 @@ class AssessorService:
         from app.services.intelligence_service import intelligence_service
 
         try:
-            classification_result = intelligence_service.classify_assessment(
-                db, assessment_id
-            )
+            classification_result = intelligence_service.classify_assessment(db, assessment_id)
         except Exception as e:
             # Log the error but don't fail the finalization operation
             print(f"Failed to run classification: {e}")
@@ -1509,10 +1533,15 @@ class AssessorService:
 
         # Notification #7: If validator completed ALL governance areas (status = AWAITING_MLGOO_APPROVAL),
         # notify MLGOO users for final approval
-        notification_result = {"success": False, "message": "Not triggered - assessment not ready for MLGOO approval"}
+        notification_result = {
+            "success": False,
+            "message": "Not triggered - assessment not ready for MLGOO approval",
+        }
         if assessment.status == AssessmentStatus.AWAITING_MLGOO_APPROVAL:
             try:
-                from app.workers.notifications import send_ready_for_mlgoo_approval_notification
+                from app.workers.notifications import (
+                    send_ready_for_mlgoo_approval_notification,
+                )
 
                 # Queue the notification task to run in the background
                 task = send_ready_for_mlgoo_approval_notification.delay(assessment_id)
@@ -1534,7 +1563,7 @@ class AssessorService:
             "message": "Assessment review completed and sent to validator for final validation",
             "assessment_id": assessment_id,
             "new_status": assessment.status.value,
-            "validated_at": assessment.validated_at.isoformat() + 'Z'
+            "validated_at": assessment.validated_at.isoformat() + "Z"
             if assessment.validated_at
             else None,
             "classification_result": classification_result,
@@ -1542,7 +1571,7 @@ class AssessorService:
             "notification_result": notification_result,
         }
 
-    def get_analytics(self, db: Session, assessor: User) -> Dict[str, Any]:
+    def get_analytics(self, db: Session, assessor: User) -> dict[str, Any]:
         """
         Get analytics data for the assessor's governance area.
 
@@ -1577,9 +1606,7 @@ class AssessorService:
             .join(Indicator, Indicator.id == AssessmentResponse.indicator_id)
             .options(
                 joinedload(Assessment.blgu_user).joinedload(User.barangay),
-                joinedload(Assessment.responses).joinedload(
-                    AssessmentResponse.indicator
-                ),
+                joinedload(Assessment.responses).joinedload(AssessmentResponse.indicator),
             )
         )
 
@@ -1598,7 +1625,8 @@ class AssessorService:
                         AssessmentStatus.AWAITING_FINAL_VALIDATION,  # Include assessor-completed assessments
                     ]
                 ),
-                Assessment.reviewed_by == assessor.id  # Only count assessments reviewed by THIS assessor
+                Assessment.reviewed_by
+                == assessor.id,  # Only count assessments reviewed by THIS assessor
             )
             .distinct(Assessment.id)
             .all()
@@ -1606,35 +1634,21 @@ class AssessorService:
 
         # Calculate overview (performance metrics)
         total_assessed = len(assessments)
-        passed = sum(
-            1
-            for a in assessments
-            if a.final_compliance_status == ComplianceStatus.PASSED
-        )
-        failed = sum(
-            1
-            for a in assessments
-            if a.final_compliance_status == ComplianceStatus.FAILED
-        )
+        passed = sum(1 for a in assessments if a.final_compliance_status == ComplianceStatus.PASSED)
+        failed = sum(1 for a in assessments if a.final_compliance_status == ComplianceStatus.FAILED)
         # If compliance status not set, count based on validation status
         # An assessment passes if majority of responses are Pass
         if total_assessed > 0:
             assessments_without_compliance = [
-                a
-                for a in assessments
-                if a.final_compliance_status is None
+                a for a in assessments if a.final_compliance_status is None
             ]
             for a in assessments_without_compliance:
                 if a.responses:
                     pass_count = sum(
-                        1
-                        for r in a.responses
-                        if r.validation_status == ValidationStatus.PASS
+                        1 for r in a.responses if r.validation_status == ValidationStatus.PASS
                     )
                     fail_count = sum(
-                        1
-                        for r in a.responses
-                        if r.validation_status == ValidationStatus.FAIL
+                        1 for r in a.responses if r.validation_status == ValidationStatus.FAIL
                     )
                     if pass_count > fail_count:
                         passed += 1
@@ -1667,8 +1681,8 @@ class AssessorService:
 
         # Calculate hotspots (top underperforming indicators)
         # Find indicators with most failures (validation_status = Fail)
-        indicator_failures: Dict[int, Dict[str, Any]] = {}
-        barangay_failures: Dict[int, List[str]] = {}
+        indicator_failures: dict[int, dict[str, Any]] = {}
+        barangay_failures: dict[int, list[str]] = {}
 
         for assessment in assessments:
             barangay_name = getattr(
@@ -1695,9 +1709,7 @@ class AssessorService:
                     indicator_failures[indicator_id]["failed_count"] += 1
                     if barangay_name not in barangay_failures[indicator_id]:
                         barangay_failures[indicator_id].append(barangay_name)
-                        indicator_failures[indicator_id]["barangays"].append(
-                            barangay_name
-                        )
+                        indicator_failures[indicator_id]["barangays"].append(barangay_name)
 
         # Convert to list and sort by failed_count (top 10)
         hotspots_list = [
@@ -1709,7 +1721,9 @@ class AssessorService:
                 "reason": None,  # Can be extended with feedback comments analysis
             }
             for indicator_id, data in sorted(
-                indicator_failures.items(), key=lambda x: x[1]["failed_count"], reverse=True
+                indicator_failures.items(),
+                key=lambda x: x[1]["failed_count"],
+                reverse=True,
             )[:10]
         ]
 
@@ -1730,10 +1744,7 @@ class AssessorService:
                 for response in assessment.responses:
                     if response.validation_status is not None:
                         # Use updated_at as proxy for validation time
-                        if (
-                            first_validation is None
-                            or response.updated_at < first_validation
-                        ):
+                        if first_validation is None or response.updated_at < first_validation:
                             first_validation = response.updated_at
 
                 if first_validation:
@@ -1743,9 +1754,7 @@ class AssessorService:
                     if time_diff > 0:
                         review_times.append(time_diff)
 
-        avg_time_to_first_review = (
-            sum(review_times) / len(review_times) if review_times else 0.0
-        )
+        avg_time_to_first_review = sum(review_times) / len(review_times) if review_times else 0.0
 
         # Calculate rework cycle time
         rework_times = []
@@ -1761,19 +1770,16 @@ class AssessorService:
                     and assessment.validated_at > assessment.submitted_at
                 ):
                     time_diff = (
-                        (assessment.validated_at - assessment.submitted_at).total_seconds()
-                        / (24 * 3600)
-                    )
+                        assessment.validated_at - assessment.submitted_at
+                    ).total_seconds() / (24 * 3600)
                     rework_times.append(time_diff)
 
-        avg_rework_cycle_time = (
-            sum(rework_times) / len(rework_times) if rework_times else 0.0
-        )
+        avg_rework_cycle_time = sum(rework_times) / len(rework_times) if rework_times else 0.0
 
         rework_rate = (rework_count / total_assessed * 100) if total_assessed > 0 else 0.0
 
         # Counts by status
-        counts_by_status: Dict[str, int] = {}
+        counts_by_status: dict[str, int] = {}
         for status in AssessmentStatus:
             count = sum(1 for a in assessments if a.status == status)
             if count > 0:

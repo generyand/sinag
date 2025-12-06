@@ -13,24 +13,26 @@ Usage:
 """
 
 import sys
-from app.db.base import SessionLocal
-from app.db.models.governance_area import Indicator, GovernanceArea
+
 from sqlalchemy import text
+
+from app.db.base import SessionLocal
+from app.db.models.governance_area import GovernanceArea, Indicator
 
 
 def cleanup_test_governance_areas(db, dry_run=True):
     """Remove test governance areas with random number names."""
-    test_areas = db.query(GovernanceArea).filter(
-        GovernanceArea.name.like('%Test Governance Area%')
-    ).all()
+    test_areas = (
+        db.query(GovernanceArea).filter(GovernanceArea.name.like("%Test Governance Area%")).all()
+    )
 
-    print(f"\n{'[DRY RUN] ' if dry_run else ''}🗑️  Test Governance Areas to delete: {len(test_areas)}")
+    print(
+        f"\n{'[DRY RUN] ' if dry_run else ''}🗑️  Test Governance Areas to delete: {len(test_areas)}"
+    )
 
     for area in test_areas:
         # Count indicators in this area
-        indicators = db.query(Indicator).filter(
-            Indicator.governance_area_id == area.id
-        ).all()
+        indicators = db.query(Indicator).filter(Indicator.governance_area_id == area.id).all()
 
         print(f"   - {area.name} (ID: {area.id}) - {len(indicators)} indicator(s)")
 
@@ -40,11 +42,11 @@ def cleanup_test_governance_areas(db, dry_run=True):
                 # Delete from all related tables
                 db.execute(
                     text("DELETE FROM indicators_history WHERE indicator_id = :indicator_id"),
-                    {"indicator_id": indicator.id}
+                    {"indicator_id": indicator.id},
                 )
                 db.execute(
                     text("DELETE FROM assessment_responses WHERE indicator_id = :indicator_id"),
-                    {"indicator_id": indicator.id}
+                    {"indicator_id": indicator.id},
                 )
                 # Delete the indicator
                 db.delete(indicator)
@@ -58,13 +60,7 @@ def cleanup_test_governance_areas(db, dry_run=True):
 def cleanup_duplicate_indicators(db, dry_run=True):
     """Remove duplicate/test indicators."""
     # Patterns to identify test indicators
-    test_patterns = [
-        'Ind A',
-        'Test Indicator',
-        'TEST',
-        'test',
-        'Asnari'
-    ]
+    test_patterns = ["Ind A", "Test Indicator", "TEST", "test", "Asnari"]
 
     # Keep these specific indicators (production + our test indicator)
     keep_ids = [278]  # MOV Upload Test Indicator
@@ -72,20 +68,20 @@ def cleanup_duplicate_indicators(db, dry_run=True):
     indicators_to_delete = []
 
     for pattern in test_patterns:
-        indicators = db.query(Indicator).filter(
-            Indicator.name.like(f'%{pattern}%')
-        ).all()
+        indicators = db.query(Indicator).filter(Indicator.name.like(f"%{pattern}%")).all()
 
         for ind in indicators:
             if ind.id not in keep_ids and ind not in indicators_to_delete:
                 indicators_to_delete.append(ind)
 
-    print(f"\n{'[DRY RUN] ' if dry_run else ''}🗑️  Duplicate/Test Indicators to delete: {len(indicators_to_delete)}")
+    print(
+        f"\n{'[DRY RUN] ' if dry_run else ''}🗑️  Duplicate/Test Indicators to delete: {len(indicators_to_delete)}"
+    )
 
     for ind in indicators_to_delete:
-        gov_area = db.query(GovernanceArea).filter(
-            GovernanceArea.id == ind.governance_area_id
-        ).first()
+        gov_area = (
+            db.query(GovernanceArea).filter(GovernanceArea.id == ind.governance_area_id).first()
+        )
         gov_area_name = gov_area.name if gov_area else "Unknown"
 
         print(f"   - ID {ind.id}: {ind.name} (in {gov_area_name})")
@@ -94,11 +90,11 @@ def cleanup_duplicate_indicators(db, dry_run=True):
             # Delete from all related tables
             db.execute(
                 text("DELETE FROM indicators_history WHERE indicator_id = :indicator_id"),
-                {"indicator_id": ind.id}
+                {"indicator_id": ind.id},
             )
             db.execute(
                 text("DELETE FROM assessment_responses WHERE indicator_id = :indicator_id"),
-                {"indicator_id": ind.id}
+                {"indicator_id": ind.id},
             )
             # Delete the indicator
             db.delete(ind)
@@ -112,14 +108,16 @@ def cleanup_empty_governance_areas(db, dry_run=True):
     empty_areas = []
 
     for area in all_areas:
-        indicator_count = db.query(Indicator).filter(
-            Indicator.governance_area_id == area.id
-        ).count()
+        indicator_count = (
+            db.query(Indicator).filter(Indicator.governance_area_id == area.id).count()
+        )
 
         if indicator_count == 0:
             empty_areas.append(area)
 
-    print(f"\n{'[DRY RUN] ' if dry_run else ''}🗑️  Empty Governance Areas to delete: {len(empty_areas)}")
+    print(
+        f"\n{'[DRY RUN] ' if dry_run else ''}🗑️  Empty Governance Areas to delete: {len(empty_areas)}"
+    )
 
     for area in empty_areas:
         print(f"   - {area.name} (ID: {area.id})")
@@ -143,17 +141,19 @@ def show_what_will_remain(db):
 
     for area in areas:
         # Skip test areas
-        if 'Test Governance Area' in area.name:
+        if "Test Governance Area" in area.name:
             continue
 
-        indicators = db.query(Indicator).filter(
-            Indicator.governance_area_id == area.id
-        ).all()
+        indicators = db.query(Indicator).filter(Indicator.governance_area_id == area.id).all()
 
         # Filter out test indicators
         real_indicators = [
-            ind for ind in indicators
-            if not any(pattern in ind.name for pattern in ['Ind A', 'Test Indicator', 'TEST', 'test', 'Asnari'])
+            ind
+            for ind in indicators
+            if not any(
+                pattern in ind.name
+                for pattern in ["Ind A", "Test Indicator", "TEST", "test", "Asnari"]
+            )
             or ind.id == 278  # Keep our test indicator
         ]
 
@@ -165,10 +165,10 @@ def show_what_will_remain(db):
                 # Check if has file upload
                 has_upload = False
                 if ind.form_schema:
-                    sections = ind.form_schema.get('sections', [])
+                    sections = ind.form_schema.get("sections", [])
                     for section in sections:
-                        for field in section.get('fields', []):
-                            if field.get('field_type') == 'file_upload':
+                        for field in section.get("fields", []):
+                            if field.get("field_type") == "file_upload":
                                 has_upload = True
                                 break
 
@@ -188,7 +188,7 @@ def main():
         sys.exit(1)
 
     mode = sys.argv[1]
-    dry_run = mode != '--confirm'
+    dry_run = mode != "--confirm"
 
     if dry_run:
         print("=" * 80)
@@ -198,9 +198,9 @@ def main():
         print("=" * 80)
         print("⚠️  DELETION MODE - Data will be permanently deleted!")
         print("=" * 80)
-        print("\nAre you sure you want to continue? Type 'yes' to confirm: ", end='')
+        print("\nAre you sure you want to continue? Type 'yes' to confirm: ", end="")
         confirmation = input().strip().lower()
-        if confirmation != 'yes':
+        if confirmation != "yes":
             print("❌ Aborted")
             sys.exit(0)
 

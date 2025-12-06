@@ -1,9 +1,10 @@
 # 🔧 System Schemas
 # Pydantic models for system-level API responses
 
-from pydantic import BaseModel
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any
+
+from pydantic import BaseModel
 
 
 class ApiResponse(BaseModel):
@@ -17,9 +18,9 @@ class HealthCheck(BaseModel):
 
     status: str
     timestamp: datetime
-    api: Dict[str, Any]
-    connections: Dict[str, Any]
-    checks: Dict[str, Any]
+    api: dict[str, Any]
+    connections: dict[str, Any]
+    checks: dict[str, Any]
 
 
 class ErrorResponse(BaseModel):

@@ -2,19 +2,28 @@
 Tests for external analytics service layer (app/services/external_analytics_service.py)
 """
 
-import pytest
 import uuid
-from sqlalchemy.orm import Session
 from datetime import datetime
 
-from app.db.models.user import User
-from app.db.models.barangay import Barangay
-from app.db.models.assessment import Assessment, AssessmentResponse
-from app.db.models.governance_area import GovernanceArea, Indicator
-from app.db.enums import UserRole, AssessmentStatus, ComplianceStatus, AreaType, ValidationStatus
-from app.services.external_analytics_service import external_analytics_service, MINIMUM_AGGREGATION_THRESHOLD
+import pytest
 from passlib.context import CryptContext
+from sqlalchemy.orm import Session
 
+from app.db.enums import (
+    AreaType,
+    AssessmentStatus,
+    ComplianceStatus,
+    UserRole,
+    ValidationStatus,
+)
+from app.db.models.assessment import Assessment, AssessmentResponse
+from app.db.models.barangay import Barangay
+from app.db.models.governance_area import GovernanceArea, Indicator
+from app.db.models.user import User
+from app.services.external_analytics_service import (
+    MINIMUM_AGGREGATION_THRESHOLD,
+    external_analytics_service,
+)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -43,10 +52,34 @@ def governance_areas(db_session: Session):
 def indicators(db_session: Session, governance_areas):
     """Create indicators for testing"""
     indicators = [
-        Indicator(id=1, indicator_code="1.1", name="Indicator 1.1", governance_area_id=1, is_active=True),
-        Indicator(id=2, indicator_code="2.1", name="Indicator 2.1", governance_area_id=2, is_active=True),
-        Indicator(id=3, indicator_code="3.1", name="Indicator 3.1", governance_area_id=3, is_active=True),
-        Indicator(id=4, indicator_code="4.1", name="Indicator 4.1", governance_area_id=4, is_active=True),
+        Indicator(
+            id=1,
+            indicator_code="1.1",
+            name="Indicator 1.1",
+            governance_area_id=1,
+            is_active=True,
+        ),
+        Indicator(
+            id=2,
+            indicator_code="2.1",
+            name="Indicator 2.1",
+            governance_area_id=2,
+            is_active=True,
+        ),
+        Indicator(
+            id=3,
+            indicator_code="3.1",
+            name="Indicator 3.1",
+            governance_area_id=3,
+            is_active=True,
+        ),
+        Indicator(
+            id=4,
+            indicator_code="4.1",
+            name="Indicator 4.1",
+            governance_area_id=4,
+            is_active=True,
+        ),
     ]
     for indicator in indicators:
         db_session.add(indicator)
@@ -59,7 +92,7 @@ def five_barangays(db_session: Session):
     """Create 5 barangays (minimum threshold for anonymization)"""
     barangays = []
     for i in range(5):
-        barangay = Barangay(name=f"Test Barangay {i+1}")
+        barangay = Barangay(name=f"Test Barangay {i + 1}")
         db_session.add(barangay)
         barangays.append(barangay)
     db_session.commit()
@@ -73,10 +106,10 @@ def five_blgu_users(db_session: Session, five_barangays):
     """Create 5 BLGU users (one per barangay)"""
     users = []
     for i, barangay in enumerate(five_barangays):
-        unique_email = f"blgu{i+1}_{uuid.uuid4().hex[:8]}@example.com"
+        unique_email = f"blgu{i + 1}_{uuid.uuid4().hex[:8]}@example.com"
         user = User(
             email=unique_email,
-            name=f"BLGU User {i+1}",
+            name=f"BLGU User {i + 1}",
             hashed_password=pwd_context.hash("password123"),
             role=UserRole.BLGU_USER,
             barangay_id=barangay.id,
@@ -134,9 +167,7 @@ def mixed_assessments(db_session: Session, five_blgu_users):
 # ====================================================================
 
 
-def test_get_overall_compliance_with_sufficient_data(
-    db_session: Session, five_assessments_passed
-):
+def test_get_overall_compliance_with_sufficient_data(db_session: Session, five_assessments_passed):
     """Test overall compliance with >= 5 barangays (passes minimum threshold)"""
     result = external_analytics_service.get_overall_compliance(db_session)
 
@@ -146,9 +177,7 @@ def test_get_overall_compliance_with_sufficient_data(
     assert result.pass_percentage > 0
 
 
-def test_get_overall_compliance_mixed_results(
-    db_session: Session, mixed_assessments
-):
+def test_get_overall_compliance_mixed_results(db_session: Session, mixed_assessments):
     """Test overall compliance with mixed pass/fail results"""
     result = external_analytics_service.get_overall_compliance(db_session)
 
@@ -158,13 +187,11 @@ def test_get_overall_compliance_mixed_results(
     assert result.pass_percentage == 60.0  # 3/5 * 100
 
 
-def test_get_overall_compliance_insufficient_data_raises_error(
-    db_session: Session
-):
+def test_get_overall_compliance_insufficient_data_raises_error(db_session: Session):
     """Test that < 5 barangays raises ValueError for privacy"""
     # Create only 4 barangays
     for i in range(4):
-        barangay = Barangay(name=f"Barangay {i+1}")
+        barangay = Barangay(name=f"Barangay {i + 1}")
         db_session.add(barangay)
     db_session.commit()
 
@@ -176,7 +203,7 @@ def test_get_overall_compliance_insufficient_data_raises_error(
             name=f"User {i}",
             hashed_password=pwd_context.hash("pass"),
             role=UserRole.BLGU_USER,
-            barangay_id=i+1,
+            barangay_id=i + 1,
             is_active=True,
         )
         db_session.add(user)
@@ -407,17 +434,16 @@ def test_get_complete_dashboard(
     assert result.overall_compliance.failed_count == 2
 
 
-def test_get_complete_dashboard_insufficient_data_raises_error(
-    db_session: Session
-):
+def test_get_complete_dashboard_insufficient_data_raises_error(db_session: Session):
     """Test that complete dashboard with < 5 barangays raises ValueError"""
     # Clear cache to ensure test isolation
     from app.core.cache import cache
+
     cache.invalidate_external_analytics()
 
     # Create only 4 barangays and assessments
     for i in range(4):
-        barangay = Barangay(name=f"Barangay {i+1}")
+        barangay = Barangay(name=f"Barangay {i + 1}")
         db_session.add(barangay)
     db_session.commit()
 
@@ -428,7 +454,7 @@ def test_get_complete_dashboard_insufficient_data_raises_error(
             name=f"User {i}",
             hashed_password=pwd_context.hash("pass"),
             role=UserRole.BLGU_USER,
-            barangay_id=i+1,
+            barangay_id=i + 1,
             is_active=True,
         )
         db_session.add(user)
@@ -464,11 +490,12 @@ def test_privacy_threshold_enforced_across_methods(db_session: Session):
     """Test that all methods enforce the privacy threshold"""
     # Clear cache to ensure test isolation
     from app.core.cache import cache
+
     cache.invalidate_external_analytics()
 
     # Create only 3 barangays (below threshold)
     for i in range(3):
-        barangay = Barangay(name=f"Barangay {i+1}")
+        barangay = Barangay(name=f"Barangay {i + 1}")
         db_session.add(barangay)
     db_session.commit()
 
@@ -479,7 +506,7 @@ def test_privacy_threshold_enforced_across_methods(db_session: Session):
             name=f"User {i}",
             hashed_password=pwd_context.hash("pass"),
             role=UserRole.BLGU_USER,
-            barangay_id=i+1,
+            barangay_id=i + 1,
             is_active=True,
         )
         db_session.add(user)
@@ -515,7 +542,7 @@ def test_csv_export_generation(db_session: Session, mixed_assessments):
         db=db_session,
         assessment_cycle=None,
         user_email="test@example.com",
-        user_role="KATUPARAN_CENTER_USER"
+        user_role="KATUPARAN_CENTER_USER",
     )
 
     # Verify CSV content structure
@@ -532,7 +559,7 @@ def test_csv_export_generation(db_session: Session, mixed_assessments):
     assert "ANONYMIZED AI INSIGHTS" in csv_content
 
     # Verify data rows are present
-    lines = csv_content.split('\n')
+    lines = csv_content.split("\n")
     assert len(lines) > 10  # Should have multiple sections
 
     # Verify no UMDC filtering (feature removed)
@@ -543,6 +570,7 @@ def test_csv_export_with_insufficient_data(db_session: Session, governance_areas
     """Test CSV export fails validation with insufficient barangays"""
     # Clear cache to ensure test isolation
     from app.core.cache import cache
+
     cache.invalidate_external_analytics()
 
     # Create only 3 barangays (below threshold of 5)
@@ -552,7 +580,7 @@ def test_csv_export_with_insufficient_data(db_session: Session, governance_areas
             name=f"User {i}",
             hashed_password=pwd_context.hash("password123"),
             role=UserRole.BLGU_USER,
-            is_active=True
+            is_active=True,
         )
         db_session.add(user)
         db_session.flush()
@@ -572,7 +600,7 @@ def test_csv_export_with_insufficient_data(db_session: Session, governance_areas
             db=db_session,
             assessment_cycle=None,
             user_email="test@example.com",
-            user_role="KATUPARAN_CENTER_USER"
+            user_role="KATUPARAN_CENTER_USER",
         )
 
     assert "Insufficient data for anonymization" in str(exc_info.value)
@@ -585,7 +613,7 @@ def test_pdf_export_generation(db_session: Session, mixed_assessments):
         db=db_session,
         assessment_cycle=None,
         user_email="test@example.com",
-        user_role="KATUPARAN_CENTER_USER"
+        user_role="KATUPARAN_CENTER_USER",
     )
 
     # Verify PDF content
@@ -593,7 +621,7 @@ def test_pdf_export_generation(db_session: Session, mixed_assessments):
     assert len(pdf_content) > 0
 
     # Verify PDF magic number (PDF header)
-    assert pdf_content[:4] == b'%PDF'
+    assert pdf_content[:4] == b"%PDF"
 
     # PDF should be substantial in size (at least 4KB for formatted report)
     assert len(pdf_content) > 4000
@@ -603,6 +631,7 @@ def test_pdf_export_with_insufficient_data(db_session: Session, governance_areas
     """Test PDF export fails validation with insufficient barangays"""
     # Clear cache to ensure test isolation
     from app.core.cache import cache
+
     cache.invalidate_external_analytics()
 
     # Create only 2 barangays (below threshold of 5)
@@ -612,7 +641,7 @@ def test_pdf_export_with_insufficient_data(db_session: Session, governance_areas
             name=f"User {i}",
             hashed_password=pwd_context.hash("password123"),
             role=UserRole.BLGU_USER,
-            is_active=True
+            is_active=True,
         )
         db_session.add(user)
         db_session.flush()
@@ -632,13 +661,15 @@ def test_pdf_export_with_insufficient_data(db_session: Session, governance_areas
             db=db_session,
             assessment_cycle=None,
             user_email="test@example.com",
-            user_role="KATUPARAN_CENTER_USER"
+            user_role="KATUPARAN_CENTER_USER",
         )
 
     assert "Insufficient data for anonymization" in str(exc_info.value)
 
 
-def test_validate_export_data_passes_with_sufficient_barangays(db_session: Session, mixed_assessments):
+def test_validate_export_data_passes_with_sufficient_barangays(
+    db_session: Session, mixed_assessments
+):
     """Test validation passes with sufficient barangays"""
     dashboard_data = external_analytics_service.get_complete_dashboard(db_session)
 
@@ -649,10 +680,13 @@ def test_validate_export_data_passes_with_sufficient_barangays(db_session: Sessi
     assert dashboard_data.overall_compliance.total_barangays >= MINIMUM_AGGREGATION_THRESHOLD
 
 
-def test_validate_export_data_fails_with_insufficient_barangays(db_session: Session, governance_areas, indicators):
+def test_validate_export_data_fails_with_insufficient_barangays(
+    db_session: Session, governance_areas, indicators
+):
     """Test validation fails with insufficient barangays"""
     # Clear cache to ensure test isolation
     from app.core.cache import cache
+
     cache.invalidate_external_analytics()
 
     # Create only 3 barangays
@@ -662,7 +696,7 @@ def test_validate_export_data_fails_with_insufficient_barangays(db_session: Sess
             name=f"User {i}",
             hashed_password=pwd_context.hash("password123"),
             role=UserRole.BLGU_USER,
-            is_active=True
+            is_active=True,
         )
         db_session.add(user)
         db_session.flush()
@@ -684,6 +718,7 @@ def test_validate_export_data_fails_with_insufficient_barangays(db_session: Sess
 def test_log_export_audit_success(caplog):
     """Test audit logging for successful export"""
     import logging
+
     caplog.set_level(logging.INFO)
 
     external_analytics_service._log_export_audit(
@@ -693,7 +728,7 @@ def test_log_export_audit_success(caplog):
         assessment_cycle="2024-Q1",
         umdc_filtered=False,
         total_barangays=10,
-        success=True
+        success=True,
     )
 
     # Verify log entry
@@ -707,6 +742,7 @@ def test_log_export_audit_success(caplog):
 def test_log_export_audit_failure(caplog):
     """Test audit logging for failed export"""
     import logging
+
     caplog.set_level(logging.ERROR)
 
     external_analytics_service._log_export_audit(
@@ -716,7 +752,7 @@ def test_log_export_audit_failure(caplog):
         assessment_cycle="2024-Q1",
         total_barangays=0,
         success=False,
-        error_message="Insufficient data for anonymization"
+        error_message="Insufficient data for anonymization",
     )
 
     # Verify error log entry
@@ -732,7 +768,7 @@ def test_csv_export_filename_format(db_session: Session, mixed_assessments):
         db=db_session,
         assessment_cycle=None,
         user_email="test@example.com",
-        user_role="KATUPARAN_CENTER_USER"
+        user_role="KATUPARAN_CENTER_USER",
     )
 
     # Verify CSV can be saved with proper naming
@@ -748,7 +784,7 @@ def test_pdf_export_contains_all_sections(db_session: Session, mixed_assessments
         db=db_session,
         assessment_cycle=None,
         user_email="test@example.com",
-        user_role="KATUPARAN_CENTER_USER"
+        user_role="KATUPARAN_CENTER_USER",
     )
 
     # Verify PDF structure
@@ -757,7 +793,7 @@ def test_pdf_export_contains_all_sections(db_session: Session, mixed_assessments
 
     # Convert to string for content checking (this is approximate, as PDFs are binary)
     # In production, you might use PyPDF2 or similar to parse PDF content
-    pdf_str = pdf_content.decode('latin-1', errors='ignore')
+    pdf_str = pdf_content.decode("latin-1", errors="ignore")
 
     # Check for expected content markers (these appear in PDF text streams)
     # Note: Exact strings may vary depending on PDF encoding
@@ -786,7 +822,10 @@ def test_dashboard_caching_cache_miss_then_hit(db_session: Session, mixed_assess
 
     # Results should be identical
     assert dashboard1.overall_compliance.passed_count == dashboard2.overall_compliance.passed_count
-    assert dashboard1.overall_compliance.pass_percentage == dashboard2.overall_compliance.pass_percentage
+    assert (
+        dashboard1.overall_compliance.pass_percentage
+        == dashboard2.overall_compliance.pass_percentage
+    )
 
     # Cleanup
     cache.invalidate_external_analytics()
@@ -833,11 +872,12 @@ def test_dashboard_cache_invalidation(db_session: Session, mixed_assessments):
 
 def test_dashboard_works_without_redis(db_session: Session, mixed_assessments):
     """Test dashboard still works when Redis is unavailable"""
-    from app.core.cache import cache
     from unittest.mock import patch
 
+    from app.core.cache import cache
+
     # Mock cache as unavailable by patching the underlying attribute
-    with patch.object(cache, '_is_available', False):
+    with patch.object(cache, "_is_available", False):
         dashboard = external_analytics_service.get_complete_dashboard(db_session)
 
         # Should still work, just without caching

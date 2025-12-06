@@ -5,15 +5,15 @@ Revises: 8d66ae521094
 Create Date: 2025-12-03 19:45:48.807157
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
 import json
 
 # revision identifiers, used by Alembic.
-revision: str = 'f53a040f0415'
-down_revision: Union[str, Sequence[str], None] = '8d66ae521094'
+revision: str = "f53a040f0415"
+down_revision: Union[str, Sequence[str], None] = "8d66ae521094"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -27,9 +27,15 @@ NOTES_DATA = {
         {"label": "c)", "text": "Summary of Income and Expenditures"},
         {"label": "d)", "text": "20% CoUtilization"},
         {"label": "e)", "text": "Annual Procurement Plan or Procurement List"},
-        {"label": "f)", "text": "List of Notices of Award (1st - 3rd Quarter of CY 2023)"},
-        {"label": "g)", "text": "Itemized Monthly Collections and Disbursements (January to September 2023)"},
-    ]
+        {
+            "label": "f)",
+            "text": "List of Notices of Award (1st - 3rd Quarter of CY 2023)",
+        },
+        {
+            "label": "g)",
+            "text": "Itemized Monthly Collections and Disbursements (January to September 2023)",
+        },
+    ],
 }
 
 

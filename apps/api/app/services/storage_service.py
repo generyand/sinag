@@ -5,21 +5,21 @@ import logging
 import re
 import time
 from datetime import datetime
-from typing import Dict, Optional
 from uuid import uuid4
+
+from fastapi import HTTPException, UploadFile
+from sqlalchemy.orm import Session
+from supabase import Client, create_client
 
 from app.core.config import settings
 from app.db.enums import AssessmentStatus
 from app.db.models.assessment import Assessment, AssessmentResponse, MOVFile
-from fastapi import UploadFile, HTTPException
-from supabase import Client, create_client
-from sqlalchemy.orm import Session
 
 # Setup logging
 logger = logging.getLogger(__name__)
 
 # Initialize Supabase admin client with service-role key for server-side operations
-_supabase_client: Optional[Client] = None
+_supabase_client: Client | None = None
 
 
 def _get_supabase_client() -> Client:
@@ -60,7 +60,11 @@ class StorageService:
     MOV_FILES_BUCKET = "mov-files"
 
     def _sanitize_display_filename(
-        self, indicator_code: str, field_label: str, extension: str, sequence_number: int = 1
+        self,
+        indicator_code: str,
+        field_label: str,
+        extension: str,
+        sequence_number: int = 1,
     ) -> str:
         """
         Generate a sanitized display filename from indicator code and field label.
@@ -95,11 +99,11 @@ class StorageService:
         sanitized_label = sanitized_label.replace(":", " -")
 
         # Remove Windows reserved characters
-        for char in ['*', '?', '"', '<', '>', '|']:
-            sanitized_label = sanitized_label.replace(char, '')
+        for char in ["*", "?", '"', "<", ">", "|"]:
+            sanitized_label = sanitized_label.replace(char, "")
 
         # Collapse multiple spaces into single space
-        sanitized_label = re.sub(r'\s+', ' ', sanitized_label)
+        sanitized_label = re.sub(r"\s+", " ", sanitized_label)
 
         # Trim leading/trailing whitespace
         sanitized_label = sanitized_label.strip()
@@ -111,7 +115,7 @@ class StorageService:
 
     def upload_mov(
         self, file: UploadFile, *, response_id: int, db: Session
-    ) -> Dict[str, str | int]:
+    ) -> dict[str, str | int]:
         """
         Upload a MOV file to Supabase Storage.
 
@@ -135,11 +139,7 @@ class StorageService:
             Exception: If upload fails
         """
         # Get the assessment response to determine assessment_id
-        response = (
-            db.query(AssessmentResponse)
-            .filter(AssessmentResponse.id == response_id)
-            .first()
-        )
+        response = db.query(AssessmentResponse).filter(AssessmentResponse.id == response_id).first()
 
         if not response:
             raise ValueError(f"Assessment response {response_id} not found")
@@ -220,11 +220,11 @@ class StorageService:
         """
         # Sanitize filename: remove path separators and special characters
         # Keep only alphanumeric, dots, hyphens, and underscores
-        sanitized = re.sub(r'[^\w\s.-]', '_', original_filename)
-        sanitized = sanitized.replace('..', '_').replace('/', '_').replace('\\', '_')
+        sanitized = re.sub(r"[^\w\s.-]", "_", original_filename)
+        sanitized = sanitized.replace("..", "_").replace("/", "_").replace("\\", "_")
 
         # Remove leading/trailing whitespace and dots
-        sanitized = sanitized.strip().strip('.')
+        sanitized = sanitized.strip().strip(".")
 
         # If sanitization resulted in empty string, use a default
         if not sanitized:
@@ -235,9 +235,7 @@ class StorageService:
 
         return unique_filename
 
-    def _get_storage_path(
-        self, assessment_id: int, indicator_id: int, filename: str
-    ) -> str:
+    def _get_storage_path(self, assessment_id: int, indicator_id: int, filename: str) -> str:
         """
         Generate the storage path for a file in Supabase Storage.
 
@@ -300,7 +298,7 @@ class StorageService:
         # Generate display filename from indicator code + field label if provided
         if indicator_code and field_label:
             # Extract file extension from original filename
-            extension = original_filename.rsplit('.', 1)[-1] if '.' in original_filename else 'file'
+            extension = original_filename.rsplit(".", 1)[-1] if "." in original_filename else "file"
 
             # Count existing files for this field to determine sequence number
             existing_count = (
@@ -485,8 +483,10 @@ class StorageService:
         2. All required MOV files have been uploaded (conditional based on answers)
         """
         try:
-            from app.services.completeness_validation_service import completeness_validation_service
             from app.db.models.governance_area import Indicator
+            from app.services.completeness_validation_service import (
+                completeness_validation_service,
+            )
 
             # Get the assessment response for this indicator
             response = (
@@ -525,6 +525,7 @@ class StorageService:
 
             # Get assessment to check status and rework timestamp
             from app.db.models.assessment import Assessment
+
             assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
 
             # Get all uploaded MOVs for this response (exclude soft-deleted files)
@@ -541,7 +542,11 @@ class StorageService:
             # Filter MOVs during rework status - BUT only for indicators with assessor feedback
             # Indicators without feedback keep their old files (no rework needed)
             if assessment:
-                assessment_status = assessment.status.value if hasattr(assessment.status, 'value') else str(assessment.status)
+                assessment_status = (
+                    assessment.status.value
+                    if hasattr(assessment.status, "value")
+                    else str(assessment.status)
+                )
                 rework_requested_at = assessment.rework_requested_at
 
                 logger.info(
@@ -549,23 +554,36 @@ class StorageService:
                     f"rework_requested_at: {rework_requested_at}"
                 )
 
-                if assessment_status and assessment_status.upper() in ('REWORK', 'NEEDS_REWORK') and rework_requested_at:
+                if (
+                    assessment_status
+                    and assessment_status.upper() in ("REWORK", "NEEDS_REWORK")
+                    and rework_requested_at
+                ):
                     # Check if this indicator has assessor feedback
                     from app.db.models.assessment import FeedbackComment, MOVAnnotation
 
                     # Check for feedback comments (non-internal)
-                    feedback_count = db.query(FeedbackComment).filter(
-                        FeedbackComment.response_id == response.id,
-                        FeedbackComment.is_internal_note == False
-                    ).count()
+                    feedback_count = (
+                        db.query(FeedbackComment)
+                        .filter(
+                            FeedbackComment.response_id == response.id,
+                            FeedbackComment.is_internal_note == False,
+                        )
+                        .count()
+                    )
 
                     # Check for MOV annotations
-                    annotation_count = db.query(MOVAnnotation).join(MOVFile).filter(
-                        MOVFile.assessment_id == assessment_id,
-                        MOVFile.indicator_id == indicator_id
-                    ).count()
+                    annotation_count = (
+                        db.query(MOVAnnotation)
+                        .join(MOVFile)
+                        .filter(
+                            MOVFile.assessment_id == assessment_id,
+                            MOVFile.indicator_id == indicator_id,
+                        )
+                        .count()
+                    )
 
-                    has_feedback = (feedback_count > 0 or annotation_count > 0)
+                    has_feedback = feedback_count > 0 or annotation_count > 0
 
                     logger.info(
                         f"[REWORK CHECK] Indicator {indicator_id}: has_feedback={has_feedback} "
@@ -576,7 +594,8 @@ class StorageService:
                     if has_feedback:
                         original_count = len(uploaded_movs)
                         uploaded_movs = [
-                            mov for mov in uploaded_movs
+                            mov
+                            for mov in uploaded_movs
                             if mov.uploaded_at and mov.uploaded_at >= rework_requested_at
                         ]
                         logger.info(
@@ -690,17 +709,17 @@ class StorageService:
             return False, "You can only delete files you uploaded"
 
         # Load the assessment to check status
-        assessment = (
-            db.query(Assessment)
-            .filter(Assessment.id == mov_file.assessment_id)
-            .first()
-        )
+        assessment = db.query(Assessment).filter(Assessment.id == mov_file.assessment_id).first()
 
         if not assessment:
             return False, "Assessment not found"
 
         # Check assessment status - only allow deletion for DRAFT, REWORK, or NEEDS_REWORK
-        allowed_statuses = [AssessmentStatus.DRAFT, AssessmentStatus.REWORK, AssessmentStatus.NEEDS_REWORK]
+        allowed_statuses = [
+            AssessmentStatus.DRAFT,
+            AssessmentStatus.REWORK,
+            AssessmentStatus.NEEDS_REWORK,
+        ]
         if assessment.status not in allowed_statuses:
             return (
                 False,
@@ -732,9 +751,7 @@ class StorageService:
             Exception: If database operation fails
         """
         # Check permissions
-        has_permission, error_message = self._check_delete_permission(
-            db, file_id, user_id
-        )
+        has_permission, error_message = self._check_delete_permission(db, file_id, user_id)
 
         if not has_permission:
             logger.warning(
@@ -809,4 +826,3 @@ class StorageService:
 
 # Create a singleton instance
 storage_service = StorageService()
-

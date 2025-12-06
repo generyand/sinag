@@ -42,8 +42,7 @@ IMPORTANT NOTES FOR PHASE 9 (VALIDATION SERVICE):
    - Failing means BDC is "Non-Functional"
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
-
+from app.indicators.base import ChecklistItem, Indicator, SubIndicator
 
 # Indicator 4.3: Functionality of the Barangay Development Council (BDC)
 INDICATOR_4_3 = Indicator(
@@ -70,18 +69,15 @@ INDICATOR_4_3 = Indicator(
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing/reconstituting the BDC with its composition compliant to Section 107 of RA 7160",
                     mov_description="Verification of uploaded Executive Order or similar issuance organizing/reconstituting the BDC",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 4.3.2
         SubIndicator(
             code="4.3.2",
             name="Meeting: Conducted meetings, public hearings, and/or barangay assemblies for public consultation",
-            upload_instructions=(
-                "Upload: Post activity report or Minutes with attendance sheet"
-            ),
+            upload_instructions=("Upload: Post activity report or Minutes with attendance sheet"),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
@@ -89,11 +85,10 @@ INDICATOR_4_3 = Indicator(
                     label="Post activity report or Minutes with attendance sheet",
                     mov_description="Verification of uploaded Post activity report or Minutes with attendance sheet",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 4.3.3
         SubIndicator(
             code="4.3.3",
@@ -110,18 +105,17 @@ INDICATOR_4_3 = Indicator(
                     label="a. Approved Barangay Development Plan",
                     mov_description="Verification of uploaded Approved Barangay Development Plan",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
                 ChecklistItem(
                     id="4_3_3_upload_2",
                     label="b. SB Resolution adopting the approved BDP",
                     mov_description="Verification of uploaded SB Resolution adopting the BDP",
                     required=True,
-                    display_order=2
+                    display_order=2,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 4.3.4
         SubIndicator(
             code="4.3.4",
@@ -139,7 +133,7 @@ INDICATOR_4_3 = Indicator(
                     mov_description="Verification of uploaded Accomplishment Report (PHYSICAL or/and FINANCIAL)",
                     item_type="checkbox",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
                 # OPTION A: YES/NO assessment first, then calculation
                 ChecklistItem(
@@ -149,7 +143,7 @@ INDICATOR_4_3 = Indicator(
                     item_type="assessment_field",
                     required=False,
                     display_order=3,
-                    option_group="Option A"
+                    option_group="Option A",
                 ),
                 ChecklistItem(
                     id="4_3_4_physical_reflected",
@@ -157,7 +151,7 @@ INDICATOR_4_3 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=4,
-                    option_group="Option A"
+                    option_group="Option A",
                 ),
                 ChecklistItem(
                     id="4_3_4_physical_accomplished",
@@ -166,7 +160,7 @@ INDICATOR_4_3 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=5,
-                    option_group="Option A"
+                    option_group="Option A",
                 ),
                 # OR separator
                 ChecklistItem(
@@ -175,7 +169,7 @@ INDICATOR_4_3 = Indicator(
                     mov_description="OR",
                     item_type="info_text",
                     required=False,
-                    display_order=6
+                    display_order=6,
                 ),
                 # OPTION B: YES/NO assessment first, then calculations
                 ChecklistItem(
@@ -185,7 +179,7 @@ INDICATOR_4_3 = Indicator(
                     item_type="assessment_field",
                     required=False,
                     display_order=7,
-                    option_group="Option B"
+                    option_group="Option B",
                 ),
                 ChecklistItem(
                     id="4_3_4_financial_allocated",
@@ -193,7 +187,7 @@ INDICATOR_4_3 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=8,
-                    option_group="Option B"
+                    option_group="Option B",
                 ),
                 ChecklistItem(
                     id="4_3_4_financial_utilized",
@@ -202,9 +196,9 @@ INDICATOR_4_3 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=9,
-                    option_group="Option B"
+                    option_group="Option B",
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

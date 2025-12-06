@@ -3,10 +3,22 @@
 
 from datetime import datetime
 
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    func,
+)
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.db.base import Base
 from app.db.enums import BBIStatus
-from sqlalchemy import JSON, Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
 class BBI(Base):
@@ -82,8 +94,9 @@ class BBIResult(Base):
         Float, nullable=True, comment="Compliance rate 0-100%"
     )
     compliance_rating: Mapped[str | None] = mapped_column(
-        String(30), nullable=True,
-        comment="3-tier rating: HIGHLY_FUNCTIONAL, MODERATELY_FUNCTIONAL, LOW_FUNCTIONAL"
+        String(30),
+        nullable=True,
+        comment="3-tier rating: HIGHLY_FUNCTIONAL, MODERATELY_FUNCTIONAL, LOW_FUNCTIONAL",
     )
     sub_indicators_passed: Mapped[int | None] = mapped_column(
         Integer, nullable=True, comment="Number of sub-indicators that passed"
@@ -92,8 +105,7 @@ class BBIResult(Base):
         Integer, nullable=True, comment="Total number of sub-indicators evaluated"
     )
     sub_indicator_results: Mapped[dict | None] = mapped_column(
-        JSON, nullable=True,
-        comment="Detailed pass/fail results for each sub-indicator"
+        JSON, nullable=True, comment="Detailed pass/fail results for each sub-indicator"
     )
 
     # Calculation details (optional JSON field for debugging/audit trail)
@@ -103,14 +115,10 @@ class BBIResult(Base):
     assessment_id: Mapped[int] = mapped_column(
         ForeignKey("assessments.id"), nullable=False, index=True
     )
-    bbi_id: Mapped[int] = mapped_column(
-        ForeignKey("bbis.id"), nullable=False, index=True
-    )
+    bbi_id: Mapped[int] = mapped_column(ForeignKey("bbis.id"), nullable=False, index=True)
 
     # Timestamps
-    calculation_date: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=func.now()
-    )
+    calculation_date: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=func.now())
 
     # Relationships
     assessment = relationship("Assessment", back_populates="bbi_results")

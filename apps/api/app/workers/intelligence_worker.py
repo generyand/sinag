@@ -2,14 +2,15 @@
 # Background tasks for AI-powered insights generation using Gemini API
 
 import logging
-from typing import Any, Dict
+from typing import Any
+
+from sqlalchemy.orm import Session
 
 from app.core.celery_app import celery_app
 from app.db.base import SessionLocal
 from app.db.enums import AssessmentStatus
 from app.db.models import Assessment
 from app.services.intelligence_service import intelligence_service
-from sqlalchemy.orm import Session
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -21,7 +22,7 @@ def _generate_insights_logic(
     max_retries: int,
     default_retry_delay: int,
     db: Session | None = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Core logic for generating insights (separated for easier testing).
 
@@ -111,7 +112,7 @@ def _generate_insights_logic(
     max_retries=3,
     default_retry_delay=60,  # Start with 60 seconds
 )
-def generate_insights_task(self: Any, assessment_id: int) -> Dict[str, Any]:
+def generate_insights_task(self: Any, assessment_id: int) -> dict[str, Any]:
     """
     Generate AI-powered insights for an assessment using Gemini API.
 
@@ -141,10 +142,7 @@ def generate_insights_task(self: Any, assessment_id: int) -> Dict[str, Any]:
     # Handle retry logic for non-validation errors
     if "error" in result:
         # Don't retry on validation errors (ValueError)
-        if (
-            "not found" in result["error"].lower()
-            or "not validated" in result["error"].lower()
-        ):
+        if "not found" in result["error"].lower() or "not validated" in result["error"].lower():
             return result
 
         # Retry with exponential backoff for other errors
@@ -173,7 +171,7 @@ def _generate_rework_summary_logic(
     max_retries: int,
     default_retry_delay: int,
     db: Session | None = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Core logic for generating rework summary (separated for easier testing).
 
@@ -209,7 +207,9 @@ def _generate_rework_summary_logic(
 
         # Check if assessment is in rework status
         if assessment.status != AssessmentStatus.REWORK:
-            error_msg = f"Assessment {assessment_id} is not in rework status. Status: {assessment.status}"
+            error_msg = (
+                f"Assessment {assessment_id} is not in rework status. Status: {assessment.status}"
+            )
             logger.warning(error_msg)
             # Not an error - just log and skip
             return {
@@ -236,9 +236,7 @@ def _generate_rework_summary_logic(
                 }
 
         # Generate rework summaries in default languages (Bisaya + English)
-        summaries = intelligence_service.generate_default_language_summaries(
-            db, assessment_id
-        )
+        summaries = intelligence_service.generate_default_language_summaries(db, assessment_id)
 
         if not summaries:
             error_msg = f"Failed to generate any language summaries for assessment {assessment_id}"
@@ -302,7 +300,7 @@ def _generate_rework_summary_logic(
     default_retry_delay=60,  # Start with 60 seconds
     queue="classification",  # Use classification queue for AI tasks
 )
-def generate_rework_summary_task(self: Any, assessment_id: int) -> Dict[str, Any]:
+def generate_rework_summary_task(self: Any, assessment_id: int) -> dict[str, Any]:
     """
     Generate AI-powered rework summary for an assessment using Gemini API.
 
@@ -367,7 +365,7 @@ def _generate_calibration_summary_logic(
     max_retries: int,
     default_retry_delay: int,
     db: Session | None = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Core logic for generating calibration summary (separated for easier testing).
 
@@ -405,7 +403,9 @@ def _generate_calibration_summary_logic(
 
         # Check if assessment is in rework status with calibration flag
         if assessment.status != AssessmentStatus.REWORK:
-            error_msg = f"Assessment {assessment_id} is not in rework status. Status: {assessment.status}"
+            error_msg = (
+                f"Assessment {assessment_id} is not in rework status. Status: {assessment.status}"
+            )
             logger.warning(error_msg)
             # Not an error - just log and skip
             return {
@@ -530,7 +530,7 @@ def _generate_calibration_summary_logic(
 )
 def generate_calibration_summary_task(
     self: Any, assessment_id: int, governance_area_id: int
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Generate AI-powered calibration summary for an assessment using Gemini API.
 
@@ -603,7 +603,7 @@ def _generate_capdev_insights_logic(
     max_retries: int,
     default_retry_delay: int,
     db: Session | None = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Core logic for generating CapDev (Capacity Development) insights.
 
@@ -642,7 +642,9 @@ def _generate_capdev_insights_logic(
 
         # Check if assessment is MLGOO approved (COMPLETED status with mlgoo_approved_at set)
         if assessment.status != AssessmentStatus.COMPLETED or not assessment.mlgoo_approved_at:
-            error_msg = f"Assessment {assessment_id} is not MLGOO approved. Status: {assessment.status}"
+            error_msg = (
+                f"Assessment {assessment_id} is not MLGOO approved. Status: {assessment.status}"
+            )
             logger.error(error_msg)
             return {"success": False, "error": error_msg}
 
@@ -667,9 +669,7 @@ def _generate_capdev_insights_logic(
         db.commit()
 
         # Generate CapDev insights in default languages (Bisaya + English)
-        insights = intelligence_service.generate_default_language_capdev_insights(
-            db, assessment_id
-        )
+        insights = intelligence_service.generate_default_language_capdev_insights(db, assessment_id)
 
         if not insights:
             error_msg = f"Failed to generate any CapDev insights for assessment {assessment_id}"
@@ -755,7 +755,7 @@ def _generate_capdev_insights_logic(
     default_retry_delay=60,  # Start with 60 seconds
     queue="classification",  # Use classification queue for AI tasks
 )
-def generate_capdev_insights_task(self: Any, assessment_id: int) -> Dict[str, Any]:
+def generate_capdev_insights_task(self: Any, assessment_id: int) -> dict[str, Any]:
     """
     Generate AI-powered CapDev (Capacity Development) insights using Gemini API.
 

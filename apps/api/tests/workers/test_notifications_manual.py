@@ -42,9 +42,7 @@ def test_celery_tasks():
 
         # Test validation complete notification task
         print("\n✅ Testing validation complete notification task...")
-        task2 = send_validation_complete_notification.delay(
-            1
-        )  # Using assessment ID 1 for testing
+        task2 = send_validation_complete_notification.delay(1)  # Using assessment ID 1 for testing
         print(f"Task queued with ID: {task2.id}")
 
         # Wait a moment for the task to complete

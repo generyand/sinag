@@ -8,10 +8,7 @@ CRITICAL: This is a security requirement. BLGU users should only see completion 
 not compliance/quality assessment (PASS/FAIL/CONDITIONAL).
 """
 
-import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
-from typing import Dict
 
 from app.db.models.assessment import Assessment
 from app.db.models.governance_area import Indicator
@@ -25,7 +22,7 @@ class TestBLGUResponseFiltering:
     def test_get_assessment_excludes_calculated_status(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
     ):
         """
@@ -59,7 +56,7 @@ class TestBLGUResponseFiltering:
     def test_list_assessments_excludes_calculated_status(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
     ):
         """
         Test: GET /assessments list for BLGU excludes calculated_status.
@@ -83,7 +80,7 @@ class TestBLGUResponseFiltering:
     def test_get_assessment_response_excludes_calculated_status(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_assessment_with_responses: Assessment,
     ):
         """
@@ -112,7 +109,7 @@ class TestBLGUResponseFiltering:
     def test_get_indicator_excludes_calculated_fields(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_indicator: Indicator,
     ):
         """
@@ -139,7 +136,7 @@ class TestBLGUResponseFiltering:
     def test_submission_status_endpoint_excludes_compliance(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
     ):
         """
@@ -171,7 +168,7 @@ class TestBLGUResponseFiltering:
     def test_dashboard_endpoint_excludes_compliance_stats(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
     ):
         """
         Test: GET /blgu/dashboard excludes compliance statistics.
@@ -200,7 +197,7 @@ class TestBLGUResponseFiltering:
     def test_resubmit_response_excludes_compliance(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_rework_assessment: Assessment,
     ):
         """
@@ -232,7 +229,7 @@ class TestComplianceFieldNaming:
     def test_calculated_status_never_in_any_blgu_response(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
     ):
         """
         Test: Search all BLGU responses for compliance field leakage.
@@ -265,7 +262,7 @@ class TestComplianceFieldNaming:
     def test_response_schema_validation_blgu(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
     ):
         """
@@ -322,7 +319,7 @@ class TestComplianceCalculationTiming:
     def test_compliance_calculated_on_submission_but_hidden(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_assessment_with_responses: Assessment,
     ):
         """
@@ -350,7 +347,7 @@ class TestComplianceCalculationTiming:
     def test_blgu_cannot_query_calculated_status_directly(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
     ):
         """
@@ -383,7 +380,7 @@ class TestErrorMessagesDoNotLeakCompliance:
     def test_validation_error_does_not_mention_compliance(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
     ):
         """
@@ -416,7 +413,7 @@ class TestErrorMessagesDoNotLeakCompliance:
     def test_unauthorized_access_error_generic(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
     ):
         """
         Test: Error messages don't reveal existence of compliance endpoints.

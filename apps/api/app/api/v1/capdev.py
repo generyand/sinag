@@ -2,7 +2,6 @@
 # API for AI-powered capacity development insights for barangays
 
 import logging
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
@@ -13,7 +12,6 @@ from app.db.models.assessment import Assessment
 from app.db.models.user import User
 from app.schemas.capdev import (
     CapDevInsightsByLanguage,
-    CapDevInsightsContent,
     CapDevInsightsResponse,
     CapDevStatusResponse,
     CapDevTriggerResponse,
@@ -449,9 +447,8 @@ async def generate_capdev_language(
 
     # Generate insights for the specific language using the service directly
     try:
-        insights = intelligence_service.get_capdev_insights_with_caching(
-            db, assessment_id, language
-        )
+        # Call for side effects (caching), result not needed here
+        intelligence_service.get_capdev_insights_with_caching(db, assessment_id, language)
 
         logger.info(
             f"MLGOO {current_user.email} generated CapDev insights in {language} "

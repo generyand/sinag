@@ -5,17 +5,17 @@ Revises: a4d5f31767e8
 Create Date: 2025-12-03 21:25:38.129411
 
 """
+
 from typing import Sequence, Union
 import json
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import JSONB
 
 
 # revision identifiers, used by Alembic.
-revision: str = '21f8ec1016e3'
-down_revision: Union[str, Sequence[str], None] = 'a4d5f31767e8'
+revision: str = "21f8ec1016e3"
+down_revision: Union[str, Sequence[str], None] = "a4d5f31767e8"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -31,7 +31,7 @@ NOTES = {
         {
             "text": "Barangay officials have the option to submit both the physical and financial reports. However, for the SGLGB Assessment, only one of the documents is required."
         }
-    ]
+    ],
 }
 
 
@@ -46,7 +46,7 @@ def upgrade() -> None:
             SET name = :new_name
             WHERE indicator_code = '3.2.3'
         """),
-        {"new_name": NEW_NAME}
+        {"new_name": NEW_NAME},
     )
 
     # Add notes to form_schema using JSONB merge (cast both sides to jsonb)
@@ -57,7 +57,7 @@ def upgrade() -> None:
             SET form_schema = (form_schema::jsonb || CAST(:notes_json AS jsonb))::json
             WHERE indicator_code = '3.2.3'
         """),
-        {"notes_json": notes_json}
+        {"notes_json": notes_json},
     )
 
 
@@ -72,7 +72,7 @@ def downgrade() -> None:
             SET name = :old_name
             WHERE indicator_code = '3.2.3'
         """),
-        {"old_name": OLD_NAME}
+        {"old_name": OLD_NAME},
     )
 
     # Remove notes from form_schema

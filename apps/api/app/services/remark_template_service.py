@@ -6,9 +6,11 @@ It supports conditional template selection based on assessment results
 and variable substitution from assessment data.
 """
 
-from typing import Dict, Any, Optional
+from typing import Any
+
 from jinja2 import Template, TemplateSyntaxError, UndefinedError
-from app.schemas.remark_schema import RemarkSchema, ConditionalRemark
+
+from app.schemas.remark_schema import ConditionalRemark, RemarkSchema
 
 
 class RemarkTemplateService:
@@ -21,7 +23,7 @@ class RemarkTemplateService:
     - Safe handling of missing variables
     """
 
-    def render_template(self, template_text: str, context: Dict[str, Any]) -> str:
+    def render_template(self, template_text: str, context: dict[str, Any]) -> str:
         """
         Render a Jinja2 template with the provided context data.
 
@@ -56,10 +58,8 @@ class RemarkTemplateService:
             raise ValueError(f"Template rendering failed: {str(e)}")
 
     def select_template(
-        self,
-        conditional_remarks: list[ConditionalRemark],
-        context: Dict[str, Any]
-    ) -> Optional[str]:
+        self, conditional_remarks: list[ConditionalRemark], context: dict[str, Any]
+    ) -> str | None:
         """
         Select the appropriate conditional template based on the context.
 
@@ -93,8 +93,8 @@ class RemarkTemplateService:
     def generate_remark(
         self,
         remark_schema: RemarkSchema,
-        submission_data: Dict[str, Any],
-        calculation_result: Optional[Dict[str, Any]] = None
+        submission_data: dict[str, Any],
+        calculation_result: dict[str, Any] | None = None,
     ) -> str:
         """
         Generate the final remark for an assessment submission.
@@ -129,27 +129,26 @@ class RemarkTemplateService:
             'BDRRMC passed with 90%'
         """
         # Build context from submission data and calculation result
-        context: Dict[str, Any] = {}
+        context: dict[str, Any] = {}
 
         # Add submission data (form fields, metadata)
         context.update(submission_data)
 
         # Add calculation result data if available
         if calculation_result:
-            context.update({
-                "status": calculation_result.get("status", "pending"),
-                "score": calculation_result.get("score"),
-            })
+            context.update(
+                {
+                    "status": calculation_result.get("status", "pending"),
+                    "score": calculation_result.get("score"),
+                }
+            )
         else:
             context["status"] = "pending"
 
         # Select template: try conditional first, fall back to default
         template_text = None
         if remark_schema.conditional_remarks:
-            template_text = self.select_template(
-                remark_schema.conditional_remarks,
-                context
-            )
+            template_text = self.select_template(remark_schema.conditional_remarks, context)
 
         # Use default template if no conditional matched
         if template_text is None:
@@ -158,7 +157,7 @@ class RemarkTemplateService:
         # Render the selected template
         return self.render_template(template_text, context)
 
-    def validate_template_syntax(self, template_text: str) -> tuple[bool, Optional[str]]:
+    def validate_template_syntax(self, template_text: str) -> tuple[bool, str | None]:
         """
         Validate Jinja2 template syntax without rendering.
 

@@ -1,14 +1,16 @@
 """Check all MOVs in the database"""
+
+from sqlalchemy import desc
+
 from app.db.base import SessionLocal
 from app.db.models import MOV
-from sqlalchemy import desc
 
 db = SessionLocal()
 
 # Get the most recent MOVs
 movs = db.query(MOV).order_by(desc(MOV.id)).limit(10).all()
 
-print(f"Most recent 10 MOVs in database:\n")
+print("Most recent 10 MOVs in database:\n")
 for mov in movs:
     print(f"ID: {mov.id}")
     print(f"  filename: {mov.filename}")
@@ -26,6 +28,3 @@ if not movs:
     print("3. Or we're looking at the wrong database")
 
 db.close()
-
-
-

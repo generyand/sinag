@@ -13,7 +13,6 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.db.models.governance_area import GovernanceArea
-from app.db.models.user import User
 
 
 @pytest.mark.integration
@@ -32,13 +31,11 @@ class TestIndicatorDrafts:
             "governance_area_id": governance_area.id,
             "creation_mode": "incremental",
             "title": "Test Draft - Financial Indicators",
-            "data": []
+            "data": [],
         }
 
         response = client.post(
-            "/api/v1/indicators/drafts",
-            headers=auth_headers_mlgoo,
-            json=draft_data
+            "/api/v1/indicators/drafts", headers=auth_headers_mlgoo, json=draft_data
         )
 
         assert response.status_code == 201
@@ -64,20 +61,15 @@ class TestIndicatorDrafts:
             "governance_area_id": governance_area.id,
             "creation_mode": "incremental",
             "title": "Test Draft for Listing",
-            "data": []
+            "data": [],
         }
         create_response = client.post(
-            "/api/v1/indicators/drafts",
-            headers=auth_headers_mlgoo,
-            json=draft_data
+            "/api/v1/indicators/drafts", headers=auth_headers_mlgoo, json=draft_data
         )
         assert create_response.status_code == 201
 
         # List drafts
-        response = client.get(
-            "/api/v1/indicators/drafts",
-            headers=auth_headers_mlgoo
-        )
+        response = client.get("/api/v1/indicators/drafts", headers=auth_headers_mlgoo)
 
         assert response.status_code == 200
         drafts = response.json()
@@ -98,21 +90,16 @@ class TestIndicatorDrafts:
             "governance_area_id": governance_area.id,
             "creation_mode": "incremental",
             "title": "Specific Draft Test",
-            "data": []
+            "data": [],
         }
         create_response = client.post(
-            "/api/v1/indicators/drafts",
-            headers=auth_headers_mlgoo,
-            json=draft_data
+            "/api/v1/indicators/drafts", headers=auth_headers_mlgoo, json=draft_data
         )
         assert create_response.status_code == 201
         draft_id = create_response.json()["id"]
 
         # Get the specific draft
-        response = client.get(
-            f"/api/v1/indicators/drafts/{draft_id}",
-            headers=auth_headers_mlgoo
-        )
+        response = client.get(f"/api/v1/indicators/drafts/{draft_id}", headers=auth_headers_mlgoo)
 
         assert response.status_code == 200
         draft = response.json()
@@ -133,12 +120,10 @@ class TestIndicatorDrafts:
             "governance_area_id": governance_area.id,
             "creation_mode": "incremental",
             "title": "Draft to Update",
-            "data": []
+            "data": [],
         }
         create_response = client.post(
-            "/api/v1/indicators/drafts",
-            headers=auth_headers_mlgoo,
-            json=draft_data
+            "/api/v1/indicators/drafts", headers=auth_headers_mlgoo, json=draft_data
         )
         assert create_response.status_code == 201
         draft = create_response.json()
@@ -153,16 +138,16 @@ class TestIndicatorDrafts:
                 {
                     "temp_id": "temp-001",
                     "name": "1.1 Budget Planning",
-                    "description": "Test indicator for budget planning"
+                    "description": "Test indicator for budget planning",
                 }
             ],
-            "version": initial_version
+            "version": initial_version,
         }
 
         response = client.put(
             f"/api/v1/indicators/drafts/{draft_id}",
             headers=auth_headers_mlgoo,
-            json=update_data
+            json=update_data,
         )
 
         assert response.status_code == 200
@@ -186,25 +171,20 @@ class TestIndicatorDrafts:
             "governance_area_id": governance_area.id,
             "creation_mode": "incremental",
             "title": "Draft for Conflict Test",
-            "data": []
+            "data": [],
         }
         create_response = client.post(
-            "/api/v1/indicators/drafts",
-            headers=auth_headers_mlgoo,
-            json=draft_data
+            "/api/v1/indicators/drafts", headers=auth_headers_mlgoo, json=draft_data
         )
         assert create_response.status_code == 201
         draft_id = create_response.json()["id"]
 
         # First update (succeeds)
-        update_data_1 = {
-            "title": "First Update",
-            "version": 1
-        }
+        update_data_1 = {"title": "First Update", "version": 1}
         response_1 = client.put(
             f"/api/v1/indicators/drafts/{draft_id}",
             headers=auth_headers_mlgoo,
-            json=update_data_1
+            json=update_data_1,
         )
         assert response_1.status_code == 200
         assert response_1.json()["version"] == 2
@@ -212,12 +192,12 @@ class TestIndicatorDrafts:
         # Second update with stale version (should fail)
         update_data_2 = {
             "title": "This should fail",
-            "version": 1  # Stale version
+            "version": 1,  # Stale version
         }
         response_2 = client.put(
             f"/api/v1/indicators/drafts/{draft_id}",
             headers=auth_headers_mlgoo,
-            json=update_data_2
+            json=update_data_2,
         )
 
         assert response_2.status_code == 409  # Conflict
@@ -249,7 +229,7 @@ class TestBulkIndicatorCreation:
                     "is_active": True,
                     "is_auto_calculable": False,
                     "is_profiling_only": False,
-                    "governance_area_id": governance_area.id
+                    "governance_area_id": governance_area.id,
                 },
                 {
                     "temp_id": "temp-child-1",
@@ -260,7 +240,7 @@ class TestBulkIndicatorCreation:
                     "is_active": True,
                     "is_auto_calculable": False,
                     "is_profiling_only": False,
-                    "governance_area_id": governance_area.id
+                    "governance_area_id": governance_area.id,
                 },
                 {
                     "temp_id": "temp-child-2",
@@ -271,15 +251,13 @@ class TestBulkIndicatorCreation:
                     "is_active": True,
                     "is_auto_calculable": False,
                     "is_profiling_only": False,
-                    "governance_area_id": governance_area.id
-                }
-            ]
+                    "governance_area_id": governance_area.id,
+                },
+            ],
         }
 
         response = client.post(
-            "/api/v1/indicators/bulk",
-            headers=auth_headers_mlgoo,
-            json=bulk_data
+            "/api/v1/indicators/bulk", headers=auth_headers_mlgoo, json=bulk_data
         )
 
         assert response.status_code == 201
@@ -298,9 +276,15 @@ class TestBulkIndicatorCreation:
 
         # Verify parent-child relationships
         created_indicators = result["created"]
-        parent_indicator = next(ind for ind in created_indicators if ind["name"] == "1.1 Test Parent Indicator")
-        child_1 = next(ind for ind in created_indicators if ind["name"] == "1.1.1 Test Child Indicator 1")
-        child_2 = next(ind for ind in created_indicators if ind["name"] == "1.1.2 Test Child Indicator 2")
+        parent_indicator = next(
+            ind for ind in created_indicators if ind["name"] == "1.1 Test Parent Indicator"
+        )
+        child_1 = next(
+            ind for ind in created_indicators if ind["name"] == "1.1.1 Test Child Indicator 1"
+        )
+        child_2 = next(
+            ind for ind in created_indicators if ind["name"] == "1.1.2 Test Child Indicator 2"
+        )
 
         assert parent_indicator["parent_id"] is None
         assert child_1["parent_id"] == parent_indicator["id"]
@@ -329,7 +313,7 @@ class TestBulkIndicatorCreation:
                     "is_active": True,
                     "is_auto_calculable": False,
                     "is_profiling_only": False,
-                    "governance_area_id": governance_area.id
+                    "governance_area_id": governance_area.id,
                 },
                 {
                     "temp_id": "temp-parent",
@@ -340,15 +324,13 @@ class TestBulkIndicatorCreation:
                     "is_active": True,
                     "is_auto_calculable": False,
                     "is_profiling_only": False,
-                    "governance_area_id": governance_area.id
-                }
-            ]
+                    "governance_area_id": governance_area.id,
+                },
+            ],
         }
 
         response = client.post(
-            "/api/v1/indicators/bulk",
-            headers=auth_headers_mlgoo,
-            json=bulk_data
+            "/api/v1/indicators/bulk", headers=auth_headers_mlgoo, json=bulk_data
         )
 
         # Should succeed because topological sorting handles the dependency order
@@ -372,15 +354,10 @@ class TestBulkIndicatorCreation:
         governance_area: GovernanceArea,
     ):
         """Test that bulk creation rejects empty indicators list."""
-        bulk_data = {
-            "governance_area_id": governance_area.id,
-            "indicators": []
-        }
+        bulk_data = {"governance_area_id": governance_area.id, "indicators": []}
 
         response = client.post(
-            "/api/v1/indicators/bulk",
-            headers=auth_headers_mlgoo,
-            json=bulk_data
+            "/api/v1/indicators/bulk", headers=auth_headers_mlgoo, json=bulk_data
         )
 
         # Should return 422 validation error for empty list
@@ -406,15 +383,15 @@ class TestBulkIndicatorCreation:
                     "is_active": True,
                     "is_auto_calculable": False,
                     "is_profiling_only": False,
-                    "governance_area_id": governance_area.id
+                    "governance_area_id": governance_area.id,
                 }
-            ]
+            ],
         }
 
         response = client.post(
             "/api/v1/indicators/bulk",
             headers=auth_headers_blgu,  # BLGU user, not MLGOO
-            json=bulk_data
+            json=bulk_data,
         )
 
         # Should return 403 Forbidden

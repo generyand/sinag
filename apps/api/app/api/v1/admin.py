@@ -2,28 +2,28 @@
 # Administrative endpoints for MLGOO-DILG users (audit logs, system configuration)
 
 from datetime import datetime
-from typing import Optional
 
-from app.api.deps import get_client_ip, get_db, require_mlgoo_dilg
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.orm import Session
+
+from app.api.deps import get_db, require_mlgoo_dilg
 from app.db.models.user import User
 from app.schemas.admin import (
     AdminSuccessResponse,
+    AssessmentCycleCreate,
+    AssessmentCycleResponse,
+    AssessmentCycleUpdate,
     AuditLogListResponse,
     AuditLogResponse,
-    AssessmentCycleCreate,
-    AssessmentCycleUpdate,
-    AssessmentCycleResponse,
-    DeadlineOverrideCreate,
-    DeadlineOverrideResponse,
-    DeadlineOverrideListResponse,
     BarangayDeadlineStatusResponse,
+    DeadlineOverrideCreate,
+    DeadlineOverrideListResponse,
+    DeadlineOverrideResponse,
     DeadlineStatusListResponse,
     PhaseStatusResponse,
 )
 from app.services.audit_service import audit_service
 from app.services.deadline_service import deadline_service
-from fastapi import APIRouter, Depends, Query, Request
-from sqlalchemy.orm import Session
 
 router = APIRouter()
 
@@ -42,19 +42,17 @@ router = APIRouter()
 )
 async def get_audit_logs(
     skip: int = Query(0, ge=0, description="Number of records to skip for pagination"),
-    limit: int = Query(
-        100, ge=1, le=500, description="Maximum number of records to return"
-    ),
-    user_id: Optional[int] = Query(None, description="Filter by user ID"),
-    entity_type: Optional[str] = Query(
+    limit: int = Query(100, ge=1, le=500, description="Maximum number of records to return"),
+    user_id: int | None = Query(None, description="Filter by user ID"),
+    entity_type: str | None = Query(
         None, description="Filter by entity type (e.g., 'indicator', 'bbi')"
     ),
-    entity_id: Optional[int] = Query(None, description="Filter by entity ID"),
-    action: Optional[str] = Query(
+    entity_id: int | None = Query(None, description="Filter by entity ID"),
+    action: str | None = Query(
         None, description="Filter by action (e.g., 'create', 'update', 'delete')"
     ),
-    start_date: Optional[datetime] = Query(None, description="Filter from date (inclusive)"),
-    end_date: Optional[datetime] = Query(None, description="Filter to date (inclusive)"),
+    start_date: datetime | None = Query(None, description="Filter from date (inclusive)"),
+    end_date: datetime | None = Query(None, description="Filter to date (inclusive)"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_mlgoo_dilg),
 ):
@@ -104,9 +102,7 @@ async def get_audit_logs(
         }
         enriched_logs.append(AuditLogResponse(**log_dict))
 
-    return AuditLogListResponse(
-        items=enriched_logs, total=total, skip=skip, limit=limit
-    )
+    return AuditLogListResponse(items=enriched_logs, total=total, skip=skip, limit=limit)
 
 
 @router.get(
@@ -206,12 +202,12 @@ async def get_entity_audit_history(
     description="Export filtered audit logs to CSV format. Requires MLGOO_DILG role.",
 )
 async def export_audit_logs_csv(
-    user_id: Optional[int] = Query(None),
-    entity_type: Optional[str] = Query(None),
-    entity_id: Optional[int] = Query(None),
-    action: Optional[str] = Query(None),
-    start_date: Optional[datetime] = Query(None),
-    end_date: Optional[datetime] = Query(None),
+    user_id: int | None = Query(None),
+    entity_type: str | None = Query(None),
+    entity_id: int | None = Query(None),
+    action: str | None = Query(None),
+    start_date: datetime | None = Query(None),
+    end_date: datetime | None = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_mlgoo_dilg),
 ):
@@ -266,7 +262,7 @@ async def export_audit_logs_csv(
         writer.writerow(
             [
                 log.id,
-                log.created_at.isoformat() + 'Z',
+                log.created_at.isoformat() + "Z",
                 log.user_id,
                 log.user.email if log.user else "",
                 log.user.name if log.user else "",
@@ -459,7 +455,7 @@ async def update_assessment_cycle(
     description="Get submission status for all barangays across all phases (phase1, rework, phase2, calibration). Requires MLGOO_DILG role.",
 )
 async def get_deadline_status(
-    cycle_id: Optional[int] = Query(None, description="Filter by cycle ID (defaults to active cycle)"),
+    cycle_id: int | None = Query(None, description="Filter by cycle ID (defaults to active cycle)"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_mlgoo_dilg),
 ):
@@ -574,9 +570,9 @@ async def apply_deadline_override(
     description="Get all deadline overrides with optional filtering by cycle, barangay, or indicator. Requires MLGOO_DILG role.",
 )
 async def get_deadline_overrides(
-    cycle_id: Optional[int] = Query(None, description="Filter by cycle ID"),
-    barangay_id: Optional[int] = Query(None, description="Filter by barangay ID"),
-    indicator_id: Optional[int] = Query(None, description="Filter by indicator ID"),
+    cycle_id: int | None = Query(None, description="Filter by cycle ID"),
+    barangay_id: int | None = Query(None, description="Filter by barangay ID"),
+    indicator_id: int | None = Query(None, description="Filter by indicator ID"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_mlgoo_dilg),
 ):
@@ -632,9 +628,9 @@ async def get_deadline_overrides(
     description="Export deadline override audit logs to CSV format. Requires MLGOO_DILG role.",
 )
 async def export_deadline_overrides_csv(
-    cycle_id: Optional[int] = Query(None, description="Filter by cycle ID"),
-    barangay_id: Optional[int] = Query(None, description="Filter by barangay ID"),
-    indicator_id: Optional[int] = Query(None, description="Filter by indicator ID"),
+    cycle_id: int | None = Query(None, description="Filter by cycle ID"),
+    barangay_id: int | None = Query(None, description="Filter by barangay ID"),
+    indicator_id: int | None = Query(None, description="Filter by indicator ID"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_mlgoo_dilg),
 ):
@@ -705,6 +701,6 @@ async def get_admin_system_status(
         data={
             "admin_user": current_user.email,
             "role": current_user.role.value,
-            "timestamp": datetime.utcnow().isoformat() + 'Z',
+            "timestamp": datetime.utcnow().isoformat() + "Z",
         },
     )

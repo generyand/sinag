@@ -3,19 +3,19 @@
 # Handles final approval workflow, RE-calibration, and grace period management
 # Updated: Added MOV files to assessment details for recalibration review
 
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
 import logging
+from datetime import datetime, timedelta
+from typing import Any
 
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.db.enums import AssessmentStatus, NotificationType, ValidationStatus
+from app.db.enums import AssessmentStatus, ValidationStatus
 from app.db.models.assessment import (
     Assessment,
     AssessmentResponse,
     MOVFile,
 )
-from app.db.models.governance_area import GovernanceArea, Indicator
+from app.db.models.governance_area import Indicator
 from app.db.models.user import User
 
 
@@ -51,7 +51,7 @@ class MLGOOService:
         db: Session,
         mlgoo_user: User,
         include_completed: bool = False,
-    ) -> List[dict]:
+    ) -> list[dict]:
         """
         Get assessments awaiting MLGOO final approval.
 
@@ -90,7 +90,11 @@ class MLGOOService:
             conditional_count = 0
             for response in assessment.responses:
                 if response.validation_status:
-                    status_val = response.validation_status.value if hasattr(response.validation_status, 'value') else response.validation_status
+                    status_val = (
+                        response.validation_status.value
+                        if hasattr(response.validation_status, "value")
+                        else response.validation_status
+                    )
                     # ValidationStatus enum uses uppercase: PASS, FAIL, CONDITIONAL
                     status_upper = status_val.upper() if isinstance(status_val, str) else status_val
                     if status_upper == "PASS":
@@ -102,25 +106,35 @@ class MLGOOService:
 
             # Calculate overall score from pass/total ratio
             total_responses = len(assessment.responses)
-            overall_score = round((pass_count / total_responses * 100), 2) if total_responses > 0 else None
+            overall_score = (
+                round((pass_count / total_responses * 100), 2) if total_responses > 0 else None
+            )
 
-            results.append({
-                "id": assessment.id,
-                "barangay_name": barangay_name,
-                "blgu_user_id": assessment.blgu_user_id,
-                "status": assessment.status.value,
-                "submitted_at": assessment.submitted_at.isoformat() if assessment.submitted_at else None,
-                "validated_at": assessment.validated_at.isoformat() if assessment.validated_at else None,
-                "compliance_status": assessment.final_compliance_status.value if assessment.final_compliance_status else None,
-                "overall_score": overall_score,
-                "pass_count": pass_count,
-                "fail_count": fail_count,
-                "conditional_count": conditional_count,
-                "total_responses": total_responses,
-                "can_recalibrate": assessment.can_request_mlgoo_recalibration,
-                "mlgoo_recalibration_count": assessment.mlgoo_recalibration_count,
-                "is_mlgoo_recalibration": assessment.is_mlgoo_recalibration,
-            })
+            results.append(
+                {
+                    "id": assessment.id,
+                    "barangay_name": barangay_name,
+                    "blgu_user_id": assessment.blgu_user_id,
+                    "status": assessment.status.value,
+                    "submitted_at": assessment.submitted_at.isoformat()
+                    if assessment.submitted_at
+                    else None,
+                    "validated_at": assessment.validated_at.isoformat()
+                    if assessment.validated_at
+                    else None,
+                    "compliance_status": assessment.final_compliance_status.value
+                    if assessment.final_compliance_status
+                    else None,
+                    "overall_score": overall_score,
+                    "pass_count": pass_count,
+                    "fail_count": fail_count,
+                    "conditional_count": conditional_count,
+                    "total_responses": total_responses,
+                    "can_recalibrate": assessment.can_request_mlgoo_recalibration,
+                    "mlgoo_recalibration_count": assessment.mlgoo_recalibration_count,
+                    "is_mlgoo_recalibration": assessment.is_mlgoo_recalibration,
+                }
+            )
 
         return results
 
@@ -129,8 +143,8 @@ class MLGOOService:
         db: Session,
         assessment_id: int,
         mlgoo_user: User,
-        comments: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        comments: str | None = None,
+    ) -> dict[str, Any]:
         """
         Approve an assessment and move it to COMPLETED status.
 
@@ -240,9 +254,9 @@ class MLGOOService:
         db: Session,
         assessment_id: int,
         mlgoo_user: User,
-        indicator_ids: List[int],
+        indicator_ids: list[int],
         comments: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Request RE-calibration for specific indicators.
 
@@ -378,7 +392,7 @@ class MLGOOService:
         db: Session,
         assessment_id: int,
         mlgoo_user: User,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get detailed assessment information for MLGOO review.
 
@@ -421,14 +435,14 @@ class MLGOOService:
             db.query(MOVFile)
             .filter(
                 MOVFile.assessment_id == assessment_id,
-                MOVFile.deleted_at.is_(None)  # Only non-deleted files
+                MOVFile.deleted_at.is_(None),  # Only non-deleted files
             )
             .all()
         )
 
         # Group MOV files by indicator_id
         # For recalibration targets, filter to only show newly uploaded files
-        mov_files_by_indicator: Dict[int, List[Dict[str, Any]]] = {}
+        mov_files_by_indicator: dict[int, list[dict[str, Any]]] = {}
         for mov_file in mov_files_query:
             # For recalibration target indicators, only include files uploaded after recalibration request
             if mov_file.indicator_id in recalibration_indicator_ids and recalibration_requested_at:
@@ -437,15 +451,19 @@ class MLGOOService:
 
             if mov_file.indicator_id not in mov_files_by_indicator:
                 mov_files_by_indicator[mov_file.indicator_id] = []
-            mov_files_by_indicator[mov_file.indicator_id].append({
-                "id": mov_file.id,
-                "file_name": mov_file.file_name,
-                "file_url": mov_file.file_url,
-                "file_type": mov_file.file_type,
-                "file_size": mov_file.file_size,
-                "field_id": mov_file.field_id,
-                "uploaded_at": mov_file.uploaded_at.isoformat() if mov_file.uploaded_at else None,
-            })
+            mov_files_by_indicator[mov_file.indicator_id].append(
+                {
+                    "id": mov_file.id,
+                    "file_name": mov_file.file_name,
+                    "file_url": mov_file.file_url,
+                    "file_type": mov_file.file_type,
+                    "file_size": mov_file.file_size,
+                    "field_id": mov_file.field_id,
+                    "uploaded_at": mov_file.uploaded_at.isoformat()
+                    if mov_file.uploaded_at
+                    else None,
+                }
+            )
 
         # Group responses by governance area
         areas_data = {}
@@ -470,7 +488,11 @@ class MLGOOService:
 
             # Count statuses
             if response.validation_status:
-                status_val = response.validation_status.value if hasattr(response.validation_status, 'value') else response.validation_status
+                status_val = (
+                    response.validation_status.value
+                    if hasattr(response.validation_status, "value")
+                    else response.validation_status
+                )
                 # ValidationStatus enum uses uppercase: PASS, FAIL, CONDITIONAL
                 status_upper = status_val.upper() if isinstance(status_val, str) else status_val
                 if status_upper == "PASS":
@@ -480,19 +502,23 @@ class MLGOOService:
                 elif status_upper == "CONDITIONAL":
                     areas_data[area_id]["conditional_count"] += 1
 
-            areas_data[area_id]["indicators"].append({
-                "response_id": response.id,
-                "indicator_id": response.indicator_id,
-                "indicator_name": response.indicator.name,
-                "indicator_code": response.indicator.indicator_code,
-                "validation_status": response.validation_status.value if response.validation_status else None,
-                "assessor_remarks": response.assessor_remarks,
-                "is_recalibration_target": bool(
-                    assessment.mlgoo_recalibration_indicator_ids and
-                    response.indicator_id in assessment.mlgoo_recalibration_indicator_ids
-                ),
-                "mov_files": mov_files_by_indicator.get(response.indicator_id, []),
-            })
+            areas_data[area_id]["indicators"].append(
+                {
+                    "response_id": response.id,
+                    "indicator_id": response.indicator_id,
+                    "indicator_name": response.indicator.name,
+                    "indicator_code": response.indicator.indicator_code,
+                    "validation_status": response.validation_status.value
+                    if response.validation_status
+                    else None,
+                    "assessor_remarks": response.assessor_remarks,
+                    "is_recalibration_target": bool(
+                        assessment.mlgoo_recalibration_indicator_ids
+                        and response.indicator_id in assessment.mlgoo_recalibration_indicator_ids
+                    ),
+                    "mov_files": mov_files_by_indicator.get(response.indicator_id, []),
+                }
+            )
 
         # Sort indicators in each governance area by indicator_code
         for area_id in areas_data:
@@ -506,7 +532,9 @@ class MLGOOService:
             area["pass_count"] + area["fail_count"] + area["conditional_count"]
             for area in areas_data.values()
         )
-        overall_score = round((total_pass / total_indicators * 100), 2) if total_indicators > 0 else None
+        overall_score = (
+            round((total_pass / total_indicators * 100), 2) if total_indicators > 0 else None
+        )
 
         return {
             "id": assessment.id,
@@ -515,9 +543,15 @@ class MLGOOService:
             "blgu_user_id": assessment.blgu_user_id,
             "blgu_user_name": assessment.blgu_user.name if assessment.blgu_user else None,
             "status": assessment.status.value,
-            "submitted_at": assessment.submitted_at.isoformat() if assessment.submitted_at else None,
-            "validated_at": assessment.validated_at.isoformat() if assessment.validated_at else None,
-            "compliance_status": assessment.final_compliance_status.value if assessment.final_compliance_status else None,
+            "submitted_at": assessment.submitted_at.isoformat()
+            if assessment.submitted_at
+            else None,
+            "validated_at": assessment.validated_at.isoformat()
+            if assessment.validated_at
+            else None,
+            "compliance_status": assessment.final_compliance_status.value
+            if assessment.final_compliance_status
+            else None,
             "overall_score": overall_score,
             "area_results": assessment.area_results,
             "governance_areas": list(areas_data.values()),
@@ -529,7 +563,8 @@ class MLGOOService:
             "mlgoo_recalibration_comments": assessment.mlgoo_recalibration_comments,
             "grace_period_expires_at": (
                 assessment.grace_period_expires_at.isoformat()
-                if assessment.grace_period_expires_at else None
+                if assessment.grace_period_expires_at
+                else None
             ),
             "is_locked_for_deadline": assessment.is_locked_for_deadline,
         }
@@ -540,7 +575,7 @@ class MLGOOService:
         assessment_id: int,
         mlgoo_user: User,
         extend_grace_period_days: int = 3,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Unlock an assessment that was locked due to deadline expiry.
 
@@ -609,9 +644,9 @@ class MLGOOService:
         db: Session,
         assessment_id: int,
         mlgoo_user: User,
-        indicator_updates: List[Dict[str, Any]],
-        comments: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        indicator_updates: list[dict[str, Any]],
+        comments: str | None = None,
+    ) -> dict[str, Any]:
         """
         Update validation status of recalibration target indicators.
 
@@ -681,10 +716,14 @@ class MLGOOService:
                 # Try uppercase first (enum values are PASS, FAIL, CONDITIONAL)
                 new_status = ValidationStatus(new_status_str.upper())
             except ValueError:
-                raise ValueError(f"Invalid validation status: {new_status_str}. Must be Pass, Fail, or Conditional")
+                raise ValueError(
+                    f"Invalid validation status: {new_status_str}. Must be Pass, Fail, or Conditional"
+                )
 
             # Store previous status for logging
-            previous_status = response.validation_status.value if response.validation_status else None
+            previous_status = (
+                response.validation_status.value if response.validation_status else None
+            )
 
             # Update the validation status
             response.validation_status = new_status
@@ -696,13 +735,15 @@ class MLGOOService:
                 else:
                     response.assessor_remarks = mlgoo_remark
 
-            updated_indicators.append({
-                "indicator_id": indicator_id,
-                "indicator_name": response.indicator.name if response.indicator else "Unknown",
-                "previous_status": previous_status,
-                "new_status": new_status.value,
-                "remarks": remarks,
-            })
+            updated_indicators.append(
+                {
+                    "indicator_id": indicator_id,
+                    "indicator_name": response.indicator.name if response.indicator else "Unknown",
+                    "previous_status": previous_status,
+                    "new_status": new_status.value,
+                    "remarks": remarks,
+                }
+            )
 
             self.logger.info(
                 f"MLGOO {mlgoo_user.name} updated indicator {indicator_id} "

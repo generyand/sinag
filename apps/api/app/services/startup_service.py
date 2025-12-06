@@ -4,9 +4,11 @@ Handles application startup checks and initialization
 """
 
 import logging
-import redis
 from datetime import datetime
-from typing import Any, Dict, List, Tuple
+from typing import Any
+
+import redis
+from sqlalchemy.orm import Session  # type: ignore[reportMissingImports]
 
 from app.core.config import settings
 from app.core.security import get_password_hash
@@ -19,11 +21,9 @@ from app.db.enums import UserRole
 from app.db.models.barangay import Barangay
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
-from app.services.governance_area_service import governance_area_service
-from app.services.indicator_service import indicator_service
 from app.indicators.definitions import ALL_INDICATORS
 from app.indicators.seeder import seed_indicators
-from sqlalchemy.orm import Session  # type: ignore[reportMissingImports]
+from app.services.governance_area_service import governance_area_service
 
 logger = logging.getLogger(__name__)
 
@@ -84,6 +84,12 @@ class StartupService:
         # Log startup initiation
         self._log_startup_info()
 
+        # In test mode, skip all external connection checks
+        if settings.TESTING:
+            logger.info("🧪 TESTING mode enabled - skipping external connection checks")
+            self._log_startup_success()
+            return
+
         # CRITICAL: Validate environment variables first
         self._validate_environment_variables()
 
@@ -126,8 +132,8 @@ class StartupService:
         """
         logger.info("🔐 Validating environment variables...")
 
-        errors: List[str] = []
-        warnings: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
 
         # Critical variables (must be set)
         critical_vars = [
@@ -140,8 +146,18 @@ class StartupService:
 
         # Conditionally required variables (based on REQUIRE_* flags)
         conditional_vars = [
-            ("GEMINI_API_KEY", settings.GEMINI_API_KEY, settings.REQUIRE_GEMINI, "AI features (classification, recommendations)"),
-            ("CELERY_BROKER_URL", settings.CELERY_BROKER_URL, settings.REQUIRE_CELERY, "Background tasks"),
+            (
+                "GEMINI_API_KEY",
+                settings.GEMINI_API_KEY,
+                settings.REQUIRE_GEMINI,
+                "AI features (classification, recommendations)",
+            ),
+            (
+                "CELERY_BROKER_URL",
+                settings.CELERY_BROKER_URL,
+                settings.REQUIRE_CELERY,
+                "Background tasks",
+            ),
         ]
 
         # Check critical variables
@@ -159,17 +175,17 @@ class StartupService:
 
         # Validate SECRET_KEY is not the default
         if settings.SECRET_KEY and len(settings.SECRET_KEY) < 32:
-            errors.append(f"  ❌ SECRET_KEY is too short (minimum 32 characters)")
+            errors.append("  ❌ SECRET_KEY is too short (minimum 32 characters)")
 
         # Validate DATABASE_URL format
         if settings.DATABASE_URL:
             if not settings.DATABASE_URL.startswith("postgresql://"):
-                errors.append(f"  ❌ DATABASE_URL must start with 'postgresql://'")
+                errors.append("  ❌ DATABASE_URL must start with 'postgresql://'")
 
         # Validate SUPABASE_URL format
         if settings.SUPABASE_URL:
             if not settings.SUPABASE_URL.startswith("https://"):
-                errors.append(f"  ❌ SUPABASE_URL must start with 'https://'")
+                errors.append("  ❌ SUPABASE_URL must start with 'https://'")
 
         # Log warnings
         if warnings:
@@ -182,7 +198,9 @@ class StartupService:
             error_message = "🚨 Critical environment variables are missing or invalid:\n\n"
             error_message += "\n".join(errors)
             error_message += "\n\n"
-            error_message += "Please check your .env file and ensure all required variables are set.\n"
+            error_message += (
+                "Please check your .env file and ensure all required variables are set.\n"
+            )
             error_message += "See apps/api/.env.example for reference."
 
             logger.critical(error_message)
@@ -220,7 +238,9 @@ class StartupService:
             if should_fail:
                 logger.critical(f"❌ {error_message}")
                 logger.critical("Background tasks (Celery) will not work!")
-                logger.critical("To bypass: Set FAIL_FAST=false OR REQUIRE_CELERY=false in .env (NOT RECOMMENDED)")
+                logger.critical(
+                    "To bypass: Set FAIL_FAST=false OR REQUIRE_CELERY=false in .env (NOT RECOMMENDED)"
+                )
                 raise RuntimeError(error_message)
             else:
                 logger.warning(f"⚠️  {error_message}")
@@ -232,7 +252,7 @@ class StartupService:
         finally:
             try:
                 redis_client.close()
-            except:
+            except Exception:
                 pass
 
     def _validate_gemini_connection(self) -> None:
@@ -251,7 +271,9 @@ class StartupService:
                 error_message = "GEMINI_API_KEY is not set"
                 logger.critical(f"❌ {error_message}")
                 logger.critical("AI features (classification, recommendations) will not work!")
-                logger.critical("To bypass: Set REQUIRE_GEMINI=false in environment (NOT RECOMMENDED)")
+                logger.critical(
+                    "To bypass: Set REQUIRE_GEMINI=false in environment (NOT RECOMMENDED)"
+                )
                 raise RuntimeError(error_message)
             else:
                 logger.warning("⚠️  GEMINI_API_KEY is not set - AI features will be disabled")
@@ -280,7 +302,9 @@ class StartupService:
             if should_fail:
                 logger.critical(f"❌ {error_message}")
                 logger.critical("AI features (classification, recommendations) will not work!")
-                logger.critical("To bypass: Set FAIL_FAST=false OR REQUIRE_GEMINI=false (NOT RECOMMENDED)")
+                logger.critical(
+                    "To bypass: Set FAIL_FAST=false OR REQUIRE_GEMINI=false (NOT RECOMMENDED)"
+                )
                 raise RuntimeError(error_message)
             else:
                 logger.warning(f"⚠️  {error_message}")
@@ -300,6 +324,7 @@ class StartupService:
     def _seed_initial_data(self) -> None:
         """Seed the database with initial required data."""
         import os
+
         # Skip seeding in tests to speed up test runs
         if os.getenv("SKIP_STARTUP_SEEDING") == "true":
             logger.info("⏭️  Skipping startup seeding (test mode)")
@@ -330,7 +355,9 @@ class StartupService:
             if existing_indicators == 0:
                 logger.info("  - Seeding hardcoded SGLGB indicators...")
                 seed_indicators(ALL_INDICATORS, db)
-                logger.info(f"  - Indicator seeding complete. ({len(ALL_INDICATORS)} parent indicators created)")
+                logger.info(
+                    f"  - Indicator seeding complete. ({len(ALL_INDICATORS)} parent indicators created)"
+                )
             else:
                 logger.info(f"  - Indicators already exist ({existing_indicators}). Skipping seed.")
 
@@ -346,9 +373,7 @@ class StartupService:
         db: Session = SessionLocal()
         try:
             # Check if any MLGOO_DILG user exists
-            existing_user = (
-                db.query(User).filter(User.role == UserRole.MLGOO_DILG).first()
-            )
+            existing_user = db.query(User).filter(User.role == UserRole.MLGOO_DILG).first()
             if existing_user:
                 logger.info("  - Admin user already exists. Skipping.")
                 return
@@ -393,9 +418,7 @@ class StartupService:
             created_count = 0
             for user_config in external_users:
                 # Check if user already exists
-                existing_user = (
-                    db.query(User).filter(User.email == user_config["email"]).first()
-                )
+                existing_user = db.query(User).filter(User.email == user_config["email"]).first()
 
                 if existing_user:
                     logger.info(f"  - {user_config['description']} already exists. Skipping.")
@@ -417,7 +440,9 @@ class StartupService:
 
             if created_count > 0:
                 db.commit()
-                logger.info(f"  - Created {created_count} external stakeholder user(s) successfully.")
+                logger.info(
+                    f"  - Created {created_count} external stakeholder user(s) successfully."
+                )
                 logger.info("  ⚠️  Default password: katuparan2025 (must be changed on first login)")
             else:
                 logger.info("  - All external users already exist. Skipping.")
@@ -441,6 +466,7 @@ class StartupService:
         This method is idempotent - it will not create duplicates.
         """
         import os
+
         # Skip seeding in tests
         if os.getenv("SKIP_STARTUP_SEEDING") == "true":
             logger.info("⏭️  Skipping demo user seeding (test mode)")
@@ -597,6 +623,7 @@ class StartupService:
             RuntimeError: If critical indicator data is missing (only in FAIL_FAST mode)
         """
         import os
+
         # Skip validation in tests
         if os.getenv("SKIP_STARTUP_SEEDING") == "true":
             return
@@ -614,25 +641,35 @@ class StartupService:
         }
 
         db: Session = SessionLocal()
-        errors: List[str] = []
-        warnings: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
 
         try:
             # Check for corrupt records (NULL indicator_code)
-            corrupt_count = db.query(Indicator).filter(
-                Indicator.indicator_code.is_(None),
-                Indicator.parent_id.is_(None)  # Only check root indicators
-            ).count()
+            corrupt_count = (
+                db.query(Indicator)
+                .filter(
+                    Indicator.indicator_code.is_(None),
+                    Indicator.parent_id.is_(None),  # Only check root indicators
+                )
+                .count()
+            )
 
             if corrupt_count > 0:
-                errors.append(f"Found {corrupt_count} corrupt indicator(s) with NULL indicator_code")
+                errors.append(
+                    f"Found {corrupt_count} corrupt indicator(s) with NULL indicator_code"
+                )
 
             # Check each governance area
             for area_id, expected in EXPECTED_INDICATORS.items():
-                actual_count = db.query(Indicator).filter(
-                    Indicator.governance_area_id == area_id,
-                    Indicator.parent_id.is_(None)  # Parent indicators only
-                ).count()
+                actual_count = (
+                    db.query(Indicator)
+                    .filter(
+                        Indicator.governance_area_id == area_id,
+                        Indicator.parent_id.is_(None),  # Parent indicators only
+                    )
+                    .count()
+                )
 
                 if actual_count == 0:
                     errors.append(f"Area {area_id} ({expected['name']}) has NO indicators!")
@@ -643,9 +680,7 @@ class StartupService:
                     )
 
             # Check total indicator count
-            total_parents = db.query(Indicator).filter(
-                Indicator.parent_id.is_(None)
-            ).count()
+            total_parents = db.query(Indicator).filter(Indicator.parent_id.is_(None)).count()
 
             expected_total = sum(e["count"] for e in EXPECTED_INDICATORS.values())  # 31
 
@@ -693,18 +728,14 @@ class StartupService:
         """
         logger.info("🔍 Checking database connections...")
 
-        connection_requirement = (
-            "all" if settings.REQUIRE_ALL_CONNECTIONS else "at least one"
-        )
+        connection_requirement = "all" if settings.REQUIRE_ALL_CONNECTIONS else "at least one"
         logger.info(
             f"🔐 Connection requirement: {connection_requirement} connection(s) must be healthy"
         )
 
         try:
             # This will throw an exception if connections fail according to requirements
-            await validate_connections_startup(
-                require_all=settings.REQUIRE_ALL_CONNECTIONS
-            )
+            await validate_connections_startup(require_all=settings.REQUIRE_ALL_CONNECTIONS)
             logger.info("✅ Database connection requirements satisfied!")
 
         except Exception as e:
@@ -720,30 +751,22 @@ class StartupService:
             if connection_details["database"]["connected"]:
                 logger.info("  🗄️  PostgreSQL: healthy")
             else:
-                logger.warning(
-                    "  🗄️  PostgreSQL: not connected (some features may be unavailable)"
-                )
+                logger.warning("  🗄️  PostgreSQL: not connected (some features may be unavailable)")
 
             # Log Supabase connection status
             if connection_details["supabase"]["connected"]:
                 logger.info("  ⚡ Supabase: healthy")
             else:
-                logger.warning(
-                    "  ⚡ Supabase: not connected (some features may be unavailable)"
-                )
+                logger.warning("  ⚡ Supabase: not connected (some features may be unavailable)")
 
         except Exception as e:
-            logger.warning(
-                f"⚠️  Could not retrieve detailed connection status: {str(e)}"
-            )
+            logger.warning(f"⚠️  Could not retrieve detailed connection status: {str(e)}")
 
     def _log_startup_success(self) -> None:
         """Log successful startup completion"""
         if self.startup_time:
             startup_duration = (datetime.now() - self.startup_time).total_seconds()
-            logger.info(
-                f"🎯 SINAG API server startup complete! ({startup_duration:.2f}s)"
-            )
+            logger.info(f"🎯 SINAG API server startup complete! ({startup_duration:.2f}s)")
         else:
             logger.info("🎯 SINAG API server startup complete!")
 
@@ -752,7 +775,7 @@ class StartupService:
         logger.info("🛑 Shutting down SINAG API server...")
         logger.info("👋 Goodbye!")
 
-    async def get_health_status(self) -> Dict[str, Any]:
+    async def get_health_status(self) -> dict[str, Any]:
         """
         Get current health status for health check endpoints.
 

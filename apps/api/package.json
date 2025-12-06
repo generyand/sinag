@@ -11,12 +11,8 @@
     "test:cov": "uv run pytest --cov=app --cov-report=term-missing --cov-report=html",
     "lint": "uv run ruff check .",
     "format": "uv run ruff format . && uv run ruff check --fix .",
-    "check": "npm run lint && npm run type-check",
+    "check": "pnpm run lint && pnpm run type-check",
     "type-check": "uv run mypy .",
     "migrate": "uv run alembic upgrade head"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.76.1",
-    "@tanstack/react-query": "^5.80.7"
   }
 }

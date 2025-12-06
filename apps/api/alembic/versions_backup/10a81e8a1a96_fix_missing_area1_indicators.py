@@ -11,15 +11,15 @@ indicator_code=NULL instead of the expected 7 parent indicators (1.1-1.7).
 Issue discovered: 76 total indicators instead of expected 86 (now 100+ with children)
 Root cause: Area 1 indicators were never properly seeded or were accidentally deleted.
 """
+
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '10a81e8a1a96'
-down_revision: Union[str, Sequence[str], None] = 'c18197861bcc'
+revision: str = "10a81e8a1a96"
+down_revision: Union[str, Sequence[str], None] = "c18197861bcc"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -52,10 +52,11 @@ def upgrade() -> None:
         print("Step 1: Removing corrupt Area 1 indicators...")
 
         # Find and delete any Area 1 indicators with NULL indicator_code
-        corrupt_indicators = session.query(Indicator).filter(
-            Indicator.governance_area_id == 1,
-            Indicator.indicator_code.is_(None)
-        ).all()
+        corrupt_indicators = (
+            session.query(Indicator)
+            .filter(Indicator.governance_area_id == 1, Indicator.indicator_code.is_(None))
+            .all()
+        )
 
         for ind in corrupt_indicators:
             print(f"  Deleting corrupt record: ID={ind.id}, name='{ind.name[:50]}...'")
@@ -67,9 +68,7 @@ def upgrade() -> None:
         print(f"  Removed {len(corrupt_indicators)} corrupt record(s)")
 
         # Step 2: Verify no Area 1 indicators exist (clean slate)
-        existing_area1 = session.query(Indicator).filter(
-            Indicator.governance_area_id == 1
-        ).count()
+        existing_area1 = session.query(Indicator).filter(Indicator.governance_area_id == 1).count()
 
         if existing_area1 > 0:
             print(f"  WARNING: Found {existing_area1} existing Area 1 indicators")
@@ -95,21 +94,19 @@ def upgrade() -> None:
         print()
         print("Step 3: Verifying seeded indicators...")
 
-        area1_parents = session.query(Indicator).filter(
-            Indicator.governance_area_id == 1,
-            Indicator.parent_id.is_(None)
-        ).order_by(Indicator.indicator_code).all()
+        area1_parents = (
+            session.query(Indicator)
+            .filter(Indicator.governance_area_id == 1, Indicator.parent_id.is_(None))
+            .order_by(Indicator.indicator_code)
+            .all()
+        )
 
         print(f"  Area 1 parent indicators: {len(area1_parents)}")
         for ind in area1_parents:
-            children_count = session.query(Indicator).filter(
-                Indicator.parent_id == ind.id
-            ).count()
+            children_count = session.query(Indicator).filter(Indicator.parent_id == ind.id).count()
             print(f"    {ind.indicator_code}: {ind.name[:40]}... ({children_count} children)")
 
-        area1_total = session.query(Indicator).filter(
-            Indicator.governance_area_id == 1
-        ).count()
+        area1_total = session.query(Indicator).filter(Indicator.governance_area_id == 1).count()
 
         print()
         print("=" * 70)
@@ -143,21 +140,20 @@ def downgrade() -> None:
 
         # Get all Area 1 indicator IDs
         area1_ids = [
-            ind.id for ind in session.query(Indicator).filter(
-                Indicator.governance_area_id == 1
-            ).all()
+            ind.id
+            for ind in session.query(Indicator).filter(Indicator.governance_area_id == 1).all()
         ]
 
         if area1_ids:
             # Delete checklist items first
-            session.query(ChecklistItem).filter(
-                ChecklistItem.indicator_id.in_(area1_ids)
-            ).delete(synchronize_session=False)
+            session.query(ChecklistItem).filter(ChecklistItem.indicator_id.in_(area1_ids)).delete(
+                synchronize_session=False
+            )
 
             # Delete indicators
-            session.query(Indicator).filter(
-                Indicator.id.in_(area1_ids)
-            ).delete(synchronize_session=False)
+            session.query(Indicator).filter(Indicator.id.in_(area1_ids)).delete(
+                synchronize_session=False
+            )
 
             session.commit()
             print(f"Removed {len(area1_ids)} Area 1 indicators")

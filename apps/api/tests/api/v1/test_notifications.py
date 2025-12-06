@@ -2,20 +2,20 @@
 Tests for notification API endpoints (app/api/v1/notifications.py)
 """
 
-import pytest
 import uuid
-from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
-from passlib.context import CryptContext
 
-from app.db.models.user import User
-from app.db.models.notification import Notification
+import pytest
+from fastapi.testclient import TestClient
+from passlib.context import CryptContext
+from sqlalchemy.orm import Session
+
+from app.api import deps
+from app.db.enums import AreaType, AssessmentStatus, NotificationType, UserRole
 from app.db.models.assessment import Assessment
 from app.db.models.barangay import Barangay
 from app.db.models.governance_area import GovernanceArea
-from app.db.enums import UserRole, NotificationType, AssessmentStatus, AreaType
-from app.api import deps
-
+from app.db.models.notification import Notification
+from app.db.models.user import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -110,6 +110,7 @@ def assessment(db_session: Session, test_user: User):
 
 def _override_user_and_db(client, user: User, db_session: Session):
     """Override authentication and database dependencies for testing"""
+
     def _override_current_active_user():
         return user
 
@@ -154,17 +155,13 @@ def create_test_notification(
 # ====================================================================
 
 
-def test_get_notifications_success(
-    client: TestClient, db_session: Session, test_user: User
-):
+def test_get_notifications_success(client: TestClient, db_session: Session, test_user: User):
     """Test getting user notifications"""
     _override_user_and_db(client, test_user, db_session)
 
     # Create notifications
     for i in range(3):
-        create_test_notification(
-            db_session, test_user.id, title=f"Notification {i}"
-        )
+        create_test_notification(db_session, test_user.id, title=f"Notification {i}")
 
     response = client.get("/api/v1/notifications/")
     assert response.status_code == 200
@@ -178,17 +175,13 @@ def test_get_notifications_success(
     assert data["unread_count"] == 3
 
 
-def test_get_notifications_pagination(
-    client: TestClient, db_session: Session, test_user: User
-):
+def test_get_notifications_pagination(client: TestClient, db_session: Session, test_user: User):
     """Test notifications pagination"""
     _override_user_and_db(client, test_user, db_session)
 
     # Create 10 notifications
     for i in range(10):
-        create_test_notification(
-            db_session, test_user.id, title=f"Notification {i}"
-        )
+        create_test_notification(db_session, test_user.id, title=f"Notification {i}")
 
     # Get first page
     response = client.get("/api/v1/notifications/?skip=0&limit=3")
@@ -199,9 +192,7 @@ def test_get_notifications_pagination(
     assert data["total"] == 10
 
 
-def test_get_notifications_unread_only(
-    client: TestClient, db_session: Session, test_user: User
-):
+def test_get_notifications_unread_only(client: TestClient, db_session: Session, test_user: User):
     """Test filtering unread notifications"""
     _override_user_and_db(client, test_user, db_session)
 
@@ -218,9 +209,7 @@ def test_get_notifications_unread_only(
     assert data["unread_count"] == 2
 
 
-def test_get_notifications_empty(
-    client: TestClient, db_session: Session, test_user: User
-):
+def test_get_notifications_empty(client: TestClient, db_session: Session, test_user: User):
     """Test getting notifications when none exist"""
     _override_user_and_db(client, test_user, db_session)
 
@@ -256,9 +245,7 @@ def test_get_notifications_only_own(
 # ====================================================================
 
 
-def test_get_notification_count(
-    client: TestClient, db_session: Session, test_user: User
-):
+def test_get_notification_count(client: TestClient, db_session: Session, test_user: User):
     """Test getting notification count"""
     _override_user_and_db(client, test_user, db_session)
 
@@ -275,9 +262,7 @@ def test_get_notification_count(
     assert data["total"] == 3
 
 
-def test_get_notification_count_empty(
-    client: TestClient, db_session: Session, test_user: User
-):
+def test_get_notification_count_empty(client: TestClient, db_session: Session, test_user: User):
     """Test getting notification count when none exist"""
     _override_user_and_db(client, test_user, db_session)
 
@@ -294,9 +279,7 @@ def test_get_notification_count_empty(
 # ====================================================================
 
 
-def test_mark_notifications_read(
-    client: TestClient, db_session: Session, test_user: User
-):
+def test_mark_notifications_read(client: TestClient, db_session: Session, test_user: User):
     """Test marking specific notifications as read"""
     _override_user_and_db(client, test_user, db_session)
 
@@ -373,9 +356,7 @@ def test_mark_notifications_read_other_user(
 # ====================================================================
 
 
-def test_mark_all_notifications_read(
-    client: TestClient, db_session: Session, test_user: User
-):
+def test_mark_all_notifications_read(client: TestClient, db_session: Session, test_user: User):
     """Test marking all notifications as read"""
     _override_user_and_db(client, test_user, db_session)
 
@@ -458,9 +439,7 @@ def test_get_notification_by_id(
     assert data["message"] == "Test message"
 
 
-def test_get_notification_by_id_not_found(
-    client: TestClient, db_session: Session, test_user: User
-):
+def test_get_notification_by_id_not_found(client: TestClient, db_session: Session, test_user: User):
     """Test getting non-existent notification"""
     _override_user_and_db(client, test_user, db_session)
 

@@ -2,21 +2,20 @@
 Tests for external analytics API endpoints (app/api/v1/external_analytics.py)
 """
 
-import pytest
 import uuid
-from unittest.mock import patch, MagicMock
-from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
 from datetime import datetime
+
+import pytest
+from fastapi.testclient import TestClient
 from passlib.context import CryptContext
+from sqlalchemy.orm import Session
 
-from app.db.models.user import User
-from app.db.models.barangay import Barangay
-from app.db.models.assessment import Assessment, AssessmentResponse
-from app.db.models.governance_area import GovernanceArea, Indicator
-from app.db.enums import UserRole, AssessmentStatus, ComplianceStatus, AreaType
 from app.api import deps
-
+from app.db.enums import AreaType, AssessmentStatus, ComplianceStatus, UserRole
+from app.db.models.assessment import Assessment
+from app.db.models.barangay import Barangay
+from app.db.models.governance_area import GovernanceArea
+from app.db.models.user import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -35,6 +34,7 @@ def clear_cache_and_overrides(client):
     # Clear external analytics cache before each test
     try:
         from app.core.cache import cache
+
         if cache.is_available:
             cache.invalidate_external_analytics()
     except Exception:
@@ -67,8 +67,6 @@ def katuparan_user(db_session: Session):
     db_session.commit()
     db_session.refresh(user)
     return user
-
-
 
 
 @pytest.fixture
@@ -138,7 +136,7 @@ def five_assessments(db_session: Session):
 
     for i in range(5):
         # Create barangay
-        barangay = Barangay(name=f"Barangay {i+1}")
+        barangay = Barangay(name=f"Barangay {i + 1}")
         db_session.add(barangay)
         barangays.append(barangay)
 
@@ -178,12 +176,14 @@ def five_assessments(db_session: Session):
 
 def _override_user_and_db(client, user: User, db_session: Session):
     """Override authentication and database dependencies"""
+
     def _override_current_active_user():
         return user
 
     def _override_current_external_user():
         if user.role != UserRole.KATUPARAN_CENTER_USER:
             from fastapi import HTTPException, status
+
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not enough permissions. External stakeholder access required.",
@@ -197,7 +197,9 @@ def _override_user_and_db(client, user: User, db_session: Session):
             pass
 
     client.app.dependency_overrides[deps.get_current_active_user] = _override_current_active_user
-    client.app.dependency_overrides[deps.get_current_external_user] = _override_current_external_user
+    client.app.dependency_overrides[deps.get_current_external_user] = (
+        _override_current_external_user
+    )
     client.app.dependency_overrides[deps.get_db] = _override_get_db
 
 
@@ -280,7 +282,7 @@ def test_get_overall_compliance_insufficient_data_returns_400(
             name=f"User {i}",
             hashed_password=pwd_context.hash("pass"),
             role=UserRole.BLGU_USER,
-            barangay_id=i+1,
+            barangay_id=i + 1,
             is_active=True,
         )
         db_session.add(user)
@@ -526,7 +528,9 @@ def test_all_endpoints_require_external_user_role(
 
     for endpoint in endpoints:
         response = client.get(endpoint)
-        assert response.status_code == 403, f"Endpoint {endpoint} should return 403 for non-external user"
+        assert response.status_code == 403, (
+            f"Endpoint {endpoint} should return 403 for non-external user"
+        )
 
 
 def test_katuparan_user_can_access_all_endpoints(
@@ -548,7 +552,9 @@ def test_katuparan_user_can_access_all_endpoints(
 
     for endpoint in endpoints:
         response = client.get(endpoint)
-        assert response.status_code == 200, f"Endpoint {endpoint} should be accessible for KATUPARAN_CENTER_USER"
+        assert response.status_code == 200, (
+            f"Endpoint {endpoint} should be accessible for KATUPARAN_CENTER_USER"
+        )
 
 
 # ====================================================================
@@ -704,7 +710,7 @@ def test_pdf_export_endpoint_success(
     assert ".pdf" in response.headers["content-disposition"]
 
     # Verify PDF content (magic number)
-    assert response.content[:4] == b'%PDF'
+    assert response.content[:4] == b"%PDF"
     # PDF size can vary depending on content, just check it's not empty
     assert len(response.content) > 1000
 

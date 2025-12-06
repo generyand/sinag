@@ -3,7 +3,7 @@
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 @celery_app.task(bind=True, name="notifications.send_new_submission_notification")
-def send_new_submission_notification(self: Any, assessment_id: int) -> Dict[str, Any]:
+def send_new_submission_notification(self: Any, assessment_id: int) -> dict[str, Any]:
     """
     Notification #1: BLGU submits assessment -> All active Assessors notified.
 
@@ -92,7 +92,7 @@ def send_new_submission_notification(self: Any, assessment_id: int) -> Dict[str,
 
 
 @celery_app.task(bind=True, name="notifications.send_rework_notification")
-def send_rework_notification(self: Any, assessment_id: int) -> Dict[str, Any]:
+def send_rework_notification(self: Any, assessment_id: int) -> dict[str, Any]:
     """
     Notification #2: Assessor sends rework -> BLGU user notified.
 
@@ -164,9 +164,7 @@ def send_rework_notification(self: Any, assessment_id: int) -> Dict[str, Any]:
 
 
 @celery_app.task(bind=True, name="notifications.send_rework_resubmission_notification")
-def send_rework_resubmission_notification(
-    self: Any, assessment_id: int
-) -> Dict[str, Any]:
+def send_rework_resubmission_notification(self: Any, assessment_id: int) -> dict[str, Any]:
     """
     Notification #3: BLGU resubmits after rework -> All active Assessors notified.
 
@@ -237,7 +235,7 @@ def send_rework_resubmission_notification(
 @celery_app.task(bind=True, name="notifications.send_ready_for_validation_notification")
 def send_ready_for_validation_notification(
     self: Any, assessment_id: int, governance_area_id: int
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Notification #4: Assessor finalizes -> Validator(s) for governance area notified.
 
@@ -260,9 +258,7 @@ def send_ready_for_validation_notification(
 
         # Get governance area
         governance_area = (
-            db.query(GovernanceArea)
-            .filter(GovernanceArea.id == governance_area_id)
-            .first()
+            db.query(GovernanceArea).filter(GovernanceArea.id == governance_area_id).first()
         )
         governance_area_name = governance_area.name if governance_area else "Unknown Area"
 
@@ -317,7 +313,7 @@ def send_ready_for_validation_notification(
 
 
 @celery_app.task(bind=True, name="notifications.send_calibration_notification")
-def send_calibration_notification(self: Any, assessment_id: int) -> Dict[str, Any]:
+def send_calibration_notification(self: Any, assessment_id: int) -> dict[str, Any]:
     """
     Notification #5: Validator requests calibration -> BLGU user notified.
 
@@ -349,14 +345,18 @@ def send_calibration_notification(self: Any, assessment_id: int) -> Dict[str, An
         # Get governance area name if calibration_validator_id is set
         governance_area_name = None
         if assessment.calibration_validator_id:
-            validator = db.query(User).filter(
-                User.id == assessment.calibration_validator_id
-            ).first()
+            validator = (
+                db.query(User).filter(User.id == assessment.calibration_validator_id).first()
+            )
             if validator and validator.validator_area:
                 governance_area_name = validator.validator_area.name
 
         # Create notification for BLGU user
-        title = f"Calibration Required: {governance_area_name}" if governance_area_name else "Calibration Required"
+        title = (
+            f"Calibration Required: {governance_area_name}"
+            if governance_area_name
+            else "Calibration Required"
+        )
         notification = notification_service.notify_blgu_user(
             db=db,
             notification_type=NotificationType.CALIBRATION_REQUESTED,
@@ -398,12 +398,10 @@ def send_calibration_notification(self: Any, assessment_id: int) -> Dict[str, An
 # ==================== CALIBRATION RESUBMISSION NOTIFICATION ====================
 
 
-@celery_app.task(
-    bind=True, name="notifications.send_calibration_resubmission_notification"
-)
+@celery_app.task(bind=True, name="notifications.send_calibration_resubmission_notification")
 def send_calibration_resubmission_notification(
     self: Any, assessment_id: int, validator_id: int
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Notification #6: BLGU resubmits after calibration -> Same Validator notified.
 
@@ -486,9 +484,7 @@ def send_calibration_resubmission_notification(
 
 
 @celery_app.task(bind=True, name="notifications.send_validation_complete_notification")
-def send_validation_complete_notification(
-    self: Any, assessment_id: int
-) -> Dict[str, Any]:
+def send_validation_complete_notification(self: Any, assessment_id: int) -> dict[str, Any]:
     """
     Send notification to MLGOO users and BLGU user when assessment validation is complete.
 
@@ -529,7 +525,7 @@ def send_validation_complete_notification(
 
         # Notify BLGU user
         if assessment.blgu_user_id:
-            blgu_notification = notification_service.notify_blgu_user(
+            notification_service.notify_blgu_user(
                 db=db,
                 notification_type=NotificationType.VALIDATION_COMPLETED,
                 title="Assessment Validated!",
@@ -576,12 +572,12 @@ def send_validation_complete_notification(
 def send_deadline_extension_notification(
     self: Any,
     barangay_id: int,
-    indicator_ids: List[int],
+    indicator_ids: list[int],
     new_deadline: str,
     reason: str,
     created_by_user_id: int,
-    db: Optional[Session] = None,
-) -> Dict[str, Any]:
+    db: Session | None = None,
+) -> dict[str, Any]:
     """
     Send notification to BLGU users when deadline is extended.
 
@@ -698,9 +694,7 @@ def send_deadline_extension_notification(
 
 
 @celery_app.task(bind=True, name="notifications.send_ready_for_mlgoo_approval_notification")
-def send_ready_for_mlgoo_approval_notification(
-    self: Any, assessment_id: int
-) -> Dict[str, Any]:
+def send_ready_for_mlgoo_approval_notification(self: Any, assessment_id: int) -> dict[str, Any]:
     """
     Notification #8: All Validators complete -> MLGOO notified for final approval.
 
@@ -771,9 +765,7 @@ def send_ready_for_mlgoo_approval_notification(
 
 
 @celery_app.task(bind=True, name="notifications.send_mlgoo_recalibration_notification")
-def send_mlgoo_recalibration_notification(
-    self: Any, assessment_id: int
-) -> Dict[str, Any]:
+def send_mlgoo_recalibration_notification(self: Any, assessment_id: int) -> dict[str, Any]:
     """
     Notification #9: MLGOO requests RE-calibration -> BLGU notified.
 
@@ -848,9 +840,7 @@ def send_mlgoo_recalibration_notification(
 
 
 @celery_app.task(bind=True, name="notifications.send_assessment_approved_notification")
-def send_assessment_approved_notification(
-    self: Any, assessment_id: int
-) -> Dict[str, Any]:
+def send_assessment_approved_notification(self: Any, assessment_id: int) -> dict[str, Any]:
     """
     Notification #10: MLGOO approves assessment -> BLGU notified.
 
@@ -881,7 +871,7 @@ def send_assessment_approved_notification(
 
         # Notify BLGU user
         if assessment.blgu_user_id:
-            notification = notification_service.notify_blgu_user(
+            notification_service.notify_blgu_user(
                 db=db,
                 notification_type=NotificationType.ASSESSMENT_APPROVED,
                 title="Assessment Approved!",
@@ -926,7 +916,7 @@ def send_assessment_approved_notification(
 @celery_app.task(bind=True, name="notifications.send_grace_period_warning_notification")
 def send_grace_period_warning_notification(
     self: Any, assessment_id: int, hours_remaining: int
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Notification #11: Grace period expiring soon -> BLGU warned.
 
@@ -1003,9 +993,7 @@ def send_grace_period_warning_notification(
 
 
 @celery_app.task(bind=True, name="notifications.send_deadline_expired_notification")
-def send_deadline_expired_notification(
-    self: Any, assessment_id: int
-) -> Dict[str, Any]:
+def send_deadline_expired_notification(self: Any, assessment_id: int) -> dict[str, Any]:
     """
     Notification #12: Grace period expired -> BLGU locked, MLGOO notified.
 

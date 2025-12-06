@@ -2,13 +2,15 @@
 # Supabase client, SQLAlchemy engine, session management, and base models
 
 import logging
-from typing import Any, Dict, Generator, Optional
+from collections.abc import Generator
+from typing import Any
 
 import redis
-from app.core.config import settings
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
 from supabase import Client, create_client
+
+from app.core.config import settings
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -29,13 +31,9 @@ except Exception as e:
 supabase_admin: Client | None = None
 try:
     if settings.SUPABASE_URL and settings.SUPABASE_SERVICE_ROLE_KEY:
-        supabase_admin = create_client(
-            settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY
-        )
+        supabase_admin = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
     else:
-        logger.warning(
-            "Supabase admin client not configured (missing URL or SERVICE_ROLE_KEY)"
-        )
+        logger.warning("Supabase admin client not configured (missing URL or SERVICE_ROLE_KEY)")
 except Exception as e:
     logger.error(f"Failed to initialize Supabase admin client: {str(e)}")
     supabase_admin = None
@@ -61,12 +59,12 @@ if settings.DATABASE_URL:
     # PERFORMANCE: Tuned for high concurrency with connection reuse
     engine = create_engine(
         settings.DATABASE_URL,
-        pool_pre_ping=True,      # Validates connections before use (prevents stale connections)
-        pool_recycle=300,        # Recycles connections every 5 min (prevents idle timeout issues)
-        pool_size=30,            # INCREASED: Base number of connections to keep in pool
-        max_overflow=70,         # INCREASED: Additional connections under load (max 100 total)
-        pool_timeout=30,         # ADDED: Wait up to 30s for a connection from pool
-        pool_use_lifo=True,      # ADDED: Use LIFO for better connection reuse (warmer connections)
+        pool_pre_ping=True,  # Validates connections before use (prevents stale connections)
+        pool_recycle=300,  # Recycles connections every 5 min (prevents idle timeout issues)
+        pool_size=30,  # INCREASED: Base number of connections to keep in pool
+        max_overflow=70,  # INCREASED: Additional connections under load (max 100 total)
+        pool_timeout=30,  # ADDED: Wait up to 30s for a connection from pool
+        pool_use_lifo=True,  # ADDED: Use LIFO for better connection reuse (warmer connections)
         echo_pool=settings.DEBUG,  # Log pool events in debug mode
         connect_args=connect_args,
     )
@@ -83,7 +81,7 @@ if settings.DATABASE_URL:
 Base = declarative_base()
 
 
-def get_db() -> Generator[Session, None, None]:
+def get_db() -> Generator[Session]:
     """
     Database session generator for SQLAlchemy operations.
     Creates a new session for each request and ensures it's properly closed.
@@ -141,7 +139,7 @@ def get_supabase_admin() -> Client:
 # 🔍 Database Connectivity Checks
 
 
-async def check_database_connection() -> Dict[str, Any]:
+async def check_database_connection() -> dict[str, Any]:
     """
     Check SQLAlchemy database connection health.
 
@@ -183,7 +181,7 @@ async def check_database_connection() -> Dict[str, Any]:
         }
 
 
-async def check_supabase_connection() -> Dict[str, Any]:
+async def check_supabase_connection() -> dict[str, Any]:
     """
     Check Supabase client connection health.
 
@@ -218,7 +216,7 @@ async def check_supabase_connection() -> Dict[str, Any]:
         }
 
 
-async def check_all_connections() -> Dict[str, Any]:
+async def check_all_connections() -> dict[str, Any]:
     """
     Check all database connections (SQLAlchemy + Supabase).
 
@@ -228,9 +226,7 @@ async def check_all_connections() -> Dict[str, Any]:
     db_check = await check_database_connection()
     supabase_check = await check_supabase_connection()
 
-    overall_healthy = db_check.get("connected", False) and supabase_check.get(
-        "connected", False
-    )
+    overall_healthy = db_check.get("connected", False) and supabase_check.get("connected", False)
 
     return {
         "overall_status": "healthy" if overall_healthy else "unhealthy",
@@ -269,12 +265,8 @@ async def validate_connections_startup(require_all: bool = True) -> None:
     # Check Supabase connection
     if not connection_status["supabase"]["connected"]:
         supabase_error = connection_status["supabase"].get("error", "Unknown error")
-        supabase_details = connection_status["supabase"].get(
-            "details", "No details provided"
-        )
-        errors.append(
-            f"Supabase connection failed: {supabase_error} ({supabase_details})"
-        )
+        supabase_details = connection_status["supabase"].get("details", "No details provided")
+        errors.append(f"Supabase connection failed: {supabase_error} ({supabase_details})")
     else:
         success_messages.append("Supabase connection: Successful")
 
@@ -300,20 +292,16 @@ async def validate_connections_startup(require_all: bool = True) -> None:
 
         # Include information about successful connections if any
         if success_messages:
-            error_message += "Successful connections:\n- " + "\n- ".join(
-                success_messages
-            )
+            error_message += "Successful connections:\n- " + "\n- ".join(success_messages)
 
-        error_message += (
-            "\n\nPlease check your database configuration and connection settings."
-        )
+        error_message += "\n\nPlease check your database configuration and connection settings."
 
         raise RuntimeError(error_message)
 
 
 # 🔴 Redis Client for Security Features (Token Blacklist, Account Lockout)
 
-_redis_client: Optional[redis.Redis] = None
+_redis_client: redis.Redis | None = None
 
 
 def get_redis_client() -> redis.Redis:
@@ -348,7 +336,7 @@ def get_redis_client() -> redis.Redis:
     return _redis_client
 
 
-async def check_redis_connection() -> Dict[str, Any]:
+async def check_redis_connection() -> dict[str, Any]:
     """
     Check Redis connection health.
 
@@ -372,7 +360,7 @@ async def check_redis_connection() -> Dict[str, Any]:
         }
 
 
-def get_db_pool_stats() -> Dict[str, Any]:
+def get_db_pool_stats() -> dict[str, Any]:
     """
     Get database connection pool statistics.
 
@@ -395,12 +383,12 @@ def get_db_pool_stats() -> Dict[str, Any]:
             "checked_in": pool.checkedin(),  # Available connections
             "checked_out": pool.checkedout(),  # Connections in use
             "overflow": pool.overflow(),  # Connections beyond pool_size
-            "invalid": pool.invalidatedcount() if hasattr(pool, 'invalidatedcount') else 0,
+            "invalid": pool.invalidatedcount() if hasattr(pool, "invalidatedcount") else 0,
             "config": {
                 # Read actual pool configuration (avoid hardcoded duplicates)
                 "size": pool.size(),
-                "max_overflow": getattr(pool, '_max_overflow', 70),
-                "timeout": getattr(pool, '_timeout', 30),
+                "max_overflow": getattr(pool, "_max_overflow", 70),
+                "timeout": getattr(pool, "_timeout", 30),
             },
         }
     except Exception as e:
@@ -411,7 +399,7 @@ def get_db_pool_stats() -> Dict[str, Any]:
         }
 
 
-async def check_redis_cache_connection() -> Dict[str, Any]:
+async def check_redis_cache_connection() -> dict[str, Any]:
     """
     Check Redis cache connection health (separate from Celery Redis).
 
@@ -420,6 +408,7 @@ async def check_redis_cache_connection() -> Dict[str, Any]:
     """
     try:
         from app.core.cache import cache
+
         if cache.is_available:
             return {
                 "connected": True,

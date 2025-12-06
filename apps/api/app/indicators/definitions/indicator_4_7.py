@@ -29,8 +29,7 @@ IMPORTANT NOTES FOR PHASE 9 (VALIDATION SERVICE):
    - Coverage: 1st Semester of CY 2023
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
-
+from app.indicators.base import ChecklistItem, Indicator, SubIndicator
 
 # Indicator 4.7: Maintenance of Updated Record of Barangay Inhabitants (RBIs)
 INDICATOR_4_7 = Indicator(
@@ -57,16 +56,16 @@ INDICATOR_4_7 = Indicator(
                     label="RBI Monitoring Form C",
                     required=True,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
                 ),
                 ChecklistItem(
                     id="4_7_1_b",
                     label="List of barangays with RBI covering the 1st Semester (generated from the BIS-BPS) certified by the C/MLGOO",
                     required=True,
                     requires_document_count=False,
-                    display_order=2
+                    display_order=2,
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

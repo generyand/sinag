@@ -1,17 +1,21 @@
 """
 Debug script to check assessment response data and MOV relationships
 """
-from app.db.base import SessionLocal
-from app.db.models import AssessmentResponse, MOV, Indicator
+
 from sqlalchemy.orm import joinedload
+
+from app.db.base import SessionLocal
+from app.db.models import AssessmentResponse
 
 db = SessionLocal()
 
 # Get all assessment responses with MOVs
-responses = db.query(AssessmentResponse).options(
-    joinedload(AssessmentResponse.movs),
-    joinedload(AssessmentResponse.indicator)
-).filter(AssessmentResponse.movs.any()).all()
+responses = (
+    db.query(AssessmentResponse)
+    .options(joinedload(AssessmentResponse.movs), joinedload(AssessmentResponse.indicator))
+    .filter(AssessmentResponse.movs.any())
+    .all()
+)
 
 print(f"Found {len(responses)} responses with MOVs:\n")
 
@@ -26,6 +30,3 @@ for response in responses:
     print()
 
 db.close()
-
-
-

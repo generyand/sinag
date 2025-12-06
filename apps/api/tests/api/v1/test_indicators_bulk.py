@@ -8,13 +8,14 @@ Tests:
 - Draft CRUD endpoints
 """
 
-import pytest
 from uuid import uuid4
 
+import pytest
+
+from app.core.security import get_password_hash
+from app.db.enums import UserRole
 from app.db.models.governance_area import GovernanceArea
 from app.db.models.user import User
-from app.db.enums import UserRole
-from app.core.security import get_password_hash
 
 
 @pytest.fixture
@@ -41,8 +42,7 @@ def auth_headers(client, admin_user, db_session):
     db_session.refresh(admin_user)
 
     login_response = client.post(
-        "/api/v1/auth/login",
-        json={"email": admin_user.email, "password": "password"}
+        "/api/v1/auth/login", json={"email": admin_user.email, "password": "password"}
     )
 
     if login_response.status_code != 200:
@@ -59,11 +59,8 @@ def auth_headers(client, admin_user, db_session):
 def governance_area(db_session):
     """Create a test governance area."""
     from app.db.enums import AreaType
-    area = GovernanceArea(
-        id=1,
-        name="Test Area",
-        area_type=AreaType.CORE
-    )
+
+    area = GovernanceArea(id=1, code="T1", name="Test Area", area_type=AreaType.CORE)
     db_session.add(area)
     db_session.commit()
     db_session.refresh(area)
@@ -87,7 +84,7 @@ class TestBulkCreationEndpoint:
                     "is_active": True,
                     "is_auto_calculable": False,
                     "is_profiling_only": False,
-                    "governance_area_id": governance_area.id
+                    "governance_area_id": governance_area.id,
                 },
                 {
                     "temp_id": "child-1",
@@ -98,16 +95,12 @@ class TestBulkCreationEndpoint:
                     "is_active": True,
                     "is_auto_calculable": False,
                     "is_profiling_only": False,
-                    "governance_area_id": governance_area.id
-                }
-            ]
+                    "governance_area_id": governance_area.id,
+                },
+            ],
         }
 
-        response = client.post(
-            "/api/v1/indicators/bulk",
-            headers=auth_headers,
-            json=payload
-        )
+        response = client.post("/api/v1/indicators/bulk", headers=auth_headers, json=payload)
 
         assert response.status_code == 201
         data = response.json()
@@ -123,15 +116,9 @@ class TestBulkCreationEndpoint:
 
     def test_bulk_create_requires_auth(self, client, governance_area):
         """Test that bulk creation requires authentication."""
-        payload = {
-            "governance_area_id": governance_area.id,
-            "indicators": []
-        }
+        payload = {"governance_area_id": governance_area.id, "indicators": []}
 
-        response = client.post(
-            "/api/v1/indicators/bulk",
-            json=payload
-        )
+        response = client.post("/api/v1/indicators/bulk", json=payload)
 
         # HTTPBearer returns 403 when no credentials provided
         assert response.status_code == 403
@@ -152,19 +139,16 @@ class TestBulkCreationEndpoint:
         # Login as BLGU user
         login_response = client.post(
             "/api/v1/auth/login",
-            json={"email": blgu_user.email, "password": "password"}
+            json={"email": blgu_user.email, "password": "password"},
         )
         blgu_token = login_response.json()["access_token"]
 
-        payload = {
-            "governance_area_id": governance_area.id,
-            "indicators": []
-        }
+        payload = {"governance_area_id": governance_area.id, "indicators": []}
 
         response = client.post(
             "/api/v1/indicators/bulk",
             headers={"Authorization": f"Bearer {blgu_token}"},
-            json=payload
+            json=payload,
         )
 
         assert response.status_code == 403
@@ -184,14 +168,10 @@ class TestBulkCreationEndpoint:
                     "is_auto_calculable": False,
                     "is_profiling_only": False,
                 }
-            ]
+            ],
         }
 
-        response = client.post(
-            "/api/v1/indicators/bulk",
-            headers=auth_headers,
-            json=payload
-        )
+        response = client.post("/api/v1/indicators/bulk", headers=auth_headers, json=payload)
 
         assert response.status_code == 404
         assert "Governance area" in response.json()["detail"]
@@ -204,10 +184,7 @@ class TestReorderEndpoint:
         """Test that reorder requires authentication."""
         payload = {"indicators": []}
 
-        response = client.post(
-            "/api/v1/indicators/reorder",
-            json=payload
-        )
+        response = client.post("/api/v1/indicators/reorder", json=payload)
 
         # HTTPBearer returns 403 when no credentials provided
         assert response.status_code == 403
@@ -228,7 +205,7 @@ class TestReorderEndpoint:
         # Login
         login_response = client.post(
             "/api/v1/auth/login",
-            json={"email": blgu_user.email, "password": "password"}
+            json={"email": blgu_user.email, "password": "password"},
         )
         blgu_token = login_response.json()["access_token"]
 
@@ -237,7 +214,7 @@ class TestReorderEndpoint:
         response = client.post(
             "/api/v1/indicators/reorder",
             headers={"Authorization": f"Bearer {blgu_token}"},
-            json=payload
+            json=payload,
         )
 
         assert response.status_code == 403
@@ -252,14 +229,10 @@ class TestDraftCRUDEndpoints:
             "governance_area_id": governance_area.id,
             "creation_mode": "incremental",
             "title": "Test Draft",
-            "data": []
+            "data": [],
         }
 
-        response = client.post(
-            "/api/v1/indicators/drafts",
-            headers=auth_headers,
-            json=payload
-        )
+        response = client.post("/api/v1/indicators/drafts", headers=auth_headers, json=payload)
 
         assert response.status_code == 201
         data = response.json()
@@ -280,16 +253,13 @@ class TestDraftCRUDEndpoints:
             json={
                 "governance_area_id": governance_area.id,
                 "creation_mode": "incremental",
-                "title": "Draft 1"
-            }
+                "title": "Draft 1",
+            },
         )
         assert create_response.status_code == 201
 
         # List drafts
-        response = client.get(
-            "/api/v1/indicators/drafts",
-            headers=auth_headers
-        )
+        response = client.get("/api/v1/indicators/drafts", headers=auth_headers)
 
         assert response.status_code == 200
         drafts = response.json()
@@ -306,16 +276,13 @@ class TestDraftCRUDEndpoints:
             json={
                 "governance_area_id": governance_area.id,
                 "creation_mode": "incremental",
-                "title": "Get Test Draft"
-            }
+                "title": "Get Test Draft",
+            },
         )
         draft_id = create_response.json()["id"]
 
         # Get draft
-        response = client.get(
-            f"/api/v1/indicators/drafts/{draft_id}",
-            headers=auth_headers
-        )
+        response = client.get(f"/api/v1/indicators/drafts/{draft_id}", headers=auth_headers)
 
         assert response.status_code == 200
         data = response.json()
@@ -332,8 +299,8 @@ class TestDraftCRUDEndpoints:
             json={
                 "governance_area_id": governance_area.id,
                 "creation_mode": "incremental",
-                "title": "Original Title"
-            }
+                "title": "Original Title",
+            },
         )
         draft = create_response.json()
 
@@ -341,13 +308,13 @@ class TestDraftCRUDEndpoints:
         update_payload = {
             "title": "Updated Title",
             "current_step": 2,
-            "version": draft["version"]  # Required for optimistic locking
+            "version": draft["version"],  # Required for optimistic locking
         }
 
         response = client.put(
             f"/api/v1/indicators/drafts/{draft['id']}",
             headers=auth_headers,
-            json=update_payload
+            json=update_payload,
         )
 
         assert response.status_code == 200
@@ -365,8 +332,8 @@ class TestDraftCRUDEndpoints:
             headers=auth_headers,
             json={
                 "governance_area_id": governance_area.id,
-                "creation_mode": "incremental"
-            }
+                "creation_mode": "incremental",
+            },
         )
         draft = create_response.json()
 
@@ -374,14 +341,14 @@ class TestDraftCRUDEndpoints:
         client.put(
             f"/api/v1/indicators/drafts/{draft['id']}",
             headers=auth_headers,
-            json={"title": "First Update", "version": 1}
+            json={"title": "First Update", "version": 1},
         )
 
         # Second update with wrong version (should fail)
         response = client.put(
             f"/api/v1/indicators/drafts/{draft['id']}",
             headers=auth_headers,
-            json={"title": "Second Update", "version": 1}  # Wrong version
+            json={"title": "Second Update", "version": 1},  # Wrong version
         )
 
         assert response.status_code == 409
@@ -395,24 +362,18 @@ class TestDraftCRUDEndpoints:
             headers=auth_headers,
             json={
                 "governance_area_id": governance_area.id,
-                "creation_mode": "incremental"
-            }
+                "creation_mode": "incremental",
+            },
         )
         draft_id = create_response.json()["id"]
 
         # Delete draft
-        response = client.delete(
-            f"/api/v1/indicators/drafts/{draft_id}",
-            headers=auth_headers
-        )
+        response = client.delete(f"/api/v1/indicators/drafts/{draft_id}", headers=auth_headers)
 
         assert response.status_code == 204
 
         # Verify deleted
-        get_response = client.get(
-            f"/api/v1/indicators/drafts/{draft_id}",
-            headers=auth_headers
-        )
+        get_response = client.get(f"/api/v1/indicators/drafts/{draft_id}", headers=auth_headers)
         assert get_response.status_code == 404
 
     def test_release_lock(self, client, auth_headers, governance_area):
@@ -423,8 +384,8 @@ class TestDraftCRUDEndpoints:
             headers=auth_headers,
             json={
                 "governance_area_id": governance_area.id,
-                "creation_mode": "incremental"
-            }
+                "creation_mode": "incremental",
+            },
         )
         draft = create_response.json()
 
@@ -432,13 +393,13 @@ class TestDraftCRUDEndpoints:
         client.put(
             f"/api/v1/indicators/drafts/{draft['id']}",
             headers=auth_headers,
-            json={"title": "Locked", "version": 1}
+            json={"title": "Locked", "version": 1},
         )
 
         # Release lock
         response = client.post(
             f"/api/v1/indicators/drafts/{draft['id']}/release-lock",
-            headers=auth_headers
+            headers=auth_headers,
         )
 
         assert response.status_code == 200

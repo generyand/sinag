@@ -10,7 +10,7 @@ This service handles:
 """
 
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any
 from uuid import UUID, uuid4
 
 from fastapi import HTTPException, status
@@ -37,8 +37,8 @@ class IndicatorDraftService:
         user_id: int,
         governance_area_id: int,
         creation_mode: str,
-        title: Optional[str] = None,
-        data: Optional[List[Dict[str, Any]]] = None,
+        title: str | None = None,
+        data: list[dict[str, Any]] | None = None,
     ) -> IndicatorDraft:
         """
         Create a new indicator draft.
@@ -59,9 +59,7 @@ class IndicatorDraftService:
         """
         # Validate governance area exists
         governance_area = (
-            db.query(GovernanceArea)
-            .filter(GovernanceArea.id == governance_area_id)
-            .first()
+            db.query(GovernanceArea).filter(GovernanceArea.id == governance_area_id).first()
         )
         if not governance_area:
             raise HTTPException(
@@ -104,7 +102,7 @@ class IndicatorDraftService:
         db: Session,
         draft_id: UUID,
         user_id: int,
-        update_data: Dict[str, Any],
+        update_data: dict[str, Any],
         version: int,
     ) -> IndicatorDraft:
         """
@@ -125,10 +123,7 @@ class IndicatorDraftService:
         """
         # Get draft with lock for update
         draft = (
-            db.query(IndicatorDraft)
-            .filter(IndicatorDraft.id == draft_id)
-            .with_for_update()
-            .first()
+            db.query(IndicatorDraft).filter(IndicatorDraft.id == draft_id).with_for_update().first()
         )
 
         if not draft:
@@ -156,9 +151,7 @@ class IndicatorDraftService:
         if draft.locked_by_user_id and draft.locked_by_user_id != user_id:
             # Check if lock is expired
             if draft.locked_at:
-                lock_expiry = draft.locked_at + timedelta(
-                    minutes=self.LOCK_EXPIRATION_MINUTES
-                )
+                lock_expiry = draft.locked_at + timedelta(minutes=self.LOCK_EXPIRATION_MINUTES)
                 if datetime.utcnow() < lock_expiry:
                     raise HTTPException(
                         status_code=status.HTTP_423_LOCKED,
@@ -166,9 +159,7 @@ class IndicatorDraftService:
                     )
                 else:
                     # Lock expired, release it
-                    logger.info(
-                        f"Lock on draft {draft_id} expired, releasing lock"
-                    )
+                    logger.info(f"Lock on draft {draft_id} expired, releasing lock")
                     draft.lock_token = None
                     draft.locked_by_user_id = None
                     draft.locked_at = None
@@ -197,9 +188,7 @@ class IndicatorDraftService:
         db.commit()
         db.refresh(draft)
 
-        logger.info(
-            f"Saved draft {draft_id} (version {draft.version}) for user {user_id}"
-        )
+        logger.info(f"Saved draft {draft_id} (version {draft.version}) for user {user_id}")
 
         return draft
 
@@ -208,10 +197,10 @@ class IndicatorDraftService:
         db: Session,
         draft_id: UUID,
         user_id: int,
-        changed_indicators: List[Dict[str, Any]],
-        changed_ids: List[str],
+        changed_indicators: list[dict[str, Any]],
+        changed_ids: list[str],
         version: int,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> IndicatorDraft:
         """
         Save draft with delta-based update (only changed indicators).
@@ -250,10 +239,7 @@ class IndicatorDraftService:
         """
         # Get draft with lock for update
         draft = (
-            db.query(IndicatorDraft)
-            .filter(IndicatorDraft.id == draft_id)
-            .with_for_update()
-            .first()
+            db.query(IndicatorDraft).filter(IndicatorDraft.id == draft_id).with_for_update().first()
         )
 
         if not draft:
@@ -281,9 +267,7 @@ class IndicatorDraftService:
         if draft.locked_by_user_id and draft.locked_by_user_id != user_id:
             # Check if lock is expired
             if draft.locked_at:
-                lock_expiry = draft.locked_at + timedelta(
-                    minutes=self.LOCK_EXPIRATION_MINUTES
-                )
+                lock_expiry = draft.locked_at + timedelta(minutes=self.LOCK_EXPIRATION_MINUTES)
                 if datetime.utcnow() < lock_expiry:
                     raise HTTPException(
                         status_code=status.HTTP_423_LOCKED,
@@ -291,9 +275,7 @@ class IndicatorDraftService:
                     )
                 else:
                     # Lock expired, release it
-                    logger.info(
-                        f"Lock on draft {draft_id} expired, releasing lock"
-                    )
+                    logger.info(f"Lock on draft {draft_id} expired, releasing lock")
                     draft.lock_token = None
                     draft.locked_by_user_id = None
                     draft.locked_at = None
@@ -306,7 +288,11 @@ class IndicatorDraftService:
 
         # Delta merge: Update only changed indicators
         # Build a lookup dictionary from existing data
-        existing_indicators = {ind.get("temp_id"): ind for ind in draft.data if isinstance(ind, dict) and "temp_id" in ind}
+        existing_indicators = {
+            ind.get("temp_id"): ind
+            for ind in draft.data
+            if isinstance(ind, dict) and "temp_id" in ind
+        }
 
         # Update changed indicators in the lookup
         for changed_ind in changed_indicators:
@@ -346,9 +332,9 @@ class IndicatorDraftService:
         self,
         db: Session,
         user_id: int,
-        governance_area_id: Optional[int] = None,
-        status: Optional[str] = None,
-    ) -> List[IndicatorDraft]:
+        governance_area_id: int | None = None,
+        status: str | None = None,
+    ) -> list[IndicatorDraft]:
         """
         Get all drafts for a user with optional filtering.
 
@@ -368,9 +354,7 @@ class IndicatorDraftService:
         )
 
         if governance_area_id:
-            query = query.filter(
-                IndicatorDraft.governance_area_id == governance_area_id
-            )
+            query = query.filter(IndicatorDraft.governance_area_id == governance_area_id)
 
         if status:
             query = query.filter(IndicatorDraft.status == status)
@@ -444,11 +428,7 @@ class IndicatorDraftService:
         Raises:
             HTTPException: If draft not found or access denied
         """
-        draft = (
-            db.query(IndicatorDraft)
-            .filter(IndicatorDraft.id == draft_id)
-            .first()
-        )
+        draft = db.query(IndicatorDraft).filter(IndicatorDraft.id == draft_id).first()
 
         if not draft:
             raise HTTPException(
@@ -488,11 +468,7 @@ class IndicatorDraftService:
         Raises:
             HTTPException: If draft not found, access denied, or lock not held
         """
-        draft = (
-            db.query(IndicatorDraft)
-            .filter(IndicatorDraft.id == draft_id)
-            .first()
-        )
+        draft = db.query(IndicatorDraft).filter(IndicatorDraft.id == draft_id).first()
 
         if not draft:
             raise HTTPException(
@@ -536,9 +512,7 @@ class IndicatorDraftService:
         Returns:
             Number of locks released
         """
-        expiry_time = datetime.utcnow() - timedelta(
-            minutes=self.LOCK_EXPIRATION_MINUTES
-        )
+        expiry_time = datetime.utcnow() - timedelta(minutes=self.LOCK_EXPIRATION_MINUTES)
 
         # Find drafts with expired locks
         expired_drafts = (

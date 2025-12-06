@@ -14,20 +14,20 @@ from datetime import datetime
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+from passlib.context import CryptContext
+from sqlalchemy.orm import Session
+
 from app.core.config import settings
-from app.db.enums import AssessmentStatus, ValidationStatus
+from app.db.enums import AreaType, AssessmentStatus, UserRole, ValidationStatus
 from app.db.models.assessment import Assessment, AssessmentResponse, FeedbackComment
 from app.db.models.barangay import Barangay
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
-from app.db.enums import AreaType, UserRole
 from app.services.intelligence_service import (
     DEFAULT_LANGUAGES,
     LANGUAGE_INSTRUCTIONS,
     intelligence_service,
 )
-from passlib.context import CryptContext
-from sqlalchemy.orm import Session
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -160,9 +160,7 @@ def assessment_with_responses(
 # ============================================================================
 
 
-def test_build_capdev_prompt_success(
-    db_session: Session, assessment_with_responses: Assessment
-):
+def test_build_capdev_prompt_success(db_session: Session, assessment_with_responses: Assessment):
     """Test successful prompt building with assessment data"""
     prompt = intelligence_service.build_capdev_prompt(
         db_session, assessment_with_responses.id, language="ceb"
@@ -299,36 +297,38 @@ def test_generate_capdev_insights_success(
     """Test successful CapDev insights generation"""
     # Mock Gemini API response
     mock_response = Mock()
-    mock_response.text = json.dumps({
-        "summary": "Test summary of governance",
-        "governance_weaknesses": ["Weakness 1", "Weakness 2"],
-        "recommendations": ["Recommendation 1", "Recommendation 2"],
-        "capacity_development_needs": [
-            {
-                "category": "Training",
-                "description": "Accounting training",
-                "affected_indicators": ["Indicator 1"],
-                "suggested_providers": ["DILG"],
-            }
-        ],
-        "suggested_interventions": [
-            {
-                "title": "Financial Training",
-                "description": "2-day workshop",
-                "governance_area": "Financial Administration",
-                "priority": "Immediate",
-                "estimated_duration": "2 days",
-                "resource_requirements": "Venue, trainer",
-            }
-        ],
-        "priority_actions": [
-            "Action 1",
-            "Action 2",
-            "Action 3",
-            "Action 4",
-            "Action 5",
-        ],
-    })
+    mock_response.text = json.dumps(
+        {
+            "summary": "Test summary of governance",
+            "governance_weaknesses": ["Weakness 1", "Weakness 2"],
+            "recommendations": ["Recommendation 1", "Recommendation 2"],
+            "capacity_development_needs": [
+                {
+                    "category": "Training",
+                    "description": "Accounting training",
+                    "affected_indicators": ["Indicator 1"],
+                    "suggested_providers": ["DILG"],
+                }
+            ],
+            "suggested_interventions": [
+                {
+                    "title": "Financial Training",
+                    "description": "2-day workshop",
+                    "governance_area": "Financial Administration",
+                    "priority": "Immediate",
+                    "estimated_duration": "2 days",
+                    "resource_requirements": "Venue, trainer",
+                }
+            ],
+            "priority_actions": [
+                "Action 1",
+                "Action 2",
+                "Action 3",
+                "Action 4",
+                "Action 5",
+            ],
+        }
+    )
 
     mock_model = MagicMock()
     mock_model.generate_content = MagicMock(return_value=mock_response)
@@ -434,10 +434,12 @@ def test_generate_capdev_insights_missing_required_keys(
 ):
     """Test that ValueError is raised when response missing required keys"""
     mock_response = Mock()
-    mock_response.text = json.dumps({
-        "summary": "Test",
-        # Missing other required keys
-    })
+    mock_response.text = json.dumps(
+        {
+            "summary": "Test",
+            # Missing other required keys
+        }
+    )
 
     mock_model = MagicMock()
     mock_model.generate_content = MagicMock(return_value=mock_response)
@@ -483,9 +485,7 @@ def test_generate_capdev_insights_quota_exceeded(
 ):
     """Test handling of API quota exceeded error"""
     mock_model = MagicMock()
-    mock_model.generate_content = MagicMock(
-        side_effect=Exception("quota exceeded")
-    )
+    mock_model.generate_content = MagicMock(side_effect=Exception("quota exceeded"))
     mock_generative_model.return_value = mock_model
 
     with patch.object(settings, "GEMINI_API_KEY", "test_api_key"):
@@ -507,6 +507,7 @@ def test_generate_default_language_capdev_insights_success(
     assessment_with_responses: Assessment,
 ):
     """Test generating insights in default languages"""
+
     # Mock the generate_capdev_insights to return different data per language
     def mock_generate(db, assessment_id, language):
         return {
@@ -630,9 +631,7 @@ def test_get_capdev_insights_with_caching_generates_if_not_cached(
     )
 
     # Verify API was called
-    mock_generate_capdev.assert_called_once_with(
-        db_session, assessment_with_responses.id, "ceb"
-    )
+    mock_generate_capdev.assert_called_once_with(db_session, assessment_with_responses.id, "ceb")
 
     # Verify result matches
     assert result == mock_insights
@@ -652,9 +651,7 @@ def test_get_capdev_insights_with_caching_stores_multiple_languages(
 ):
     """Test that multiple languages are stored separately"""
     # Set up existing Bisaya insights
-    assessment_with_responses.capdev_insights = {
-        "ceb": {"summary": "Bisaya summary"}
-    }
+    assessment_with_responses.capdev_insights = {"ceb": {"summary": "Bisaya summary"}}
     db_session.commit()
 
     # Mock English generation
@@ -679,9 +676,7 @@ def test_get_capdev_insights_with_caching_assessment_not_found(
 ):
     """Test that ValueError is raised for non-existent assessment"""
     with pytest.raises(ValueError, match="Assessment.*not found"):
-        intelligence_service.get_capdev_insights_with_caching(
-            db_session, 99999, language="ceb"
-        )
+        intelligence_service.get_capdev_insights_with_caching(db_session, 99999, language="ceb")
 
 
 def test_get_capdev_insights_with_caching_not_mlgoo_approved(
@@ -750,16 +745,10 @@ def test_language_instructions_non_empty():
 def test_language_instructions_contain_keywords():
     """Test that language instructions contain appropriate keywords"""
     # Bisaya instructions
-    assert (
-        "Binisaya" in LANGUAGE_INSTRUCTIONS["ceb"]
-        or "Cebuano" in LANGUAGE_INSTRUCTIONS["ceb"]
-    )
+    assert "Binisaya" in LANGUAGE_INSTRUCTIONS["ceb"] or "Cebuano" in LANGUAGE_INSTRUCTIONS["ceb"]
 
     # Filipino instructions
-    assert (
-        "Tagalog" in LANGUAGE_INSTRUCTIONS["fil"]
-        or "Filipino" in LANGUAGE_INSTRUCTIONS["fil"]
-    )
+    assert "Tagalog" in LANGUAGE_INSTRUCTIONS["fil"] or "Filipino" in LANGUAGE_INSTRUCTIONS["fil"]
 
     # English instructions
     assert "English" in LANGUAGE_INSTRUCTIONS["en"]
@@ -781,14 +770,22 @@ def test_full_capdev_workflow_with_caching(
     """Test complete workflow: generate -> cache -> retrieve cached"""
     # Mock Gemini response
     mock_response = Mock()
-    mock_response.text = json.dumps({
-        "summary": "Complete summary",
-        "governance_weaknesses": ["Weakness 1"],
-        "recommendations": ["Rec 1"],
-        "capacity_development_needs": [],
-        "suggested_interventions": [],
-        "priority_actions": ["Action 1", "Action 2", "Action 3", "Action 4", "Action 5"],
-    })
+    mock_response.text = json.dumps(
+        {
+            "summary": "Complete summary",
+            "governance_weaknesses": ["Weakness 1"],
+            "recommendations": ["Rec 1"],
+            "capacity_development_needs": [],
+            "suggested_interventions": [],
+            "priority_actions": [
+                "Action 1",
+                "Action 2",
+                "Action 3",
+                "Action 4",
+                "Action 5",
+            ],
+        }
+    )
 
     mock_model = MagicMock()
     mock_model.generate_content = MagicMock(return_value=mock_response)

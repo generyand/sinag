@@ -42,8 +42,7 @@ IMPORTANT NOTES FOR PHASE 9 (VALIDATION SERVICE):
    - Failing means BESWMC is "Non-Functional"
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
-
+from app.indicators.base import ChecklistItem, Indicator, SubIndicator
 
 # Indicator 6.1: Functionality of the Barangay Ecological Solid Waste Management Committee (BESWMC)
 INDICATOR_6_1 = Indicator(
@@ -70,7 +69,7 @@ INDICATOR_6_1 = Indicator(
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the organization of the BESWMC",
                     required=True,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
                 ),
                 ChecklistItem(
                     id="6_1_1_date",
@@ -78,11 +77,10 @@ INDICATOR_6_1 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="date_input",
                     required=True,
-                    display_order=2
+                    display_order=2,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 6.1.2
         SubIndicator(
             code="6.1.2",
@@ -97,11 +95,10 @@ INDICATOR_6_1 = Indicator(
                     label="Approved Solid Waste Management Program/Plan with corresponding fund allocation",
                     required=True,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 6.1.3
         SubIndicator(
             code="6.1.3",
@@ -116,11 +113,10 @@ INDICATOR_6_1 = Indicator(
                     label="At least one (1) copy of proof of training such as Certificate of Completion and/or Participation",
                     required=True,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 6.1.4
         SubIndicator(
             code="6.1.4",
@@ -147,7 +143,7 @@ INDICATOR_6_1 = Indicator(
                     item_type="checkbox",
                     mov_description=None,
                     required=False,
-                    display_order=1
+                    display_order=1,
                 ),
                 # INPUT FIELD for report count (BEFORE YES/NO)
                 ChecklistItem(
@@ -156,7 +152,7 @@ INDICATOR_6_1 = Indicator(
                     item_type="calculation_field",
                     mov_description="Please supply the number of documents submitted",
                     required=False,
-                    display_order=2
+                    display_order=2,
                 ),
                 # OPTION A: YES/NO, then calculation fields
                 ChecklistItem(
@@ -166,7 +162,7 @@ INDICATOR_6_1 = Indicator(
                     mov_description="Assessment for physical accomplishment option",
                     required=False,
                     display_order=3,
-                    option_group="Option A"
+                    option_group="Option A",
                 ),
                 ChecklistItem(
                     id="6_1_4_physical_accomplished",
@@ -175,7 +171,7 @@ INDICATOR_6_1 = Indicator(
                     mov_description="Please supply the required information:",
                     required=False,
                     display_order=4.1,
-                    option_group="Option A"
+                    option_group="Option A",
                 ),
                 ChecklistItem(
                     id="6_1_4_physical_reflected",
@@ -184,7 +180,7 @@ INDICATOR_6_1 = Indicator(
                     mov_description=None,
                     required=False,
                     display_order=4.2,
-                    option_group="Option A"
+                    option_group="Option A",
                 ),
                 # OR separator
                 ChecklistItem(
@@ -193,7 +189,7 @@ INDICATOR_6_1 = Indicator(
                     item_type="info_text",
                     mov_description="OR",
                     required=False,
-                    display_order=5
+                    display_order=5,
                 ),
                 # OPTION B: YES/NO, then amount calculations
                 ChecklistItem(
@@ -203,7 +199,7 @@ INDICATOR_6_1 = Indicator(
                     mov_description="Assessment for fund utilization option",
                     required=False,
                     display_order=6,
-                    option_group="Option B"
+                    option_group="Option B",
                 ),
                 ChecklistItem(
                     id="6_1_4_financial_utilized",
@@ -212,7 +208,7 @@ INDICATOR_6_1 = Indicator(
                     mov_description="Please supply the required information:",
                     required=False,
                     display_order=7.1,
-                    option_group="Option B"
+                    option_group="Option B",
                 ),
                 ChecklistItem(
                     id="6_1_4_financial_allocated",
@@ -221,9 +217,9 @@ INDICATOR_6_1 = Indicator(
                     mov_description=None,
                     required=False,
                     display_order=7.2,
-                    option_group="Option B"
+                    option_group="Option B",
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

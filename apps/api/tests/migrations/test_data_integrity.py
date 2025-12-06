@@ -5,8 +5,6 @@ Tests that data is preserved during migrations.
 Verifies no data loss during schema changes.
 """
 
-import pytest
-
 
 class TestDataIntegrityAfterMigrations:
     """

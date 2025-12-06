@@ -38,8 +38,7 @@ IMPORTANT NOTES FOR PHASE 9 (VALIDATION SERVICE):
      * One (1) photo with Close-up View
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
-
+from app.indicators.base import ChecklistItem, Indicator, SubIndicator
 
 # Indicator 4.9: Halina't Magtanim ng Prutas at Gulay (HAPAG) sa Barangay Project
 INDICATOR_4_9 = Indicator(
@@ -68,11 +67,10 @@ INDICATOR_4_9 = Indicator(
                     label="Photo documentation of the established BCG (One photo with Distant View and One photo with Close-up View)",
                     mov_description="Verification of uploaded photo documentation of the established BCG",
                     required=False,  # Profiling only
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 4.9.2
         SubIndicator(
             code="4.9.2",
@@ -89,7 +87,7 @@ INDICATOR_4_9 = Indicator(
                     label="Ordinance signed by the PB, Barangay Secretary and SBMs on the establishment of a BCG",
                     mov_description="Verification of uploaded Ordinance signed by the PB, Barangay Secretary and SBMs on the establishment of a BCG",
                     required=False,  # Profiling only
-                    display_order=1
+                    display_order=1,
                 ),
                 ChecklistItem(
                     id="4_9_2_date_of_approval",
@@ -97,11 +95,10 @@ INDICATOR_4_9 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="date_input",
                     required=False,  # Profiling only
-                    display_order=2
+                    display_order=2,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 4.9.3
         SubIndicator(
             code="4.9.3",
@@ -118,7 +115,7 @@ INDICATOR_4_9 = Indicator(
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the designated SBM to manage the BCG",
                     mov_description="Verification of uploaded EO or similar issuance on the designated SBM to manage the BCG",
                     required=False,  # Profiling only
-                    display_order=1
+                    display_order=1,
                 ),
                 ChecklistItem(
                     id="4_9_3_date_of_approval",
@@ -126,11 +123,10 @@ INDICATOR_4_9 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="date_input",
                     required=False,  # Profiling only
-                    display_order=2
+                    display_order=2,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 4.9.4
         SubIndicator(
             code="4.9.4",
@@ -145,11 +141,10 @@ INDICATOR_4_9 = Indicator(
                     label="Proof of conduct of at least one (1) Advocacy Campaign/Awareness (Photo/Social Media Post, PAR/AR, etc.)",
                     mov_description="Verification of uploaded proof of conduct of at least one (1) Advocacy Campaign/Awareness",
                     required=False,  # Profiling only
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 4.9.5
         SubIndicator(
             code="4.9.5",
@@ -166,7 +161,7 @@ INDICATOR_4_9 = Indicator(
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the established group volunteers",
                     mov_description="Verification of uploaded EO or similar issuance on the established group volunteers",
                     required=False,  # Profiling only
-                    display_order=1
+                    display_order=1,
                 ),
                 ChecklistItem(
                     id="4_9_5_date_of_approval",
@@ -174,9 +169,9 @@ INDICATOR_4_9 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="date_input",
                     required=False,  # Profiling only
-                    display_order=2
+                    display_order=2,
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

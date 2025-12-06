@@ -3,12 +3,11 @@ Test Cache Headers Middleware
 Tests for HTTP cache headers middleware functionality
 """
 
-import hashlib
+from unittest.mock import MagicMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.middleware.cache_headers import CacheHeadersMiddleware
 

@@ -12,7 +12,7 @@ Compliance status (PASS/FAIL/CONDITIONAL) is NEVER exposed to BLGU users.
 
 from collections import defaultdict
 from datetime import datetime
-from typing import Dict, List, Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload, selectinload
@@ -22,8 +22,12 @@ from app.db.enums import AssessmentStatus, UserRole
 from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
-from app.schemas.blgu_dashboard import AISummary, AISummaryIndicator, BLGUDashboardResponse, IndicatorNavigationItem
-from app.services.completeness_validation_service import completeness_validation_service
+from app.schemas.blgu_dashboard import (
+    AISummary,
+    AISummaryIndicator,
+    BLGUDashboardResponse,
+    IndicatorNavigationItem,
+)
 
 router = APIRouter(tags=["blgu-dashboard"])
 
@@ -31,9 +35,9 @@ router = APIRouter(tags=["blgu-dashboard"])
 @router.get("/{assessment_id}", response_model=BLGUDashboardResponse)
 def get_blgu_dashboard(
     assessment_id: int,
-    language: Optional[str] = Query(
+    language: str | None = Query(
         None,
-        description="Language code for AI summary: ceb (Bisaya), fil (Tagalog), en (English). Defaults to user's preferred language."
+        description="Language code for AI summary: ceb (Bisaya), fil (Tagalog), en (English). Defaults to user's preferred language.",
     ),
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
@@ -55,24 +59,24 @@ def get_blgu_dashboard(
     # Check user role is BLGU_USER
     if current_user.role != UserRole.BLGU_USER:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=status.HTTP_403_FORBIDDEN,  # noqa: F823 - status is imported from fastapi
             detail="Only BLGU users can access the dashboard",
         )
 
     # Retrieve assessment with eager loading to prevent N+1 queries
     # PERFORMANCE FIX: Load all related data upfront in a single query
-    from app.db.models.assessment import FeedbackComment, MOVFile
+    from app.db.models.assessment import FeedbackComment
 
     assessment = (
         db.query(Assessment)
         .options(
             # Eager load responses with their indicators and feedback comments
             selectinload(Assessment.responses)
-                .joinedload(AssessmentResponse.indicator)
-                .joinedload(Indicator.governance_area),
+            .joinedload(AssessmentResponse.indicator)
+            .joinedload(Indicator.governance_area),
             selectinload(Assessment.responses)
-                .selectinload(AssessmentResponse.feedback_comments)
-                .joinedload(FeedbackComment.assessor),
+            .selectinload(AssessmentResponse.feedback_comments)
+            .joinedload(FeedbackComment.assessor),
             # Eager load MOV files for annotation processing
             selectinload(Assessment.mov_files),
         )
@@ -101,7 +105,11 @@ def get_blgu_dashboard(
         all_indicators = (
             db.query(Indicator)
             .options(joinedload(Indicator.governance_area))
-            .order_by(Indicator.governance_area_id, Indicator.sort_order, Indicator.indicator_code)
+            .order_by(
+                Indicator.governance_area_id,
+                Indicator.sort_order,
+                Indicator.indicator_code,
+            )
             .all()
         )
 
@@ -109,12 +117,13 @@ def get_blgu_dashboard(
         response_lookup = {r.indicator_id: r for r in assessment.responses}
 
         # Build parent-child relationships (children inherit sort order from query)
-        children_by_parent: Dict[int | None, list[Indicator]] = {}
+        children_by_parent: dict[int | None, list[Indicator]] = {}
         for ind in all_indicators:
             parent_id = ind.parent_id
             children_by_parent.setdefault(parent_id, []).append(ind)
     except Exception as e:
         import traceback
+
         print(f"Error loading indicators: {e}")
         print(traceback.format_exc())
         raise HTTPException(
@@ -123,12 +132,8 @@ def get_blgu_dashboard(
         )
 
     # Structure to group indicators by governance area
-    governance_area_groups: Dict[int, Dict[str, Any]] = defaultdict(
-        lambda: {
-            "governance_area_id": 0,
-            "governance_area_name": "",
-            "indicators": []
-        }
+    governance_area_groups: dict[int, dict[str, Any]] = defaultdict(
+        lambda: {"governance_area_id": 0, "governance_area_name": "", "indicators": []}
     )
 
     def count_leaf_indicators(indicator: Indicator) -> int:
@@ -181,24 +186,27 @@ def get_blgu_dashboard(
         # Calculate feedback counts for this indicator
         text_comment_count = 0
         if response:
-            text_comment_count = len([
-                c for c in response.feedback_comments
-                if not c.is_internal_note
-            ])
+            text_comment_count = len(
+                [c for c in response.feedback_comments if not c.is_internal_note]
+            )
 
         # MOV annotation count will be calculated after we load all annotations
         # We'll update this in a second pass below
 
-        governance_area_groups[area_id]["indicators"].append({
-            "indicator_id": indicator.id,
-            "indicator_name": indicator.name,
-            "is_complete": is_complete,
-            "response_id": response.id if response else None,
-            # NEW: Add validation status and feedback counts for rework workflow
-            "validation_status": response.validation_status.value if response and response.validation_status else None,
-            "text_comment_count": text_comment_count,
-            "mov_annotation_count": 0,  # Will be updated in second pass
-        })
+        governance_area_groups[area_id]["indicators"].append(
+            {
+                "indicator_id": indicator.id,
+                "indicator_name": indicator.name,
+                "is_complete": is_complete,
+                "response_id": response.id if response else None,
+                # NEW: Add validation status and feedback counts for rework workflow
+                "validation_status": response.validation_status.value
+                if response and response.validation_status
+                else None,
+                "text_comment_count": text_comment_count,
+                "mov_annotation_count": 0,  # Will be updated in second pass
+            }
+        )
 
     # Get all governance areas
     governance_areas = db.query(GovernanceArea).all()
@@ -211,7 +219,8 @@ def get_blgu_dashboard(
         for area in governance_areas:
             # Get top-level indicators for this area (indicators without parents)
             top_level_indicators = [
-                ind for ind in all_indicators
+                ind
+                for ind in all_indicators
                 if ind.governance_area_id == area.id and ind.parent_id is None
             ]
 
@@ -228,6 +237,7 @@ def get_blgu_dashboard(
                 process_indicator(indicator)
     except Exception as e:
         import traceback
+
         print(f"Error processing indicators: {e}")
         print(traceback.format_exc())
         raise HTTPException(
@@ -257,20 +267,24 @@ def get_blgu_dashboard(
             for feedback in response.feedback_comments:
                 # Only include non-internal feedback (public comments for BLGU)
                 if not feedback.is_internal_note:
-                    comments_list.append({
-                        "comment": feedback.comment,
-                        "comment_type": feedback.comment_type,
-                        "indicator_id": response.indicator_id,
-                        "indicator_name": response.indicator.name,
-                        "created_at": feedback.created_at.isoformat() + 'Z' if feedback.created_at else None,
-                    })
+                    comments_list.append(
+                        {
+                            "comment": feedback.comment,
+                            "comment_type": feedback.comment_type,
+                            "indicator_id": response.indicator_id,
+                            "indicator_name": response.indicator.name,
+                            "created_at": feedback.created_at.isoformat() + "Z"
+                            if feedback.created_at
+                            else None,
+                        }
+                    )
 
         rework_comments = comments_list if comments_list else None
 
         # Collect MOV annotations grouped by indicator
         # This shows BLGU users which MOVs the assessor highlighted/commented on
         # PERFORMANCE FIX: Fetch all annotations upfront with a single query to avoid N+1
-        from app.db.models.assessment import MOVAnnotation, MOVFile
+        from app.db.models.assessment import MOVAnnotation
 
         # Get all MOV file IDs for this assessment
         mov_file_ids = [mf.id for mf in assessment.mov_files]
@@ -278,44 +292,49 @@ def get_blgu_dashboard(
         # Fetch ALL annotations for this assessment's MOV files in ONE query
         all_annotations = []
         if mov_file_ids:
-            all_annotations = db.query(MOVAnnotation).filter(
-                MOVAnnotation.mov_file_id.in_(mov_file_ids)
-            ).all()
+            all_annotations = (
+                db.query(MOVAnnotation).filter(MOVAnnotation.mov_file_id.in_(mov_file_ids)).all()
+            )
 
         # Build lookup dict: mov_file_id -> list of annotations
-        annotations_by_mov_file: Dict[int, List[MOVAnnotation]] = defaultdict(list)
+        annotations_by_mov_file: dict[int, list[MOVAnnotation]] = defaultdict(list)
         for annotation in all_annotations:
             annotations_by_mov_file[annotation.mov_file_id].append(annotation)
 
         # Now process indicators and group annotations by indicator_id
-        annotations_by_indicator_dict: Dict[int, List[Dict[str, Any]]] = defaultdict(list)
+        annotations_by_indicator_dict: dict[int, list[dict[str, Any]]] = defaultdict(list)
 
         for response in assessment.responses:
             # Get all MOV files for this indicator (MOV files are linked to assessment+indicator, not response)
             mov_files_for_indicator = [
-                mf for mf in assessment.mov_files
-                if mf.indicator_id == response.indicator_id
+                mf for mf in assessment.mov_files if mf.indicator_id == response.indicator_id
             ]
 
             for mov_file in mov_files_for_indicator:
                 # Use preloaded annotations from lookup dict (NO database query!)
                 for annotation in annotations_by_mov_file.get(mov_file.id, []):
-                    annotations_by_indicator_dict[response.indicator_id].append({
-                        "annotation_id": annotation.id,
-                        "mov_file_id": mov_file.id,
-                        "mov_filename": mov_file.file_name,  # Use file_name attribute
-                        "mov_file_type": mov_file.file_type,
-                        "annotation_type": annotation.annotation_type,
-                        "page": annotation.page,
-                        "rect": annotation.rect,
-                        "rects": annotation.rects,
-                        "comment": annotation.comment,
-                        "created_at": annotation.created_at.isoformat() + 'Z' if annotation.created_at else None,
-                        "indicator_id": response.indicator_id,
-                        "indicator_name": response.indicator.name,
-                    })
+                    annotations_by_indicator_dict[response.indicator_id].append(
+                        {
+                            "annotation_id": annotation.id,
+                            "mov_file_id": mov_file.id,
+                            "mov_filename": mov_file.file_name,  # Use file_name attribute
+                            "mov_file_type": mov_file.file_type,
+                            "annotation_type": annotation.annotation_type,
+                            "page": annotation.page,
+                            "rect": annotation.rect,
+                            "rects": annotation.rects,
+                            "comment": annotation.comment,
+                            "created_at": annotation.created_at.isoformat() + "Z"
+                            if annotation.created_at
+                            else None,
+                            "indicator_id": response.indicator_id,
+                            "indicator_name": response.indicator.name,
+                        }
+                    )
 
-        mov_annotations_by_indicator = dict(annotations_by_indicator_dict) if annotations_by_indicator_dict else None
+        mov_annotations_by_indicator = (
+            dict(annotations_by_indicator_dict) if annotations_by_indicator_dict else None
+        )
 
         # SECOND PASS: Update mov_annotation_count in governance_area_groups
         # Now that we have annotations_by_indicator_dict, update the counts
@@ -335,21 +354,27 @@ def get_blgu_dashboard(
     if assessment.is_calibration_rework:
         # Build list of all governance areas with pending calibrations
         for pc in pending_calibrations:
-            calibration_governance_areas.append({
-                "governance_area_id": pc.get("governance_area_id"),
-                "governance_area_name": pc.get("governance_area_name"),
-                "validator_name": pc.get("validator_name"),
-                "requested_at": pc.get("requested_at"),
-                "approved": pc.get("approved", False),
-            })
+            calibration_governance_areas.append(
+                {
+                    "governance_area_id": pc.get("governance_area_id"),
+                    "governance_area_name": pc.get("governance_area_name"),
+                    "validator_name": pc.get("validator_name"),
+                    "requested_at": pc.get("requested_at"),
+                    "approved": pc.get("approved", False),
+                }
+            )
 
         # Legacy single calibration info (for backward compatibility)
         if assessment.calibration_validator_id:
-            calibration_validator = db.query(User).filter(User.id == assessment.calibration_validator_id).first()
+            calibration_validator = (
+                db.query(User).filter(User.id == assessment.calibration_validator_id).first()
+            )
             if calibration_validator and calibration_validator.validator_area_id:
-                cal_area = db.query(GovernanceArea).filter(
-                    GovernanceArea.id == calibration_validator.validator_area_id
-                ).first()
+                cal_area = (
+                    db.query(GovernanceArea)
+                    .filter(GovernanceArea.id == calibration_validator.validator_area_id)
+                    .first()
+                )
                 if cal_area:
                     calibration_governance_area_id = cal_area.id
                     calibration_governance_area_name = cal_area.name
@@ -377,14 +402,16 @@ def get_blgu_dashboard(
             combined_overall_parts = []
             all_languages = set()
 
-            for area_id_str, area_summary_data in assessment.calibration_summaries_by_area.items():
+            for (
+                area_id_str,
+                area_summary_data,
+            ) in assessment.calibration_summaries_by_area.items():
                 if not isinstance(area_summary_data, dict):
                     continue
 
                 # Track available languages
                 all_languages.update(
-                    lang for lang in ["ceb", "en", "fil"]
-                    if lang in area_summary_data
+                    lang for lang in ["ceb", "en", "fil"] if lang in area_summary_data
                 )
 
                 # Get the summary in target language
@@ -413,16 +440,20 @@ def get_blgu_dashboard(
                     # Combine for single unified summary
                     if lang_summary.get("overall_summary"):
                         area_name = lang_summary.get("governance_area", f"Area {area_id_str}")
-                        combined_overall_parts.append(f"**{area_name}**: {lang_summary['overall_summary']}")
+                        combined_overall_parts.append(
+                            f"**{area_name}**: {lang_summary['overall_summary']}"
+                        )
 
                     for ind_sum in lang_summary.get("indicator_summaries", []):
-                        combined_indicator_summaries.append(AISummaryIndicator(
-                            indicator_id=ind_sum.get("indicator_id", 0),
-                            indicator_name=ind_sum.get("indicator_name", ""),
-                            key_issues=ind_sum.get("key_issues", []),
-                            suggested_actions=ind_sum.get("suggested_actions", []),
-                            affected_movs=ind_sum.get("affected_movs", []),
-                        ))
+                        combined_indicator_summaries.append(
+                            AISummaryIndicator(
+                                indicator_id=ind_sum.get("indicator_id", 0),
+                                indicator_name=ind_sum.get("indicator_name", ""),
+                                key_issues=ind_sum.get("key_issues", []),
+                                suggested_actions=ind_sum.get("suggested_actions", []),
+                                affected_movs=ind_sum.get("affected_movs", []),
+                            )
+                        )
 
                     combined_priority_actions.extend(lang_summary.get("priority_actions", []))
 
@@ -430,7 +461,9 @@ def get_blgu_dashboard(
 
             if combined_indicator_summaries:
                 # Create combined AI summary
-                combined_overall = "\n\n".join(combined_overall_parts) if combined_overall_parts else ""
+                combined_overall = (
+                    "\n\n".join(combined_overall_parts) if combined_overall_parts else ""
+                )
 
                 ai_summary = AISummary(
                     overall_summary=combined_overall,
@@ -453,8 +486,7 @@ def get_blgu_dashboard(
                 # Get available languages
                 if isinstance(summary_data, dict):
                     ai_summary_available_languages = [
-                        lang for lang in ["ceb", "en", "fil"]
-                        if lang in summary_data
+                        lang for lang in ["ceb", "en", "fil"] if lang in summary_data
                     ]
 
                 # Get the summary in the requested language
@@ -473,13 +505,15 @@ def get_blgu_dashboard(
                 if lang_summary:
                     indicator_summaries = []
                     for ind_sum in lang_summary.get("indicator_summaries", []):
-                        indicator_summaries.append(AISummaryIndicator(
-                            indicator_id=ind_sum.get("indicator_id", 0),
-                            indicator_name=ind_sum.get("indicator_name", ""),
-                            key_issues=ind_sum.get("key_issues", []),
-                            suggested_actions=ind_sum.get("suggested_actions", []),
-                            affected_movs=ind_sum.get("affected_movs", []),
-                        ))
+                        indicator_summaries.append(
+                            AISummaryIndicator(
+                                indicator_id=ind_sum.get("indicator_id", 0),
+                                indicator_name=ind_sum.get("indicator_name", ""),
+                                key_issues=ind_sum.get("key_issues", []),
+                                suggested_actions=ind_sum.get("suggested_actions", []),
+                                affected_movs=ind_sum.get("affected_movs", []),
+                            )
+                        )
 
                     generated_at = None
                     if lang_summary.get("generated_at"):
@@ -513,8 +547,7 @@ def get_blgu_dashboard(
                 # Get available languages
                 if isinstance(summary_data, dict):
                     ai_summary_available_languages = [
-                        lang for lang in ["ceb", "en", "fil"]
-                        if lang in summary_data
+                        lang for lang in ["ceb", "en", "fil"] if lang in summary_data
                     ]
 
                 # Get the summary in the requested language
@@ -533,13 +566,15 @@ def get_blgu_dashboard(
                 if lang_summary:
                     indicator_summaries = []
                     for ind_sum in lang_summary.get("indicator_summaries", []):
-                        indicator_summaries.append(AISummaryIndicator(
-                            indicator_id=ind_sum.get("indicator_id", 0),
-                            indicator_name=ind_sum.get("indicator_name", ""),
-                            key_issues=ind_sum.get("key_issues", []),
-                            suggested_actions=ind_sum.get("suggested_actions", []),
-                            affected_movs=ind_sum.get("affected_movs", []),
-                        ))
+                        indicator_summaries.append(
+                            AISummaryIndicator(
+                                indicator_id=ind_sum.get("indicator_id", 0),
+                                indicator_name=ind_sum.get("indicator_name", ""),
+                                key_issues=ind_sum.get("key_issues", []),
+                                suggested_actions=ind_sum.get("suggested_actions", []),
+                                affected_movs=ind_sum.get("affected_movs", []),
+                            )
+                        )
 
                     generated_at = None
                     if lang_summary.get("generated_at"):
@@ -572,13 +607,15 @@ def get_blgu_dashboard(
 
     if assessment.status == AssessmentStatus.COMPLETED:
         # Now we can expose compliance data
-        final_compliance_status = assessment.final_compliance_status.value if assessment.final_compliance_status else None
+        final_compliance_status = (
+            assessment.final_compliance_status.value if assessment.final_compliance_status else None
+        )
 
         # Parse area_results if available
         if assessment.area_results:
             # First, calculate indicator counts per governance area from responses
             # This gives us actual Pass/Fail/Conditional counts for the verdict display
-            area_indicator_counts: Dict[str, Dict[str, int]] = {}
+            area_indicator_counts: dict[str, dict[str, int]] = {}
 
             # Get all governance areas for ID lookup
             all_governance_areas = db.query(GovernanceArea).all()
@@ -601,7 +638,11 @@ def get_blgu_dashboard(
                     if ga_name in area_indicator_counts:
                         area_indicator_counts[ga_name]["total"] += 1
                         if response.validation_status:
-                            status_val = response.validation_status.value if hasattr(response.validation_status, 'value') else response.validation_status
+                            status_val = (
+                                response.validation_status.value
+                                if hasattr(response.validation_status, "value")
+                                else response.validation_status
+                            )
                             if status_val == "PASS":
                                 area_indicator_counts[ga_name]["passed"] += 1
                             elif status_val == "FAIL":
@@ -615,30 +656,48 @@ def get_blgu_dashboard(
                 # Handle both old format (dict with area_data) and new format (string status)
                 if isinstance(status, dict):
                     # Old format: area_data is a dictionary
-                    area_results_list.append({
-                        "area_id": status.get("area_id"),
-                        "area_name": status.get("area_name", area_name),
-                        "area_type": status.get("area_type", "Core"),
-                        "passed": status.get("passed", False),
-                        "total_indicators": status.get("total_indicators", 0),
-                        "passed_indicators": status.get("passed_indicators", 0),
-                        "failed_indicators": status.get("failed_indicators", 0),
-                    })
+                    area_results_list.append(
+                        {
+                            "area_id": status.get("area_id"),
+                            "area_name": status.get("area_name", area_name),
+                            "area_type": status.get("area_type", "Core"),
+                            "passed": status.get("passed", False),
+                            "total_indicators": status.get("total_indicators", 0),
+                            "passed_indicators": status.get("passed_indicators", 0),
+                            "failed_indicators": status.get("failed_indicators", 0),
+                        }
+                    )
                 else:
                     # New format: status is "Passed" or "Failed" string
                     # Use the calculated counts from responses
-                    counts = area_indicator_counts.get(area_name, {"total": 0, "passed": 0, "failed": 0, "conditional": 0})
+                    counts = area_indicator_counts.get(
+                        area_name,
+                        {"total": 0, "passed": 0, "failed": 0, "conditional": 0},
+                    )
                     ga = governance_area_by_name.get(area_name)
-                    area_results_list.append({
-                        "area_id": ga.id if ga else None,
-                        "area_name": area_name,
-                        "area_type": ga.area_type.value if ga and ga.area_type else ("Core" if area_name in ["Financial Administration and Sustainability", "Disaster Preparedness", "Safety, Peace and Order"] else "Essential"),
-                        "passed": status == "Passed",
-                        "total_indicators": counts["total"],
-                        # SGLGB Rule: Conditional = Considered = PASS (counts toward passing)
-                        "passed_indicators": counts["passed"] + counts["conditional"],
-                        "failed_indicators": counts["failed"],
-                    })
+                    area_results_list.append(
+                        {
+                            "area_id": ga.id if ga else None,
+                            "area_name": area_name,
+                            "area_type": ga.area_type.value
+                            if ga and ga.area_type
+                            else (
+                                "Core"
+                                if area_name
+                                in [
+                                    "Financial Administration and Sustainability",
+                                    "Disaster Preparedness",
+                                    "Safety, Peace and Order",
+                                ]
+                                else "Essential"
+                            ),
+                            "passed": status == "Passed",
+                            "total_indicators": counts["total"],
+                            # SGLGB Rule: Conditional = Considered = PASS (counts toward passing)
+                            "passed_indicators": counts["passed"] + counts["conditional"],
+                            "failed_indicators": counts["failed"],
+                        }
+                    )
             area_results = area_results_list
 
         # AI recommendations (CapDev)
@@ -648,15 +707,22 @@ def get_blgu_dashboard(
     bbi_compliance = None
     if assessment.status == AssessmentStatus.COMPLETED:
         from app.services.bbi_service import bbi_service
-        from app.db.models.bbi import BBIResult
 
         bbi_results = bbi_service.get_bbi_results(db, assessment_id)
         if bbi_results:
             # Calculate summary
-            highly_functional = sum(1 for r in bbi_results if r.compliance_rating == "HIGHLY_FUNCTIONAL")
-            moderately_functional = sum(1 for r in bbi_results if r.compliance_rating == "MODERATELY_FUNCTIONAL")
+            highly_functional = sum(
+                1 for r in bbi_results if r.compliance_rating == "HIGHLY_FUNCTIONAL"
+            )
+            moderately_functional = sum(
+                1 for r in bbi_results if r.compliance_rating == "MODERATELY_FUNCTIONAL"
+            )
             low_functional = sum(1 for r in bbi_results if r.compliance_rating == "LOW_FUNCTIONAL")
-            avg_compliance = sum(r.compliance_percentage for r in bbi_results) / len(bbi_results) if bbi_results else 0
+            avg_compliance = (
+                sum(r.compliance_percentage for r in bbi_results) / len(bbi_results)
+                if bbi_results
+                else 0
+            )
 
             bbi_compliance = {
                 "assessment_id": assessment_id,
@@ -674,7 +740,9 @@ def get_blgu_dashboard(
                         # sub_indicator_results is stored as dict in DB, transform to list format
                         # or return empty list since BLGU view doesn't need detailed breakdown
                         "sub_indicator_results": [],
-                        "calculation_date": r.calculation_date.isoformat() + 'Z' if r.calculation_date else None,
+                        "calculation_date": r.calculation_date.isoformat() + "Z"
+                        if r.calculation_date
+                        else None,
                     }
                     for r in bbi_results
                 ],
@@ -685,7 +753,9 @@ def get_blgu_dashboard(
                     "low_functional_count": low_functional,
                     "average_compliance_percentage": round(avg_compliance, 2),
                 },
-                "calculated_at": bbi_results[0].calculation_date.isoformat() + 'Z' if bbi_results and bbi_results[0].calculation_date else None,
+                "calculated_at": bbi_results[0].calculation_date.isoformat() + "Z"
+                if bbi_results and bbi_results[0].calculation_date
+                else None,
             }
 
     # Epic 5.0: Return status and rework tracking fields
@@ -693,7 +763,9 @@ def get_blgu_dashboard(
         "assessment_id": assessment_id,
         "status": assessment.status.value,  # Epic 5.0: Assessment workflow status
         "rework_count": assessment.rework_count,  # Epic 5.0: Rework cycle count (0 or 1)
-        "rework_requested_at": assessment.rework_requested_at.isoformat() + 'Z' if assessment.rework_requested_at else None,  # Epic 5.0
+        "rework_requested_at": assessment.rework_requested_at.isoformat() + "Z"
+        if assessment.rework_requested_at
+        else None,  # Epic 5.0
         "rework_requested_by": assessment.rework_requested_by,  # Epic 5.0: Assessor who requested rework
         # Calibration tracking (Phase 2 Validator workflow)
         "is_calibration_rework": assessment.is_calibration_rework,  # True if Validator calibrated (BLGU should submit back to Validator)
@@ -701,15 +773,22 @@ def get_blgu_dashboard(
         "calibration_governance_area_id": calibration_governance_area_id,  # Legacy: single governance area that was calibrated
         "calibration_governance_area_name": calibration_governance_area_name,  # Legacy: name of calibrated area
         # PARALLEL CALIBRATION: Multiple validators can request calibration
-        "pending_calibrations_count": len(pending_calibrations),  # Total pending calibration requests
+        "pending_calibrations_count": len(
+            pending_calibrations
+        ),  # Total pending calibration requests
         "calibration_governance_areas": calibration_governance_areas,  # List of all pending calibration areas with details
-        "ai_summaries_by_area": ai_summaries_by_area if ai_summaries_by_area else None,  # Summaries grouped by governance area
+        "ai_summaries_by_area": ai_summaries_by_area
+        if ai_summaries_by_area
+        else None,  # Summaries grouped by governance area
         # MLGOO RE-calibration tracking (distinct from Validator calibration)
         "is_mlgoo_recalibration": assessment.is_mlgoo_recalibration,  # True if MLGOO requested RE-calibration
         "mlgoo_recalibration_indicator_ids": assessment.mlgoo_recalibration_indicator_ids,  # Specific indicators to address
         "mlgoo_recalibration_comments": assessment.mlgoo_recalibration_comments,  # MLGOO's explanation
         "mlgoo_recalibration_count": assessment.mlgoo_recalibration_count,  # Count of RE-calibrations (max 1)
-        "mlgoo_recalibration_requested_at": assessment.mlgoo_recalibration_requested_at.isoformat() + 'Z' if assessment.mlgoo_recalibration_requested_at else None,  # Timestamp for timeline
+        "mlgoo_recalibration_requested_at": assessment.mlgoo_recalibration_requested_at.isoformat()
+        + "Z"
+        if assessment.mlgoo_recalibration_requested_at
+        else None,  # Timestamp for timeline
         "total_indicators": total_indicators,
         "completed_indicators": completed_indicators,
         "incomplete_indicators": incomplete_indicators,
@@ -721,8 +800,12 @@ def get_blgu_dashboard(
         "ai_summary": ai_summary,
         "ai_summary_available_languages": ai_summary_available_languages,
         # Timeline dates for phase tracking
-        "submitted_at": assessment.submitted_at.isoformat() + 'Z' if assessment.submitted_at else None,
-        "validated_at": assessment.validated_at.isoformat() + 'Z' if assessment.validated_at else None,
+        "submitted_at": assessment.submitted_at.isoformat() + "Z"
+        if assessment.submitted_at
+        else None,
+        "validated_at": assessment.validated_at.isoformat() + "Z"
+        if assessment.validated_at
+        else None,
         # Verdict data - ONLY populated when COMPLETED
         "final_compliance_status": final_compliance_status,
         "area_results": area_results,
@@ -732,7 +815,10 @@ def get_blgu_dashboard(
     }
 
 
-@router.get("/{assessment_id}/indicators/navigation", response_model=List[IndicatorNavigationItem])
+@router.get(
+    "/{assessment_id}/indicators/navigation",
+    response_model=list[IndicatorNavigationItem],
+)
 def get_indicator_navigation(
     assessment_id: int,
     db: Session = Depends(deps.get_db),
@@ -796,13 +882,15 @@ def get_indicator_navigation(
         # Generate frontend route path
         route_path = f"/blgu/assessment/{assessment_id}/indicator/{response.indicator.id}"
 
-        navigation_list.append({
-            "indicator_id": response.indicator.id,
-            "title": response.indicator.name,
-            "completion_status": completion_status,
-            "route_path": route_path,
-            "governance_area_name": response.indicator.governance_area.name,
-            "governance_area_id": response.indicator.governance_area.id,
-        })
+        navigation_list.append(
+            {
+                "indicator_id": response.indicator.id,
+                "title": response.indicator.name,
+                "completion_status": completion_status,
+                "route_path": route_path,
+                "governance_area_name": response.indicator.governance_area.name,
+                "governance_area_id": response.indicator.governance_area.id,
+            }
+        )
 
     return navigation_list

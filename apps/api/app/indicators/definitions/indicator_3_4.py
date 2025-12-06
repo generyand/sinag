@@ -8,8 +8,13 @@ Note: This indicator assesses the organization and capacity building of Barangay
 through structure and training compliance.
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem, FormNotes, NoteItem
-
+from app.indicators.base import (
+    ChecklistItem,
+    FormNotes,
+    Indicator,
+    NoteItem,
+    SubIndicator,
+)
 
 # Indicator 3.4: Organization and Strengthening Capacities of Barangay Tanod
 INDICATOR_3_4 = Indicator(
@@ -40,7 +45,7 @@ INDICATOR_3_4 = Indicator(
                     mov_description="Verification that the EO/issuance creates Barangay Tanod with proper composition",
                     item_type="checkbox",
                     required=False,
-                    display_order=1
+                    display_order=1,
                 ),
                 ChecklistItem(
                     id="3_4_1_date",
@@ -48,7 +53,7 @@ INDICATOR_3_4 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="date_input",
                     required=False,
-                    display_order=2
+                    display_order=2,
                 ),
             ],
             notes=FormNotes(
@@ -57,10 +62,9 @@ INDICATOR_3_4 = Indicator(
                     NoteItem(label="1.", text="Chief Tanod/Executive Officer"),
                     NoteItem(label="2.", text="Team Leaders"),
                     NoteItem(label="3.", text="Team Members"),
-                ]
-            )
+                ],
+            ),
         ),
-
         # Sub-Indicator 3.4.2: Trainings
         SubIndicator(
             code="3.4.2",
@@ -75,9 +79,9 @@ INDICATOR_3_4 = Indicator(
                     label="At least one (1) copy of proof of training such as Certificate of Completion and/or Participation",
                     required=True,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

@@ -10,32 +10,33 @@ Updates indicator 1.1.1 checklist items:
 3. Add separate checkboxes for f and g, with count fields below them
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'd20911882332'
-down_revision: Union[str, Sequence[str], None] = 'c93e8fbb44e7'
+revision: str = "d20911882332"
+down_revision: Union[str, Sequence[str], None] = "c93e8fbb44e7"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
     """Update indicator 1.1.1 checklist items."""
-    from app.db.models.governance_area import Indicator, ChecklistItem as ChecklistItemModel
+    from app.db.models.governance_area import (
+        Indicator,
+        ChecklistItem as ChecklistItemModel,
+    )
 
     bind = op.get_bind()
     session = Session(bind=bind)
 
     try:
         # Get indicator 1.1.1
-        indicator = session.query(Indicator).filter(
-            Indicator.indicator_code == "1.1.1"
-        ).first()
+        indicator = session.query(Indicator).filter(Indicator.indicator_code == "1.1.1").first()
 
         if not indicator:
             print("Indicator 1.1.1 not found, skipping...")
@@ -59,7 +60,7 @@ def upgrade() -> None:
                 mov_description=None,
                 required=True,
                 requires_document_count=False,
-                display_order=1
+                display_order=1,
             ),
             # Document count - right after BFDP Form
             ChecklistItemModel(
@@ -70,7 +71,7 @@ def upgrade() -> None:
                 mov_description="Please supply the number of documents submitted:",
                 required=True,
                 requires_document_count=True,
-                display_order=2
+                display_order=2,
             ),
             # Photo documentation checkbox
             ChecklistItemModel(
@@ -81,7 +82,7 @@ def upgrade() -> None:
                 mov_description="Photos must clearly show the BFDP board with barangay name and posted documents",
                 required=True,
                 requires_document_count=False,
-                display_order=3
+                display_order=3,
             ),
             # ANNUAL REPORT Group
             ChecklistItemModel(
@@ -93,7 +94,7 @@ def upgrade() -> None:
                 mov_description="Barangay Financial Report for CY 2023",
                 required=True,
                 requires_document_count=False,
-                display_order=4
+                display_order=4,
             ),
             ChecklistItemModel(
                 indicator_id=indicator.id,
@@ -104,7 +105,7 @@ def upgrade() -> None:
                 mov_description="Barangay Budget for CY 2023",
                 required=True,
                 requires_document_count=False,
-                display_order=5
+                display_order=5,
             ),
             ChecklistItemModel(
                 indicator_id=indicator.id,
@@ -115,7 +116,7 @@ def upgrade() -> None:
                 mov_description="Summary of Income and Expenditures for CY 2023",
                 required=True,
                 requires_document_count=False,
-                display_order=6
+                display_order=6,
             ),
             ChecklistItemModel(
                 indicator_id=indicator.id,
@@ -126,7 +127,7 @@ def upgrade() -> None:
                 mov_description="20% Component of the NTA Utilization for CY 2023",
                 required=True,
                 requires_document_count=False,
-                display_order=7
+                display_order=7,
             ),
             ChecklistItemModel(
                 indicator_id=indicator.id,
@@ -137,7 +138,7 @@ def upgrade() -> None:
                 mov_description="Annual Procurement Plan OR Procurement List (either one is acceptable)",
                 required=True,
                 requires_document_count=False,
-                display_order=8
+                display_order=8,
             ),
             # QUARTERLY REPORT Group - checkbox first
             ChecklistItemModel(
@@ -149,7 +150,7 @@ def upgrade() -> None:
                 mov_description="List of Notices of Award (1st - 3rd Quarter of CY 2023)",
                 required=True,
                 requires_document_count=False,
-                display_order=9
+                display_order=9,
             ),
             # Count field for f
             ChecklistItemModel(
@@ -161,7 +162,7 @@ def upgrade() -> None:
                 mov_description=None,
                 required=True,
                 requires_document_count=True,
-                display_order=10
+                display_order=10,
             ),
             # MONTHLY REPORT Group - checkbox first
             ChecklistItemModel(
@@ -173,7 +174,7 @@ def upgrade() -> None:
                 mov_description="Itemized Monthly Collections and Disbursements (January to September 2023)",
                 required=True,
                 requires_document_count=False,
-                display_order=11
+                display_order=11,
             ),
             # Count field for g
             ChecklistItemModel(
@@ -185,7 +186,7 @@ def upgrade() -> None:
                 mov_description=None,
                 required=True,
                 requires_document_count=True,
-                display_order=12
+                display_order=12,
             ),
         ]
 
@@ -198,18 +199,78 @@ def upgrade() -> None:
             # Update assessor_validation fields to match new checklist
             form_schema["assessor_validation"] = {
                 "fields": [
-                    {"item_id": "1_1_1_bfdp_form", "type": "checkbox", "label": "BFDP Monitoring Form A of the DILG Advisory covering the 1st to 3rd quarter monitoring data signed by the City/Municipal C/MLGOO, Punong Barangay and Barangay Secretary"},
-                    {"item_id": "1_1_1_bfdp_count", "type": "document_count", "label": "BFDP Monitoring Form A were submitted", "description": "Please supply the number of documents submitted:"},
-                    {"item_id": "1_1_1_photo_docs", "type": "checkbox", "label": "Two (2) Photo Documentation of the BFDP board showing the name of the barangay", "description": "Photos must clearly show the BFDP board with barangay name and posted documents"},
-                    {"item_id": "1_1_1_a", "type": "checkbox", "label": "a. Barangay Financial Report", "group": "ANNUAL REPORT", "description": "Barangay Financial Report for CY 2023"},
-                    {"item_id": "1_1_1_b", "type": "checkbox", "label": "b. Barangay Budget", "description": "Barangay Budget for CY 2023"},
-                    {"item_id": "1_1_1_c", "type": "checkbox", "label": "c. Summary of Income and Expenditures", "description": "Summary of Income and Expenditures for CY 2023"},
-                    {"item_id": "1_1_1_d", "type": "checkbox", "label": "d. 20% Component of the NTA Utilization", "description": "20% Component of the NTA Utilization for CY 2023"},
-                    {"item_id": "1_1_1_e", "type": "checkbox", "label": "e. Annual Procurement Plan or Procurement List", "description": "Annual Procurement Plan OR Procurement List (either one is acceptable)"},
-                    {"item_id": "1_1_1_f", "type": "checkbox", "label": "f. List of Notices of Award (1st - 3rd Quarter of CY 2023)", "group": "QUARTERLY REPORT", "description": "List of Notices of Award (1st - 3rd Quarter of CY 2023)"},
-                    {"item_id": "1_1_1_f_count", "type": "document_count", "label": "List of Notices of Award were submitted"},
-                    {"item_id": "1_1_1_g", "type": "checkbox", "label": "g. Itemized Monthly Collections and Disbursements (January to September 2023)", "group": "MONTHLY REPORT", "description": "Itemized Monthly Collections and Disbursements (January to September 2023)"},
-                    {"item_id": "1_1_1_g_count", "type": "document_count", "label": "Itemized Monthly Collections and Disbursements were submitted"},
+                    {
+                        "item_id": "1_1_1_bfdp_form",
+                        "type": "checkbox",
+                        "label": "BFDP Monitoring Form A of the DILG Advisory covering the 1st to 3rd quarter monitoring data signed by the City/Municipal C/MLGOO, Punong Barangay and Barangay Secretary",
+                    },
+                    {
+                        "item_id": "1_1_1_bfdp_count",
+                        "type": "document_count",
+                        "label": "BFDP Monitoring Form A were submitted",
+                        "description": "Please supply the number of documents submitted:",
+                    },
+                    {
+                        "item_id": "1_1_1_photo_docs",
+                        "type": "checkbox",
+                        "label": "Two (2) Photo Documentation of the BFDP board showing the name of the barangay",
+                        "description": "Photos must clearly show the BFDP board with barangay name and posted documents",
+                    },
+                    {
+                        "item_id": "1_1_1_a",
+                        "type": "checkbox",
+                        "label": "a. Barangay Financial Report",
+                        "group": "ANNUAL REPORT",
+                        "description": "Barangay Financial Report for CY 2023",
+                    },
+                    {
+                        "item_id": "1_1_1_b",
+                        "type": "checkbox",
+                        "label": "b. Barangay Budget",
+                        "description": "Barangay Budget for CY 2023",
+                    },
+                    {
+                        "item_id": "1_1_1_c",
+                        "type": "checkbox",
+                        "label": "c. Summary of Income and Expenditures",
+                        "description": "Summary of Income and Expenditures for CY 2023",
+                    },
+                    {
+                        "item_id": "1_1_1_d",
+                        "type": "checkbox",
+                        "label": "d. 20% Component of the NTA Utilization",
+                        "description": "20% Component of the NTA Utilization for CY 2023",
+                    },
+                    {
+                        "item_id": "1_1_1_e",
+                        "type": "checkbox",
+                        "label": "e. Annual Procurement Plan or Procurement List",
+                        "description": "Annual Procurement Plan OR Procurement List (either one is acceptable)",
+                    },
+                    {
+                        "item_id": "1_1_1_f",
+                        "type": "checkbox",
+                        "label": "f. List of Notices of Award (1st - 3rd Quarter of CY 2023)",
+                        "group": "QUARTERLY REPORT",
+                        "description": "List of Notices of Award (1st - 3rd Quarter of CY 2023)",
+                    },
+                    {
+                        "item_id": "1_1_1_f_count",
+                        "type": "document_count",
+                        "label": "List of Notices of Award were submitted",
+                    },
+                    {
+                        "item_id": "1_1_1_g",
+                        "type": "checkbox",
+                        "label": "g. Itemized Monthly Collections and Disbursements (January to September 2023)",
+                        "group": "MONTHLY REPORT",
+                        "description": "Itemized Monthly Collections and Disbursements (January to September 2023)",
+                    },
+                    {
+                        "item_id": "1_1_1_g_count",
+                        "type": "document_count",
+                        "label": "Itemized Monthly Collections and Disbursements were submitted",
+                    },
                 ]
             }
             indicator.form_schema = form_schema

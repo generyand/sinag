@@ -9,8 +9,13 @@ through its organizational structure, approved plan, performance in reducing mal
 and accomplishment reporting.
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem, FormNotes, NoteItem
-
+from app.indicators.base import (
+    ChecklistItem,
+    FormNotes,
+    Indicator,
+    NoteItem,
+    SubIndicator,
+)
 
 # Indicator 4.8: Functionality of the Barangay Nutrition Committee (BNC)
 INDICATOR_4_8 = Indicator(
@@ -50,7 +55,7 @@ INDICATOR_4_8 = Indicator(
                     mov_description="Verification that the EO/issuance creates BNC with proper composition as per minimum requirement",
                     item_type="checkbox",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
             ],
             notes=FormNotes(
@@ -58,7 +63,10 @@ INDICATOR_4_8 = Indicator(
                 items=[
                     NoteItem(label="1.", text="Barangay Captain (as chair)"),
                     NoteItem(label="2.", text="President of the Rural Improvement Club (RIC)"),
-                    NoteItem(label="3.", text="President, Parent Teacher Child Association (PTCA)"),
+                    NoteItem(
+                        label="3.",
+                        text="President, Parent Teacher Child Association (PTCA)",
+                    ),
                     NoteItem(label="4.", text="Head/President, local organization"),
                     NoteItem(label="5.", text="Sangguniang Members on Health"),
                     NoteItem(label="6.", text="SK Chairperson"),
@@ -69,17 +77,14 @@ INDICATOR_4_8 = Indicator(
                     NoteItem(label="11.", text="Agriculture Technicians"),
                     NoteItem(label="12.", text="Rural Health Midwife (RHM)"),
                     NoteItem(label="13.", text="Other as may be identified"),
-                ]
-            )
+                ],
+            ),
         ),
-
         # Sub-Indicator 4.8.2: Plan - Presence of approved BNAP
         SubIndicator(
             code="4.8.2",
             name="Plan: Presence of approved BNAP",
-            upload_instructions=(
-                "Upload: Approved BNAP signed by the BNC"
-            ),
+            upload_instructions=("Upload: Approved BNAP signed by the BNC"),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
@@ -87,11 +92,10 @@ INDICATOR_4_8 = Indicator(
                     label="Approved BNAP signed by the BNC",
                     mov_description="Verification of uploaded Approved BNAP signed by the BNC",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 4.8.3: Decrease in Prevalence Rate
         SubIndicator(
             code="4.8.3",
@@ -110,7 +114,7 @@ INDICATOR_4_8 = Indicator(
                     mov_description="Verification of uploaded Operation Timbang (OPT) Plus Form 1A for CYs 2022 and 2023",
                     item_type="checkbox",
                     required=False,
-                    display_order=1
+                    display_order=1,
                 ),
                 ChecklistItem(
                     id="4_8_3_upload_cert",
@@ -118,7 +122,7 @@ INDICATOR_4_8 = Indicator(
                     mov_description="Verification of uploaded Certification from the C/MHO on the Decrease in Prevalence Rate",
                     item_type="checkbox",
                     required=False,
-                    display_order=2
+                    display_order=2,
                 ),
                 # Three categories with YES/NO assessment
                 ChecklistItem(
@@ -127,7 +131,7 @@ INDICATOR_4_8 = Indicator(
                     mov_description="Assessment for decrease in underweight prevalence",
                     item_type="assessment_field",
                     required=False,
-                    display_order=4
+                    display_order=4,
                 ),
                 ChecklistItem(
                     id="4_8_3_stunting",
@@ -135,7 +139,7 @@ INDICATOR_4_8 = Indicator(
                     mov_description="Assessment for decrease in stunting prevalence",
                     item_type="assessment_field",
                     required=False,
-                    display_order=5
+                    display_order=5,
                 ),
                 ChecklistItem(
                     id="4_8_3_wasting",
@@ -143,7 +147,7 @@ INDICATOR_4_8 = Indicator(
                     mov_description="Assessment for decrease in wasting prevalence",
                     item_type="assessment_field",
                     required=False,
-                    display_order=6
+                    display_order=6,
                 ),
             ],
             notes=FormNotes(
@@ -152,10 +156,9 @@ INDICATOR_4_8 = Indicator(
                     NoteItem(label="1.", text="Underweight and Severe Underweight"),
                     NoteItem(label="2.", text="Stunting and Severe Stunting; and"),
                     NoteItem(label="3.", text="Moderate Wasting and Severe Wasting"),
-                ]
-            )
+                ],
+            ),
         ),
-
         # Sub-Indicator 4.8.4: Accomplishment Report
         SubIndicator(
             code="4.8.4",
@@ -181,7 +184,7 @@ INDICATOR_4_8 = Indicator(
                     item_type="checkbox",
                     required=True,
                     display_order=1,
-                    option_group="shared"
+                    option_group="shared",
                 ),
                 # OPTION A: YES/NO, then CERTIFICATION, then calculation
                 ChecklistItem(
@@ -191,7 +194,7 @@ INDICATOR_4_8 = Indicator(
                     item_type="assessment_field",
                     required=False,
                     display_order=2,
-                    option_group="option_a"
+                    option_group="option_a",
                 ),
                 ChecklistItem(
                     id="4_8_4_cert_a",
@@ -200,7 +203,7 @@ INDICATOR_4_8 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=3,
-                    option_group="option_a"
+                    option_group="option_a",
                 ),
                 ChecklistItem(
                     id="4_8_4_physical_accomplished",
@@ -209,7 +212,7 @@ INDICATOR_4_8 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=4,
-                    option_group="option_a"
+                    option_group="option_a",
                 ),
                 ChecklistItem(
                     id="4_8_4_physical_reflected",
@@ -217,7 +220,7 @@ INDICATOR_4_8 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=5,
-                    option_group="option_a"
+                    option_group="option_a",
                 ),
                 # OR separator
                 ChecklistItem(
@@ -226,7 +229,7 @@ INDICATOR_4_8 = Indicator(
                     mov_description="OR",
                     item_type="info_text",
                     required=False,
-                    display_order=6
+                    display_order=6,
                 ),
                 # OPTION B: YES/NO, then CERTIFICATION, then calculations
                 ChecklistItem(
@@ -236,7 +239,7 @@ INDICATOR_4_8 = Indicator(
                     item_type="assessment_field",
                     required=False,
                     display_order=7,
-                    option_group="option_b"
+                    option_group="option_b",
                 ),
                 ChecklistItem(
                     id="4_8_4_cert_b",
@@ -245,7 +248,7 @@ INDICATOR_4_8 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=8,
-                    option_group="option_b"
+                    option_group="option_b",
                 ),
                 ChecklistItem(
                     id="4_8_4_financial_utilized",
@@ -254,7 +257,7 @@ INDICATOR_4_8 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=9,
-                    option_group="option_b"
+                    option_group="option_b",
                 ),
                 ChecklistItem(
                     id="4_8_4_financial_allocated",
@@ -262,9 +265,9 @@ INDICATOR_4_8 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=10,
-                    option_group="option_b"
+                    option_group="option_b",
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

@@ -8,8 +8,13 @@ Note: This indicator assesses the functionality of the BPOC based on three crite
 structure, plan, and accomplishment reports.
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem, FormNotes, NoteItem
-
+from app.indicators.base import (
+    ChecklistItem,
+    FormNotes,
+    Indicator,
+    NoteItem,
+    SubIndicator,
+)
 
 # Indicator 3.2: BPOC Functionality (BBI)
 INDICATOR_3_2 = Indicator(
@@ -49,7 +54,7 @@ INDICATOR_3_2 = Indicator(
                     mov_description="Verification of uploaded Executive Order or similar issuance organizing BPOC with compliant composition",
                     item_type="checkbox",
                     required=False,
-                    display_order=1
+                    display_order=1,
                 ),
                 ChecklistItem(
                     id="3_2_1_date_of_approval",
@@ -57,7 +62,7 @@ INDICATOR_3_2 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="date_input",
                     required=True,
-                    display_order=2
+                    display_order=2,
                 ),
             ],
             notes=FormNotes(
@@ -70,19 +75,19 @@ INDICATOR_3_2 = Indicator(
                     NoteItem(label="5.", text="PNP Officer"),
                     NoteItem(label="6.", text="A representative of the Interfaith Group"),
                     NoteItem(label="7.", text="A Senior Citizen"),
-                    NoteItem(label="8.", text="At least three (3) members of the existing Barangay-Based Anti-Crime or Neighborhood Watch Groups or an NGO representative"),
+                    NoteItem(
+                        label="8.",
+                        text="At least three (3) members of the existing Barangay-Based Anti-Crime or Neighborhood Watch Groups or an NGO representative",
+                    ),
                     NoteItem(label="9.", text="A Barangay Tanod"),
-                ]
-            )
+                ],
+            ),
         ),
-
         # Sub-Indicator 3.2.2: Plan
         SubIndicator(
             code="3.2.2",
             name="Plan: Formulated Barangay Peace and Order and Public Safety (BPOPS) Plan in accordance to DILG MC 2017-142",
-            upload_instructions=(
-                "Upload: Approved BPOPS Plan"
-            ),
+            upload_instructions=("Upload: Approved BPOPS Plan"),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 # Upload Verification
@@ -91,11 +96,10 @@ INDICATOR_3_2 = Indicator(
                     label="Approved BPOPS Plan",
                     mov_description="Verification of uploaded Approved Barangay Peace and Order and Public Safety Plan",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 3.2.3: Accomplishment Reports
         SubIndicator(
             code="3.2.3",
@@ -114,7 +118,7 @@ INDICATOR_3_2 = Indicator(
                     mov_description="Verification of uploaded Accomplishment Report (PHYSICAL or/and FINANCIAL)",
                     item_type="checkbox",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
                 # Option A: Physical Accomplishment - YES/NO assessment
                 ChecklistItem(
@@ -124,7 +128,7 @@ INDICATOR_3_2 = Indicator(
                     item_type="assessment_field",
                     required=False,
                     display_order=2,
-                    option_group="Option A"
+                    option_group="Option A",
                 ),
                 ChecklistItem(
                     id="3_2_3_physical_accomplished",
@@ -133,7 +137,7 @@ INDICATOR_3_2 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=3,
-                    option_group="Option A"
+                    option_group="Option A",
                 ),
                 ChecklistItem(
                     id="3_2_3_physical_reflected",
@@ -142,9 +146,8 @@ INDICATOR_3_2 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=4,
-                    option_group="Option A"
+                    option_group="Option A",
                 ),
-
                 # OR Separator (info_text)
                 ChecklistItem(
                     id="3_2_3_or",
@@ -152,9 +155,8 @@ INDICATOR_3_2 = Indicator(
                     mov_description="OR",
                     item_type="info_text",
                     required=False,
-                    display_order=5
+                    display_order=5,
                 ),
-
                 # Option B: Financial Accomplishment - YES/NO assessment
                 ChecklistItem(
                     id="3_2_3_option_b",
@@ -163,7 +165,7 @@ INDICATOR_3_2 = Indicator(
                     item_type="assessment_field",
                     required=False,
                     display_order=6,
-                    option_group="Option B"
+                    option_group="Option B",
                 ),
                 ChecklistItem(
                     id="3_2_3_financial_allocated",
@@ -172,7 +174,7 @@ INDICATOR_3_2 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=7,
-                    option_group="Option B"
+                    option_group="Option B",
                 ),
                 ChecklistItem(
                     id="3_2_3_financial_utilized",
@@ -181,9 +183,9 @@ INDICATOR_3_2 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=8,
-                    option_group="Option B"
+                    option_group="Option B",
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

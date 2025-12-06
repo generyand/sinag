@@ -8,9 +8,9 @@ Compliance status (PASS/FAIL/CONDITIONAL) is NEVER exposed to BLGU users.
 """
 
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional
-from pydantic import BaseModel, Field
+from typing import Any, Literal
 
+from pydantic import BaseModel, Field
 
 # ============================================================================
 # BBI (Barangay-Based Institutions) Compliance Schemas
@@ -24,8 +24,8 @@ class SubIndicatorResult(BaseModel):
     code: str = Field(..., description="Sub-indicator code")
     name: str = Field(..., description="Sub-indicator name")
     passed: bool = Field(..., description="Whether the sub-indicator passed")
-    validation_rule: Optional[str] = Field(None, description="Validation rule applied")
-    checklist_summary: Optional[Dict[str, Any]] = Field(
+    validation_rule: str | None = Field(None, description="Validation rule applied")
+    checklist_summary: dict[str, Any] | None = Field(
         None, description="Summary of checklist items if applicable"
     )
 
@@ -44,21 +44,21 @@ class BBIComplianceResult(BaseModel):
     bbi_name: str = Field(..., description="Full BBI name")
     bbi_abbreviation: str = Field(..., description="BBI abbreviation (e.g., BDRRMC, BCPC)")
     governance_area_id: int = Field(..., description="Associated governance area ID")
-    governance_area_name: Optional[str] = Field(None, description="Governance area name")
+    governance_area_name: str | None = Field(None, description="Governance area name")
     assessment_id: int = Field(..., description="Assessment ID")
-    compliance_percentage: float = Field(
-        ..., description="Compliance percentage (0-100)"
-    )
+    compliance_percentage: float = Field(..., description="Compliance percentage (0-100)")
     compliance_rating: str = Field(
         ...,
         description="Rating: HIGHLY_FUNCTIONAL, MODERATELY_FUNCTIONAL, or LOW_FUNCTIONAL",
     )
     sub_indicators_passed: int = Field(..., description="Number of sub-indicators passed")
     sub_indicators_total: int = Field(..., description="Total number of sub-indicators")
-    sub_indicator_results: List[SubIndicatorResult] = Field(
+    sub_indicator_results: list[SubIndicatorResult] = Field(
         default_factory=list, description="Detailed results for each sub-indicator"
     )
-    calculation_date: str = Field(..., description="Date when calculation was performed (ISO format)")
+    calculation_date: str = Field(
+        ..., description="Date when calculation was performed (ISO format)"
+    )
 
 
 class BBIComplianceSummary(BaseModel):
@@ -88,9 +88,9 @@ class BBIComplianceData(BaseModel):
     """
 
     assessment_id: int = Field(..., description="Assessment ID")
-    barangay_id: Optional[int] = Field(None, description="Barangay ID")
-    barangay_name: Optional[str] = Field(None, description="Barangay name")
-    bbi_results: List[BBIComplianceResult] = Field(
+    barangay_id: int | None = Field(None, description="Barangay ID")
+    barangay_name: str | None = Field(None, description="Barangay name")
+    bbi_results: list[BBIComplianceResult] = Field(
         default_factory=list, description="Individual BBI compliance results"
     )
     summary: BBIComplianceSummary = Field(..., description="Summary statistics")
@@ -102,13 +102,13 @@ class AISummaryIndicator(BaseModel):
 
     indicator_id: int = Field(..., description="Indicator ID")
     indicator_name: str = Field(..., description="Indicator name")
-    key_issues: List[str] = Field(
+    key_issues: list[str] = Field(
         default_factory=list, description="Key issues identified by assessor/validator"
     )
-    suggested_actions: List[str] = Field(
+    suggested_actions: list[str] = Field(
         default_factory=list, description="Suggested actions to address the issues"
     )
-    affected_movs: List[str] = Field(
+    affected_movs: list[str] = Field(
         default_factory=list, description="List of MOV filenames with issues"
     )
 
@@ -121,32 +121,33 @@ class AISummary(BaseModel):
     BLGU users understand what needs to be fixed.
     """
 
-    overall_summary: str = Field(
-        ..., description="Brief 2-3 sentence overview of the main issues"
-    )
-    governance_area: Optional[str] = Field(
+    overall_summary: str = Field(..., description="Brief 2-3 sentence overview of the main issues")
+    governance_area: str | None = Field(
         None, description="Name of the governance area (only for calibration)"
     )
-    governance_area_id: Optional[int] = Field(
+    governance_area_id: int | None = Field(
         None, description="ID of the governance area (only for calibration)"
     )
-    indicator_summaries: List[AISummaryIndicator] = Field(
+    indicator_summaries: list[AISummaryIndicator] = Field(
         default_factory=list, description="Detailed summaries for each indicator"
     )
-    priority_actions: List[str] = Field(
+    priority_actions: list[str] = Field(
         default_factory=list, description="Top 3-5 priority actions to address first"
     )
-    estimated_time: Optional[str] = Field(
-        None, description="Estimated time to complete corrections (e.g., '30-45 minutes')"
+    estimated_time: str | None = Field(
+        None,
+        description="Estimated time to complete corrections (e.g., '30-45 minutes')",
     )
-    generated_at: Optional[datetime] = Field(
+    generated_at: datetime | None = Field(
         None, description="Timestamp when the summary was generated"
     )
-    language: Optional[str] = Field(
-        None, description="Language code of this summary (ceb=Bisaya, fil=Tagalog, en=English)"
+    language: str | None = Field(
+        None,
+        description="Language code of this summary (ceb=Bisaya, fil=Tagalog, en=English)",
     )
     summary_type: Literal["rework", "calibration"] = Field(
-        ..., description="Type of summary: 'rework' (assessor) or 'calibration' (validator)"
+        ...,
+        description="Type of summary: 'rework' (assessor) or 'calibration' (validator)",
     )
 
 
@@ -160,9 +161,13 @@ class IndicatorItem(BaseModel):
     indicator_id: int = Field(..., description="Indicator ID")
     indicator_name: str = Field(..., description="Indicator name")
     is_complete: bool = Field(
-        ..., description="Completion status: True if all required fields filled, False otherwise"
+        ...,
+        description="Completion status: True if all required fields filled, False otherwise",
     )
-    response_id: Optional[int] = Field(None, description="Assessment response ID for this indicator (null if no response yet)")
+    response_id: int | None = Field(
+        None,
+        description="Assessment response ID for this indicator (null if no response yet)",
+    )
 
 
 class GovernanceAreaGroup(BaseModel):
@@ -174,7 +179,7 @@ class GovernanceAreaGroup(BaseModel):
 
     governance_area_id: int = Field(..., description="Governance area ID")
     governance_area_name: str = Field(..., description="Governance area name")
-    indicators: List[IndicatorItem] = Field(
+    indicators: list[IndicatorItem] = Field(
         ..., description="List of indicators in this governance area"
     )
 
@@ -193,7 +198,8 @@ class IndicatorNavigationItem(BaseModel):
         ..., description="Completion status: 'complete' or 'incomplete'"
     )
     route_path: str = Field(
-        ..., description="Frontend route path for navigation (e.g., /blgu/assessment/123/indicator/456)"
+        ...,
+        description="Frontend route path for navigation (e.g., /blgu/assessment/123/indicator/456)",
     )
     governance_area_name: str = Field(..., description="Name of the governance area")
     governance_area_id: int = Field(..., description="ID of the governance area")
@@ -211,7 +217,9 @@ class ReworkComment(BaseModel):
     comment_type: str = Field(..., description="Type of comment (general, specific issue, etc.)")
     indicator_id: int = Field(..., description="Indicator this comment applies to")
     indicator_name: str = Field(..., description="Name of the indicator")
-    created_at: Optional[str] = Field(None, description="Timestamp when comment was created (ISO format)")
+    created_at: str | None = Field(
+        None, description="Timestamp when comment was created (ISO format)"
+    )
 
 
 class BLGUDashboardResponse(BaseModel):
@@ -229,47 +237,53 @@ class BLGUDashboardResponse(BaseModel):
     assessment_id: int = Field(..., description="Assessment ID")
 
     # Epic 5.0: Assessment status and rework tracking
-    status: str = Field(..., description="Assessment status (DRAFT, SUBMITTED, IN_REVIEW, REWORK, COMPLETED)")
+    status: str = Field(
+        ...,
+        description="Assessment status (DRAFT, SUBMITTED, IN_REVIEW, REWORK, COMPLETED)",
+    )
     rework_count: int = Field(..., description="Number of times rework has been requested (0 or 1)")
-    rework_requested_at: Optional[str] = Field(None, description="Timestamp when rework was requested (ISO format)")
-    rework_requested_by: Optional[int] = Field(None, description="User ID of assessor who requested rework")
+    rework_requested_at: str | None = Field(
+        None, description="Timestamp when rework was requested (ISO format)"
+    )
+    rework_requested_by: int | None = Field(
+        None, description="User ID of assessor who requested rework"
+    )
 
     # Calibration tracking (Phase 2 Validator workflow)
     is_calibration_rework: bool = Field(
         default=False,
         description="If True, BLGU should submit back to Validator (not Assessor). "
-        "Set when Validator calibrates the assessment."
+        "Set when Validator calibrates the assessment.",
     )
-    calibration_validator_id: Optional[int] = Field(
+    calibration_validator_id: int | None = Field(
         None,
         description="Legacy: ID of the Validator who requested calibration (null if regular rework). "
-        "For parallel calibration, use calibration_governance_areas instead."
+        "For parallel calibration, use calibration_governance_areas instead.",
     )
-    calibration_governance_area_id: Optional[int] = Field(
+    calibration_governance_area_id: int | None = Field(
         None,
         description="Legacy: ID of the governance area that was calibrated (null if regular rework). "
-        "For parallel calibration, use calibration_governance_areas instead."
+        "For parallel calibration, use calibration_governance_areas instead.",
     )
-    calibration_governance_area_name: Optional[str] = Field(
+    calibration_governance_area_name: str | None = Field(
         None,
         description="Legacy: Name of the governance area that was calibrated (null if regular rework). "
-        "For parallel calibration, use calibration_governance_areas instead."
+        "For parallel calibration, use calibration_governance_areas instead.",
     )
     # PARALLEL CALIBRATION: Multiple validators can request calibration simultaneously
     pending_calibrations_count: int = Field(
-        default=0,
-        description="Number of pending calibration requests from validators"
+        default=0, description="Number of pending calibration requests from validators"
     )
-    calibration_governance_areas: Optional[List[Dict[str, Any]]] = Field(
+    calibration_governance_areas: list[dict[str, Any]] | None = Field(
         None,
         description="List of all pending calibration requests. Each item contains: "
-        "governance_area_id, governance_area_name, validator_name, requested_at, approved"
+        "governance_area_id, governance_area_name, validator_name, requested_at, approved",
     )
-    ai_summaries_by_area: Optional[List[Dict[str, Any]]] = Field(
+    ai_summaries_by_area: list[dict[str, Any]] | None = Field(
         None,
         description="AI summaries grouped by governance area for parallel calibration. "
         "Each item contains governance_area_id, governance_area, overall_summary, "
-        "indicator_summaries, priority_actions, estimated_time"
+        "indicator_summaries, priority_actions, estimated_time",
     )
 
     total_indicators: int = Field(..., description="Total number of indicators in the assessment")
@@ -282,26 +296,28 @@ class BLGUDashboardResponse(BaseModel):
     completion_percentage: float = Field(
         ..., description="Percentage of indicators completed (0.0 to 100.0)"
     )
-    governance_areas: List[GovernanceAreaGroup] = Field(
+    governance_areas: list[GovernanceAreaGroup] = Field(
         ..., description="Indicators grouped by governance area"
     )
-    rework_comments: Optional[List[ReworkComment]] = Field(
-        None, description="Assessor feedback comments if assessment needs rework (null otherwise)"
+    rework_comments: list[ReworkComment] | None = Field(
+        None,
+        description="Assessor feedback comments if assessment needs rework (null otherwise)",
     )
-    mov_annotations_by_indicator: Optional[Dict[int, List[Dict[str, Any]]]] = Field(
-        None, description="MOV annotations grouped by indicator ID - shows which MOVs assessor highlighted/commented on (null if no annotations)"
+    mov_annotations_by_indicator: dict[int, list[dict[str, Any]]] | None = Field(
+        None,
+        description="MOV annotations grouped by indicator ID - shows which MOVs assessor highlighted/commented on (null if no annotations)",
     )
 
     # AI-generated summary for rework/calibration guidance
-    ai_summary: Optional[AISummary] = Field(
+    ai_summary: AISummary | None = Field(
         None,
         description="AI-generated summary with overall guidance, per-indicator breakdowns, and priority actions. "
-        "Only populated when assessment is in REWORK status. Use the language query parameter to get summary in different languages."
+        "Only populated when assessment is in REWORK status. Use the language query parameter to get summary in different languages.",
     )
-    ai_summary_available_languages: Optional[List[str]] = Field(
+    ai_summary_available_languages: list[str] | None = Field(
         None,
         description="List of language codes for which AI summaries are available (e.g., ['ceb', 'en']). "
-        "Tagalog ('fil') is generated on-demand if requested."
+        "Tagalog ('fil') is generated on-demand if requested.",
     )
 
     # MLGOO RE-calibration tracking (distinct from Validator calibration)
@@ -309,58 +325,55 @@ class BLGUDashboardResponse(BaseModel):
     is_mlgoo_recalibration: bool = Field(
         default=False,
         description="If True, this is an MLGOO RE-calibration (not regular rework or validator calibration). "
-        "BLGU should only address the specific indicators in mlgoo_recalibration_indicator_ids."
+        "BLGU should only address the specific indicators in mlgoo_recalibration_indicator_ids.",
     )
-    mlgoo_recalibration_indicator_ids: Optional[List[int]] = Field(
+    mlgoo_recalibration_indicator_ids: list[int] | None = Field(
         None,
         description="List of indicator IDs that MLGOO has unlocked for RE-calibration. "
-        "Only these indicators need to be addressed by BLGU."
+        "Only these indicators need to be addressed by BLGU.",
     )
-    mlgoo_recalibration_comments: Optional[str] = Field(
-        None,
-        description="MLGOO's comments explaining why RE-calibration is needed."
+    mlgoo_recalibration_comments: str | None = Field(
+        None, description="MLGOO's comments explaining why RE-calibration is needed."
     )
     mlgoo_recalibration_count: int = Field(
         default=0,
-        description="Number of times MLGOO has requested RE-calibration (max 1)."
+        description="Number of times MLGOO has requested RE-calibration (max 1).",
     )
 
     # Timeline dates for phase progression tracking
-    submitted_at: Optional[str] = Field(
-        None,
-        description="Timestamp when assessment was first submitted (ISO format)"
+    submitted_at: str | None = Field(
+        None, description="Timestamp when assessment was first submitted (ISO format)"
     )
-    validated_at: Optional[str] = Field(
-        None,
-        description="Timestamp when final validation was completed (ISO format)"
+    validated_at: str | None = Field(
+        None, description="Timestamp when final validation was completed (ISO format)"
     )
 
     # Verdict fields - ONLY populated when status is COMPLETED
     # IMPORTANT: These are intentionally null until assessment is finalized
     # to prevent BLGU users from seeing Pass/Fail status prematurely
-    final_compliance_status: Optional[str] = Field(
+    final_compliance_status: str | None = Field(
         None,
         description="Final SGLGB compliance status: 'Passed' or 'Failed'. "
-        "Only populated when status is COMPLETED."
+        "Only populated when status is COMPLETED.",
     )
-    area_results: Optional[List[Dict[str, Any]]] = Field(
+    area_results: list[dict[str, Any]] | None = Field(
         None,
         description="Results breakdown by governance area. Each item contains: "
         "area_id, area_name, area_type (Core/Essential), passed (bool), "
         "total_indicators, passed_indicators, failed_indicators. "
-        "Only populated when status is COMPLETED."
+        "Only populated when status is COMPLETED.",
     )
-    ai_recommendations: Optional[Dict[str, Any]] = Field(
+    ai_recommendations: dict[str, Any] | None = Field(
         None,
         description="AI-generated CapDev recommendations grouped by governance area. "
-        "Only populated when status is COMPLETED."
+        "Only populated when status is COMPLETED.",
     )
 
     # BBI Compliance - ONLY populated when status is COMPLETED
-    bbi_compliance: Optional[BBIComplianceData] = Field(
+    bbi_compliance: BBIComplianceData | None = Field(
         None,
         description="BBI (Barangay-Based Institutions) compliance data with individual "
-        "results and summary statistics. Only populated when status is COMPLETED."
+        "results and summary statistics. Only populated when status is COMPLETED.",
     )
 
     class Config:

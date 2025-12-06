@@ -3,8 +3,6 @@
 
 from datetime import datetime
 
-from app.db.base import Base
-from app.db.enums import UserRole
 from sqlalchemy import (
     Boolean,
     Column,
@@ -16,6 +14,9 @@ from sqlalchemy import (
     String,
 )
 from sqlalchemy.orm import relationship
+
+from app.db.base import Base
+from app.db.enums import UserRole
 
 
 class User(Base):
@@ -62,17 +63,21 @@ class User(Base):
     is_superuser = Column(Boolean, default=False, nullable=False)
 
     # Timestamps
-    created_at = Column(
-        DateTime(timezone=True), default=datetime.utcnow, nullable=False
-    )
-    updated_at = Column(
-        DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow
-    )
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     barangay = relationship("Barangay", back_populates="users")
     validator_area = relationship("GovernanceArea", back_populates="validators")
-    assessments = relationship("Assessment", foreign_keys="Assessment.blgu_user_id", back_populates="blgu_user")
+    assessments = relationship(
+        "Assessment", foreign_keys="Assessment.blgu_user_id", back_populates="blgu_user"
+    )
     feedback_comments = relationship("FeedbackComment", back_populates="assessor")
-    created_deadline_overrides = relationship("DeadlineOverride", back_populates="creator", foreign_keys="DeadlineOverride.created_by")
-    notifications = relationship("Notification", back_populates="recipient", cascade="all, delete-orphan")
+    created_deadline_overrides = relationship(
+        "DeadlineOverride",
+        back_populates="creator",
+        foreign_keys="DeadlineOverride.created_by",
+    )
+    notifications = relationship(
+        "Notification", back_populates="recipient", cascade="all, delete-orphan"
+    )

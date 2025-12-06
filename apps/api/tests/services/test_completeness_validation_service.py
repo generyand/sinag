@@ -12,10 +12,8 @@ Covers:
 - Completion percentage calculation
 """
 
-import pytest
 from app.services.completeness_validation_service import (
     completeness_validation_service,
-    CompletenessValidationError,
 )
 
 
@@ -30,7 +28,7 @@ class TestCompletenessValidationService:
                     "field_id": "project_name",
                     "field_type": "text_input",
                     "label": "Project Name",
-                    "required": True
+                    "required": True,
                 },
                 {
                     "field_id": "project_type",
@@ -39,20 +37,18 @@ class TestCompletenessValidationService:
                     "required": True,
                     "options": [
                         {"label": "Type A", "value": "type_a"},
-                        {"label": "Type B", "value": "type_b"}
-                    ]
-                }
+                        {"label": "Type B", "value": "type_b"},
+                    ],
+                },
             ]
         }
 
         response_data = {
             "project_name": "Community Health Initiative",
-            "project_type": "type_a"
+            "project_type": "type_a",
         }
 
-        result = completeness_validation_service.validate_completeness(
-            form_schema, response_data
-        )
+        result = completeness_validation_service.validate_completeness(form_schema, response_data)
 
         assert result["is_complete"] is True
         assert len(result["missing_fields"]) == 0
@@ -67,14 +63,14 @@ class TestCompletenessValidationService:
                     "field_id": "project_name",
                     "field_type": "text_input",
                     "label": "Project Name",
-                    "required": True
+                    "required": True,
                 },
                 {
                     "field_id": "description",
                     "field_type": "text_area",
                     "label": "Description",
-                    "required": False
-                }
+                    "required": False,
+                },
             ]
         }
 
@@ -83,9 +79,7 @@ class TestCompletenessValidationService:
             # project_name is missing
         }
 
-        result = completeness_validation_service.validate_completeness(
-            form_schema, response_data
-        )
+        result = completeness_validation_service.validate_completeness(form_schema, response_data)
 
         assert result["is_complete"] is False
         assert len(result["missing_fields"]) == 1
@@ -102,7 +96,7 @@ class TestCompletenessValidationService:
                     "field_id": "project_name",
                     "field_type": "text_input",
                     "label": "Project Name",
-                    "required": True
+                    "required": True,
                 }
             ]
         }
@@ -111,9 +105,7 @@ class TestCompletenessValidationService:
             "project_name": ""  # Empty string
         }
 
-        result = completeness_validation_service.validate_completeness(
-            form_schema, response_data
-        )
+        result = completeness_validation_service.validate_completeness(form_schema, response_data)
 
         assert result["is_complete"] is False
         assert len(result["missing_fields"]) == 1
@@ -126,7 +118,7 @@ class TestCompletenessValidationService:
                     "field_id": "project_name",
                     "field_type": "text_input",
                     "label": "Project Name",
-                    "required": True
+                    "required": True,
                 }
             ]
         }
@@ -135,9 +127,7 @@ class TestCompletenessValidationService:
             "project_name": "   "  # Whitespace only
         }
 
-        result = completeness_validation_service.validate_completeness(
-            form_schema, response_data
-        )
+        result = completeness_validation_service.validate_completeness(form_schema, response_data)
 
         assert result["is_complete"] is False
         assert len(result["missing_fields"]) == 1
@@ -150,7 +140,7 @@ class TestCompletenessValidationService:
                     "field_id": "completion_rate",
                     "field_type": "number_input",
                     "label": "Completion Rate",
-                    "required": True
+                    "required": True,
                 }
             ]
         }
@@ -159,9 +149,7 @@ class TestCompletenessValidationService:
             "completion_rate": 0  # Zero is valid
         }
 
-        result = completeness_validation_service.validate_completeness(
-            form_schema, response_data
-        )
+        result = completeness_validation_service.validate_completeness(form_schema, response_data)
 
         assert result["is_complete"] is True
         assert len(result["missing_fields"]) == 0
@@ -175,9 +163,7 @@ class TestCompletenessValidationService:
                     "field_type": "checkbox_group",
                     "label": "Is Approved",
                     "required": True,
-                    "options": [
-                        {"label": "Yes", "value": "yes"}
-                    ]
+                    "options": [{"label": "Yes", "value": "yes"}],
                 }
             ]
         }
@@ -186,9 +172,7 @@ class TestCompletenessValidationService:
             "is_approved": False  # False is valid
         }
 
-        result = completeness_validation_service.validate_completeness(
-            form_schema, response_data
-        )
+        result = completeness_validation_service.validate_completeness(form_schema, response_data)
 
         assert result["is_complete"] is True
 
@@ -203,8 +187,8 @@ class TestCompletenessValidationService:
                     "required": True,
                     "options": [
                         {"label": "Option 1", "value": "opt1"},
-                        {"label": "Option 2", "value": "opt2"}
-                    ]
+                        {"label": "Option 2", "value": "opt2"},
+                    ],
                 }
             ]
         }
@@ -213,9 +197,7 @@ class TestCompletenessValidationService:
             "selected_options": []  # Empty list
         }
 
-        result = completeness_validation_service.validate_completeness(
-            form_schema, response_data
-        )
+        result = completeness_validation_service.validate_completeness(form_schema, response_data)
 
         assert result["is_complete"] is False
         assert len(result["missing_fields"]) == 1
@@ -231,19 +213,15 @@ class TestCompletenessValidationService:
                     "required": True,
                     "options": [
                         {"label": "Option 1", "value": "opt1"},
-                        {"label": "Option 2", "value": "opt2"}
-                    ]
+                        {"label": "Option 2", "value": "opt2"},
+                    ],
                 }
             ]
         }
 
-        response_data = {
-            "selected_options": ["opt1"]
-        }
+        response_data = {"selected_options": ["opt1"]}
 
-        result = completeness_validation_service.validate_completeness(
-            form_schema, response_data
-        )
+        result = completeness_validation_service.validate_completeness(form_schema, response_data)
 
         assert result["is_complete"] is True
 
@@ -255,15 +233,13 @@ class TestCompletenessValidationService:
                     "field_id": "document_upload",
                     "field_type": "file_upload",
                     "label": "Upload Document",
-                    "required": True
+                    "required": True,
                 }
             ]
         }
 
         response_data = {}
-        uploaded_movs = [
-            {"id": 1, "filename": "document.pdf"}
-        ]
+        uploaded_movs = [{"id": 1, "filename": "document.pdf"}]
 
         result = completeness_validation_service.validate_completeness(
             form_schema, response_data, uploaded_movs
@@ -279,7 +255,7 @@ class TestCompletenessValidationService:
                     "field_id": "document_upload",
                     "field_type": "file_upload",
                     "label": "Upload Document",
-                    "required": True
+                    "required": True,
                 }
             ]
         }
@@ -306,8 +282,8 @@ class TestCompletenessValidationService:
                     "required": True,
                     "options": [
                         {"label": "Yes", "value": "yes"},
-                        {"label": "No", "value": "no"}
-                    ]
+                        {"label": "No", "value": "no"},
+                    ],
                 },
                 {
                     "field_id": "document_upload",
@@ -317,15 +293,13 @@ class TestCompletenessValidationService:
                     "conditional_mov_requirement": {
                         "field_id": "has_documents",
                         "operator": "equals",
-                        "value": "yes"
-                    }
-                }
+                        "value": "yes",
+                    },
+                },
             ]
         }
 
-        response_data = {
-            "has_documents": "yes"
-        }
+        response_data = {"has_documents": "yes"}
         uploaded_movs = []
 
         result = completeness_validation_service.validate_completeness(
@@ -348,8 +322,8 @@ class TestCompletenessValidationService:
                     "required": True,
                     "options": [
                         {"label": "Yes", "value": "yes"},
-                        {"label": "No", "value": "no"}
-                    ]
+                        {"label": "No", "value": "no"},
+                    ],
                 },
                 {
                     "field_id": "document_upload",
@@ -359,15 +333,13 @@ class TestCompletenessValidationService:
                     "conditional_mov_requirement": {
                         "field_id": "has_documents",
                         "operator": "equals",
-                        "value": "yes"
-                    }
-                }
+                        "value": "yes",
+                    },
+                },
             ]
         }
 
-        response_data = {
-            "has_documents": "no"
-        }
+        response_data = {"has_documents": "no"}
         uploaded_movs = []
 
         result = completeness_validation_service.validate_completeness(
@@ -385,30 +357,26 @@ class TestCompletenessValidationService:
                     "field_id": "field1",
                     "field_type": "text_input",
                     "label": "Field 1",
-                    "required": True
+                    "required": True,
                 },
                 {
                     "field_id": "field2",
                     "field_type": "text_input",
                     "label": "Field 2",
-                    "required": True
+                    "required": True,
                 },
                 {
                     "field_id": "field3",
                     "field_type": "text_input",
                     "label": "Field 3",
-                    "required": True
-                }
+                    "required": True,
+                },
             ]
         }
 
-        response_data = {
-            "field2": "Value 2"
-        }
+        response_data = {"field2": "Value 2"}
 
-        result = completeness_validation_service.validate_completeness(
-            form_schema, response_data
-        )
+        result = completeness_validation_service.validate_completeness(form_schema, response_data)
 
         assert result["is_complete"] is False
         assert len(result["missing_fields"]) == 2
@@ -427,21 +395,18 @@ class TestCompletenessValidationService:
                     "field_id": "field1",
                     "field_type": "text_input",
                     "label": "Field 1",
-                    "required": True
+                    "required": True,
                 },
                 {
                     "field_id": "field2",
                     "field_type": "text_input",
                     "label": "Field 2",
-                    "required": True
-                }
+                    "required": True,
+                },
             ]
         }
 
-        response_data = {
-            "field1": "Value 1",
-            "field2": "Value 2"
-        }
+        response_data = {"field1": "Value 1", "field2": "Value 2"}
 
         percentage = completeness_validation_service.get_completion_percentage(
             form_schema, response_data
@@ -457,33 +422,30 @@ class TestCompletenessValidationService:
                     "field_id": "field1",
                     "field_type": "text_input",
                     "label": "Field 1",
-                    "required": True
+                    "required": True,
                 },
                 {
                     "field_id": "field2",
                     "field_type": "text_input",
                     "label": "Field 2",
-                    "required": True
+                    "required": True,
                 },
                 {
                     "field_id": "field3",
                     "field_type": "text_input",
                     "label": "Field 3",
-                    "required": True
+                    "required": True,
                 },
                 {
                     "field_id": "field4",
                     "field_type": "text_input",
                     "label": "Field 4",
-                    "required": True
-                }
+                    "required": True,
+                },
             ]
         }
 
-        response_data = {
-            "field1": "Value 1",
-            "field2": "Value 2"
-        }
+        response_data = {"field1": "Value 1", "field2": "Value 2"}
 
         percentage = completeness_validation_service.get_completion_percentage(
             form_schema, response_data
@@ -499,14 +461,14 @@ class TestCompletenessValidationService:
                     "field_id": "field1",
                     "field_type": "text_input",
                     "label": "Project Name",
-                    "required": True
+                    "required": True,
                 },
                 {
                     "field_id": "field2",
                     "field_type": "text_input",
                     "label": "Project Description",
-                    "required": True
-                }
+                    "required": True,
+                },
             ]
         }
 
@@ -528,25 +490,21 @@ class TestCompletenessValidationService:
                     "field_id": "field1",
                     "field_type": "text_input",
                     "label": "Optional Field",
-                    "required": False
+                    "required": False,
                 }
             ]
         }
 
         response_data = {}
 
-        result = completeness_validation_service.validate_completeness(
-            form_schema, response_data
-        )
+        result = completeness_validation_service.validate_completeness(form_schema, response_data)
 
         assert result["is_complete"] is True
         assert result["required_field_count"] == 0
 
     def test_null_form_schema(self):
         """Test with null form schema"""
-        result = completeness_validation_service.validate_completeness(
-            None, {"field": "value"}
-        )
+        result = completeness_validation_service.validate_completeness(None, {"field": "value"})
 
         assert result["is_complete"] is True
         assert result["required_field_count"] == 0
@@ -559,14 +517,12 @@ class TestCompletenessValidationService:
                     "field_id": "field1",
                     "field_type": "text_input",
                     "label": "Required Field",
-                    "required": True
+                    "required": True,
                 }
             ]
         }
 
-        result = completeness_validation_service.validate_completeness(
-            form_schema, None
-        )
+        result = completeness_validation_service.validate_completeness(form_schema, None)
 
         assert result["is_complete"] is False
         assert len(result["missing_fields"]) == 1

@@ -8,19 +8,19 @@ This test suite covers:
 - CSV export functionality
 """
 
+from datetime import UTC, datetime, timedelta
+
 import pytest
-from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 
-from app.services.deadline_service import deadline_service, DeadlineStatusType
-from app.db.models.admin import AssessmentCycle, DeadlineOverride
-from app.db.models.barangay import Barangay
-from app.db.models.governance_area import Indicator, GovernanceArea
-from app.db.models.user import User
-from app.db.models.assessment import Assessment
-from app.db.enums import UserRole, AssessmentStatus
 from app.core.security import get_password_hash
-
+from app.db.enums import AssessmentStatus, UserRole
+from app.db.models.admin import AssessmentCycle
+from app.db.models.assessment import Assessment
+from app.db.models.barangay import Barangay
+from app.db.models.governance_area import GovernanceArea, Indicator
+from app.db.models.user import User
+from app.services.deadline_service import DeadlineStatusType, deadline_service
 
 # ====================================================================
 # Test Fixtures
@@ -51,8 +51,10 @@ def sample_barangay_2(db_session: Session):
 def sample_governance_area(db_session: Session):
     """Create a sample governance area for testing"""
     from app.db.enums import AreaType
+
     area = GovernanceArea(
         name="Test Governance Area",
+        code="TG",
         area_type=AreaType.CORE,
     )
     db_session.add(area)
@@ -125,7 +127,7 @@ def blgu_user(db_session: Session, sample_barangay):
 @pytest.fixture
 def sample_cycle(db_session: Session):
     """Create a sample assessment cycle"""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     cycle = AssessmentCycle(
         name="Test Cycle 2025",
         year=2025,
@@ -148,7 +150,7 @@ def sample_cycle(db_session: Session):
 
 def test_create_assessment_cycle_success(db_session: Session):
     """Test creating a valid assessment cycle"""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     cycle = deadline_service.create_assessment_cycle(
         db=db_session,
@@ -168,7 +170,7 @@ def test_create_assessment_cycle_success(db_session: Session):
 
 def test_create_assessment_cycle_deactivates_existing(db_session: Session):
     """Test that creating a new cycle deactivates the previous active cycle"""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     # Create first cycle
     cycle1 = deadline_service.create_assessment_cycle(
@@ -203,7 +205,7 @@ def test_create_assessment_cycle_deactivates_existing(db_session: Session):
 
 def test_create_assessment_cycle_invalid_chronology(db_session: Session):
     """Test that creating a cycle with invalid deadline order raises ValueError"""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     with pytest.raises(ValueError, match="chronological order"):
         deadline_service.create_assessment_cycle(
@@ -260,7 +262,7 @@ def test_update_cycle_name_and_year(db_session: Session, sample_cycle):
 
 def test_update_cycle_deadlines_before_start(db_session: Session):
     """Test updating deadlines for a cycle that hasn't started"""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     future = now + timedelta(days=100)
 
     # Create cycle with deadlines in the future
@@ -286,12 +288,14 @@ def test_update_cycle_deadlines_before_start(db_session: Session):
 
     # Compare timestamps, converting both to UTC and removing microseconds
     expected_deadline = future + timedelta(days=35)
-    assert updated_cycle.phase1_deadline.replace(microsecond=0) == expected_deadline.replace(tzinfo=None, microsecond=0)
+    assert updated_cycle.phase1_deadline.replace(microsecond=0) == expected_deadline.replace(
+        tzinfo=None, microsecond=0
+    )
 
 
 def test_update_cycle_deadlines_after_start_fails(db_session: Session):
     """Test that updating deadlines after cycle starts raises ValueError"""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     past = now - timedelta(days=10)
 
     # Create cycle that has already started (phase1_deadline is in the past)
@@ -343,7 +347,7 @@ def test_apply_deadline_override_success(
     admin_user,
 ):
     """Test successfully applying a deadline override"""
-    new_deadline = datetime.now(timezone.utc) + timedelta(days=100)
+    new_deadline = datetime.now(UTC) + timedelta(days=100)
 
     override = deadline_service.apply_deadline_override(
         db=db_session,
@@ -360,7 +364,9 @@ def test_apply_deadline_override_success(
     assert override.barangay_id == sample_barangay.id
     assert override.indicator_id == sample_indicator.id
     # Compare timestamps, converting both to UTC and removing microseconds
-    assert override.new_deadline.replace(microsecond=0) == new_deadline.replace(tzinfo=None, microsecond=0)
+    assert override.new_deadline.replace(microsecond=0) == new_deadline.replace(
+        tzinfo=None, microsecond=0
+    )
     assert override.reason == "Extension requested due to natural disaster"
     assert override.created_by == admin_user.id
 
@@ -373,7 +379,7 @@ def test_apply_deadline_override_past_deadline_fails(
     admin_user,
 ):
     """Test that setting deadline in the past raises ValueError"""
-    past_deadline = datetime.now(timezone.utc) - timedelta(days=1)
+    past_deadline = datetime.now(UTC) - timedelta(days=1)
 
     with pytest.raises(ValueError, match="must be in the future"):
         deadline_service.apply_deadline_override(
@@ -394,7 +400,7 @@ def test_apply_deadline_override_invalid_cycle(
     admin_user,
 ):
     """Test that invalid cycle ID raises ValueError"""
-    new_deadline = datetime.now(timezone.utc) + timedelta(days=100)
+    new_deadline = datetime.now(UTC) + timedelta(days=100)
 
     with pytest.raises(ValueError, match="cycle.*not found"):
         deadline_service.apply_deadline_override(
@@ -415,7 +421,7 @@ def test_apply_deadline_override_invalid_barangay(
     admin_user,
 ):
     """Test that invalid barangay ID raises ValueError"""
-    new_deadline = datetime.now(timezone.utc) + timedelta(days=100)
+    new_deadline = datetime.now(UTC) + timedelta(days=100)
 
     with pytest.raises(ValueError, match="Barangay.*not found"):
         deadline_service.apply_deadline_override(
@@ -436,7 +442,7 @@ def test_apply_deadline_override_invalid_indicator(
     admin_user,
 ):
     """Test that invalid indicator ID raises ValueError"""
-    new_deadline = datetime.now(timezone.utc) + timedelta(days=100)
+    new_deadline = datetime.now(UTC) + timedelta(days=100)
 
     with pytest.raises(ValueError, match="Indicator.*not found"):
         deadline_service.apply_deadline_override(
@@ -464,7 +470,7 @@ def test_get_deadline_overrides_no_filters(
 ):
     """Test getting all deadline overrides without filters"""
     # Create multiple overrides
-    new_deadline = datetime.now(timezone.utc) + timedelta(days=100)
+    new_deadline = datetime.now(UTC) + timedelta(days=100)
 
     override1 = deadline_service.apply_deadline_override(
         db=db_session,
@@ -490,7 +496,7 @@ def test_get_deadline_overrides_filter_by_cycle(
     admin_user,
 ):
     """Test filtering overrides by cycle ID"""
-    new_deadline = datetime.now(timezone.utc) + timedelta(days=100)
+    new_deadline = datetime.now(UTC) + timedelta(days=100)
 
     override = deadline_service.apply_deadline_override(
         db=db_session,
@@ -520,7 +526,7 @@ def test_get_deadline_overrides_filter_by_barangay(
     admin_user,
 ):
     """Test filtering overrides by barangay ID"""
-    new_deadline = datetime.now(timezone.utc) + timedelta(days=100)
+    new_deadline = datetime.now(UTC) + timedelta(days=100)
 
     # Create override for barangay 1
     override1 = deadline_service.apply_deadline_override(
@@ -565,7 +571,7 @@ def test_get_deadline_overrides_filter_by_indicator(
     admin_user,
 ):
     """Test filtering overrides by indicator ID"""
-    new_deadline = datetime.now(timezone.utc) + timedelta(days=100)
+    new_deadline = datetime.now(UTC) + timedelta(days=100)
 
     # Create override for indicator 1
     override1 = deadline_service.apply_deadline_override(
@@ -614,7 +620,7 @@ def test_export_overrides_to_csv_success(
     admin_user,
 ):
     """Test exporting deadline overrides to CSV"""
-    new_deadline = datetime.now(timezone.utc) + timedelta(days=100)
+    new_deadline = datetime.now(UTC) + timedelta(days=100)
 
     override = deadline_service.apply_deadline_override(
         db=db_session,
@@ -645,7 +651,7 @@ def test_export_overrides_to_csv_with_filters(
     admin_user,
 ):
     """Test exporting filtered overrides to CSV"""
-    new_deadline = datetime.now(timezone.utc) + timedelta(days=100)
+    new_deadline = datetime.now(UTC) + timedelta(days=100)
 
     override = deadline_service.apply_deadline_override(
         db=db_session,
@@ -695,7 +701,7 @@ def test_get_deadline_status_basic(
 
 def test_determine_phase_status_pending(db_session: Session, sample_cycle):
     """Test phase status when deadline hasn't passed and no submission"""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     future_deadline = now + timedelta(days=30)
 
     status = deadline_service._determine_phase_status(
@@ -710,7 +716,7 @@ def test_determine_phase_status_pending(db_session: Session, sample_cycle):
 
 def test_determine_phase_status_overdue(db_session: Session, sample_cycle):
     """Test phase status when deadline passed and no submission"""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     past_deadline = now - timedelta(days=10)
 
     status = deadline_service._determine_phase_status(
@@ -737,7 +743,7 @@ def test_determine_phase_status_submitted_on_time(
     that relationship is through AssessmentResponse. Once the assessment submission
     feature is complete, this test can be re-enabled with proper fixtures.
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     deadline = now + timedelta(days=30)
     submitted_at = now - timedelta(days=5)
 
@@ -776,7 +782,7 @@ def test_determine_phase_status_submitted_late(
     that relationship is through AssessmentResponse. Once the assessment submission
     feature is complete, this test can be re-enabled with proper fixtures.
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     deadline = now - timedelta(days=10)
     submitted_at = now - timedelta(days=5)
 

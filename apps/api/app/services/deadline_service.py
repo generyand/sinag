@@ -1,21 +1,20 @@
 # ⏰ Deadline Management Service
 # Business logic for managing assessment cycles and deadline overrides
 
-from datetime import datetime, timezone
-from typing import Optional, List, Dict, Any
-from enum import Enum
 import csv
+from datetime import UTC, datetime
+from enum import Enum
 from io import StringIO
+from typing import Any
 
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import and_, or_, func
 
+from app.db.enums import AssessmentStatus
 from app.db.models.admin import AssessmentCycle, DeadlineOverride
+from app.db.models.assessment import Assessment
 from app.db.models.barangay import Barangay
 from app.db.models.governance_area import Indicator
 from app.db.models.user import User
-from app.db.models.assessment import Assessment
-from app.db.enums import AssessmentStatus
 from app.workers.notifications import send_deadline_extension_notification
 
 
@@ -77,12 +76,9 @@ class DeadlineService:
             ValueError: If deadlines are not in chronological order
         """
         # Validate chronological order of deadlines
-        if not (
-            phase1_deadline < rework_deadline < phase2_deadline < calibration_deadline
-        ):
+        if not (phase1_deadline < rework_deadline < phase2_deadline < calibration_deadline):
             raise ValueError(
-                "Deadlines must be in chronological order: "
-                "phase1 < rework < phase2 < calibration"
+                "Deadlines must be in chronological order: phase1 < rework < phase2 < calibration"
             )
 
         # Deactivate any existing active cycle
@@ -110,7 +106,7 @@ class DeadlineService:
 
         return new_cycle
 
-    def get_active_cycle(self, db: Session) -> Optional[AssessmentCycle]:
+    def get_active_cycle(self, db: Session) -> AssessmentCycle | None:
         """
         Get the currently active assessment cycle.
 
@@ -142,12 +138,12 @@ class DeadlineService:
         self,
         db: Session,
         cycle_id: int,
-        name: Optional[str] = None,
-        year: Optional[int] = None,
-        phase1_deadline: Optional[datetime] = None,
-        rework_deadline: Optional[datetime] = None,
-        phase2_deadline: Optional[datetime] = None,
-        calibration_deadline: Optional[datetime] = None,
+        name: str | None = None,
+        year: int | None = None,
+        phase1_deadline: datetime | None = None,
+        rework_deadline: datetime | None = None,
+        phase2_deadline: datetime | None = None,
+        calibration_deadline: datetime | None = None,
     ) -> AssessmentCycle:
         """
         Update an existing assessment cycle.
@@ -188,9 +184,7 @@ class DeadlineService:
                     calibration_deadline,
                 ]
             ):
-                raise ValueError(
-                    "Cannot modify deadlines for a cycle that has already started"
-                )
+                raise ValueError("Cannot modify deadlines for a cycle that has already started")
 
         # Update fields if provided
         if name is not None:
@@ -216,8 +210,7 @@ class DeadlineService:
             < updated_deadlines["calibration"]
         ):
             raise ValueError(
-                "Deadlines must be in chronological order: "
-                "phase1 < rework < phase2 < calibration"
+                "Deadlines must be in chronological order: phase1 < rework < phase2 < calibration"
             )
 
         # Apply deadline updates
@@ -236,9 +229,7 @@ class DeadlineService:
 
         return cycle
 
-    def get_deadline_status(
-        self, db: Session, cycle_id: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+    def get_deadline_status(self, db: Session, cycle_id: int | None = None) -> list[dict[str, Any]]:
         """
         Get deadline status for all barangays across all phases.
 
@@ -286,11 +277,7 @@ class DeadlineService:
             assessment_by_barangay[barangay_id].append(assessment)
 
         # Get deadline overrides for this cycle
-        overrides = (
-            db.query(DeadlineOverride)
-            .filter(DeadlineOverride.cycle_id == cycle.id)
-            .all()
-        )
+        overrides = db.query(DeadlineOverride).filter(DeadlineOverride.cycle_id == cycle.id).all()
 
         # Build override lookup by (barangay_id, indicator_id)
         override_lookup = {}
@@ -298,7 +285,7 @@ class DeadlineService:
             key = (override.barangay_id, override.indicator_id)
             override_lookup[key] = override.new_deadline
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         status_results = []
 
         for barangay in barangays:
@@ -343,16 +330,16 @@ class DeadlineService:
         If the datetime is naive, assume it's UTC and make it aware.
         """
         if dt.tzinfo is None:
-            return dt.replace(tzinfo=timezone.utc)
+            return dt.replace(tzinfo=UTC)
         return dt
 
     def _determine_phase_status(
         self,
-        assessments: List[Assessment],
+        assessments: list[Assessment],
         deadline: datetime,
         now: datetime,
         phase: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Helper method to determine status for a specific phase.
 
@@ -370,9 +357,7 @@ class DeadlineService:
 
         # Check if there's a submitted assessment
         submitted_assessments = [
-            a
-            for a in assessments
-            if a.submitted_at and a.status != AssessmentStatus.DRAFT
+            a for a in assessments if a.submitted_at and a.status != AssessmentStatus.DRAFT
         ]
 
         if submitted_assessments:
@@ -385,26 +370,26 @@ class DeadlineService:
             if submitted_at <= deadline:
                 return {
                     "status": DeadlineStatusType.SUBMITTED_ON_TIME.value,
-                    "submitted_at": submitted_at.isoformat() + 'Z',
-                    "deadline": deadline.isoformat() + 'Z',
+                    "submitted_at": submitted_at.isoformat() + "Z",
+                    "deadline": deadline.isoformat() + "Z",
                 }
             else:
                 return {
                     "status": DeadlineStatusType.SUBMITTED_LATE.value,
-                    "submitted_at": submitted_at.isoformat() + 'Z',
-                    "deadline": deadline.isoformat() + 'Z',
+                    "submitted_at": submitted_at.isoformat() + "Z",
+                    "deadline": deadline.isoformat() + "Z",
                 }
         else:
             # No submission yet
             if now < deadline:
                 return {
                     "status": DeadlineStatusType.PENDING.value,
-                    "deadline": deadline.isoformat() + 'Z',
+                    "deadline": deadline.isoformat() + "Z",
                 }
             else:
                 return {
                     "status": DeadlineStatusType.OVERDUE.value,
-                    "deadline": deadline.isoformat() + 'Z',
+                    "deadline": deadline.isoformat() + "Z",
                 }
 
     def apply_deadline_override(
@@ -462,7 +447,7 @@ class DeadlineService:
             raise ValueError(f"User with ID {created_by_user_id} not found")
 
         # Validate new_deadline is not in the past
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if new_deadline <= now:
             raise ValueError(
                 f"New deadline must be in the future. "
@@ -497,7 +482,7 @@ class DeadlineService:
             send_deadline_extension_notification.delay(
                 barangay_id=barangay_id,
                 indicator_ids=[indicator_id],
-                new_deadline=new_deadline.isoformat() + 'Z',
+                new_deadline=new_deadline.isoformat() + "Z",
                 reason=reason,
                 created_by_user_id=created_by_user_id,
             )
@@ -505,6 +490,7 @@ class DeadlineService:
             # Log error but don't fail the override creation
             # (notification failures shouldn't block the main operation)
             import logging
+
             logger = logging.getLogger(__name__)
             logger.error(
                 "Failed to trigger deadline extension notification for override %s: %s",
@@ -517,10 +503,10 @@ class DeadlineService:
     def get_deadline_overrides(
         self,
         db: Session,
-        cycle_id: Optional[int] = None,
-        barangay_id: Optional[int] = None,
-        indicator_id: Optional[int] = None,
-    ) -> List[DeadlineOverride]:
+        cycle_id: int | None = None,
+        barangay_id: int | None = None,
+        indicator_id: int | None = None,
+    ) -> list[DeadlineOverride]:
         """
         Query deadline overrides with optional filters.
 
@@ -556,9 +542,9 @@ class DeadlineService:
     def export_overrides_to_csv(
         self,
         db: Session,
-        cycle_id: Optional[int] = None,
-        barangay_id: Optional[int] = None,
-        indicator_id: Optional[int] = None,
+        cycle_id: int | None = None,
+        barangay_id: int | None = None,
+        indicator_id: int | None = None,
     ) -> str:
         """
         Export deadline overrides to CSV format for audit purposes.
@@ -584,36 +570,40 @@ class DeadlineService:
         writer = csv.writer(output)
 
         # Write header row
-        writer.writerow([
-            "Override ID",
-            "Cycle Name",
-            "Barangay Name",
-            "Indicator Name",
-            "Original Deadline",
-            "New Deadline",
-            "Extension Duration (Days)",
-            "Reason",
-            "Created By",
-            "Created At",
-        ])
+        writer.writerow(
+            [
+                "Override ID",
+                "Cycle Name",
+                "Barangay Name",
+                "Indicator Name",
+                "Original Deadline",
+                "New Deadline",
+                "Extension Duration (Days)",
+                "Reason",
+                "Created By",
+                "Created At",
+            ]
+        )
 
         # Write data rows
         for override in overrides:
             # Calculate extension duration
             extension_days = (override.new_deadline - override.original_deadline).days
 
-            writer.writerow([
-                override.id,
-                override.cycle.name,
-                override.barangay.name,
-                override.indicator.name,
-                override.original_deadline.strftime("%Y-%m-%d %H:%M:%S UTC"),
-                override.new_deadline.strftime("%Y-%m-%d %H:%M:%S UTC"),
-                extension_days,
-                override.reason,
-                override.creator.email,
-                override.created_at.strftime("%Y-%m-%d %H:%M:%S UTC"),
-            ])
+            writer.writerow(
+                [
+                    override.id,
+                    override.cycle.name,
+                    override.barangay.name,
+                    override.indicator.name,
+                    override.original_deadline.strftime("%Y-%m-%d %H:%M:%S UTC"),
+                    override.new_deadline.strftime("%Y-%m-%d %H:%M:%S UTC"),
+                    extension_days,
+                    override.reason,
+                    override.creator.email,
+                    override.created_at.strftime("%Y-%m-%d %H:%M:%S UTC"),
+                ]
+            )
 
         return output.getvalue()
 

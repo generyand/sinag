@@ -10,14 +10,14 @@ Tests verify that the Assessment model:
 - is_locked property returns correct boolean based on status
 """
 
-import pytest
 from datetime import datetime
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
 
+import pytest
+from sqlalchemy.orm import Session
+
+from app.db.enums import AssessmentStatus, UserRole
 from app.db.models.assessment import Assessment
 from app.db.models.user import User
-from app.db.enums import AssessmentStatus, UserRole
 
 
 class TestAssessmentModelReworkFields:
@@ -239,7 +239,9 @@ class TestAssessmentModelReworkFields:
         db_session.delete(blgu_user)
         db_session.commit()
 
-    def test_can_request_rework_property_true_when_submitted_and_no_rework(self, db_session: Session):
+    def test_can_request_rework_property_true_when_submitted_and_no_rework(
+        self, db_session: Session
+    ):
         """Test that can_request_rework returns True when status is SUBMITTED and rework_count < 1."""
         user = User(
             email="test_blgu7@example.com",
@@ -258,8 +260,9 @@ class TestAssessmentModelReworkFields:
         db_session.add(assessment)
         db_session.commit()
 
-        assert assessment.can_request_rework is True, \
+        assert assessment.can_request_rework is True, (
             "can_request_rework should be True when SUBMITTED and rework_count = 0"
+        )
 
         # Cleanup
         db_session.delete(assessment)
@@ -285,8 +288,9 @@ class TestAssessmentModelReworkFields:
         db_session.add(assessment)
         db_session.commit()
 
-        assert assessment.can_request_rework is False, \
+        assert assessment.can_request_rework is False, (
             "can_request_rework should be False when rework_count >= 1"
+        )
 
         # Cleanup
         db_session.delete(assessment)
@@ -321,8 +325,9 @@ class TestAssessmentModelReworkFields:
             db_session.add(assessment)
             db_session.commit()
 
-            assert assessment.can_request_rework is False, \
+            assert assessment.can_request_rework is False, (
                 f"can_request_rework should be False when status is {status}"
+            )
 
             db_session.delete(assessment)
             db_session.commit()
@@ -356,8 +361,7 @@ class TestAssessmentModelReworkFields:
             db_session.add(assessment)
             db_session.commit()
 
-            assert assessment.is_locked is True, \
-                f"is_locked should be True when status is {status}"
+            assert assessment.is_locked is True, f"is_locked should be True when status is {status}"
 
             db_session.delete(assessment)
             db_session.commit()
@@ -390,8 +394,9 @@ class TestAssessmentModelReworkFields:
             db_session.add(assessment)
             db_session.commit()
 
-            assert assessment.is_locked is False, \
+            assert assessment.is_locked is False, (
                 f"is_locked should be False when status is {status}"
+            )
 
             db_session.delete(assessment)
             db_session.commit()

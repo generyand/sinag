@@ -19,7 +19,7 @@ export default defineConfig({
       client: 'react-query',
       // Don't hardcode baseUrl - let the mutator set it dynamically
       // This allows for proper SSR support and environment-based URLs
-      
+
       override: {
         // 🔧 Use our custom Axios instance with authentication & error handling
         mutator: {

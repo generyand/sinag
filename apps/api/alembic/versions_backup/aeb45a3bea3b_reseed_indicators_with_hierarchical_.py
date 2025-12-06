@@ -5,15 +5,15 @@ Revises: 03be4cf96073
 Create Date: 2025-11-16 22:50:00.000000
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'aeb45a3bea3b'
-down_revision: Union[str, None] = '03be4cf96073'
+revision: str = "aeb45a3bea3b"
+down_revision: Union[str, None] = "03be4cf96073"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -21,7 +21,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """
     Delete all existing indicators and reseed with the new hierarchical structure.
-    
+
     This is necessary because indicator 1.6 now has a 4-level hierarchy:
     1.6 → 1.6.1 (container) → 1.6.1.1, 1.6.1.2, 1.6.1.3 (leaf nodes)
     1.6 → 1.6.2 (container) → 1.6.2.1, 1.6.2.2 (leaf nodes)

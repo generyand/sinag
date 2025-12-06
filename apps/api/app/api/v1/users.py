@@ -2,11 +2,12 @@
 # Endpoints for user management and user information
 
 import math
-from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.db.models.user import User
-from app.schemas.user import User as UserSchema
 from app.schemas.user import (
     PasswordResetRequest,
     UserAdminCreate,
@@ -14,9 +15,8 @@ from app.schemas.user import (
     UserListResponse,
     UserUpdate,
 )
+from app.schemas.user import User as UserSchema
 from app.services.user_service import user_service
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
 
 router = APIRouter()
 
@@ -44,9 +44,7 @@ async def update_current_user(
     """
     updated_user = user_service.update_user(db, current_user.id, user_update)
     if not updated_user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return updated_user
 
 
@@ -55,7 +53,7 @@ async def update_language_preference(
     language: str = Query(
         ...,
         pattern="^(ceb|fil|en)$",
-        description="Language code: ceb (Bisaya), fil (Tagalog), or en (English)"
+        description="Language code: ceb (Bisaya), fil (Tagalog), or en (English)",
     ),
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
@@ -89,9 +87,9 @@ async def get_users(
     current_user: User = Depends(deps.get_current_admin_user),
     page: int = Query(1, ge=1, description="Page number"),
     size: int = Query(10, ge=1, le=100, description="Page size"),
-    search: Optional[str] = Query(None, description="Search in name and email"),
-    role: Optional[str] = Query(None, description="Filter by role"),
-    is_active: Optional[bool] = Query(None, description="Filter by active status"),
+    search: str | None = Query(None, description="Search in name and email"),
+    role: str | None = Query(None, description="Filter by role"),
+    is_active: bool | None = Query(None, description="Filter by active status"),
 ):
     """
     Get paginated list of users with optional filtering.
@@ -105,9 +103,7 @@ async def get_users(
 
     total_pages = math.ceil(total / size)
 
-    return UserListResponse(
-        users=users, total=total, page=page, size=size, total_pages=total_pages
-    )
+    return UserListResponse(users=users, total=total, page=page, size=size, total_pages=total_pages)
 
 
 @router.post("/", response_model=UserSchema, tags=["users"])
@@ -145,9 +141,7 @@ async def get_user(
     """
     user = user_service.get_user_by_id(db, user_id)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return user
 
 
@@ -174,9 +168,7 @@ async def update_user(
     """
     updated_user = user_service.update_user_admin(db, user_id, user_update)
     if not updated_user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return updated_user
 
 
@@ -199,9 +191,7 @@ async def deactivate_user(
 
     deactivated_user = user_service.deactivate_user(db, user_id)
     if not deactivated_user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return deactivated_user
 
 
@@ -218,9 +208,7 @@ async def activate_user(
     """
     activated_user = user_service.activate_user(db, user_id)
     if not activated_user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return activated_user
 
 
@@ -245,9 +233,7 @@ async def reset_user_password(
     """
     reset_user = user_service.reset_password(db, user_id, reset_data.new_password)
     if not reset_user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return {"message": "Password reset successfully"}
 
 

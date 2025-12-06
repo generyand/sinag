@@ -14,16 +14,16 @@ import uuid
 from datetime import datetime
 
 import pytest
+from fastapi.testclient import TestClient
+from passlib.context import CryptContext
+from sqlalchemy.orm import Session
+
 from app.api import deps
-from app.db.enums import AssessmentStatus, ComplianceStatus, UserRole
+from app.db.enums import AreaType, AssessmentStatus, ComplianceStatus, UserRole
 from app.db.models.assessment import Assessment
 from app.db.models.barangay import Barangay
 from app.db.models.governance_area import GovernanceArea
 from app.db.models.user import User
-from app.db.enums import AreaType
-from fastapi.testclient import TestClient
-from passlib.context import CryptContext
-from sqlalchemy.orm import Session
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -136,7 +136,9 @@ def completed_assessments(db_session: Session, test_barangays):
             status=AssessmentStatus.COMPLETED,
             mlgoo_approved_by=1,
             mlgoo_approved_at=datetime(2024, 1, 1),
-            final_compliance_status=ComplianceStatus.PASSED if i % 2 == 0 else ComplianceStatus.FAILED,
+            final_compliance_status=ComplianceStatus.PASSED
+            if i % 2 == 0
+            else ComplianceStatus.FAILED,
         )
         db_session.add(assessment)
         assessments.append(assessment)
@@ -167,12 +169,8 @@ def _override_user_and_db(client, user: User, db_session: Session):
         finally:
             pass
 
-    client.app.dependency_overrides[deps.get_current_active_user] = (
-        _override_current_active_user
-    )
-    client.app.dependency_overrides[deps.get_current_admin_user] = (
-        _override_current_admin_user
-    )
+    client.app.dependency_overrides[deps.get_current_active_user] = _override_current_active_user
+    client.app.dependency_overrides[deps.get_current_admin_user] = _override_current_admin_user
     client.app.dependency_overrides[deps.get_db] = _override_get_db
 
 
@@ -474,9 +472,7 @@ def test_get_top_failing_indicators_with_cycle(
     """Test top failing indicators with cycle filter"""
     _override_user_and_db(client, mlgoo_user, db_session)
 
-    response = client.get(
-        "/api/v1/municipal-overview/top-failing-indicators?assessment_cycle=2024"
-    )
+    response = client.get("/api/v1/municipal-overview/top-failing-indicators?assessment_cycle=2024")
 
     assert response.status_code == 200
 
@@ -730,7 +726,10 @@ def test_dashboard_aggregates_all_data_correctly(
 
     # Verify compliance summary is consistent
     compliance = data["compliance_summary"]
-    assert compliance["assessed_barangays"] == compliance["passed_barangays"] + compliance["failed_barangays"]
+    assert (
+        compliance["assessed_barangays"]
+        == compliance["passed_barangays"] + compliance["failed_barangays"]
+    )
 
     # Verify barangay statuses list is populated
     assert len(data["barangay_statuses"]["barangays"]) >= 0

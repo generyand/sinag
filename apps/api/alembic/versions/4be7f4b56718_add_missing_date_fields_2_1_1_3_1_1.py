@@ -8,23 +8,26 @@ Updates existing "Date of approval" fields in 2.1.1 and 3.1.1 to use date_input 
 instead of document_count (which shows "Enter count").
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
 
 # revision identifiers, used by Alembic.
-revision: str = '4be7f4b56718'
-down_revision: Union[str, Sequence[str], None] = '91539f62d6e3'
+revision: str = "4be7f4b56718"
+down_revision: Union[str, Sequence[str], None] = "91539f62d6e3"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
     """Update existing date fields to date_input type."""
-    from app.db.models.governance_area import Indicator, ChecklistItem as ChecklistItemModel
+    from app.db.models.governance_area import (
+        Indicator,
+        ChecklistItem as ChecklistItemModel,
+    )
 
     bind = op.get_bind()
     session = Session(bind=bind)
@@ -36,16 +39,20 @@ def upgrade() -> None:
         # Check by item_id patterns for 2.1.1 and 3.1.1
 
         # Get indicator 2.1.1
-        indicator_2_1_1 = session.query(Indicator).filter(
-            Indicator.indicator_code == "2.1.1"
-        ).first()
+        indicator_2_1_1 = (
+            session.query(Indicator).filter(Indicator.indicator_code == "2.1.1").first()
+        )
 
         if indicator_2_1_1:
             # Find any date-related field for this indicator
-            date_items = session.query(ChecklistItemModel).filter(
-                ChecklistItemModel.indicator_id == indicator_2_1_1.id,
-                ChecklistItemModel.label.ilike("%date%")
-            ).all()
+            date_items = (
+                session.query(ChecklistItemModel)
+                .filter(
+                    ChecklistItemModel.indicator_id == indicator_2_1_1.id,
+                    ChecklistItemModel.label.ilike("%date%"),
+                )
+                .all()
+            )
 
             for item in date_items:
                 if item.item_type != "date_input":
@@ -61,22 +68,26 @@ def upgrade() -> None:
                     label="Date of approval",
                     item_type="date_input",
                     required=True,
-                    display_order=2
+                    display_order=2,
                 )
                 session.add(new_item)
                 print("  - Added 2_1_1_date field")
 
         # Get indicator 3.1.1
-        indicator_3_1_1 = session.query(Indicator).filter(
-            Indicator.indicator_code == "3.1.1"
-        ).first()
+        indicator_3_1_1 = (
+            session.query(Indicator).filter(Indicator.indicator_code == "3.1.1").first()
+        )
 
         if indicator_3_1_1:
             # Find any date-related field for this indicator
-            date_items = session.query(ChecklistItemModel).filter(
-                ChecklistItemModel.indicator_id == indicator_3_1_1.id,
-                ChecklistItemModel.label.ilike("%date%")
-            ).all()
+            date_items = (
+                session.query(ChecklistItemModel)
+                .filter(
+                    ChecklistItemModel.indicator_id == indicator_3_1_1.id,
+                    ChecklistItemModel.label.ilike("%date%"),
+                )
+                .all()
+            )
 
             for item in date_items:
                 if item.item_type != "date_input":
@@ -92,7 +103,7 @@ def upgrade() -> None:
                     label="Date of approval",
                     item_type="date_input",
                     required=True,
-                    display_order=2
+                    display_order=2,
                 )
                 session.add(new_item)
                 print("  - Added 3_1_1_date field")

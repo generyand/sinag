@@ -4,6 +4,11 @@
 import logging
 from contextlib import asynccontextmanager
 
+from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
+
+from app.api.deps import get_current_admin_user
 from app.api.v1 import api_router as api_router_v1
 
 # Import from our restructured modules
@@ -14,14 +19,10 @@ from app.middleware import (
     RateLimitMiddleware,
     RequestLoggingMiddleware,
     SecurityHeadersMiddleware,
-    get_prometheus_metrics,
     get_metrics_summary,
+    get_prometheus_metrics,
 )
-from app.api.deps import get_current_admin_user
 from app.services.startup_service import startup_service
-from fastapi import Depends, FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import PlainTextResponse
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -122,7 +123,7 @@ async def prometheus_metrics():
 # JSON metrics summary endpoint (requires admin auth)
 @app.get("/api/v1/system/metrics", tags=["system"])
 async def metrics_summary(
-    current_user = Depends(get_current_admin_user),
+    current_user=Depends(get_current_admin_user),
 ):
     """
     Get metrics summary as JSON. Requires MLGOO_DILG admin role.
@@ -132,6 +133,7 @@ async def metrics_summary(
     """
     from app.core.cache import get_cache_stats
     from app.db.base import get_db_pool_stats
+
     return {
         "requests": get_metrics_summary(),
         "cache": get_cache_stats(),
@@ -173,10 +175,11 @@ async def readiness_probe():
             "checks": {
                 "database": "ok",
                 "redis": "ok",
-            }
+            },
         }
     else:
         from fastapi import HTTPException
+
         raise HTTPException(
             status_code=503,
             detail={
@@ -184,15 +187,15 @@ async def readiness_probe():
                 "checks": {
                     "database": "ok" if db_status.get("connected") else "failed",
                     "redis": "ok" if redis_status.get("connected") else "failed",
-                }
-            }
+                },
+            },
         )
 
 
 # Detailed health check endpoint (requires admin auth)
 @app.get("/api/v1/system/health", tags=["system"])
 async def detailed_health(
-    current_user = Depends(get_current_admin_user),
+    current_user=Depends(get_current_admin_user),
 ):
     """
     Detailed health check with all dependencies. Requires MLGOO_DILG admin role.
@@ -205,8 +208,8 @@ async def detailed_health(
     """
     from app.db.base import (
         check_database_connection,
-        check_redis_connection,
         check_redis_cache_connection,
+        check_redis_connection,
         get_db_pool_stats,
     )
 
@@ -222,10 +225,7 @@ async def detailed_health(
     gemini_status = {"available": bool(settings.GEMINI_API_KEY)}
 
     # Determine overall health
-    all_healthy = (
-        db_status.get("connected", False) and
-        redis_celery_status.get("connected", False)
-    )
+    all_healthy = db_status.get("connected", False) and redis_celery_status.get("connected", False)
 
     return {
         "status": "healthy" if all_healthy else "degraded",

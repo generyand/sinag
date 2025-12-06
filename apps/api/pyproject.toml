@@ -14,7 +14,9 @@ dependencies = [
     "openpyxl>=3.1.0",
     "loguru>=0.7.3",
     "passlib[bcrypt]>=1.7.4",
+    "prometheus-client>=0.21.0",  # Observability metrics
     "psycopg2-binary>=2.9.10",
+    "pybreaker>=1.2.0",  # Circuit breaker for Gemini API
     "pydantic-settings>=2.9.1",
     "pydantic[email]>=2.11.7",
     "python-dotenv>=1.1.0",
@@ -37,6 +39,24 @@ dev = [
     "pytest-cov>=7.0.0",
     "ruff>=0.11.13",
 ]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP"]
+ignore = ["E501", "E402"]  # Line too long, module import not at top
+
+[tool.ruff.lint.per-file-ignores]
+"alembic/**/*.py" = ["F401", "F841", "I001", "UP007", "UP035", "E722"]  # Allow in all migrations
+"tests/**/*.py" = ["F841"]  # Allow unused variables in tests
+"app/**/*.py" = ["E711", "E712"]  # SQLAlchemy requires == True/False/None for proper SQL
+"scripts/**/*.py" = ["E722", "E712"]  # Allow bare except in debug scripts
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
 
 [tool.mypy]
 python_version = "3.13"

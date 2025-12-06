@@ -9,14 +9,14 @@ Tests verify that the MOVFile model:
 - Soft delete pattern functions correctly
 """
 
-import pytest
 from datetime import datetime
+
 from sqlalchemy.orm import Session
 
-from app.db.models.assessment import Assessment, MOVFile
-from app.db.models.governance_area import Indicator, GovernanceArea
+from app.db.enums import AreaType
+from app.db.models.assessment import MOVFile
+from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
-from app.db.enums import AssessmentStatus, AreaType
 
 
 class TestMOVFileModel:
@@ -27,10 +27,7 @@ class TestMOVFileModel:
         # Get or create a governance area and indicator
         governance_area = db_session.query(GovernanceArea).first()
         if not governance_area:
-            governance_area = GovernanceArea(
-                name="Test Governance Area",
-                area_type=AreaType.CORE
-            )
+            governance_area = GovernanceArea(name="Test Governance Area", code="TG", area_type=AreaType.CORE)
             db_session.add(governance_area)
             db_session.flush()
 
@@ -40,7 +37,7 @@ class TestMOVFileModel:
                 name="Test Indicator",
                 description="Test indicator for MOV files",
                 governance_area_id=governance_area.id,
-                form_schema={}
+                form_schema={},
             )
             db_session.add(indicator)
             db_session.flush()
@@ -53,7 +50,7 @@ class TestMOVFileModel:
             file_name="test_evidence.pdf",
             file_url="https://storage.supabase.co/mov-files/1/1/test_evidence.pdf",
             file_type="application/pdf",
-            file_size=102400  # 100 KB
+            file_size=102400,  # 100 KB
         )
 
         db_session.add(mov_file)
@@ -69,17 +66,17 @@ class TestMOVFileModel:
         assert saved_file.file_type == "application/pdf"
         assert saved_file.deleted_at is None, "New files should not be soft deleted"
 
-    def test_mov_file_assessment_relationship(self, db_session: Session, mock_assessment, mock_blgu_user):
+    def test_mov_file_assessment_relationship(
+        self, db_session: Session, mock_assessment, mock_blgu_user
+    ):
         """Test that MOVFile has correct relationship with Assessment."""
         # Get or create indicator
-        governance_area = GovernanceArea(name="Test Area", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Test Area", code="TA", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 
         indicator = Indicator(
-            name="Test Indicator",
-            governance_area_id=governance_area.id,
-            form_schema={}
+            name="Test Indicator", governance_area_id=governance_area.id, form_schema={}
         )
         db_session.add(indicator)
         db_session.flush()
@@ -92,7 +89,7 @@ class TestMOVFileModel:
             file_name="assessment_evidence.pdf",
             file_url="https://storage.supabase.co/mov-files/1/1/assessment_evidence.pdf",
             file_type="application/pdf",
-            file_size=50000
+            file_size=50000,
         )
         db_session.add(mov_file)
         db_session.commit()
@@ -108,10 +105,12 @@ class TestMOVFileModel:
         file_names = [f.file_name for f in mock_assessment.mov_files]
         assert "assessment_evidence.pdf" in file_names
 
-    def test_mov_file_indicator_relationship(self, db_session: Session, mock_assessment, mock_blgu_user):
+    def test_mov_file_indicator_relationship(
+        self, db_session: Session, mock_assessment, mock_blgu_user
+    ):
         """Test that MOVFile has correct relationship with Indicator."""
         # Create governance area and indicator
-        governance_area = GovernanceArea(name="Financial Governance", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Financial Governance", code="FG", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 
@@ -119,7 +118,7 @@ class TestMOVFileModel:
             name="Budget Transparency",
             description="Indicator for budget documents",
             governance_area_id=governance_area.id,
-            form_schema={}
+            form_schema={},
         )
         db_session.add(indicator)
         db_session.flush()
@@ -132,7 +131,7 @@ class TestMOVFileModel:
             file_name="budget_document.xlsx",
             file_url="https://storage.supabase.co/mov-files/1/2/budget_document.xlsx",
             file_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            file_size=256000
+            file_size=256000,
         )
         db_session.add(mov_file)
         db_session.commit()
@@ -147,17 +146,17 @@ class TestMOVFileModel:
         assert len(indicator.mov_files) > 0, "Indicator should have mov_files relationship"
         assert indicator.mov_files[0].file_name == "budget_document.xlsx"
 
-    def test_mov_file_uploader_relationship(self, db_session: Session, mock_assessment, mock_blgu_user):
+    def test_mov_file_uploader_relationship(
+        self, db_session: Session, mock_assessment, mock_blgu_user
+    ):
         """Test that MOVFile has correct relationship with User (uploader)."""
         # Create indicator
-        governance_area = GovernanceArea(name="Test Area", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Test Area", code="TA", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 
         indicator = Indicator(
-            name="Test Indicator",
-            governance_area_id=governance_area.id,
-            form_schema={}
+            name="Test Indicator", governance_area_id=governance_area.id, form_schema={}
         )
         db_session.add(indicator)
         db_session.flush()
@@ -170,7 +169,7 @@ class TestMOVFileModel:
             file_name="user_upload.jpg",
             file_url="https://storage.supabase.co/mov-files/1/1/user_upload.jpg",
             file_type="image/jpeg",
-            file_size=512000
+            file_size=512000,
         )
         db_session.add(mov_file)
         db_session.commit()
@@ -183,14 +182,12 @@ class TestMOVFileModel:
     def test_cascade_delete_assessment(self, db_session: Session, mock_assessment, mock_blgu_user):
         """Test that deleting an assessment cascades to delete mov_files."""
         # Create indicator
-        governance_area = GovernanceArea(name="Test Area", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Test Area", code="TA", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 
         indicator = Indicator(
-            name="Test Indicator",
-            governance_area_id=governance_area.id,
-            form_schema={}
+            name="Test Indicator", governance_area_id=governance_area.id, form_schema={}
         )
         db_session.add(indicator)
         db_session.flush()
@@ -203,7 +200,7 @@ class TestMOVFileModel:
             file_name="cascade_test.pdf",
             file_url="https://storage.supabase.co/mov-files/1/1/cascade_test.pdf",
             file_type="application/pdf",
-            file_size=1024
+            file_size=1024,
         )
         db_session.add(mov_file)
         db_session.commit()
@@ -228,14 +225,14 @@ class TestMOVFileModel:
         This test verifies the model relationship is set up correctly.
         """
         # Create indicator
-        governance_area = GovernanceArea(name="Test Area for Cascade", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Test Area for Cascade", code="TA", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 
         indicator = Indicator(
             name="Test Indicator for Cascade",
             governance_area_id=governance_area.id,
-            form_schema={}
+            form_schema={},
         )
         db_session.add(indicator)
         db_session.flush()
@@ -248,7 +245,7 @@ class TestMOVFileModel:
             file_name="indicator_cascade_test.pdf",
             file_url="https://storage.supabase.co/mov-files/1/1/indicator_cascade_test.pdf",
             file_type="application/pdf",
-            file_size=2048
+            file_size=2048,
         )
         db_session.add(mov_file)
         db_session.commit()
@@ -274,20 +271,18 @@ class TestMOVFileModel:
             email="tempuser@test.com",
             name="Temporary User",
             hashed_password="hashed_password",
-            role="BLGU_USER"
+            role="BLGU_USER",
         )
         db_session.add(temp_user)
         db_session.flush()
 
         # Create indicator
-        governance_area = GovernanceArea(name="Test Area", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Test Area", code="TA", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 
         indicator = Indicator(
-            name="Test Indicator",
-            governance_area_id=governance_area.id,
-            form_schema={}
+            name="Test Indicator", governance_area_id=governance_area.id, form_schema={}
         )
         db_session.add(indicator)
         db_session.flush()
@@ -300,7 +295,7 @@ class TestMOVFileModel:
             file_name="user_delete_test.pdf",
             file_url="https://storage.supabase.co/mov-files/1/1/user_delete_test.pdf",
             file_type="application/pdf",
-            file_size=4096
+            file_size=4096,
         )
         db_session.add(mov_file)
         db_session.commit()
@@ -318,20 +313,20 @@ class TestMOVFileModel:
         # Verify file still exists
         # Note: SQLite doesn't enforce SET NULL, but PostgreSQL will
         remaining_file = db_session.query(MOVFile).filter_by(id=file_id).first()
-        assert remaining_file is not None, "MOVFile should still exist after user deletion (not cascade deleted)"
+        assert remaining_file is not None, (
+            "MOVFile should still exist after user deletion (not cascade deleted)"
+        )
         # In PostgreSQL production, uploaded_by would be NULL here
 
     def test_soft_delete_pattern(self, db_session: Session, mock_assessment, mock_blgu_user):
         """Test that the deleted_at column supports soft delete pattern."""
         # Create indicator
-        governance_area = GovernanceArea(name="Test Area", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Test Area", code="TA", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 
         indicator = Indicator(
-            name="Test Indicator",
-            governance_area_id=governance_area.id,
-            form_schema={}
+            name="Test Indicator", governance_area_id=governance_area.id, form_schema={}
         )
         db_session.add(indicator)
         db_session.flush()
@@ -344,7 +339,7 @@ class TestMOVFileModel:
             file_name="soft_delete_test.pdf",
             file_url="https://storage.supabase.co/mov-files/1/1/soft_delete_test.pdf",
             file_type="application/pdf",
-            file_size=8192
+            file_size=8192,
         )
         db_session.add(mov_file)
         db_session.commit()
@@ -365,17 +360,19 @@ class TestMOVFileModel:
         file_count = db_session.query(MOVFile).filter_by(file_name="soft_delete_test.pdf").count()
         assert file_count == 1, "Soft deleted file should still exist in database"
 
-    def test_multiple_files_per_indicator(self, db_session: Session, mock_assessment, mock_blgu_user):
+    def test_multiple_files_per_indicator(
+        self, db_session: Session, mock_assessment, mock_blgu_user
+    ):
         """Test that multiple files can be uploaded for the same indicator."""
         # Create indicator
-        governance_area = GovernanceArea(name="Test Area", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Test Area", code="TA", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 
         indicator = Indicator(
             name="Multi-File Indicator",
             governance_area_id=governance_area.id,
-            form_schema={}
+            form_schema={},
         )
         db_session.add(indicator)
         db_session.flush()
@@ -388,7 +385,7 @@ class TestMOVFileModel:
             file_name="evidence1.pdf",
             file_url="https://storage.supabase.co/mov-files/1/1/evidence1.pdf",
             file_type="application/pdf",
-            file_size=1024
+            file_size=1024,
         )
 
         file2 = MOVFile(
@@ -398,7 +395,7 @@ class TestMOVFileModel:
             file_name="evidence2.jpg",
             file_url="https://storage.supabase.co/mov-files/1/1/evidence2.jpg",
             file_type="image/jpeg",
-            file_size=2048
+            file_size=2048,
         )
 
         file3 = MOVFile(
@@ -408,7 +405,7 @@ class TestMOVFileModel:
             file_name="evidence3.xlsx",
             file_url="https://storage.supabase.co/mov-files/1/1/evidence3.xlsx",
             file_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            file_size=4096
+            file_size=4096,
         )
 
         db_session.add_all([file1, file2, file3])
@@ -424,14 +421,12 @@ class TestMOVFileModel:
     def test_timestamps_auto_populate(self, db_session: Session, mock_assessment, mock_blgu_user):
         """Test that uploaded_at timestamp is automatically populated."""
         # Create indicator
-        governance_area = GovernanceArea(name="Test Area", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Test Area", code="TA", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 
         indicator = Indicator(
-            name="Test Indicator",
-            governance_area_id=governance_area.id,
-            form_schema={}
+            name="Test Indicator", governance_area_id=governance_area.id, form_schema={}
         )
         db_session.add(indicator)
         db_session.flush()
@@ -444,7 +439,7 @@ class TestMOVFileModel:
             file_name="timestamp_test.pdf",
             file_url="https://storage.supabase.co/mov-files/1/1/timestamp_test.pdf",
             file_type="application/pdf",
-            file_size=1024
+            file_size=1024,
         )
         db_session.add(mov_file)
         db_session.commit()

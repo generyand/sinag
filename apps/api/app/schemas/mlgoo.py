@@ -1,11 +1,9 @@
 # 📋 MLGOO Schemas
 # Pydantic models for MLGOO (Municipal Local Government Operations Officer) endpoints
 
-from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
-
 
 # ==================== Request Schemas ====================
 
@@ -13,7 +11,7 @@ from pydantic import BaseModel, Field
 class ApproveAssessmentRequest(BaseModel):
     """Request body for approving an assessment."""
 
-    comments: Optional[str] = Field(
+    comments: str | None = Field(
         None,
         description="Optional approval comments",
         max_length=2000,
@@ -23,7 +21,7 @@ class ApproveAssessmentRequest(BaseModel):
 class RecalibrationRequest(BaseModel):
     """Request body for requesting RE-calibration."""
 
-    indicator_ids: List[int] = Field(
+    indicator_ids: list[int] = Field(
         ...,
         description="List of indicator IDs to RE-calibrate",
         min_length=1,
@@ -56,7 +54,7 @@ class IndicatorValidationUpdate(BaseModel):
         description="New validation status: Pass, Fail, or Conditional",
         pattern="^(Pass|Fail|Conditional)$",
     )
-    remarks: Optional[str] = Field(
+    remarks: str | None = Field(
         None,
         description="Optional remarks for the validation decision",
         max_length=2000,
@@ -66,12 +64,12 @@ class IndicatorValidationUpdate(BaseModel):
 class UpdateRecalibrationValidationRequest(BaseModel):
     """Request body for updating validation status of recalibration target indicators."""
 
-    indicator_updates: List[IndicatorValidationUpdate] = Field(
+    indicator_updates: list[IndicatorValidationUpdate] = Field(
         ...,
         description="List of indicator validation status updates",
         min_length=1,
     )
-    comments: Optional[str] = Field(
+    comments: str | None = Field(
         None,
         description="Optional overall comments from MLGOO",
         max_length=2000,
@@ -86,12 +84,12 @@ class ApprovalQueueItem(BaseModel):
 
     id: int
     barangay_name: str
-    blgu_user_id: Optional[int]
+    blgu_user_id: int | None
     status: str
-    submitted_at: Optional[str]
-    validated_at: Optional[str]
-    compliance_status: Optional[str]
-    overall_score: Optional[float]
+    submitted_at: str | None
+    validated_at: str | None
+    compliance_status: str | None
+    overall_score: float | None
     pass_count: int
     fail_count: int
     conditional_count: int
@@ -109,7 +107,7 @@ class ApprovalQueueResponse(BaseModel):
 
     success: bool
     count: int
-    assessments: List[ApprovalQueueItem]
+    assessments: list[ApprovalQueueItem]
 
 
 class MOVFileItem(BaseModel):
@@ -120,8 +118,8 @@ class MOVFileItem(BaseModel):
     file_url: str
     file_type: str
     file_size: int
-    field_id: Optional[str] = None
-    uploaded_at: Optional[str] = None
+    field_id: str | None = None
+    uploaded_at: str | None = None
 
 
 class IndicatorDetailItem(BaseModel):
@@ -130,11 +128,11 @@ class IndicatorDetailItem(BaseModel):
     response_id: int
     indicator_id: int
     indicator_name: str
-    indicator_code: Optional[str]
-    validation_status: Optional[str]
-    assessor_remarks: Optional[str]
+    indicator_code: str | None
+    validation_status: str | None
+    assessor_remarks: str | None
     is_recalibration_target: bool
-    mov_files: List[MOVFileItem] = Field(default_factory=list)
+    mov_files: list[MOVFileItem] = Field(default_factory=list)
 
 
 class GovernanceAreaDetailItem(BaseModel):
@@ -142,11 +140,11 @@ class GovernanceAreaDetailItem(BaseModel):
 
     id: int
     name: str
-    area_type: Optional[str]
+    area_type: str | None
     pass_count: int
     fail_count: int
     conditional_count: int
-    indicators: List[IndicatorDetailItem]
+    indicators: list[IndicatorDetailItem]
 
 
 class AssessmentDetailResponse(BaseModel):
@@ -154,23 +152,23 @@ class AssessmentDetailResponse(BaseModel):
 
     id: int
     barangay_name: str
-    cycle_year: Optional[int]
-    blgu_user_id: Optional[int]
-    blgu_user_name: Optional[str]
+    cycle_year: int | None
+    blgu_user_id: int | None
+    blgu_user_name: str | None
     status: str
-    submitted_at: Optional[str]
-    validated_at: Optional[str]
-    compliance_status: Optional[str]
-    overall_score: Optional[float]
-    area_results: Optional[Dict[str, Any]]
-    governance_areas: List[GovernanceAreaDetailItem]
+    submitted_at: str | None
+    validated_at: str | None
+    compliance_status: str | None
+    overall_score: float | None
+    area_results: dict[str, Any] | None
+    governance_areas: list[GovernanceAreaDetailItem]
     can_approve: bool
     can_recalibrate: bool
     mlgoo_recalibration_count: int
     is_mlgoo_recalibration: bool
-    mlgoo_recalibration_indicator_ids: Optional[List[int]]
-    mlgoo_recalibration_comments: Optional[str]
-    grace_period_expires_at: Optional[str]
+    mlgoo_recalibration_indicator_ids: list[int] | None
+    mlgoo_recalibration_comments: str | None
+    grace_period_expires_at: str | None
     is_locked_for_deadline: bool
 
     class Config:
@@ -181,9 +179,9 @@ class NotificationResult(BaseModel):
     """Result of notification triggering."""
 
     success: bool
-    message: Optional[str] = None
-    error: Optional[str] = None
-    task_id: Optional[str] = None
+    message: str | None = None
+    error: str | None = None
+    task_id: str | None = None
 
 
 class ApproveAssessmentResponse(BaseModel):
@@ -207,8 +205,8 @@ class RecalibrationResponse(BaseModel):
     assessment_id: int
     barangay_name: str
     status: str
-    indicator_ids: List[int]
-    indicator_names: List[str]
+    indicator_ids: list[int]
+    indicator_names: list[str]
     comments: str
     requested_by: str
     requested_at: str
@@ -234,9 +232,9 @@ class UpdatedIndicatorItem(BaseModel):
 
     indicator_id: int
     indicator_name: str
-    previous_status: Optional[str]
+    previous_status: str | None
     new_status: str
-    remarks: Optional[str]
+    remarks: str | None
 
 
 class UpdateRecalibrationValidationResponse(BaseModel):
@@ -246,6 +244,6 @@ class UpdateRecalibrationValidationResponse(BaseModel):
     message: str
     assessment_id: int
     barangay_name: str
-    updated_indicators: List[UpdatedIndicatorItem]
+    updated_indicators: list[UpdatedIndicatorItem]
     updated_by: str
     updated_at: str

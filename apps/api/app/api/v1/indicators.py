@@ -1,7 +1,6 @@
 # 📊 Indicator API Endpoints
 # CRUD operations for indicator management with versioning support
 
-from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -9,11 +8,11 @@ from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.db.models.user import User
+from app.schemas.calculation_schema import CalculationSchema
+from app.schemas.form_schema import FormSchema
 from app.schemas.indicator import (
-    BulkCreateError,
     BulkIndicatorCreate,
     BulkIndicatorResponse,
-    ChecklistItemResponse,
     FormSchemaResponse,
     IndicatorCreate,
     IndicatorDraftCreate,
@@ -27,16 +26,14 @@ from app.schemas.indicator import (
     IndicatorUpdate,
     IndicatorValidationRequest,
     IndicatorValidationResponse,
+    ReorderRequest,
     SimplifiedIndicatorResponse,
     ValidationError,
-    ReorderRequest,
 )
-from app.schemas.form_schema import FormSchema
-from app.schemas.calculation_schema import CalculationSchema
-from app.services.indicator_service import indicator_service
-from app.services.indicator_draft_service import indicator_draft_service
-from app.services.indicator_validation_service import indicator_validation_service
 from app.services.form_schema_validator import generate_validation_errors
+from app.services.indicator_draft_service import indicator_draft_service
+from app.services.indicator_service import indicator_service
+from app.services.indicator_validation_service import indicator_validation_service
 from app.services.intelligence_service import intelligence_service
 
 router = APIRouter(tags=["indicators"])
@@ -84,18 +81,18 @@ def create_indicator(
 
 @router.get(
     "/",
-    response_model=List[IndicatorResponse],
+    response_model=list[IndicatorResponse],
     summary="List all indicators",
 )
 def list_indicators(
     *,
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
-    governance_area_id: Optional[int] = Query(None, description="Filter by governance area"),
-    is_active: Optional[bool] = Query(None, description="Filter by active status"),
+    governance_area_id: int | None = Query(None, description="Filter by governance area"),
+    is_active: bool | None = Query(None, description="Filter by active status"),
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(100, ge=1, le=1000, description="Max records to return"),
-) -> List[IndicatorResponse]:
+) -> list[IndicatorResponse]:
     """
     List indicators with optional filtering.
 
@@ -445,7 +442,7 @@ def deactivate_indicator(
 
 @router.get(
     "/{indicator_id}/history",
-    response_model=List[IndicatorHistoryResponse],
+    response_model=list[IndicatorHistoryResponse],
     summary="Get indicator version history",
 )
 def get_indicator_history(
@@ -453,7 +450,7 @@ def get_indicator_history(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
     indicator_id: int,
-) -> List[IndicatorHistoryResponse]:
+) -> list[IndicatorHistoryResponse]:
     """
     Get version history for an indicator.
 
@@ -501,7 +498,6 @@ def get_indicator_form_schema(
     **Raises**:
     - 404: Indicator not found
     """
-    from app.db.enums import UserRole
 
     # Retrieve indicator with form_schema, calculation_schema, remark_schema
     indicator = indicator_service.get_indicator(db=db, indicator_id=indicator_id)
@@ -527,8 +523,10 @@ def get_indicator_form_schema(
         metadata=FormSchemaMetadata(
             title=indicator.name,
             description=indicator.description,
-            governance_area_name=indicator.governance_area.name if indicator.governance_area else None,
-        )
+            governance_area_name=indicator.governance_area.name
+            if indicator.governance_area
+            else None,
+        ),
     )
 
 
@@ -539,15 +537,15 @@ def get_indicator_form_schema(
 
 @router.get(
     "/tree/{governance_area_id}",
-    response_model=List[dict],
+    response_model=list[dict],
     summary="Get indicator tree structure",
 )
-def get_indicator_tree(
+def get_indicator_tree_by_governance_area(
     *,
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
     governance_area_id: int,
-) -> List[dict]:
+) -> list[dict]:
     """
     Get hierarchical tree structure of indicators for a governance area.
 
@@ -601,7 +599,7 @@ def get_indicator_tree(
 
 @router.post(
     "/recalculate-codes/{governance_area_id}",
-    response_model=List[IndicatorResponse],
+    response_model=list[IndicatorResponse],
     summary="Recalculate indicator codes",
 )
 def recalculate_indicator_codes(
@@ -609,7 +607,7 @@ def recalculate_indicator_codes(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.require_mlgoo_dilg),
     governance_area_id: int,
-) -> List[IndicatorResponse]:
+) -> list[IndicatorResponse]:
     """
     Recalculate indicator codes for a governance area after reordering.
 
@@ -704,7 +702,7 @@ def bulk_create_indicators(
 
 @router.post(
     "/reorder",
-    response_model=List[IndicatorResponse],
+    response_model=list[IndicatorResponse],
     summary="Reorder indicators",
 )
 def reorder_indicators(
@@ -712,7 +710,7 @@ def reorder_indicators(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.require_mlgoo_dilg),
     reorder_data: ReorderRequest,
-) -> List[IndicatorResponse]:
+) -> list[IndicatorResponse]:
     """
     Reorder indicators by updating codes and parent_ids in batch.
 
@@ -784,16 +782,16 @@ def create_indicator_draft(
 
 @router.get(
     "/drafts",
-    response_model=List[IndicatorDraftSummary],
+    response_model=list[IndicatorDraftSummary],
     summary="List user's indicator drafts",
 )
 def list_indicator_drafts(
     *,
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.require_mlgoo_dilg),
-    governance_area_id: Optional[int] = Query(None, description="Filter by governance area"),
-    status: Optional[str] = Query(None, description="Filter by status"),
-) -> List[IndicatorDraftSummary]:
+    governance_area_id: int | None = Query(None, description="Filter by governance area"),
+    status: str | None = Query(None, description="Filter by status"),
+) -> list[IndicatorDraftSummary]:
     """
     List all drafts for the current user with optional filtering.
 
@@ -1142,7 +1140,7 @@ def validate_indicator_tree(
     weight_result = indicator_validation_service.validate_weights(indicators)
 
     # Collect all errors
-    all_errors: List[ValidationError] = []
+    all_errors: list[ValidationError] = []
 
     # Add tree validation errors
     for error_msg in tree_result.errors:
@@ -1237,20 +1235,18 @@ def get_indicator_by_code(
     GET /api/v1/indicators/code/1.1.1
     ```
     """
-    from app.db.models.governance_area import Indicator, ChecklistItem
     from sqlalchemy.orm import joinedload
+
+    from app.db.models.governance_area import Indicator
 
     # Query indicator with relationships
     indicator = (
         db.query(Indicator)
-        .filter(
-            Indicator.indicator_code == indicator_code,
-            Indicator.is_active == True
-        )
+        .filter(Indicator.indicator_code == indicator_code, Indicator.is_active == True)
         .options(
             joinedload(Indicator.governance_area),
             joinedload(Indicator.checklist_items),
-            joinedload(Indicator.children).joinedload(Indicator.checklist_items)
+            joinedload(Indicator.children).joinedload(Indicator.checklist_items),
         )
         .first()
     )
@@ -1258,7 +1254,7 @@ def get_indicator_by_code(
     if not indicator:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Indicator with code '{indicator_code}' not found"
+            detail=f"Indicator with code '{indicator_code}' not found",
         )
 
     return indicator
@@ -1300,8 +1296,9 @@ def get_indicator_tree(
     - 1.1.1 (with 7 checklist items)
     - 1.1.2 (with 1 checklist item)
     """
-    from app.db.models.governance_area import Indicator
     from sqlalchemy.orm import joinedload
+
+    from app.db.models.governance_area import Indicator
 
     # Query parent indicator with all relationships
     indicator = (
@@ -1309,12 +1306,12 @@ def get_indicator_tree(
         .filter(
             Indicator.indicator_code == indicator_code,
             Indicator.is_active == True,
-            Indicator.parent_id == None  # Only parent indicators
+            Indicator.parent_id == None,  # Only parent indicators
         )
         .options(
             joinedload(Indicator.governance_area),
             joinedload(Indicator.children).joinedload(Indicator.checklist_items),
-            joinedload(Indicator.children).joinedload(Indicator.governance_area)
+            joinedload(Indicator.children).joinedload(Indicator.governance_area),
         )
         .first()
     )
@@ -1322,13 +1319,13 @@ def get_indicator_tree(
     if not indicator:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Parent indicator with code '{indicator_code}' not found"
+            detail=f"Parent indicator with code '{indicator_code}' not found",
         )
 
     if not indicator.children:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Indicator '{indicator_code}' has no children. Use /code/{indicator_code} instead."
+            detail=f"Indicator '{indicator_code}' has no children. Use /code/{indicator_code} instead.",
         )
 
     return indicator

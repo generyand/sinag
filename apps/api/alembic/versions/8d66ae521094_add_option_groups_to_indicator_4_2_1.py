@@ -12,6 +12,7 @@ Indicator 4.2.1: Presence of a Barangay Health Station/Center
 
 The barangay only needs ONE option complete to pass, not both.
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -19,8 +20,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '8d66ae521094'
-down_revision: Union[str, Sequence[str], None] = '7346b2e75b9e'
+revision: str = "8d66ae521094"
+down_revision: Union[str, Sequence[str], None] = "7346b2e75b9e"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -48,10 +49,12 @@ def upgrade() -> None:
                 SET option_group = :option_group
                 WHERE item_id = :item_id
             """),
-            {"option_group": option_group, "item_id": item_id}
+            {"option_group": option_group, "item_id": item_id},
         )
 
-    print(f"Updated option_group for {len(OPTION_GROUP_MAPPINGS)} checklist items in indicator 4.2.1")
+    print(
+        f"Updated option_group for {len(OPTION_GROUP_MAPPINGS)} checklist items in indicator 4.2.1"
+    )
 
 
 def downgrade() -> None:
@@ -66,7 +69,9 @@ def downgrade() -> None:
                 SET option_group = NULL
                 WHERE item_id = :item_id
             """),
-            {"item_id": item_id}
+            {"item_id": item_id},
         )
 
-    print(f"Cleared option_group for {len(OPTION_GROUP_MAPPINGS)} checklist items in indicator 4.2.1")
+    print(
+        f"Cleared option_group for {len(OPTION_GROUP_MAPPINGS)} checklist items in indicator 4.2.1"
+    )

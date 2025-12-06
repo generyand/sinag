@@ -2,12 +2,12 @@
 # Collects request metrics for monitoring and observability
 # PERFORMANCE: Enables tracking of request latency, throughput, and errors
 
+import logging
 import re
 import time
-import logging
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable, Dict, List, Optional
 from threading import Lock
 
 from fastapi import Request, Response
@@ -17,19 +17,19 @@ logger = logging.getLogger(__name__)
 
 # Pre-compiled regex patterns for path normalization (PERFORMANCE: compile once)
 UUID_PATTERN = re.compile(
-    r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}',
-    re.IGNORECASE
+    r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", re.IGNORECASE
 )
-NUMERIC_ID_PATTERN = re.compile(r'/\d+(?=/|$)')
+NUMERIC_ID_PATTERN = re.compile(r"/\d+(?=/|$)")
 
 
 @dataclass
 class EndpointMetrics:
     """Metrics for a specific endpoint."""
+
     request_count: int = 0
     error_count: int = 0
     total_latency_ms: float = 0.0
-    latency_buckets: Dict[str, int] = field(default_factory=lambda: defaultdict(int))
+    latency_buckets: dict[str, int] = field(default_factory=lambda: defaultdict(int))
 
     @property
     def avg_latency_ms(self) -> float:
@@ -58,19 +58,13 @@ class MetricsCollector:
 
     def __init__(self):
         self._lock = Lock()
-        self._metrics: Dict[str, Dict[str, EndpointMetrics]] = defaultdict(
+        self._metrics: dict[str, dict[str, EndpointMetrics]] = defaultdict(
             lambda: defaultdict(EndpointMetrics)
         )
         self._active_requests = 0
         self._start_time = time.time()
 
-    def record_request(
-        self,
-        method: str,
-        path: str,
-        status_code: int,
-        latency_ms: float
-    ) -> None:
+    def record_request(self, method: str, path: str, status_code: int, latency_ms: float) -> None:
         """Record a completed request."""
         with self._lock:
             endpoint_key = self._normalize_path(path)
@@ -99,9 +93,9 @@ class MetricsCollector:
     def _normalize_path(self, path: str) -> str:
         """Normalize path to group similar endpoints."""
         # Replace UUIDs with placeholder (using pre-compiled pattern)
-        path = UUID_PATTERN.sub('{id}', path)
+        path = UUID_PATTERN.sub("{id}", path)
         # Replace numeric IDs with placeholder (using pre-compiled pattern)
-        path = NUMERIC_ID_PATTERN.sub('/{id}', path)
+        path = NUMERIC_ID_PATTERN.sub("/{id}", path)
         return path
 
     def _get_latency_bucket(self, latency_ms: float) -> str:
@@ -148,15 +142,11 @@ class MetricsCollector:
                     labels = f'method="{method}",endpoint="{endpoint}"'
 
                     # Request count
-                    lines.append(
-                        f'sinag_http_requests_total{{{labels}}} {metrics.request_count}'
-                    )
+                    lines.append(f"sinag_http_requests_total{{{labels}}} {metrics.request_count}")
 
                     # Error count
                     if metrics.error_count > 0:
-                        lines.append(
-                            f'sinag_http_errors_total{{{labels}}} {metrics.error_count}'
-                        )
+                        lines.append(f"sinag_http_errors_total{{{labels}}} {metrics.error_count}")
 
                     # Latency histogram buckets
                     cumulative = 0
@@ -172,15 +162,15 @@ class MetricsCollector:
                         f'sinag_http_request_duration_ms_bucket{{{labels},le="+Inf"}} {cumulative}'
                     )
                     lines.append(
-                        f'sinag_http_request_duration_ms_sum{{{labels}}} {metrics.total_latency_ms:.2f}'
+                        f"sinag_http_request_duration_ms_sum{{{labels}}} {metrics.total_latency_ms:.2f}"
                     )
                     lines.append(
-                        f'sinag_http_request_duration_ms_count{{{labels}}} {metrics.request_count}'
+                        f"sinag_http_request_duration_ms_count{{{labels}}} {metrics.request_count}"
                     )
 
         return "\n".join(lines)
 
-    def get_summary(self) -> Dict:
+    def get_summary(self) -> dict:
         """Get metrics summary as dictionary."""
         summary = {
             "uptime_seconds": time.time() - self._start_time,
@@ -209,8 +199,13 @@ class MetricsCollector:
             summary["totals"] = {
                 "requests": total_requests,
                 "errors": total_errors,
-                "error_rate": round((total_errors / total_requests * 100) if total_requests > 0 else 0, 2),
-                "avg_latency_ms": round((total_latency / total_requests) if total_requests > 0 else 0, 2),
+                "error_rate": round(
+                    (total_errors / total_requests * 100) if total_requests > 0 else 0,
+                    2,
+                ),
+                "avg_latency_ms": round(
+                    (total_latency / total_requests) if total_requests > 0 else 0, 2
+                ),
             }
 
         return summary
@@ -252,7 +247,7 @@ class MetricsMiddleware(BaseHTTPMiddleware):
                 method=request.method,
                 path=path,
                 status_code=response.status_code,
-                latency_ms=latency_ms
+                latency_ms=latency_ms,
             )
 
             return response
@@ -266,6 +261,6 @@ def get_prometheus_metrics() -> str:
     return metrics_collector.get_prometheus_metrics()
 
 
-def get_metrics_summary() -> Dict:
+def get_metrics_summary() -> dict:
     """Get metrics summary as dictionary."""
     return metrics_collector.get_summary()

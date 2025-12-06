@@ -11,21 +11,21 @@ Tests the complete indicator management workflow:
 """
 
 import pytest
-from uuid import uuid4
 from sqlalchemy.orm import Session
 
-from app.db.models.governance_area import Indicator, GovernanceArea
 from app.db.models.admin import AuditLog
-from app.db.models.bbi import BBI, BBIResult
+from app.db.models.governance_area import Indicator
+from app.services.audit_service import audit_service
 from app.services.indicator_draft_service import indicator_draft_service
 from app.services.indicator_service import indicator_service
-from app.services.audit_service import audit_service
 
 
 class TestIndicatorWorkflow:
     """Test complete indicator workflow from draft to publish."""
 
-    def test_full_workflow_draft_to_publish(self, db_session: Session, mlgoo_user, mock_governance_area):
+    def test_full_workflow_draft_to_publish(
+        self, db_session: Session, mlgoo_user, mock_governance_area
+    ):
         """
         Test 1: Full workflow - create draft → add indicators → publish → verify in DB
 
@@ -117,32 +117,44 @@ class TestIndicatorWorkflow:
         assert len(temp_id_mapping) == 3
 
         # Verify parent created
-        parent = db_session.query(Indicator).filter(Indicator.id == temp_id_mapping["temp_1"]).first()
+        parent = (
+            db_session.query(Indicator).filter(Indicator.id == temp_id_mapping["temp_1"]).first()
+        )
         assert parent is not None
         assert parent.name == "Parent Indicator"
         assert parent.parent_id is None
 
         # Verify children created with correct parent_id
-        child1 = db_session.query(Indicator).filter(Indicator.id == temp_id_mapping["temp_2"]).first()
+        child1 = (
+            db_session.query(Indicator).filter(Indicator.id == temp_id_mapping["temp_2"]).first()
+        )
         assert child1 is not None
         assert child1.parent_id == parent.id
 
-        child2 = db_session.query(Indicator).filter(Indicator.id == temp_id_mapping["temp_3"]).first()
+        child2 = (
+            db_session.query(Indicator).filter(Indicator.id == temp_id_mapping["temp_3"]).first()
+        )
         assert child2 is not None
         assert child2.parent_id == parent.id
 
         # Step 5: Verify audit log created
-        audit_logs = db_session.query(AuditLog).filter(
-            AuditLog.user_id == mlgoo_user.id,
-            AuditLog.entity_type == "indicator",
-            AuditLog.action == "bulk_create",
-        ).all()
+        audit_logs = (
+            db_session.query(AuditLog)
+            .filter(
+                AuditLog.user_id == mlgoo_user.id,
+                AuditLog.entity_type == "indicator",
+                AuditLog.action == "bulk_create",
+            )
+            .all()
+        )
 
         assert len(audit_logs) > 0
         latest_log = audit_logs[-1]
         assert latest_log.changes["count"] == 3
 
-    def test_validation_failure_prevents_publish(self, db_session: Session, mlgoo_user, mock_governance_area):
+    def test_validation_failure_prevents_publish(
+        self, db_session: Session, mlgoo_user, mock_governance_area
+    ):
         """
         Test 2: Validation failure - missing weights → publish fails → draft intact
 
@@ -191,7 +203,9 @@ class TestIndicatorWorkflow:
         # Attempt to publish (should fail validation)
         # Note: We'd need to add validation to bulk_create_indicators
         # For now, we'll test the validation service directly
-        from app.services.indicator_validation_service import indicator_validation_service
+        from app.services.indicator_validation_service import (
+            indicator_validation_service,
+        )
 
         weight_result = indicator_validation_service.validate_weights(indicators)
         assert weight_result.is_valid is False
@@ -201,7 +215,9 @@ class TestIndicatorWorkflow:
         final_count = db_session.query(Indicator).count()
         assert final_count == initial_count
 
-    def test_topological_sort_handles_parent_after_child(self, db_session: Session, mlgoo_user, mock_governance_area):
+    def test_topological_sort_handles_parent_after_child(
+        self, db_session: Session, mlgoo_user, mock_governance_area
+    ):
         """
         Test 3: Topological sort - create parent after child in list → publish succeeds in correct order
 
@@ -247,8 +263,16 @@ class TestIndicatorWorkflow:
         assert len(created_indicators) == 2
 
         # Verify parent created before child
-        parent = db_session.query(Indicator).filter(Indicator.id == temp_id_mapping["temp_parent"]).first()
-        child = db_session.query(Indicator).filter(Indicator.id == temp_id_mapping["temp_child"]).first()
+        parent = (
+            db_session.query(Indicator)
+            .filter(Indicator.id == temp_id_mapping["temp_parent"])
+            .first()
+        )
+        child = (
+            db_session.query(Indicator)
+            .filter(Indicator.id == temp_id_mapping["temp_child"])
+            .first()
+        )
 
         assert parent is not None
         assert child is not None
@@ -262,7 +286,9 @@ class TestIndicatorWorkflow:
         """
         Test 4: Circular reference - A → B → A should be detected and rejected
         """
-        from app.services.indicator_validation_service import indicator_validation_service
+        from app.services.indicator_validation_service import (
+            indicator_validation_service,
+        )
 
         # Circular reference: A → B → A
         indicators = [
@@ -291,13 +317,19 @@ class TestIndicatorWorkflow:
         """
         Test 5: Invalid indicator codes should be caught by validation
         """
-        from app.services.indicator_validation_service import indicator_validation_service
+        from app.services.indicator_validation_service import (
+            indicator_validation_service,
+        )
 
         # Invalid codes: trailing dots, letters, etc.
         indicators = [
             {"id": "1", "indicator_code": "1.", "sort_order": 0},  # Trailing dot
             {"id": "2", "indicator_code": "A.1", "sort_order": 1},  # Letter
-            {"id": "3", "indicator_code": "1.a", "sort_order": 2},  # Letter in second position
+            {
+                "id": "3",
+                "indicator_code": "1.a",
+                "sort_order": 2,
+            },  # Letter in second position
         ]
 
         errors, warnings = indicator_validation_service.validate_indicator_codes(indicators)
@@ -343,7 +375,10 @@ class TestIndicatorWorkflow:
                 version=initial_version,  # Stale version!
             )
 
-        assert "version conflict" in str(exc_info.value).lower() or "optimistic lock" in str(exc_info.value).lower()
+        assert (
+            "version conflict" in str(exc_info.value).lower()
+            or "optimistic lock" in str(exc_info.value).lower()
+        )
 
     def test_audit_log_query(self, db_session: Session, mlgoo_user):
         """
@@ -383,7 +418,9 @@ class TestIndicatorWorkflow:
         """
         Test 8: Non-existent parent should be caught by validation
         """
-        from app.services.indicator_validation_service import indicator_validation_service
+        from app.services.indicator_validation_service import (
+            indicator_validation_service,
+        )
 
         indicators = [
             {
@@ -410,7 +447,9 @@ class TestSchemaValidation:
 
     def test_form_schema_validation(self):
         """Test form schema validation catches missing labels."""
-        from app.services.indicator_validation_service import indicator_validation_service
+        from app.services.indicator_validation_service import (
+            indicator_validation_service,
+        )
 
         indicator = {
             "form_schema": {
@@ -421,9 +460,7 @@ class TestSchemaValidation:
             }
         }
 
-        errors = indicator_validation_service.validate_form_schema(
-            indicator.get("form_schema")
-        )
+        errors = indicator_validation_service.validate_form_schema(indicator.get("form_schema"))
 
         assert len(errors) == 1
         assert "field1" in errors[0]
@@ -431,7 +468,9 @@ class TestSchemaValidation:
 
     def test_calculation_schema_field_reference_validation(self):
         """Test calculation schema validation catches invalid field references."""
-        from app.services.indicator_validation_service import indicator_validation_service
+        from app.services.indicator_validation_service import (
+            indicator_validation_service,
+        )
 
         indicator = {
             "form_schema": {
@@ -461,7 +500,9 @@ class TestSchemaValidation:
 
     def test_remark_schema_variable_validation(self):
         """Test remark schema validation catches unknown variables."""
-        from app.services.indicator_validation_service import indicator_validation_service
+        from app.services.indicator_validation_service import (
+            indicator_validation_service,
+        )
 
         indicator = {
             "form_schema": {
@@ -522,15 +563,17 @@ class TestBulkOperations:
         ]
 
         for i in range(1, 50):
-            indicators.append({
-                "temp_id": f"temp_child_{i}",
-                "parent_temp_id": "temp_parent",
-                "name": f"Child {i}",
-                "indicator_code": f"1.{i}",
-                "sort_order": i - 1,
-                "weight": 100 / 49,  # Divide weight equally
-                "order": i,
-            })
+            indicators.append(
+                {
+                    "temp_id": f"temp_child_{i}",
+                    "parent_temp_id": "temp_parent",
+                    "name": f"Child {i}",
+                    "indicator_code": f"1.{i}",
+                    "sort_order": i - 1,
+                    "weight": 100 / 49,  # Divide weight equally
+                    "order": i,
+                }
+            )
 
         created_indicators, temp_id_mapping, errors = indicator_service.bulk_create_indicators(
             db=db_session,

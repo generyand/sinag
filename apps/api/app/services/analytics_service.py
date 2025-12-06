@@ -3,11 +3,26 @@
 
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import List, Optional
 
-from app.db.enums import AssessmentStatus, BBIStatus, ComplianceStatus, UserRole, ValidationStatus
-from app.db.models import Assessment, AssessmentResponse, Barangay, GovernanceArea, Indicator, User
-from app.db.models.bbi import BBI, BBIResult
+from sqlalchemy import case, desc, func
+from sqlalchemy.orm import Session, joinedload, selectinload
+
+from app.db.enums import (
+    AssessmentStatus,
+    BBIStatus,
+    ComplianceStatus,
+    UserRole,
+    ValidationStatus,
+)
+from app.db.models import (
+    Assessment,
+    AssessmentResponse,
+    Barangay,
+    GovernanceArea,
+    Indicator,
+    User,
+)
+from app.db.models.bbi import BBIResult
 from app.schemas.analytics import (
     AreaBreakdown,
     BarangayRanking,
@@ -22,28 +37,24 @@ from app.schemas.analytics import (
     StatusDistributionItem,
     TrendData,
 )
-from sqlalchemy import case, desc, func
-from sqlalchemy.orm import Session, joinedload, selectinload
 
 
 @dataclass
 class ReportsFilters:
     """Data class for reports filtering parameters."""
 
-    cycle_id: Optional[int] = None
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
-    governance_area_codes: Optional[List[str]] = None
-    barangay_ids: Optional[List[int]] = None
-    status: Optional[str] = None
+    cycle_id: int | None = None
+    start_date: date | None = None
+    end_date: date | None = None
+    governance_area_codes: list[str] | None = None
+    barangay_ids: list[int] | None = None
+    status: str | None = None
 
 
 class AnalyticsService:
     """Service class for analytics and dashboard KPI calculations."""
 
-    def get_dashboard_kpis(
-        self, db: Session, cycle_id: Optional[int] = None
-    ) -> DashboardKPIResponse:
+    def get_dashboard_kpis(self, db: Session, cycle_id: int | None = None) -> DashboardKPIResponse:
         """
         Get all dashboard KPIs for the MLGOO-DILG dashboard.
 
@@ -83,7 +94,7 @@ class AnalyticsService:
         )
 
     def _calculate_overall_compliance(
-        self, db: Session, cycle_id: Optional[int] = None
+        self, db: Session, cycle_id: int | None = None
     ) -> ComplianceRate:
         """
         Calculate overall compliance rate (pass/fail statistics).
@@ -96,9 +107,7 @@ class AnalyticsService:
             ComplianceRate schema with total, passed, failed counts and percentage
         """
         # Build base query for validated assessments
-        query = db.query(Assessment).filter(
-            Assessment.final_compliance_status.isnot(None)
-        )
+        query = db.query(Assessment).filter(Assessment.final_compliance_status.isnot(None))
 
         # TODO: Add cycle_id filter when cycle field is added to Assessment model
         # if cycle_id is not None:
@@ -119,12 +128,8 @@ class AnalyticsService:
             )
 
         # Count passed and failed
-        passed = sum(
-            1 for a in assessments if a.final_compliance_status == ComplianceStatus.PASSED
-        )
-        failed = sum(
-            1 for a in assessments if a.final_compliance_status == ComplianceStatus.FAILED
-        )
+        passed = sum(1 for a in assessments if a.final_compliance_status == ComplianceStatus.PASSED)
+        failed = sum(1 for a in assessments if a.final_compliance_status == ComplianceStatus.FAILED)
 
         # Calculate percentage (handle division by zero)
         pass_percentage = (passed / total_barangays * 100) if total_barangays > 0 else 0.0
@@ -137,7 +142,7 @@ class AnalyticsService:
         )
 
     def _calculate_completion_status(
-        self, db: Session, cycle_id: Optional[int] = None
+        self, db: Session, cycle_id: int | None = None
     ) -> ComplianceRate:
         """
         Calculate completion status (validated vs in-progress assessments).
@@ -174,8 +179,8 @@ class AnalyticsService:
         )
 
     def _calculate_area_breakdown(
-        self, db: Session, cycle_id: Optional[int] = None
-    ) -> List[AreaBreakdown]:
+        self, db: Session, cycle_id: int | None = None
+    ) -> list[AreaBreakdown]:
         """
         Calculate compliance breakdown by governance area.
 
@@ -189,9 +194,7 @@ class AnalyticsService:
         # Get all governance areas with eager loaded indicators
         # PERFORMANCE FIX: Eager load indicators to prevent N+1 queries
         governance_areas = (
-            db.query(GovernanceArea)
-            .options(selectinload(GovernanceArea.indicators))
-            .all()
+            db.query(GovernanceArea).options(selectinload(GovernanceArea.indicators)).all()
         )
 
         if not governance_areas:
@@ -250,8 +253,7 @@ class AnalyticsService:
             for assessment in validated_assessments:
                 # Get responses for this area's indicators
                 area_responses = [
-                    r for r in assessment.responses
-                    if r.indicator_id in indicator_ids
+                    r for r in assessment.responses if r.indicator_id in indicator_ids
                 ]
 
                 if not area_responses:
@@ -259,13 +261,11 @@ class AnalyticsService:
 
                 # Count indicators by validation status
                 met_count = sum(
-                    1 for r in area_responses
+                    1
+                    for r in area_responses
                     if r.validation_status in (ValidationStatus.PASS, ValidationStatus.CONDITIONAL)
                 )
-                total_validated = sum(
-                    1 for r in area_responses
-                    if r.validation_status is not None
-                )
+                total_validated = sum(1 for r in area_responses if r.validation_status is not None)
 
                 # Skip if no indicators have been validated yet
                 if total_validated == 0:
@@ -294,8 +294,8 @@ class AnalyticsService:
         return area_breakdown
 
     def _calculate_top_failed_indicators(
-        self, db: Session, cycle_id: Optional[int] = None
-    ) -> List[FailedIndicator]:
+        self, db: Session, cycle_id: int | None = None
+    ) -> list[FailedIndicator]:
         """
         Calculate top 5 most frequently failed indicators.
 
@@ -354,7 +354,7 @@ class AnalyticsService:
 
         return failed_indicators
 
-    def _calculate_trends(self, db: Session) -> List[TrendData]:
+    def _calculate_trends(self, db: Session) -> list[TrendData]:
         """
         Calculate historical trend data across last 3 cycles.
 
@@ -375,8 +375,8 @@ class AnalyticsService:
         return []
 
     def _calculate_barangay_rankings(
-        self, db: Session, cycle_id: Optional[int] = None
-    ) -> List[BarangayRanking]:
+        self, db: Session, cycle_id: int | None = None
+    ) -> list[BarangayRanking]:
         """
         Calculate barangay rankings by compliance score.
 
@@ -394,8 +394,14 @@ class AnalyticsService:
                 Barangay.name.label("barangay_name"),
                 func.avg(
                     case(
-                        (Assessment.final_compliance_status == ComplianceStatus.PASSED, 100.0),
-                        (Assessment.final_compliance_status == ComplianceStatus.FAILED, 0.0),
+                        (
+                            Assessment.final_compliance_status == ComplianceStatus.PASSED,
+                            100.0,
+                        ),
+                        (
+                            Assessment.final_compliance_status == ComplianceStatus.FAILED,
+                            0.0,
+                        ),
                         else_=None,
                     )
                 ).label("score"),
@@ -429,8 +435,8 @@ class AnalyticsService:
         return rankings
 
     def _calculate_status_distribution(
-        self, db: Session, cycle_id: Optional[int] = None
-    ) -> List[StatusDistributionItem]:
+        self, db: Session, cycle_id: int | None = None
+    ) -> list[StatusDistributionItem]:
         """
         Calculate distribution of assessments by workflow status.
 
@@ -495,9 +501,7 @@ class AnalyticsService:
 
         return distribution
 
-    def _calculate_rework_stats(
-        self, db: Session, cycle_id: Optional[int] = None
-    ) -> ReworkStats:
+    def _calculate_rework_stats(self, db: Session, cycle_id: int | None = None) -> ReworkStats:
         """
         Calculate rework and calibration usage statistics.
 
@@ -562,8 +566,8 @@ class AnalyticsService:
         return db.query(Barangay).count()
 
     def _calculate_bbi_analytics(
-        self, db: Session, cycle_id: Optional[int] = None
-    ) -> Optional[BBIAnalyticsData]:
+        self, db: Session, cycle_id: int | None = None
+    ) -> BBIAnalyticsData | None:
         """
         Calculate BBI (Barangay-based Institutions) compliance analytics.
 
@@ -629,27 +633,18 @@ class AnalyticsService:
             results = data["results"]
 
             # Count by tier
-            highly_count = sum(
-                1 for r in results
-                if r.status == BBIStatus.HIGHLY_FUNCTIONAL
-            )
+            highly_count = sum(1 for r in results if r.status == BBIStatus.HIGHLY_FUNCTIONAL)
             moderately_count = sum(
-                1 for r in results
-                if r.status == BBIStatus.MODERATELY_FUNCTIONAL
+                1 for r in results if r.status == BBIStatus.MODERATELY_FUNCTIONAL
             )
-            low_count = sum(
-                1 for r in results
-                if r.status == BBIStatus.LOW_FUNCTIONAL
-            )
+            low_count = sum(1 for r in results if r.status == BBIStatus.LOW_FUNCTIONAL)
 
             # Calculate average compliance for this BBI
             compliance_values = [
-                r.compliance_percentage for r in results
-                if r.compliance_percentage is not None
+                r.compliance_percentage for r in results if r.compliance_percentage is not None
             ]
             avg_compliance = (
-                sum(compliance_values) / len(compliance_values)
-                if compliance_values else 0.0
+                sum(compliance_values) / len(compliance_values) if compliance_values else 0.0
             )
 
             total_barangays = len(results)
@@ -675,10 +670,7 @@ class AnalyticsService:
             total_result_count += len(compliance_values)
 
         # Calculate overall summary
-        overall_avg = (
-            total_compliance_sum / total_result_count
-            if total_result_count > 0 else 0.0
-        )
+        overall_avg = total_compliance_sum / total_result_count if total_result_count > 0 else 0.0
 
         # Count unique assessments with BBI results
         unique_assessments = len(set(r.assessment_id for r in bbi_results))
@@ -734,8 +726,12 @@ class AnalyticsService:
         metadata = ReportMetadata(
             generated_at=datetime.utcnow(),
             cycle_id=filters.cycle_id,
-            start_date=datetime.combine(filters.start_date, datetime.min.time()) if filters.start_date else None,
-            end_date=datetime.combine(filters.end_date, datetime.min.time()) if filters.end_date else None,
+            start_date=datetime.combine(filters.start_date, datetime.min.time())
+            if filters.start_date
+            else None,
+            end_date=datetime.combine(filters.end_date, datetime.min.time())
+            if filters.end_date
+            else None,
             governance_areas=filters.governance_area_codes,
             barangay_ids=filters.barangay_ids,
             status=filters.status,
@@ -760,9 +756,7 @@ class AnalyticsService:
             ChartData schema with bar_chart, pie_chart, and line_chart populated
         """
         from app.schemas.analytics import (
-            BarChartData,
             ChartData,
-            PieChartData,
         )
 
         # Get all assessments from the filtered query
@@ -783,7 +777,7 @@ class AnalyticsService:
             line_chart=line_chart_data,
         )
 
-    def _aggregate_bar_chart(self, db: Session, assessments: List[Assessment]) -> List:
+    def _aggregate_bar_chart(self, db: Session, assessments: list[Assessment]) -> list:
         """
         Aggregate bar chart data: pass/fail rates by governance area.
 
@@ -807,9 +801,7 @@ class AnalyticsService:
         # Get all governance areas with eager loaded indicators
         # PERFORMANCE FIX: Eager load indicators to prevent N+1 queries
         governance_areas = (
-            db.query(GovernanceArea)
-            .options(selectinload(GovernanceArea.indicators))
-            .all()
+            db.query(GovernanceArea).options(selectinload(GovernanceArea.indicators)).all()
         )
 
         if not governance_areas:
@@ -832,8 +824,7 @@ class AnalyticsService:
             for assessment in assessments:
                 # Get responses for this area's indicators
                 area_responses = [
-                    r for r in assessment.responses
-                    if r.indicator_id in indicator_ids
+                    r for r in assessment.responses if r.indicator_id in indicator_ids
                 ]
 
                 if not area_responses:
@@ -841,13 +832,11 @@ class AnalyticsService:
 
                 # Count indicators by validation status
                 met_count = sum(
-                    1 for r in area_responses
+                    1
+                    for r in area_responses
                     if r.validation_status in (ValidationStatus.PASS, ValidationStatus.CONDITIONAL)
                 )
-                total_validated = sum(
-                    1 for r in area_responses
-                    if r.validation_status is not None
-                )
+                total_validated = sum(1 for r in area_responses if r.validation_status is not None)
 
                 # Skip if no indicators have been validated yet
                 if total_validated == 0:
@@ -875,7 +864,7 @@ class AnalyticsService:
 
         return bar_data
 
-    def _aggregate_pie_chart(self, assessments: List[Assessment]) -> List:
+    def _aggregate_pie_chart(self, assessments: list[Assessment]) -> list:
         """
         Aggregate pie chart data: overall compliance status distribution.
 
@@ -892,17 +881,12 @@ class AnalyticsService:
 
         # Count assessments by status
         passed_count = sum(
-            1 for a in assessments
-            if a.final_compliance_status == ComplianceStatus.PASSED
+            1 for a in assessments if a.final_compliance_status == ComplianceStatus.PASSED
         )
         failed_count = sum(
-            1 for a in assessments
-            if a.final_compliance_status == ComplianceStatus.FAILED
+            1 for a in assessments if a.final_compliance_status == ComplianceStatus.FAILED
         )
-        in_progress_count = sum(
-            1 for a in assessments
-            if a.final_compliance_status is None
-        )
+        in_progress_count = sum(1 for a in assessments if a.final_compliance_status is None)
 
         total = len(assessments)
 
@@ -941,7 +925,7 @@ class AnalyticsService:
 
         return pie_data
 
-    def _aggregate_line_chart(self, assessments: List[Assessment]) -> List:
+    def _aggregate_line_chart(self, assessments: list[Assessment]) -> list:
         """
         Aggregate line chart data: trends over time/cycles.
 
@@ -966,7 +950,9 @@ class AnalyticsService:
                 continue
 
             # Group by year-month
-            month_key = assessment.submitted_at.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            month_key = assessment.submitted_at.replace(
+                day=1, hour=0, minute=0, second=0, microsecond=0
+            )
 
             monthly_data[month_key]["total"] += 1
             if assessment.final_compliance_status == ComplianceStatus.PASSED:
@@ -1040,12 +1026,12 @@ class AnalyticsService:
             if assessment.responses:
                 # Count indicators by validation status
                 met_count = sum(
-                    1 for r in assessment.responses
+                    1
+                    for r in assessment.responses
                     if r.validation_status in (ValidationStatus.PASS, ValidationStatus.CONDITIONAL)
                 )
                 total_validated = sum(
-                    1 for r in assessment.responses
-                    if r.validation_status is not None
+                    1 for r in assessment.responses if r.validation_status is not None
                 )
 
                 if total_validated > 0:
@@ -1057,8 +1043,8 @@ class AnalyticsService:
                     score = round((completed / total * 100), 2) if total > 0 else 0.0
 
             # Get coordinates (handle missing lat/lng fields gracefully)
-            lat = getattr(barangay, 'latitude', None) or getattr(barangay, 'lat', None)
-            lng = getattr(barangay, 'longitude', None) or getattr(barangay, 'lng', None)
+            lat = getattr(barangay, "latitude", None) or getattr(barangay, "lat", None)
+            lng = getattr(barangay, "longitude", None) or getattr(barangay, "lng", None)
 
             barangay_map[barangay_id] = BarangayMapPoint(
                 barangay_id=barangay_id,
@@ -1118,14 +1104,17 @@ class AnalyticsService:
             # Determine governance area
             # Try to get from barangay or from assessment responses
             governance_area = "N/A"
-            if hasattr(barangay, 'governance_area') and barangay.governance_area:
+            if hasattr(barangay, "governance_area") and barangay.governance_area:
                 governance_area = barangay.governance_area.name
-            elif hasattr(barangay, 'governance_area_id') and barangay.governance_area_id:
+            elif hasattr(barangay, "governance_area_id") and barangay.governance_area_id:
                 # Look up the governance area
                 from app.db.models import GovernanceArea
-                area = db.query(GovernanceArea).filter(
-                    GovernanceArea.id == barangay.governance_area_id
-                ).first()
+
+                area = (
+                    db.query(GovernanceArea)
+                    .filter(GovernanceArea.id == barangay.governance_area_id)
+                    .first()
+                )
                 if area:
                     governance_area = area.name
 
@@ -1143,12 +1132,12 @@ class AnalyticsService:
             if assessment.responses:
                 # Count indicators by validation status
                 met_count = sum(
-                    1 for r in assessment.responses
+                    1
+                    for r in assessment.responses
                     if r.validation_status in (ValidationStatus.PASS, ValidationStatus.CONDITIONAL)
                 )
                 total_validated = sum(
-                    1 for r in assessment.responses
-                    if r.validation_status is not None
+                    1 for r in assessment.responses if r.validation_status is not None
                 )
 
                 if total_validated > 0:
@@ -1207,8 +1196,10 @@ class AnalyticsService:
                 query = query.join(Barangay, User.barangay_id == Barangay.id)
                 # Note: Assuming Barangay has governance_area_id field
                 # If the relationship is different, adjust accordingly
-                if hasattr(Barangay, 'governance_area_id'):
-                    query = query.filter(Barangay.governance_area_id == current_user.governance_area_id)
+                if hasattr(Barangay, "governance_area_id"):
+                    query = query.filter(
+                        Barangay.governance_area_id == current_user.governance_area_id
+                    )
         elif current_user.role == UserRole.BLGU_USER:
             # BLGU sees only their own barangay's assessment
             if current_user.barangay_id is not None:
@@ -1230,7 +1221,9 @@ class AnalyticsService:
         # Filter by governance area codes
         if filters.governance_area_codes is not None and len(filters.governance_area_codes) > 0:
             # Need to join with Barangay and GovernanceArea if not already joined
-            if not any(isinstance(mapper.class_, type(Barangay)) for mapper in query.column_descriptions):
+            if not any(
+                isinstance(mapper.class_, type(Barangay)) for mapper in query.column_descriptions
+            ):
                 query = query.join(Barangay, User.barangay_id == Barangay.id)
             # Assuming governance areas are identified by their ID
             # Parse area codes like "GA-1" to extract IDs
@@ -1244,7 +1237,7 @@ class AnalyticsService:
                         area_ids.append(int(code))
                     except ValueError:
                         pass
-            if area_ids and hasattr(Barangay, 'governance_area_id'):
+            if area_ids and hasattr(Barangay, "governance_area_id"):
                 query = query.filter(Barangay.governance_area_id.in_(area_ids))
 
         # Filter by barangay IDs

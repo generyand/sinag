@@ -3,19 +3,15 @@ Tests for notification service layer (app/services/notification_service.py)
 """
 
 import pytest
-from datetime import datetime
 from sqlalchemy.orm import Session
-from unittest.mock import patch, MagicMock
 
-from app.db.models.user import User
-from app.db.models.notification import Notification
+from app.core.security import get_password_hash
+from app.db.enums import AreaType, AssessmentStatus, NotificationType, UserRole
 from app.db.models.assessment import Assessment
 from app.db.models.barangay import Barangay
 from app.db.models.governance_area import GovernanceArea
-from app.db.enums import UserRole, NotificationType, AssessmentStatus, AreaType
+from app.db.models.user import User
 from app.services.notification_service import notification_service
-from app.core.security import get_password_hash
-
 
 # ====================================================================
 # Test Fixtures
@@ -114,9 +110,7 @@ def assessment(db_session: Session, blgu_user: User):
 # ====================================================================
 
 
-def test_create_notification_success(
-    db_session: Session, blgu_user: User, assessment: Assessment
-):
+def test_create_notification_success(db_session: Session, blgu_user: User, assessment: Assessment):
     """Test creating a notification successfully"""
     notification = notification_service.create_notification(
         db=db_session,
@@ -205,9 +199,7 @@ def test_notify_all_active_assessors(
     assert assessor2.id in recipient_ids
 
 
-def test_notify_all_active_assessors_excludes_inactive(
-    db_session: Session, assessment: Assessment
-):
+def test_notify_all_active_assessors_excludes_inactive(db_session: Session, assessment: Assessment):
     """Test that inactive assessors are not notified"""
     # Create active assessor
     active_assessor = User(
@@ -268,9 +260,7 @@ def test_notify_validators_for_governance_area(
     assert notifications[0].governance_area_id == governance_area.id
 
 
-def test_notify_validators_excludes_other_areas(
-    db_session: Session, assessment: Assessment
-):
+def test_notify_validators_excludes_other_areas(db_session: Session, assessment: Assessment):
     """Test that validators from other areas are not notified"""
     # Create two governance areas
     ga1 = GovernanceArea(name="Area 1", code="A1", area_type=AreaType.CORE)
@@ -317,9 +307,7 @@ def test_notify_validators_excludes_other_areas(
 # ====================================================================
 
 
-def test_notify_blgu_user(
-    db_session: Session, blgu_user: User, assessment: Assessment
-):
+def test_notify_blgu_user(db_session: Session, blgu_user: User, assessment: Assessment):
     """Test notifying BLGU user for an assessment"""
     notification = notification_service.notify_blgu_user(
         db=db_session,

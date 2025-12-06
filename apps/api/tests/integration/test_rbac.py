@@ -15,18 +15,16 @@ Tests the authorization layer for:
 - Governance area assignment validation (VALIDATOR)
 """
 
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
-from typing import Dict
 import uuid
 
-from app.db.models.assessment import Assessment
-from app.db.models.user import User
-from app.db.models.barangay import Barangay
-from app.db.models.governance_area import GovernanceArea
-from app.db.enums import AssessmentStatus, UserRole
+from fastapi.testclient import TestClient
 from passlib.context import CryptContext
+from sqlalchemy.orm import Session
+
+from app.db.enums import AssessmentStatus, UserRole
+from app.db.models.assessment import Assessment
+from app.db.models.barangay import Barangay
+from app.db.models.user import User
 
 
 class TestRoleBasedAccessControl:
@@ -87,10 +85,7 @@ class TestRoleBasedAccessControl:
         headers = {"Authorization": f"Bearer {token}"}
 
         # Attempt to submit other user's assessment
-        response = client.post(
-            f"/api/v1/assessments/{other_assessment.id}/submit",
-            headers=headers
-        )
+        response = client.post(f"/api/v1/assessments/{other_assessment.id}/submit", headers=headers)
 
         # Should be forbidden
         assert response.status_code == 403
@@ -100,7 +95,7 @@ class TestRoleBasedAccessControl:
     def test_blgu_cannot_request_rework(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_submitted_assessment: Assessment,
     ):
         """
@@ -111,14 +106,12 @@ class TestRoleBasedAccessControl:
         - BLGU user receives 403 Forbidden
         - Role check is enforced at endpoint level
         """
-        rework_request = {
-            "comments": "BLGU attempting to request rework - should be forbidden"
-        }
+        rework_request = {"comments": "BLGU attempting to request rework - should be forbidden"}
 
         response = client.post(
             f"/api/v1/assessments/{test_submitted_assessment.id}/request-rework",
             headers=auth_headers_blgu,
-            json=rework_request
+            json=rework_request,
         )
 
         assert response.status_code == 403
@@ -129,7 +122,7 @@ class TestRoleBasedAccessControl:
     def test_assessor_can_request_rework_any_assessment(
         self,
         client: TestClient,
-        auth_headers_assessor: Dict[str, str],
+        auth_headers_assessor: dict[str, str],
         test_submitted_assessment: Assessment,
         db_session: Session,
     ):
@@ -141,14 +134,12 @@ class TestRoleBasedAccessControl:
         - No barangay restriction for ASSESSOR
         - Rework request succeeds
         """
-        rework_request = {
-            "comments": "Assessor requesting rework - should succeed"
-        }
+        rework_request = {"comments": "Assessor requesting rework - should succeed"}
 
         response = client.post(
             f"/api/v1/assessments/{test_submitted_assessment.id}/request-rework",
             headers=auth_headers_assessor,
-            json=rework_request
+            json=rework_request,
         )
 
         assert response.status_code == 200
@@ -163,7 +154,7 @@ class TestRoleBasedAccessControl:
     def test_validator_can_request_rework(
         self,
         client: TestClient,
-        auth_headers_validator: Dict[str, str],
+        auth_headers_validator: dict[str, str],
         test_submitted_assessment: Assessment,
         db_session: Session,
     ):
@@ -174,14 +165,12 @@ class TestRoleBasedAccessControl:
         - VALIDATOR role has permission to request rework
         - Rework request succeeds
         """
-        rework_request = {
-            "comments": "Validator requesting rework - should succeed"
-        }
+        rework_request = {"comments": "Validator requesting rework - should succeed"}
 
         response = client.post(
             f"/api/v1/assessments/{test_submitted_assessment.id}/request-rework",
             headers=auth_headers_validator,
-            json=rework_request
+            json=rework_request,
         )
 
         assert response.status_code == 200
@@ -191,7 +180,7 @@ class TestRoleBasedAccessControl:
     def test_mlgoo_can_request_rework(
         self,
         client: TestClient,
-        auth_headers_mlgoo: Dict[str, str],
+        auth_headers_mlgoo: dict[str, str],
         test_submitted_assessment: Assessment,
         db_session: Session,
     ):
@@ -202,14 +191,12 @@ class TestRoleBasedAccessControl:
         - MLGOO_DILG role has admin permissions
         - Can request rework on any assessment
         """
-        rework_request = {
-            "comments": "MLGOO admin requesting rework - should succeed"
-        }
+        rework_request = {"comments": "MLGOO admin requesting rework - should succeed"}
 
         response = client.post(
             f"/api/v1/assessments/{test_submitted_assessment.id}/request-rework",
             headers=auth_headers_mlgoo,
-            json=rework_request
+            json=rework_request,
         )
 
         assert response.status_code == 200
@@ -219,7 +206,7 @@ class TestRoleBasedAccessControl:
     def test_assessor_cannot_submit_as_blgu(
         self,
         client: TestClient,
-        auth_headers_assessor: Dict[str, str],
+        auth_headers_assessor: dict[str, str],
         test_draft_assessment: Assessment,
     ):
         """
@@ -231,7 +218,7 @@ class TestRoleBasedAccessControl:
         """
         response = client.post(
             f"/api/v1/assessments/{test_draft_assessment.id}/submit",
-            headers=auth_headers_assessor
+            headers=auth_headers_assessor,
         )
 
         assert response.status_code == 403
@@ -241,7 +228,7 @@ class TestRoleBasedAccessControl:
     def test_assessor_cannot_resubmit_assessment(
         self,
         client: TestClient,
-        auth_headers_assessor: Dict[str, str],
+        auth_headers_assessor: dict[str, str],
         test_rework_assessment: Assessment,
     ):
         """
@@ -253,7 +240,7 @@ class TestRoleBasedAccessControl:
         """
         response = client.post(
             f"/api/v1/assessments/{test_rework_assessment.id}/resubmit",
-            headers=auth_headers_assessor
+            headers=auth_headers_assessor,
         )
 
         assert response.status_code == 403
@@ -263,7 +250,7 @@ class TestRoleBasedAccessControl:
     def test_blgu_can_access_own_assessment_data(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
     ):
         """
@@ -275,7 +262,7 @@ class TestRoleBasedAccessControl:
         """
         response = client.get(
             f"/api/v1/assessments/{test_draft_assessment.id}/submission-status",
-            headers=auth_headers_blgu
+            headers=auth_headers_blgu,
         )
 
         assert response.status_code == 200
@@ -335,7 +322,7 @@ class TestRoleBasedAccessControl:
         # Try to access other user's assessment
         response = client.get(
             f"/api/v1/assessments/{other_assessment.id}/submission-status",
-            headers=headers
+            headers=headers,
         )
 
         # Should be forbidden
@@ -344,7 +331,7 @@ class TestRoleBasedAccessControl:
     def test_assessor_can_access_any_assessment(
         self,
         client: TestClient,
-        auth_headers_assessor: Dict[str, str],
+        auth_headers_assessor: dict[str, str],
         test_submitted_assessment: Assessment,
     ):
         """
@@ -357,7 +344,7 @@ class TestRoleBasedAccessControl:
         """
         response = client.get(
             f"/api/v1/assessments/{test_submitted_assessment.id}/submission-status",
-            headers=auth_headers_assessor
+            headers=auth_headers_assessor,
         )
 
         assert response.status_code == 200
@@ -367,7 +354,7 @@ class TestRoleBasedAccessControl:
     def test_validator_can_access_assessments(
         self,
         client: TestClient,
-        auth_headers_validator: Dict[str, str],
+        auth_headers_validator: dict[str, str],
         test_submitted_assessment: Assessment,
     ):
         """
@@ -380,7 +367,7 @@ class TestRoleBasedAccessControl:
         """
         response = client.get(
             f"/api/v1/assessments/{test_submitted_assessment.id}/submission-status",
-            headers=auth_headers_validator
+            headers=auth_headers_validator,
         )
 
         assert response.status_code == 200
@@ -390,7 +377,7 @@ class TestRoleBasedAccessControl:
     def test_mlgoo_admin_has_full_access(
         self,
         client: TestClient,
-        auth_headers_mlgoo: Dict[str, str],
+        auth_headers_mlgoo: dict[str, str],
         test_submitted_assessment: Assessment,
     ):
         """
@@ -402,7 +389,7 @@ class TestRoleBasedAccessControl:
         """
         response = client.get(
             f"/api/v1/assessments/{test_submitted_assessment.id}/submission-status",
-            headers=auth_headers_mlgoo
+            headers=auth_headers_mlgoo,
         )
 
         assert response.status_code == 200
@@ -422,9 +409,7 @@ class TestRoleBasedAccessControl:
         - Returns 401 Unauthorized without token
         """
         # Try to access endpoint without auth headers
-        response = client.get(
-            f"/api/v1/assessments/{test_draft_assessment.id}/submission-status"
-        )
+        response = client.get(f"/api/v1/assessments/{test_draft_assessment.id}/submission-status")
 
         assert response.status_code == 401
 
@@ -444,7 +429,7 @@ class TestRoleBasedAccessControl:
 
         response = client.get(
             f"/api/v1/assessments/{test_draft_assessment.id}/submission-status",
-            headers=headers
+            headers=headers,
         )
 
         assert response.status_code == 401
@@ -452,10 +437,10 @@ class TestRoleBasedAccessControl:
     def test_role_hierarchy_enforcement(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
-        auth_headers_assessor: Dict[str, str],
-        auth_headers_validator: Dict[str, str],
-        auth_headers_mlgoo: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
+        auth_headers_assessor: dict[str, str],
+        auth_headers_validator: dict[str, str],
+        auth_headers_mlgoo: dict[str, str],
         test_submitted_assessment: Assessment,
     ):
         """
@@ -467,27 +452,23 @@ class TestRoleBasedAccessControl:
         - VALIDATOR: Can request rework
         - MLGOO: Can perform all operations
         """
-        rework_request = {
-            "comments": "Testing role hierarchy enforcement"
-        }
+        rework_request = {"comments": "Testing role hierarchy enforcement"}
 
         # BLGU - should fail
         blgu_response = client.post(
             f"/api/v1/assessments/{test_submitted_assessment.id}/request-rework",
             headers=auth_headers_blgu,
-            json=rework_request
+            json=rework_request,
         )
         assert blgu_response.status_code == 403
 
         # Reset assessment status for next tests
-        from sqlalchemy.orm import Session
-        from app.db.base import get_db
 
         # ASSESSOR - should succeed
         assessor_response = client.post(
             f"/api/v1/assessments/{test_submitted_assessment.id}/request-rework",
             headers=auth_headers_assessor,
-            json=rework_request
+            json=rework_request,
         )
         # May succeed or fail depending on assessment state
         assert assessor_response.status_code in [200, 400]
@@ -496,6 +477,6 @@ class TestRoleBasedAccessControl:
         if assessor_response.status_code == 200:
             submit_response = client.post(
                 f"/api/v1/assessments/{test_submitted_assessment.id}/submit",
-                headers=auth_headers_assessor
+                headers=auth_headers_assessor,
             )
             assert submit_response.status_code == 403

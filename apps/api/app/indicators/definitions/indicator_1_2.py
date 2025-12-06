@@ -8,8 +8,7 @@ Note: This indicator assesses whether the barangay has increased its local resou
 compared to the previous year, demonstrating innovation in revenue generation.
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
-
+from app.indicators.base import ChecklistItem, Indicator, SubIndicator
 
 # Indicator 1.2: Innovations on revenue generation
 INDICATOR_1_2 = Indicator(
@@ -36,14 +35,14 @@ INDICATOR_1_2 = Indicator(
                     label="SRE for 2022 and 2023, signed by Barangay Treasurer and Punong Barangay",
                     mov_description="Statement of Receipts and Expenditures (SRE) for CY 2022 and CY 2023 with signatures",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
                 ChecklistItem(
                     id="1_2_1_b",
                     label="Certification on Increase in Local Resources signed by the City/Municipal Treasurer/ Budget Officer",
                     mov_description="Official certification from City/Municipal Treasurer or Budget Officer confirming the increase in local resources",
                     required=True,
-                    display_order=2
+                    display_order=2,
                 ),
                 ChecklistItem(
                     id="1_2_1_amount_2022",
@@ -51,7 +50,7 @@ INDICATOR_1_2 = Indicator(
                     mov_description="Please supply the required information",
                     required=True,
                     requires_document_count=True,  # Reusing this field to indicate numeric input is required
-                    display_order=3
+                    display_order=3,
                 ),
                 ChecklistItem(
                     id="1_2_1_amount_2023",
@@ -59,9 +58,9 @@ INDICATOR_1_2 = Indicator(
                     mov_description=None,
                     required=True,
                     requires_document_count=True,  # Reusing this field to indicate numeric input is required
-                    display_order=4
+                    display_order=4,
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

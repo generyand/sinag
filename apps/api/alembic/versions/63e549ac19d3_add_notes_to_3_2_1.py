@@ -5,15 +5,15 @@ Revises: 9a0064a7c8ba
 Create Date: 2025-12-03 20:40:29.532390
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
 import json
 
 # revision identifiers, used by Alembic.
-revision: str = '63e549ac19d3'
-down_revision: Union[str, Sequence[str], None] = '9a0064a7c8ba'
+revision: str = "63e549ac19d3"
+down_revision: Union[str, Sequence[str], None] = "9a0064a7c8ba"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -33,9 +33,9 @@ FORM_SCHEMA_3_2_1 = {
                     "required": True,
                     "accept": ".pdf,.doc,.docx,.jpg,.jpeg,.png",
                     "multiple": True,
-                    "max_size": 50
+                    "max_size": 50,
                 }
-            ]
+            ],
         }
     ],
     "checklist_items": [
@@ -45,7 +45,7 @@ FORM_SCHEMA_3_2_1 = {
             "mov_description": "Verification of uploaded Executive Order or similar issuance organizing BPOC with compliant composition",
             "item_type": "checkbox",
             "required": False,
-            "display_order": 1
+            "display_order": 1,
         }
     ],
     "notes": {
@@ -58,10 +58,13 @@ FORM_SCHEMA_3_2_1 = {
             {"label": "5.", "text": "PNP Officer"},
             {"label": "6.", "text": "A representative of the Interfaith Group"},
             {"label": "7.", "text": "A Senior Citizen"},
-            {"label": "8.", "text": "At least three (3) members of the existing Barangay-Based Anti-Crime or Neighborhood Watch Groups or an NGO representative"},
-            {"label": "9.", "text": "A Barangay Tanod"}
-        ]
-    }
+            {
+                "label": "8.",
+                "text": "At least three (3) members of the existing Barangay-Based Anti-Crime or Neighborhood Watch Groups or an NGO representative",
+            },
+            {"label": "9.", "text": "A Barangay Tanod"},
+        ],
+    },
 }
 
 

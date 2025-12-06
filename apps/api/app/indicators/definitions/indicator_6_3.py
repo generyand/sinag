@@ -27,8 +27,7 @@ IMPORTANT NOTES FOR PHASE 9 (VALIDATION SERVICE):
    - Related environmental regulations on waste segregation at source
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
-
+from app.indicators.base import ChecklistItem, Indicator, SubIndicator
 
 # Indicator 6.3: Provision of Support Mechanisms for Segregated Collection
 INDICATOR_6_3 = Indicator(
@@ -55,7 +54,7 @@ INDICATOR_6_3 = Indicator(
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on segregation of wastes at-source",
                     mov_description="Verification of uploaded EO or similar issuance on segregation of wastes at-source",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
                 ChecklistItem(
                     id="6_3_1_date_of_approval",
@@ -63,9 +62,9 @@ INDICATOR_6_3 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="date_input",
                     required=True,
-                    display_order=2
+                    display_order=2,
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

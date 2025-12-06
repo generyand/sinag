@@ -3,8 +3,15 @@
 Essential testing setup for 2-person team
 """
 
+import os
 import sys
 from pathlib import Path
+
+# CRITICAL: Set TESTING mode BEFORE any app imports
+# This ensures the Settings object is created with TESTING=true
+# which skips all external connection checks (PostgreSQL, Redis, Gemini, Supabase)
+os.environ["TESTING"] = "true"
+os.environ["SKIP_STARTUP_SEEDING"] = "true"
 
 # Add the parent directory to Python path so we can import main and app modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -30,20 +37,20 @@ class JSONBCompatible(JSON):
 postgresql.JSONB = JSONBCompatible
 
 import pytest
-from app.db.base import Base, get_db
-# Ensure all ORM models are registered on Base.metadata before creating tables
-from app.db import models  # noqa: F401
 from fastapi.testclient import TestClient
-from main import app
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
+
+# Ensure all ORM models are registered on Base.metadata before creating tables
+from app.db import models  # noqa: F401
+from app.db.base import Base, get_db
+from main import app
 
 # Test database URL (use SQLite for simplicity in tests)
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
+engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+
 
 # Enable foreign key support in SQLite
 @event.listens_for(engine, "connect")
@@ -79,18 +86,15 @@ def clear_rate_limits():
 
 
 @pytest.fixture(scope="session", autouse=True)
-def disable_startup_seeding():
-    """Disable data seeding during test runs to speed up tests"""
-    import os
-    # Set environment variable to skip startup seeding
-    old_value = os.environ.get("SKIP_STARTUP_SEEDING")
-    os.environ["SKIP_STARTUP_SEEDING"] = "true"
+def enable_testing_mode():
+    """
+    Placeholder fixture for test mode.
+
+    Note: TESTING=true and SKIP_STARTUP_SEEDING=true are set at the TOP of this file
+    (before any imports) to ensure they're active before the Settings object is created.
+    This fixture exists for documentation and potential future cleanup needs.
+    """
     yield
-    # Restore old value after session
-    if old_value is None:
-        os.environ.pop("SKIP_STARTUP_SEEDING", None)
-    else:
-        os.environ["SKIP_STARTUP_SEEDING"] = old_value
 
 
 @pytest.fixture(scope="session")
@@ -178,9 +182,10 @@ def mock_blgu_user(db_session, mock_barangay):
     """Create a mock BLGU user for testing"""
     import uuid
 
+    from passlib.context import CryptContext
+
     from app.db.enums import UserRole
     from app.db.models.user import User
-    from passlib.context import CryptContext
 
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -245,10 +250,11 @@ def mock_assessment_without_barangay(db_session):
     import uuid
     from datetime import datetime
 
+    from passlib.context import CryptContext
+
     from app.db.enums import AssessmentStatus, UserRole
     from app.db.models.assessment import Assessment
     from app.db.models.user import User
-    from passlib.context import CryptContext
 
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -293,9 +299,10 @@ def mlgoo_user(db_session):
     """Create a MLGOO_DILG admin user for testing"""
     import uuid
 
+    from passlib.context import CryptContext
+
     from app.db.enums import UserRole
     from app.db.models.user import User
-    from passlib.context import CryptContext
 
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -319,12 +326,12 @@ def mock_governance_area(db_session):
     """Create a mock governance area for testing"""
     import uuid
 
-    from app.db.models.governance_area import GovernanceArea
     from app.db.enums import AreaType
+    from app.db.models.governance_area import GovernanceArea
 
     unique_id = uuid.uuid4().hex[:8]
     unique_name = f"Test Governance Area {unique_id}"
-    unique_code = f"T{unique_id[:1].upper()}"  # 2-letter code like "TA", "TB", etc.
+    unique_code = unique_id[:2].upper()  # 2-letter code from UUID hex
 
     area = GovernanceArea(name=unique_name, code=unique_code, area_type=AreaType.CORE)
     db_session.add(area)
@@ -338,9 +345,10 @@ def validator_user(db_session, mock_governance_area):
     """Create a VALIDATOR user for testing"""
     import uuid
 
+    from passlib.context import CryptContext
+
     from app.db.enums import UserRole
     from app.db.models.user import User
-    from passlib.context import CryptContext
 
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -365,9 +373,10 @@ def assessor_user(db_session):
     """Create an ASSESSOR user for testing"""
     import uuid
 
+    from passlib.context import CryptContext
+
     from app.db.enums import UserRole
     from app.db.models.user import User
-    from passlib.context import CryptContext
 
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -391,9 +400,10 @@ def blgu_user(db_session, mock_barangay):
     """Alias for mock_blgu_user for consistency in naming"""
     import uuid
 
+    from passlib.context import CryptContext
+
     from app.db.enums import UserRole
     from app.db.models.user import User
-    from passlib.context import CryptContext
 
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

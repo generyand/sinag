@@ -4,8 +4,6 @@ MOV File Management API Endpoints (Epic 4.0)
 Provides endpoints for uploading, listing, and deleting MOV (Means of Verification) files.
 """
 
-from typing import List, Optional
-
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session, joinedload
 
@@ -43,8 +41,8 @@ def upload_mov_file(
     assessment_id: int,
     indicator_id: int,
     file: UploadFile = File(...),
-    field_id: Optional[str] = Form(None),
-    field_label: Optional[str] = Form(None),
+    field_id: str | None = Form(None),
+    field_label: str | None = Form(None),
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
 ) -> MOVFileResponse:
@@ -80,7 +78,7 @@ def upload_mov_file(
         )
 
     # Look up indicator code for display filename generation
-    indicator_code: Optional[str] = None
+    indicator_code: str | None = None
     if field_label:
         indicator = db.query(Indicator).filter(Indicator.id == indicator_id).first()
         if indicator and indicator.indicator_code:

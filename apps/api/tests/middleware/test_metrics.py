@@ -3,22 +3,21 @@ Test Metrics Middleware
 Tests for Prometheus metrics collection middleware
 """
 
-import pytest
-import re
 from threading import Thread
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
+
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.middleware.metrics import (
+    NUMERIC_ID_PATTERN,
+    UUID_PATTERN,
+    EndpointMetrics,
     MetricsCollector,
     MetricsMiddleware,
-    EndpointMetrics,
-    UUID_PATTERN,
-    NUMERIC_ID_PATTERN,
-    metrics_collector,
-    get_prometheus_metrics,
     get_metrics_summary,
+    get_prometheus_metrics,
 )
 
 
@@ -365,15 +364,15 @@ class TestGetPrometheusMetrics:
         output = collector.get_prometheus_metrics()
 
         # Should have histogram buckets
-        assert 'sinag_http_request_duration_ms_bucket' in output
+        assert "sinag_http_request_duration_ms_bucket" in output
         assert 'le="5"' in output
         assert 'le="100"' in output
         assert 'le="500"' in output
         assert 'le="+Inf"' in output
 
         # Should have histogram sum and count
-        assert 'sinag_http_request_duration_ms_sum' in output
-        assert 'sinag_http_request_duration_ms_count' in output
+        assert "sinag_http_request_duration_ms_sum" in output
+        assert "sinag_http_request_duration_ms_count" in output
 
     def test_get_summary_includes_all_metrics(self):
         """Test get_summary returns comprehensive metrics dict"""
@@ -444,7 +443,7 @@ class TestMetricsMiddleware:
         """Test middleware records successful requests"""
         test_collector = MetricsCollector()
 
-        with patch('app.middleware.metrics.metrics_collector', test_collector):
+        with patch("app.middleware.metrics.metrics_collector", test_collector):
             client = TestClient(app_with_metrics)
             response = client.get("/api/v1/users")
 
@@ -457,7 +456,7 @@ class TestMetricsMiddleware:
         """Test middleware skips /health endpoint"""
         test_collector = MetricsCollector()
 
-        with patch('app.middleware.metrics.metrics_collector', test_collector):
+        with patch("app.middleware.metrics.metrics_collector", test_collector):
             client = TestClient(app_with_metrics)
             response = client.get("/health")
 
@@ -470,7 +469,7 @@ class TestMetricsMiddleware:
         """Test middleware skips /metrics endpoint"""
         test_collector = MetricsCollector()
 
-        with patch('app.middleware.metrics.metrics_collector', test_collector):
+        with patch("app.middleware.metrics.metrics_collector", test_collector):
             client = TestClient(app_with_metrics)
             response = client.get("/metrics")
 
@@ -483,7 +482,7 @@ class TestMetricsMiddleware:
         """Test middleware increments/decrements active requests"""
         test_collector = MetricsCollector()
 
-        with patch('app.middleware.metrics.metrics_collector', test_collector):
+        with patch("app.middleware.metrics.metrics_collector", test_collector):
             # Active count should be 0 initially
             assert test_collector._active_requests == 0
 
@@ -497,7 +496,7 @@ class TestMetricsMiddleware:
         """Test middleware normalizes paths with IDs"""
         test_collector = MetricsCollector()
 
-        with patch('app.middleware.metrics.metrics_collector', test_collector):
+        with patch("app.middleware.metrics.metrics_collector", test_collector):
             client = TestClient(app_with_metrics)
 
             # Add route with ID parameter
@@ -519,7 +518,7 @@ class TestModuleFunctions:
 
     def test_get_prometheus_metrics_delegates_to_collector(self):
         """Test get_prometheus_metrics uses global collector"""
-        with patch('app.middleware.metrics.metrics_collector') as mock_collector:
+        with patch("app.middleware.metrics.metrics_collector") as mock_collector:
             mock_collector.get_prometheus_metrics.return_value = "prometheus output"
 
             result = get_prometheus_metrics()
@@ -529,7 +528,7 @@ class TestModuleFunctions:
 
     def test_get_metrics_summary_delegates_to_collector(self):
         """Test get_metrics_summary uses global collector"""
-        with patch('app.middleware.metrics.metrics_collector') as mock_collector:
+        with patch("app.middleware.metrics.metrics_collector") as mock_collector:
             mock_collector.get_summary.return_value = {"summary": "data"}
 
             result = get_metrics_summary()

@@ -18,29 +18,54 @@ Revises: c0d0ff841142
 Create Date: 2025-11-16 19:44:45.058611
 
 """
+
 from typing import Sequence, Union
 import json
 import sys
 from pathlib import Path
 
 from alembic import op
-import sqlalchemy as sa
 from sqlalchemy import text
 
 # Add app directory to path so we can import indicators
 app_dir = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(app_dir))
 
-from app.indicators.definitions import indicator_1_1, indicator_1_2, indicator_1_3, indicator_1_4, indicator_1_5, indicator_1_6, indicator_1_7
+from app.indicators.definitions import (
+    indicator_1_1,
+    indicator_1_2,
+    indicator_1_3,
+    indicator_1_4,
+    indicator_1_5,
+    indicator_1_6,
+    indicator_1_7,
+)
 from app.indicators.definitions import indicator_2_1, indicator_2_2, indicator_2_3
-from app.indicators.definitions import indicator_3_1, indicator_3_2, indicator_3_3, indicator_3_4, indicator_3_5, indicator_3_6
-from app.indicators.definitions import indicator_4_1, indicator_4_2, indicator_4_3, indicator_4_4, indicator_4_5, indicator_4_6, indicator_4_7, indicator_4_8, indicator_4_9
+from app.indicators.definitions import (
+    indicator_3_1,
+    indicator_3_2,
+    indicator_3_3,
+    indicator_3_4,
+    indicator_3_5,
+    indicator_3_6,
+)
+from app.indicators.definitions import (
+    indicator_4_1,
+    indicator_4_2,
+    indicator_4_3,
+    indicator_4_4,
+    indicator_4_5,
+    indicator_4_6,
+    indicator_4_7,
+    indicator_4_8,
+    indicator_4_9,
+)
 from app.indicators.definitions import indicator_5_1, indicator_5_2, indicator_5_3
 from app.indicators.definitions import indicator_6_1, indicator_6_2, indicator_6_3
 
 # revision identifiers, used by Alembic.
-revision: str = '03be4cf96073'
-down_revision: Union[str, Sequence[str], None] = 'c0d0ff841142'
+revision: str = "03be4cf96073"
+down_revision: Union[str, Sequence[str], None] = "c0d0ff841142"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -88,13 +113,13 @@ def upgrade() -> None:
     # Build a mapping of indicator_code -> upload_instructions from Python definitions
     instructions_map = {}
     for parent_indicator in ALL_INDICATORS:
-        if hasattr(parent_indicator, 'children'):
+        if hasattr(parent_indicator, "children"):
             for sub_indicator in parent_indicator.children:
-                if hasattr(sub_indicator, 'upload_instructions'):
+                if hasattr(sub_indicator, "upload_instructions"):
                     instructions_map[sub_indicator.code] = sub_indicator.upload_instructions
 
-    print(f"📝 Generating BLGU file upload forms for hardcoded sub-indicators...")
-    print(f"   Using upload_instructions (MOVs) from Python definitions")
+    print("📝 Generating BLGU file upload forms for hardcoded sub-indicators...")
+    print("   Using upload_instructions (MOVs) from Python definitions")
     print(f"   Found {len(instructions_map)} sub-indicators with upload_instructions\n")
 
     # Get all indicators from database that have checklist items
@@ -134,7 +159,8 @@ def upgrade() -> None:
 
         # Split by numbered items (1. 2. 3. etc.)
         import re
-        lines = upload_instructions.split('\n')
+
+        lines = upload_instructions.split("\n")
 
         # Find lines that start with numbers (1. 2. 3. etc.)
         numbered_items = []
@@ -143,14 +169,11 @@ def upgrade() -> None:
 
         for line in lines:
             # Check if line starts with a number followed by a period (e.g., "1. ", "2. ")
-            match = re.match(r'^(\d+)\.\s+(.+)$', line.strip())
+            match = re.match(r"^(\d+)\.\s+(.+)$", line.strip())
             if match:
                 # Save previous item if exists
                 if current_item is not None:
-                    numbered_items.append({
-                        'number': current_item,
-                        'text': '\n'.join(current_text)
-                    })
+                    numbered_items.append({"number": current_item, "text": "\n".join(current_text)})
                 # Start new item
                 current_item = match.group(1)
                 current_text = [match.group(2)]
@@ -160,10 +183,7 @@ def upgrade() -> None:
 
         # Add the last item
         if current_item is not None:
-            numbered_items.append({
-                'number': current_item,
-                'text': '\n'.join(current_text)
-            })
+            numbered_items.append({"number": current_item, "text": "\n".join(current_text)})
 
         # Create upload fields
         fields = []
@@ -176,10 +196,10 @@ def upgrade() -> None:
                     "field_type": "file_upload",
                     "label": f"MOV {item['number']}: Upload for {indicator_code}",
                     "required": True,
-                    "help_text": item['text'],  # The specific MOV description
+                    "help_text": item["text"],  # The specific MOV description
                     "accept": ".pdf,.jpg,.jpeg,.png,.doc,.docx,.xlsx,.xls",
                     "max_size_mb": 50,
-                    "multiple": True
+                    "multiple": True,
                 }
                 fields.append(field)
         else:
@@ -192,16 +212,12 @@ def upgrade() -> None:
                 "help_text": upload_instructions,
                 "accept": ".pdf,.jpg,.jpeg,.png,.doc,.docx,.xlsx,.xls",
                 "max_size_mb": 50,
-                "multiple": True
+                "multiple": True,
             }
             fields.append(field)
 
         # Create the form_schema structure
-        form_schema = {
-            "fields": fields,
-            "version": "2.0",
-            "schema_type": "blgu_upload"
-        }
+        form_schema = {"fields": fields, "version": "2.0", "schema_type": "blgu_upload"}
 
         # Update the indicator with the generated form_schema
         form_schema_json = json.dumps(form_schema).replace("'", "''")  # Escape single quotes
@@ -217,8 +233,8 @@ def upgrade() -> None:
         updated_count += 1
 
     print(f"\n✨ Form schemas generated for {updated_count} sub-indicators!")
-    print(f"   BLGUs see upload_instructions (MOVs) telling them what to upload")
-    print(f"   Validators see checklist items (a, b, c...) to verify uploaded files")
+    print("   BLGUs see upload_instructions (MOVs) telling them what to upload")
+    print("   Validators see checklist items (a, b, c...) to verify uploaded files")
 
 
 def downgrade() -> None:

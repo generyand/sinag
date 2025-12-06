@@ -2,27 +2,27 @@
 # Endpoints for user authentication and authorization
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_active_user, get_client_ip
+from app.api.deps import get_client_ip, get_current_active_user, get_db
 from app.core.security import (
-    verify_password,
+    MAX_FAILED_ATTEMPTS,
+    blacklist_token,
+    clear_failed_logins,
     create_access_token,
     get_password_hash,
-    verify_token,
-    blacklist_token,
     is_account_locked,
     record_failed_login,
-    clear_failed_logins,
-    MAX_FAILED_ATTEMPTS,
+    verify_password,
+    verify_token,
 )
 from app.db.models.user import User
-from app.schemas.token import LoginRequest, AuthToken, ChangePasswordRequest
 from app.schemas.system import ApiResponse
+from app.schemas.token import AuthToken, ChangePasswordRequest, LoginRequest
 from app.services.audit_service import audit_service
 
 logger = logging.getLogger(__name__)
@@ -51,9 +51,7 @@ async def login(
     # Check account lockout FIRST (before any database queries)
     is_locked, retry_after = is_account_locked(login_data.email)
     if is_locked:
-        logger.warning(
-            f"Login attempt for locked account: {login_data.email} from IP {client_ip}"
-        )
+        logger.warning(f"Login attempt for locked account: {login_data.email} from IP {client_ip}")
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=f"Account temporarily locked due to multiple failed login attempts. Try again in {retry_after} seconds.",
@@ -184,9 +182,7 @@ async def change_password(
     client_ip = get_client_ip(request)
 
     # Verify current password
-    if not verify_password(
-        password_data.current_password, current_user.hashed_password
-    ):
+    if not verify_password(password_data.current_password, current_user.hashed_password):
         # Log failed password change attempt
         logger.warning(
             f"Failed password change attempt for user {current_user.id} from IP {client_ip}"
@@ -206,7 +202,6 @@ async def change_password(
         )
 
     # Update password and reset must_change_password flag
-    old_hash = current_user.hashed_password[:20] + "..."  # Truncated for audit log
     current_user.hashed_password = get_password_hash(password_data.new_password)
     current_user.must_change_password = False
 
@@ -257,15 +252,14 @@ async def logout(
 
         if exp:
             # Calculate remaining TTL
-            now = datetime.now(timezone.utc).timestamp()
+            now = datetime.now(UTC).timestamp()
             expires_in = int(exp - now)
 
             if expires_in > 0:
                 # Blacklist the token
                 blacklist_token(token, expires_in)
                 logger.info(
-                    f"Token blacklisted for user {current_user.id}, "
-                    f"expires in {expires_in} seconds"
+                    f"Token blacklisted for user {current_user.id}, expires in {expires_in} seconds"
                 )
     except Exception as e:
         # Log but don't fail - still return success to user

@@ -11,13 +11,13 @@ Tests verify that the SubmissionValidationService:
 import pytest
 from sqlalchemy.orm import Session
 
+from app.db.enums import AreaType, AssessmentStatus, UserRole
 from app.db.models.assessment import Assessment, AssessmentResponse, MOVFile
+from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
-from app.db.models.governance_area import Indicator, GovernanceArea
-from app.db.enums import AssessmentStatus, UserRole, AreaType
 from app.services.submission_validation_service import (
+    SubmissionValidationError,
     submission_validation_service,
-    SubmissionValidationError
 )
 
 
@@ -31,23 +31,17 @@ class TestSubmissionValidationService:
             email="test1@example.com",
             hashed_password="hashed",
             name="Test User 1",
-            role=UserRole.BLGU_USER
+            role=UserRole.BLGU_USER,
         )
         db_session.add(user)
         db_session.commit()
 
-        assessment = Assessment(
-            blgu_user_id=user.id,
-            status=AssessmentStatus.DRAFT
-        )
+        assessment = Assessment(blgu_user_id=user.id, status=AssessmentStatus.DRAFT)
         db_session.add(assessment)
         db_session.commit()
 
         # Create governance area and indicator with simple form schema
-        gov_area = GovernanceArea(
-            name="Test Area",
-            area_type=AreaType.CORE
-        )
+        gov_area = GovernanceArea(name="Test Area", code="TA", area_type=AreaType.CORE)
         db_session.add(gov_area)
         db_session.commit()
 
@@ -59,11 +53,11 @@ class TestSubmissionValidationService:
                         "field_id": "field1",
                         "label": "Field 1",
                         "field_type": "text",
-                        "required": True
+                        "required": True,
                     }
                 ]
             },
-            governance_area_id=gov_area.id
+            governance_area_id=gov_area.id,
         )
         db_session.add(indicator)
         db_session.commit()
@@ -73,15 +67,14 @@ class TestSubmissionValidationService:
             assessment_id=assessment.id,
             indicator_id=indicator.id,
             response_data={"field1": "Complete answer"},
-            is_completed=True
+            is_completed=True,
         )
         db_session.add(response)
         db_session.commit()
 
         # Validate submission
         result = submission_validation_service.validate_submission(
-            assessment_id=assessment.id,
-            db=db_session
+            assessment_id=assessment.id, db=db_session
         )
 
         assert result.is_valid is True
@@ -104,22 +97,16 @@ class TestSubmissionValidationService:
             email="test2@example.com",
             hashed_password="hashed",
             name="Test User 2",
-            role=UserRole.BLGU_USER
+            role=UserRole.BLGU_USER,
         )
         db_session.add(user)
         db_session.commit()
 
-        assessment = Assessment(
-            blgu_user_id=user.id,
-            status=AssessmentStatus.DRAFT
-        )
+        assessment = Assessment(blgu_user_id=user.id, status=AssessmentStatus.DRAFT)
         db_session.add(assessment)
         db_session.commit()
 
-        gov_area = GovernanceArea(
-            name="Test Area 2",
-            area_type=AreaType.CORE
-        )
+        gov_area = GovernanceArea(name="Test Area 2", code="TA", area_type=AreaType.CORE)
         db_session.add(gov_area)
         db_session.commit()
 
@@ -131,11 +118,11 @@ class TestSubmissionValidationService:
                         "field_id": "required_field",
                         "label": "Required Field",
                         "field_type": "text",
-                        "required": True
+                        "required": True,
                     }
                 ]
             },
-            governance_area_id=gov_area.id
+            governance_area_id=gov_area.id,
         )
         db_session.add(indicator)
         db_session.commit()
@@ -145,15 +132,14 @@ class TestSubmissionValidationService:
             assessment_id=assessment.id,
             indicator_id=indicator.id,
             response_data={},  # Empty - required field not filled
-            is_completed=False
+            is_completed=False,
         )
         db_session.add(response)
         db_session.commit()
 
         # Validate submission
         result = submission_validation_service.validate_submission(
-            assessment_id=assessment.id,
-            db=db_session
+            assessment_id=assessment.id, db=db_session
         )
 
         assert result.is_valid is False
@@ -176,22 +162,16 @@ class TestSubmissionValidationService:
             email="test3@example.com",
             hashed_password="hashed",
             name="Test User 3",
-            role=UserRole.BLGU_USER
+            role=UserRole.BLGU_USER,
         )
         db_session.add(user)
         db_session.commit()
 
-        assessment = Assessment(
-            blgu_user_id=user.id,
-            status=AssessmentStatus.DRAFT
-        )
+        assessment = Assessment(blgu_user_id=user.id, status=AssessmentStatus.DRAFT)
         db_session.add(assessment)
         db_session.commit()
 
-        gov_area = GovernanceArea(
-            name="Test Area 3",
-            area_type=AreaType.CORE
-        )
+        gov_area = GovernanceArea(name="Test Area 3", code="TA", area_type=AreaType.CORE)
         db_session.add(gov_area)
         db_session.commit()
 
@@ -204,11 +184,11 @@ class TestSubmissionValidationService:
                         "field_id": "file_field",
                         "label": "Upload File",
                         "field_type": "file_upload",
-                        "required": True
+                        "required": True,
                     }
                 ]
             },
-            governance_area_id=gov_area.id
+            governance_area_id=gov_area.id,
         )
         db_session.add(indicator)
         db_session.commit()
@@ -218,7 +198,7 @@ class TestSubmissionValidationService:
             assessment_id=assessment.id,
             indicator_id=indicator.id,
             response_data={},  # File upload fields don't use response_data
-            is_completed=False
+            is_completed=False,
         )
         db_session.add(response)
         db_session.commit()
@@ -227,8 +207,7 @@ class TestSubmissionValidationService:
 
         # Validate submission
         result = submission_validation_service.validate_submission(
-            assessment_id=assessment.id,
-            db=db_session
+            assessment_id=assessment.id, db=db_session
         )
 
         assert result.is_valid is False
@@ -251,22 +230,16 @@ class TestSubmissionValidationService:
             email="test4@example.com",
             hashed_password="hashed",
             name="Test User 4",
-            role=UserRole.BLGU_USER
+            role=UserRole.BLGU_USER,
         )
         db_session.add(user)
         db_session.commit()
 
-        assessment = Assessment(
-            blgu_user_id=user.id,
-            status=AssessmentStatus.DRAFT
-        )
+        assessment = Assessment(blgu_user_id=user.id, status=AssessmentStatus.DRAFT)
         db_session.add(assessment)
         db_session.commit()
 
-        gov_area = GovernanceArea(
-            name="Test Area 4",
-            area_type=AreaType.CORE
-        )
+        gov_area = GovernanceArea(name="Test Area 4", code="TA", area_type=AreaType.CORE)
         db_session.add(gov_area)
         db_session.commit()
 
@@ -278,11 +251,11 @@ class TestSubmissionValidationService:
                         "field_id": "file_field",
                         "label": "Upload File",
                         "field_type": "file_upload",
-                        "required": True
+                        "required": True,
                     }
                 ]
             },
-            governance_area_id=gov_area.id
+            governance_area_id=gov_area.id,
         )
         db_session.add(indicator)
         db_session.commit()
@@ -291,7 +264,7 @@ class TestSubmissionValidationService:
             assessment_id=assessment.id,
             indicator_id=indicator.id,
             response_data={},
-            is_completed=True
+            is_completed=True,
         )
         db_session.add(response)
         db_session.commit()
@@ -304,15 +277,14 @@ class TestSubmissionValidationService:
             file_name="test.pdf",
             file_url="https://example.com/test.pdf",
             file_type="application/pdf",
-            file_size=1024
+            file_size=1024,
         )
         db_session.add(mov_file)
         db_session.commit()
 
         # Validate submission
         result = submission_validation_service.validate_submission(
-            assessment_id=assessment.id,
-            db=db_session
+            assessment_id=assessment.id, db=db_session
         )
 
         assert result.is_valid is True
@@ -335,22 +307,16 @@ class TestSubmissionValidationService:
             email="test5@example.com",
             hashed_password="hashed",
             name="Test User 5",
-            role=UserRole.BLGU_USER
+            role=UserRole.BLGU_USER,
         )
         db_session.add(user)
         db_session.commit()
 
-        assessment = Assessment(
-            blgu_user_id=user.id,
-            status=AssessmentStatus.DRAFT
-        )
+        assessment = Assessment(blgu_user_id=user.id, status=AssessmentStatus.DRAFT)
         db_session.add(assessment)
         db_session.commit()
 
-        gov_area = GovernanceArea(
-            name="Test Area 5",
-            area_type=AreaType.CORE
-        )
+        gov_area = GovernanceArea(name="Test Area 5", code="TA", area_type=AreaType.CORE)
         db_session.add(gov_area)
         db_session.commit()
 
@@ -363,11 +329,11 @@ class TestSubmissionValidationService:
                         "field_id": "required_text",
                         "label": "Required Text",
                         "field_type": "text",
-                        "required": True
+                        "required": True,
                     }
                 ]
             },
-            governance_area_id=gov_area.id
+            governance_area_id=gov_area.id,
         )
         db_session.add(indicator1)
 
@@ -380,11 +346,11 @@ class TestSubmissionValidationService:
                         "field_id": "file_field",
                         "label": "File Field",
                         "field_type": "file_upload",
-                        "required": True
+                        "required": True,
                     }
                 ]
             },
-            governance_area_id=gov_area.id
+            governance_area_id=gov_area.id,
         )
         db_session.add(indicator2)
         db_session.commit()
@@ -394,7 +360,7 @@ class TestSubmissionValidationService:
             assessment_id=assessment.id,
             indicator_id=indicator1.id,
             response_data={},  # Missing required field
-            is_completed=False
+            is_completed=False,
         )
         db_session.add(response1)
 
@@ -403,15 +369,14 @@ class TestSubmissionValidationService:
             assessment_id=assessment.id,
             indicator_id=indicator2.id,
             response_data={},
-            is_completed=False
+            is_completed=False,
         )
         db_session.add(response2)
         db_session.commit()
 
         # Validate submission
         result = submission_validation_service.validate_submission(
-            assessment_id=assessment.id,
-            db=db_session
+            assessment_id=assessment.id, db=db_session
         )
 
         assert result.is_valid is False
@@ -435,7 +400,7 @@ class TestSubmissionValidationService:
         with pytest.raises(SubmissionValidationError) as exc_info:
             submission_validation_service.validate_submission(
                 assessment_id=99999,  # Non-existent ID
-                db=db_session
+                db=db_session,
             )
 
         assert "not found" in str(exc_info.value).lower()
@@ -447,22 +412,16 @@ class TestSubmissionValidationService:
             email="test6@example.com",
             hashed_password="hashed",
             name="Test User 6",
-            role=UserRole.BLGU_USER
+            role=UserRole.BLGU_USER,
         )
         db_session.add(user)
         db_session.commit()
 
-        assessment = Assessment(
-            blgu_user_id=user.id,
-            status=AssessmentStatus.DRAFT
-        )
+        assessment = Assessment(blgu_user_id=user.id, status=AssessmentStatus.DRAFT)
         db_session.add(assessment)
         db_session.commit()
 
-        gov_area = GovernanceArea(
-            name="Test Area 6",
-            area_type=AreaType.CORE
-        )
+        gov_area = GovernanceArea(name="Test Area 6", code="TA", area_type=AreaType.CORE)
         db_session.add(gov_area)
         db_session.commit()
 
@@ -474,11 +433,11 @@ class TestSubmissionValidationService:
                         "field_id": "file_field",
                         "label": "File Field",
                         "field_type": "file_upload",
-                        "required": True
+                        "required": True,
                     }
                 ]
             },
-            governance_area_id=gov_area.id
+            governance_area_id=gov_area.id,
         )
         db_session.add(indicator)
         db_session.commit()
@@ -487,13 +446,14 @@ class TestSubmissionValidationService:
             assessment_id=assessment.id,
             indicator_id=indicator.id,
             response_data={},
-            is_completed=False
+            is_completed=False,
         )
         db_session.add(response)
         db_session.commit()
 
         # Create soft-deleted MOVFile
         from datetime import datetime
+
         mov_file = MOVFile(
             assessment_id=assessment.id,
             indicator_id=indicator.id,
@@ -502,15 +462,14 @@ class TestSubmissionValidationService:
             file_url="https://example.com/deleted.pdf",
             file_type="application/pdf",
             file_size=1024,
-            deleted_at=datetime.utcnow()  # Soft deleted
+            deleted_at=datetime.utcnow(),  # Soft deleted
         )
         db_session.add(mov_file)
         db_session.commit()
 
         # Validate submission - should fail because deleted file doesn't count
         result = submission_validation_service.validate_submission(
-            assessment_id=assessment.id,
-            db=db_session
+            assessment_id=assessment.id, db=db_session
         )
 
         assert result.is_valid is False

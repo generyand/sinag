@@ -11,11 +11,11 @@ Tests:
 import pytest
 from fastapi import HTTPException
 
+from app.core.security import get_password_hash
+from app.db.enums import UserRole
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
-from app.db.enums import UserRole
 from app.services.indicator_service import indicator_service
-from app.core.security import get_password_hash
 
 
 @pytest.fixture
@@ -38,11 +38,8 @@ def test_user(db_session):
 def test_governance_area(db_session):
     """Create a test governance area."""
     from app.db.enums import AreaType
-    area = GovernanceArea(
-        id=1,
-        name="Test Governance Area",
-        area_type=AreaType.CORE
-    )
+
+    area = GovernanceArea(id=1, code="T1", name="Test Governance Area", area_type=AreaType.CORE)
     db_session.add(area)
     db_session.commit()
     db_session.refresh(area)
@@ -190,12 +187,12 @@ class TestBulkCreation:
         assert "child-1" in temp_id_mapping
 
         # Verify parent relationship
-        parent = db_session.query(Indicator).filter(
-            Indicator.id == temp_id_mapping["parent-1"]
-        ).first()
-        child = db_session.query(Indicator).filter(
-            Indicator.id == temp_id_mapping["child-1"]
-        ).first()
+        parent = (
+            db_session.query(Indicator).filter(Indicator.id == temp_id_mapping["parent-1"]).first()
+        )
+        child = (
+            db_session.query(Indicator).filter(Indicator.id == temp_id_mapping["child-1"]).first()
+        )
 
         assert parent is not None
         assert child is not None
@@ -311,12 +308,12 @@ class TestBulkCreation:
 
         # Verify both children have same parent
         parent_id = temp_id_mapping["parent"]
-        child1 = db_session.query(Indicator).filter(
-            Indicator.id == temp_id_mapping["child-1"]
-        ).first()
-        child2 = db_session.query(Indicator).filter(
-            Indicator.id == temp_id_mapping["child-2"]
-        ).first()
+        child1 = (
+            db_session.query(Indicator).filter(Indicator.id == temp_id_mapping["child-1"]).first()
+        )
+        child2 = (
+            db_session.query(Indicator).filter(Indicator.id == temp_id_mapping["child-2"]).first()
+        )
 
         assert child1.parent_id == parent_id
         assert child2.parent_id == parent_id
@@ -523,9 +520,7 @@ def test_get_indicator_tree_returns_hierarchical_structure(
     assert len(grandchild_node["children"]) == 0  # No children
 
 
-def test_get_indicator_tree_includes_all_metadata(
-    db_session, test_governance_area, test_user
-):
+def test_get_indicator_tree_includes_all_metadata(db_session, test_governance_area, test_user):
     """Test get_indicator_tree includes all indicator metadata."""
     indicator = indicator_service.create_indicator(
         db=db_session,
@@ -555,23 +550,13 @@ def test_get_indicator_tree_includes_all_metadata(
     assert node["version"] == 1
 
 
-def test_get_indicator_tree_filters_by_governance_area(
-    db_session, test_user
-):
+def test_get_indicator_tree_filters_by_governance_area(db_session, test_user):
     """Test get_indicator_tree only returns indicators for specified governance area."""
     from app.db.enums import AreaType
 
     # Create two governance areas
-    area1 = GovernanceArea(
-        id=1,
-        name="Area 1",
-        area_type=AreaType.CORE
-    )
-    area2 = GovernanceArea(
-        id=2,
-        name="Area 2",
-        area_type=AreaType.CORE
-    )
+    area1 = GovernanceArea(id=1, code="T1", name="Area 1", area_type=AreaType.CORE)
+    area2 = GovernanceArea(id=2, code="T2", name="Area 2", area_type=AreaType.CORE)
     db_session.add(area1)
     db_session.add(area2)
     db_session.commit()
@@ -599,9 +584,7 @@ def test_get_indicator_tree_filters_by_governance_area(
     assert tree2[0]["name"] == "Area 2 Indicator"
 
 
-def test_recalculate_codes_assigns_sequential_codes(
-    db_session, test_governance_area, test_user
-):
+def test_recalculate_codes_assigns_sequential_codes(db_session, test_governance_area, test_user):
     """Test recalculate_codes assigns sequential codes based on sort_order."""
     # Create indicators
     root1 = indicator_service.create_indicator(
@@ -666,9 +649,7 @@ def test_recalculate_codes_assigns_sequential_codes(
     assert child1_2.indicator_code == "1.2"
 
 
-def test_recalculate_codes_handles_deep_nesting(
-    db_session, test_governance_area, test_user
-):
+def test_recalculate_codes_handles_deep_nesting(db_session, test_governance_area, test_user):
     """Test recalculate_codes handles deeply nested indicators."""
     # Create 4-level hierarchy
     level1 = indicator_service.create_indicator(
@@ -734,9 +715,7 @@ def test_recalculate_codes_handles_deep_nesting(
     assert level4.indicator_code == "1.1.1.1"
 
 
-def test_recalculate_codes_respects_sort_order(
-    db_session, test_governance_area, test_user
-):
+def test_recalculate_codes_respects_sort_order(db_session, test_governance_area, test_user):
     """Test recalculate_codes respects sort_order for numbering."""
     # Create indicators with specific sort_order
     root = indicator_service.create_indicator(

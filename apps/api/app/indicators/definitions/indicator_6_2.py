@@ -9,8 +9,7 @@ Materials Recovery System (MRS) in compliance with R.A. 9003 (Ecological Solid W
 Management Act of 2000).
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
-
+from app.indicators.base import ChecklistItem, Indicator, SubIndicator
 
 # Indicator 6.2: Existence of a Solid Waste Management Facility Pursuant to R.A. 9003
 INDICATOR_6_2 = Indicator(
@@ -48,7 +47,7 @@ INDICATOR_6_2 = Indicator(
                     item_type="info_text",
                     mov_description="Label for option A",
                     required=False,
-                    display_order=1
+                    display_order=1,
                 ),
                 ChecklistItem(
                     id="6_2_1_a_photo",
@@ -57,7 +56,7 @@ INDICATOR_6_2 = Indicator(
                     mov_description="Verification of photo documentation",
                     required=False,
                     display_order=2,
-                    option_group="Option A"
+                    option_group="Option A",
                 ),
                 # OR separator 1
                 ChecklistItem(
@@ -66,7 +65,7 @@ INDICATOR_6_2 = Indicator(
                     item_type="info_text",
                     mov_description="OR",
                     required=False,
-                    display_order=3
+                    display_order=3,
                 ),
                 # OPTION B LABEL (info_text, not checkbox)
                 ChecklistItem(
@@ -75,7 +74,7 @@ INDICATOR_6_2 = Indicator(
                     item_type="info_text",
                     mov_description="Label for option B",
                     required=False,
-                    display_order=4
+                    display_order=4,
                 ),
                 ChecklistItem(
                     id="6_2_1_b_moa_junkshop",
@@ -84,7 +83,7 @@ INDICATOR_6_2 = Indicator(
                     mov_description="Verification of MOA with junkshop",
                     required=False,
                     display_order=5,
-                    option_group="Option B"
+                    option_group="Option B",
                 ),
                 ChecklistItem(
                     id="6_2_1_b_mechanism",
@@ -93,7 +92,7 @@ INDICATOR_6_2 = Indicator(
                     mov_description="Verification of mechanism to process biodegradable wastes",
                     required=False,
                     display_order=6,
-                    option_group="Option B"
+                    option_group="Option B",
                 ),
                 ChecklistItem(
                     id="6_2_1_b_moa_service",
@@ -102,7 +101,7 @@ INDICATOR_6_2 = Indicator(
                     mov_description="Verification of MOA with service provider",
                     required=False,
                     display_order=7,
-                    option_group="Option B"
+                    option_group="Option B",
                 ),
                 # OR separator 2
                 ChecklistItem(
@@ -111,7 +110,7 @@ INDICATOR_6_2 = Indicator(
                     item_type="info_text",
                     mov_description="OR",
                     required=False,
-                    display_order=8
+                    display_order=8,
                 ),
                 # OPTION C LABEL (info_text, not checkbox)
                 ChecklistItem(
@@ -120,7 +119,7 @@ INDICATOR_6_2 = Indicator(
                     item_type="info_text",
                     mov_description="Label for option C",
                     required=False,
-                    display_order=9
+                    display_order=9,
                 ),
                 ChecklistItem(
                     id="6_2_1_c_moa_host",
@@ -129,7 +128,7 @@ INDICATOR_6_2 = Indicator(
                     mov_description="Verification of MOA with host barangay",
                     required=False,
                     display_order=10,
-                    option_group="Option C"
+                    option_group="Option C",
                 ),
                 ChecklistItem(
                     id="6_2_1_c_moa_lgu",
@@ -138,9 +137,9 @@ INDICATOR_6_2 = Indicator(
                     mov_description="Verification of MOA or LGU document",
                     required=False,
                     display_order=11,
-                    option_group="Option C"
+                    option_group="Option C",
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

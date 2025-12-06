@@ -2,16 +2,16 @@
 Tests for users API endpoints (app/api/v1/users.py)
 """
 
-import pytest
 import uuid
+
+import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
 from passlib.context import CryptContext
+from sqlalchemy.orm import Session
 
-from app.db.models.user import User
-from app.db.enums import UserRole
 from app.api import deps
-
+from app.db.enums import UserRole
+from app.db.models.user import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -84,6 +84,7 @@ def assessor_user(db_session: Session):
 
 def _override_user_and_db(client, user: User, db_session: Session):
     """Override authentication and database dependencies for admin users"""
+
     def _override_current_active_user():
         return user
 
@@ -131,9 +132,7 @@ def test_get_current_user_unauthorized(client: TestClient):
 # ====================================================================
 
 
-def test_update_current_user_success(
-    client: TestClient, blgu_user: User, db_session: Session
-):
+def test_update_current_user_success(client: TestClient, blgu_user: User, db_session: Session):
     """Test updating current user profile"""
     _override_user_and_db(client, blgu_user, db_session)
 
@@ -318,9 +317,7 @@ def test_get_users_list_as_admin(
     assert data["total"] >= 3  # At least 3 users (admin, blgu, assessor)
 
 
-def test_get_users_list_with_pagination(
-    client: TestClient, db_session: Session, admin_user: User
-):
+def test_get_users_list_with_pagination(client: TestClient, db_session: Session, admin_user: User):
     """Test user list pagination"""
     _override_user_and_db(client, admin_user, db_session)
 
@@ -339,7 +336,7 @@ def test_get_users_list_with_search(
     """Test searching users by name or email"""
     _override_user_and_db(client, admin_user, db_session)
 
-    response = client.get(f"/api/v1/users/?search=BLGU")
+    response = client.get("/api/v1/users/?search=BLGU")
 
     assert response.status_code == 200
     data = response.json()
@@ -602,9 +599,7 @@ def test_deactivate_user_forbidden_for_non_admin(
 # ====================================================================
 
 
-def test_activate_user_as_admin(
-    client: TestClient, db_session: Session, admin_user: User
-):
+def test_activate_user_as_admin(client: TestClient, db_session: Session, admin_user: User):
     """Test admin can activate inactive user"""
     # Create inactive user
     unique_email = f"inactive_{uuid.uuid4().hex[:8]}@example.com"
@@ -903,7 +898,11 @@ def test_create_blgu_user_requires_barangay(
 
 
 def test_create_duplicate_email_fails(
-    client: TestClient, db_session: Session, admin_user: User, blgu_user: User, mock_barangay
+    client: TestClient,
+    db_session: Session,
+    admin_user: User,
+    blgu_user: User,
+    mock_barangay,
 ):
     """Test creating user with duplicate email fails"""
     _override_user_and_db(client, admin_user, db_session)
@@ -928,7 +927,11 @@ def test_create_duplicate_email_fails(
 
 
 def test_update_user_role_from_blgu_to_validator(
-    client: TestClient, db_session: Session, admin_user: User, blgu_user: User, mock_governance_area
+    client: TestClient,
+    db_session: Session,
+    admin_user: User,
+    blgu_user: User,
+    mock_governance_area,
 ):
     """Test changing user from BLGU_USER to VALIDATOR clears barangay_id and sets validator_area_id"""
     _override_user_and_db(client, admin_user, db_session)
@@ -998,7 +1001,11 @@ def test_update_user_role_from_validator_to_assessor(
 
 
 def test_update_user_role_from_assessor_to_blgu(
-    client: TestClient, db_session: Session, admin_user: User, assessor_user: User, mock_barangay
+    client: TestClient,
+    db_session: Session,
+    admin_user: User,
+    assessor_user: User,
+    mock_barangay,
 ):
     """Test changing user from ASSESSOR to BLGU_USER requires barangay_id"""
     _override_user_and_db(client, admin_user, db_session)
@@ -1051,9 +1058,7 @@ def test_only_mlgoo_dilg_can_access_user_management(
     assert response.status_code == 403
 
 
-def test_validator_cannot_access_user_management(
-    client: TestClient, db_session: Session
-):
+def test_validator_cannot_access_user_management(client: TestClient, db_session: Session):
     """Test that VALIDATOR role cannot access user management endpoints"""
     # Create validator user
     unique_email = f"validator_{uuid.uuid4().hex[:8]}@example.com"

@@ -4,10 +4,9 @@
 import time
 import uuid
 from collections import defaultdict
-from datetime import datetime, timedelta
-from typing import Callable, Dict, Optional
+from collections.abc import Callable
 
-from fastapi import Request, Response, status
+from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -40,9 +39,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Request-ID"] = request_id
 
         # Add HSTS header for HTTPS (31536000 seconds = 1 year)
-        response.headers["Strict-Transport-Security"] = (
-            "max-age=31536000; includeSubDomains"
-        )
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
         # Content Security Policy
         # Note: Adjust based on your frontend needs
@@ -82,9 +79,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     """
 
     # Class-level store to allow clearing in tests
-    _rate_limit_store: Dict[str, Dict[str, list]] = defaultdict(
-        lambda: defaultdict(list)
-    )
+    _rate_limit_store: dict[str, dict[str, list]] = defaultdict(lambda: defaultdict(list))
 
     def __init__(self, app):
         super().__init__(app)
@@ -94,11 +89,23 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Rate limit configurations
         # SECURITY: Stricter limits for auth endpoints to prevent brute-force
         self.limits = {
-            "/api/v1/auth/login": {"requests": 5, "window": 300},  # 5 per 5 min (strict)
-            "/api/v1/auth/change-password": {"requests": 3, "window": 300},  # 3 per 5 min
-            "/api/v1/auth": {"requests": 10, "window": 60},  # 10 per minute (other auth)
+            "/api/v1/auth/login": {
+                "requests": 5,
+                "window": 300,
+            },  # 5 per 5 min (strict)
+            "/api/v1/auth/change-password": {
+                "requests": 3,
+                "window": 300,
+            },  # 3 per 5 min
+            "/api/v1/auth": {
+                "requests": 10,
+                "window": 60,
+            },  # 10 per minute (other auth)
             "/api/v1/admin": {"requests": 50, "window": 60},  # 50 requests per minute
-            "/api/v1/users": {"requests": 30, "window": 60},  # 30 per minute (user mgmt)
+            "/api/v1/users": {
+                "requests": 30,
+                "window": 60,
+            },  # 30 per minute (user mgmt)
             "/health": {"requests": 1000, "window": 60},  # 1000 requests per minute
             "default": {"requests": 100, "window": 60},  # 100 requests per minute
         }
@@ -126,7 +133,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         return "unknown"
 
-    def _get_rate_limit_config(self, path: str) -> Dict[str, int]:
+    def _get_rate_limit_config(self, path: str) -> dict[str, int]:
         """Get rate limit configuration for a given path."""
         # Check for exact matches first
         for prefix, config in self.limits.items():
@@ -136,8 +143,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return self.limits["default"]
 
     def _is_rate_limited(
-        self, client_ip: str, path: str, config: Dict[str, int]
-    ) -> tuple[bool, Optional[int]]:
+        self, client_ip: str, path: str, config: dict[str, int]
+    ) -> tuple[bool, int | None]:
         """
         Check if the request should be rate limited.
 
@@ -230,9 +237,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         import logging
 
         logger = logging.getLogger(__name__)
-        logger.info(
-            f"[{request_id}] {request.method} {request.url.path} - Client: {client_ip}"
-        )
+        logger.info(f"[{request_id}] {request.method} {request.url.path} - Client: {client_ip}")
 
         # Process request
         try:

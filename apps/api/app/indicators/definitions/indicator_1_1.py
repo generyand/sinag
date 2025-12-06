@@ -5,8 +5,13 @@ Governance Area: 1 (Financial Administration and Sustainability)
 BBI Status: No (BFDP is a policy compliance requirement, NOT a barangay-based institution)
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem, FormNotes, NoteItem
-
+from app.indicators.base import (
+    ChecklistItem,
+    FormNotes,
+    Indicator,
+    NoteItem,
+    SubIndicator,
+)
 
 # Indicator 1.1: BFDP Compliance
 INDICATOR_1_1 = Indicator(
@@ -37,7 +42,7 @@ INDICATOR_1_1 = Indicator(
                     label="Three (3) BFDP Monitoring Form A of the DILG Advisory covering the 1st to 3rd quarter monitoring data signed by the City Director/C/MLGOO, Punong Barangay and Barangay Secretary",
                     mov_description=None,
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
                 # Document count input - right after BFDP Form checkbox
                 ChecklistItem(
@@ -46,7 +51,7 @@ INDICATOR_1_1 = Indicator(
                     mov_description="Please supply the number of documents submitted:",
                     item_type="document_count",
                     required=True,
-                    display_order=2
+                    display_order=2,
                 ),
                 # Photo documentation checkbox
                 ChecklistItem(
@@ -54,7 +59,7 @@ INDICATOR_1_1 = Indicator(
                     label="Two (2) Photo Documentation of the BFDP board showing the name of the barangay",
                     mov_description="Photos must clearly show the BFDP board with barangay name and posted documents",
                     required=True,
-                    display_order=3
+                    display_order=3,
                 ),
                 # ANNUAL REPORT Group - starts with "a. Barangay Financial Report"
                 ChecklistItem(
@@ -63,35 +68,35 @@ INDICATOR_1_1 = Indicator(
                     group_name="ANNUAL REPORT",
                     mov_description="Barangay Financial Report",
                     required=True,
-                    display_order=4
+                    display_order=4,
                 ),
                 ChecklistItem(
                     id="1_1_1_b",
                     label="b. Barangay Budget",
                     mov_description="Barangay Budget",
                     required=True,
-                    display_order=5
+                    display_order=5,
                 ),
                 ChecklistItem(
                     id="1_1_1_c",
                     label="c. Summary of Income and Expenditures",
                     mov_description="Summary of Income and Expenditures",
                     required=True,
-                    display_order=6
+                    display_order=6,
                 ),
                 ChecklistItem(
                     id="1_1_1_d",
                     label="d. 20% Component of the NTA Utilization",
                     mov_description="20% Component of the NTA Utilization",
                     required=True,
-                    display_order=7
+                    display_order=7,
                 ),
                 ChecklistItem(
                     id="1_1_1_e",
                     label="e. Annual Procurement Plan or Procurement List",
                     mov_description="Annual Procurement Plan OR Procurement List (either one is acceptable)",
                     required=True,
-                    display_order=8
+                    display_order=8,
                 ),
                 # QUARTERLY REPORT Group - checkbox first, then count field
                 ChecklistItem(
@@ -100,7 +105,7 @@ INDICATOR_1_1 = Indicator(
                     group_name="QUARTERLY REPORT",
                     mov_description="List of Notices of Award (1st - 3rd Quarter)",
                     required=True,
-                    display_order=9
+                    display_order=9,
                 ),
                 ChecklistItem(
                     id="1_1_1_f_count",
@@ -108,7 +113,7 @@ INDICATOR_1_1 = Indicator(
                     mov_description="Please supply the number of documents submitted",
                     item_type="document_count",
                     required=True,
-                    display_order=10
+                    display_order=10,
                 ),
                 # MONTHLY REPORT Group - checkbox first, then count field
                 ChecklistItem(
@@ -117,7 +122,7 @@ INDICATOR_1_1 = Indicator(
                     group_name="MONTHLY REPORT",
                     mov_description="Itemized Monthly Collections and Disbursements (January to September)",
                     required=True,
-                    display_order=11
+                    display_order=11,
                 ),
                 ChecklistItem(
                     id="1_1_1_g_count",
@@ -125,7 +130,7 @@ INDICATOR_1_1 = Indicator(
                     mov_description="Please supply the number of documents submitted",
                     item_type="document_count",
                     required=True,
-                    display_order=12
+                    display_order=12,
                 ),
             ],
             notes=FormNotes(
@@ -137,9 +142,12 @@ INDICATOR_1_1 = Indicator(
                     NoteItem(label="d)", text="20% CoUtilization"),
                     NoteItem(label="e)", text="Annual Procurement Plan or Procurement List"),
                     NoteItem(label="f)", text="List of Notices of Award (1st - 3rd Quarter)"),
-                    NoteItem(label="g)", text="Itemized Monthly Collections and Disbursements (January to September)"),
-                ]
-            )
+                    NoteItem(
+                        label="g)",
+                        text="Itemized Monthly Collections and Disbursements (January to September)",
+                    ),
+                ],
+            ),
         ),
         # Sub-Indicator 1.1.2
         SubIndicator(
@@ -156,9 +164,9 @@ INDICATOR_1_1 = Indicator(
                     label="Annex B of DBM-DOF-DILG JMC No. 2018-1",
                     mov_description="Accomplished and signed BFR with received stamp from the Office of the C/M Accountant",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

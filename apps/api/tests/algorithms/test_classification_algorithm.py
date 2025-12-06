@@ -4,6 +4,7 @@ Test the "3+1" SGLGB compliance rule with comprehensive edge cases
 """
 
 import pytest
+
 from app.db.enums import AreaType, AssessmentStatus, ComplianceStatus, ValidationStatus
 from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.barangay import Barangay
@@ -47,21 +48,24 @@ def test_data(db_session):
         {
             "id": 1,
             "name": "Financial Administration and Sustainability",
+            "code": "FI",
             "area_type": AreaType.CORE,
         },
-        {"id": 2, "name": "Disaster Preparedness", "area_type": AreaType.CORE},
-        {"id": 3, "name": "Safety, Peace and Order", "area_type": AreaType.CORE},
+        {"id": 2, "name": "Disaster Preparedness", "code": "DI", "area_type": AreaType.CORE},
+        {"id": 3, "name": "Safety, Peace and Order", "code": "SA", "area_type": AreaType.CORE},
         {
             "id": 4,
             "name": "Social Protection and Sensitivity",
+            "code": "SO",
             "area_type": AreaType.ESSENTIAL,
         },
         {
             "id": 5,
             "name": "Business-Friendliness and Competitiveness",
+            "code": "BU",
             "area_type": AreaType.ESSENTIAL,
         },
-        {"id": 6, "name": "Environmental Management", "area_type": AreaType.ESSENTIAL},
+        {"id": 6, "name": "Environmental Management", "code": "EN", "area_type": AreaType.ESSENTIAL},
     ]
 
     for area_data in core_areas:
@@ -178,9 +182,7 @@ def test_classification_algorithm(test_data, core_passed, essential_passed, expe
 
     # Essential responses
     for i, indicator in enumerate(essential_indicators):
-        status = (
-            ValidationStatus.PASS if i < essential_passed * 2 else ValidationStatus.FAIL
-        )
+        status = ValidationStatus.PASS if i < essential_passed * 2 else ValidationStatus.FAIL
         response = AssessmentResponse(
             id=response_id,
             assessment_id=assessment.id,

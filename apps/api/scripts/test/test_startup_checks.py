@@ -31,9 +31,9 @@ sys.path.insert(0, str(Path(__file__).parent))
 async def test_startup(scenario: str = "success"):
     """Test startup checks with different scenarios."""
 
-    print(f"\n{'='*80}")
+    print(f"\n{'=' * 80}")
     print(f"Testing Startup Checks - Scenario: {scenario}")
-    print(f"{'='*80}\n")
+    print(f"{'=' * 80}\n")
 
     # Store original environment variables
     original_env = os.environ.copy()
@@ -64,18 +64,18 @@ async def test_startup(scenario: str = "success"):
         print("\n▶️  Running startup checks...\n")
         await startup_service.perform_startup_checks()
 
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print("✅ SUCCESS: All startup checks passed!")
-        print("="*80 + "\n")
+        print("=" * 80 + "\n")
         return True
 
     except Exception as e:
-        print("\n" + "="*80)
-        print(f"❌ FAILURE: Startup checks failed (as expected for failure scenarios)")
-        print("="*80)
+        print("\n" + "=" * 80)
+        print("❌ FAILURE: Startup checks failed (as expected for failure scenarios)")
+        print("=" * 80)
         print(f"\nError Type: {type(e).__name__}")
         print(f"Error Message:\n{str(e)}")
-        print("\n" + "="*80 + "\n")
+        print("\n" + "=" * 80 + "\n")
         return False
 
     finally:
@@ -93,9 +93,15 @@ def main():
     )
     parser.add_argument(
         "--scenario",
-        choices=["success", "missing-db", "missing-secret", "invalid-db-url", "redis-down"],
+        choices=[
+            "success",
+            "missing-db",
+            "missing-secret",
+            "invalid-db-url",
+            "redis-down",
+        ],
         default="success",
-        help="Test scenario to run"
+        help="Test scenario to run",
     )
 
     args = parser.parse_args()

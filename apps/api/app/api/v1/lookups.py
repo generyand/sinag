@@ -2,15 +2,15 @@
 # Endpoints for fetching data from lookup tables like
 # governance areas, barangays, and user roles.
 
-from typing import List
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.api import deps
-from app.schemas import lookups as lookup_schema
-from app.services.governance_area_service import governance_area_service
-from app.services.barangay_service import barangay_service
 from app.db.enums import UserRole
+from app.schemas import lookups as lookup_schema
+from app.services.barangay_service import barangay_service
+from app.services.governance_area_service import governance_area_service
 
 router = APIRouter()
 
@@ -46,7 +46,7 @@ USER_ROLE_OPTIONS = [
 
 @router.get(
     "/governance-areas",
-    response_model=List[lookup_schema.GovernanceArea],
+    response_model=list[lookup_schema.GovernanceArea],
 )
 def get_all_governance_areas(
     db: Session = Depends(deps.get_db),
@@ -60,7 +60,7 @@ def get_all_governance_areas(
 
 @router.get(
     "/barangays",
-    response_model=List[lookup_schema.Barangay],
+    response_model=list[lookup_schema.Barangay],
 )
 def get_all_barangays(
     db: Session = Depends(deps.get_db),
@@ -74,7 +74,7 @@ def get_all_barangays(
 
 @router.get(
     "/roles",
-    response_model=List[lookup_schema.UserRoleOption],
+    response_model=list[lookup_schema.UserRoleOption],
 )
 def get_all_roles():
     """

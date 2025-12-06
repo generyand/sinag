@@ -1,6 +1,6 @@
 """Check if assessment exists and has the right structure"""
+
 import requests
-import json
 
 BASE_URL = "http://localhost:8000"
 API_V1 = f"{BASE_URL}/api/v1"
@@ -9,7 +9,7 @@ API_V1 = f"{BASE_URL}/api/v1"
 print("🔐 Logging in...")
 response = requests.post(
     f"{API_V1}/auth/login",
-    json={"email": "test1@example.com", "password": "changethis"}
+    json={"email": "test1@example.com", "password": "changethis"},
 )
 
 if response.status_code != 200:
@@ -17,7 +17,7 @@ if response.status_code != 200:
     exit(1)
 
 token = response.json()["access_token"]
-print(f"✅ Login successful")
+print("✅ Login successful")
 
 # Get user info
 print("\n👤 Getting user info...")

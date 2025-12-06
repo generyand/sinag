@@ -48,8 +48,7 @@ IMPORTANT NOTES FOR PHASE 9 (VALIDATION SERVICE):
    - The year appears in sub-indicator 2.2.1 description
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
-
+from app.indicators.base import ChecklistItem, Indicator, SubIndicator
 
 # Indicator 2.2: Extent of Risk Assessment and Early Warning System (EWS)
 INDICATOR_2_2 = Indicator(
@@ -75,11 +74,10 @@ INDICATOR_2_2 = Indicator(
                     label="Post-Activity Report of activities such as Climate and Disaster Risk Assessment, Participatory Disaster Risk Assessment, BDRRM Planning, etc.",
                     mov_description="Verification of uploaded Post-Activity Report documenting Risk Assessment activities conducted in the barangay not earlier than CY 2020",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 2.2.2
         SubIndicator(
             code="2.2.2",
@@ -98,11 +96,10 @@ INDICATOR_2_2 = Indicator(
                     label="Two (2) Photo documentations of Barangay Risk/Hazard Map",
                     mov_description="Verification of uploaded photo documentation showing the Barangay Risk/Hazard Map which indicates possible risks — natural or man-made",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 2.2.3
         SubIndicator(
             code="2.2.3",
@@ -121,7 +118,7 @@ INDICATOR_2_2 = Indicator(
                     label="Two (2) Photo documentations of EWS",
                     mov_description="Verification of uploaded photo documentation showing the established Early Warning System (EWS) for the top two hazards present in the barangay",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
                 # TOP 1 Hazard (Text Input)
                 ChecklistItem(
@@ -130,7 +127,7 @@ INDICATOR_2_2 = Indicator(
                     mov_description="Please supply the required information",
                     required=True,
                     requires_document_count=True,  # This is a text input field
-                    display_order=2
+                    display_order=2,
                 ),
                 # TOP 2 Hazard (Text Input)
                 ChecklistItem(
@@ -139,9 +136,9 @@ INDICATOR_2_2 = Indicator(
                     mov_description=None,  # Removed - only first field needs label
                     required=True,
                     requires_document_count=True,  # This is a text input field
-                    display_order=3
+                    display_order=3,
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

@@ -5,6 +5,7 @@ Revises: 1a2b3c4d5e6f
 Create Date: 2025-11-05 21:14:57.719450
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -12,8 +13,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '407936f13d35'
-down_revision: Union[str, Sequence[str], None] = '1a2b3c4d5e6f'
+revision: str = "407936f13d35"
+down_revision: Union[str, Sequence[str], None] = "1a2b3c4d5e6f"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -28,10 +29,12 @@ def upgrade() -> None:
     connection = op.get_bind()
 
     # Check if this is a fresh database (validator_area_id already exists)
-    result = connection.execute(sa.text(
-        "SELECT column_name FROM information_schema.columns "
-        "WHERE table_name = 'users' AND column_name = 'validator_area_id'"
-    ))
+    result = connection.execute(
+        sa.text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_name = 'users' AND column_name = 'validator_area_id'"
+        )
+    )
     is_fresh_db = result.fetchone() is not None
 
     if is_fresh_db:
@@ -51,23 +54,27 @@ def upgrade() -> None:
         )
 
     # Step 2: Rename governance_area_id to validator_area_id
-    op.alter_column('users', 'governance_area_id', new_column_name='validator_area_id')
+    op.alter_column("users", "governance_area_id", new_column_name="validator_area_id")
 
     # Step 3: Update PostgreSQL enum type to add new values
     # Check if ASSESSOR value exists, if not add it
-    result = connection.execute(sa.text(
-        "SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid "
-        "WHERE t.typname = 'user_role_enum' AND e.enumlabel = 'ASSESSOR'"
-    ))
+    result = connection.execute(
+        sa.text(
+            "SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid "
+            "WHERE t.typname = 'user_role_enum' AND e.enumlabel = 'ASSESSOR'"
+        )
+    )
     if not result.fetchone():
         connection.execute(sa.text("COMMIT"))
         connection.execute(sa.text("ALTER TYPE user_role_enum ADD VALUE 'ASSESSOR'"))
 
     # Check if VALIDATOR value exists, if not add it
-    result = connection.execute(sa.text(
-        "SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid "
-        "WHERE t.typname = 'user_role_enum' AND e.enumlabel = 'VALIDATOR'"
-    ))
+    result = connection.execute(
+        sa.text(
+            "SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid "
+            "WHERE t.typname = 'user_role_enum' AND e.enumlabel = 'VALIDATOR'"
+        )
+    )
     if not result.fetchone():
         connection.execute(sa.text("COMMIT"))
         connection.execute(sa.text("ALTER TYPE user_role_enum ADD VALUE 'VALIDATOR'"))
@@ -90,7 +97,7 @@ def downgrade() -> None:
     op.execute("UPDATE users SET role = 'AREA_ASSESSOR' WHERE role = 'VALIDATOR'")
 
     # Step 2: Rename validator_area_id back to governance_area_id
-    op.alter_column('users', 'validator_area_id', new_column_name='governance_area_id')
+    op.alter_column("users", "validator_area_id", new_column_name="governance_area_id")
 
     # Note: We don't remove the 'ASSESSOR' and 'VALIDATOR' values from the PostgreSQL enum
     # as PostgreSQL doesn't support removing enum values without recreating the entire enum type.

@@ -3,8 +3,6 @@
 
 from datetime import datetime
 
-from app.db.base import Base
-from app.db.enums import NotificationType
 from sqlalchemy import (
     Boolean,
     Column,
@@ -16,6 +14,9 @@ from sqlalchemy import (
     Text,
 )
 from sqlalchemy.orm import relationship
+
+from app.db.base import Base
+from app.db.enums import NotificationType
 
 
 class Notification(Base):

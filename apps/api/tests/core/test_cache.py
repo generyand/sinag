@@ -2,24 +2,25 @@
 Tests for Redis caching functionality (app/core/cache.py)
 """
 
-import pytest
 import time
 from threading import Thread
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import MagicMock, patch
+
+import pytest
 from redis.exceptions import RedisError
 
 from app.core.cache import (
-    RedisCache,
-    cache,
-    CacheMetrics,
-    cached,
-    cache_query_result,
-    get_cache_stats,
-    invalidate_cache_pattern,
-    CACHE_TTL_EXTERNAL_ANALYTICS,
     CACHE_TTL_DASHBOARD,
+    CACHE_TTL_EXTERNAL_ANALYTICS,
     CACHE_TTL_LOOKUP,
     CACHE_TTL_SHORT,
+    CacheMetrics,
+    RedisCache,
+    cache,
+    cache_query_result,
+    cached,
+    get_cache_stats,
+    invalidate_cache_pattern,
 )
 
 
@@ -197,11 +198,7 @@ class TestRedisCache:
             "bool": True,
             "null": None,
             "list": [1, 2, 3],
-            "nested": {
-                "dict": {
-                    "deeply": ["nested", "values"]
-                }
-            }
+            "nested": {"dict": {"deeply": ["nested", "values"]}},
         }
 
         # Set and retrieve
@@ -214,7 +211,7 @@ class TestRedisCache:
         # Cleanup
         cache.delete(test_key)
 
-    @patch('app.core.cache.redis.Redis')
+    @patch("app.core.cache.redis.Redis")
     def test_cache_handles_redis_connection_error(self, mock_redis):
         """Test cache handles Redis connection errors during initialization"""
         # Mock Redis to raise connection error
@@ -226,7 +223,7 @@ class TestRedisCache:
         # Should mark as unavailable
         assert test_cache.is_available is False
 
-    @patch('app.core.cache.redis.Redis')
+    @patch("app.core.cache.redis.Redis")
     def test_cache_handles_redis_ping_failure(self, mock_redis):
         """Test cache handles Redis ping failure"""
         # Mock Redis instance that fails ping
@@ -437,7 +434,7 @@ class TestCacheKeyGeneration:
 class TestDeletePattern:
     """Test SCAN-based pattern deletion"""
 
-    @patch('app.core.cache.redis.Redis')
+    @patch("app.core.cache.redis.Redis")
     def test_delete_pattern_uses_scan_not_keys(self, mock_redis):
         """Test delete_pattern uses SCAN instead of blocking KEYS command"""
         mock_client = MagicMock()
@@ -451,7 +448,7 @@ class TestDeletePattern:
         ]
         mock_client.delete.return_value = 5
 
-        with patch('app.core.cache.settings') as mock_settings:
+        with patch("app.core.cache.settings") as mock_settings:
             mock_settings.REDIS_CACHE_URL = "redis://localhost:6380/0"
 
             test_cache = RedisCache()
@@ -461,9 +458,9 @@ class TestDeletePattern:
             assert mock_client.scan.call_count == 2
             assert mock_client.delete.call_count == 2
             # Verify KEYS was never called
-            assert not hasattr(mock_client, 'keys') or mock_client.keys.call_count == 0
+            assert not hasattr(mock_client, "keys") or mock_client.keys.call_count == 0
 
-    @patch('app.core.cache.redis.Redis')
+    @patch("app.core.cache.redis.Redis")
     def test_delete_pattern_handles_redis_error(self, mock_redis):
         """Test delete_pattern handles Redis errors gracefully"""
         mock_client = MagicMock()
@@ -471,7 +468,7 @@ class TestDeletePattern:
         mock_client.ping.return_value = True
         mock_client.scan.side_effect = RedisError("Scan failed")
 
-        with patch('app.core.cache.settings') as mock_settings:
+        with patch("app.core.cache.settings") as mock_settings:
             mock_settings.REDIS_CACHE_URL = "redis://localhost:6380/0"
 
             test_cache = RedisCache()
@@ -483,7 +480,7 @@ class TestDeletePattern:
 class TestCachedDecorator:
     """Test @cached decorator functionality"""
 
-    @patch('app.core.cache.cache')
+    @patch("app.core.cache.cache")
     def test_cached_decorator_hit(self, mock_cache):
         """Test decorator returns cached value on hit"""
         mock_cache.is_available = True
@@ -500,7 +497,7 @@ class TestCachedDecorator:
         mock_cache.get.assert_called_once()
         mock_cache.record_hit.assert_called_once()
 
-    @patch('app.core.cache.cache')
+    @patch("app.core.cache.cache")
     def test_cached_decorator_miss(self, mock_cache):
         """Test decorator computes and caches on miss"""
         mock_cache.is_available = True
@@ -521,7 +518,7 @@ class TestCachedDecorator:
         mock_cache.set.assert_called_once_with("test:key", computed_value, ttl=300)
         mock_cache.record_miss.assert_called_once()
 
-    @patch('app.core.cache.cache')
+    @patch("app.core.cache.cache")
     def test_cached_decorator_skip_none(self, mock_cache):
         """Test decorator doesn't cache None when skip_none=True"""
         mock_cache.is_available = True
@@ -537,7 +534,7 @@ class TestCachedDecorator:
         assert result is None
         mock_cache.set.assert_not_called()  # Should not cache None
 
-    @patch('app.core.cache.cache')
+    @patch("app.core.cache.cache")
     def test_cached_decorator_cache_none_when_configured(self, mock_cache):
         """Test decorator caches None when skip_none=False"""
         mock_cache.is_available = True
@@ -553,7 +550,7 @@ class TestCachedDecorator:
         assert result is None
         mock_cache.set.assert_called_once_with("test:key", None, ttl=300)
 
-    @patch('app.core.cache.cache')
+    @patch("app.core.cache.cache")
     def test_cached_decorator_when_redis_unavailable(self, mock_cache):
         """Test decorator bypasses cache when Redis unavailable"""
         mock_cache.is_available = False
@@ -576,7 +573,7 @@ class TestCachedDecorator:
         mock_cache.get.assert_not_called()
         mock_cache.set.assert_not_called()
 
-    @patch('app.core.cache.cache')
+    @patch("app.core.cache.cache")
     def test_cached_decorator_custom_key_builder(self, mock_cache):
         """Test decorator with custom key builder"""
         mock_cache.is_available = True
@@ -594,7 +591,7 @@ class TestCachedDecorator:
         # Should use custom key builder instead of default
         mock_cache.get.assert_called_once_with("custom:123")
 
-    @patch('app.core.cache.cache')
+    @patch("app.core.cache.cache")
     def test_cached_decorator_preserves_function_metadata(self, mock_cache):
         """Test decorator preserves function name and docstring"""
         mock_cache.is_available = False
@@ -611,7 +608,7 @@ class TestCachedDecorator:
 class TestCacheQueryResultDecorator:
     """Test @cache_query_result decorator functionality"""
 
-    @patch('app.core.cache.cache')
+    @patch("app.core.cache.cache")
     def test_cache_query_result_delegates_to_cached(self, mock_cache):
         """Test cache_query_result is a wrapper around cached"""
         mock_cache.is_available = True
@@ -631,7 +628,7 @@ class TestCacheQueryResultDecorator:
 class TestModuleFunctions:
     """Test module-level functions"""
 
-    @patch('app.core.cache.cache')
+    @patch("app.core.cache.cache")
     def test_invalidate_cache_pattern(self, mock_cache):
         """Test invalidate_cache_pattern delegates to cache"""
         mock_cache.delete_pattern.return_value = 5
@@ -641,7 +638,7 @@ class TestModuleFunctions:
         assert deleted == 5
         mock_cache.delete_pattern.assert_called_once_with("dashboard:*")
 
-    @patch('app.core.cache.cache')
+    @patch("app.core.cache.cache")
     def test_get_cache_stats_when_available(self, mock_cache):
         """Test get_cache_stats returns metrics when cache available"""
         mock_cache.is_available = True
@@ -657,7 +654,7 @@ class TestModuleFunctions:
         assert stats["metrics"]["hits"] == 100
         assert stats["metrics"]["misses"] == 20
 
-    @patch('app.core.cache.cache')
+    @patch("app.core.cache.cache")
     def test_get_cache_stats_when_unavailable(self, mock_cache):
         """Test get_cache_stats returns None metrics when cache unavailable"""
         mock_cache.is_available = False

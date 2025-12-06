@@ -1,11 +1,13 @@
-import pytest
 from datetime import datetime
+
+import pytest
+from fastapi import HTTPException
+
 from app.api import deps
 from app.db.enums import AreaType, AssessmentStatus, UserRole
 from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
-from fastapi import HTTPException
 
 
 def create_user(
@@ -45,9 +47,7 @@ def create_assessment_with_indicator(
     db.commit()
     db.refresh(a)
 
-    ar = AssessmentResponse(
-        assessment_id=a.id, indicator_id=indicator.id, is_completed=True
-    )
+    ar = AssessmentResponse(assessment_id=a.id, indicator_id=indicator.id, is_completed=True)
     db.add(ar)
     db.commit()
     return a
@@ -59,11 +59,9 @@ class DummyCreds:
 
 
 @pytest.mark.asyncio
-async def test_get_current_area_assessor_user_requires_role_and_area(
-    db_session, monkeypatch
-):
+async def test_get_current_area_assessor_user_requires_role_and_area(db_session, monkeypatch):
     # Arrange: create governance area and users
-    area = GovernanceArea(id=1, name="Core A", area_type=AreaType.CORE)
+    area = GovernanceArea(id=1, code="T1", name="Core A", area_type=AreaType.CORE)
     db_session.add(area)
     db_session.commit()
     db_session.refresh(area)
@@ -91,47 +89,35 @@ async def test_get_current_area_assessor_user_requires_role_and_area(
     )
 
     # Monkeypatch token verification to return user id from provided token
-    monkeypatch.setattr(
-        "app.core.security.verify_token", lambda token: {"sub": int(token)}
-    )
+    monkeypatch.setattr("app.core.security.verify_token", lambda token: {"sub": int(token)})
 
     # Act + Assert: wrong role -> 403
     with pytest.raises(HTTPException) as e1:
-        await deps.get_current_area_assessor_user(
-            current_user=not_assessor, db=db_session
-        )
+        await deps.get_current_area_assessor_user(current_user=not_assessor, db=db_session)
     assert e1.value.status_code == 403
 
     # Missing governance area -> 403
     with pytest.raises(HTTPException) as e2:
-        await deps.get_current_area_assessor_user(
-            current_user=assessor_no_area, db=db_session
-        )
+        await deps.get_current_area_assessor_user(current_user=assessor_no_area, db=db_session)
     assert e2.value.status_code == 403
 
     # Valid assessor with area -> returns user with loaded area
-    user = await deps.get_current_area_assessor_user(
-        current_user=assessor_ok, db=db_session
-    )
+    user = await deps.get_current_area_assessor_user(current_user=assessor_ok, db=db_session)
     assert user.id == assessor_ok.id
     assert user.governance_area is not None
 
 
 def test_get_assessor_queue_filters_by_governance_area(client, db_session, monkeypatch):
     # Arrange: setup two areas and indicators
-    area_a = GovernanceArea(name="Area A", area_type=AreaType.CORE)
-    area_b = GovernanceArea(name="Area B", area_type=AreaType.ESSENTIAL)
+    area_a = GovernanceArea(name="Area A", code="AA", area_type=AreaType.CORE)
+    area_b = GovernanceArea(name="Area B", code="AB", area_type=AreaType.ESSENTIAL)
     db_session.add_all([area_a, area_b])
     db_session.commit()
     db_session.refresh(area_a)
     db_session.refresh(area_b)
 
-    ind_a = Indicator(
-        name="Ind A", description="", form_schema={}, governance_area_id=area_a.id
-    )
-    ind_b = Indicator(
-        name="Ind B", description="", form_schema={}, governance_area_id=area_b.id
-    )
+    ind_a = Indicator(name="Ind A", description="", form_schema={}, governance_area_id=area_a.id)
+    ind_b = Indicator(name="Ind B", description="", form_schema={}, governance_area_id=area_b.id)
     db_session.add_all([ind_a, ind_b])
     db_session.commit()
     db_session.refresh(ind_a)

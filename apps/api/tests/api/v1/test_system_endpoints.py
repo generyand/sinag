@@ -3,9 +3,7 @@ Test System Endpoints
 Integration tests for health checks, metrics, and system monitoring endpoints
 """
 
-import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
-from fastapi.testclient import TestClient
+from unittest.mock import AsyncMock, MagicMock, patch
 
 
 class TestHealthEndpoints:
@@ -38,8 +36,8 @@ class TestHealthEndpoints:
 
     def test_readiness_probe_when_healthy(self, client):
         """Test /health/ready returns 200 when services are healthy"""
-        with patch('app.db.base.check_database_connection') as mock_db:
-            with patch('app.db.base.check_redis_connection') as mock_redis:
+        with patch("app.db.base.check_database_connection") as mock_db:
+            with patch("app.db.base.check_redis_connection") as mock_redis:
                 # Mock healthy connections
                 mock_db.return_value = {"connected": True}
                 mock_redis.return_value = {"connected": True}
@@ -56,10 +54,13 @@ class TestHealthEndpoints:
 
     def test_readiness_probe_when_database_unhealthy(self, client):
         """Test /health/ready returns 503 when database is down"""
-        with patch('app.db.base.check_database_connection') as mock_db:
-            with patch('app.db.base.check_redis_connection') as mock_redis:
+        with patch("app.db.base.check_database_connection") as mock_db:
+            with patch("app.db.base.check_redis_connection") as mock_redis:
                 # Mock database failure
-                mock_db.return_value = {"connected": False, "error": "Connection failed"}
+                mock_db.return_value = {
+                    "connected": False,
+                    "error": "Connection failed",
+                }
                 mock_redis.return_value = {"connected": True}
 
                 response = client.get("/health/ready")
@@ -73,11 +74,14 @@ class TestHealthEndpoints:
 
     def test_readiness_probe_when_redis_unhealthy(self, client):
         """Test /health/ready returns 503 when Redis is down"""
-        with patch('app.db.base.check_database_connection') as mock_db:
-            with patch('app.db.base.check_redis_connection') as mock_redis:
+        with patch("app.db.base.check_database_connection") as mock_db:
+            with patch("app.db.base.check_redis_connection") as mock_redis:
                 # Mock Redis failure
                 mock_db.return_value = {"connected": True}
-                mock_redis.return_value = {"connected": False, "error": "Connection refused"}
+                mock_redis.return_value = {
+                    "connected": False,
+                    "error": "Connection refused",
+                }
 
                 response = client.get("/health/ready")
 
@@ -90,8 +94,8 @@ class TestHealthEndpoints:
 
     def test_readiness_probe_when_all_services_down(self, client):
         """Test /health/ready when all services are down"""
-        with patch('app.db.base.check_database_connection') as mock_db:
-            with patch('app.db.base.check_redis_connection') as mock_redis:
+        with patch("app.db.base.check_database_connection") as mock_db:
+            with patch("app.db.base.check_redis_connection") as mock_redis:
                 # Mock all failures
                 mock_db.return_value = {"connected": False}
                 mock_redis.return_value = {"connected": False}
@@ -145,10 +149,10 @@ class TestDetailedHealthEndpoint:
         assert login_response.status_code == 200
         token = login_response.json()["access_token"]
 
-        with patch('app.db.base.check_database_connection') as mock_db:
-            with patch('app.db.base.check_redis_connection') as mock_redis:
-                with patch('app.db.base.check_redis_cache_connection') as mock_cache:
-                    with patch('app.db.base.get_db_pool_stats') as mock_pool:
+        with patch("app.db.base.check_database_connection") as mock_db:
+            with patch("app.db.base.check_redis_connection") as mock_redis:
+                with patch("app.db.base.check_redis_cache_connection") as mock_cache:
+                    with patch("app.db.base.get_db_pool_stats") as mock_pool:
                         # Mock healthy connections
                         mock_db.return_value = {"connected": True, "status": "healthy"}
                         mock_redis.return_value = {"connected": True}
@@ -182,10 +186,10 @@ class TestDetailedHealthEndpoint:
         )
         token = login_response.json()["access_token"]
 
-        with patch('app.db.base.check_database_connection') as mock_db:
-            with patch('app.db.base.check_redis_connection') as mock_redis:
-                with patch('app.db.base.check_redis_cache_connection') as mock_cache:
-                    with patch('app.db.base.get_db_pool_stats') as mock_pool:
+        with patch("app.db.base.check_database_connection") as mock_db:
+            with patch("app.db.base.check_redis_connection") as mock_redis:
+                with patch("app.db.base.check_redis_cache_connection") as mock_cache:
+                    with patch("app.db.base.get_db_pool_stats") as mock_pool:
                         mock_db.return_value = {"connected": True}
                         mock_redis.return_value = {"connected": True}
                         mock_cache.return_value = {"connected": True}
@@ -217,13 +221,16 @@ class TestDetailedHealthEndpoint:
         )
         token = login_response.json()["access_token"]
 
-        with patch('app.db.base.check_database_connection') as mock_db:
-            with patch('app.db.base.check_redis_connection') as mock_redis:
-                with patch('app.db.base.check_redis_cache_connection') as mock_cache:
-                    with patch('app.db.base.get_db_pool_stats') as mock_pool:
+        with patch("app.db.base.check_database_connection") as mock_db:
+            with patch("app.db.base.check_redis_connection") as mock_redis:
+                with patch("app.db.base.check_redis_cache_connection") as mock_cache:
+                    with patch("app.db.base.get_db_pool_stats") as mock_pool:
                         # Database healthy but Redis Celery down
                         mock_db.return_value = {"connected": True}
-                        mock_redis.return_value = {"connected": False, "error": "Connection failed"}
+                        mock_redis.return_value = {
+                            "connected": False,
+                            "error": "Connection failed",
+                        }
                         mock_cache.return_value = {"connected": True}
                         mock_pool.return_value = {"available": True}
 
@@ -309,8 +316,8 @@ class TestMetricsEndpoints:
         )
         token = login_response.json()["access_token"]
 
-        with patch('app.core.cache.cache') as mock_cache:
-            with patch('app.db.base.engine') as mock_engine:
+        with patch("app.core.cache.cache") as mock_cache:
+            with patch("app.db.base.engine") as mock_engine:
                 # Mock cache stats
                 mock_cache.is_available = True
                 mock_cache.get_metrics.return_value = {
@@ -348,8 +355,8 @@ class TestMetricsEndpoints:
         )
         token = login_response.json()["access_token"]
 
-        with patch('app.core.cache.cache'):
-            with patch('app.db.base.engine'):
+        with patch("app.core.cache.cache"):
+            with patch("app.db.base.engine"):
                 response = client.get(
                     "/api/v1/system/metrics",
                     headers={"Authorization": f"Bearer {token}"},
@@ -373,8 +380,8 @@ class TestMetricsEndpoints:
         )
         token = login_response.json()["access_token"]
 
-        with patch('app.core.cache.cache') as mock_cache:
-            with patch('app.db.base.engine'):
+        with patch("app.core.cache.cache") as mock_cache:
+            with patch("app.db.base.engine"):
                 mock_cache.is_available = True
                 mock_cache.get_metrics.return_value = {
                     "hits": 500,
@@ -407,8 +414,8 @@ class TestMetricsEndpoints:
         )
         token = login_response.json()["access_token"]
 
-        with patch('app.core.cache.cache'):
-            with patch('app.db.base.engine') as mock_engine:
+        with patch("app.core.cache.cache"):
+            with patch("app.db.base.engine") as mock_engine:
                 mock_pool = MagicMock()
                 mock_pool.size.return_value = 30
                 mock_pool.checkedin.return_value = 20
@@ -449,7 +456,9 @@ class TestEndpointAccessControl:
             # Should not be 401 (may be 200, 503, etc.)
             assert response.status_code != 401
 
-    def test_admin_endpoints_require_mlgoo_role(self, client, mlgoo_user, validator_user, assessor_user):
+    def test_admin_endpoints_require_mlgoo_role(
+        self, client, mlgoo_user, validator_user, assessor_user
+    ):
         """Test admin-only endpoints reject non-MLGOO users"""
         admin_endpoints = [
             "/api/v1/system/health",
@@ -470,7 +479,9 @@ class TestEndpointAccessControl:
                     headers={"Authorization": f"Bearer {token}"},
                 )
                 # Should be forbidden
-                assert response.status_code == 403, f"{endpoint} should be forbidden for {user.role}"
+                assert response.status_code == 403, (
+                    f"{endpoint} should be forbidden for {user.role}"
+                )
 
         # Test with MLGOO admin - should succeed
         login_response = client.post(
@@ -479,11 +490,13 @@ class TestEndpointAccessControl:
         )
         token = login_response.json()["access_token"]
 
-        with patch('app.db.base.check_database_connection', new_callable=AsyncMock) as mock_db:
-            with patch('app.db.base.check_redis_connection', new_callable=AsyncMock) as mock_redis:
-                with patch('app.db.base.check_redis_cache_connection', new_callable=AsyncMock) as mock_cache:
-                    with patch('app.db.base.get_db_pool_stats') as mock_pool:
-                        with patch('app.core.cache.cache'):
+        with patch("app.db.base.check_database_connection", new_callable=AsyncMock) as mock_db:
+            with patch("app.db.base.check_redis_connection", new_callable=AsyncMock) as mock_redis:
+                with patch(
+                    "app.db.base.check_redis_cache_connection", new_callable=AsyncMock
+                ) as mock_cache:
+                    with patch("app.db.base.get_db_pool_stats") as mock_pool:
+                        with patch("app.core.cache.cache"):
                             # Set return values for async mocks
                             mock_db.return_value = {"connected": True}
                             mock_redis.return_value = {"connected": True}
@@ -496,7 +509,9 @@ class TestEndpointAccessControl:
                                     headers={"Authorization": f"Bearer {token}"},
                                 )
                                 # Should succeed
-                                assert response.status_code == 200, f"{endpoint} should be accessible for MLGOO_DILG"
+                                assert response.status_code == 200, (
+                                    f"{endpoint} should be accessible for MLGOO_DILG"
+                                )
 
 
 class TestDatabasePoolStats:
@@ -506,7 +521,7 @@ class TestDatabasePoolStats:
         """Test get_db_pool_stats returns pool information"""
         from app.db.base import get_db_pool_stats
 
-        with patch('app.db.base.engine') as mock_engine:
+        with patch("app.db.base.engine") as mock_engine:
             mock_pool = MagicMock()
             mock_pool.size.return_value = 30
             mock_pool.checkedin.return_value = 25
@@ -526,7 +541,7 @@ class TestDatabasePoolStats:
         """Test get_db_pool_stats handles missing engine gracefully"""
         from app.db.base import get_db_pool_stats
 
-        with patch('app.db.base.engine', None):
+        with patch("app.db.base.engine", None):
             stats = get_db_pool_stats()
 
             assert stats["available"] is False
@@ -538,10 +553,11 @@ class TestRedisCacheConnectionCheck:
 
     def test_check_redis_cache_connection_when_available(self):
         """Test cache connection check when Redis cache is available"""
-        from app.db.base import check_redis_cache_connection
         import asyncio
 
-        with patch('app.core.cache.cache') as mock_cache:
+        from app.db.base import check_redis_cache_connection
+
+        with patch("app.core.cache.cache") as mock_cache:
             mock_cache.is_available = True
             mock_cache.get_metrics.return_value = {
                 "hits": 100,
@@ -556,10 +572,11 @@ class TestRedisCacheConnectionCheck:
 
     def test_check_redis_cache_connection_when_unavailable(self):
         """Test cache connection check when Redis cache is unavailable"""
-        from app.db.base import check_redis_cache_connection
         import asyncio
 
-        with patch('app.core.cache.cache') as mock_cache:
+        from app.db.base import check_redis_cache_connection
+
+        with patch("app.core.cache.cache") as mock_cache:
             mock_cache.is_available = False
 
             result = asyncio.run(check_redis_cache_connection())

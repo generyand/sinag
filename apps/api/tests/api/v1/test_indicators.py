@@ -2,17 +2,17 @@
 Tests for indicators API endpoints (app/api/v1/indicators.py)
 """
 
-import pytest
 import uuid
+
+import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
 from passlib.context import CryptContext
+from sqlalchemy.orm import Session
 
-from app.db.models.user import User
-from app.db.models.governance_area import GovernanceArea, Indicator
-from app.db.enums import UserRole, AreaType
 from app.api import deps
-
+from app.db.enums import AreaType, UserRole
+from app.db.models.governance_area import GovernanceArea, Indicator
+from app.db.models.user import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -67,8 +67,10 @@ def assessor_user(db_session: Session):
 @pytest.fixture
 def governance_area(db_session: Session):
     """Create a governance area for testing"""
+    unique_code = uuid.uuid4().hex[:2].upper()
     area = GovernanceArea(
         name=f"Test Area {uuid.uuid4().hex[:8]}",
+        code=unique_code,
         area_type=AreaType.CORE,
     )
     db_session.add(area)
@@ -94,7 +96,7 @@ def test_indicator(db_session: Session, governance_area: GovernanceArea):
                     "field_type": "text",
                     "label": "Test Field",
                     "required": True,
-                    "is_means_of_verification": False
+                    "is_means_of_verification": False,
                 }
             ]
         },
@@ -108,6 +110,7 @@ def test_indicator(db_session: Session, governance_area: GovernanceArea):
 
 def _override_admin_and_db(client, admin_user: User, db_session: Session):
     """Override authentication and database dependencies for admin users"""
+
     def _override_current_user():
         return admin_user
 
@@ -127,6 +130,7 @@ def _override_admin_and_db(client, admin_user: User, db_session: Session):
 
 def _override_user_and_db(client, user: User, db_session: Session):
     """Override authentication and database dependencies for non-admin users"""
+
     def _override_current_user():
         return user
 
@@ -149,7 +153,7 @@ def test_create_indicator_success(
     client: TestClient,
     db_session: Session,
     admin_user: User,
-    governance_area: GovernanceArea
+    governance_area: GovernanceArea,
 ):
     """Test creating a new indicator as admin"""
     _override_admin_and_db(client, admin_user, db_session)
@@ -167,7 +171,7 @@ def test_create_indicator_success(
                     "field_id": "test_field_1",
                     "field_type": "text_input",
                     "label": "Test Field",
-                    "required": True
+                    "required": True,
                 }
             ]
         },
@@ -201,7 +205,7 @@ def test_create_indicator_non_admin(
     client: TestClient,
     db_session: Session,
     assessor_user: User,
-    governance_area: GovernanceArea
+    governance_area: GovernanceArea,
 ):
     """Test that non-admin users cannot create indicators"""
     _override_user_and_db(client, assessor_user, db_session)
@@ -217,9 +221,7 @@ def test_create_indicator_non_admin(
 
 
 def test_create_indicator_invalid_governance_area(
-    client: TestClient,
-    db_session: Session,
-    admin_user: User
+    client: TestClient, db_session: Session, admin_user: User
 ):
     """Test creating indicator with non-existent governance area"""
     _override_admin_and_db(client, admin_user, db_session)
@@ -241,10 +243,7 @@ def test_create_indicator_invalid_governance_area(
 
 
 def test_list_indicators_success(
-    client: TestClient,
-    db_session: Session,
-    admin_user: User,
-    test_indicator: Indicator
+    client: TestClient, db_session: Session, admin_user: User, test_indicator: Indicator
 ):
     """Test listing all indicators"""
     _override_admin_and_db(client, admin_user, db_session)
@@ -265,7 +264,7 @@ def test_list_indicators_with_filters(
     db_session: Session,
     admin_user: User,
     test_indicator: Indicator,
-    governance_area: GovernanceArea
+    governance_area: GovernanceArea,
 ):
     """Test listing indicators with governance_area_id filter"""
     _override_admin_and_db(client, admin_user, db_session)
@@ -280,10 +279,7 @@ def test_list_indicators_with_filters(
 
 
 def test_list_indicators_pagination(
-    client: TestClient,
-    db_session: Session,
-    admin_user: User,
-    test_indicator: Indicator
+    client: TestClient, db_session: Session, admin_user: User, test_indicator: Indicator
 ):
     """Test pagination parameters"""
     _override_admin_and_db(client, admin_user, db_session)
@@ -302,10 +298,7 @@ def test_list_indicators_pagination(
 
 
 def test_get_indicator_by_id_success(
-    client: TestClient,
-    db_session: Session,
-    admin_user: User,
-    test_indicator: Indicator
+    client: TestClient, db_session: Session, admin_user: User, test_indicator: Indicator
 ):
     """Test getting a single indicator by ID"""
     _override_admin_and_db(client, admin_user, db_session)
@@ -319,11 +312,7 @@ def test_get_indicator_by_id_success(
     assert data["version"] == test_indicator.version
 
 
-def test_get_indicator_not_found(
-    client: TestClient,
-    db_session: Session,
-    admin_user: User
-):
+def test_get_indicator_not_found(client: TestClient, db_session: Session, admin_user: User):
     """Test getting non-existent indicator returns 404"""
     _override_admin_and_db(client, admin_user, db_session)
 
@@ -339,10 +328,7 @@ def test_get_indicator_not_found(
 
 
 def test_update_indicator_metadata_only(
-    client: TestClient,
-    db_session: Session,
-    admin_user: User,
-    test_indicator: Indicator
+    client: TestClient, db_session: Session, admin_user: User, test_indicator: Indicator
 ):
     """Test updating indicator metadata (no version change)"""
     _override_admin_and_db(client, admin_user, db_session)
@@ -364,10 +350,7 @@ def test_update_indicator_metadata_only(
 
 
 def test_update_indicator_schema_triggers_versioning(
-    client: TestClient,
-    db_session: Session,
-    admin_user: User,
-    test_indicator: Indicator
+    client: TestClient, db_session: Session, admin_user: User, test_indicator: Indicator
 ):
     """Test updating schema fields triggers version increment"""
     _override_admin_and_db(client, admin_user, db_session)
@@ -381,7 +364,7 @@ def test_update_indicator_schema_triggers_versioning(
                     "field_id": "new_field",
                     "field_type": "number_input",
                     "label": "New Number Field",
-                    "required": True
+                    "required": True,
                 }
             ]
         },
@@ -404,11 +387,7 @@ def test_update_indicator_unauthorized(client: TestClient, test_indicator: Indic
     assert response.status_code in [401, 403]
 
 
-def test_update_indicator_not_found(
-    client: TestClient,
-    db_session: Session,
-    admin_user: User
-):
+def test_update_indicator_not_found(client: TestClient, db_session: Session, admin_user: User):
     """Test updating non-existent indicator returns 404"""
     _override_admin_and_db(client, admin_user, db_session)
 
@@ -425,10 +404,7 @@ def test_update_indicator_not_found(
 
 
 def test_deactivate_indicator_success(
-    client: TestClient,
-    db_session: Session,
-    admin_user: User,
-    test_indicator: Indicator
+    client: TestClient, db_session: Session, admin_user: User, test_indicator: Indicator
 ):
     """Test deactivating an indicator (soft delete)"""
     _override_admin_and_db(client, admin_user, db_session)
@@ -448,11 +424,7 @@ def test_deactivate_indicator_unauthorized(client: TestClient, test_indicator: I
     assert response.status_code in [401, 403]
 
 
-def test_deactivate_indicator_not_found(
-    client: TestClient,
-    db_session: Session,
-    admin_user: User
-):
+def test_deactivate_indicator_not_found(client: TestClient, db_session: Session, admin_user: User):
     """Test deactivating non-existent indicator returns 404"""
     _override_admin_and_db(client, admin_user, db_session)
 
@@ -467,10 +439,7 @@ def test_deactivate_indicator_not_found(
 
 
 def test_get_indicator_history_success(
-    client: TestClient,
-    db_session: Session,
-    admin_user: User,
-    test_indicator: Indicator
+    client: TestClient, db_session: Session, admin_user: User, test_indicator: Indicator
 ):
     """Test getting indicator version history"""
     _override_admin_and_db(client, admin_user, db_session)
@@ -485,7 +454,7 @@ def test_get_indicator_history_success(
                         "field_id": "updated_field",
                         "field_type": "text_input",
                         "label": "Updated Field",
-                        "required": True
+                        "required": True,
                     }
                 ]
             }
@@ -502,11 +471,7 @@ def test_get_indicator_history_success(
     assert len(data) >= 1
 
 
-def test_get_indicator_history_not_found(
-    client: TestClient,
-    db_session: Session,
-    admin_user: User
-):
+def test_get_indicator_history_not_found(client: TestClient, db_session: Session, admin_user: User):
     """Test getting history for non-existent indicator returns 404"""
     _override_admin_and_db(client, admin_user, db_session)
 
@@ -521,10 +486,7 @@ def test_get_indicator_history_not_found(
 
 
 def test_get_form_schema_success(
-    client: TestClient,
-    db_session: Session,
-    admin_user: User,
-    test_indicator: Indicator
+    client: TestClient, db_session: Session, admin_user: User, test_indicator: Indicator
 ):
     """Test successfully retrieving form schema for an indicator"""
     _override_admin_and_db(client, admin_user, db_session)
@@ -556,9 +518,7 @@ def test_get_form_schema_success(
 
 
 def test_get_form_schema_with_blgu_user(
-    client: TestClient,
-    db_session: Session,
-    test_indicator: Indicator
+    client: TestClient, db_session: Session, test_indicator: Indicator
 ):
     """Test BLGU users can access form schemas (all barangays complete all governance areas)"""
     # Create a BLGU user
@@ -597,7 +557,7 @@ def test_get_form_schema_with_assessor(
     client: TestClient,
     db_session: Session,
     assessor_user: User,
-    test_indicator: Indicator
+    test_indicator: Indicator,
 ):
     """Test assessors can access form schemas"""
     _override_user_and_db(client, assessor_user, db_session)
@@ -610,11 +570,7 @@ def test_get_form_schema_with_assessor(
     assert "form_schema" in data
 
 
-def test_get_form_schema_not_found(
-    client: TestClient,
-    db_session: Session,
-    admin_user: User
-):
+def test_get_form_schema_not_found(client: TestClient, db_session: Session, admin_user: User):
     """Test getting form schema for non-existent indicator returns 404"""
     _override_admin_and_db(client, admin_user, db_session)
 
@@ -635,7 +591,7 @@ def test_get_form_schema_with_complex_schema(
     client: TestClient,
     db_session: Session,
     admin_user: User,
-    governance_area: GovernanceArea
+    governance_area: GovernanceArea,
 ):
     """Test form schema retrieval with complex multi-field schema"""
     # Create indicator with complex form schema
@@ -653,7 +609,7 @@ def test_get_form_schema_with_complex_schema(
                     "field_type": "text_input",
                     "label": "Text Input",
                     "required": True,
-                    "help_text": "Enter text"
+                    "help_text": "Enter text",
                 },
                 {
                     "field_id": "number_field",
@@ -661,13 +617,13 @@ def test_get_form_schema_with_complex_schema(
                     "label": "Number Input",
                     "required": True,
                     "min_value": 0,
-                    "max_value": 100
+                    "max_value": 100,
                 },
                 {
                     "field_id": "date_field",
                     "field_type": "date_picker",
                     "label": "Date Picker",
-                    "required": False
+                    "required": False,
                 },
                 {
                     "field_id": "radio_field",
@@ -676,9 +632,9 @@ def test_get_form_schema_with_complex_schema(
                     "required": True,
                     "options": [
                         {"value": "yes", "label": "Yes"},
-                        {"value": "no", "label": "No"}
-                    ]
-                }
+                        {"value": "no", "label": "No"},
+                    ],
+                },
             ]
         },
         governance_area_id=governance_area.id,
@@ -718,7 +674,7 @@ def test_get_form_schema_excludes_calculation_schema(
     client: TestClient,
     db_session: Session,
     admin_user: User,
-    governance_area: GovernanceArea
+    governance_area: GovernanceArea,
 ):
     """Test that form schema endpoint does NOT include calculation_schema (assessor-only)"""
     # Create indicator with both form_schema and calculation_schema
@@ -735,18 +691,11 @@ def test_get_form_schema_excludes_calculation_schema(
                     "field_id": "score",
                     "field_type": "number_input",
                     "label": "Score",
-                    "required": True
+                    "required": True,
                 }
             ]
         },
-        calculation_schema={
-            "rules": [
-                {
-                    "condition": "score >= 80",
-                    "result": "PASS"
-                }
-            ]
-        },
+        calculation_schema={"rules": [{"condition": "score >= 80", "result": "PASS"}]},
         governance_area_id=governance_area.id,
     )
     db_session.add(indicator_with_calc)

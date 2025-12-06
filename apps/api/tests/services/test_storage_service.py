@@ -36,9 +36,15 @@ class TestStorageServiceFilenameGeneration:
             ("test.pdf", r"^[0-9a-f-]{36}_test\.pdf$"),
             ("My Document.docx", r"^[0-9a-f-]{36}_My Document\.docx$"),
             ("file with spaces.jpg", r"^[0-9a-f-]{36}_file with spaces\.jpg$"),
-            ("../../etc/passwd", r"^[0-9a-f-]{36}_____etc_passwd$"),  # 5 underscores: . . / etc / passwd
+            (
+                "../../etc/passwd",
+                r"^[0-9a-f-]{36}_____etc_passwd$",
+            ),  # 5 underscores: . . / etc / passwd
             ("file/with/slashes.png", r"^[0-9a-f-]{36}_file_with_slashes\.png$"),
-            ("file\\with\\backslashes.xlsx", r"^[0-9a-f-]{36}_file_with_backslashes\.xlsx$"),
+            (
+                "file\\with\\backslashes.xlsx",
+                r"^[0-9a-f-]{36}_file_with_backslashes\.xlsx$",
+            ),
             ("file..with..dots.txt", r"^[0-9a-f-]{36}_file_with_dots\.txt$"),
             ("", r"^[0-9a-f-]{36}_file$"),
             ("   ", r"^[0-9a-f-]{36}_file$"),
@@ -51,7 +57,9 @@ class TestStorageServiceFilenameGeneration:
         result = service._generate_unique_filename(original)
 
         # Check that result matches expected pattern
-        assert re.match(expected_pattern, result), f"Filename '{result}' doesn't match pattern '{expected_pattern}'"
+        assert re.match(expected_pattern, result), (
+            f"Filename '{result}' doesn't match pattern '{expected_pattern}'"
+        )
 
         # Verify UUID portion is valid
         uuid_part = result.split("_")[0]
@@ -111,7 +119,9 @@ class TestStorageServiceFileUpload:
         mock_client = MagicMock()
         # Mock successful upload
         mock_client.storage.from_().upload.return_value = {"path": "mocked/path"}
-        mock_client.storage.from_().get_public_url.return_value = "https://storage.supabase.co/mov-files/1/1/test.pdf"
+        mock_client.storage.from_().get_public_url.return_value = (
+            "https://storage.supabase.co/mov-files/1/1/test.pdf"
+        )
         return mock_client
 
     @pytest.fixture
@@ -261,9 +271,7 @@ class TestStorageServiceFileUpload:
         db_session.refresh(result)
         assert result.id is not None
 
-    def test_upload_mov_file_with_no_filename(
-        self, service, mock_supabase_client, db_session
-    ):
+    def test_upload_mov_file_with_no_filename(self, service, mock_supabase_client, db_session):
         """Test that upload handles files with no filename."""
         # Create file with no filename
         file_data = io.BytesIO(b"%PDF-1.4\n%")
@@ -288,9 +296,7 @@ class TestStorageServiceFileUpload:
             # Should use default filename "file"
             assert result.file_name.endswith("_file")
 
-    def test_upload_mov_file_with_no_content_type(
-        self, service, mock_supabase_client, db_session
-    ):
+    def test_upload_mov_file_with_no_content_type(self, service, mock_supabase_client, db_session):
         """Test that upload handles files with no content type."""
         # Create file with no content type (don't pass headers parameter)
         file_data = io.BytesIO(b"some data")
@@ -333,7 +339,7 @@ class TestStorageServiceFileDeletion:
         self, service, mock_supabase_client, db_session, mock_assessment, mock_blgu_user
     ):
         """Test successful deletion by BLGU user for DRAFT assessment (Task 4.6.4)."""
-        from app.db.enums import AssessmentStatus, AreaType
+        from app.db.enums import AreaType, AssessmentStatus
         from app.db.models.governance_area import GovernanceArea, Indicator
 
         # Ensure assessment is in DRAFT status
@@ -341,14 +347,12 @@ class TestStorageServiceFileDeletion:
         db_session.commit()
 
         # Create indicator
-        governance_area = GovernanceArea(name="Test Area", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Test Area", code="TA", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 
         indicator = Indicator(
-            name="Test Indicator",
-            governance_area_id=governance_area.id,
-            form_schema={}
+            name="Test Indicator", governance_area_id=governance_area.id, form_schema={}
         )
         db_session.add(indicator)
         db_session.flush()
@@ -391,23 +395,22 @@ class TestStorageServiceFileDeletion:
         self, service, db_session, mock_assessment, mock_blgu_user
     ):
         """Test that deletion is rejected for SUBMITTED assessment (Task 4.6.5)."""
-        from app.db.enums import AssessmentStatus, AreaType
-        from app.db.models.governance_area import GovernanceArea, Indicator
         from fastapi import HTTPException
+
+        from app.db.enums import AreaType, AssessmentStatus
+        from app.db.models.governance_area import GovernanceArea, Indicator
 
         # Set assessment to SUBMITTED_FOR_REVIEW status
         mock_assessment.status = AssessmentStatus.SUBMITTED_FOR_REVIEW
         db_session.commit()
 
         # Create indicator
-        governance_area = GovernanceArea(name="Test Area", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Test Area", code="TA", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 
         indicator = Indicator(
-            name="Test Indicator",
-            governance_area_id=governance_area.id,
-            form_schema={}
+            name="Test Indicator", governance_area_id=governance_area.id, form_schema={}
         )
         db_session.add(indicator)
         db_session.flush()
@@ -431,9 +434,7 @@ class TestStorageServiceFileDeletion:
 
         # Attempt to delete - should raise HTTPException
         with pytest.raises(HTTPException) as exc_info:
-            service.delete_mov_file(
-                db=db_session, file_id=file_id, user_id=mock_blgu_user.id
-            )
+            service.delete_mov_file(db=db_session, file_id=file_id, user_id=mock_blgu_user.id)
 
         assert exc_info.value.status_code == 403
         assert "Cannot delete files from" in exc_info.value.detail
@@ -446,10 +447,11 @@ class TestStorageServiceFileDeletion:
         self, service, db_session, mock_assessment, mock_blgu_user
     ):
         """Test that user can only delete their own files (Task 4.6.6)."""
-        from app.db.enums import AssessmentStatus, AreaType
+        from fastapi import HTTPException
+
+        from app.db.enums import AreaType, AssessmentStatus
         from app.db.models.governance_area import GovernanceArea, Indicator
         from app.db.models.user import User
-        from fastapi import HTTPException
 
         # Ensure assessment is in DRAFT status
         mock_assessment.status = AssessmentStatus.DRAFT
@@ -460,20 +462,18 @@ class TestStorageServiceFileDeletion:
             email="other@example.com",
             name="Other User",
             hashed_password="hashed",
-            role="BLGU_USER"
+            role="BLGU_USER",
         )
         db_session.add(other_user)
         db_session.flush()
 
         # Create indicator
-        governance_area = GovernanceArea(name="Test Area", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Test Area", code="TA", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 
         indicator = Indicator(
-            name="Test Indicator",
-            governance_area_id=governance_area.id,
-            form_schema={}
+            name="Test Indicator", governance_area_id=governance_area.id, form_schema={}
         )
         db_session.add(indicator)
         db_session.flush()
@@ -497,9 +497,7 @@ class TestStorageServiceFileDeletion:
 
         # Attempt to delete with different user - should raise HTTPException
         with pytest.raises(HTTPException) as exc_info:
-            service.delete_mov_file(
-                db=db_session, file_id=file_id, user_id=other_user.id
-            )
+            service.delete_mov_file(db=db_session, file_id=file_id, user_id=other_user.id)
 
         assert exc_info.value.status_code == 403
         assert "You can only delete files you uploaded" in exc_info.value.detail
@@ -512,7 +510,7 @@ class TestStorageServiceFileDeletion:
         self, service, mock_supabase_client, db_session, mock_assessment, mock_blgu_user
     ):
         """Test that deletion is allowed for NEEDS_REWORK assessment."""
-        from app.db.enums import AssessmentStatus, AreaType
+        from app.db.enums import AreaType, AssessmentStatus
         from app.db.models.governance_area import GovernanceArea, Indicator
 
         # Set assessment to NEEDS_REWORK status
@@ -520,14 +518,12 @@ class TestStorageServiceFileDeletion:
         db_session.commit()
 
         # Create indicator
-        governance_area = GovernanceArea(name="Test Area", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Test Area", code="TA", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 
         indicator = Indicator(
-            name="Test Indicator",
-            governance_area_id=governance_area.id,
-            form_schema={}
+            name="Test Indicator", governance_area_id=governance_area.id, form_schema={}
         )
         db_session.add(indicator)
         db_session.flush()
@@ -566,24 +562,22 @@ class TestStorageServiceFileDeletion:
         self, service, db_session, mock_assessment, mock_blgu_user
     ):
         """Test that already deleted files cannot be deleted again."""
-        from app.db.enums import AssessmentStatus, AreaType
-        from app.db.models.governance_area import GovernanceArea, Indicator
         from fastapi import HTTPException
-        from datetime import datetime
+
+        from app.db.enums import AreaType, AssessmentStatus
+        from app.db.models.governance_area import GovernanceArea, Indicator
 
         # Ensure assessment is in DRAFT status
         mock_assessment.status = AssessmentStatus.DRAFT
         db_session.commit()
 
         # Create indicator
-        governance_area = GovernanceArea(name="Test Area", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Test Area", code="TA", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 
         indicator = Indicator(
-            name="Test Indicator",
-            governance_area_id=governance_area.id,
-            form_schema={}
+            name="Test Indicator", governance_area_id=governance_area.id, form_schema={}
         )
         db_session.add(indicator)
         db_session.flush()
@@ -608,14 +602,14 @@ class TestStorageServiceFileDeletion:
 
         # Attempt to delete - should raise HTTPException
         with pytest.raises(HTTPException) as exc_info:
-            service.delete_mov_file(
-                db=db_session, file_id=file_id, user_id=mock_blgu_user.id
-            )
+            service.delete_mov_file(db=db_session, file_id=file_id, user_id=mock_blgu_user.id)
 
         assert exc_info.value.status_code == 403
         assert "already been deleted" in exc_info.value.detail
 
-    def test_delete_file_from_storage_handles_errors_gracefully(self, service, mock_supabase_client):
+    def test_delete_file_from_storage_handles_errors_gracefully(
+        self, service, mock_supabase_client
+    ):
         """Test that storage deletion errors don't crash the service."""
         # Mock Supabase failure
         mock_supabase_client.storage.from_().remove.side_effect = Exception("Connection error")

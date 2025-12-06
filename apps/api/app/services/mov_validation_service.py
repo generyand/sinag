@@ -11,7 +11,7 @@ Aligned with Indicator Builder Specification v1.4.
 """
 
 from datetime import date, datetime, timedelta
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Literal
 
 from app.schemas.mov_checklist import (
     MOVAssessmentItem,
@@ -45,7 +45,7 @@ class MOVValidationService:
     def validate_checklist(
         self,
         checklist_config: MOVChecklistConfig,
-        submission_data: Dict[str, Any],
+        submission_data: dict[str, Any],
     ) -> MOVValidationStatus:
         """
         Validate entire MOV checklist against submission data.
@@ -64,9 +64,9 @@ class MOVValidationService:
                 "item-3": {"value": "2022-12-15"}
             }
         """
-        item_results: Dict[str, str] = {}
-        errors: List[str] = []
-        warnings: List[str] = []
+        item_results: dict[str, str] = {}
+        errors: list[str] = []
+        warnings: list[str] = []
 
         # Validate each item
         for item in checklist_config.items:
@@ -103,7 +103,7 @@ class MOVValidationService:
         self,
         item: MOVItem,
         value: Any,
-    ) -> tuple[ValidationStatusType, List[str]]:
+    ) -> tuple[ValidationStatusType, list[str]]:
         """
         Validate a single MOV item.
 
@@ -114,8 +114,6 @@ class MOVValidationService:
         Returns:
             Tuple of (status, list of error messages)
         """
-        errors: List[str] = []
-
         # Handle missing value for required items
         if item.required and (value is None or value == ""):
             return "Pending", ["This field is required"]
@@ -149,7 +147,7 @@ class MOVValidationService:
     def evaluate_display_condition(
         self,
         condition: Any,
-        context: Dict[str, Any],
+        context: dict[str, Any],
     ) -> bool:
         """
         Evaluate conditional display logic.
@@ -219,8 +217,8 @@ class MOVValidationService:
     def calculate_threshold_status(
         self,
         numeric_value: float,
-        min_value: Optional[float],
-        threshold: Optional[float],
+        min_value: float | None,
+        threshold: float | None,
     ) -> ValidationStatusType:
         """
         Calculate validation status for threshold-based items.
@@ -256,8 +254,8 @@ class MOVValidationService:
     def evaluate_group(
         self,
         group_item: MOVGroupItem,
-        child_values: Dict[str, Any],
-    ) -> tuple[ValidationStatusType, List[str]]:
+        child_values: dict[str, Any],
+    ) -> tuple[ValidationStatusType, list[str]]:
         """
         Evaluate group item with OR/AND logic and min_required.
 
@@ -275,8 +273,8 @@ class MOVValidationService:
         Returns:
             Tuple of (status, list of error messages)
         """
-        child_statuses: List[ValidationStatusType] = []
-        all_errors: List[str] = []
+        child_statuses: list[ValidationStatusType] = []
+        all_errors: list[str] = []
 
         # Validate each child
         for child in group_item.children:
@@ -319,7 +317,7 @@ class MOVValidationService:
         self,
         item: MOVCheckboxItem,
         value: Any,
-    ) -> tuple[ValidationStatusType, List[str]]:
+    ) -> tuple[ValidationStatusType, list[str]]:
         """Validate checkbox item (simple yes/no)."""
         if not isinstance(value, bool):
             return "Failed", ["Value must be true or false"]
@@ -334,7 +332,7 @@ class MOVValidationService:
         self,
         item: MOVGroupItem,
         value: Any,
-    ) -> tuple[ValidationStatusType, List[str]]:
+    ) -> tuple[ValidationStatusType, list[str]]:
         """Validate group item with OR/AND logic."""
         # Value should be a dict of child values keyed by child ID
         if not isinstance(value, dict):
@@ -346,7 +344,7 @@ class MOVValidationService:
         self,
         item: MOVCurrencyInputItem,
         value: Any,
-    ) -> tuple[ValidationStatusType, List[str]]:
+    ) -> tuple[ValidationStatusType, list[str]]:
         """Validate currency input with threshold logic."""
         # Extract numeric value (value might be {"value": 500000.0} or just 500000.0)
         numeric_value = value.get("value") if isinstance(value, dict) else value
@@ -373,7 +371,7 @@ class MOVValidationService:
         self,
         item: MOVNumberInputItem,
         value: Any,
-    ) -> tuple[ValidationStatusType, List[str]]:
+    ) -> tuple[ValidationStatusType, list[str]]:
         """Validate number input with threshold logic."""
         # Extract numeric value
         numeric_value = value.get("value") if isinstance(value, dict) else value
@@ -400,7 +398,7 @@ class MOVValidationService:
         self,
         item: MOVTextInputItem,
         value: Any,
-    ) -> tuple[ValidationStatusType, List[str]]:
+    ) -> tuple[ValidationStatusType, list[str]]:
         """Validate text input with regex pattern."""
         # Extract text value
         text_value = value.get("value") if isinstance(value, dict) else value
@@ -425,7 +423,7 @@ class MOVValidationService:
         self,
         item: MOVDateInputItem,
         value: Any,
-    ) -> tuple[ValidationStatusType, List[str]]:
+    ) -> tuple[ValidationStatusType, list[str]]:
         """Validate date input with grace period logic."""
         # Extract date value
         date_value = value.get("value") if isinstance(value, dict) else value
@@ -467,7 +465,7 @@ class MOVValidationService:
         self,
         item: MOVAssessmentItem,
         value: Any,
-    ) -> tuple[ValidationStatusType, List[str]]:
+    ) -> tuple[ValidationStatusType, list[str]]:
         """Validate assessment item (validator judgment)."""
         # Extract assessment value
         assessment_value = value.get("value") if isinstance(value, dict) else value
@@ -487,7 +485,7 @@ class MOVValidationService:
         self,
         item: MOVRadioGroupItem,
         value: Any,
-    ) -> tuple[ValidationStatusType, List[str]]:
+    ) -> tuple[ValidationStatusType, list[str]]:
         """Validate radio group item (single selection)."""
         # Extract selected value
         selected_value = value.get("value") if isinstance(value, dict) else value
@@ -503,7 +501,7 @@ class MOVValidationService:
         self,
         item: MOVDropdownItem,
         value: Any,
-    ) -> tuple[ValidationStatusType, List[str]]:
+    ) -> tuple[ValidationStatusType, list[str]]:
         """Validate dropdown item (single or multiple selection)."""
         # Extract selected value(s)
         selected_value = value.get("value") if isinstance(value, dict) else value
@@ -528,7 +526,7 @@ class MOVValidationService:
 
     def _calculate_overall_status(
         self,
-        item_results: Dict[str, str],
+        item_results: dict[str, str],
         validation_mode: Literal["strict", "lenient"],
     ) -> ValidationStatusType:
         """

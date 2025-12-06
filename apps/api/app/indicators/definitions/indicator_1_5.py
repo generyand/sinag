@@ -41,8 +41,7 @@ IMPORTANT NOTES FOR PHASE 9 (VALIDATION SERVICE):
      * Both distant and close-up views present
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
-
+from app.indicators.base import ChecklistItem, Indicator, SubIndicator
 
 # Indicator 1.5: Posting of the Barangay Citizens' Charter (CitCha)
 INDICATOR_1_5 = Indicator(
@@ -71,9 +70,9 @@ INDICATOR_1_5 = Indicator(
                     label="Two (2) Photo documentation of the Barangay CitCha (name of the barangay should be visible)",
                     mov_description="Verification of uploaded photo documentation showing the Barangay Citizens' Charter posted at a conspicuous place with barangay name visible",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

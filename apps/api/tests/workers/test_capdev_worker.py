@@ -11,16 +11,17 @@ after MLGOO approval, including:
 
 import uuid
 from datetime import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
+from passlib.context import CryptContext
+from sqlalchemy.orm import Session
+
 from app.db.enums import AssessmentStatus, UserRole
 from app.db.models.assessment import Assessment
 from app.db.models.barangay import Barangay
 from app.db.models.user import User
 from app.workers.intelligence_worker import _generate_capdev_insights_logic
-from passlib.context import CryptContext
-from sqlalchemy.orm import Session
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -193,7 +194,9 @@ def test_generate_capdev_insights_logic_skips_if_already_exists(
     assert "capdev_insights" in result
 
 
-@patch("app.workers.intelligence_worker.intelligence_service.generate_default_language_capdev_insights")
+@patch(
+    "app.workers.intelligence_worker.intelligence_service.generate_default_language_capdev_insights"
+)
 def test_generate_capdev_insights_logic_success(
     mock_generate_insights,
     db_session: Session,
@@ -244,7 +247,9 @@ def test_generate_capdev_insights_logic_success(
     assert mlgoo_approved_assessment.capdev_insights_generated_at is not None
 
 
-@patch("app.workers.intelligence_worker.intelligence_service.generate_default_language_capdev_insights")
+@patch(
+    "app.workers.intelligence_worker.intelligence_service.generate_default_language_capdev_insights"
+)
 def test_generate_capdev_insights_logic_updates_status_to_generating(
     mock_generate_insights,
     db_session: Session,
@@ -273,7 +278,9 @@ def test_generate_capdev_insights_logic_updates_status_to_generating(
     assert mlgoo_approved_assessment.capdev_insights_status == "completed"
 
 
-@patch("app.workers.intelligence_worker.intelligence_service.generate_default_language_capdev_insights")
+@patch(
+    "app.workers.intelligence_worker.intelligence_service.generate_default_language_capdev_insights"
+)
 def test_generate_capdev_insights_logic_empty_insights_failure(
     mock_generate_insights,
     db_session: Session,
@@ -298,7 +305,9 @@ def test_generate_capdev_insights_logic_empty_insights_failure(
     assert mlgoo_approved_assessment.capdev_insights_status == "failed"
 
 
-@patch("app.workers.intelligence_worker.intelligence_service.generate_default_language_capdev_insights")
+@patch(
+    "app.workers.intelligence_worker.intelligence_service.generate_default_language_capdev_insights"
+)
 def test_generate_capdev_insights_logic_api_error(
     mock_generate_insights,
     db_session: Session,
@@ -319,7 +328,9 @@ def test_generate_capdev_insights_logic_api_error(
     assert "Gemini API error" in result["error"]
 
 
-@patch("app.workers.intelligence_worker.intelligence_service.generate_default_language_capdev_insights")
+@patch(
+    "app.workers.intelligence_worker.intelligence_service.generate_default_language_capdev_insights"
+)
 def test_generate_capdev_insights_logic_value_error(
     mock_generate_insights,
     db_session: Session,
@@ -344,7 +355,9 @@ def test_generate_capdev_insights_logic_value_error(
     assert mlgoo_approved_assessment.capdev_insights_status == "failed"
 
 
-@patch("app.workers.intelligence_worker.intelligence_service.generate_default_language_capdev_insights")
+@patch(
+    "app.workers.intelligence_worker.intelligence_service.generate_default_language_capdev_insights"
+)
 def test_generate_capdev_insights_logic_sets_failed_status_on_final_retry(
     mock_generate_insights,
     db_session: Session,
@@ -369,7 +382,9 @@ def test_generate_capdev_insights_logic_sets_failed_status_on_final_retry(
     assert mlgoo_approved_assessment.capdev_insights_status == "failed"
 
 
-@patch("app.workers.intelligence_worker.intelligence_service.generate_default_language_capdev_insights")
+@patch(
+    "app.workers.intelligence_worker.intelligence_service.generate_default_language_capdev_insights"
+)
 def test_generate_capdev_insights_logic_retry_count_logging(
     mock_generate_insights,
     db_session: Session,
@@ -396,7 +411,9 @@ def test_generate_capdev_insights_logic_retry_count_logging(
 # ============================================================================
 
 
-@patch("app.workers.intelligence_worker.intelligence_service.generate_default_language_capdev_insights")
+@patch(
+    "app.workers.intelligence_worker.intelligence_service.generate_default_language_capdev_insights"
+)
 def test_capdev_insights_persisted_to_database(
     mock_generate_insights,
     db_session: Session,
@@ -437,7 +454,9 @@ def test_capdev_insights_persisted_to_database(
     assert mlgoo_approved_assessment.capdev_insights["en"]["summary"] == "English summary from AI"
 
 
-@patch("app.workers.intelligence_worker.intelligence_service.generate_default_language_capdev_insights")
+@patch(
+    "app.workers.intelligence_worker.intelligence_service.generate_default_language_capdev_insights"
+)
 def test_capdev_insights_timestamp_set(
     mock_generate_insights,
     db_session: Session,
@@ -485,7 +504,9 @@ def test_generate_capdev_insights_logic_handles_none_db_parameter():
     assert result["success"] is False
 
 
-@patch("app.workers.intelligence_worker.intelligence_service.generate_default_language_capdev_insights")
+@patch(
+    "app.workers.intelligence_worker.intelligence_service.generate_default_language_capdev_insights"
+)
 def test_generate_capdev_insights_logic_partial_language_generation(
     mock_generate_insights,
     db_session: Session,
@@ -537,7 +558,9 @@ def test_capdev_task_configuration():
 # ============================================================================
 
 
-@patch("app.workers.intelligence_worker.intelligence_service.generate_default_language_capdev_insights")
+@patch(
+    "app.workers.intelligence_worker.intelligence_service.generate_default_language_capdev_insights"
+)
 def test_generate_capdev_insights_no_retry_on_not_found(
     mock_generate_insights,
     db_session: Session,
@@ -557,7 +580,9 @@ def test_generate_capdev_insights_no_retry_on_not_found(
     # The task wrapper should not retry this
 
 
-@patch("app.workers.intelligence_worker.intelligence_service.generate_default_language_capdev_insights")
+@patch(
+    "app.workers.intelligence_worker.intelligence_service.generate_default_language_capdev_insights"
+)
 def test_generate_capdev_insights_no_retry_on_not_approved(
     mock_generate_insights,
     db_session: Session,
@@ -582,7 +607,9 @@ def test_generate_capdev_insights_no_retry_on_not_approved(
 # ============================================================================
 
 
-@patch("app.workers.intelligence_worker.intelligence_service.generate_default_language_capdev_insights")
+@patch(
+    "app.workers.intelligence_worker.intelligence_service.generate_default_language_capdev_insights"
+)
 def test_generate_capdev_insights_concurrent_calls_prevented(
     mock_generate_insights,
     db_session: Session,

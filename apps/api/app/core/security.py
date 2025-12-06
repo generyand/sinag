@@ -5,12 +5,12 @@ import hashlib
 import html
 import logging
 import re
-from datetime import datetime, timedelta, timezone
-from typing import Optional, Tuple, Union
+from datetime import UTC, datetime, timedelta
 
-from app.core.config import settings
 from jose import JWTError, jwt  # type: ignore
 from passlib.context import CryptContext  # type: ignore
+
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -19,10 +19,10 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def create_access_token(
-    subject: Union[str, int],
-    expires_delta: Optional[timedelta] = None,
-    role: Optional[str] = None,
-    must_change_password: Optional[bool] = None,
+    subject: str | int,
+    expires_delta: timedelta | None = None,
+    role: str | None = None,
+    must_change_password: bool | None = None,
 ) -> str:
     """
     Create a new JWT access token.
@@ -36,7 +36,7 @@ def create_access_token(
     Returns:
         str: Encoded JWT token
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if expires_delta:
         expire = now + expires_delta
     else:
@@ -50,9 +50,7 @@ def create_access_token(
     if must_change_password is not None:
         to_encode["must_change_password"] = must_change_password
 
-    encoded_jwt = jwt.encode(
-        to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
-    )
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
 
@@ -70,9 +68,7 @@ def verify_token(token: str) -> dict:
         JWTError: If token is invalid or expired
     """
     try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-        )
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         return payload
     except JWTError:
         raise JWTError("Invalid token")
@@ -119,7 +115,7 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def verify_password_reset_token(token: str) -> Optional[str]:
+def verify_password_reset_token(token: str) -> str | None:
     """
     Verify password reset token and return user email.
 
@@ -130,9 +126,7 @@ def verify_password_reset_token(token: str) -> Optional[str]:
         Optional[str]: User email if token is valid, None otherwise
     """
     try:
-        decoded_token = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-        )
+        decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         return decoded_token.get("sub")
     except JWTError:
         return None
@@ -149,7 +143,7 @@ def generate_password_reset_token(email: str) -> str:
         str: Password reset token
     """
     delta = timedelta(hours=24)  # Token expires in 24 hours
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     expires = now + delta
     exp = expires.timestamp()
     encoded_jwt = jwt.encode(
@@ -224,7 +218,7 @@ MAX_FAILED_ATTEMPTS = 5  # Lock after 5 failed attempts
 LOCKOUT_WINDOW_SECONDS = 900  # 15 minute lockout window
 
 
-def record_failed_login(email: str, ip_address: Optional[str] = None) -> int:
+def record_failed_login(email: str, ip_address: str | None = None) -> int:
     """
     Record a failed login attempt.
 
@@ -258,7 +252,7 @@ def record_failed_login(email: str, ip_address: Optional[str] = None) -> int:
         return 0
 
 
-def is_account_locked(email: str) -> Tuple[bool, int]:
+def is_account_locked(email: str) -> tuple[bool, int]:
     """
     Check if an account is locked due to failed login attempts.
 
@@ -348,7 +342,7 @@ def get_failed_login_count(email: str) -> int:
 # ============================================================================
 
 
-def sanitize_html(text: Optional[str], allow_basic_formatting: bool = False) -> Optional[str]:
+def sanitize_html(text: str | None, allow_basic_formatting: bool = False) -> str | None:
     """
     Sanitize HTML content to prevent XSS attacks.
 
@@ -378,36 +372,58 @@ def sanitize_html(text: Optional[str], allow_basic_formatting: bool = False) -> 
 
     # List of dangerous tags to always remove
     dangerous_tags = [
-        'script', 'iframe', 'object', 'embed', 'applet',
-        'link', 'style', 'meta', 'base', 'form',
+        "script",
+        "iframe",
+        "object",
+        "embed",
+        "applet",
+        "link",
+        "style",
+        "meta",
+        "base",
+        "form",
     ]
 
     # List of dangerous attributes to remove
     dangerous_attrs = [
-        'onload', 'onerror', 'onclick', 'onmouseover', 'onmouseout',
-        'onkeydown', 'onkeyup', 'onkeypress', 'onfocus', 'onblur',
-        'onchange', 'onsubmit', 'onreset', 'onselect', 'onabort',
-        'javascript:', 'data:', 'vbscript:',
+        "onload",
+        "onerror",
+        "onclick",
+        "onmouseover",
+        "onmouseout",
+        "onkeydown",
+        "onkeyup",
+        "onkeypress",
+        "onfocus",
+        "onblur",
+        "onchange",
+        "onsubmit",
+        "onreset",
+        "onselect",
+        "onabort",
+        "javascript:",
+        "data:",
+        "vbscript:",
     ]
 
     # Remove dangerous tags and their content
     for tag in dangerous_tags:
         # Remove opening tag, content, and closing tag
-        pattern = f'<{tag}[^>]*>.*?</{tag}>'
-        text = re.sub(pattern, '', text, flags=re.IGNORECASE | re.DOTALL)
+        pattern = f"<{tag}[^>]*>.*?</{tag}>"
+        text = re.sub(pattern, "", text, flags=re.IGNORECASE | re.DOTALL)
         # Remove self-closing tags
-        pattern = f'<{tag}[^>]*/>'
-        text = re.sub(pattern, '', text, flags=re.IGNORECASE)
+        pattern = f"<{tag}[^>]*/>"
+        text = re.sub(pattern, "", text, flags=re.IGNORECASE)
 
     # Remove dangerous attributes from remaining tags
     for attr in dangerous_attrs:
         # Remove attribute="value" or attribute='value' or attribute=value
-        pattern = f'{attr}\\s*=\\s*["\']?[^"\'\\s>]*["\']?'
-        text = re.sub(pattern, '', text, flags=re.IGNORECASE)
+        pattern = f"{attr}\\s*=\\s*[\"']?[^\"'\\s>]*[\"']?"
+        text = re.sub(pattern, "", text, flags=re.IGNORECASE)
 
     # If basic formatting is not allowed, strip all remaining HTML tags
     if not allow_basic_formatting:
-        text = re.sub('<[^>]+>', '', text)
+        text = re.sub("<[^>]+>", "", text)
 
     # Escape any remaining special HTML characters to prevent injection
     # This converts < > & " ' to their HTML entity equivalents
@@ -417,7 +433,7 @@ def sanitize_html(text: Optional[str], allow_basic_formatting: bool = False) -> 
     return text.strip()
 
 
-def sanitize_text_input(text: Optional[str], max_length: Optional[int] = None) -> Optional[str]:
+def sanitize_text_input(text: str | None, max_length: int | None = None) -> str | None:
     """
     Sanitize plain text input by removing all HTML and limiting length.
 
@@ -441,7 +457,7 @@ def sanitize_text_input(text: Optional[str], max_length: Optional[int] = None) -
     return sanitized
 
 
-def sanitize_rich_text(text: Optional[str]) -> Optional[str]:
+def sanitize_rich_text(text: str | None) -> str | None:
     """
     Sanitize rich text that may contain basic HTML formatting.
 
@@ -461,19 +477,36 @@ def sanitize_rich_text(text: Optional[str]) -> Optional[str]:
     sanitized = sanitize_html(text, allow_basic_formatting=True)
 
     # Whitelist of allowed tags for rich text
-    allowed_tags = {'b', 'i', 'u', 'strong', 'em', 'p', 'br', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'}
+    allowed_tags = {
+        "b",
+        "i",
+        "u",
+        "strong",
+        "em",
+        "p",
+        "br",
+        "ul",
+        "ol",
+        "li",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",
+    }
 
     # Remove tags not in whitelist
     def replace_tag(match):
         tag = match.group(1).lower()
-        if tag.startswith('/'):
+        if tag.startswith("/"):
             tag = tag[1:]  # Remove slash for closing tags
         if tag in allowed_tags:
             return match.group(0)  # Keep allowed tags
-        return ''  # Remove disallowed tags
+        return ""  # Remove disallowed tags
 
     # Pattern to match HTML tags
-    pattern = r'<(/?\w+)(?:\s[^>]*)?>'
+    pattern = r"<(/?\w+)(?:\s[^>]*)?>"
     if sanitized is None:
         return None
     sanitized = re.sub(pattern, replace_tag, sanitized, flags=re.IGNORECASE)

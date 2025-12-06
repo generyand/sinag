@@ -3,14 +3,17 @@
 
 import io
 import logging
-from typing import Optional
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
-from openpyxl.utils import get_column_letter
 
-from app.schemas.gar import GARResponse, GARGovernanceArea, GARIndicator, GARChecklistItem
 from app.schemas.bbi import AssessmentBBIComplianceResponse
+from app.schemas.gar import (
+    GARChecklistItem,
+    GARGovernanceArea,
+    GARIndicator,
+    GARResponse,
+)
 
 
 class GARExportService:
@@ -107,7 +110,9 @@ class GARExportService:
         # Barangay info
         ws.merge_cells(f"A{row}:B{row}")
         cell = ws[f"A{row}"]
-        cell.value = f"Barangay {gar_data.barangay_name}, {gar_data.municipality}, {gar_data.province}"
+        cell.value = (
+            f"Barangay {gar_data.barangay_name}, {gar_data.municipality}, {gar_data.province}"
+        )
         cell.font = Font(bold=True, italic=True, size=11)
         cell.alignment = Alignment(horizontal="center")
         row += 2  # Extra spacing
@@ -127,7 +132,11 @@ class GARExportService:
         cell = ws[f"A{row}"]
         cell.value = area_title
         cell.font = Font(bold=True, size=11)
-        cell.fill = PatternFill(start_color=self.colors["header_bg"], end_color=self.colors["header_bg"], fill_type="solid")
+        cell.fill = PatternFill(
+            start_color=self.colors["header_bg"],
+            end_color=self.colors["header_bg"],
+            fill_type="solid",
+        )
         cell.border = self.thin_border
         ws[f"B{row}"].border = self.thin_border
         row += 1
@@ -159,13 +168,21 @@ class GARExportService:
         # Add Overall Result row
         ws[f"A{row}"].value = "OVERALL RESULT"
         ws[f"A{row}"].font = Font(bold=True)
-        ws[f"A{row}"].fill = PatternFill(start_color=self.colors["overall_bg"], end_color=self.colors["overall_bg"], fill_type="solid")
+        ws[f"A{row}"].fill = PatternFill(
+            start_color=self.colors["overall_bg"],
+            end_color=self.colors["overall_bg"],
+            fill_type="solid",
+        )
         ws[f"A{row}"].border = self.thin_border
 
         ws[f"B{row}"].border = self.thin_border
         if area.overall_result:
-            result_color = self.colors["met"] if area.overall_result == "Passed" else self.colors["unmet"]
-            ws[f"B{row}"].fill = PatternFill(start_color=result_color, end_color=result_color, fill_type="solid")
+            result_color = (
+                self.colors["met"] if area.overall_result == "Passed" else self.colors["unmet"]
+            )
+            ws[f"B{row}"].fill = PatternFill(
+                start_color=result_color, end_color=result_color, fill_type="solid"
+            )
         row += 1
 
         return row
@@ -183,14 +200,18 @@ class GARExportService:
         # Make header indicators bold
         if indicator.is_header:
             ws[f"A{row}"].font = Font(bold=True)
-            ws[f"A{row}"].fill = PatternFill(start_color="E8F5E9", end_color="E8F5E9", fill_type="solid")
+            ws[f"A{row}"].fill = PatternFill(
+                start_color="E8F5E9", end_color="E8F5E9", fill_type="solid"
+            )
 
         # Result cell
         ws[f"B{row}"].border = self.thin_border
         if indicator.validation_status and not indicator.is_header:
             color = self._get_status_color(indicator.validation_status)
             if color:
-                ws[f"B{row}"].fill = PatternFill(start_color=color, end_color=color, fill_type="solid")
+                ws[f"B{row}"].fill = PatternFill(
+                    start_color=color, end_color=color, fill_type="solid"
+                )
 
         return row + 1
 
@@ -215,7 +236,9 @@ class GARExportService:
         if item.validation_result:
             color = self._get_result_color(item.validation_result)
             if color:
-                ws[f"B{row}"].fill = PatternFill(start_color=color, end_color=color, fill_type="solid")
+                ws[f"B{row}"].fill = PatternFill(
+                    start_color=color, end_color=color, fill_type="solid"
+                )
 
         return row + 1
 
@@ -242,7 +265,9 @@ class GARExportService:
                 ws[f"B{row}"].border = self.thin_border
                 if item.result:
                     color = self.colors["met"] if item.result == "Passed" else self.colors["unmet"]
-                    ws[f"B{row}"].fill = PatternFill(start_color=color, end_color=color, fill_type="solid")
+                    ws[f"B{row}"].fill = PatternFill(
+                        start_color=color, end_color=color, fill_type="solid"
+                    )
                 row += 1
 
         # Essential Governance Areas header
@@ -264,7 +289,9 @@ class GARExportService:
                 ws[f"B{row}"].border = self.thin_border
                 if item.result:
                     color = self.colors["met"] if item.result == "Passed" else self.colors["unmet"]
-                    ws[f"B{row}"].fill = PatternFill(start_color=color, end_color=color, fill_type="solid")
+                    ws[f"B{row}"].fill = PatternFill(
+                        start_color=color, end_color=color, fill_type="solid"
+                    )
                 row += 1
 
         return row
@@ -358,13 +385,15 @@ class GARExportService:
         row += 1
 
         # Rating legend
-        ws[f"A{row}"].value = "Rating: 75%+ = Highly Functional, 50-74% = Moderately Functional, <50% = Low Functional"
+        ws[
+            f"A{row}"
+        ].value = "Rating: 75%+ = Highly Functional, 50-74% = Moderately Functional, <50% = Low Functional"
         ws[f"A{row}"].font = Font(italic=True, size=9)
         ws.merge_cells(f"A{row}:B{row}")
 
         return row + 1
 
-    def _get_bbi_rating_color(self, rating: str) -> Optional[str]:
+    def _get_bbi_rating_color(self, rating: str) -> str | None:
         """Get color for BBI compliance rating."""
         rating_upper = rating.upper() if rating else ""
         if "HIGHLY" in rating_upper:
@@ -383,7 +412,7 @@ class GARExportService:
             return "MODERATELY_FUNCTIONAL"
         return "LOW_FUNCTIONAL"
 
-    def _get_status_color(self, status: str) -> Optional[str]:
+    def _get_status_color(self, status: str) -> str | None:
         """Get color for validation status."""
         # Normalize to uppercase for comparison (ValidationStatus enum values are PASS, FAIL, CONDITIONAL)
         normalized = status.upper() if status else ""
@@ -395,7 +424,7 @@ class GARExportService:
             return self.colors["unmet"]
         return None
 
-    def _get_result_color(self, result: str) -> Optional[str]:
+    def _get_result_color(self, result: str) -> str | None:
         """Get color for checklist validation result."""
         return self.colors.get(result)
 
@@ -412,27 +441,33 @@ class GARExportService:
         try:
             from reportlab.lib import colors
             from reportlab.lib.pagesizes import A4, landscape
-            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
             from reportlab.lib.units import inch
-            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+            from reportlab.platypus import (
+                Paragraph,
+                SimpleDocTemplate,
+                Spacer,
+                Table,
+                TableStyle,
+            )
 
             buffer = io.BytesIO()
             # Use landscape orientation for more width
             doc = SimpleDocTemplate(
                 buffer,
                 pagesize=landscape(A4),
-                topMargin=0.5*inch,
-                bottomMargin=0.5*inch,
-                leftMargin=0.5*inch,
-                rightMargin=0.5*inch,
+                topMargin=0.5 * inch,
+                bottomMargin=0.5 * inch,
+                leftMargin=0.5 * inch,
+                rightMargin=0.5 * inch,
             )
             elements = []
             styles = getSampleStyleSheet()
 
             # Title style
             title_style = ParagraphStyle(
-                'Title',
-                parent=styles['Heading1'],
+                "Title",
+                parent=styles["Heading1"],
                 fontSize=14,
                 alignment=1,  # Center
                 spaceAfter=6,
@@ -440,8 +475,8 @@ class GARExportService:
 
             # Cell text style for wrapping
             cell_style = ParagraphStyle(
-                'CellStyle',
-                parent=styles['Normal'],
+                "CellStyle",
+                parent=styles["Normal"],
                 fontSize=9,
                 leading=11,
             )
@@ -449,10 +484,12 @@ class GARExportService:
             # Add header
             elements.append(Paragraph(gar_data.cycle_year, title_style))
             elements.append(Paragraph("GOVERNANCE ASSESSMENT REPORT", title_style))
-            elements.append(Paragraph(
-                f"<i>Barangay {gar_data.barangay_name}, {gar_data.municipality}, {gar_data.province}</i>",
-                title_style
-            ))
+            elements.append(
+                Paragraph(
+                    f"<i>Barangay {gar_data.barangay_name}, {gar_data.municipality}, {gar_data.province}</i>",
+                    title_style,
+                )
+            )
             elements.append(Spacer(1, 20))
 
             # Color definitions for PDF
@@ -470,27 +507,32 @@ class GARExportService:
 
                 # Build table data using Paragraph for text wrapping
                 table_data = []
-                table_data.append([Paragraph(f"<b>{area_title}</b>", cell_style), ""])  # Area header row
-                table_data.append([Paragraph("<b>INDICATORS</b>", cell_style), Paragraph("<b>RESULT</b>", cell_style)])  # Column headers
+                table_data.append(
+                    [Paragraph(f"<b>{area_title}</b>", cell_style), ""]
+                )  # Area header row
+                table_data.append(
+                    [
+                        Paragraph("<b>INDICATORS</b>", cell_style),
+                        Paragraph("<b>RESULT</b>", cell_style),
+                    ]
+                )  # Column headers
 
                 # Style commands for this table
                 style_commands = [
                     # Area header
-                    ('SPAN', (0, 0), (1, 0)),
-                    ('BACKGROUND', (0, 0), (1, 0), header_color),
-                    ('ALIGN', (0, 0), (1, 0), 'CENTER'),
-
+                    ("SPAN", (0, 0), (1, 0)),
+                    ("BACKGROUND", (0, 0), (1, 0), header_color),
+                    ("ALIGN", (0, 0), (1, 0), "CENTER"),
                     # Column headers
-                    ('BACKGROUND', (0, 1), (1, 1), colors.lightgrey),
-                    ('ALIGN', (0, 1), (1, 1), 'CENTER'),
-
+                    ("BACKGROUND", (0, 1), (1, 1), colors.lightgrey),
+                    ("ALIGN", (0, 1), (1, 1), "CENTER"),
                     # Grid
-                    ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                    ('LEFTPADDING', (0, 0), (-1, -1), 4),
-                    ('RIGHTPADDING', (0, 0), (-1, -1), 4),
-                    ('TOPPADDING', (0, 0), (-1, -1), 4),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+                    ("TOPPADDING", (0, 0), (-1, -1), 4),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
                 ]
 
                 row_idx = 2  # Start after headers
@@ -498,23 +540,47 @@ class GARExportService:
                 # Add indicators and checklist items
                 for indicator in area.indicators:
                     indent = "&nbsp;&nbsp;" * indicator.indent_level
-                    indicator_text = f"{indent}<b>{indicator.indicator_code}</b> {indicator.indicator_name}"
+                    indicator_text = (
+                        f"{indent}<b>{indicator.indicator_code}</b> {indicator.indicator_name}"
+                    )
 
                     # Use Paragraph for text wrapping
                     table_data.append([Paragraph(indicator_text, cell_style), ""])
 
                     # Color for indicator (ValidationStatus enum values are PASS, FAIL, CONDITIONAL)
                     if indicator.validation_status and not indicator.is_header:
-                        status_upper = indicator.validation_status.upper() if indicator.validation_status else ""
+                        status_upper = (
+                            indicator.validation_status.upper()
+                            if indicator.validation_status
+                            else ""
+                        )
                         if status_upper == "PASS":
-                            style_commands.append(('BACKGROUND', (1, row_idx), (1, row_idx), met_color))
+                            style_commands.append(
+                                ("BACKGROUND", (1, row_idx), (1, row_idx), met_color)
+                            )
                         elif status_upper == "CONDITIONAL":
-                            style_commands.append(('BACKGROUND', (1, row_idx), (1, row_idx), considered_color))
+                            style_commands.append(
+                                (
+                                    "BACKGROUND",
+                                    (1, row_idx),
+                                    (1, row_idx),
+                                    considered_color,
+                                )
+                            )
                         elif status_upper == "FAIL":
-                            style_commands.append(('BACKGROUND', (1, row_idx), (1, row_idx), unmet_color))
+                            style_commands.append(
+                                ("BACKGROUND", (1, row_idx), (1, row_idx), unmet_color)
+                            )
 
                     if indicator.is_header:
-                        style_commands.append(('BACKGROUND', (0, row_idx), (0, row_idx), colors.Color(0.9, 0.97, 0.9)))
+                        style_commands.append(
+                            (
+                                "BACKGROUND",
+                                (0, row_idx),
+                                (0, row_idx),
+                                colors.Color(0.9, 0.97, 0.9),
+                            )
+                        )
 
                     row_idx += 1
 
@@ -526,23 +592,44 @@ class GARExportService:
                         # Color for checklist item
                         if item.validation_result:
                             if item.validation_result == "met":
-                                style_commands.append(('BACKGROUND', (1, row_idx), (1, row_idx), met_color))
+                                style_commands.append(
+                                    (
+                                        "BACKGROUND",
+                                        (1, row_idx),
+                                        (1, row_idx),
+                                        met_color,
+                                    )
+                                )
                             elif item.validation_result == "considered":
-                                style_commands.append(('BACKGROUND', (1, row_idx), (1, row_idx), considered_color))
+                                style_commands.append(
+                                    (
+                                        "BACKGROUND",
+                                        (1, row_idx),
+                                        (1, row_idx),
+                                        considered_color,
+                                    )
+                                )
                             elif item.validation_result == "unmet":
-                                style_commands.append(('BACKGROUND', (1, row_idx), (1, row_idx), unmet_color))
+                                style_commands.append(
+                                    (
+                                        "BACKGROUND",
+                                        (1, row_idx),
+                                        (1, row_idx),
+                                        unmet_color,
+                                    )
+                                )
 
                         row_idx += 1
 
                 # Add overall result row
                 table_data.append([Paragraph("<b>OVERALL RESULT</b>", cell_style), ""])
-                style_commands.append(('BACKGROUND', (0, row_idx), (0, row_idx), header_color))
+                style_commands.append(("BACKGROUND", (0, row_idx), (0, row_idx), header_color))
                 if area.overall_result:
                     result_color = met_color if area.overall_result == "Passed" else unmet_color
-                    style_commands.append(('BACKGROUND', (1, row_idx), (1, row_idx), result_color))
+                    style_commands.append(("BACKGROUND", (1, row_idx), (1, row_idx), result_color))
 
                 # Create table with wider indicator column
-                col_widths = [9.0*inch, 1.2*inch]
+                col_widths = [9.0 * inch, 1.2 * inch]
                 table = Table(table_data, colWidths=col_widths)
                 table.setStyle(TableStyle(style_commands))
                 elements.append(table)
@@ -555,20 +642,22 @@ class GARExportService:
                 # Build summary table
                 summary_data = []
                 summary_style_commands = [
-                    ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                    ('LEFTPADDING', (0, 0), (-1, -1), 6),
-                    ('RIGHTPADDING', (0, 0), (-1, -1), 6),
-                    ('TOPPADDING', (0, 0), (-1, -1), 6),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                    ("TOPPADDING", (0, 0), (-1, -1), 6),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
                 ]
 
                 # Core Governance Areas header
-                summary_data.append([
-                    Paragraph("<b>Core Governance Area</b>", cell_style),
-                    Paragraph("<b>Result</b>", cell_style)
-                ])
-                summary_style_commands.append(('BACKGROUND', (0, 0), (1, 0), colors.lightgrey))
+                summary_data.append(
+                    [
+                        Paragraph("<b>Core Governance Area</b>", cell_style),
+                        Paragraph("<b>Result</b>", cell_style),
+                    ]
+                )
+                summary_style_commands.append(("BACKGROUND", (0, 0), (1, 0), colors.lightgrey))
 
                 row_idx = 1
                 # Core areas
@@ -577,15 +666,21 @@ class GARExportService:
                         summary_data.append([Paragraph(item.area_name, cell_style), ""])
                         if item.result:
                             result_color = met_color if item.result == "Passed" else unmet_color
-                            summary_style_commands.append(('BACKGROUND', (1, row_idx), (1, row_idx), result_color))
+                            summary_style_commands.append(
+                                ("BACKGROUND", (1, row_idx), (1, row_idx), result_color)
+                            )
                         row_idx += 1
 
                 # Essential Governance Areas header
-                summary_data.append([
-                    Paragraph("<b>Essential Governance Area</b>", cell_style),
-                    Paragraph("<b>Result</b>", cell_style)
-                ])
-                summary_style_commands.append(('BACKGROUND', (0, row_idx), (1, row_idx), colors.lightgrey))
+                summary_data.append(
+                    [
+                        Paragraph("<b>Essential Governance Area</b>", cell_style),
+                        Paragraph("<b>Result</b>", cell_style),
+                    ]
+                )
+                summary_style_commands.append(
+                    ("BACKGROUND", (0, row_idx), (1, row_idx), colors.lightgrey)
+                )
                 row_idx += 1
 
                 # Essential areas
@@ -594,11 +689,13 @@ class GARExportService:
                         summary_data.append([Paragraph(item.area_name, cell_style), ""])
                         if item.result:
                             result_color = met_color if item.result == "Passed" else unmet_color
-                            summary_style_commands.append(('BACKGROUND', (1, row_idx), (1, row_idx), result_color))
+                            summary_style_commands.append(
+                                ("BACKGROUND", (1, row_idx), (1, row_idx), result_color)
+                            )
                         row_idx += 1
 
                 # Create summary table
-                summary_col_widths = [6.0*inch, 1.5*inch]
+                summary_col_widths = [6.0 * inch, 1.5 * inch]
                 summary_table = Table(summary_data, colWidths=summary_col_widths)
                 summary_table.setStyle(TableStyle(summary_style_commands))
                 elements.append(summary_table)
@@ -616,69 +713,94 @@ class GARExportService:
                 # Build BBI table
                 bbi_table_data = []
                 bbi_style_commands = [
-                    ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                    ('LEFTPADDING', (0, 0), (-1, -1), 6),
-                    ('RIGHTPADDING', (0, 0), (-1, -1), 6),
-                    ('TOPPADDING', (0, 0), (-1, -1), 6),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                    ("TOPPADDING", (0, 0), (-1, -1), 6),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
                 ]
 
                 # Section header
-                bbi_table_data.append([
-                    Paragraph("<b>BBI FUNCTIONALITY COMPLIANCE (DILG MC 2024-417)</b>", cell_style),
-                    ""
-                ])
-                bbi_style_commands.append(('SPAN', (0, 0), (1, 0)))
-                bbi_style_commands.append(('BACKGROUND', (0, 0), (1, 0), bbi_header_color))
-                bbi_style_commands.append(('ALIGN', (0, 0), (1, 0), 'CENTER'))
+                bbi_table_data.append(
+                    [
+                        Paragraph(
+                            "<b>BBI FUNCTIONALITY COMPLIANCE (DILG MC 2024-417)</b>",
+                            cell_style,
+                        ),
+                        "",
+                    ]
+                )
+                bbi_style_commands.append(("SPAN", (0, 0), (1, 0)))
+                bbi_style_commands.append(("BACKGROUND", (0, 0), (1, 0), bbi_header_color))
+                bbi_style_commands.append(("ALIGN", (0, 0), (1, 0), "CENTER"))
 
                 # Column headers
-                bbi_table_data.append([
-                    Paragraph("<b>BBI</b>", cell_style),
-                    Paragraph("<b>COMPLIANCE</b>", cell_style)
-                ])
-                bbi_style_commands.append(('BACKGROUND', (0, 1), (1, 1), colors.lightgrey))
-                bbi_style_commands.append(('ALIGN', (0, 1), (1, 1), 'CENTER'))
+                bbi_table_data.append(
+                    [
+                        Paragraph("<b>BBI</b>", cell_style),
+                        Paragraph("<b>COMPLIANCE</b>", cell_style),
+                    ]
+                )
+                bbi_style_commands.append(("BACKGROUND", (0, 1), (1, 1), colors.lightgrey))
+                bbi_style_commands.append(("ALIGN", (0, 1), (1, 1), "CENTER"))
 
                 row_idx = 2
                 # BBI results
                 for bbi in gar_data.bbi_compliance.bbi_results:
-                    bbi_table_data.append([
-                        Paragraph(f"{bbi.bbi_abbreviation} - {bbi.bbi_name}", cell_style),
-                        f"{round(bbi.compliance_percentage)}%"
-                    ])
-                    bbi_style_commands.append(('ALIGN', (1, row_idx), (1, row_idx), 'CENTER'))
+                    bbi_table_data.append(
+                        [
+                            Paragraph(f"{bbi.bbi_abbreviation} - {bbi.bbi_name}", cell_style),
+                            f"{round(bbi.compliance_percentage)}%",
+                        ]
+                    )
+                    bbi_style_commands.append(("ALIGN", (1, row_idx), (1, row_idx), "CENTER"))
 
                     # Color based on rating
                     rating = bbi.compliance_rating.upper() if bbi.compliance_rating else ""
                     if "HIGHLY" in rating:
-                        bbi_style_commands.append(('BACKGROUND', (1, row_idx), (1, row_idx), bbi_highly_color))
+                        bbi_style_commands.append(
+                            ("BACKGROUND", (1, row_idx), (1, row_idx), bbi_highly_color)
+                        )
                     elif "MODERATELY" in rating:
-                        bbi_style_commands.append(('BACKGROUND', (1, row_idx), (1, row_idx), bbi_mod_color))
+                        bbi_style_commands.append(
+                            ("BACKGROUND", (1, row_idx), (1, row_idx), bbi_mod_color)
+                        )
                     elif "LOW" in rating:
-                        bbi_style_commands.append(('BACKGROUND', (1, row_idx), (1, row_idx), bbi_low_color))
+                        bbi_style_commands.append(
+                            ("BACKGROUND", (1, row_idx), (1, row_idx), bbi_low_color)
+                        )
                     row_idx += 1
 
                 # Average compliance row
                 avg_pct = gar_data.bbi_compliance.summary.average_compliance_percentage
-                bbi_table_data.append([
-                    Paragraph("<b>AVERAGE COMPLIANCE</b>", cell_style),
-                    f"{round(avg_pct)}%"
-                ])
-                bbi_style_commands.append(('BACKGROUND', (0, row_idx), (0, row_idx), bbi_header_color))
-                bbi_style_commands.append(('ALIGN', (1, row_idx), (1, row_idx), 'CENTER'))
+                bbi_table_data.append(
+                    [
+                        Paragraph("<b>AVERAGE COMPLIANCE</b>", cell_style),
+                        f"{round(avg_pct)}%",
+                    ]
+                )
+                bbi_style_commands.append(
+                    ("BACKGROUND", (0, row_idx), (0, row_idx), bbi_header_color)
+                )
+                bbi_style_commands.append(("ALIGN", (1, row_idx), (1, row_idx), "CENTER"))
 
                 # Color for average
                 if avg_pct >= 75:
-                    bbi_style_commands.append(('BACKGROUND', (1, row_idx), (1, row_idx), bbi_highly_color))
+                    bbi_style_commands.append(
+                        ("BACKGROUND", (1, row_idx), (1, row_idx), bbi_highly_color)
+                    )
                 elif avg_pct >= 50:
-                    bbi_style_commands.append(('BACKGROUND', (1, row_idx), (1, row_idx), bbi_mod_color))
+                    bbi_style_commands.append(
+                        ("BACKGROUND", (1, row_idx), (1, row_idx), bbi_mod_color)
+                    )
                 else:
-                    bbi_style_commands.append(('BACKGROUND', (1, row_idx), (1, row_idx), bbi_low_color))
+                    bbi_style_commands.append(
+                        ("BACKGROUND", (1, row_idx), (1, row_idx), bbi_low_color)
+                    )
 
                 # Create BBI table
-                bbi_col_widths = [6.0*inch, 1.5*inch]
+                bbi_col_widths = [6.0 * inch, 1.5 * inch]
                 bbi_table = Table(bbi_table_data, colWidths=bbi_col_widths)
                 bbi_table.setStyle(TableStyle(bbi_style_commands))
                 elements.append(bbi_table)
@@ -690,18 +812,20 @@ class GARExportService:
                     f"{gar_data.bbi_compliance.summary.low_functional_count} Low Functional"
                 )
                 legend_style = ParagraphStyle(
-                    'BBILegend',
-                    parent=styles['Normal'],
+                    "BBILegend",
+                    parent=styles["Normal"],
                     fontSize=8,
-                    fontStyle='italic',
+                    fontStyle="italic",
                     spaceAfter=4,
                 )
                 elements.append(Spacer(1, 8))
                 elements.append(Paragraph(summary_text, legend_style))
-                elements.append(Paragraph(
-                    "Rating: 75%+ = Highly Functional, 50-74% = Moderately Functional, &lt;50% = Low Functional",
-                    legend_style
-                ))
+                elements.append(
+                    Paragraph(
+                        "Rating: 75%+ = Highly Functional, 50-74% = Moderately Functional, &lt;50% = Low Functional",
+                        legend_style,
+                    )
+                )
 
             # Build PDF
             doc.build(elements)

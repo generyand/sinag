@@ -4,11 +4,10 @@
 import logging
 import re
 from datetime import datetime
-from typing import Any, Dict, List, Optional
 
 from sqlalchemy.orm import Session, joinedload
 
-from app.db.enums import AssessmentStatus, ValidationStatus
+from app.db.enums import AssessmentStatus
 from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.governance_area import ChecklistItem, GovernanceArea, Indicator
 from app.db.models.user import User
@@ -42,12 +41,17 @@ class GARService:
             .join(User, Assessment.blgu_user_id == User.id)
             .options(joinedload(Assessment.blgu_user).joinedload(User.barangay))
             .filter(
-                Assessment.status.in_([
-                    AssessmentStatus.COMPLETED,
-                    AssessmentStatus.AWAITING_FINAL_VALIDATION,
-                ])
+                Assessment.status.in_(
+                    [
+                        AssessmentStatus.COMPLETED,
+                        AssessmentStatus.AWAITING_FINAL_VALIDATION,
+                    ]
+                )
             )
-            .order_by(Assessment.validated_at.desc().nullslast(), Assessment.submitted_at.desc())
+            .order_by(
+                Assessment.validated_at.desc().nullslast(),
+                Assessment.submitted_at.desc(),
+            )
             .all()
         )
 
@@ -73,7 +77,7 @@ class GARService:
         self,
         db: Session,
         assessment_id: int,
-        governance_area_id: Optional[int] = None,
+        governance_area_id: int | None = None,
     ) -> GARResponse:
         """
         Generate GAR data for a specific assessment.
@@ -139,7 +143,9 @@ class GARService:
                 assessment_id=assessment_id,
             )
         except Exception as e:
-            self.logger.warning(f"Failed to get BBI compliance data for assessment {assessment_id}: {e}")
+            self.logger.warning(
+                f"Failed to get BBI compliance data for assessment {assessment_id}: {e}"
+            )
 
         return GARResponse(
             assessment_id=assessment.id,
@@ -162,20 +168,19 @@ class GARService:
         """Build GAR data for a single governance area."""
 
         # Get all indicators for this area (including sub-indicators)
-        all_indicators = (
-            db.query(Indicator)
-            .filter(Indicator.governance_area_id == area.id)
-            .all()
-        )
+        all_indicators = db.query(Indicator).filter(Indicator.governance_area_id == area.id).all()
 
         # Sort indicators by hierarchical code (e.g., 1.1 < 1.1.1 < 1.1.2 < 1.2)
-        all_indicators = sorted(all_indicators, key=lambda i: self._sort_key_for_indicator_code(i.indicator_code))
+        all_indicators = sorted(
+            all_indicators,
+            key=lambda i: self._sort_key_for_indicator_code(i.indicator_code),
+        )
 
         # Filter out depth 4+ indicators (like 1.6.1.1, 1.6.1.2) - GAR only shows up to depth 3
         indicators = [i for i in all_indicators if self._get_indicator_depth(i.indicator_code) <= 3]
 
         # Create a map of responses by indicator_id
-        response_map: Dict[int, AssessmentResponse] = {}
+        response_map: dict[int, AssessmentResponse] = {}
         for resp in assessment.responses:
             if resp.indicator and resp.indicator.governance_area_id == area.id:
                 response_map[resp.indicator_id] = resp
@@ -202,15 +207,15 @@ class GARService:
             gar_checklist = []
             for item in checklist_items:
                 # Filter: only include minimum requirements, not MOV items
-                if not self._is_minimum_requirement(item.label, item.item_type, indicator.indicator_code):
+                if not self._is_minimum_requirement(
+                    item.label, item.item_type, indicator.indicator_code
+                ):
                     continue
 
                 validation_result = self._get_checklist_validation_result(item, response)
 
                 # Transform label for GAR display (specific indicators only)
-                display_label = self._get_gar_display_label(
-                    indicator.indicator_code, item.label
-                )
+                display_label = self._get_gar_display_label(indicator.indicator_code, item.label)
 
                 gar_checklist.append(
                     GARChecklistItem(
@@ -236,7 +241,8 @@ class GARService:
             is_header = any(
                 i.indicator_code
                 and i.indicator_code.startswith(indicator.indicator_code + ".")
-                and self._get_indicator_depth(i.indicator_code) == self._get_indicator_depth(indicator.indicator_code) + 1
+                and self._get_indicator_depth(i.indicator_code)
+                == self._get_indicator_depth(indicator.indicator_code) + 1
                 for i in indicators
             )
 
@@ -316,8 +322,8 @@ class GARService:
     def _get_checklist_validation_result(
         self,
         item: ChecklistItem,
-        response: Optional[AssessmentResponse],
-    ) -> Optional[str]:
+        response: AssessmentResponse | None,
+    ) -> str | None:
         """
         Get validation result for a checklist item from response data.
 
@@ -394,7 +400,9 @@ class GARService:
             return 0
         return len(indicator_code.split("."))
 
-    def _is_minimum_requirement(self, label: str, item_type: str, indicator_code: str = None) -> bool:
+    def _is_minimum_requirement(
+        self, label: str, item_type: str, indicator_code: str = None
+    ) -> bool:
         """
         Filter to determine if a checklist item should appear in GAR.
 
@@ -516,7 +524,9 @@ class GARService:
         This transformation is GAR-only and does not affect validator/assessor checklists.
         """
         # Clean up trailing semicolons and connectors like "; and", "; or", "; AND/OR", etc.
-        cleaned_label = re.sub(r'[;,]\s*(and|or|and/or)?\s*$', '', original_label, flags=re.IGNORECASE).strip()
+        cleaned_label = re.sub(
+            r"[;,]\s*(and|or|and/or)?\s*$", "", original_label, flags=re.IGNORECASE
+        ).strip()
 
         # Specific label mappings for numbered checklist items (e.g., 4.1.7.1., 4.1.7.2.)
         numbered_label_map = {
@@ -541,7 +551,9 @@ class GARService:
         if indicator_code == "4.5.5":
             label_lower = cleaned_label.lower()
             if "localized flow chart" in label_lower:
-                return "Has an updated localized flow chart of referral system not earlier than 2020"
+                return (
+                    "Has an updated localized flow chart of referral system not earlier than 2020"
+                )
             if "comprehensive barangay juvenile" in label_lower:
                 return "Has a Comprehensive Barangay Juvenile Intervention Program"
             if "children at risk" in label_lower or "cicl" in label_lower:
@@ -566,7 +578,15 @@ class GARService:
                 return "Decrease in prevalence rate for moderate wasting and severe wasting"
 
         # Indicators that use Physical/Financial Report labeling in GAR
-        report_indicators = {"2.1.4", "3.2.3", "4.1.6", "4.3.4", "4.5.6", "4.8.4", "6.1.4"}
+        report_indicators = {
+            "2.1.4",
+            "3.2.3",
+            "4.1.6",
+            "4.3.4",
+            "4.5.6",
+            "4.8.4",
+            "6.1.4",
+        }
 
         if indicator_code not in report_indicators:
             return cleaned_label
@@ -586,9 +606,9 @@ class GARService:
 
     def _calculate_header_validation_statuses(
         self,
-        gar_indicators: List[GARIndicator],
-        all_indicators: List[Indicator],
-        response_map: Dict[int, AssessmentResponse],
+        gar_indicators: list[GARIndicator],
+        all_indicators: list[Indicator],
+        response_map: dict[int, AssessmentResponse],
     ) -> None:
         """
         Calculate validation status for header indicators from their children.
@@ -605,9 +625,6 @@ class GARService:
         - If ALL children have "PASS" -> parent is "PASS"
         - If no children have status -> parent remains None
         """
-        # Build a map of GAR indicator codes for quick lookup
-        gar_code_map = {i.indicator_code: i for i in gar_indicators}
-
         # Process GAR indicators that don't have validation status
         # These might be headers whose children are hidden (depth 4+)
         for gar_indicator in gar_indicators:
@@ -617,7 +634,8 @@ class GARService:
 
             # Find ALL children from all_indicators (including hidden depth-4+)
             children_indicators = [
-                i for i in all_indicators
+                i
+                for i in all_indicators
                 if i.indicator_code
                 and i.indicator_code.startswith(gar_indicator.indicator_code + ".")
                 and i.indicator_code.count(".") == gar_indicator.indicator_code.count(".") + 1

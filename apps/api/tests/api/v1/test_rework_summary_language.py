@@ -3,21 +3,19 @@ Tests for GET /api/v1/assessments/{assessment_id}/rework-summary endpoint
 with multi-language support (ceb, fil, en)
 """
 
-import json
-import pytest
 import uuid
 from datetime import datetime
-from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
 from passlib.context import CryptContext
+from sqlalchemy.orm import Session
 
-from app.db.models.user import User
-from app.db.models.barangay import Barangay
-from app.db.models.assessment import Assessment
-from app.db.enums import UserRole, AssessmentStatus
 from app.api import deps
-
+from app.db.enums import AssessmentStatus, UserRole
+from app.db.models.assessment import Assessment
+from app.db.models.barangay import Barangay
+from app.db.models.user import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -74,7 +72,7 @@ def rework_assessment(db_session: Session, blgu_user_for_rework: User):
                 "priority_actions": ["Aksyon 1", "Aksyon 2"],
                 "estimated_time": "2 semana",
                 "generated_at": datetime.now().isoformat(),
-                "language": "ceb"
+                "language": "ceb",
             },
             "en": {
                 "overall_summary": "This is the English summary",
@@ -82,8 +80,8 @@ def rework_assessment(db_session: Session, blgu_user_for_rework: User):
                 "priority_actions": ["Action 1", "Action 2"],
                 "estimated_time": "2 weeks",
                 "generated_at": datetime.now().isoformat(),
-                "language": "en"
-            }
+                "language": "en",
+            },
         },
         created_at=datetime.now(),
     )
@@ -95,6 +93,7 @@ def rework_assessment(db_session: Session, blgu_user_for_rework: User):
 
 def _override_user_and_db(client, user: User, db_session: Session):
     """Override authentication and database dependencies"""
+
     def _override_current_active_user():
         return user
 
@@ -143,9 +142,7 @@ def test_get_rework_summary_explicit_bisaya_language(
     """Test requesting Bisaya explicitly via language query parameter"""
     _override_user_and_db(client, blgu_user_for_rework, db_session)
 
-    response = client.get(
-        f"/api/v1/assessments/{rework_assessment.id}/rework-summary?language=ceb"
-    )
+    response = client.get(f"/api/v1/assessments/{rework_assessment.id}/rework-summary?language=ceb")
 
     assert response.status_code == 200
     data = response.json()
@@ -164,9 +161,7 @@ def test_get_rework_summary_explicit_english_language(
     """Test requesting English explicitly via language query parameter"""
     _override_user_and_db(client, blgu_user_for_rework, db_session)
 
-    response = client.get(
-        f"/api/v1/assessments/{rework_assessment.id}/rework-summary?language=en"
-    )
+    response = client.get(f"/api/v1/assessments/{rework_assessment.id}/rework-summary?language=en")
 
     assert response.status_code == 200
     data = response.json()
@@ -186,9 +181,7 @@ def test_get_rework_summary_tagalog_fallback_behavior(
     _override_user_and_db(client, blgu_user_for_rework, db_session)
 
     # Request Tagalog when it's not available in the rework_summary
-    response = client.get(
-        f"/api/v1/assessments/{rework_assessment.id}/rework-summary?language=fil"
-    )
+    response = client.get(f"/api/v1/assessments/{rework_assessment.id}/rework-summary?language=fil")
 
     # The endpoint should return 200 - either with generated fil or fallback to ceb/en
     assert response.status_code == 200
@@ -242,9 +235,7 @@ def test_get_rework_summary_user_with_tagalog_preference(
     blgu_user_for_rework.preferred_language = "fil"
     db_session.commit()
 
-    response = client.get(
-        f"/api/v1/assessments/{rework_assessment.id}/rework-summary"
-    )
+    response = client.get(f"/api/v1/assessments/{rework_assessment.id}/rework-summary")
 
     assert response.status_code == 200
     data = response.json()
@@ -268,9 +259,7 @@ def test_get_rework_summary_user_with_english_preference(
     blgu_user_for_rework.preferred_language = "en"
     db_session.commit()
 
-    response = client.get(
-        f"/api/v1/assessments/{rework_assessment.id}/rework-summary"
-    )
+    response = client.get(f"/api/v1/assessments/{rework_assessment.id}/rework-summary")
 
     assert response.status_code == 200
     data = response.json()
@@ -293,9 +282,7 @@ def test_get_rework_summary_language_parameter_overrides_user_preference(
     assert blgu_user_for_rework.preferred_language == "ceb"
 
     # But explicitly request English
-    response = client.get(
-        f"/api/v1/assessments/{rework_assessment.id}/rework-summary?language=en"
-    )
+    response = client.get(f"/api/v1/assessments/{rework_assessment.id}/rework-summary?language=en")
 
     assert response.status_code == 200
     data = response.json()
@@ -336,9 +323,7 @@ def test_get_rework_summary_assessment_not_in_rework_status(
     db_session.commit()
     db_session.refresh(draft_assessment)
 
-    response = client.get(
-        f"/api/v1/assessments/{draft_assessment.id}/rework-summary"
-    )
+    response = client.get(f"/api/v1/assessments/{draft_assessment.id}/rework-summary")
 
     # Should return an error (400 or 404)
     assert response.status_code in [400, 404]
@@ -353,9 +338,7 @@ def test_get_rework_summary_response_structure(
     """Test that response has correct structure"""
     _override_user_and_db(client, blgu_user_for_rework, db_session)
 
-    response = client.get(
-        f"/api/v1/assessments/{rework_assessment.id}/rework-summary?language=ceb"
-    )
+    response = client.get(f"/api/v1/assessments/{rework_assessment.id}/rework-summary?language=ceb")
 
     assert response.status_code == 200
     data = response.json()
@@ -430,9 +413,7 @@ def test_get_rework_summary_different_users_same_assessment(
 
     _override_user_and_db(client, user_en, db_session)
 
-    response = client.get(
-        f"/api/v1/assessments/{rework_assessment.id}/rework-summary"
-    )
+    response = client.get(f"/api/v1/assessments/{rework_assessment.id}/rework-summary")
 
     assert response.status_code == 200
     data = response.json()

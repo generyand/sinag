@@ -104,9 +104,7 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_feedback_comments_id"), "feedback_comments", ["id"], unique=False
-    )
+    op.create_index(op.f("ix_feedback_comments_id"), "feedback_comments", ["id"], unique=False)
     op.create_table(
         "movs",
         sa.Column("id", sa.Integer(), nullable=False),

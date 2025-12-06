@@ -9,6 +9,7 @@ Tests file validation functionality including:
 """
 
 import io
+
 import pytest
 from fastapi import UploadFile
 
@@ -38,7 +39,7 @@ class TestFileValidationService:
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 b"PK\x03\x04",
             ),
-            ("test.jpg", "image/jpeg", b"\xFF\xD8\xFF"),
+            ("test.jpg", "image/jpeg", b"\xff\xd8\xff"),
             ("test.png", "image/png", b"\x89PNG\r\n\x1a\n"),
             ("test.mp4", "video/mp4", b"\x00\x00\x00\x20ftypisom"),
         ],
@@ -213,7 +214,7 @@ class TestFileValidationService:
     def test_jpeg_file_with_alternate_extension(self, service):
         """Test that JPEG files can use both .jpg and .jpeg extensions."""
         for ext in [".jpg", ".jpeg"]:
-            file_data = io.BytesIO(b"\xFF\xD8\xFF")
+            file_data = io.BytesIO(b"\xff\xd8\xff")
             upload_file = UploadFile(
                 filename=f"image{ext}",
                 file=file_data,

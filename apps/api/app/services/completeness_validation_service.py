@@ -22,20 +22,22 @@ Usage:
         print(f"Missing fields: {result['missing_fields']}")
 """
 
-from typing import Dict, Any, List, Optional
-from app.schemas.form_schema import (
-    FormSchema,
-    FormField,
-    FileUploadField,
-    ConditionalMOVLogic,
-)
 import logging
+from typing import Any
+
+from app.schemas.form_schema import (
+    ConditionalMOVLogic,
+    FileUploadField,
+    FormField,
+    FormSchema,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class CompletenessValidationError(Exception):
     """Custom exception for completeness validation errors"""
+
     pass
 
 
@@ -54,10 +56,10 @@ class CompletenessValidationService:
 
     def validate_completeness(
         self,
-        form_schema: Optional[Dict[str, Any]],
-        response_data: Optional[Dict[str, Any]],
-        uploaded_movs: Optional[List[Any]] = None
-    ) -> Dict[str, Any]:
+        form_schema: dict[str, Any] | None,
+        response_data: dict[str, Any] | None,
+        uploaded_movs: list[Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Validate that all required fields have been filled out.
 
@@ -85,7 +87,7 @@ class CompletenessValidationService:
                 "is_complete": True,
                 "missing_fields": [],
                 "required_field_count": 0,
-                "filled_field_count": 0
+                "filled_field_count": 0,
             }
 
         if response_data is None:
@@ -97,29 +99,38 @@ class CompletenessValidationService:
         try:
             # Check if this is a legacy JSON Schema format (Epic 1.0/2.0)
             # These have 'type', 'properties', etc. but no 'fields' or 'sections'
-            if 'type' in form_schema and 'fields' not in form_schema and 'sections' not in form_schema:
+            if (
+                "type" in form_schema
+                and "fields" not in form_schema
+                and "sections" not in form_schema
+            ):
                 # Legacy format - skip validation, return complete
-                self.logger.info("Legacy JSON Schema format detected, skipping completeness validation")
+                self.logger.info(
+                    "Legacy JSON Schema format detected, skipping completeness validation"
+                )
                 return {
                     "is_complete": True,
                     "missing_fields": [],
                     "required_field_count": 0,
-                    "filled_field_count": 0
+                    "filled_field_count": 0,
                 }
 
             # Handle both Epic 3.0 (sections-based) and Epic 4.0 (fields-based) schemas
-            if 'sections' in form_schema and 'fields' not in form_schema:
+            if "sections" in form_schema and "fields" not in form_schema:
                 # Epic 3.0 format - convert sections to fields
                 fields = []
-                for section in form_schema.get('sections', []):
-                    fields.extend(section.get('fields', []))
-                form_schema = {**form_schema, 'fields': fields}
+                for section in form_schema.get("sections", []):
+                    fields.extend(section.get("fields", []))
+                form_schema = {**form_schema, "fields": fields}
+
+            # Sanitize form schema to handle data quality issues (e.g., empty note texts)
+            form_schema = self._sanitize_form_schema(form_schema)
 
             # Parse and validate the form schema using Pydantic
             schema_obj = FormSchema(**form_schema)
 
             # Check for grouped OR validation (e.g., indicator 2.1.4, 6.2.1)
-            validation_rule = form_schema.get('validation_rule', 'ALL_ITEMS_REQUIRED')
+            validation_rule = form_schema.get("validation_rule", "ALL_ITEMS_REQUIRED")
 
             if validation_rule in ('ANY_ITEM_REQUIRED', 'OR_LOGIC_AT_LEAST_1_REQUIRED', 'ANY_OPTION_GROUP_REQUIRED'):
                 # For OR-logic, get ALL file_upload fields (not just required=True)
@@ -127,21 +138,19 @@ class CompletenessValidationService:
                 # ANY_OPTION_GROUP_REQUIRED: Used for indicators like 1.6.1 where user must complete
                 # any ONE of several option groups (Option 1 OR Option 2 OR Option 3)
                 or_fields = [
-                    field for field in schema_obj.fields
-                    if isinstance(field, FileUploadField)
+                    field for field in schema_obj.fields if isinstance(field, FileUploadField)
                 ]
                 logger.info(f"[OR LOGIC] Found {len(or_fields)} file_upload fields for OR validation (rule: {validation_rule})")
                 return self._validate_grouped_or_fields(
                     or_fields, response_data, uploaded_movs
                 )
 
-            if validation_rule == 'SHARED_PLUS_OR_LOGIC':
+            if validation_rule == "SHARED_PLUS_OR_LOGIC":
                 # SHARED+OR validation: SHARED fields (required) + (OPTION A OR OPTION B)
                 # Requirements: 0/2 → Need 1 shared + 1 from (option_a OR option_b)
                 # If both option_a AND option_b have uploads, still counts as 1/2 (not 2/2)
                 upload_fields = [
-                    field for field in schema_obj.fields
-                    if isinstance(field, FileUploadField)
+                    field for field in schema_obj.fields if isinstance(field, FileUploadField)
                 ]
                 logger.info(f"[SHARED+OR LOGIC] Found {len(upload_fields)} file_upload fields")
                 return self._validate_shared_plus_or_fields(
@@ -155,11 +164,13 @@ class CompletenessValidationService:
             missing_fields = []
             for field in required_fields:
                 if not self._is_field_filled(field, response_data, uploaded_movs):
-                    missing_fields.append({
-                        "field_id": field.field_id,
-                        "label": field.label,
-                        "reason": self._get_missing_reason(field, response_data, uploaded_movs)
-                    })
+                    missing_fields.append(
+                        {
+                            "field_id": field.field_id,
+                            "label": field.label,
+                            "reason": self._get_missing_reason(field, response_data, uploaded_movs),
+                        }
+                    )
 
             # Calculate statistics
             required_count = len(required_fields)
@@ -169,7 +180,7 @@ class CompletenessValidationService:
                 "is_complete": len(missing_fields) == 0,
                 "missing_fields": missing_fields,
                 "required_field_count": required_count,
-                "filled_field_count": filled_count
+                "filled_field_count": filled_count,
             }
 
         except Exception as e:
@@ -177,10 +188,8 @@ class CompletenessValidationService:
             raise CompletenessValidationError(f"Failed to validate completeness: {str(e)}")
 
     def _get_required_fields(
-        self,
-        form_schema: FormSchema,
-        response_data: Dict[str, Any]
-    ) -> List[FormField]:
+        self, form_schema: FormSchema, response_data: dict[str, Any]
+    ) -> list[FormField]:
         """
         Get all required fields from the form schema.
 
@@ -203,15 +212,15 @@ class CompletenessValidationService:
                 required_fields.append(field)
             # Check if file upload field has conditional MOV requirement
             elif isinstance(field, FileUploadField) and field.conditional_mov_requirement:
-                if self._is_conditional_mov_required(field.conditional_mov_requirement, response_data):
+                if self._is_conditional_mov_required(
+                    field.conditional_mov_requirement, response_data
+                ):
                     required_fields.append(field)
 
         return required_fields
 
     def _is_conditional_mov_required(
-        self,
-        conditional_logic: ConditionalMOVLogic,
-        response_data: Dict[str, Any]
+        self, conditional_logic: ConditionalMOVLogic, response_data: dict[str, Any]
     ) -> bool:
         """
         Evaluate conditional MOV logic to determine if MOV is required.
@@ -239,10 +248,7 @@ class CompletenessValidationService:
             return False
 
     def _is_field_filled(
-        self,
-        field: FormField,
-        response_data: Dict[str, Any],
-        uploaded_movs: List[Any]
+        self, field: FormField, response_data: dict[str, Any], uploaded_movs: list[Any]
     ) -> bool:
         """
         Check if a field has been filled out.
@@ -262,8 +268,9 @@ class CompletenessValidationService:
             # A file upload field is filled if there are uploaded MOVs with matching field_id
             # Count MOVs that belong to this specific field
             field_movs = [
-                mov for mov in uploaded_movs
-                if hasattr(mov, 'field_id') and mov.field_id == field.field_id
+                mov
+                for mov in uploaded_movs
+                if hasattr(mov, "field_id") and mov.field_id == field.field_id
             ]
 
             # Debug logging to track validation
@@ -303,10 +310,7 @@ class CompletenessValidationService:
         return True
 
     def _get_missing_reason(
-        self,
-        field: FormField,
-        response_data: Dict[str, Any],
-        uploaded_movs: List[Any]
+        self, field: FormField, response_data: dict[str, Any], uploaded_movs: list[Any]
     ) -> str:
         """
         Get a human-readable reason why a field is missing.
@@ -341,12 +345,62 @@ class CompletenessValidationService:
 
         return "Field is incomplete"
 
+    def _sanitize_form_schema(self, form_schema: dict[str, Any]) -> dict[str, Any]:
+        """
+        Sanitize form schema to handle data quality issues.
+
+        This method cleans up the form schema to handle cases where the data
+        stored in the database doesn't strictly comply with the Pydantic schema
+        validation rules (e.g., empty note texts).
+
+        Args:
+            form_schema: The raw form schema dict from the database
+
+        Returns:
+            Sanitized form schema dict
+        """
+        sanitized = dict(form_schema)
+
+        # Sanitize notes - filter out items with empty text
+        if "notes" in sanitized and sanitized["notes"]:
+            notes = sanitized["notes"]
+            if isinstance(notes, dict) and "items" in notes:
+                # Filter out note items with empty or whitespace-only text
+                filtered_items = [
+                    item for item in notes.get("items", [])
+                    if isinstance(item, dict)
+                    and item.get("text")
+                    and str(item.get("text", "")).strip()
+                ]
+                if filtered_items:
+                    sanitized["notes"] = {**notes, "items": filtered_items}
+                else:
+                    # No valid items left, remove notes entirely
+                    sanitized["notes"] = None
+
+        # Sanitize secondary_notes similarly
+        if "secondary_notes" in sanitized and sanitized["secondary_notes"]:
+            secondary_notes = sanitized["secondary_notes"]
+            if isinstance(secondary_notes, dict) and "items" in secondary_notes:
+                filtered_items = [
+                    item for item in secondary_notes.get("items", [])
+                    if isinstance(item, dict)
+                    and item.get("text")
+                    and str(item.get("text", "")).strip()
+                ]
+                if filtered_items:
+                    sanitized["secondary_notes"] = {**secondary_notes, "items": filtered_items}
+                else:
+                    sanitized["secondary_notes"] = None
+
+        return sanitized
+
     def _validate_grouped_or_fields(
         self,
-        required_fields: List[FormField],
-        response_data: Dict[str, Any],
-        uploaded_movs: List[Any]
-    ) -> Dict[str, Any]:
+        required_fields: list[FormField],
+        response_data: dict[str, Any],
+        uploaded_movs: list[Any],
+    ) -> dict[str, Any]:
         """
         Validate fields with grouped OR logic (e.g., indicator 2.1.4, 1.6.1).
 
@@ -443,23 +497,27 @@ class CompletenessValidationService:
             # All groups are incomplete, show all missing fields
             for group_info in incomplete_groups:
                 for field in group_info["missing_fields"]:
-                    missing_fields.append({
-                        "field_id": field.field_id,
-                        "label": field.label,
-                        "reason": self._get_missing_reason(field, response_data, uploaded_movs)
-                    })
+                    missing_fields.append(
+                        {
+                            "field_id": field.field_id,
+                            "label": field.label,
+                            "reason": self._get_missing_reason(field, response_data, uploaded_movs),
+                        }
+                    )
 
         # For OR logic, we report "1 of 1" complete if any group is complete
         required_count = 1  # Only 1 complete group is required
         filled_count = 1 if is_complete else 0
 
-        logger.info(f"[GROUPED OR] Validation result: {filled_count}/{required_count} groups complete")
+        logger.info(
+            f"[GROUPED OR] Validation result: {filled_count}/{required_count} groups complete"
+        )
 
         return {
             "is_complete": is_complete,
             "missing_fields": missing_fields,
             "required_field_count": required_count,
-            "filled_field_count": filled_count
+            "filled_field_count": filled_count,
         }
 
     def _group_has_internal_or_logic(self, group_name: str, group_fields: List[FormField]) -> bool:
@@ -496,10 +554,10 @@ class CompletenessValidationService:
 
     def _validate_shared_plus_or_fields(
         self,
-        fields: List[FormField],
-        response_data: Dict[str, Any],
-        uploaded_movs: List[Any]
-    ) -> Dict[str, Any]:
+        fields: list[FormField],
+        response_data: dict[str, Any],
+        uploaded_movs: list[Any],
+    ) -> dict[str, Any]:
         """
         Validate fields with SHARED+OR logic (e.g., indicator 4.1.6, 4.8.4).
 
@@ -524,11 +582,11 @@ class CompletenessValidationService:
         for field in fields:
             if isinstance(field, FileUploadField):
                 option_group = field.option_group
-                if option_group == 'shared':
+                if option_group == "shared":
                     shared_fields.append(field)
-                elif option_group == 'option_a':
+                elif option_group == "option_a":
                     option_a_fields.append(field)
-                elif option_group == 'option_b':
+                elif option_group == "option_b":
                     option_b_fields.append(field)
 
         logger.info(
@@ -545,8 +603,12 @@ class CompletenessValidationService:
             else:
                 shared_missing.append(field)
 
-        shared_complete = (len(shared_missing) == 0 and len(shared_fields) > 0) if shared_fields else True
-        logger.info(f"[SHARED+OR LOGIC] SHARED: {shared_filled}/{len(shared_fields)} filled, complete={shared_complete}")
+        shared_complete = (
+            (len(shared_missing) == 0 and len(shared_fields) > 0) if shared_fields else True
+        )
+        logger.info(
+            f"[SHARED+OR LOGIC] SHARED: {shared_filled}/{len(shared_fields)} filled, complete={shared_complete}"
+        )
 
         # Check OPTION A fields - at least 1 upload needed
         option_a_has_upload = False
@@ -562,7 +624,9 @@ class CompletenessValidationService:
                 option_b_has_upload = True
                 break
 
-        logger.info(f"[SHARED+OR LOGIC] option_a_has_upload={option_a_has_upload}, option_b_has_upload={option_b_has_upload}")
+        logger.info(
+            f"[SHARED+OR LOGIC] option_a_has_upload={option_a_has_upload}, option_b_has_upload={option_b_has_upload}"
+        )
 
         # Either option_a OR option_b must have at least 1 upload
         option_complete = option_a_has_upload or option_b_has_upload
@@ -577,37 +641,43 @@ class CompletenessValidationService:
         if option_complete:
             filled_count += 1
 
-        is_complete = (filled_count == required_count)
+        is_complete = filled_count == required_count
 
         # Build missing fields list
         missing_fields = []
         if not shared_complete:
             for field in shared_missing:
-                missing_fields.append({
-                    "field_id": field.field_id,
-                    "label": field.label,
-                    "reason": "Required SHARED document is missing"
-                })
+                missing_fields.append(
+                    {
+                        "field_id": field.field_id,
+                        "label": field.label,
+                        "reason": "Required SHARED document is missing",
+                    }
+                )
 
         if not option_complete:
             # Report all option fields as potentially missing since user needs to pick one
             for field in option_a_fields + option_b_fields:
-                missing_fields.append({
-                    "field_id": field.field_id,
-                    "label": field.label,
-                    "reason": "At least one OPTION document is required (PHYSICAL or FINANCIAL)"
-                })
+                missing_fields.append(
+                    {
+                        "field_id": field.field_id,
+                        "label": field.label,
+                        "reason": "At least one OPTION document is required (PHYSICAL or FINANCIAL)",
+                    }
+                )
 
-        logger.info(f"[SHARED+OR LOGIC] Validation result: {filled_count}/{required_count} complete")
+        logger.info(
+            f"[SHARED+OR LOGIC] Validation result: {filled_count}/{required_count} complete"
+        )
 
         return {
             "is_complete": is_complete,
             "missing_fields": missing_fields,
             "required_field_count": required_count,
-            "filled_field_count": filled_count
+            "filled_field_count": filled_count,
         }
 
-    def _detect_field_groups(self, fields: List[FormField]) -> Dict[str, List[FormField]]:
+    def _detect_field_groups(self, fields: list[FormField]) -> dict[str, list[FormField]]:
         """
         Detect field groups based on explicit option_group or field_id patterns.
 
@@ -626,9 +696,8 @@ class CompletenessValidationService:
 
         # Special case: If only 2 fields total with section_1/section_2, treat each as separate option
         # (e.g., 1.6.1.3 with 2 separate upload options)
-        is_two_field_or = (
-            len(fields) == 2 and
-            all('section_1' in f.field_id or 'section_2' in f.field_id for f in fields)
+        is_two_field_or = len(fields) == 2 and all(
+            "section_1" in f.field_id or "section_2" in f.field_id for f in fields
         )
 
         for field in fields:
@@ -649,10 +718,10 @@ class CompletenessValidationService:
                 if is_two_field_or:
                     # Only 2 fields, both with section_1 or section_2 → each is its own option
                     group_name = f"Field {field_id}"
-                elif 'section_1' in field_id or 'section_2' in field_id:
+                elif "section_1" in field_id or "section_2" in field_id:
                     # Part of a multi-field group (Option A)
                     group_name = "Group A (Option A)"
-                elif 'section_3' in field_id or 'section_4' in field_id:
+                elif "section_3" in field_id or "section_4" in field_id:
                     # Part of a multi-field group (Option B)
                     group_name = "Group B (Option B)"
                 else:
@@ -672,9 +741,9 @@ class CompletenessValidationService:
 
     def get_completion_percentage(
         self,
-        form_schema: Optional[Dict[str, Any]],
-        response_data: Optional[Dict[str, Any]],
-        uploaded_movs: Optional[List[Any]] = None
+        form_schema: dict[str, Any] | None,
+        response_data: dict[str, Any] | None,
+        uploaded_movs: list[Any] | None = None,
     ) -> float:
         """
         Calculate the percentage of required fields that have been filled.
@@ -697,10 +766,10 @@ class CompletenessValidationService:
 
     def get_missing_field_labels(
         self,
-        form_schema: Optional[Dict[str, Any]],
-        response_data: Optional[Dict[str, Any]],
-        uploaded_movs: Optional[List[Any]] = None
-    ) -> List[str]:
+        form_schema: dict[str, Any] | None,
+        response_data: dict[str, Any] | None,
+        uploaded_movs: list[Any] | None = None,
+    ) -> list[str]:
         """
         Get a list of labels for missing required fields.
 

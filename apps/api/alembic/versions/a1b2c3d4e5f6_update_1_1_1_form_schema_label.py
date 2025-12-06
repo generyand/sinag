@@ -5,6 +5,7 @@ Revises: 8b2e4f1a9c3d
 Create Date: 2025-12-05 16:10:00.000000
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -12,8 +13,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'a1b2c3d4e5f6'
-down_revision: Union[str, Sequence[str], None] = '8b2e4f1a9c3d'
+revision: str = "a1b2c3d4e5f6"
+down_revision: Union[str, Sequence[str], None] = "8b2e4f1a9c3d"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -27,7 +28,8 @@ def upgrade() -> None:
     conn = op.get_bind()
 
     # Update the first field's label and description in the form_schema JSON
-    conn.execute(sa.text(f"""
+    conn.execute(
+        sa.text(f"""
         UPDATE indicators
         SET form_schema = jsonb_set(
             jsonb_set(
@@ -39,14 +41,16 @@ def upgrade() -> None:
             '"{NEW_LABEL}"'::jsonb
         )
         WHERE indicator_code = '1.1.1'
-    """))
+    """)
+    )
 
 
 def downgrade() -> None:
     """Downgrade schema."""
     conn = op.get_bind()
 
-    conn.execute(sa.text(f"""
+    conn.execute(
+        sa.text(f"""
         UPDATE indicators
         SET form_schema = jsonb_set(
             jsonb_set(
@@ -58,4 +62,5 @@ def downgrade() -> None:
             '"{OLD_LABEL}"'::jsonb
         )
         WHERE indicator_code = '1.1.1'
-    """))
+    """)
+    )

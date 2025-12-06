@@ -6,15 +6,14 @@ Tests the LanguageCode type and language field validation in user schemas
 import pytest
 from pydantic import ValidationError
 
+from app.db.enums import UserRole
 from app.schemas.user import (
-    LanguageCode,
     User,
     UserAdminCreate,
     UserAdminUpdate,
     UserCreate,
     UserUpdate,
 )
-from app.db.enums import UserRole
 
 
 class TestLanguageCodeValidation:
@@ -27,7 +26,7 @@ class TestLanguageCodeValidation:
             email="test@example.com",
             name="Test User",
             password="password123",
-            preferred_language="ceb"
+            preferred_language="ceb",
         )
         assert user_create.preferred_language == "ceb"
 
@@ -37,7 +36,7 @@ class TestLanguageCodeValidation:
             email="test@example.com",
             name="Test User",
             password="password123",
-            preferred_language="fil"
+            preferred_language="fil",
         )
         assert user_create.preferred_language == "fil"
 
@@ -47,7 +46,7 @@ class TestLanguageCodeValidation:
             email="test@example.com",
             name="Test User",
             password="password123",
-            preferred_language="en"
+            preferred_language="en",
         )
         assert user_create.preferred_language == "en"
 
@@ -58,7 +57,7 @@ class TestLanguageCodeValidation:
                 email="test@example.com",
                 name="Test User",
                 password="password123",
-                preferred_language="invalid_code"
+                preferred_language="invalid_code",
             )
 
         error = exc_info.value.errors()[0]
@@ -72,7 +71,7 @@ class TestLanguageCodeValidation:
                 email="test@example.com",
                 name="Test User",
                 password="password123",
-                preferred_language=""
+                preferred_language="",
             )
 
         error = exc_info.value.errors()[0]
@@ -84,11 +83,7 @@ class TestUserCreateSchemaLanguage:
 
     def test_user_create_default_language_is_ceb(self):
         """Test that default language is 'ceb' when not specified."""
-        user_create = UserCreate(
-            email="test@example.com",
-            name="Test User",
-            password="password123"
-        )
+        user_create = UserCreate(email="test@example.com", name="Test User", password="password123")
         assert user_create.preferred_language == "ceb"
 
     def test_user_create_with_explicit_language(self):
@@ -97,7 +92,7 @@ class TestUserCreateSchemaLanguage:
             email="test@example.com",
             name="Test User",
             password="password123",
-            preferred_language="fil"
+            preferred_language="fil",
         )
         assert user_create.preferred_language == "fil"
 
@@ -108,7 +103,7 @@ class TestUserCreateSchemaLanguage:
                 email=f"test_{lang}@example.com",
                 name=f"Test User {lang}",
                 password="password123",
-                preferred_language=lang
+                preferred_language=lang,
             )
             assert user_create.preferred_language == lang
 
@@ -150,7 +145,7 @@ class TestUserAdminCreateSchemaLanguage:
             email="admin@example.com",
             name="Admin User",
             password="password123",
-            role=UserRole.MLGOO_DILG
+            role=UserRole.MLGOO_DILG,
         )
         assert user_create.preferred_language == "ceb"
 
@@ -161,7 +156,7 @@ class TestUserAdminCreateSchemaLanguage:
             name="Admin User",
             password="password123",
             role=UserRole.MLGOO_DILG,
-            preferred_language="en"
+            preferred_language="en",
         )
         assert user_create.preferred_language == "en"
 
@@ -173,7 +168,7 @@ class TestUserAdminCreateSchemaLanguage:
             password="password123",
             role=UserRole.BLGU_USER,
             barangay_id=1,
-            preferred_language="fil"
+            preferred_language="fil",
         )
         assert user_create.preferred_language == "fil"
         assert user_create.role == UserRole.BLGU_USER
@@ -217,7 +212,7 @@ class TestUserResponseSchemaLanguage:
             is_superuser=False,
             must_change_password=False,
             preferred_language="ceb",
-            created_at=datetime.now()
+            created_at=datetime.now(),
         )
         assert user.preferred_language == "ceb"
         assert hasattr(user, "preferred_language")
@@ -234,7 +229,7 @@ class TestUserResponseSchemaLanguage:
             is_active=True,
             is_superuser=False,
             must_change_password=False,
-            created_at=datetime.now()
+            created_at=datetime.now(),
         )
         # Should use default value of "ceb"
         assert user.preferred_language == "ceb"
@@ -253,6 +248,6 @@ class TestUserResponseSchemaLanguage:
                 is_superuser=False,
                 must_change_password=False,
                 preferred_language=lang,
-                created_at=datetime.now()
+                created_at=datetime.now(),
             )
             assert user.preferred_language == lang

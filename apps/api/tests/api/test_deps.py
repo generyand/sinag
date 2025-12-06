@@ -2,16 +2,16 @@
 Tests for FastAPI dependency functions (app/api/deps.py)
 """
 
-import pytest
 import uuid
-from sqlalchemy.orm import Session
+
+import pytest
 from fastapi import HTTPException
 from passlib.context import CryptContext
+from sqlalchemy.orm import Session
 
-from app.db.models.user import User
-from app.db.enums import UserRole
 from app.api.deps import get_current_external_user
-
+from app.db.enums import UserRole
+from app.db.models.user import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -60,14 +60,28 @@ def mlgoo_user(db_session: Session):
 @pytest.fixture
 def validator_user(db_session: Session):
     """Create a Validator user for testing"""
+    from app.db.enums import AreaType
+    from app.db.models.governance_area import GovernanceArea
+
     unique_email = f"validator_{uuid.uuid4().hex[:8]}@dilg.gov.ph"
+
+    # Create governance area first
+    unique_code = uuid.uuid4().hex[:2].upper()
+    governance_area = GovernanceArea(
+        name=f"Test Governance Area {uuid.uuid4().hex[:8]}",
+        code=unique_code,
+        area_type=AreaType.CORE,
+    )
+    db_session.add(governance_area)
+    db_session.commit()
+    db_session.refresh(governance_area)
 
     user = User(
         email=unique_email,
         name="Validator User",
         hashed_password=pwd_context.hash("password123"),
         role=UserRole.VALIDATOR,
-        validator_area_id=1,
+        validator_area_id=governance_area.id,
         is_active=True,
     )
     db_session.add(user)

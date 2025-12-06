@@ -2,10 +2,9 @@
 # Pydantic models for the MLGOO Municipal Performance Overview dashboard
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
-
 
 # ============================================================================
 # Compliance Summary Schemas
@@ -19,12 +18,8 @@ class MunicipalComplianceSummary(BaseModel):
     assessed_barangays: int = Field(
         ..., description="Number of barangays with completed assessments"
     )
-    passed_barangays: int = Field(
-        ..., description="Number of barangays that passed SGLGB"
-    )
-    failed_barangays: int = Field(
-        ..., description="Number of barangays that failed SGLGB"
-    )
+    passed_barangays: int = Field(..., description="Number of barangays that passed SGLGB")
+    failed_barangays: int = Field(..., description="Number of barangays that failed SGLGB")
     compliance_rate: float = Field(
         ..., description="Percentage of assessed barangays that passed (0-100)"
     )
@@ -50,33 +45,24 @@ class GovernanceAreaPerformance(BaseModel):
     id: int = Field(..., description="Governance area ID")
     name: str = Field(..., description="Governance area name")
     area_type: str = Field(..., description="Area type: CORE or ESSENTIAL")
-    total_indicators: int = Field(
-        ..., description="Total number of indicators in this area"
-    )
-    passed_count: int = Field(
-        ..., description="Number of barangays that passed this area"
-    )
-    failed_count: int = Field(
-        ..., description="Number of barangays that failed this area"
-    )
+    total_indicators: int = Field(..., description="Total number of indicators in this area")
+    passed_count: int = Field(..., description="Number of barangays that passed this area")
+    failed_count: int = Field(..., description="Number of barangays that failed this area")
     pass_rate: float = Field(
         ..., description="Percentage of barangays that passed this area (0-100)"
     )
-    common_weaknesses: List[str] = Field(
-        default_factory=list,
-        description="Common weaknesses identified in this area"
+    common_weaknesses: list[str] = Field(
+        default_factory=list, description="Common weaknesses identified in this area"
     )
 
 
 class GovernanceAreaPerformanceList(BaseModel):
     """Schema for list of governance area performance data."""
 
-    areas: List[GovernanceAreaPerformance] = Field(
+    areas: list[GovernanceAreaPerformance] = Field(
         default_factory=list, description="Performance data for each governance area"
     )
-    core_areas_pass_rate: float = Field(
-        ..., description="Average pass rate across core areas"
-    )
+    core_areas_pass_rate: float = Field(..., description="Average pass rate across core areas")
     essential_areas_pass_rate: float = Field(
         ..., description="Average pass rate across essential areas"
     )
@@ -97,25 +83,18 @@ class FailingIndicator(BaseModel):
         ..., description="Name of the governance area this indicator belongs to"
     )
     governance_area_id: int = Field(..., description="Governance area ID")
-    fail_count: int = Field(
-        ..., description="Number of barangays that failed this indicator"
-    )
-    total_assessed: int = Field(
-        ..., description="Total barangays assessed for this indicator"
-    )
-    fail_rate: float = Field(
-        ..., description="Percentage of barangays that failed (0-100)"
-    )
-    common_issues: List[str] = Field(
-        default_factory=list,
-        description="Common issues identified for this indicator"
+    fail_count: int = Field(..., description="Number of barangays that failed this indicator")
+    total_assessed: int = Field(..., description="Total barangays assessed for this indicator")
+    fail_rate: float = Field(..., description="Percentage of barangays that failed (0-100)")
+    common_issues: list[str] = Field(
+        default_factory=list, description="Common issues identified for this indicator"
     )
 
 
 class TopFailingIndicatorsList(BaseModel):
     """Schema for list of top failing indicators."""
 
-    indicators: List[FailingIndicator] = Field(
+    indicators: list[FailingIndicator] = Field(
         default_factory=list, description="Top failing indicators"
     )
     total_indicators_assessed: int = Field(
@@ -134,21 +113,20 @@ class AggregatedCapDevSummary(BaseModel):
     total_assessments_with_capdev: int = Field(
         ..., description="Number of assessments with CapDev insights generated"
     )
-    top_recommendations: List[Dict[str, Any]] = Field(
+    top_recommendations: list[dict[str, Any]] = Field(
         default_factory=list,
-        description="Most frequently recommended capacity development actions"
+        description="Most frequently recommended capacity development actions",
     )
-    common_weaknesses_by_area: Dict[str, List[str]] = Field(
-        default_factory=dict,
-        description="Common weaknesses grouped by governance area"
+    common_weaknesses_by_area: dict[str, list[str]] = Field(
+        default_factory=dict, description="Common weaknesses grouped by governance area"
     )
-    priority_interventions: List[Dict[str, Any]] = Field(
+    priority_interventions: list[dict[str, Any]] = Field(
         default_factory=list,
-        description="High-priority interventions suggested across barangays"
+        description="High-priority interventions suggested across barangays",
     )
-    skills_gap_analysis: Dict[str, int] = Field(
+    skills_gap_analysis: dict[str, int] = Field(
         default_factory=dict,
-        description="Frequency of skills mentioned as needing development"
+        description="Frequency of skills mentioned as needing development",
     )
 
 
@@ -162,30 +140,26 @@ class BarangayAssessmentStatus(BaseModel):
 
     barangay_id: int = Field(..., description="Barangay ID")
     barangay_name: str = Field(..., description="Barangay name")
-    assessment_id: Optional[int] = Field(None, description="Assessment ID if exists")
+    assessment_id: int | None = Field(None, description="Assessment ID if exists")
     status: str = Field(..., description="Assessment status")
-    compliance_status: Optional[str] = Field(
+    compliance_status: str | None = Field(
         None, description="Final compliance status: PASSED or FAILED"
     )
-    submitted_at: Optional[datetime] = Field(None, description="When assessment was submitted")
-    mlgoo_approved_at: Optional[datetime] = Field(
+    submitted_at: datetime | None = Field(None, description="When assessment was submitted")
+    mlgoo_approved_at: datetime | None = Field(
         None, description="When MLGOO approved the assessment"
     )
-    overall_score: Optional[float] = Field(
-        None, description="Overall pass rate percentage"
-    )
+    overall_score: float | None = Field(None, description="Overall pass rate percentage")
     has_capdev_insights: bool = Field(
         False, description="Whether CapDev insights have been generated"
     )
-    capdev_status: Optional[str] = Field(
-        None, description="CapDev insights generation status"
-    )
+    capdev_status: str | None = Field(None, description="CapDev insights generation status")
 
 
 class BarangayStatusList(BaseModel):
     """Schema for list of barangay assessment statuses."""
 
-    barangays: List[BarangayAssessmentStatus] = Field(
+    barangays: list[BarangayAssessmentStatus] = Field(
         default_factory=list, description="Status of each barangay"
     )
     total_count: int = Field(..., description="Total number of barangays")
@@ -227,12 +201,8 @@ class MunicipalOverviewDashboard(BaseModel):
     )
 
     # Metadata
-    generated_at: datetime = Field(
-        ..., description="When this dashboard data was generated"
-    )
-    assessment_cycle: Optional[str] = Field(
-        None, description="Assessment cycle filter if applied"
-    )
+    generated_at: datetime = Field(..., description="When this dashboard data was generated")
+    assessment_cycle: str | None = Field(None, description="Assessment cycle filter if applied")
 
 
 # ============================================================================
@@ -243,16 +213,12 @@ class MunicipalOverviewDashboard(BaseModel):
 class MunicipalOverviewFilter(BaseModel):
     """Schema for filtering municipal overview data."""
 
-    assessment_cycle: Optional[str] = Field(None, description="Filter by assessment cycle")
-    governance_area_id: Optional[int] = Field(
-        None, description="Filter by specific governance area"
-    )
-    compliance_status: Optional[str] = Field(
+    assessment_cycle: str | None = Field(None, description="Filter by assessment cycle")
+    governance_area_id: int | None = Field(None, description="Filter by specific governance area")
+    compliance_status: str | None = Field(
         None, description="Filter by compliance status: PASSED or FAILED"
     )
-    include_draft: bool = Field(
-        False, description="Whether to include draft assessments"
-    )
+    include_draft: bool = Field(False, description="Whether to include draft assessments")
 
 
 # ============================================================================
@@ -264,11 +230,16 @@ class MunicipalExportRequest(BaseModel):
     """Schema for requesting municipal data export."""
 
     format: str = Field(..., description="Export format: csv or pdf")
-    include_sections: List[str] = Field(
-        default_factory=lambda: ["compliance_summary", "governance_areas", "indicators", "capdev"],
-        description="Sections to include in export"
+    include_sections: list[str] = Field(
+        default_factory=lambda: [
+            "compliance_summary",
+            "governance_areas",
+            "indicators",
+            "capdev",
+        ],
+        description="Sections to include in export",
     )
-    assessment_cycle: Optional[str] = Field(None, description="Filter by assessment cycle")
+    assessment_cycle: str | None = Field(None, description="Filter by assessment cycle")
 
 
 class MunicipalExportResponse(BaseModel):
@@ -276,5 +247,5 @@ class MunicipalExportResponse(BaseModel):
 
     success: bool
     message: str
-    filename: Optional[str] = None
-    download_url: Optional[str] = None
+    filename: str | None = None
+    download_url: str | None = None

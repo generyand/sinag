@@ -5,7 +5,7 @@ Helps identify which indicators to use for testing Epic 4.0.
 """
 
 from app.db.base import SessionLocal
-from app.db.models.governance_area import Indicator, GovernanceArea
+from app.db.models.governance_area import GovernanceArea, Indicator
 
 
 def list_indicators_by_file_upload():
@@ -24,9 +24,9 @@ def list_indicators_by_file_upload():
         total_without_upload = 0
 
         for gov_area in gov_areas:
-            indicators = db.query(Indicator).filter(
-                Indicator.governance_area_id == gov_area.id
-            ).all()
+            indicators = (
+                db.query(Indicator).filter(Indicator.governance_area_id == gov_area.id).all()
+            )
 
             with_upload = []
             without_upload = []
@@ -36,13 +36,13 @@ def list_indicators_by_file_upload():
                     without_upload.append(ind)
                     continue
 
-                sections = ind.form_schema.get('sections', [])
+                sections = ind.form_schema.get("sections", [])
                 has_file_upload = False
 
                 for section in sections:
-                    fields = section.get('fields', [])
+                    fields = section.get("fields", [])
                     for field in fields:
-                        if field.get('field_type') == 'file_upload':
+                        if field.get("field_type") == "file_upload":
                             has_file_upload = True
                             break
                     if has_file_upload:
@@ -62,7 +62,9 @@ def list_indicators_by_file_upload():
                 print(f"\n   ✅ WITH file_upload field ({len(with_upload)}):")
                 for ind in with_upload:
                     print(f"      • ID {ind.id:3d}: {ind.name}")
-                    print(f"        URL: http://localhost:3000/blgu/assessment/68/indicator/{ind.id}")
+                    print(
+                        f"        URL: http://localhost:3000/blgu/assessment/68/indicator/{ind.id}"
+                    )
                 total_with_upload += len(with_upload)
 
             # Print indicators WITHOUT file upload (collapsed)
@@ -73,7 +75,7 @@ def list_indicators_by_file_upload():
             print()
 
         print("=" * 80)
-        print(f"📈 SUMMARY")
+        print("📈 SUMMARY")
         print("=" * 80)
         print(f"✅ Indicators with file_upload: {total_with_upload}")
         print(f"❌ Indicators without file_upload: {total_without_upload}")
@@ -86,12 +88,14 @@ def list_indicators_by_file_upload():
             all_indicators = db.query(Indicator).all()
             for ind in all_indicators:
                 if ind.form_schema:
-                    sections = ind.form_schema.get('sections', [])
+                    sections = ind.form_schema.get("sections", [])
                     for section in sections:
-                        for field in section.get('fields', []):
-                            if field.get('field_type') == 'file_upload':
+                        for field in section.get("fields", []):
+                            if field.get("field_type") == "file_upload":
                                 print(f"   • {ind.name}")
-                                print(f"     http://localhost:3000/blgu/assessment/68/indicator/{ind.id}")
+                                print(
+                                    f"     http://localhost:3000/blgu/assessment/68/indicator/{ind.id}"
+                                )
                                 print()
                                 break
 

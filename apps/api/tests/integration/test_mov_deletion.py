@@ -1,18 +1,27 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
 from sqlalchemy.orm import Session
-from app.db.models import Assessment, AssessmentResponse, Indicator, MOV, User, GovernanceArea
-from app.db.enums import UserRole, AssessmentStatus, AreaType
+
+from app.db.enums import AreaType, AssessmentStatus, UserRole
+from app.db.models import (
+    MOV,
+    Assessment,
+    AssessmentResponse,
+    GovernanceArea,
+    Indicator,
+    User,
+)
 from app.services.assessment_service import AssessmentService
+
 
 @pytest.fixture
 def setup_assessment_with_mov(db_session: Session):
     """Creates a GovernanceArea, indicator that requires MOV, an assessment response, and one MOV attached."""
-    area = GovernanceArea(
-        name="Test GOV AREA for MOV", area_type=AreaType.CORE
-    )
+    area = GovernanceArea(name="Test GOV AREA for MOV", code="TG", area_type=AreaType.CORE)
     db_session.add(area)
-    db_session.commit(); db_session.refresh(area)
+    db_session.commit()
+    db_session.refresh(area)
     indicator = Indicator(
         name="Indicator for MOV Deletion Test",
         description="Test indicator requiring MOV on YES",
@@ -21,23 +30,34 @@ def setup_assessment_with_mov(db_session: Session):
             "properties": {"answer": {"type": "string", "enum": ["YES", "NO", "N/A"]}},
             "required": ["answer"],
         },
-        governance_area_id=area.id
+        governance_area_id=area.id,
     )
     db_session.add(indicator)
-    db_session.commit(); db_session.refresh(indicator)
+    db_session.commit()
+    db_session.refresh(indicator)
     user = User(
-        email="movdeltest@test.com", name="MovDelTest", role=UserRole.BLGU_USER, hashed_password="x", is_active=True
+        email="movdeltest@test.com",
+        name="MovDelTest",
+        role=UserRole.BLGU_USER,
+        hashed_password="x",
+        is_active=True,
     )
-    db_session.add(user); db_session.commit(); db_session.refresh(user)
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
     assessment = Assessment(status=AssessmentStatus.DRAFT, blgu_user_id=user.id)
-    db_session.add(assessment); db_session.commit(); db_session.refresh(assessment)
+    db_session.add(assessment)
+    db_session.commit()
+    db_session.refresh(assessment)
     response = AssessmentResponse(
         assessment_id=assessment.id,
         indicator_id=indicator.id,
         response_data={"answer": "YES"},
         is_completed=True,
     )
-    db_session.add(response); db_session.commit(); db_session.refresh(response)
+    db_session.add(response)
+    db_session.commit()
+    db_session.refresh(response)
     mov = MOV(
         filename="file.pdf",
         original_filename="fileorig.pdf",
@@ -46,8 +66,18 @@ def setup_assessment_with_mov(db_session: Session):
         storage_path="testbucket/file.pdf",
         response_id=response.id,
     )
-    db_session.add(mov); db_session.commit(); db_session.refresh(mov)
-    return {"user": user, "assessment": assessment, "indicator": indicator, "area": area, "response": response, "mov": mov}
+    db_session.add(mov)
+    db_session.commit()
+    db_session.refresh(mov)
+    return {
+        "user": user,
+        "assessment": assessment,
+        "indicator": indicator,
+        "area": area,
+        "response": response,
+        "mov": mov,
+    }
+
 
 def test_mov_deletion_updates_completion(db_session, setup_assessment_with_mov):
     svc = AssessmentService()
@@ -71,6 +101,7 @@ def test_mov_deletion_updates_completion(db_session, setup_assessment_with_mov):
     refreshed = db_session.query(AssessmentResponse).get(response.id)
     assert refreshed.is_completed is False
 
+
 def test_atomic_deletion_aborts_on_file_failure(db_session, setup_assessment_with_mov):
     svc = AssessmentService()
     context = setup_assessment_with_mov
@@ -80,13 +111,13 @@ def test_atomic_deletion_aborts_on_file_failure(db_session, setup_assessment_wit
     with patch("app.db.base.supabase_admin") as mock_admin:
         bucket = mock_admin.storage.from_.return_value
         bucket.remove.side_effect = Exception("Supabase failure")
-        import sqlalchemy.exc
         # Transaction abort should not delete MOV or modify response
         with pytest.raises(Exception):
             svc.delete_mov(db_session, mov.id)
         assert db_session.query(MOV).filter_by(id=mov.id).first() is not None
         refreshed = db_session.query(AssessmentResponse).get(response.id)
         assert refreshed.is_completed is True
+
 
 def test_delete_no_effect_for_nonexistent_mov(db_session):
     svc = AssessmentService()

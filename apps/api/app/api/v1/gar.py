@@ -1,7 +1,6 @@
 # GAR (Governance Assessment Report) API Routes
 # Endpoints for generating and exporting GAR reports
 
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
@@ -40,7 +39,7 @@ async def get_gar_assessments(
 )
 async def get_gar_report(
     assessment_id: int,
-    governance_area_id: Optional[int] = Query(
+    governance_area_id: int | None = Query(
         None,
         description="Filter by governance area ID (1=Financial, 2=Disaster, etc.)",
     ),
@@ -79,7 +78,7 @@ async def get_gar_report(
 )
 async def export_gar_excel(
     assessment_id: int,
-    governance_area_id: Optional[int] = Query(
+    governance_area_id: int | None = Query(
         None,
         description="Filter by governance area ID",
     ),
@@ -126,7 +125,7 @@ async def export_gar_excel(
 )
 async def export_gar_pdf(
     assessment_id: int,
-    governance_area_id: Optional[int] = Query(
+    governance_area_id: int | None = Query(
         None,
         description="Filter by governance area ID",
     ),
