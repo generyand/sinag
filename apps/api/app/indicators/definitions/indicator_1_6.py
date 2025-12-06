@@ -10,13 +10,15 @@ Youth Investment Program).
 
 HIERARCHICAL STRUCTURE:
 1.6 Release of SK Funds
-  ├─ 1.6.1 Compliance with Section 20 of SK Reform Act
-  │   ├─ 1.6.1.1 Has Barangay-SK Agreement
-  │   ├─ 1.6.1.2 No agreement but has SK account
-  │   └─ 1.6.1.3 No SK Officials/quorum or no SK bank account
+  ├─ 1.6.1 Compliance with Section 20 of SK Reform Act (OR logic - choose ONE option)
+  │   ├─ OPTION 1: Has Barangay-SK Agreement (needs both a + b)
+  │   ├─ OR
+  │   ├─ OPTION 2: No agreement but has SK account (needs deposit slip)
+  │   ├─ OR
+  │   └─ OPTION 3: No SK Officials/quorum or no SK bank account (needs a OR b)
   └─ 1.6.2 Presence of Approved ABYIP
-      ├─ 1.6.2.1 If 5 or more SK Officials
-      └─ 1.6.2.2 If 4 or fewer SK Officials
+      ├─ Option A: If 5 or more SK Officials
+      └─ Option B: If 4 or fewer SK Officials
 """
 
 from app.indicators.base import Indicator, SubIndicator, ChecklistItem, FormNotes, NoteItem, FieldNotes
@@ -31,114 +33,138 @@ INDICATOR_1_6 = Indicator(
     sort_order=6,
     description="Compliance with Section 20 of the SK Reform Act of 2015 and Item 3.2 of DBM-DILG-NYC JMC No. 1, s. 2019",
     children=[
-        # === 1.6.1 Parent Container with OR logic ===
+        # === 1.6.1 Consolidated Indicator with OR logic (choose ONE of three options) ===
         SubIndicator(
             code="1.6.1",
-            name="Compliance with Section 20 of the SK Reform Act of 2015 and Item 3.2 of DBM-DILG-NYC JMC No. 1, s. 2019",
-            upload_instructions=None,  # Parent container - no direct upload
-            validation_rule="ANY_ITEM_REQUIRED",  # Only ONE child (1.6.1.1 OR 1.6.1.2 OR 1.6.1.3) is required
-            checklist_items=[],
-            children=[
-                # === 1.6.1.1 Actual Upload Indicator ===
-                SubIndicator(
-                    code="1.6.1.1",
-                    name="Barangay has Barangay-SK Agreement for release/deposit",
-                    upload_instructions=(
-                        "Upload the following documents:\n"
-                        "1. Copy of the written agreement\n"
-                        "2. Proof of deposit reflecting the Account No./Name of Barangay SK and the total allocated amount for SK funds"
-                    ),
-                    validation_rule="ALL_ITEMS_REQUIRED",
-                    checklist_items=[
-                        ChecklistItem(
-                            id="1_6_1_1_a",
-                            label="a) Copy of the written agreement",
-                            mov_description="Copy of the written Barangay-SK Agreement",
-                            required=True,
-                            display_order=1
-                        ),
-                        ChecklistItem(
-                            id="1_6_1_1_b",
-                            label="b) Proof of deposit reflecting the Account No./Name of Barangay SK and the total allocated amount for SK funds",
-                            mov_description="Proof of deposit with Account No./Name and total SK funds amount",
-                            required=True,
-                            display_order=2,
-                            field_notes=FieldNotes(
-                                title="CONSIDERATION:",
-                                items=[
-                                    NoteItem(text="In the absence of deposit slips, bank statements will be considered, provided that it shows the transaction date, and that the total 10% of the SK Fund has been transferred."),
-                                ]
-                            )
-                        ),
-                    ]
+            name="Compliance with Section 20 of the SK Reform Act of 2015 and Item 3.2 of DBM-DILG-NYC JMC No. 1, s. 2019 dated January 23, 2019",
+            upload_instructions=(
+                "Upload documents for ONE of the following options that applies to your barangay:\n\n"
+                "OPTION 1: If barangay has Barangay-SK Agreement for release/deposit\n"
+                "  - Copy of the written agreement, AND\n"
+                "  - Proof of deposit reflecting Account No./Name and total SK funds\n\n"
+                "OPTION 2: If barangay does NOT have Barangay-SK Agreement but has current account\n"
+                "  - Deposit slips reflecting Account No./Name and total SK funds\n\n"
+                "OPTION 3: If barangay does NOT have SK Officials, or has SK Officials but no quorum and/or no SK Bank Account\n"
+                "  - Proof of transfer to trust fund, OR\n"
+                "  - Legal forms from C/M treasurer if SK fund kept in C/M custody"
+            ),
+            validation_rule="ANY_OPTION_GROUP_REQUIRED",  # Any one complete option group satisfies the requirement
+            checklist_items=[
+                # === OPTION 1: Has Barangay-SK Agreement ===
+                ChecklistItem(
+                    id="1_6_1_opt1_header",
+                    label="OPTION 1: The barangay has Barangay-SK Agreement for the release/deposit",
+                    item_type="section_header",
+                    required=False,
+                    display_order=1,
+                    option_group="Option 1"
                 ),
-
-                # === 1.6.1.2 Actual Upload Indicator ===
-                SubIndicator(
-                    code="1.6.1.2",
-                    name="The barangay does not have Barangay-SK Agreement but with current account",
-                    upload_instructions=(
-                        "Upload: Deposit slips reflecting the Account No./Name of Barangay SK and the total allocated amount for SK funds"
-                    ),
-                    validation_rule="ALL_ITEMS_REQUIRED",
-                    checklist_items=[
-                        ChecklistItem(
-                            id="1_6_1_2_deposit",
-                            label="Deposit slips reflecting the Account No./Name of Barangay SK and the total allocated amount for SK funds",
-                            mov_description="Deposit slips with Account No./Name and total SK funds",
-                            required=True,
-                            display_order=1,
-                            field_notes=FieldNotes(
-                                title="CONSIDERATION:",
-                                items=[
-                                    NoteItem(text="In the absence of deposit slips, bank statements will be considered, provided that it shows the transaction date, and that the total 10% of the SK Fund has been transferred."),
-                                ]
-                            )
-                        ),
-                    ]
+                ChecklistItem(
+                    id="1_6_1_opt1_a",
+                    label="a) Copy of the written agreement",
+                    mov_description="Copy of the written Barangay-SK Agreement",
+                    required=False,  # Part of Option 1 group
+                    display_order=2,
+                    option_group="Option 1"
                 ),
-
-                # === 1.6.1.3 Actual Upload Indicator ===
-                SubIndicator(
-                    code="1.6.1.3",
-                    name="The barangay does not have SK Officials or with SK Officials but no quorum and/or No SK Bank Account",
-                    upload_instructions=(
-                        "Upload ONE of the following:\n"
-                        "1. Proof of transfer of the 10% 2023 SK funds to the trust fund of the Barangay such as Deposit Slip or Official Receipt\n"
-                        "2. Proof of transfer or corresponding legal forms/documents issued by the city/municipal treasurer if the barangay opted that the corresponding SK fund be kept as trust fund in the custody of the C/M treasurer"
-                    ),
-                    validation_rule="ANY_ITEM_REQUIRED",
-                    checklist_items=[
-                        ChecklistItem(
-                            id="1_6_1_3_a",
-                            label="a) Proof of transfer of the 10% 2023 SK funds to the trust fund of the Barangay such as Deposit Slip or Official Receipt",
-                            mov_description="Proof of transfer of 10% 2023 SK funds to barangay trust fund (Deposit Slip or Official Receipt)",
-                            required=False,
-                            display_order=1
-                        ),
-                        ChecklistItem(
-                            id="1_6_1_3_or",
-                            label="OR",
-                            item_type="info_text",
-                            required=False,
-                            display_order=2
-                        ),
-                        ChecklistItem(
-                            id="1_6_1_3_b",
-                            label="b) Proof of transfer or corresponding legal forms/documents issued by the city/municipal treasurer if the barangay opted that the corresponding SK fund be kept as trust fund in the custody of the C/M treasurer",
-                            mov_description="Legal forms/documents from city/municipal treasurer if SK fund kept as trust fund in C/M custody",
-                            required=False,
-                            display_order=3
-                        ),
-                    ],
-                    notes=FormNotes(
-                        title="Note:",
+                ChecklistItem(
+                    id="1_6_1_opt1_b",
+                    label="b) Proof of deposit reflecting the Account No./Name of Barangay SK and the total allocated amount for the 2025 SK funds",
+                    mov_description="Proof of deposit with Account No./Name and total SK funds amount",
+                    required=False,  # Part of Option 1 group
+                    display_order=3,
+                    option_group="Option 1",
+                    field_notes=FieldNotes(
+                        title="CONSIDERATION:",
                         items=[
-                            NoteItem(text="SK Resolution authorizing the barangay to utilize the SK Funds if the SK has no bank account yet shall not be considered as MOV under the indicator."),
+                            NoteItem(text="In the absence of deposit slips, bank statements will be considered, provided that it shows the transaction date, and that the total 10% of the SK Fund has been transferred."),
                         ]
                     )
                 ),
-            ]
+
+                # === OR Separator between Option 1 and Option 2 ===
+                ChecklistItem(
+                    id="1_6_1_or_1",
+                    label="OR",
+                    item_type="info_text",
+                    required=False,
+                    display_order=4
+                ),
+
+                # === OPTION 2: No Agreement but has current account ===
+                ChecklistItem(
+                    id="1_6_1_opt2_header",
+                    label="OPTION 2: The barangay does not have Barangay-SK Agreement but with current account",
+                    item_type="section_header",
+                    required=False,
+                    display_order=5,
+                    option_group="Option 2"
+                ),
+                ChecklistItem(
+                    id="1_6_1_opt2_deposit",
+                    label="Deposit slips reflecting the Account No./Name of Barangay SK and the total allocated amount for the 2025 SK funds",
+                    mov_description="Deposit slips with Account No./Name and total SK funds",
+                    required=False,  # Part of Option 2 group
+                    display_order=6,
+                    option_group="Option 2",
+                    field_notes=FieldNotes(
+                        title="CONSIDERATION:",
+                        items=[
+                            NoteItem(text="In the absence of deposit slips, bank statements will be considered, provided that it shows the transaction date, and that the total 10% of the SK Fund has been transferred."),
+                        ]
+                    )
+                ),
+
+                # === OR Separator between Option 2 and Option 3 ===
+                ChecklistItem(
+                    id="1_6_1_or_2",
+                    label="OR",
+                    item_type="info_text",
+                    required=False,
+                    display_order=7
+                ),
+
+                # === OPTION 3: No SK Officials / No Quorum / No SK Bank Account ===
+                ChecklistItem(
+                    id="1_6_1_opt3_header",
+                    label="OPTION 3: The barangay does not have SK Officials or with SK Officials but no quorum and/or No SK Bank Account",
+                    item_type="section_header",
+                    required=False,
+                    display_order=8,
+                    option_group="Option 3"
+                ),
+                ChecklistItem(
+                    id="1_6_1_opt3_a",
+                    label="a) Proof of transfer of the 10% 2025 SK funds to the trust fund of the Barangay such as Deposit Slip or Official Receipt",
+                    mov_description="Proof of transfer of 10% SK funds to barangay trust fund (Deposit Slip or Official Receipt)",
+                    required=False,  # Part of Option 3 group (OR logic within)
+                    display_order=9,
+                    option_group="Option 3"
+                ),
+                ChecklistItem(
+                    id="1_6_1_opt3_or",
+                    label="OR",
+                    item_type="info_text",
+                    required=False,
+                    display_order=10,
+                    option_group="Option 3"  # Part of Option 3's internal OR
+                ),
+                ChecklistItem(
+                    id="1_6_1_opt3_b",
+                    label="b) Proof of transfer or corresponding legal forms/documents issued by the city/municipal treasurer if the barangay opted that the corresponding SK fund be kept as trust fund in the custody of the C/M treasurer",
+                    mov_description="Legal forms/documents from city/municipal treasurer if SK fund kept as trust fund in C/M custody",
+                    required=False,  # Part of Option 3 group (OR logic within)
+                    display_order=11,
+                    option_group="Option 3"
+                ),
+            ],
+            notes=FormNotes(
+                title="Important Notes:",
+                items=[
+                    NoteItem(text="Choose and upload documents for ONLY ONE option that applies to your barangay's situation."),
+                    NoteItem(text="SK Resolution authorizing the barangay to utilize the SK Funds if the SK has no bank account yet shall NOT be considered as MOV under this indicator."),
+                ]
+            )
         ),
 
         # === 1.6.2 Single Indicator with Conditional Logic (OR between 5+ and 4-below) ===

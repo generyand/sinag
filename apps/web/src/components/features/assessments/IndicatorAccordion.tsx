@@ -19,7 +19,7 @@ import { Assessment, ComplianceAnswer, Indicator } from "@/types/assessment";
 import { postAssessmentsResponses, useGetAssessmentsMyAssessment } from "@sinag/shared";
 import { AlertCircle, CheckCircle, Circle } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { DynamicFormRenderer } from "../forms/DynamicFormRenderer";
 
 // Lazy load heavy DynamicIndicatorForm component (1100+ LOC)
@@ -95,6 +95,54 @@ export function IndicatorAccordion({
     const props = (indicator as any)?.formSchema?.properties || {};
     return Object.values(props).some((v: any) => typeof v?.mov_upload_section === 'string');
   })();
+
+  // Memoized callback for indicator completion status changes
+  // This prevents infinite re-render loops
+  const handleIndicatorComplete = useCallback((indicatorIdNum: number, isComplete: boolean) => {
+    if (updateAssessmentData) {
+      updateAssessmentData((prevData) => {
+        const updated = { ...prevData } as any;
+
+        // Recursive function to update indicator status in the tree
+        const updateInTree = (nodes: any[]): any[] => {
+          return nodes.map((node) => {
+            if (node.id === indicator.id) {
+              return {
+                ...node,
+                status: isComplete ? 'completed' : 'not_started',
+              };
+            }
+            if (node.children && node.children.length > 0) {
+              const updatedChildren = updateInTree(node.children);
+              // Check if all children are completed
+              const allChildrenCompleted = updatedChildren.every(
+                (c: any) => c.status === 'completed'
+              );
+              return {
+                ...node,
+                children: updatedChildren,
+                status: allChildrenCompleted ? 'completed' : node.status,
+              };
+            }
+            return node;
+          });
+        };
+
+        // Update indicators in all governance areas
+        updated.governanceAreas = updated.governanceAreas.map((area: any) => {
+          if (area.indicators && area.indicators.length > 0) {
+            return {
+              ...area,
+              indicators: updateInTree(area.indicators),
+            };
+          }
+          return area;
+        });
+
+        return updated;
+      });
+    }
+  }, [indicator.id, updateAssessmentData]);
 
   async function ensureResponseId(): Promise<number> {
     const existing = (indicator as any).responseId as number | null | undefined;
@@ -480,6 +528,7 @@ export function IndicatorAccordion({
                     // Optionally refresh assessment data after save
                     console.log('Answers saved successfully for indicator', indicator.id);
                   }}
+                  onIndicatorComplete={handleIndicatorComplete}
                 />
               )}
 

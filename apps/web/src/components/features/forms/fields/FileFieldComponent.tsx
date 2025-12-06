@@ -17,9 +17,10 @@ import {
     MOVFileResponse,
     useGetAssessmentsMyAssessment,
     useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles,
-    usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload
+    usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload,
+    getGetAssessmentsMyAssessmentQueryKey,
+    getGetBlguDashboardAssessmentIdQueryKey,
 } from "@sinag/shared";
-import { getGetAssessmentsMyAssessmentQueryKey } from "@sinag/shared/src/generated/endpoints/assessments";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, CheckCircle2, FileIcon, Info, Loader2, X } from "lucide-react";
 import dynamic from "next/dynamic";
@@ -141,12 +142,20 @@ export function FileFieldComponent({
 
           toast.success("File uploaded successfully");
 
-          // Reset and process next file in queue
+          // Reset UI state and show success briefly
           setTimeout(() => {
             setUploadError(null);
             setUploadProgress(0);
             setShowSuccess(false);
             setSelectedFile(null);
+
+            // Tell global queue this upload is complete
+            completeCurrentUpload();
+          }, 1000);
+
+          // Refetch data after backend has processed completeness validation
+          // Using a separate timeout to ensure backend has time to update is_completed
+          setTimeout(() => {
             refetchFiles();
 
             // CRITICAL: Invalidate and refetch assessment query to update progress tracking
@@ -160,9 +169,15 @@ export function FileFieldComponent({
               queryKey: getGetAssessmentsMyAssessmentQueryKey(),
             });
 
-            // Tell global queue this upload is complete
-            completeCurrentUpload();
-          }, 1500);
+            // CRITICAL: Invalidate and REFETCH BLGU dashboard query using exact key
+            queryClient.invalidateQueries({
+              queryKey: getGetBlguDashboardAssessmentIdQueryKey(assessmentId),
+              refetchType: 'active',
+            });
+            queryClient.refetchQueries({
+              queryKey: getGetBlguDashboardAssessmentIdQueryKey(assessmentId),
+            });
+          }, 2000);
         },
         onError: (error: any, variables, context: any) => {
           // Clear the progress interval
