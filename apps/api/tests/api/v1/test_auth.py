@@ -128,7 +128,7 @@ def test_login_with_valid_credentials(client: TestClient, db_session: Session, t
     assert "access_token" in data
     assert data["token_type"] == "bearer"
     assert "expires_in" in data
-    assert data["expires_in"] == 60 * 24 * 8 * 60  # 8 days in seconds
+    assert data["expires_in"] == 60 * 60 * 24 * 7  # 7 days in seconds
 
 
 def test_login_with_invalid_password(client: TestClient, db_session: Session, test_user: User):
@@ -158,7 +158,11 @@ def test_login_with_nonexistent_email(client: TestClient, db_session: Session):
 
 
 def test_login_with_inactive_account(client: TestClient, db_session: Session, inactive_user: User):
-    """Test login failure when user account is inactive"""
+    """Test login failure when user account is inactive.
+
+    Security: Returns same generic error as invalid credentials to prevent
+    account enumeration attacks.
+    """
     _override_db(client, db_session)
 
     response = client.post(
@@ -166,8 +170,9 @@ def test_login_with_inactive_account(client: TestClient, db_session: Session, in
         json={"email": inactive_user.email, "password": "testpassword123"},
     )
 
-    assert response.status_code == 400
-    assert "Inactive user account" in response.json()["detail"]
+    # Security improvement: same error as invalid credentials
+    assert response.status_code == 401
+    assert "Incorrect email or password" in response.json()["detail"]
 
 
 def test_login_with_missing_fields(client: TestClient):
@@ -211,10 +216,11 @@ def test_change_password_success(client: TestClient, db_session: Session, test_u
     """Test successful password change"""
     _override_user_and_db(client, test_user, db_session)
 
-    # Change password
+    # Change password (meets new policy: 12+ chars, upper, lower, digit, special)
+    new_password = "NewP@ssword123!"
     response = client.post(
         "/api/v1/auth/change-password",
-        json={"current_password": "testpassword123", "new_password": "newpassword456"},
+        json={"current_password": "testpassword123", "new_password": new_password},
     )
 
     assert response.status_code == 200
@@ -227,7 +233,7 @@ def test_change_password_success(client: TestClient, db_session: Session, test_u
     # Verify can login with new password
     new_login_response = client.post(
         "/api/v1/auth/login",
-        json={"email": test_user.email, "password": "newpassword456"},
+        json={"email": test_user.email, "password": new_password},
     )
     assert new_login_response.status_code == 200
 
@@ -248,7 +254,7 @@ def test_change_password_with_incorrect_current_password(
     # Attempt to change password with wrong current password
     response = client.post(
         "/api/v1/auth/change-password",
-        json={"current_password": "wrongpassword", "new_password": "newpassword456"},
+        json={"current_password": "wrongpassword", "new_password": "NewP@ssword123!"},
     )
 
     assert response.status_code == 400
@@ -275,10 +281,10 @@ def test_change_password_resets_must_change_password_flag(
 
     _override_user_and_db(client, user_must_change_password, db_session)
 
-    # Change password
+    # Change password (meets new policy: 12+ chars, upper, lower, digit, special)
     response = client.post(
         "/api/v1/auth/change-password",
-        json={"current_password": "temppassword", "new_password": "newpassword123"},
+        json={"current_password": "temppassword", "new_password": "NewP@ssword123!"},
     )
 
     assert response.status_code == 200
@@ -312,21 +318,36 @@ def test_change_password_with_missing_fields(client: TestClient, db_session: Ses
 # ====================================================================
 
 
-def test_logout_success(client: TestClient):
-    """Test logout endpoint returns success message"""
-    # Note: Current implementation is a placeholder
-    response = client.post("/api/v1/auth/logout")
+def test_logout_success(client: TestClient, db_session: Session, test_user: User):
+    """Test logout endpoint returns success message and blacklists token"""
+    _override_user_and_db(client, test_user, db_session)
+
+    # First login to get a token
+    _override_db(client, db_session)
+    login_response = client.post(
+        "/api/v1/auth/login",
+        json={"email": test_user.email, "password": "testpassword123"},
+    )
+    assert login_response.status_code == 200
+    token = login_response.json()["access_token"]
+
+    # Now logout with the token
+    _override_user_and_db(client, test_user, db_session)
+    response = client.post(
+        "/api/v1/auth/logout",
+        headers={"Authorization": f"Bearer {token}"},
+    )
 
     assert response.status_code == 200
     assert "Successfully logged out" in response.json()["message"]
 
 
 def test_logout_without_authentication(client: TestClient):
-    """Test logout works even without authentication (placeholder behavior)"""
-    # Current implementation doesn't require authentication
+    """Test logout requires authentication (security improvement)"""
+    # Logout now requires authentication - returns 401/403
     response = client.post("/api/v1/auth/logout")
 
-    assert response.status_code == 200
+    assert response.status_code in [401, 403]
 
 
 # ====================================================================
@@ -360,7 +381,7 @@ def test_token_contains_user_information(client: TestClient, db_session: Session
 def test_expired_token_rejected(client: TestClient, db_session: Session, test_user: User):
     """Test that expired tokens are rejected"""
     import jwt
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
     from app.core.config import settings
 
     # Create an expired token manually
@@ -368,7 +389,8 @@ def test_expired_token_rejected(client: TestClient, db_session: Session, test_us
         "sub": str(test_user.id),
         "role": test_user.role.value,
         "must_change_password": False,
-        "exp": datetime.utcnow() - timedelta(days=1),  # Expired yesterday
+        "exp": datetime.now(timezone.utc) - timedelta(days=1),  # Expired yesterday
+        "iat": datetime.now(timezone.utc) - timedelta(days=2),
     }
 
     expired_token = jwt.encode(
@@ -377,11 +399,11 @@ def test_expired_token_rejected(client: TestClient, db_session: Session, test_us
 
     _override_db(client, db_session)
 
-    # Try to use expired token
+    # Try to use expired token (password meets new policy)
     response = client.post(
         "/api/v1/auth/change-password",
         headers={"Authorization": f"Bearer {expired_token}"},
-        json={"current_password": "testpassword123", "new_password": "newpass"},
+        json={"current_password": "testpassword123", "new_password": "NewP@ssword123!"},
     )
 
     assert response.status_code == 401  # Unauthorized due to expired token

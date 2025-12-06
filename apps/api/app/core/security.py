@@ -1,14 +1,18 @@
 # 🔐 Security Functions
 # Password hashing, JWT token creation/verification, and security utilities
 
+import hashlib
 import html
+import logging
 import re
-from datetime import datetime, timedelta
-from typing import Optional, Union
+from datetime import datetime, timedelta, timezone
+from typing import Optional, Tuple, Union
 
 from app.core.config import settings
 from jose import JWTError, jwt  # type: ignore
 from passlib.context import CryptContext  # type: ignore
+
+logger = logging.getLogger(__name__)
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -32,14 +36,13 @@ def create_access_token(
     Returns:
         str: Encoded JWT token
     """
+    now = datetime.now(timezone.utc)
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = now + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(
-            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-        )
+        expire = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
-    to_encode = {"exp": expire, "sub": str(subject)}
+    to_encode = {"exp": expire, "sub": str(subject), "iat": now}
 
     # Add optional fields to payload
     if role is not None:
@@ -146,7 +149,7 @@ def generate_password_reset_token(email: str) -> str:
         str: Password reset token
     """
     delta = timedelta(hours=24)  # Token expires in 24 hours
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     expires = now + delta
     exp = expires.timestamp()
     encoded_jwt = jwt.encode(
@@ -155,6 +158,189 @@ def generate_password_reset_token(email: str) -> str:
         algorithm=settings.ALGORITHM,
     )
     return encoded_jwt
+
+
+# ============================================================================
+# Token Blacklist (Logout/Revocation)
+# ============================================================================
+
+
+def blacklist_token(token: str, expires_in_seconds: int) -> bool:
+    """
+    Add a token to the blacklist.
+
+    Args:
+        token: JWT token to blacklist
+        expires_in_seconds: TTL matching token expiration
+
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    from app.db.base import get_redis_client
+
+    try:
+        redis_client = get_redis_client()
+        # Hash the token to avoid storing raw JWTs
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+        key = f"blacklist:{token_hash}"
+        redis_client.setex(key, expires_in_seconds, "1")
+        logger.info(f"Token blacklisted successfully (hash: {token_hash[:16]}...)")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to blacklist token: {str(e)}")
+        return False
+
+
+def is_token_blacklisted(token: str) -> bool:
+    """
+    Check if a token is blacklisted.
+
+    Args:
+        token: JWT token to check
+
+    Returns:
+        bool: True if blacklisted, False otherwise
+    """
+    from app.db.base import get_redis_client
+
+    try:
+        redis_client = get_redis_client()
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+        key = f"blacklist:{token_hash}"
+        return redis_client.exists(key) > 0
+    except Exception as e:
+        logger.error(f"Failed to check token blacklist: {str(e)}")
+        # Fail open to avoid blocking all requests on Redis failure
+        # In high-security environments, consider failing closed instead
+        return False
+
+
+# ============================================================================
+# Account Lockout (Brute-Force Protection)
+# ============================================================================
+
+# Configuration
+MAX_FAILED_ATTEMPTS = 5  # Lock after 5 failed attempts
+LOCKOUT_WINDOW_SECONDS = 900  # 15 minute lockout window
+
+
+def record_failed_login(email: str, ip_address: Optional[str] = None) -> int:
+    """
+    Record a failed login attempt.
+
+    Args:
+        email: Email address of the account
+        ip_address: IP address of the request (for logging)
+
+    Returns:
+        int: Current number of failed attempts
+    """
+    from app.db.base import get_redis_client
+
+    try:
+        redis_client = get_redis_client()
+        # Use email (normalized) as the key
+        normalized_email = email.lower().strip()
+        key = f"failed_login:{normalized_email}"
+
+        # Increment counter
+        current = redis_client.incr(key)
+
+        # Set/reset expiration on first attempt or each subsequent attempt
+        redis_client.expire(key, LOCKOUT_WINDOW_SECONDS)
+
+        logger.warning(
+            f"Failed login attempt #{current} for {normalized_email} from IP {ip_address}"
+        )
+        return current
+    except Exception as e:
+        logger.error(f"Failed to record failed login: {str(e)}")
+        return 0
+
+
+def is_account_locked(email: str) -> Tuple[bool, int]:
+    """
+    Check if an account is locked due to failed login attempts.
+
+    Args:
+        email: Email address to check
+
+    Returns:
+        Tuple[bool, int]: (is_locked, retry_after_seconds)
+    """
+    from app.db.base import get_redis_client
+
+    try:
+        redis_client = get_redis_client()
+        normalized_email = email.lower().strip()
+        key = f"failed_login:{normalized_email}"
+
+        failed_attempts = redis_client.get(key)
+        if not failed_attempts:
+            return False, 0
+
+        failed_attempts = int(failed_attempts)
+
+        if failed_attempts >= MAX_FAILED_ATTEMPTS:
+            ttl = redis_client.ttl(key)
+            if ttl > 0:
+                return True, ttl
+            else:
+                # Key has no TTL or expired, clear it
+                redis_client.delete(key)
+                return False, 0
+
+        return False, 0
+    except Exception as e:
+        logger.error(f"Failed to check account lockout: {str(e)}")
+        # Fail open to avoid blocking all logins on Redis failure
+        return False, 0
+
+
+def clear_failed_logins(email: str) -> bool:
+    """
+    Clear failed login attempts on successful login.
+
+    Args:
+        email: Email address to clear
+
+    Returns:
+        bool: True if successful
+    """
+    from app.db.base import get_redis_client
+
+    try:
+        redis_client = get_redis_client()
+        normalized_email = email.lower().strip()
+        key = f"failed_login:{normalized_email}"
+        redis_client.delete(key)
+        return True
+    except Exception as e:
+        logger.error(f"Failed to clear failed logins: {str(e)}")
+        return False
+
+
+def get_failed_login_count(email: str) -> int:
+    """
+    Get current failed login count for an email.
+
+    Args:
+        email: Email address to check
+
+    Returns:
+        int: Number of failed attempts
+    """
+    from app.db.base import get_redis_client
+
+    try:
+        redis_client = get_redis_client()
+        normalized_email = email.lower().strip()
+        key = f"failed_login:{normalized_email}"
+        count = redis_client.get(key)
+        return int(count) if count else 0
+    except Exception as e:
+        logger.error(f"Failed to get failed login count: {str(e)}")
+        return 0
 
 
 # ============================================================================

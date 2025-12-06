@@ -9,13 +9,33 @@ from pathlib import Path
 # Add the parent directory to Python path so we can import main and app modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+# IMPORTANT: Patch JSONB BEFORE importing any models
+# SQLite doesn't support JSONB, so we need to replace it with a compatible JSON type
+from sqlalchemy import JSON
+from sqlalchemy.dialects import postgresql
+
+
+class JSONBCompatible(JSON):
+    """
+    A JSON type that's compatible with both PostgreSQL JSONB and SQLite JSON.
+    Ignores JSONB-specific arguments like astext_type.
+    """
+
+    def __init__(self, astext_type=None, **kwargs):
+        # Ignore astext_type (JSONB-specific) for SQLite compatibility
+        super().__init__(**kwargs)
+
+
+# Replace JSONB with our compatible version
+postgresql.JSONB = JSONBCompatible
+
 import pytest
 from app.db.base import Base, get_db
 # Ensure all ORM models are registered on Base.metadata before creating tables
 from app.db import models  # noqa: F401
 from fastapi.testclient import TestClient
 from main import app
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 
 # Test database URL (use SQLite for simplicity in tests)
@@ -24,6 +44,16 @@ SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
 )
+
+# Enable foreign key support in SQLite
+@event.listens_for(engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    """Enable foreign key support in SQLite"""
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
+
+
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -34,6 +64,18 @@ def override_get_db():
         yield db
     finally:
         db.close()
+
+
+@pytest.fixture(autouse=True)
+def clear_rate_limits():
+    """Clear rate limiting state before each test to prevent 429 errors."""
+    from app.middleware.security import RateLimitMiddleware
+
+    # Clear rate limits before test
+    RateLimitMiddleware.clear_rate_limits()
+    yield
+    # Clear again after test for good measure
+    RateLimitMiddleware.clear_rate_limits()
 
 
 @pytest.fixture(scope="session", autouse=True)

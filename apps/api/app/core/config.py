@@ -2,6 +2,7 @@
 # Pydantic settings management for environment variables and app configuration
 
 import secrets
+import warnings
 from typing import List, Optional
 
 from pydantic import ConfigDict, ValidationInfo, field_validator
@@ -23,9 +24,47 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
 
     # Security
-    SECRET_KEY: str = secrets.token_urlsafe(32)
+    # IMPORTANT: SECRET_KEY must be set via environment variable in production
+    # Generate with: openssl rand -hex 32 or python -c "import secrets; print(secrets.token_urlsafe(32))"
+    SECRET_KEY: str = ""
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days (reduced from 8)
+
+    @field_validator("SECRET_KEY", mode="after")
+    @classmethod
+    def validate_secret_key(cls, v: str, info: ValidationInfo) -> str:
+        """
+        Validate SECRET_KEY is set and meets minimum security requirements.
+
+        - In production: SECRET_KEY must be set explicitly
+        - In development: A random key is generated with a warning
+        """
+        environment = info.data.get("ENVIRONMENT", "development") if info.data else "development"
+
+        if not v or v == "":
+            if environment == "production":
+                raise ValueError(
+                    "SECRET_KEY must be set in production environment. "
+                    "Generate with: openssl rand -hex 32"
+                )
+            # Generate a random key for development with a warning
+            v = secrets.token_urlsafe(32)
+            warnings.warn(
+                "SECRET_KEY not set - using randomly generated key. "
+                "This will invalidate all tokens on restart. "
+                "Set SECRET_KEY in .env for persistent sessions.",
+                UserWarning,
+                stacklevel=2,
+            )
+
+        # Validate minimum length (32 characters = 256 bits of entropy when base64)
+        if len(v) < 32:
+            raise ValueError(
+                f"SECRET_KEY must be at least 32 characters long (got {len(v)}). "
+                "Generate with: openssl rand -hex 32"
+            )
+
+        return v
 
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = [

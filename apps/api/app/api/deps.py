@@ -4,7 +4,7 @@
 import logging
 from typing import Generator, Optional
 
-from app.core.security import verify_token
+from app.core.security import verify_token, is_token_blacklisted
 from app.db.base import get_db as get_db_session
 from app.db.base import get_supabase, get_supabase_admin
 from app.db.enums import UserRole
@@ -43,7 +43,7 @@ async def get_current_user(
         User: Current authenticated user
 
     Raises:
-        HTTPException: If token is invalid or user not found
+        HTTPException: If token is invalid, blacklisted, or user not found
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -51,9 +51,20 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
+    token = credentials.credentials
+
+    # Check if token is blacklisted (logged out)
+    if is_token_blacklisted(token):
+        logger.warning("Attempt to use blacklisted token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been revoked",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     try:
         # Verify and decode the JWT token
-        payload = verify_token(credentials.credentials)
+        payload = verify_token(token)
         user_id: Optional[str] = payload.get("sub")
         if user_id is None:
             raise credentials_exception

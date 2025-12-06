@@ -2,8 +2,9 @@
 # Supabase client, SQLAlchemy engine, session management, and base models
 
 import logging
-from typing import Any, Dict, Generator
+from typing import Any, Dict, Generator, Optional
 
+import redis
 from app.core.config import settings
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
@@ -296,3 +297,64 @@ async def validate_connections_startup(require_all: bool = True) -> None:
         )
 
         raise RuntimeError(error_message)
+
+
+# 🔴 Redis Client for Security Features (Token Blacklist, Account Lockout)
+
+_redis_client: Optional[redis.Redis] = None
+
+
+def get_redis_client() -> redis.Redis:
+    """
+    Get or create Redis client for security features.
+
+    Returns:
+        redis.Redis: Redis client instance
+
+    Raises:
+        RuntimeError: If Redis connection fails
+    """
+    global _redis_client
+
+    if _redis_client is None:
+        try:
+            # Parse Redis URL from Celery broker URL
+            redis_url = settings.CELERY_BROKER_URL
+            _redis_client = redis.from_url(
+                redis_url,
+                decode_responses=True,
+                socket_connect_timeout=5,
+                socket_timeout=5,
+            )
+            # Test connection
+            _redis_client.ping()
+            logger.info("Redis client connected successfully")
+        except Exception as e:
+            logger.error(f"Failed to connect to Redis: {str(e)}")
+            raise RuntimeError(f"Redis connection failed: {str(e)}")
+
+    return _redis_client
+
+
+async def check_redis_connection() -> Dict[str, Any]:
+    """
+    Check Redis connection health.
+
+    Returns:
+        Dict containing connection status and details
+    """
+    try:
+        client = get_redis_client()
+        client.ping()
+        return {
+            "connected": True,
+            "service": "Redis",
+            "status": "healthy",
+        }
+    except Exception as e:
+        logger.error(f"Redis connection check failed: {str(e)}")
+        return {
+            "connected": False,
+            "error": "Redis connection failed",
+            "details": str(e),
+        }
