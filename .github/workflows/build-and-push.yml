@@ -18,6 +18,7 @@ on:
   push:
     branches:
       - main
+      - develop  # Also build on develop branch
     tags:
       - 'v*'
   workflow_dispatch:  # Allow manual trigger
