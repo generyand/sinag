@@ -9,15 +9,15 @@ Previously, child indicators had sort_order=0 (default).
 Now they are assigned sort_order based on their position within siblings,
 derived from parsing their indicator_code (e.g., 1.1.1 -> sort_order 1, 1.1.2 -> sort_order 2).
 """
+
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'f0c7b9b01747'
-down_revision: Union[str, Sequence[str], None] = '10a81e8a1a96'
+revision: str = "f0c7b9b01747"
+down_revision: Union[str, Sequence[str], None] = "10a81e8a1a96"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -40,9 +40,7 @@ def upgrade() -> None:
         print("Fixing sort_order for child indicators...")
 
         # Get all child indicators (those with parent_id set)
-        children = session.query(Indicator).filter(
-            Indicator.parent_id.isnot(None)
-        ).all()
+        children = session.query(Indicator).filter(Indicator.parent_id.isnot(None)).all()
 
         updated_count = 0
         for child in children:
@@ -86,9 +84,9 @@ def downgrade() -> None:
     try:
         print("Resetting sort_order to 0 for child indicators...")
 
-        session.query(Indicator).filter(
-            Indicator.parent_id.isnot(None)
-        ).update({Indicator.sort_order: 0}, synchronize_session=False)
+        session.query(Indicator).filter(Indicator.parent_id.isnot(None)).update(
+            {Indicator.sort_order: 0}, synchronize_session=False
+        )
 
         session.commit()
         print("Done")

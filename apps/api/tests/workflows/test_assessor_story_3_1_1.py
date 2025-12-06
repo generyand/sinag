@@ -2,6 +2,8 @@
 # Tests for the POST /api/v1/assessments/{id}/rework endpoint
 
 import pytest
+from sqlalchemy.orm import Session
+
 from app.api import deps
 from app.db.enums import AreaType, AssessmentStatus, UserRole, ValidationStatus
 from app.db.models import (
@@ -12,7 +14,6 @@ from app.db.models import (
     Indicator,
     User,
 )
-from sqlalchemy.orm import Session
 
 
 def create_test_data_for_rework(db_session: Session) -> dict:

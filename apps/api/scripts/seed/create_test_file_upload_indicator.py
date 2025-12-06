@@ -3,8 +3,8 @@ Create a test indicator with proper file_upload field for testing Epic 4.0
 """
 
 from app.db.base import SessionLocal
-from app.db.models import Indicator, GovernanceArea
-import json
+from app.db.models import GovernanceArea, Indicator
+
 
 def create_test_indicator():
     db = SessionLocal()
@@ -36,7 +36,7 @@ def create_test_indicator():
                                 "label": "Test Text Field",
                                 "help_text": "This is a regular text field for context",
                                 "required": False,
-                                "order": 1
+                                "order": 1,
                             },
                             {
                                 "field_id": "test_mov_upload",
@@ -45,8 +45,16 @@ def create_test_indicator():
                                 "help_text": "Upload supporting documents (PDF, DOCX, XLSX, images, or video). Maximum file size: 50MB",
                                 "required": False,
                                 "order": 2,
-                                "allowed_file_types": [".pdf", ".docx", ".xlsx", ".jpg", ".jpeg", ".png", ".mp4"],
-                                "max_file_size_mb": 50
+                                "allowed_file_types": [
+                                    ".pdf",
+                                    ".docx",
+                                    ".xlsx",
+                                    ".jpg",
+                                    ".jpeg",
+                                    ".png",
+                                    ".mp4",
+                                ],
+                                "max_file_size_mb": 50,
                             },
                             {
                                 "field_id": "test_radio_field",
@@ -58,13 +66,13 @@ def create_test_indicator():
                                 "options": [
                                     {"value": "yes", "label": "Yes"},
                                     {"value": "no", "label": "No"},
-                                    {"value": "na", "label": "N/A"}
-                                ]
-                            }
-                        ]
+                                    {"value": "na", "label": "N/A"},
+                                ],
+                            },
+                        ],
                     }
                 ]
-            }
+            },
         )
 
         db.add(indicator)
@@ -75,14 +83,17 @@ def create_test_indicator():
         print(f"📋 Indicator ID: {indicator.id}")
         print(f"📁 Indicator Name: {indicator.name}")
         print(f"🏛️ Governance Area: {governance_area.name} (ID: {governance_area.id})")
-        print(f"\n🔗 Test URL: http://localhost:3000/blgu/assessment/{{assessment_id}}/indicator/{indicator.id}")
-        print(f"\n💡 Replace {{assessment_id}} with your actual assessment ID")
+        print(
+            f"\n🔗 Test URL: http://localhost:3000/blgu/assessment/{{assessment_id}}/indicator/{indicator.id}"
+        )
+        print("\n💡 Replace {assessment_id} with your actual assessment ID")
 
     except Exception as e:
         db.rollback()
         print(f"❌ Error creating indicator: {e}")
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     create_test_indicator()

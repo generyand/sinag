@@ -3,25 +3,24 @@
 # Implements strict data privacy rules to prevent identification of individual barangays
 
 import logging
-from typing import List, Optional, Dict
-from sqlalchemy import func, case
+
+from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
+from app.core.cache import CACHE_TTL_EXTERNAL_ANALYTICS, cache
+from app.db.enums import ComplianceStatus, ValidationStatus
 from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.governance_area import GovernanceArea, Indicator
-from app.db.models.barangay import Barangay
-from app.db.enums import ComplianceStatus, ValidationStatus
 from app.schemas.external_analytics import (
-    OverallComplianceResponse,
+    AnonymizedAIInsightsResponse,
+    AnonymizedInsight,
+    ExternalAnalyticsDashboardResponse,
     GovernanceAreaPerformance,
     GovernanceAreaPerformanceResponse,
+    OverallComplianceResponse,
     TopFailingIndicator,
     TopFailingIndicatorsResponse,
-    AnonymizedInsight,
-    AnonymizedAIInsightsResponse,
-    ExternalAnalyticsDashboardResponse,
 )
-from app.core.cache import cache, CACHE_TTL_EXTERNAL_ANALYTICS
 
 logger = logging.getLogger(__name__)
 
@@ -46,10 +45,10 @@ class ExternalAnalyticsService:
         export_type: str,
         user_email: str,
         user_role: str,
-        assessment_cycle: Optional[str],
+        assessment_cycle: str | None,
         total_barangays: int,
         success: bool = True,
-        error_message: Optional[str] = None
+        error_message: str | None = None,
     ) -> None:
         """
         Log export operation for audit trail.
@@ -78,19 +77,16 @@ class ExternalAnalyticsService:
             logger.info(
                 f"📄 EXPORT AUDIT: {export_type} export by {user_email} ({user_role}) - "
                 f"{total_barangays} barangays aggregated - Cycle: {assessment_cycle or 'latest'}",
-                extra=log_entry
+                extra=log_entry,
             )
         else:
             logger.error(
                 f"❌ EXPORT AUDIT FAILED: {export_type} export by {user_email} ({user_role}) - "
                 f"Error: {error_message}",
-                extra=log_entry
+                extra=log_entry,
             )
 
-    def _validate_export_data(
-        self,
-        dashboard_data: ExternalAnalyticsDashboardResponse
-    ) -> None:
+    def _validate_export_data(self, dashboard_data: ExternalAnalyticsDashboardResponse) -> None:
         """
         Validate that export data adheres to anonymization rules.
 
@@ -131,9 +127,7 @@ class ExternalAnalyticsService:
         )
 
     def get_overall_compliance(
-        self,
-        db: Session,
-        assessment_cycle: Optional[str] = None
+        self, db: Session, assessment_cycle: str | None = None
     ) -> OverallComplianceResponse:
         """
         Get municipal-wide SGLGB compliance statistics.
@@ -149,9 +143,7 @@ class ExternalAnalyticsService:
             ValueError: If fewer than minimum threshold barangays assessed
         """
         # Query for completed assessments
-        query = db.query(Assessment).filter(
-            Assessment.final_compliance_status.isnot(None)
-        )
+        query = db.query(Assessment).filter(Assessment.final_compliance_status.isnot(None))
 
         # Apply cycle filter if specified
         if assessment_cycle:
@@ -170,8 +162,7 @@ class ExternalAnalyticsService:
 
         # Count passed/failed
         passed_count = sum(
-            1 for a in assessments
-            if a.final_compliance_status == ComplianceStatus.PASSED
+            1 for a in assessments if a.final_compliance_status == ComplianceStatus.PASSED
         )
         failed_count = total_barangays - passed_count
 
@@ -192,9 +183,7 @@ class ExternalAnalyticsService:
         )
 
     def get_governance_area_performance(
-        self,
-        db: Session,
-        assessment_cycle: Optional[str] = None
+        self, db: Session, assessment_cycle: str | None = None
     ) -> GovernanceAreaPerformanceResponse:
         """
         Get aggregated pass/fail rates for all governance areas.
@@ -213,10 +202,11 @@ class ExternalAnalyticsService:
 
         for area in governance_areas:
             # Get all indicators for this governance area
-            indicators_in_area = db.query(Indicator).filter(
-                Indicator.governance_area_id == area.id,
-                Indicator.is_active == True
-            ).all()
+            indicators_in_area = (
+                db.query(Indicator)
+                .filter(Indicator.governance_area_id == area.id, Indicator.is_active == True)
+                .all()
+            )
 
             if not indicators_in_area:
                 continue
@@ -231,7 +221,7 @@ class ExternalAnalyticsService:
             if assessment_cycle:
                 query = query.join(Assessment).filter(
                     Assessment.assessment_cycle == assessment_cycle,
-                    Assessment.final_compliance_status.isnot(None)
+                    Assessment.final_compliance_status.isnot(None),
                 )
             else:
                 query = query.join(Assessment).filter(
@@ -274,14 +264,13 @@ class ExternalAnalyticsService:
             fail_percentage = (failed_count / total_assessed * 100) if total_assessed > 0 else 0.0
 
             # Get indicator breakdown for this area
-            indicators = db.query(Indicator).filter(
-                Indicator.governance_area_id == area.id,
-                Indicator.is_active == True
-            ).all()
-
-            indicator_breakdown = self._get_indicator_breakdown(
-                db, area.id, assessment_cycle
+            indicators = (
+                db.query(Indicator)
+                .filter(Indicator.governance_area_id == area.id, Indicator.is_active == True)
+                .all()
             )
+
+            indicator_breakdown = self._get_indicator_breakdown(db, area.id, assessment_cycle)
 
             area_performances.append(
                 GovernanceAreaPerformance(
@@ -306,8 +295,8 @@ class ExternalAnalyticsService:
         self,
         db: Session,
         governance_area_id: int,
-        assessment_cycle: Optional[str] = None
-    ) -> List[Dict]:
+        assessment_cycle: str | None = None,
+    ) -> list[dict]:
         """
         Get percentage of barangays passing each indicator in an area.
 
@@ -319,10 +308,14 @@ class ExternalAnalyticsService:
         Returns:
             List of dicts with indicator code and pass percentage
         """
-        indicators = db.query(Indicator).filter(
-            Indicator.governance_area_id == governance_area_id,
-            Indicator.is_active == True
-        ).all()
+        indicators = (
+            db.query(Indicator)
+            .filter(
+                Indicator.governance_area_id == governance_area_id,
+                Indicator.is_active == True,
+            )
+            .all()
+        )
 
         breakdown = []
 
@@ -335,7 +328,7 @@ class ExternalAnalyticsService:
             if assessment_cycle:
                 query = query.join(Assessment).filter(
                     Assessment.assessment_cycle == assessment_cycle,
-                    Assessment.final_compliance_status.isnot(None)
+                    Assessment.final_compliance_status.isnot(None),
                 )
             else:
                 query = query.join(Assessment).filter(
@@ -350,27 +343,27 @@ class ExternalAnalyticsService:
             # Count passed responses
             # Passed = validation_status is PASS or CONDITIONAL
             passed_count = sum(
-                1 for r in responses
+                1
+                for r in responses
                 if r.validation_status in (ValidationStatus.PASS, ValidationStatus.CONDITIONAL)
             )
 
             total = len(responses)
             pass_percentage = (passed_count / total * 100) if total > 0 else 0.0
 
-            breakdown.append({
-                "indicator_code": indicator.indicator_code,
-                "indicator_name": indicator.name,
-                "pass_percentage": round(pass_percentage, 2),
-                "total_assessed": total,
-            })
+            breakdown.append(
+                {
+                    "indicator_code": indicator.indicator_code,
+                    "indicator_name": indicator.name,
+                    "pass_percentage": round(pass_percentage, 2),
+                    "total_assessed": total,
+                }
+            )
 
         return breakdown
 
     def get_top_failing_indicators(
-        self,
-        db: Session,
-        assessment_cycle: Optional[str] = None,
-        limit: int = 5
+        self, db: Session, assessment_cycle: str | None = None, limit: int = 5
     ) -> TopFailingIndicatorsResponse:
         """
         Get the top N indicators with highest failure rates across all barangays.
@@ -384,49 +377,60 @@ class ExternalAnalyticsService:
             TopFailingIndicatorsResponse with top failing indicators
         """
         # Build query to count failures per indicator
-        query = db.query(
-            Indicator.id,
-            Indicator.indicator_code,
-            Indicator.name,
-            GovernanceArea.code,
-            func.count(AssessmentResponse.id).label('total_assessed'),
-            func.sum(
-                case(
-                    (AssessmentResponse.validation_status == ValidationStatus.FAIL, 1),
-                    else_=0
-                )
-            ).label('failure_count')
-        ).join(
-            AssessmentResponse, AssessmentResponse.indicator_id == Indicator.id
-        ).join(
-            Assessment, Assessment.id == AssessmentResponse.assessment_id
-        ).join(
-            GovernanceArea, GovernanceArea.id == Indicator.governance_area_id
-        ).filter(
-            Assessment.final_compliance_status.isnot(None)
+        query = (
+            db.query(
+                Indicator.id,
+                Indicator.indicator_code,
+                Indicator.name,
+                GovernanceArea.code,
+                func.count(AssessmentResponse.id).label("total_assessed"),
+                func.sum(
+                    case(
+                        (
+                            AssessmentResponse.validation_status == ValidationStatus.FAIL,
+                            1,
+                        ),
+                        else_=0,
+                    )
+                ).label("failure_count"),
+            )
+            .join(AssessmentResponse, AssessmentResponse.indicator_id == Indicator.id)
+            .join(Assessment, Assessment.id == AssessmentResponse.assessment_id)
+            .join(GovernanceArea, GovernanceArea.id == Indicator.governance_area_id)
+            .filter(Assessment.final_compliance_status.isnot(None))
         )
 
         if assessment_cycle:
             query = query.filter(Assessment.assessment_cycle == assessment_cycle)
 
         # Group by indicator and order by failure count
-        results = query.group_by(
-            Indicator.id,
-            Indicator.indicator_code,
-            Indicator.name,
-            GovernanceArea.code
-        ).order_by(
-            func.sum(
-                case(
-                    (AssessmentResponse.validation_status == ValidationStatus.FAIL, 1),
-                    else_=0
-                )
-            ).desc()
-        ).limit(limit).all()
+        results = (
+            query.group_by(
+                Indicator.id,
+                Indicator.indicator_code,
+                Indicator.name,
+                GovernanceArea.code,
+            )
+            .order_by(
+                func.sum(
+                    case(
+                        (
+                            AssessmentResponse.validation_status == ValidationStatus.FAIL,
+                            1,
+                        ),
+                        else_=0,
+                    )
+                ).desc()
+            )
+            .limit(limit)
+            .all()
+        )
 
         top_failing = []
         for r in results:
-            failure_percentage = (r.failure_count / r.total_assessed * 100) if r.total_assessed > 0 else 0.0
+            failure_percentage = (
+                (r.failure_count / r.total_assessed * 100) if r.total_assessed > 0 else 0.0
+            )
 
             top_failing.append(
                 TopFailingIndicator(
@@ -445,9 +449,7 @@ class ExternalAnalyticsService:
         return TopFailingIndicatorsResponse(top_failing_indicators=top_failing)
 
     def get_anonymized_ai_insights(
-        self,
-        db: Session,
-        assessment_cycle: Optional[str] = None
+        self, db: Session, assessment_cycle: str | None = None
     ) -> AnonymizedAIInsightsResponse:
         """
         Get aggregated, anonymized AI-generated insights.
@@ -465,7 +467,7 @@ class ExternalAnalyticsService:
         # Query for assessments with AI recommendations
         query = db.query(Assessment).filter(
             Assessment.final_compliance_status.isnot(None),
-            Assessment.ai_recommendations.isnot(None)
+            Assessment.ai_recommendations.isnot(None),
         )
 
         if assessment_cycle:
@@ -488,10 +490,7 @@ class ExternalAnalyticsService:
             total_assessments_analyzed=total_analyzed,
         )
 
-    def _extract_common_themes(
-        self,
-        assessments: List[Assessment]
-    ) -> List[AnonymizedInsight]:
+    def _extract_common_themes(self, assessments: list[Assessment]) -> list[AnonymizedInsight]:
         """
         Extract common themes from AI recommendations.
 
@@ -551,9 +550,7 @@ class ExternalAnalyticsService:
         return all_insights
 
     def get_complete_dashboard(
-        self,
-        db: Session,
-        assessment_cycle: Optional[str] = None
+        self, db: Session, assessment_cycle: str | None = None
     ) -> ExternalAnalyticsDashboardResponse:
         """
         Get all dashboard data in a single response.
@@ -571,21 +568,19 @@ class ExternalAnalyticsService:
             ValueError: If insufficient data for anonymization
         """
         logger.info(
-            f"Generating external analytics dashboard "
-            f"(cycle: {assessment_cycle or 'latest'})"
+            f"Generating external analytics dashboard (cycle: {assessment_cycle or 'latest'})"
         )
 
         # Build cache key
         cache_key = cache._generate_cache_key(
-            prefix="external_dashboard",
-            assessment_cycle=assessment_cycle or "latest"
+            prefix="external_dashboard", assessment_cycle=assessment_cycle or "latest"
         )
 
         # Try to get from cache
         if cache.is_available:
             cached_result = cache.get(cache_key)
             if cached_result:
-                logger.info(f"📦 Returning cached dashboard data")
+                logger.info("📦 Returning cached dashboard data")
                 # Reconstruct Pydantic model from cached dict
                 return ExternalAnalyticsDashboardResponse(**cached_result)
 
@@ -612,9 +607,9 @@ class ExternalAnalyticsService:
     def generate_csv_export(
         self,
         db: Session,
-        assessment_cycle: Optional[str] = None,
-        user_email: Optional[str] = None,
-        user_role: Optional[str] = None
+        assessment_cycle: str | None = None,
+        user_email: str | None = None,
+        user_role: str | None = None,
     ) -> str:
         """
         Generate CSV export of external analytics data.
@@ -632,12 +627,10 @@ class ExternalAnalyticsService:
             ValueError: If insufficient data for anonymization
         """
         import csv
-        from io import StringIO
         from datetime import datetime
+        from io import StringIO
 
-        logger.info(
-            f"Generating CSV export (cycle: {assessment_cycle or 'latest'})"
-        )
+        logger.info(f"Generating CSV export (cycle: {assessment_cycle or 'latest'})")
 
         try:
             # Get all dashboard data
@@ -656,61 +649,95 @@ class ExternalAnalyticsService:
             writer.writerow([f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
             writer.writerow([f"Assessment Cycle: {assessment_cycle or 'Latest'}"])
             writer.writerow([""])
-            writer.writerow(["PRIVACY NOTICE: All data is aggregated and anonymized. Individual barangay performance cannot be identified."])
+            writer.writerow(
+                [
+                    "PRIVACY NOTICE: All data is aggregated and anonymized. Individual barangay performance cannot be identified."
+                ]
+            )
             writer.writerow([""])
 
             # Overall Compliance Section
             writer.writerow(["OVERALL MUNICIPAL COMPLIANCE"])
             writer.writerow(["Total Barangays", "Passed", "Failed", "Pass Percentage"])
-            writer.writerow([
-                dashboard_data.overall_compliance.total_barangays,
-                dashboard_data.overall_compliance.passed_count,
-                dashboard_data.overall_compliance.failed_count,
-                f"{dashboard_data.overall_compliance.pass_percentage:.2f}%"
-            ])
+            writer.writerow(
+                [
+                    dashboard_data.overall_compliance.total_barangays,
+                    dashboard_data.overall_compliance.passed_count,
+                    dashboard_data.overall_compliance.failed_count,
+                    f"{dashboard_data.overall_compliance.pass_percentage:.2f}%",
+                ]
+            )
             writer.writerow([""])
 
             # Governance Area Performance Section
             writer.writerow(["GOVERNANCE AREA PERFORMANCE"])
-            writer.writerow(["Area Code", "Area Name", "Type", "Barangays Assessed", "Passed", "Failed", "Pass Percentage", "Indicators"])
+            writer.writerow(
+                [
+                    "Area Code",
+                    "Area Name",
+                    "Type",
+                    "Barangays Assessed",
+                    "Passed",
+                    "Failed",
+                    "Pass Percentage",
+                    "Indicators",
+                ]
+            )
             for area in dashboard_data.governance_area_performance.areas:
-                writer.writerow([
-                    area.area_code,
-                    area.area_name,
-                    area.area_type,
-                    area.total_barangays_assessed,
-                    area.passed_count,
-                    area.failed_count,
-                    f"{area.pass_percentage:.2f}%",
-                    area.indicator_count
-                ])
+                writer.writerow(
+                    [
+                        area.area_code,
+                        area.area_name,
+                        area.area_type,
+                        area.total_barangays_assessed,
+                        area.passed_count,
+                        area.failed_count,
+                        f"{area.pass_percentage:.2f}%",
+                        area.indicator_count,
+                    ]
+                )
             writer.writerow([""])
 
             # Top Failing Indicators Section
             writer.writerow(["TOP FAILING INDICATORS"])
-            writer.writerow(["Indicator Code", "Indicator Name", "Governance Area", "Failures", "Total Assessed", "Failure Percentage"])
+            writer.writerow(
+                [
+                    "Indicator Code",
+                    "Indicator Name",
+                    "Governance Area",
+                    "Failures",
+                    "Total Assessed",
+                    "Failure Percentage",
+                ]
+            )
             for indicator in dashboard_data.top_failing_indicators.top_failing_indicators:
-                writer.writerow([
-                    indicator.indicator_code,
-                    indicator.indicator_name,
-                    indicator.governance_area_code,
-                    indicator.failure_count,
-                    indicator.total_assessed,
-                    f"{indicator.failure_percentage:.2f}%"
-                ])
+                writer.writerow(
+                    [
+                        indicator.indicator_code,
+                        indicator.indicator_name,
+                        indicator.governance_area_code,
+                        indicator.failure_count,
+                        indicator.total_assessed,
+                        f"{indicator.failure_percentage:.2f}%",
+                    ]
+                )
             writer.writerow([""])
 
             # AI Insights Section
             writer.writerow(["ANONYMIZED AI INSIGHTS"])
-            writer.writerow(["Governance Area", "Theme", "Insight Summary", "Frequency", "Priority"])
+            writer.writerow(
+                ["Governance Area", "Theme", "Insight Summary", "Frequency", "Priority"]
+            )
             for insight in dashboard_data.ai_insights.insights:
-                writer.writerow([
-                    f"{insight.governance_area_code} - {insight.governance_area_name}",
-                    insight.theme,
-                    insight.insight_summary,
-                    insight.frequency,
-                    insight.priority or "N/A"
-                ])
+                writer.writerow(
+                    [
+                        f"{insight.governance_area_code} - {insight.governance_area_name}",
+                        insight.theme,
+                        insight.insight_summary,
+                        insight.frequency,
+                        insight.priority or "N/A",
+                    ]
+                )
 
             csv_content = output.getvalue()
             output.close()
@@ -723,7 +750,7 @@ class ExternalAnalyticsService:
                     user_role=user_role,
                     assessment_cycle=assessment_cycle,
                     total_barangays=dashboard_data.overall_compliance.total_barangays,
-                    success=True
+                    success=True,
                 )
 
             logger.info(f"CSV export generated successfully ({len(csv_content)} bytes)")
@@ -739,7 +766,7 @@ class ExternalAnalyticsService:
                     assessment_cycle=assessment_cycle,
                     total_barangays=0,
                     success=False,
-                    error_message=str(e)
+                    error_message=str(e),
                 )
             raise
         except Exception as e:
@@ -752,16 +779,16 @@ class ExternalAnalyticsService:
                     assessment_cycle=assessment_cycle,
                     total_barangays=0,
                     success=False,
-                    error_message=str(e)
+                    error_message=str(e),
                 )
             raise
 
     def generate_pdf_export(
         self,
         db: Session,
-        assessment_cycle: Optional[str] = None,
-        user_email: Optional[str] = None,
-        user_role: Optional[str] = None
+        assessment_cycle: str | None = None,
+        user_email: str | None = None,
+        user_role: str | None = None,
     ) -> bytes:
         """
         Generate PDF export of external analytics data.
@@ -778,17 +805,22 @@ class ExternalAnalyticsService:
         Raises:
             ValueError: If insufficient data for anonymization
         """
-        from io import BytesIO
         from datetime import datetime
+        from io import BytesIO
+
         from reportlab.lib import colors
-        from reportlab.lib.pagesizes import letter, A4
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.enums import TA_CENTER
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
         from reportlab.lib.units import inch
         from reportlab.platypus import (
-            SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer,
-            PageBreak, Image as RLImage
+            PageBreak,
+            Paragraph,
+            SimpleDocTemplate,
+            Spacer,
+            Table,
+            TableStyle,
         )
-        from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
 
         logger.info(f"Generating PDF export (cycle: {assessment_cycle or 'latest'})")
 
@@ -811,176 +843,246 @@ class ExternalAnalyticsService:
 
         # Define styles
         styles = getSampleStyleSheet()
-        styles.add(ParagraphStyle(
-            name='CustomTitle',
-            parent=styles['Heading1'],
-            fontSize=24,
-            textColor=colors.HexColor('#1e40af'),
-            spaceAfter=30,
-            alignment=TA_CENTER,
-            fontName='Helvetica-Bold'
-        ))
-        styles.add(ParagraphStyle(
-            name='CustomHeading',
-            parent=styles['Heading2'],
-            fontSize=16,
-            textColor=colors.HexColor('#1e40af'),
-            spaceAfter=12,
-            spaceBefore=12,
-            fontName='Helvetica-Bold'
-        ))
-        styles.add(ParagraphStyle(
-            name='PrivacyNotice',
-            parent=styles['BodyText'],
-            fontSize=9,
-            textColor=colors.HexColor('#7f1d1d'),
-            spaceBefore=6,
-            spaceAfter=12,
-            alignment=TA_CENTER,
-            fontName='Helvetica-Bold'
-        ))
+        styles.add(
+            ParagraphStyle(
+                name="CustomTitle",
+                parent=styles["Heading1"],
+                fontSize=24,
+                textColor=colors.HexColor("#1e40af"),
+                spaceAfter=30,
+                alignment=TA_CENTER,
+                fontName="Helvetica-Bold",
+            )
+        )
+        styles.add(
+            ParagraphStyle(
+                name="CustomHeading",
+                parent=styles["Heading2"],
+                fontSize=16,
+                textColor=colors.HexColor("#1e40af"),
+                spaceAfter=12,
+                spaceBefore=12,
+                fontName="Helvetica-Bold",
+            )
+        )
+        styles.add(
+            ParagraphStyle(
+                name="PrivacyNotice",
+                parent=styles["BodyText"],
+                fontSize=9,
+                textColor=colors.HexColor("#7f1d1d"),
+                spaceBefore=6,
+                spaceAfter=12,
+                alignment=TA_CENTER,
+                fontName="Helvetica-Bold",
+            )
+        )
 
         # Title
-        title = Paragraph("SINAG: Strategic Insights Nurturing Assessments and Governance", styles['CustomTitle'])
+        title = Paragraph(
+            "SINAG: Strategic Insights Nurturing Assessments and Governance",
+            styles["CustomTitle"],
+        )
         elements.append(title)
 
-        subtitle = Paragraph("External Analytics Report", styles['Heading2'])
+        subtitle = Paragraph("External Analytics Report", styles["Heading2"])
         elements.append(subtitle)
         elements.append(Spacer(1, 0.2 * inch))
 
         # Metadata
         metadata_data = [
-            ["Generated:", datetime.now().strftime('%Y-%m-%d %H:%M:%S')],
-            ["Assessment Cycle:", assessment_cycle or 'Latest'],
+            ["Generated:", datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
+            ["Assessment Cycle:", assessment_cycle or "Latest"],
         ]
         metadata_table = Table(metadata_data, colWidths=[2 * inch, 4 * inch])
-        metadata_table.setStyle(TableStyle([
-            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 0), (-1, -1), 10),
-            ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#374151')),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ]))
+        metadata_table.setStyle(
+            TableStyle(
+                [
+                    ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+                    ("FONTSIZE", (0, 0), (-1, -1), 10),
+                    ("TEXTCOLOR", (0, 0), (0, -1), colors.HexColor("#374151")),
+                    ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ]
+            )
+        )
         elements.append(metadata_table)
         elements.append(Spacer(1, 0.2 * inch))
 
         # Privacy Notice
         privacy = Paragraph(
             "PRIVACY NOTICE: All data is aggregated and anonymized. Individual barangay performance cannot be identified.",
-            styles['PrivacyNotice']
+            styles["PrivacyNotice"],
         )
         elements.append(privacy)
         elements.append(Spacer(1, 0.3 * inch))
 
         # Section 1: Overall Compliance
-        elements.append(Paragraph("Overall Municipal Compliance", styles['CustomHeading']))
+        elements.append(Paragraph("Overall Municipal Compliance", styles["CustomHeading"]))
         overall_data = [
             ["Metric", "Value"],
-            ["Total Barangays Assessed", str(dashboard_data.overall_compliance.total_barangays)],
+            [
+                "Total Barangays Assessed",
+                str(dashboard_data.overall_compliance.total_barangays),
+            ],
             ["Barangays Passed", str(dashboard_data.overall_compliance.passed_count)],
             ["Barangays Failed", str(dashboard_data.overall_compliance.failed_count)],
             ["Pass Rate", f"{dashboard_data.overall_compliance.pass_percentage:.1f}%"],
         ]
         overall_table = Table(overall_data, colWidths=[3 * inch, 3 * inch])
-        overall_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#dbeafe')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 12),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ]))
+        overall_table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#dbeafe")),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#1e40af")),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, 0), 12),
+                    ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+                    ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
+                    ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                ]
+            )
+        )
         elements.append(overall_table)
         elements.append(Spacer(1, 0.3 * inch))
 
         # Section 2: Governance Area Performance
-        elements.append(Paragraph("Governance Area Performance", styles['CustomHeading']))
-        area_data = [["Area Code", "Area Name", "Pass Rate", "Total Indicators", "Passed", "Failed"]]
+        elements.append(Paragraph("Governance Area Performance", styles["CustomHeading"]))
+        area_data = [
+            [
+                "Area Code",
+                "Area Name",
+                "Pass Rate",
+                "Total Indicators",
+                "Passed",
+                "Failed",
+            ]
+        ]
         for area in dashboard_data.governance_area_performance.areas:
-            area_data.append([
-                area.area_code,
-                area.area_name[:30] + "..." if len(area.area_name) > 30 else area.area_name,
-                f"{area.pass_percentage:.1f}%",
-                str(area.total_indicators),
-                str(area.passed_indicators),
-                str(area.failed_indicators),
-            ])
+            area_data.append(
+                [
+                    area.area_code,
+                    area.area_name[:30] + "..." if len(area.area_name) > 30 else area.area_name,
+                    f"{area.pass_percentage:.1f}%",
+                    str(area.total_indicators),
+                    str(area.passed_indicators),
+                    str(area.failed_indicators),
+                ]
+            )
 
-        area_table = Table(area_data, colWidths=[0.8 * inch, 2 * inch, 1 * inch, 1 * inch, 0.8 * inch, 0.8 * inch])
-        area_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#dbeafe')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('FONTSIZE', (0, 1), (-1, -1), 9),
-        ]))
+        area_table = Table(
+            area_data,
+            colWidths=[
+                0.8 * inch,
+                2 * inch,
+                1 * inch,
+                1 * inch,
+                0.8 * inch,
+                0.8 * inch,
+            ],
+        )
+        area_table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#dbeafe")),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#1e40af")),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, 0), 10),
+                    ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+                    ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
+                    ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                    ("FONTSIZE", (0, 1), (-1, -1), 9),
+                ]
+            )
+        )
         elements.append(area_table)
         elements.append(Spacer(1, 0.3 * inch))
 
         # Section 3: Top Failing Indicators
-        elements.append(Paragraph("Top Failing Indicators", styles['CustomHeading']))
+        elements.append(Paragraph("Top Failing Indicators", styles["CustomHeading"]))
         failing_data = [["Code", "Indicator Name", "Failure Rate", "Failed Count"]]
         for indicator in dashboard_data.top_failing_indicators.top_failing_indicators:
-            failing_data.append([
-                indicator.indicator_code,
-                indicator.indicator_name[:40] + "..." if len(indicator.indicator_name) > 40 else indicator.indicator_name,
-                f"{indicator.failure_rate:.1f}%",
-                str(indicator.failed_count),
-            ])
+            failing_data.append(
+                [
+                    indicator.indicator_code,
+                    indicator.indicator_name[:40] + "..."
+                    if len(indicator.indicator_name) > 40
+                    else indicator.indicator_name,
+                    f"{indicator.failure_rate:.1f}%",
+                    str(indicator.failed_count),
+                ]
+            )
 
-        failing_table = Table(failing_data, colWidths=[0.8 * inch, 3.5 * inch, 1.2 * inch, 1.2 * inch])
-        failing_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#dbeafe')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('FONTSIZE', (0, 1), (-1, -1), 9),
-        ]))
+        failing_table = Table(
+            failing_data, colWidths=[0.8 * inch, 3.5 * inch, 1.2 * inch, 1.2 * inch]
+        )
+        failing_table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#dbeafe")),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#1e40af")),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, 0), 10),
+                    ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+                    ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
+                    ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                    ("FONTSIZE", (0, 1), (-1, -1), 9),
+                ]
+            )
+        )
         elements.append(failing_table)
         elements.append(Spacer(1, 0.3 * inch))
 
         # Section 4: AI-Generated Insights
         if dashboard_data.ai_insights.insights:
             elements.append(PageBreak())
-            elements.append(Paragraph("AI-Generated Insights & Recommendations", styles['CustomHeading']))
+            elements.append(
+                Paragraph("AI-Generated Insights & Recommendations", styles["CustomHeading"])
+            )
             elements.append(Spacer(1, 0.1 * inch))
 
             insights_data = [["Area", "Theme", "Insight", "Frequency", "Priority"]]
             for insight in dashboard_data.ai_insights.insights:
-                insights_data.append([
-                    f"{insight.governance_area_code}\n{insight.governance_area_name[:15]}",
-                    insight.theme[:20] + "..." if len(insight.theme) > 20 else insight.theme,
-                    insight.insight_summary[:60] + "..." if len(insight.insight_summary) > 60 else insight.insight_summary,
-                    str(insight.frequency),
-                    insight.priority or "N/A",
-                ])
+                insights_data.append(
+                    [
+                        f"{insight.governance_area_code}\n{insight.governance_area_name[:15]}",
+                        insight.theme[:20] + "..." if len(insight.theme) > 20 else insight.theme,
+                        insight.insight_summary[:60] + "..."
+                        if len(insight.insight_summary) > 60
+                        else insight.insight_summary,
+                        str(insight.frequency),
+                        insight.priority or "N/A",
+                    ]
+                )
 
-            insights_table = Table(insights_data, colWidths=[1.2 * inch, 1.5 * inch, 2.5 * inch, 0.8 * inch, 0.8 * inch])
-            insights_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#dbeafe')),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
-                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, 0), 9),
-                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                ('GRID', (0, 0), (-1, -1), 1, colors.black),
-                ('FONTSIZE', (0, 1), (-1, -1), 8),
-                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ]))
+            insights_table = Table(
+                insights_data,
+                colWidths=[1.2 * inch, 1.5 * inch, 2.5 * inch, 0.8 * inch, 0.8 * inch],
+            )
+            insights_table.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#dbeafe")),
+                        ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#1e40af")),
+                        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("FONTSIZE", (0, 0), (-1, 0), 9),
+                        ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+                        ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
+                        ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                        ("FONTSIZE", (0, 1), (-1, -1), 8),
+                        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ]
+                )
+            )
             elements.append(insights_table)
         else:
-            elements.append(Paragraph("No AI insights available for this cycle.", styles['BodyText']))
+            elements.append(
+                Paragraph("No AI insights available for this cycle.", styles["BodyText"])
+            )
 
         # Build PDF
         doc.build(elements)

@@ -2,6 +2,7 @@
 # Business logic for managing barangays
 
 from sqlalchemy.orm import Session
+
 from app.db.models.barangay import Barangay
 
 

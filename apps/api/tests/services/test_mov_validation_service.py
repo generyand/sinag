@@ -10,21 +10,19 @@ Comprehensive tests for MOV checklist validation including:
 - Nested groups (group within group)
 """
 
-from datetime import date, timedelta
-from typing import Any, Dict
-import pytest
+from datetime import date
 
 from app.schemas.mov_checklist import (
-    MOVCheckboxItem,
-    MOVGroupItem,
-    MOVCurrencyInputItem,
-    MOVNumberInputItem,
-    MOVTextInputItem,
-    MOVDateInputItem,
     MOVAssessmentItem,
-    MOVRadioGroupItem,
-    MOVDropdownItem,
+    MOVCheckboxItem,
     MOVChecklistConfig,
+    MOVCurrencyInputItem,
+    MOVDateInputItem,
+    MOVDropdownItem,
+    MOVGroupItem,
+    MOVNumberInputItem,
+    MOVRadioGroupItem,
+    MOVTextInputItem,
     OptionItem,
 )
 from app.services.mov_validation_service import mov_validation_service
@@ -576,7 +574,9 @@ class TestMOVDropdownItem:
             searchable=False,
         )
 
-        status, errors = mov_validation_service.validate_item(item, {"value": ["budget", "resolution"]})
+        status, errors = mov_validation_service.validate_item(
+            item, {"value": ["budget", "resolution"]}
+        )
         assert status == "Passed"
         assert errors == []
 
@@ -595,7 +595,9 @@ class TestMOVDropdownItem:
             searchable=False,
         )
 
-        status, errors = mov_validation_service.validate_item(item, {"value": ["budget", "invalid"]})
+        status, errors = mov_validation_service.validate_item(
+            item, {"value": ["budget", "invalid"]}
+        )
         assert status == "Failed"
         assert "Invalid values" in errors[0]
 
@@ -754,8 +756,8 @@ class TestMOVGroupItem:
         )
 
         child_values = {
-            "chk1": True,   # Pass
-            "chk2": True,   # Pass
+            "chk1": True,  # Pass
+            "chk2": True,  # Pass
             "chk3": False,  # Fail
         }
 
@@ -798,7 +800,7 @@ class TestMOVGroupItem:
         )
 
         child_values = {
-            "chk1": True,   # Only this one passes
+            "chk1": True,  # Only this one passes
             "chk2": False,
             "chk3": False,
         }

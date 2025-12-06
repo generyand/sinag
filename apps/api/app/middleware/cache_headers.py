@@ -3,7 +3,7 @@
 
 import hashlib
 import logging
-from typing import Callable, Dict, Optional
+from collections.abc import Callable
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -26,21 +26,18 @@ class CacheHeadersMiddleware(BaseHTTPMiddleware):
 
     # Cache rules for different API paths
     # Format: path_prefix -> {max_age, public, stale_while_revalidate}
-    CACHE_RULES: Dict[str, Dict] = {
+    CACHE_RULES: dict[str, dict] = {
         # No cache - sensitive/dynamic endpoints
         "/api/v1/auth": {"cache": False},
         "/api/v1/users/me": {"cache": False},
-
         # Short cache - dashboards (private, user-specific)
         "/api/v1/analytics": {"max_age": 900, "public": False, "swr": 300},
         "/api/v1/blgu-dashboard": {"max_age": 300, "public": False, "swr": 60},
         "/api/v1/assessor-dashboard": {"max_age": 300, "public": False, "swr": 60},
         "/api/v1/mlgoo-dashboard": {"max_age": 300, "public": False, "swr": 60},
         "/api/v1/validator-dashboard": {"max_age": 300, "public": False, "swr": 60},
-
         # Long cache - external analytics (public, rarely changes)
         "/api/v1/external-analytics": {"max_age": 3600, "public": True, "swr": 600},
-
         # Long cache - lookup/reference data (rarely changes)
         "/api/v1/lookups": {"max_age": 3600, "public": True, "swr": 600},
         "/api/v1/governance-areas": {"max_age": 1800, "public": True, "swr": 300},
@@ -48,7 +45,6 @@ class CacheHeadersMiddleware(BaseHTTPMiddleware):
         "/api/v1/cycles": {"max_age": 1800, "public": True, "swr": 300},
         "/api/v1/provinces": {"max_age": 3600, "public": True, "swr": 600},
         "/api/v1/municipalities": {"max_age": 3600, "public": True, "swr": 600},
-
         # Medium cache - lists (private, changes with user actions)
         "/api/v1/assessments": {"max_age": 60, "public": False, "swr": 30},
         "/api/v1/barangays": {"max_age": 300, "public": False, "swr": 60},
@@ -119,7 +115,7 @@ class CacheHeadersMiddleware(BaseHTTPMiddleware):
 
         return response
 
-    def _get_cache_rule(self, path: str) -> Optional[Dict]:
+    def _get_cache_rule(self, path: str) -> dict | None:
         """Get cache rule for a given path."""
         # Check for exact or prefix matches
         for prefix, rule in self.CACHE_RULES.items():

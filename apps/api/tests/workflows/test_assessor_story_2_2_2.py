@@ -2,15 +2,16 @@
 # Tests for the assessor-side MOV uploader endpoint functionality
 
 import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
 from app.api import deps
 from app.db.enums import AssessmentStatus, UserRole
 from app.db.models.assessment import MOV, Assessment, AssessmentResponse
 from app.db.models.barangay import Barangay
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
-from fastapi.testclient import TestClient
 from main import app
-from sqlalchemy.orm import Session
 
 
 @pytest.fixture
@@ -53,9 +54,7 @@ def create_test_assessment_response_for_mov(db_session: Session) -> AssessmentRe
     db_session.commit()
     db_session.refresh(indicator)
 
-    assessment = Assessment(
-        blgu_user_id=blgu_user.id, status=AssessmentStatus.SUBMITTED_FOR_REVIEW
-    )
+    assessment = Assessment(blgu_user_id=blgu_user.id, status=AssessmentStatus.SUBMITTED_FOR_REVIEW)
     db_session.add(assessment)
     db_session.commit()
     db_session.refresh(assessment)
@@ -181,9 +180,7 @@ def test_upload_mov_response_not_found(client, db_session):
         "response_id": 99999,
     }
 
-    response_result = client.post(
-        "/api/v1/assessor/assessment-responses/99999/movs", json=mov_data
-    )
+    response_result = client.post("/api/v1/assessor/assessment-responses/99999/movs", json=mov_data)
 
     # Assertions
     assert response_result.status_code == 200
@@ -231,9 +228,7 @@ def test_upload_mov_access_denied(client, db_session):
     db_session.commit()
     db_session.refresh(indicator)
 
-    assessment = Assessment(
-        blgu_user_id=blgu_user.id, status=AssessmentStatus.SUBMITTED_FOR_REVIEW
-    )
+    assessment = Assessment(blgu_user_id=blgu_user.id, status=AssessmentStatus.SUBMITTED_FOR_REVIEW)
     db_session.add(assessment)
     db_session.commit()
     db_session.refresh(assessment)
@@ -349,9 +344,7 @@ def test_upload_mov_response_id_mismatch(client, db_session):
         "response_id": 123,  # Different from URL parameter
     }
 
-    response_result = client.post(
-        "/api/v1/assessor/assessment-responses/456/movs", json=mov_data
-    )
+    response_result = client.post("/api/v1/assessor/assessment-responses/456/movs", json=mov_data)
 
     # Assertions
     assert response_result.status_code == 200

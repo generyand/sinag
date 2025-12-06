@@ -8,7 +8,6 @@ Tests the calculation schema evaluation and remark generation functionality:
 - Integration with assessment workflow
 """
 
-import pytest
 from app.db.models.governance_area import Indicator
 from app.schemas.calculation_schema import (
     AndAllRule,
@@ -358,9 +357,7 @@ class TestNestedConditionGroups:
             "field2": "yes",
             "completion_rate": 85.0,  # But PERCENTAGE passes
         }
-        result = intelligence_service.evaluate_calculation_schema(
-            schema, assessment_data
-        )
+        result = intelligence_service.evaluate_calculation_schema(schema, assessment_data)
         assert result is True
 
 
@@ -569,9 +566,7 @@ class TestRemarkGeneration:
             db=db_session,
             indicator_id=indicator.id,
             indicator_status="Pass",
-            assessment_data={
-                "compliance_details": "All documents submitted and verified"
-            },
+            assessment_data={"compliance_details": "All documents submitted and verified"},
         )
 
         assert remark is not None

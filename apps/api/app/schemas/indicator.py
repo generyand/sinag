@@ -2,13 +2,13 @@
 # Pydantic models for indicator-related API requests and responses
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.schemas.form_schema import FormSchema
 from app.schemas.calculation_schema import CalculationSchema
+from app.schemas.form_schema import FormSchema
 from app.schemas.remark_schema import RemarkSchema
 
 
@@ -26,37 +26,51 @@ class IndicatorBase(BaseModel):
     """Base indicator schema with common fields."""
 
     name: str = Field(..., min_length=3, description="Indicator name (min 3 characters)")
-    description: Optional[str] = Field(None, description="Indicator description")
+    description: str | None = Field(None, description="Indicator description")
     governance_area_id: int = Field(..., description="ID of governance area")
-    parent_id: Optional[int] = Field(None, description="Parent indicator ID for hierarchical structure")
+    parent_id: int | None = Field(
+        None, description="Parent indicator ID for hierarchical structure"
+    )
     is_active: bool = Field(True, description="Active status")
     is_profiling_only: bool = Field(False, description="Profiling-only flag")
     is_auto_calculable: bool = Field(False, description="Auto-calculable Pass/Fail flag")
-    technical_notes_text: Optional[str] = Field(None, description="Technical notes (plain text)")
+    technical_notes_text: str | None = Field(None, description="Technical notes (plain text)")
 
 
 class IndicatorCreate(IndicatorBase):
     """Schema for creating a new indicator."""
 
-    form_schema: Optional[FormSchema] = Field(None, description="Form schema with validated field types")
-    calculation_schema: Optional[CalculationSchema] = Field(None, description="Calculation schema with validated rules")
-    remark_schema: Optional[RemarkSchema] = Field(None, description="Remark schema with validated templates")
+    form_schema: FormSchema | None = Field(
+        None, description="Form schema with validated field types"
+    )
+    calculation_schema: CalculationSchema | None = Field(
+        None, description="Calculation schema with validated rules"
+    )
+    remark_schema: RemarkSchema | None = Field(
+        None, description="Remark schema with validated templates"
+    )
 
 
 class IndicatorUpdate(BaseModel):
     """Schema for updating an indicator (all fields optional)."""
 
-    name: Optional[str] = Field(None, min_length=3)
-    description: Optional[str] = None
-    governance_area_id: Optional[int] = None
-    parent_id: Optional[int] = None
-    is_active: Optional[bool] = None
-    is_profiling_only: Optional[bool] = None
-    is_auto_calculable: Optional[bool] = None
-    form_schema: Optional[FormSchema] = Field(None, description="Form schema with validated field types")
-    calculation_schema: Optional[CalculationSchema] = Field(None, description="Calculation schema with validated rules")
-    remark_schema: Optional[RemarkSchema] = Field(None, description="Remark schema with validated templates")
-    technical_notes_text: Optional[str] = None
+    name: str | None = Field(None, min_length=3)
+    description: str | None = None
+    governance_area_id: int | None = None
+    parent_id: int | None = None
+    is_active: bool | None = None
+    is_profiling_only: bool | None = None
+    is_auto_calculable: bool | None = None
+    form_schema: FormSchema | None = Field(
+        None, description="Form schema with validated field types"
+    )
+    calculation_schema: CalculationSchema | None = Field(
+        None, description="Calculation schema with validated rules"
+    )
+    remark_schema: RemarkSchema | None = Field(
+        None, description="Remark schema with validated templates"
+    )
+    technical_notes_text: str | None = None
 
 
 class IndicatorNestedParent(BaseModel):
@@ -76,23 +90,23 @@ class IndicatorResponse(BaseModel):
 
     id: int
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     version: int
     is_active: bool
     is_profiling_only: bool
     is_auto_calculable: bool
-    form_schema: Optional[Dict[str, Any]] = Field(None, description="Form schema (JSON)")
-    calculation_schema: Optional[Dict[str, Any]] = None
-    remark_schema: Optional[Dict[str, Any]] = None
-    technical_notes_text: Optional[str] = None
+    form_schema: dict[str, Any] | None = Field(None, description="Form schema (JSON)")
+    calculation_schema: dict[str, Any] | None = None
+    remark_schema: dict[str, Any] | None = None
+    technical_notes_text: str | None = None
     governance_area_id: int
-    parent_id: Optional[int] = None
+    parent_id: int | None = None
     created_at: datetime
     updated_at: datetime
 
     # Nested relationships
-    governance_area: Optional[GovernanceAreaNested] = None
-    parent: Optional[IndicatorNestedParent] = None
+    governance_area: GovernanceAreaNested | None = None
+    parent: IndicatorNestedParent | None = None
 
 
 class UserNested(BaseModel):
@@ -114,29 +128,29 @@ class IndicatorHistoryResponse(BaseModel):
     indicator_id: int
     version: int
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     is_active: bool
     is_auto_calculable: bool
     is_profiling_only: bool
-    form_schema: Optional[Dict[str, Any]] = Field(None, description="Form schema (JSON)")
-    calculation_schema: Optional[Dict[str, Any]] = None
-    remark_schema: Optional[Dict[str, Any]] = None
-    technical_notes_text: Optional[str] = None
+    form_schema: dict[str, Any] | None = Field(None, description="Form schema (JSON)")
+    calculation_schema: dict[str, Any] | None = None
+    remark_schema: dict[str, Any] | None = None
+    technical_notes_text: str | None = None
     governance_area_id: int
-    parent_id: Optional[int] = None
+    parent_id: int | None = None
     archived_at: datetime
-    archived_by: Optional[int] = None
+    archived_by: int | None = None
 
     # Nested relationships
-    archived_by_user: Optional[UserNested] = None
+    archived_by_user: UserNested | None = None
 
 
 class FormSchemaMetadata(BaseModel):
     """Metadata for form schema response."""
 
     title: str = Field(..., description="Indicator title/name")
-    description: Optional[str] = Field(None, description="Indicator description")
-    governance_area_name: Optional[str] = Field(None, description="Governance area name")
+    description: str | None = Field(None, description="Indicator description")
+    governance_area_name: str | None = Field(None, description="Governance area name")
 
 
 class FormSchemaResponse(BaseModel):
@@ -147,7 +161,7 @@ class FormSchemaResponse(BaseModel):
     """
 
     indicator_id: int = Field(..., description="Indicator ID")
-    form_schema: Dict[str, Any] = Field(..., description="Form schema JSON structure")
+    form_schema: dict[str, Any] = Field(..., description="Form schema JSON structure")
     metadata: FormSchemaMetadata = Field(..., description="Indicator metadata")
 
 
@@ -160,7 +174,7 @@ class IndicatorCreateWithOrder(IndicatorCreate):
     """Schema for creating an indicator with ordering information for bulk operations."""
 
     temp_id: str = Field(..., description="Temporary client-side UUID for this indicator")
-    parent_temp_id: Optional[str] = Field(
+    parent_temp_id: str | None = Field(
         None, description="Temporary ID of parent indicator (for hierarchy)"
     )
     order: int = Field(..., description="Display order within parent")
@@ -170,7 +184,7 @@ class BulkIndicatorCreate(BaseModel):
     """Schema for bulk creating multiple indicators in a hierarchy."""
 
     governance_area_id: int = Field(..., description="Governance area for all indicators")
-    indicators: List[IndicatorCreateWithOrder] = Field(
+    indicators: list[IndicatorCreateWithOrder] = Field(
         ..., description="List of indicators to create"
     )
 
@@ -185,11 +199,9 @@ class BulkCreateError(BaseModel):
 class BulkIndicatorResponse(BaseModel):
     """Response schema for bulk indicator creation."""
 
-    created: List[IndicatorResponse] = Field(..., description="Successfully created indicators")
-    temp_id_mapping: Dict[str, int] = Field(
-        ..., description="Map of temp_id to real database ID"
-    )
-    errors: List[BulkCreateError] = Field(
+    created: list[IndicatorResponse] = Field(..., description="Successfully created indicators")
+    temp_id_mapping: dict[str, int] = Field(..., description="Map of temp_id to real database ID")
+    errors: list[BulkCreateError] = Field(
         default_factory=list, description="List of errors encountered"
     )
 
@@ -197,7 +209,7 @@ class BulkIndicatorResponse(BaseModel):
 class ReorderRequest(BaseModel):
     """Schema for reordering indicators."""
 
-    indicators: List[Dict[str, Any]] = Field(
+    indicators: list[dict[str, Any]] = Field(
         ..., description="List of indicator updates with id, code, parent_id"
     )
 
@@ -211,9 +223,11 @@ class IndicatorDraftCreate(BaseModel):
     """Schema for creating a new indicator draft."""
 
     governance_area_id: int = Field(..., description="Governance area ID")
-    creation_mode: str = Field(..., description="Creation mode (e.g., 'incremental', 'bulk_import')")
-    title: Optional[str] = Field(None, max_length=200, description="Optional draft title")
-    data: Optional[List[Dict[str, Any]]] = Field(
+    creation_mode: str = Field(
+        ..., description="Creation mode (e.g., 'incremental', 'bulk_import')"
+    )
+    title: str | None = Field(None, max_length=200, description="Optional draft title")
+    data: list[dict[str, Any]] | None = Field(
         default_factory=list, description="Draft indicator data"
     )
 
@@ -221,10 +235,10 @@ class IndicatorDraftCreate(BaseModel):
 class IndicatorDraftUpdate(BaseModel):
     """Schema for updating an existing indicator draft."""
 
-    current_step: Optional[int] = Field(None, description="Current wizard step")
-    status: Optional[str] = Field(None, description="Draft status")
-    data: Optional[List[Dict[str, Any]]] = Field(None, description="Draft indicator data")
-    title: Optional[str] = Field(None, max_length=200, description="Draft title")
+    current_step: int | None = Field(None, description="Current wizard step")
+    status: str | None = Field(None, description="Draft status")
+    data: list[dict[str, Any]] | None = Field(None, description="Draft indicator data")
+    title: str | None = Field(None, max_length=200, description="Draft title")
     version: int = Field(..., description="Version number for optimistic locking")
 
 
@@ -239,18 +253,18 @@ class IndicatorDraftResponse(BaseModel):
     creation_mode: str
     current_step: int
     status: str
-    data: List[Dict[str, Any]]
-    title: Optional[str] = None
+    data: list[dict[str, Any]]
+    title: str | None = None
     created_at: datetime
     updated_at: datetime
     last_accessed_at: datetime
     version: int
-    lock_token: Optional[UUID] = None
-    locked_by_user_id: Optional[int] = None
-    locked_at: Optional[datetime] = None
+    lock_token: UUID | None = None
+    locked_by_user_id: int | None = None
+    locked_at: datetime | None = None
 
     # Nested relationships
-    governance_area: Optional[GovernanceAreaNested] = None
+    governance_area: GovernanceAreaNested | None = None
 
 
 class IndicatorDraftSummary(BaseModel):
@@ -263,23 +277,23 @@ class IndicatorDraftSummary(BaseModel):
     creation_mode: str
     current_step: int
     status: str
-    title: Optional[str] = None
+    title: str | None = None
     updated_at: datetime
     last_accessed_at: datetime
 
     # Nested relationships
-    governance_area: Optional[GovernanceAreaNested] = None
+    governance_area: GovernanceAreaNested | None = None
 
 
 class IndicatorDraftDeltaUpdate(BaseModel):
     """Schema for delta-based draft update (only changed indicators)."""
 
-    changed_indicators: List[Dict[str, Any]] = Field(
+    changed_indicators: list[dict[str, Any]] = Field(
         ..., description="List of changed indicator dictionaries"
     )
-    changed_ids: List[str] = Field(..., description="List of temp_ids for changed indicators")
+    changed_ids: list[str] = Field(..., description="List of temp_ids for changed indicators")
     version: int = Field(..., description="Version number for optimistic locking")
-    metadata: Optional[Dict[str, Any]] = Field(
+    metadata: dict[str, Any] | None = Field(
         None,
         description="Optional metadata (current_step, status, title, etc.)",
     )
@@ -293,7 +307,7 @@ class IndicatorDraftDeltaUpdate(BaseModel):
 class IndicatorValidationRequest(BaseModel):
     """Schema for validating indicator tree structure before publishing."""
 
-    indicators: List[Dict[str, Any]] = Field(
+    indicators: list[dict[str, Any]] = Field(
         ..., description="List of indicator dictionaries to validate"
     )
 
@@ -303,19 +317,17 @@ class ValidationError(BaseModel):
 
     type: str = Field(..., description="Error type (circular_reference, invalid_code, etc.)")
     message: str = Field(..., description="Human-readable error message")
-    indicator_id: Optional[str] = Field(None, description="Affected indicator ID or temp_id")
+    indicator_id: str | None = Field(None, description="Affected indicator ID or temp_id")
 
 
 class IndicatorValidationResponse(BaseModel):
     """Response schema for indicator tree validation."""
 
     is_valid: bool = Field(..., description="Whether the indicator tree is valid")
-    errors: List[ValidationError] = Field(
+    errors: list[ValidationError] = Field(
         default_factory=list, description="List of validation errors"
     )
-    warnings: List[str] = Field(
-        default_factory=list, description="List of validation warnings"
-    )
+    warnings: list[str] = Field(default_factory=list, description="List of validation warnings")
 
 
 # =============================================================================
@@ -331,14 +343,23 @@ class ChecklistItemResponse(BaseModel):
     id: int
     item_id: str = Field(..., description="Unique item identifier (e.g., '1_1_1_a')")
     label: str = Field(..., description="Display text (e.g., 'a. Barangay Financial Report')")
-    item_type: str = Field(default="checkbox", description="Type of checklist item (checkbox, info_text, assessment_field, document_count, calculation_field)")
-    group_name: Optional[str] = Field(None, description="Group header (e.g., 'ANNUAL REPORT')")
-    mov_description: Optional[str] = Field(None, description="Means of Verification description")
+    item_type: str = Field(
+        default="checkbox",
+        description="Type of checklist item (checkbox, info_text, assessment_field, document_count, calculation_field)",
+    )
+    group_name: str | None = Field(None, description="Group header (e.g., 'ANNUAL REPORT')")
+    mov_description: str | None = Field(None, description="Means of Verification description")
     required: bool = Field(..., description="Required for indicator to pass")
-    requires_document_count: bool = Field(..., description="Needs document count input from validator")
+    requires_document_count: bool = Field(
+        ..., description="Needs document count input from validator"
+    )
     display_order: int = Field(..., description="Sort order within indicator")
-    option_group: Optional[str] = Field(None, description="Option group for OR logic (e.g., 'Option A', 'Option B')")
-    field_notes: Optional[dict] = Field(None, description="Notes displayed below this field (e.g., CONSIDERATION)")
+    option_group: str | None = Field(
+        None, description="Option group for OR logic (e.g., 'Option A', 'Option B')"
+    )
+    field_notes: dict | None = Field(
+        None, description="Notes displayed below this field (e.g., CONSIDERATION)"
+    )
 
 
 class SimplifiedIndicatorResponse(BaseModel):
@@ -349,17 +370,21 @@ class SimplifiedIndicatorResponse(BaseModel):
     id: int
     indicator_code: str = Field(..., description="Indicator code (e.g., '1.1', '1.1.1')")
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     governance_area_id: int
-    parent_id: Optional[int] = None
+    parent_id: int | None = None
     is_bbi: bool = Field(..., description="Is this a BBI indicator")
     is_active: bool
     validation_rule: str = Field(..., description="Validation strategy")
 
     # Nested relationships
-    governance_area: Optional[GovernanceAreaNested] = None
-    checklist_items: List[ChecklistItemResponse] = Field(default_factory=list, description="MOV checklist items")
-    children: List["SimplifiedIndicatorResponse"] = Field(default_factory=list, description="Child indicators")
+    governance_area: GovernanceAreaNested | None = None
+    checklist_items: list[ChecklistItemResponse] = Field(
+        default_factory=list, description="MOV checklist items"
+    )
+    children: list["SimplifiedIndicatorResponse"] = Field(
+        default_factory=list, description="Child indicators"
+    )
 
 
 class IndicatorTreeResponse(BaseModel):
@@ -370,12 +395,14 @@ class IndicatorTreeResponse(BaseModel):
     id: int
     indicator_code: str
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     governance_area_id: int
     is_bbi: bool
     is_active: bool
-    children: List[SimplifiedIndicatorResponse] = Field(..., description="Sub-indicators with checklists")
-    governance_area: Optional[GovernanceAreaNested] = None
+    children: list[SimplifiedIndicatorResponse] = Field(
+        ..., description="Sub-indicators with checklists"
+    )
+    governance_area: GovernanceAreaNested | None = None
 
 
 # Enable forward references for recursive model

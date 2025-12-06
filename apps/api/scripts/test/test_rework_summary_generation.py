@@ -13,17 +13,16 @@ Example:
     python scripts/test_rework_summary_generation.py 1
 """
 
-import sys
 import os
+import sys
 
 # Add parent directory to path to import app modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.core.celery_app import celery_app
-from app.workers.intelligence_worker import generate_rework_summary_task
 from app.db.base import SessionLocal
-from app.db.models.assessment import Assessment
 from app.db.enums import AssessmentStatus
+from app.db.models.assessment import Assessment
+from app.workers.intelligence_worker import generate_rework_summary_task
 
 
 def check_assessment(assessment_id: int):
@@ -43,7 +42,9 @@ def check_assessment(assessment_id: int):
         print(f"  Has Existing Summary: {assessment.rework_summary is not None}")
 
         if assessment.status != AssessmentStatus.REWORK:
-            print(f"⚠️  Warning: Assessment status is not REWORK (current: {assessment.status.value})")
+            print(
+                f"⚠️  Warning: Assessment status is not REWORK (current: {assessment.status.value})"
+            )
             print("   The task will still run but may not be appropriate")
 
         # Check for feedback
@@ -68,30 +69,34 @@ def trigger_generation(assessment_id: int, force: bool = False):
         # Queue the Celery task
         result = generate_rework_summary_task.delay(assessment_id)
 
-        print(f"✓ Task queued successfully!")
+        print("✓ Task queued successfully!")
         print(f"  Task ID: {result.id}")
-        print(f"  Task Name: intelligence.generate_rework_summary_task")
-        print(f"\n📊 Monitor progress in Celery worker logs")
-        print(f"   Expected completion: 5-15 seconds")
+        print("  Task Name: intelligence.generate_rework_summary_task")
+        print("\n📊 Monitor progress in Celery worker logs")
+        print("   Expected completion: 5-15 seconds")
 
         # Wait for result (optional)
-        print(f"\n⏳ Waiting for task to complete (timeout: 30s)...")
+        print("\n⏳ Waiting for task to complete (timeout: 30s)...")
         try:
             task_result = result.get(timeout=30)
 
             if task_result.get("success"):
-                print(f"✅ Success! Rework summary generated")
+                print("✅ Success! Rework summary generated")
                 if task_result.get("skipped"):
                     print(f"   (Skipped: {task_result.get('message')})")
                 else:
-                    print(f"   Summary has {len(task_result['rework_summary']['indicator_summaries'])} indicator(s)")
-                    print(f"   Overall summary: {task_result['rework_summary']['overall_summary'][:100]}...")
+                    print(
+                        f"   Summary has {len(task_result['rework_summary']['indicator_summaries'])} indicator(s)"
+                    )
+                    print(
+                        f"   Overall summary: {task_result['rework_summary']['overall_summary'][:100]}..."
+                    )
             else:
                 print(f"❌ Failed: {task_result.get('error', 'Unknown error')}")
 
-        except Exception as e:
-            print(f"⏰ Task is still running in background (timeout reached)")
-            print(f"   Check Celery logs or database after a few moments")
+        except Exception:
+            print("⏰ Task is still running in background (timeout reached)")
+            print("   Check Celery logs or database after a few moments")
 
     except Exception as e:
         print(f"❌ Error triggering task: {str(e)}")

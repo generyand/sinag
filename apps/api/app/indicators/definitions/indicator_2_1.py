@@ -8,8 +8,13 @@ Note: This indicator assesses the functionality of the BDRRMC based on four crit
 structure, plan, budget allocation, and accomplishment reports.
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem, FormNotes, NoteItem
-
+from app.indicators.base import (
+    ChecklistItem,
+    FormNotes,
+    Indicator,
+    NoteItem,
+    SubIndicator,
+)
 
 # Indicator 2.1: BDRRMC Functionality (BBI)
 INDICATOR_2_1 = Indicator(
@@ -40,26 +45,31 @@ INDICATOR_2_1 = Indicator(
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the BDRRMC with its composition compliant to the provisions of JMC No. 2014-01",
                     required=True,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
                 ),
                 ChecklistItem(
                     id="2_1_1_date",
                     label="Date of approval",
                     item_type="date_input",
                     required=True,
-                    display_order=2
+                    display_order=2,
                 ),
             ],
             notes=FormNotes(
                 title="Minimum Composition of the BDRRMC:",
                 items=[
                     NoteItem(label="1.", text="Punong Barangay;"),
-                    NoteItem(label="2.", text="A Representative from the Sangguniang Barangay; and"),
-                    NoteItem(label="3.", text="2 CSO representatives from the existing and active community-based people's organizations representing the most vulnerable and marginalized groups in the barangay (Item 5.7. of NDRRMC, DILG, DBM, and CSC JMC No. 2014-01)"),
-                ]
-            )
+                    NoteItem(
+                        label="2.",
+                        text="A Representative from the Sangguniang Barangay; and",
+                    ),
+                    NoteItem(
+                        label="3.",
+                        text="2 CSO representatives from the existing and active community-based people's organizations representing the most vulnerable and marginalized groups in the barangay (Item 5.7. of NDRRMC, DILG, DBM, and CSC JMC No. 2014-01)",
+                    ),
+                ],
+            ),
         ),
-
         # Sub-Indicator 2.1.2: Plan
         SubIndicator(
             code="2.1.2",
@@ -77,25 +87,24 @@ INDICATOR_2_1 = Indicator(
                     label="Approved BDRRM Plan adopted by the Sangguniang Barangay",
                     required=True,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
                 ),
                 ChecklistItem(
                     id="2_1_2_resolution",
                     label="Resolution adopting the BDRRM Plan signed by the Sangguniang Barangay with received stamp from the C/MDRRMO",
                     required=True,
                     requires_document_count=False,
-                    display_order=2
+                    display_order=2,
                 ),
                 ChecklistItem(
                     id="2_1_2_certification",
                     label="Certification on the list of barangays with approved BDRRM Plan signed by the C/MDRRMO",
                     required=True,
                     requires_document_count=False,
-                    display_order=3
+                    display_order=3,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 2.1.3: Budget
         SubIndicator(
             code="2.1.3",
@@ -115,7 +124,7 @@ INDICATOR_2_1 = Indicator(
                     label="Certification on the allocation of at least 5% of the Estimated Revenue from Regular Sources as BDRRM Fund, signed by the City/Municipal Budget Officer",
                     required=True,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
                 ),
                 ChecklistItem(
                     id="2_1_3_estimated_revenue",
@@ -123,18 +132,17 @@ INDICATOR_2_1 = Indicator(
                     mov_description="Please supply the required information",
                     required=True,
                     requires_document_count=True,  # Amount input
-                    display_order=2
+                    display_order=2,
                 ),
                 ChecklistItem(
                     id="2_1_3_bdrrmf_amount",
                     label="Amount of BDRRMF",
                     required=True,
                     requires_document_count=True,  # Amount input
-                    display_order=3
+                    display_order=3,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 2.1.4: Accomplishment Reports
         SubIndicator(
             code="2.1.4",
@@ -160,7 +168,7 @@ INDICATOR_2_1 = Indicator(
                     item_type="assessment_field",
                     required=False,
                     display_order=2,
-                    option_group="Option A"
+                    option_group="Option A",
                 ),
                 ChecklistItem(
                     id="2_1_4_upload_1",
@@ -169,7 +177,7 @@ INDICATOR_2_1 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=3,
-                    option_group="Option A"
+                    option_group="Option A",
                 ),
                 ChecklistItem(
                     id="2_1_4_upload_2",
@@ -178,7 +186,7 @@ INDICATOR_2_1 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=4,
-                    option_group="Option A"
+                    option_group="Option A",
                 ),
                 ChecklistItem(
                     id="2_1_4_physical_accomplished",
@@ -187,7 +195,7 @@ INDICATOR_2_1 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=5.1,
-                    option_group="Option A"
+                    option_group="Option A",
                 ),
                 ChecklistItem(
                     id="2_1_4_physical_reflected",
@@ -195,9 +203,8 @@ INDICATOR_2_1 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=5.2,
-                    option_group="Option A"
+                    option_group="Option A",
                 ),
-
                 # OR Separator (informational)
                 ChecklistItem(
                     id="2_1_4_or_separator",
@@ -205,9 +212,8 @@ INDICATOR_2_1 = Indicator(
                     mov_description="OR",
                     item_type="info_text",
                     required=False,
-                    display_order=6
+                    display_order=6,
                 ),
-
                 # Option B: Financial Accomplishment (with YES/NO assessment)
                 ChecklistItem(
                     id="2_1_4_option_b",
@@ -216,7 +222,7 @@ INDICATOR_2_1 = Indicator(
                     item_type="assessment_field",
                     required=False,
                     display_order=7,
-                    option_group="Option B"
+                    option_group="Option B",
                 ),
                 ChecklistItem(
                     id="2_1_4_upload_3",
@@ -225,7 +231,7 @@ INDICATOR_2_1 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=8,
-                    option_group="Option B"
+                    option_group="Option B",
                 ),
                 ChecklistItem(
                     id="2_1_4_upload_4",
@@ -234,7 +240,7 @@ INDICATOR_2_1 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=9,
-                    option_group="Option B"
+                    option_group="Option B",
                 ),
                 ChecklistItem(
                     id="2_1_4_financial_utilized",
@@ -243,7 +249,7 @@ INDICATOR_2_1 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=10.1,
-                    option_group="Option B"
+                    option_group="Option B",
                 ),
                 ChecklistItem(
                     id="2_1_4_financial_allocated",
@@ -251,9 +257,9 @@ INDICATOR_2_1 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=10.2,
-                    option_group="Option B"
+                    option_group="Option B",
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

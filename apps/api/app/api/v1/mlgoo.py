@@ -2,7 +2,6 @@
 # API endpoints for MLGOO (Municipal Local Government Operations Officer) features
 # Handles final approval workflow, RE-calibration, and grace period management
 
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -144,7 +143,7 @@ async def get_assessment_details(
 )
 async def approve_assessment(
     assessment_id: int,
-    request: Optional[ApproveAssessmentRequest] = None,
+    request: ApproveAssessmentRequest | None = None,
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_admin_user),
 ):
@@ -264,7 +263,7 @@ async def request_recalibration(
 )
 async def unlock_assessment(
     assessment_id: int,
-    request: Optional[UnlockAssessmentRequest] = None,
+    request: UnlockAssessmentRequest | None = None,
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_admin_user),
 ):

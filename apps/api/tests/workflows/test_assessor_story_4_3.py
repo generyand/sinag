@@ -1,17 +1,19 @@
 # 🧪 Tests for Assessor Story 4.3: Assessor Analytics Endpoint
 # Tests for the GET /api/v1/assessor/analytics endpoint
 
-import pytest
 from datetime import datetime, timedelta
+
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
 from app.api import deps
 from app.db.enums import AssessmentStatus, ComplianceStatus, UserRole, ValidationStatus
-from app.db.models.assessment import Assessment, AssessmentResponse, FeedbackComment
+from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.barangay import Barangay
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
-from fastapi.testclient import TestClient
 from main import app
-from sqlalchemy.orm import Session
 
 
 @pytest.fixture
@@ -51,6 +53,7 @@ def create_test_assessment_with_responses(
 ) -> Assessment:
     """Create a test assessment with responses for analytics testing."""
     import time
+
     # Use timestamp to ensure unique barangay names and emails
     timestamp = int(time.time() * 1000000)  # microseconds for uniqueness
     barangay = Barangay(name=f"Test Barangay Analytics {governance_area_id} {timestamp}")
@@ -301,9 +304,7 @@ def test_get_analytics_hotspots(client, db_session):
     assert any(hotspot["indicator"] == "Failing Indicator" for hotspot in hotspots)
 
     # Find the failing indicator hotspot
-    failing_hotspot = next(
-        (h for h in hotspots if h["indicator"] == "Failing Indicator"), None
-    )
+    failing_hotspot = next((h for h in hotspots if h["indicator"] == "Failing Indicator"), None)
     assert failing_hotspot is not None
     assert failing_hotspot["failed_count"] >= 3
     assert "barangays" in failing_hotspot
@@ -549,4 +550,3 @@ def test_get_analytics_compliance_status_fallback(client, db_session):
     # Cleanup
     client.app.dependency_overrides.pop(deps.get_current_area_assessor_user, None)
     client.app.dependency_overrides.pop(deps.get_db, None)
-

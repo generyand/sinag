@@ -9,15 +9,13 @@ Tests security measures against malicious file uploads including:
 """
 
 import io
-import pytest
+
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
 
 from app.core.security import create_access_token
-from app.db.models.user import User
-from app.db.models.barangay import Barangay
 from app.db.models.assessment import Assessment
 from app.db.models.governance_area import Indicator
+from app.db.models.user import User
 from app.services.file_validation_service import file_validation_service
 
 
@@ -42,7 +40,7 @@ class TestMaliciousFileUploadSecurity:
         headers = {"Authorization": f"Bearer {token}"}
 
         # Create a file with PE executable header (Windows .exe) but PDF extension
-        executable_content = b'MZ\x90\x00' + b'\x00' * 100  # PE header signature
+        executable_content = b"MZ\x90\x00" + b"\x00" * 100  # PE header signature
         file_obj = io.BytesIO(executable_content)
 
         response = client.post(
@@ -70,7 +68,7 @@ class TestMaliciousFileUploadSecurity:
         headers = {"Authorization": f"Bearer {token}"}
 
         # ELF header signature
-        elf_content = b'\x7fELF' + b'\x00' * 100
+        elf_content = b"\x7fELF" + b"\x00" * 100
         file_obj = io.BytesIO(elf_content)
 
         response = client.post(
@@ -99,7 +97,7 @@ class TestMaliciousFileUploadSecurity:
         headers = {"Authorization": f"Bearer {token}"}
 
         # Valid PDF content
-        pdf_content = b'%PDF-1.4\n%test\n%%EOF'
+        pdf_content = b"%PDF-1.4\n%test\n%%EOF"
         file_obj = io.BytesIO(pdf_content)
 
         # Attempt path traversal in filename
@@ -138,7 +136,7 @@ class TestMaliciousFileUploadSecurity:
         token = create_access_token(data={"sub": str(test_blgu_user.id)})
         headers = {"Authorization": f"Bearer {token}"}
 
-        pdf_content = b'%PDF-1.4\n%test\n%%EOF'
+        pdf_content = b"%PDF-1.4\n%test\n%%EOF"
         file_obj = io.BytesIO(pdf_content)
 
         # Filename with null byte
@@ -171,7 +169,7 @@ class TestMaliciousFileUploadSecurity:
         headers = {"Authorization": f"Bearer {token}"}
 
         # Shell script content
-        script_content = b'#!/bin/bash\nrm -rf /'
+        script_content = b"#!/bin/bash\nrm -rf /"
         file_obj = io.BytesIO(script_content)
 
         response = client.post(
@@ -224,13 +222,19 @@ class TestMaliciousFileUploadSecurity:
         headers = {"Authorization": f"Bearer {token}"}
 
         # Create file > 50MB
-        large_content = b'PK' + b'\x00' * (51 * 1024 * 1024)
+        large_content = b"PK" + b"\x00" * (51 * 1024 * 1024)
         file_obj = io.BytesIO(large_content)
 
         response = client.post(
             f"/api/v1/assessments/{test_assessment_draft.id}/indicators/{test_indicator.id}/upload",
             headers=headers,
-            files={"file": ("zipbomb.docx", file_obj, "application/vnd.openxmlformats-officedocument.wordprocessingml.document")},
+            files={
+                "file": (
+                    "zipbomb.docx",
+                    file_obj,
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                )
+            },
         )
 
         assert response.status_code == 400
@@ -253,7 +257,7 @@ class TestMaliciousFileUploadSecurity:
         headers = {"Authorization": f"Bearer {token}"}
 
         # PNG signature but PDF extension
-        png_content = b'\x89PNG\r\n\x1a\n' + b'\x00' * 100
+        png_content = b"\x89PNG\r\n\x1a\n" + b"\x00" * 100
         file_obj = io.BytesIO(png_content)
 
         response = client.post(
@@ -320,21 +324,17 @@ class TestMaliciousFileUploadSecurity:
         Unit test for FileValidationService security methods.
         """
         # Test executable detection
-        exe_file = io.BytesIO(b'MZ\x90\x00' + b'\x00' * 100)
+        exe_file = io.BytesIO(b"MZ\x90\x00" + b"\x00" * 100)
         is_valid, error = file_validation_service.validate_file(
-            exe_file,
-            "test.pdf",
-            "application/pdf"
+            exe_file, "test.pdf", "application/pdf"
         )
         assert not is_valid
         assert "executable" in error.lower() or "security" in error.lower()
 
         # Test ELF detection
-        elf_file = io.BytesIO(b'\x7fELF' + b'\x00' * 100)
+        elf_file = io.BytesIO(b"\x7fELF" + b"\x00" * 100)
         is_valid, error = file_validation_service.validate_file(
-            elf_file,
-            "test.pdf",
-            "application/pdf"
+            elf_file, "test.pdf", "application/pdf"
         )
         assert not is_valid
 
@@ -351,7 +351,7 @@ class TestMaliciousFileUploadSecurity:
         token = create_access_token(data={"sub": str(test_blgu_user.id)})
         headers = {"Authorization": f"Bearer {token}"}
 
-        pdf_content = b'%PDF-1.4\n%test\n%%EOF'
+        pdf_content = b"%PDF-1.4\n%test\n%%EOF"
         file_obj = io.BytesIO(pdf_content)
 
         response = client.post(
@@ -381,7 +381,7 @@ class TestMaliciousFileUploadSecurity:
         headers = {"Authorization": f"Bearer {token}"}
 
         # Executable content
-        exe_content = b'MZ\x90\x00' + b'\x00' * 100
+        exe_content = b"MZ\x90\x00" + b"\x00" * 100
         file_obj = io.BytesIO(exe_content)
 
         response = client.post(

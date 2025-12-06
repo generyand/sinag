@@ -2,7 +2,10 @@
 # Endpoints for BBI (Barangay-based Institutions) management
 
 import math
-from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.db.models.user import User
@@ -20,9 +23,6 @@ from app.schemas.bbi import (
     TestBBICalculationResponse,
 )
 from app.services.bbi_service import bbi_service
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel
-from sqlalchemy.orm import Session
 
 router = APIRouter()
 
@@ -35,7 +35,7 @@ router = APIRouter()
 class BBIListResponse(BaseModel):
     """Response model for paginated BBI list."""
 
-    bbis: List[BBIWithGovernanceArea]
+    bbis: list[BBIWithGovernanceArea]
     total: int
     page: int
     size: int
@@ -81,10 +81,8 @@ async def list_bbis(
     current_user: User = Depends(deps.get_current_active_user),
     page: int = Query(1, ge=1, description="Page number"),
     size: int = Query(10, ge=1, le=100, description="Page size"),
-    governance_area_id: Optional[int] = Query(
-        None, description="Filter by governance area ID"
-    ),
-    is_active: Optional[bool] = Query(None, description="Filter by active status"),
+    governance_area_id: int | None = Query(None, description="Filter by governance area ID"),
+    is_active: bool | None = Query(None, description="Filter by active status"),
 ):
     """
     Get paginated list of BBIs with optional filtering.
@@ -118,9 +116,7 @@ async def list_bbis(
 
     total_pages = math.ceil(total / size) if total > 0 else 0
 
-    return BBIListResponse(
-        bbis=bbis, total=total, page=page, size=size, total_pages=total_pages
-    )
+    return BBIListResponse(bbis=bbis, total=total, page=page, size=size, total_pages=total_pages)
 
 
 @router.get("/{bbi_id}", response_model=BBIWithGovernanceArea, tags=["bbis"])
@@ -228,9 +224,7 @@ async def test_bbi_calculation(
 
         from app.db.enums import BBIStatus
 
-        predicted_status = (
-            BBIStatus.FUNCTIONAL if is_functional else BBIStatus.NON_FUNCTIONAL
-        )
+        predicted_status = BBIStatus.FUNCTIONAL if is_functional else BBIStatus.NON_FUNCTIONAL
 
         # Build evaluation details
         operator = request.mapping_rules.get("operator", "AND")
@@ -280,7 +274,7 @@ async def test_bbi_calculation(
 
 @router.get(
     "/results/assessment/{assessment_id}",
-    response_model=List[BBIResultResponse],
+    response_model=list[BBIResultResponse],
     tags=["bbis"],
 )
 async def get_assessment_bbi_results(
@@ -331,15 +325,9 @@ async def get_assessment_bbi_compliance(
 
     from app.db.models.assessment import Assessment
     from app.db.models.barangay import Barangay
-    from app.db.models.governance_area import Indicator
-    from sqlalchemy import and_
 
     # Get assessment with barangay info
-    assessment = (
-        db.query(Assessment)
-        .filter(Assessment.id == assessment_id)
-        .first()
-    )
+    assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
     if not assessment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -352,9 +340,7 @@ async def get_assessment_bbi_compliance(
     barangay_id = None
     if assessment.blgu_user and assessment.blgu_user.barangay_id:
         barangay = (
-            db.query(Barangay)
-            .filter(Barangay.id == assessment.blgu_user.barangay_id)
-            .first()
+            db.query(Barangay).filter(Barangay.id == assessment.blgu_user.barangay_id).first()
         )
         if barangay:
             barangay_name = barangay.name
@@ -383,13 +369,15 @@ async def get_assessment_bbi_compliance(
         sub_results = []
         if result.sub_indicator_results:
             for sr in result.sub_indicator_results:
-                sub_results.append(SubIndicatorResult(
-                    code=sr.get("code", ""),
-                    name=sr.get("name", ""),
-                    passed=sr.get("passed", False),
-                    validation_rule=sr.get("validation_rule"),
-                    checklist_summary=sr.get("checklist_summary"),
-                ))
+                sub_results.append(
+                    SubIndicatorResult(
+                        code=sr.get("code", ""),
+                        name=sr.get("name", ""),
+                        passed=sr.get("passed", False),
+                        validation_rule=sr.get("validation_rule"),
+                        checklist_summary=sr.get("checklist_summary"),
+                    )
+                )
 
         compliance_result = BBIComplianceResult(
             bbi_id=result.bbi_id,
@@ -483,9 +471,7 @@ async def calculate_assessment_bbi_compliance(
     barangay_id = None
     if assessment.blgu_user and assessment.blgu_user.barangay_id:
         barangay = (
-            db.query(Barangay)
-            .filter(Barangay.id == assessment.blgu_user.barangay_id)
-            .first()
+            db.query(Barangay).filter(Barangay.id == assessment.blgu_user.barangay_id).first()
         )
         if barangay:
             barangay_name = barangay.name
@@ -505,13 +491,15 @@ async def calculate_assessment_bbi_compliance(
         sub_results = []
         if result.sub_indicator_results:
             for sr in result.sub_indicator_results:
-                sub_results.append(SubIndicatorResult(
-                    code=sr.get("code", ""),
-                    name=sr.get("name", ""),
-                    passed=sr.get("passed", False),
-                    validation_rule=sr.get("validation_rule"),
-                    checklist_summary=sr.get("checklist_summary"),
-                ))
+                sub_results.append(
+                    SubIndicatorResult(
+                        code=sr.get("code", ""),
+                        name=sr.get("name", ""),
+                        passed=sr.get("passed", False),
+                        validation_rule=sr.get("validation_rule"),
+                        checklist_summary=sr.get("checklist_summary"),
+                    )
+                )
 
         compliance_result = BBIComplianceResult(
             bbi_id=result.bbi_id,

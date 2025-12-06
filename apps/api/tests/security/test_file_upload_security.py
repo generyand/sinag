@@ -10,11 +10,9 @@ Security tests for MOV file upload system:
 - MIME type validation
 """
 
-import pytest
 from io import BytesIO
+
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
-from typing import Dict
 
 from app.db.models.assessment import Assessment
 from app.db.models.governance_area import Indicator
@@ -28,7 +26,7 @@ class TestExecutableFileRejection:
     def test_reject_exe_file(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
     ):
@@ -61,7 +59,7 @@ class TestExecutableFileRejection:
     def test_reject_bat_file(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
     ):
@@ -86,7 +84,7 @@ class TestExecutableFileRejection:
     def test_reject_sh_file(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
     ):
@@ -111,7 +109,7 @@ class TestExecutableFileRejection:
     def test_reject_dll_file(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
     ):
@@ -142,7 +140,7 @@ class TestDisguisedExtensionDetection:
     def test_reject_double_extension_pdf_exe(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
     ):
@@ -168,7 +166,7 @@ class TestDisguisedExtensionDetection:
     def test_reject_null_byte_in_filename(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
     ):
@@ -187,9 +185,7 @@ class TestDisguisedExtensionDetection:
         response = client.post(
             f"/api/v1/movs/assessments/{test_draft_assessment.id}/indicators/{test_indicator.id}/upload",
             headers=auth_headers_blgu,
-            files={
-                "file": ("document.pdf\x00.exe", file_with_null, "application/pdf")
-            },
+            files={"file": ("document.pdf\x00.exe", file_with_null, "application/pdf")},
         )
 
         # Should either reject (400) or sanitize filename
@@ -205,7 +201,7 @@ class TestDisguisedExtensionDetection:
     def test_mime_type_content_mismatch(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
     ):
@@ -223,9 +219,7 @@ class TestDisguisedExtensionDetection:
         response = client.post(
             f"/api/v1/movs/assessments/{test_draft_assessment.id}/indicators/{test_indicator.id}/upload",
             headers=auth_headers_blgu,
-            files={
-                "file": ("document.pdf", fake_pdf, "application/pdf")
-            },  # Claims PDF
+            files={"file": ("document.pdf", fake_pdf, "application/pdf")},  # Claims PDF
         )
 
         # Should detect mismatch and reject
@@ -234,7 +228,7 @@ class TestDisguisedExtensionDetection:
     def test_javascript_file_as_text(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
     ):
@@ -266,7 +260,7 @@ class TestPathTraversalPrevention:
     def test_reject_filename_with_parent_directory(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
     ):
@@ -299,7 +293,7 @@ class TestPathTraversalPrevention:
     def test_reject_filename_with_absolute_path(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
     ):
@@ -328,7 +322,7 @@ class TestPathTraversalPrevention:
     def test_reject_filename_with_windows_path(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
     ):
@@ -365,7 +359,7 @@ class TestPathTraversalPrevention:
     def test_reject_filename_with_encoded_slashes(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
     ):
@@ -401,7 +395,7 @@ class TestFileSizeLimitEnforcement:
     def test_reject_file_over_50mb(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
     ):
@@ -439,7 +433,7 @@ class TestFileSizeLimitEnforcement:
     def test_accept_file_exactly_at_50mb_limit(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
     ):
@@ -466,7 +460,7 @@ class TestFileSizeLimitEnforcement:
     def test_error_message_for_oversized_file(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
     ):
@@ -495,7 +489,7 @@ class TestMaliciousContentDetection:
     def test_detect_embedded_script_in_pdf(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
     ):
@@ -524,7 +518,7 @@ class TestMaliciousContentDetection:
     def test_zip_bomb_detection(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
     ):
@@ -553,7 +547,7 @@ class TestMaliciousContentDetection:
     def test_file_with_macros(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
     ):
@@ -587,7 +581,7 @@ class TestAllowedFileTypes:
     def test_accept_valid_pdf(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
     ):
@@ -613,7 +607,7 @@ class TestAllowedFileTypes:
     def test_accept_valid_image_jpg(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
     ):
@@ -624,7 +618,7 @@ class TestAllowedFileTypes:
         - Image files allowed
         - JPEG signature validated
         """
-        jpg_content = b"\xFF\xD8\xFF\xE0\x00\x10JFIF" + b"\x00" * 50
+        jpg_content = b"\xff\xd8\xff\xe0\x00\x10JFIF" + b"\x00" * 50
         jpg_file = BytesIO(jpg_content)
 
         response = client.post(
@@ -638,7 +632,7 @@ class TestAllowedFileTypes:
     def test_accept_valid_png(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
     ):

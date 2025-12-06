@@ -14,7 +14,6 @@ This supports auto-calculation of accomplishment percentages.
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "b8eb6dfbc55e"
@@ -55,8 +54,16 @@ def upgrade() -> None:
             ],
             "rename_items": [
                 # Financial fields - rename to consistent naming
-                ("2_1_4_calculation_b1", "2_1_4_financial_utilized", "Total amount utilized (as of Dec. 31, 2023)"),
-                ("2_1_4_calculation_b2", "2_1_4_financial_allocated", "Total amount allocated for PPAs in the BDRRM Plan for CY 2023"),
+                (
+                    "2_1_4_calculation_b1",
+                    "2_1_4_financial_utilized",
+                    "Total amount utilized (as of Dec. 31, 2023)",
+                ),
+                (
+                    "2_1_4_calculation_b2",
+                    "2_1_4_financial_allocated",
+                    "Total amount allocated for PPAs in the BDRRM Plan for CY 2023",
+                ),
             ],
         },
         # 4.8.4 - BNC
@@ -87,8 +94,16 @@ def upgrade() -> None:
             ],
             "rename_items": [
                 # Financial fields - rename to consistent naming
-                ("4_8_4_amount_utilized", "4_8_4_financial_utilized", "Total amount utilized (as of Dec. 31, 2023)"),
-                ("4_8_4_amount_allocated", "4_8_4_financial_allocated", "Total amount allocated for PPAs in the BNAP"),
+                (
+                    "4_8_4_amount_utilized",
+                    "4_8_4_financial_utilized",
+                    "Total amount utilized (as of Dec. 31, 2023)",
+                ),
+                (
+                    "4_8_4_amount_allocated",
+                    "4_8_4_financial_allocated",
+                    "Total amount allocated for PPAs in the BNAP",
+                ),
             ],
         },
         # 6.1.4 - BESWMC
@@ -117,8 +132,16 @@ def upgrade() -> None:
             ],
             "rename_items": [
                 # Financial fields - rename to consistent naming
-                ("6_1_4_calc_b_utilized", "6_1_4_financial_utilized", "Total amount utilized (as of Dec 31, 2023)"),
-                ("6_1_4_calc_b_allocated", "6_1_4_financial_allocated", "Total amount allocated for PPAs in the BESWM Plan"),
+                (
+                    "6_1_4_calc_b_utilized",
+                    "6_1_4_financial_utilized",
+                    "Total amount utilized (as of Dec 31, 2023)",
+                ),
+                (
+                    "6_1_4_calc_b_allocated",
+                    "6_1_4_financial_allocated",
+                    "Total amount allocated for PPAs in the BESWM Plan",
+                ),
             ],
         },
     ]
@@ -129,7 +152,7 @@ def upgrade() -> None:
         # Get the indicator ID
         result = conn.execute(
             sa.text("SELECT id FROM indicators WHERE indicator_code = :code"),
-            {"code": indicator_code}
+            {"code": indicator_code},
         )
         row = result.fetchone()
         if not row:
@@ -142,8 +165,10 @@ def upgrade() -> None:
         # Remove old items
         for item_id in update.get("remove_items", []):
             result = conn.execute(
-                sa.text("DELETE FROM checklist_items WHERE indicator_id = :ind_id AND item_id = :item_id"),
-                {"ind_id": indicator_id, "item_id": item_id}
+                sa.text(
+                    "DELETE FROM checklist_items WHERE indicator_id = :ind_id AND item_id = :item_id"
+                ),
+                {"ind_id": indicator_id, "item_id": item_id},
             )
             print(f"  Removed item: {item_id} (rows affected: {result.rowcount})")
 
@@ -155,7 +180,12 @@ def upgrade() -> None:
                     SET item_id = :new_id, label = :new_label
                     WHERE indicator_id = :ind_id AND item_id = :old_id
                 """),
-                {"ind_id": indicator_id, "old_id": old_id, "new_id": new_id, "new_label": new_label}
+                {
+                    "ind_id": indicator_id,
+                    "old_id": old_id,
+                    "new_id": new_id,
+                    "new_label": new_label,
+                },
             )
             print(f"  Renamed: {old_id} -> {new_id} (rows affected: {result.rowcount})")
 
@@ -163,8 +193,10 @@ def upgrade() -> None:
         for item in update.get("add_items", []):
             # Check if item already exists
             existing = conn.execute(
-                sa.text("SELECT id FROM checklist_items WHERE indicator_id = :ind_id AND item_id = :item_id"),
-                {"ind_id": indicator_id, "item_id": item["item_id"]}
+                sa.text(
+                    "SELECT id FROM checklist_items WHERE indicator_id = :ind_id AND item_id = :item_id"
+                ),
+                {"ind_id": indicator_id, "item_id": item["item_id"]},
             ).fetchone()
 
             if existing:
@@ -185,7 +217,7 @@ def upgrade() -> None:
                     "required": item.get("required", False),
                     "display_order": item.get("display_order", 0),
                     "option_group": item.get("option_group"),
-                }
+                },
             )
             print(f"  Added item: {item['item_id']}")
 

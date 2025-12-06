@@ -1,4 +1,5 @@
 """Find assessments for the logged-in user"""
+
 from app.db.base import SessionLocal
 from app.db.models.assessment import Assessment
 
@@ -19,10 +20,7 @@ if not assessments:
     print("\nCreating a new assessment...")
 
     # Create a new assessment
-    new_assessment = Assessment(
-        blgu_user_id=user_id,
-        status="DRAFT"
-    )
+    new_assessment = Assessment(blgu_user_id=user_id, status="DRAFT")
     db.add(new_assessment)
     db.commit()
     db.refresh(new_assessment)

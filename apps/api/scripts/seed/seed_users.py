@@ -14,12 +14,12 @@ from pathlib import Path
 # Add the app directory to the path
 sys.path.insert(0, str(Path(__file__).parent))
 
+from app.core.security import get_password_hash
 from app.db.base import SessionLocal
-from app.db.models.user import User
+from app.db.enums import UserRole
 from app.db.models.barangay import Barangay
 from app.db.models.governance_area import GovernanceArea
-from app.db.enums import UserRole
-from app.core.security import get_password_hash
+from app.db.models.user import User
 
 # Default password for all seeded users
 DEFAULT_PASSWORD = "sinag2025"
@@ -199,7 +199,7 @@ def create_mlgoo(db):
     # Check if user already exists
     existing = db.query(User).filter(User.email == email).first()
     if existing:
-        print(f"  ⏭️  MLGOO Admin already exists. Skipping.")
+        print("  ⏭️  MLGOO Admin already exists. Skipping.")
         return 0
 
     # Create MLGOO user
@@ -215,7 +215,7 @@ def create_mlgoo(db):
     db.add(user)
     db.commit()
     print(f"  ✅ Created: {email} ({name})")
-    print(f"\n  📊 MLGOO - Created: 1")
+    print("\n  📊 MLGOO - Created: 1")
     return 1
 
 
@@ -244,7 +244,7 @@ def main():
         print(f"  Assessors:   {assessor_count}")
         print(f"  Validators:  {validator_count}")
         print(f"  MLGOO Admin: {mlgoo_count}")
-        print(f"  ─────────────────────")
+        print("  ─────────────────────")
         print(f"  TOTAL:       {total}")
         print("=" * 60)
 

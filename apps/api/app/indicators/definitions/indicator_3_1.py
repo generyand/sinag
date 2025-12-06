@@ -43,8 +43,14 @@ IMPORTANT NOTES FOR PHASE 9 (VALIDATION SERVICE):
    - Failing means BADAC is "Non-Functional"
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem, FormNotes, NoteItem, FieldNotes
-
+from app.indicators.base import (
+    ChecklistItem,
+    FieldNotes,
+    FormNotes,
+    Indicator,
+    NoteItem,
+    SubIndicator,
+)
 
 # Indicator 3.1: Functionality of the Barangay Anti-Drug Abuse Council (BADAC)
 INDICATOR_3_1 = Indicator(
@@ -70,7 +76,7 @@ INDICATOR_3_1 = Indicator(
                     mov_description="Verification that the EO/issuance creates BADAC with proper composition and committees",
                     item_type="checkbox",
                     required=False,
-                    display_order=1
+                    display_order=1,
                 ),
                 ChecklistItem(
                     id="3_1_1_date",
@@ -78,7 +84,7 @@ INDICATOR_3_1 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="date_input",
                     required=True,
-                    display_order=2
+                    display_order=2,
                 ),
             ],
             notes=FormNotes(
@@ -105,10 +111,9 @@ INDICATOR_3_1 = Indicator(
                     NoteItem(label="   3.", text="Public School Principal/Representative"),
                     NoteItem(label="   4.", text="At least 2 representatives of NGOs/CSOs"),
                     NoteItem(label="   5.", text="Representative of Faith-Based Organization"),
-                ]
-            )
+                ],
+            ),
         ),
-
         # Sub-Indicator 3.1.2
         SubIndicator(
             code="3.1.2",
@@ -125,7 +130,7 @@ INDICATOR_3_1 = Indicator(
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) establishing the Rehabilitation Referral Desk",
                     required=True,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
                 ),
                 ChecklistItem(
                     id="3_1_2_date",
@@ -133,11 +138,10 @@ INDICATOR_3_1 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="date_input",
                     required=True,
-                    display_order=2
+                    display_order=2,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 3.1.3
         SubIndicator(
             code="3.1.3",
@@ -154,7 +158,7 @@ INDICATOR_3_1 = Indicator(
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs), organizing house clusters with designated HCL",
                     required=True,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
                 ),
                 ChecklistItem(
                     id="3_1_3_date",
@@ -162,11 +166,10 @@ INDICATOR_3_1 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="date_input",
                     required=True,
-                    display_order=2
+                    display_order=2,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 3.1.4
         SubIndicator(
             code="3.1.4",
@@ -183,7 +186,7 @@ INDICATOR_3_1 = Indicator(
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs), organizing BAT",
                     required=True,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
                 ),
                 ChecklistItem(
                     id="3_1_4_date",
@@ -191,11 +194,10 @@ INDICATOR_3_1 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="date_input",
                     required=True,
-                    display_order=2
+                    display_order=2,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 3.1.5
         SubIndicator(
             code="3.1.5",
@@ -210,11 +212,10 @@ INDICATOR_3_1 = Indicator(
                     label="Copy of approved BADPA Summary or copy of approved BPOPs Plan with BADPA",
                     required=True,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 3.1.6
         SubIndicator(
             code="3.1.6",
@@ -235,7 +236,7 @@ INDICATOR_3_1 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=1,
-                    option_group="Option 1"
+                    option_group="Option 1",
                 ),
                 # OR separator
                 ChecklistItem(
@@ -244,7 +245,7 @@ INDICATOR_3_1 = Indicator(
                     mov_description="OR",
                     item_type="info_text",
                     required=False,
-                    display_order=2
+                    display_order=2,
                 ),
                 # Option 2 - option_group="Option 2" for OR-logic grouping
                 ChecklistItem(
@@ -254,7 +255,7 @@ INDICATOR_3_1 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=3,
-                    option_group="Option 2"
+                    option_group="Option 2",
                 ),
                 # YES/NO assessment for allocated amount (ungrouped - always required)
                 ChecklistItem(
@@ -263,18 +264,15 @@ INDICATOR_3_1 = Indicator(
                     mov_description="Assessment whether substantial amount is allocated for anti-illegal drugs initiative",
                     item_type="assessment_field",
                     required=False,
-                    display_order=5
+                    display_order=5,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 3.1.7
         SubIndicator(
             code="3.1.7",
             name="Implementation of Drug Abuse Prevention Advocacy Campaigns - Barangay organized at least 1 community-based IEC Activity during CY 2023",
-            upload_instructions=(
-                "Upload: Copy of Activity Report prepared by the BADAC"
-            ),
+            upload_instructions=("Upload: Copy of Activity Report prepared by the BADAC"),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
@@ -282,11 +280,10 @@ INDICATOR_3_1 = Indicator(
                     label="Copy of Activity Report prepared by the BADAC",
                     required=True,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 3.1.8
         SubIndicator(
             code="3.1.8",
@@ -310,9 +307,11 @@ INDICATOR_3_1 = Indicator(
                     field_notes=FieldNotes(
                         title="Note:",
                         items=[
-                            NoteItem(text="The CIR contains data protected by the Data Privacy Act of 2012. Hence, we recommend submitting only the transmittal.")
-                        ]
-                    )
+                            NoteItem(
+                                text="The CIR contains data protected by the Data Privacy Act of 2012. Hence, we recommend submitting only the transmittal."
+                            )
+                        ],
+                    ),
                 ),
                 ChecklistItem(
                     id="3_1_8_count",
@@ -320,24 +319,25 @@ INDICATOR_3_1 = Indicator(
                     mov_description="Please supply the number of documents submitted:",
                     item_type="document_count",
                     required=True,
-                    display_order=2
+                    display_order=2,
                 ),
                 ChecklistItem(
                     id="3_1_8_b",
                     label="Certification on the submitted CIR signed by the CADAC/MADAC and Local PNP Unit",
                     required=True,
                     requires_document_count=False,
-                    display_order=3
+                    display_order=3,
                 ),
             ],
             notes=FormNotes(
                 title="Note:",
                 items=[
-                    NoteItem(text="Drug-unaffected barangays shall also submit updated CIR, stating in the report that there is absence of illegal drug-related activities in the barangays. The same applies to drug-free and drug-cleared barangays."),
-                ]
-            )
+                    NoteItem(
+                        text="Drug-unaffected barangays shall also submit updated CIR, stating in the report that there is absence of illegal drug-related activities in the barangays. The same applies to drug-free and drug-cleared barangays."
+                    ),
+                ],
+            ),
         ),
-
         # Sub-Indicator 3.1.9
         SubIndicator(
             code="3.1.9",
@@ -352,11 +352,10 @@ INDICATOR_3_1 = Indicator(
                     label="Accomplished BADAC Form 4- Unified Barangay Report on Referral Action (UBRA)",
                     required=True,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 3.1.10
         SubIndicator(
             code="3.1.10",
@@ -373,7 +372,7 @@ INDICATOR_3_1 = Indicator(
                     label="Copy of the BADAC monthly minutes of the meeting with attendance sheets (at least 3 minutes)",
                     required=True,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
                 ),
                 ChecklistItem(
                     id="3_1_10_count",
@@ -381,9 +380,9 @@ INDICATOR_3_1 = Indicator(
                     mov_description="Please supply the number of documents submitted:",
                     item_type="document_count",
                     required=True,
-                    display_order=2
+                    display_order=2,
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

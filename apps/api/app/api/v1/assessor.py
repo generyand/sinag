@@ -1,7 +1,9 @@
 # 🧭 Assessor API Routes
 # Endpoints for assessor-specific functionality (secure queue, validation actions)
 
-from typing import List, Optional
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.db.models.user import User
@@ -18,13 +20,11 @@ from app.schemas import (
     ValidationResponse,
 )
 from app.services import annotation_service, assessor_service, intelligence_service
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-from sqlalchemy.orm import Session
 
 router = APIRouter()
 
 
-@router.get("/queue", response_model=List[AssessorQueueItem], tags=["assessor"])
+@router.get("/queue", response_model=list[AssessorQueueItem], tags=["assessor"])
 async def get_assessor_queue(
     db: Session = Depends(deps.get_db),
     current_assessor: User = Depends(deps.get_current_area_assessor_user),
@@ -90,7 +90,6 @@ async def validate_assessment_response(
     # Backend validation: REMOVED for draft saves
     # Comments for FAIL/CONDITIONAL are checked during finalization instead
     # This allows validators to save drafts without writing comments immediately
-    from app.db.enums import ValidationStatus
 
     result = assessor_service.validate_assessment_response(
         db=db,
@@ -150,7 +149,7 @@ async def upload_mov_for_assessor(
 async def upload_mov_file_for_assessor(
     response_id: int,
     file: UploadFile = File(..., description="The MOV file to upload"),
-    filename: Optional[str] = Form(None, description="Optional custom filename"),
+    filename: str | None = Form(None, description="Optional custom filename"),
     db: Session = Depends(deps.get_db),
     current_assessor: User = Depends(deps.get_current_area_assessor_user),
 ):
@@ -312,8 +311,11 @@ async def finalize_assessment(
     The assessor must have permission to review assessments in their governance area.
     """
     import logging
+
     logger = logging.getLogger(__name__)
-    logger.info(f"[FINALIZE ROUTE] Starting finalize for assessment {assessment_id}, assessor {current_assessor.id}")
+    logger.info(
+        f"[FINALIZE ROUTE] Starting finalize for assessment {assessment_id}, assessor {current_assessor.id}"
+    )
 
     try:
         result = assessor_service.finalize_assessment(
@@ -323,14 +325,19 @@ async def finalize_assessment(
         return result
     except ValueError as e:
         from fastapi import HTTPException
+
         logger.error(f"[FINALIZE ROUTE] ValueError for assessment {assessment_id}: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
     except PermissionError as e:
         from fastapi import HTTPException
+
         logger.error(f"[FINALIZE ROUTE] PermissionError for assessment {assessment_id}: {str(e)}")
         raise HTTPException(status_code=403, detail=str(e))
     except Exception as e:
-        logger.error(f"[FINALIZE ROUTE] Unexpected error for assessment {assessment_id}: {type(e).__name__}: {str(e)}", exc_info=True)
+        logger.error(
+            f"[FINALIZE ROUTE] Unexpected error for assessment {assessment_id}: {type(e).__name__}: {str(e)}",
+            exc_info=True,
+        )
         raise
 
 
@@ -353,9 +360,7 @@ async def classify_assessment(
     The assessor must have permission to review assessments in their governance area.
     """
     try:
-        result = intelligence_service.classify_assessment(
-            db=db, assessment_id=assessment_id
-        )
+        result = intelligence_service.classify_assessment(db=db, assessment_id=assessment_id)
         return result
     except ValueError as e:
         from fastapi import HTTPException
@@ -389,9 +394,7 @@ async def get_assessor_analytics(
     implementation that can be extended as the UI grows.
     """
     try:
-        analytics_data = assessor_service.get_analytics(
-            db=db, assessor=current_assessor
-        )
+        analytics_data = assessor_service.get_analytics(db=db, assessor=current_assessor)
         return AssessorAnalyticsResponse(**analytics_data)
     except Exception as e:
         raise HTTPException(
@@ -426,27 +429,21 @@ async def create_annotation(
     # Verify the mov_file_id matches the annotation data
     if annotation_data.mov_file_id != mov_file_id:
         raise HTTPException(
-            status_code=400,
-            detail="MOV file ID in URL does not match annotation data"
+            status_code=400, detail="MOV file ID in URL does not match annotation data"
         )
 
     try:
         annotation = annotation_service.create_annotation(
-            db=db,
-            annotation_data=annotation_data,
-            assessor_id=current_assessor.id
+            db=db, annotation_data=annotation_data, assessor_id=current_assessor.id
         )
         return annotation
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to create annotation: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to create annotation: {str(e)}")
 
 
 @router.get(
     "/movs/{mov_file_id}/annotations",
-    response_model=List[AnnotationResponse],
+    response_model=list[AnnotationResponse],
     tags=["assessor"],
 )
 async def get_annotations_for_mov(
@@ -461,21 +458,15 @@ async def get_annotations_for_mov(
     made on the specified MOV file, ordered by creation time.
     """
     try:
-        annotations = annotation_service.get_annotations_for_mov(
-            db=db,
-            mov_file_id=mov_file_id
-        )
+        annotations = annotation_service.get_annotations_for_mov(db=db, mov_file_id=mov_file_id)
         return annotations
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to retrieve annotations: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve annotations: {str(e)}")
 
 
 @router.get(
     "/assessments/{assessment_id}/annotations",
-    response_model=List[AnnotationResponse],
+    response_model=list[AnnotationResponse],
     tags=["assessor"],
 )
 async def get_annotations_for_assessment(
@@ -491,15 +482,11 @@ async def get_annotations_for_assessment(
     """
     try:
         annotations = annotation_service.get_annotations_for_assessment(
-            db=db,
-            assessment_id=assessment_id
+            db=db, assessment_id=assessment_id
         )
         return annotations
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to retrieve annotations: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve annotations: {str(e)}")
 
 
 @router.patch(
@@ -524,23 +511,20 @@ async def update_annotation(
             db=db,
             annotation_id=annotation_id,
             annotation_data=annotation_data,
-            assessor_id=current_assessor.id
+            assessor_id=current_assessor.id,
         )
 
         if not annotation:
             raise HTTPException(
                 status_code=404,
-                detail="Annotation not found or you don't have permission to update it"
+                detail="Annotation not found or you don't have permission to update it",
             )
 
         return annotation
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to update annotation: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to update annotation: {str(e)}")
 
 
 @router.delete(
@@ -560,22 +544,17 @@ async def delete_annotation(
     """
     try:
         success = annotation_service.delete_annotation(
-            db=db,
-            annotation_id=annotation_id,
-            assessor_id=current_assessor.id
+            db=db, annotation_id=annotation_id, assessor_id=current_assessor.id
         )
 
         if not success:
             raise HTTPException(
                 status_code=404,
-                detail="Annotation not found or you don't have permission to delete it"
+                detail="Annotation not found or you don't have permission to delete it",
             )
 
         return {"success": True, "message": "Annotation deleted successfully"}
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to delete annotation: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to delete annotation: {str(e)}")

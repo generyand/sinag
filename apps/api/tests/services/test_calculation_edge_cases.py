@@ -12,10 +12,11 @@ Tests edge cases for the calculation engine:
 """
 
 import pytest
+
 from app.db.enums import ValidationStatus
 from app.services.calculation_engine_service import (
-    calculation_engine_service,
     CalculationEngineError,
+    calculation_engine_service,
 )
 
 
@@ -54,9 +55,7 @@ class TestCalculationMissingData:
         # Missing 'completion_rate' field
         response_data = {"other_field": 100}
 
-        result = calculation_engine_service.execute_calculation(
-            calculation_schema, response_data
-        )
+        result = calculation_engine_service.execute_calculation(calculation_schema, response_data)
 
         assert result == ValidationStatus.FAIL
 
@@ -89,9 +88,7 @@ class TestCalculationMissingData:
 
         response_data = {}
 
-        result = calculation_engine_service.execute_calculation(
-            calculation_schema, response_data
-        )
+        result = calculation_engine_service.execute_calculation(calculation_schema, response_data)
 
         assert result == ValidationStatus.FAIL
 
@@ -137,9 +134,7 @@ class TestCalculationMissingData:
         response_data = {"status": "Active"}
 
         # Should handle missing field gracefully
-        result = calculation_engine_service.execute_calculation(
-            calculation_schema, response_data
-        )
+        result = calculation_engine_service.execute_calculation(calculation_schema, response_data)
 
         # Result depends on how service handles missing data
         assert result in [ValidationStatus.PASS, ValidationStatus.FAIL]
@@ -173,9 +168,7 @@ class TestCalculationMissingData:
 
         response_data = {}  # Missing 'documents' field
 
-        result = calculation_engine_service.execute_calculation(
-            calculation_schema, response_data
-        )
+        result = calculation_engine_service.execute_calculation(calculation_schema, response_data)
 
         assert result == ValidationStatus.FAIL
 
@@ -203,9 +196,7 @@ class TestCalculationInvalidSchema:
         response_data = {"field": "value"}
 
         with pytest.raises((CalculationEngineError, KeyError, Exception)):
-            calculation_engine_service.execute_calculation(
-                calculation_schema, response_data
-            )
+            calculation_engine_service.execute_calculation(calculation_schema, response_data)
 
     @pytest.mark.skip(reason="Tests invalid schema - validation correctly rejects it")
     def test_invalid_rule_type_handles_gracefully(self):
@@ -236,9 +227,7 @@ class TestCalculationInvalidSchema:
         response_data = {"test": 100}
 
         # Should handle gracefully and return FAIL
-        result = calculation_engine_service.execute_calculation(
-            calculation_schema, response_data
-        )
+        result = calculation_engine_service.execute_calculation(calculation_schema, response_data)
 
         assert result == ValidationStatus.FAIL
 
@@ -285,7 +274,9 @@ class TestCalculationInvalidSchema:
             # Acceptable to raise error
             pass
 
-    @pytest.mark.skip(reason="Tests invalid schema - validation correctly rejects empty rules array")
+    @pytest.mark.skip(
+        reason="Tests invalid schema - validation correctly rejects empty rules array"
+    )
     def test_empty_rules_array(self):
         """
         Test: Condition group with empty rules array.
@@ -308,9 +299,7 @@ class TestCalculationInvalidSchema:
 
         response_data = {"field": "value"}
 
-        result = calculation_engine_service.execute_calculation(
-            calculation_schema, response_data
-        )
+        result = calculation_engine_service.execute_calculation(calculation_schema, response_data)
 
         # Empty rules might default to PASS or FAIL
         assert result in [ValidationStatus.PASS, ValidationStatus.FAIL]
@@ -370,9 +359,7 @@ class TestCalculationInvalidSchema:
         response_data = {"field": "value"}
 
         with pytest.raises((CalculationEngineError, AttributeError, TypeError)):
-            calculation_engine_service.execute_calculation(
-                calculation_schema, response_data
-            )
+            calculation_engine_service.execute_calculation(calculation_schema, response_data)
 
 
 class TestCalculationNullUndefinedValues:
@@ -409,9 +396,7 @@ class TestCalculationNullUndefinedValues:
 
         response_data = {"completion_rate": None}
 
-        result = calculation_engine_service.execute_calculation(
-            calculation_schema, response_data
-        )
+        result = calculation_engine_service.execute_calculation(calculation_schema, response_data)
 
         assert result == ValidationStatus.FAIL
 
@@ -444,9 +429,7 @@ class TestCalculationNullUndefinedValues:
 
         response_data = {"status": ""}
 
-        result = calculation_engine_service.execute_calculation(
-            calculation_schema, response_data
-        )
+        result = calculation_engine_service.execute_calculation(calculation_schema, response_data)
 
         assert result == ValidationStatus.FAIL
 
@@ -479,9 +462,7 @@ class TestCalculationNullUndefinedValues:
 
         response_data = {"completion_rate": 0}
 
-        result = calculation_engine_service.execute_calculation(
-            calculation_schema, response_data
-        )
+        result = calculation_engine_service.execute_calculation(calculation_schema, response_data)
 
         assert result == ValidationStatus.FAIL  # 0 < 50
 
@@ -514,9 +495,7 @@ class TestCalculationNullUndefinedValues:
 
         response_data = {"is_active": False}
 
-        result = calculation_engine_service.execute_calculation(
-            calculation_schema, response_data
-        )
+        result = calculation_engine_service.execute_calculation(calculation_schema, response_data)
 
         assert result == ValidationStatus.FAIL  # False != True
 
@@ -549,9 +528,7 @@ class TestCalculationNullUndefinedValues:
 
         response_data = {"documents": []}
 
-        result = calculation_engine_service.execute_calculation(
-            calculation_schema, response_data
-        )
+        result = calculation_engine_service.execute_calculation(calculation_schema, response_data)
 
         assert result == ValidationStatus.FAIL  # 0 < 1
 
@@ -642,7 +619,9 @@ class TestCalculationTypeEdgeCases:
             # Acceptable to raise error
             pass
 
-    @pytest.mark.skip(reason="PERCENTAGE_THRESHOLD must be 0-100 - negative values correctly rejected")
+    @pytest.mark.skip(
+        reason="PERCENTAGE_THRESHOLD must be 0-100 - negative values correctly rejected"
+    )
     def test_negative_threshold_value(self):
         """
         Test: Negative threshold in PERCENTAGE_THRESHOLD.
@@ -671,9 +650,7 @@ class TestCalculationTypeEdgeCases:
 
         response_data = {"change_rate": -5.0}
 
-        result = calculation_engine_service.execute_calculation(
-            calculation_schema, response_data
-        )
+        result = calculation_engine_service.execute_calculation(calculation_schema, response_data)
 
         assert result == ValidationStatus.PASS  # -5 >= -10
 
@@ -706,9 +683,7 @@ class TestCalculationTypeEdgeCases:
 
         response_data = {"population": 1500000000}  # 1.5 billion
 
-        result = calculation_engine_service.execute_calculation(
-            calculation_schema, response_data
-        )
+        result = calculation_engine_service.execute_calculation(calculation_schema, response_data)
 
         assert result == ValidationStatus.PASS
 
@@ -741,8 +716,6 @@ class TestCalculationTypeEdgeCases:
         response_data = {"checkboxes": {"opt1": True, "opt2": True, "opt3": False}}
 
         # Service should count True values in dict
-        result = calculation_engine_service.execute_calculation(
-            calculation_schema, response_data
-        )
+        result = calculation_engine_service.execute_calculation(calculation_schema, response_data)
 
         assert result == ValidationStatus.PASS  # 2 >= 2

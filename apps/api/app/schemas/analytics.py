@@ -2,7 +2,6 @@
 # Pydantic models for analytics and dashboard-related API requests and responses
 
 from datetime import datetime
-from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -19,7 +18,9 @@ class ComplianceRate(BaseModel):
     total_barangays: int = Field(..., description="Total number of barangays assessed")
     passed: int = Field(..., description="Number of barangays that passed")
     failed: int = Field(..., description="Number of barangays that failed")
-    pass_percentage: float = Field(..., description="Percentage of barangays that passed", ge=0, le=100)
+    pass_percentage: float = Field(
+        ..., description="Percentage of barangays that passed", ge=0, le=100
+    )
 
 
 class AreaBreakdown(BaseModel):
@@ -73,9 +74,16 @@ class ReworkStats(BaseModel):
 
     total_assessments: int = Field(..., description="Total number of assessments")
     assessments_with_rework: int = Field(..., description="Assessments that used rework cycle")
-    rework_rate: float = Field(..., description="Percentage of assessments that needed rework", ge=0, le=100)
+    rework_rate: float = Field(
+        ..., description="Percentage of assessments that needed rework", ge=0, le=100
+    )
     assessments_with_calibration: int = Field(..., description="Assessments that used calibration")
-    calibration_rate: float = Field(..., description="Percentage of assessments that needed calibration", ge=0, le=100)
+    calibration_rate: float = Field(
+        ...,
+        description="Percentage of assessments that needed calibration",
+        ge=0,
+        le=100,
+    )
 
 
 # ============================================================================
@@ -91,10 +99,21 @@ class BBIAnalyticsItem(BaseModel):
     bbi_id: int = Field(..., description="Unique identifier for the BBI")
     bbi_name: str = Field(..., description="Full name of the BBI")
     bbi_abbreviation: str = Field(..., description="BBI abbreviation (e.g., BDC, BDRRMC)")
-    average_compliance: float = Field(..., description="Average compliance percentage across all barangays", ge=0, le=100)
-    highly_functional_count: int = Field(..., description="Number of barangays with 75%+ compliance", ge=0)
-    moderately_functional_count: int = Field(..., description="Number of barangays with 50-74% compliance", ge=0)
-    low_functional_count: int = Field(..., description="Number of barangays with <50% compliance", ge=0)
+    average_compliance: float = Field(
+        ...,
+        description="Average compliance percentage across all barangays",
+        ge=0,
+        le=100,
+    )
+    highly_functional_count: int = Field(
+        ..., description="Number of barangays with 75%+ compliance", ge=0
+    )
+    moderately_functional_count: int = Field(
+        ..., description="Number of barangays with 50-74% compliance", ge=0
+    )
+    low_functional_count: int = Field(
+        ..., description="Number of barangays with <50% compliance", ge=0
+    )
     total_barangays: int = Field(..., description="Total barangays assessed for this BBI", ge=0)
 
 
@@ -104,9 +123,13 @@ class BBIAnalyticsSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     total_assessments: int = Field(..., description="Total assessments with BBI results", ge=0)
-    overall_average_compliance: float = Field(..., description="Overall average compliance across all BBIs", ge=0, le=100)
+    overall_average_compliance: float = Field(
+        ..., description="Overall average compliance across all BBIs", ge=0, le=100
+    )
     total_highly_functional: int = Field(..., description="Total highly functional ratings", ge=0)
-    total_moderately_functional: int = Field(..., description="Total moderately functional ratings", ge=0)
+    total_moderately_functional: int = Field(
+        ..., description="Total moderately functional ratings", ge=0
+    )
     total_low_functional: int = Field(..., description="Total low functional ratings", ge=0)
 
 
@@ -116,9 +139,8 @@ class BBIAnalyticsData(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     summary: BBIAnalyticsSummary = Field(..., description="Summary statistics for all BBIs")
-    bbi_breakdown: List[BBIAnalyticsItem] = Field(
-        default_factory=list,
-        description="Per-BBI compliance breakdown"
+    bbi_breakdown: list[BBIAnalyticsItem] = Field(
+        default_factory=list, description="Per-BBI compliance breakdown"
     )
 
 
@@ -140,35 +162,29 @@ class DashboardKPIResponse(BaseModel):
 
     overall_compliance_rate: ComplianceRate = Field(..., description="Overall pass/fail statistics")
     completion_status: ComplianceRate = Field(..., description="Completion status of assessments")
-    area_breakdown: List[AreaBreakdown] = Field(
-        default_factory=list,
-        description="Compliance breakdown by governance area"
+    area_breakdown: list[AreaBreakdown] = Field(
+        default_factory=list, description="Compliance breakdown by governance area"
     )
-    top_failed_indicators: List[FailedIndicator] = Field(
+    top_failed_indicators: list[FailedIndicator] = Field(
         default_factory=list,
         description="Top 5 most frequently failed indicators",
-        max_length=5
+        max_length=5,
     )
-    trends: List[TrendData] = Field(
+    trends: list[TrendData] = Field(
         default_factory=list,
         description="Historical trend data across cycles",
-        max_length=3
+        max_length=3,
     )
-    barangay_rankings: List[BarangayRanking] = Field(
+    barangay_rankings: list[BarangayRanking] = Field(
+        default_factory=list, description="Barangays ranked by compliance score"
+    )
+    status_distribution: list[StatusDistributionItem] = Field(
         default_factory=list,
-        description="Barangays ranked by compliance score"
+        description="Distribution of assessments by workflow status",
     )
-    status_distribution: List[StatusDistributionItem] = Field(
-        default_factory=list,
-        description="Distribution of assessments by workflow status"
-    )
-    rework_stats: ReworkStats = Field(
-        ...,
-        description="Rework and calibration usage statistics"
-    )
-    bbi_analytics: Optional[BBIAnalyticsData] = Field(
-        None,
-        description="BBI compliance analytics per DILG MC 2024-417"
+    rework_stats: ReworkStats = Field(..., description="Rework and calibration usage statistics")
+    bbi_analytics: BBIAnalyticsData | None = Field(
+        None, description="BBI compliance analytics per DILG MC 2024-417"
     )
     total_barangays: int = Field(..., description="Total number of barangays in the municipality")
 
@@ -205,17 +221,16 @@ class ChartData(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    bar_chart: List[BarChartData] = Field(
+    bar_chart: list[BarChartData] = Field(
         default_factory=list,
-        description="Bar chart data showing pass/fail rates by governance area"
+        description="Bar chart data showing pass/fail rates by governance area",
     )
-    pie_chart: List[PieChartData] = Field(
+    pie_chart: list[PieChartData] = Field(
         default_factory=list,
-        description="Pie chart data showing overall status distribution"
+        description="Pie chart data showing overall status distribution",
     )
-    line_chart: List[TrendData] = Field(
-        default_factory=list,
-        description="Line chart data showing trends over cycles"
+    line_chart: list[TrendData] = Field(
+        default_factory=list, description="Line chart data showing trends over cycles"
     )
 
 
@@ -226,10 +241,10 @@ class BarangayMapPoint(BaseModel):
 
     barangay_id: int = Field(..., description="Unique identifier for the barangay")
     name: str = Field(..., description="Barangay name")
-    lat: Optional[float] = Field(None, description="Latitude coordinate")
-    lng: Optional[float] = Field(None, description="Longitude coordinate")
+    lat: float | None = Field(None, description="Latitude coordinate")
+    lng: float | None = Field(None, description="Longitude coordinate")
     status: str = Field(..., description="Compliance status (Pass/Fail/In Progress)")
-    score: Optional[float] = Field(None, description="Compliance score", ge=0, le=100)
+    score: float | None = Field(None, description="Compliance score", ge=0, le=100)
 
 
 class MapData(BaseModel):
@@ -237,9 +252,9 @@ class MapData(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    barangays: List[BarangayMapPoint] = Field(
+    barangays: list[BarangayMapPoint] = Field(
         default_factory=list,
-        description="List of barangays with geographic coordinates and status"
+        description="List of barangays with geographic coordinates and status",
     )
 
 
@@ -252,7 +267,7 @@ class AssessmentRow(BaseModel):
     barangay_name: str = Field(..., description="Name of the barangay")
     governance_area: str = Field(..., description="Governance area code")
     status: str = Field(..., description="Assessment status (Pass/Fail/In Progress)")
-    score: Optional[float] = Field(None, description="Compliance score", ge=0, le=100)
+    score: float | None = Field(None, description="Compliance score", ge=0, le=100)
 
 
 class TableData(BaseModel):
@@ -260,9 +275,8 @@ class TableData(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    rows: List[AssessmentRow] = Field(
-        default_factory=list,
-        description="List of assessment rows for the current page"
+    rows: list[AssessmentRow] = Field(
+        default_factory=list, description="List of assessment rows for the current page"
     )
     total_count: int = Field(..., description="Total number of assessments matching filters", ge=0)
     page: int = Field(..., description="Current page number", ge=1)
@@ -275,12 +289,12 @@ class ReportMetadata(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     generated_at: datetime = Field(..., description="Timestamp when the report was generated")
-    cycle_id: Optional[int] = Field(None, description="Filter: Assessment cycle ID")
-    start_date: Optional[datetime] = Field(None, description="Filter: Start date")
-    end_date: Optional[datetime] = Field(None, description="Filter: End date")
-    governance_areas: Optional[List[str]] = Field(None, description="Filter: Governance area codes")
-    barangay_ids: Optional[List[int]] = Field(None, description="Filter: Barangay IDs")
-    status: Optional[str] = Field(None, description="Filter: Status filter")
+    cycle_id: int | None = Field(None, description="Filter: Assessment cycle ID")
+    start_date: datetime | None = Field(None, description="Filter: Start date")
+    end_date: datetime | None = Field(None, description="Filter: End date")
+    governance_areas: list[str] | None = Field(None, description="Filter: Governance area codes")
+    barangay_ids: list[int] | None = Field(None, description="Filter: Barangay IDs")
+    status: str | None = Field(None, description="Filter: Status filter")
 
 
 class ReportsDataResponse(BaseModel):
@@ -291,4 +305,6 @@ class ReportsDataResponse(BaseModel):
     chart_data: ChartData = Field(..., description="Data for bar, pie, and line charts")
     map_data: MapData = Field(..., description="Geographic map data for barangays")
     table_data: TableData = Field(..., description="Paginated table data for assessments")
-    metadata: ReportMetadata = Field(..., description="Report generation metadata and applied filters")
+    metadata: ReportMetadata = Field(
+        ..., description="Report generation metadata and applied filters"
+    )

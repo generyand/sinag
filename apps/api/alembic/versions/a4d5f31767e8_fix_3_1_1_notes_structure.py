@@ -5,15 +5,15 @@ Revises: 63e549ac19d3
 Create Date: 2025-12-03 20:42:17.281676
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
 import json
 
 # revision identifiers, used by Alembic.
-revision: str = 'a4d5f31767e8'
-down_revision: Union[str, Sequence[str], None] = '63e549ac19d3'
+revision: str = "a4d5f31767e8"
+down_revision: Union[str, Sequence[str], None] = "63e549ac19d3"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -33,9 +33,9 @@ FORM_SCHEMA_3_1_1 = {
                     "required": True,
                     "accept": ".pdf,.doc,.docx,.jpg,.jpeg,.png",
                     "multiple": True,
-                    "max_size": 50
+                    "max_size": 50,
                 }
-            ]
+            ],
         }
     ],
     "checklist_items": [
@@ -45,7 +45,7 @@ FORM_SCHEMA_3_1_1 = {
             "mov_description": "Verification that the EO/issuance creates BADAC with proper composition and committees",
             "item_type": "checkbox",
             "required": False,
-            "display_order": 1
+            "display_order": 1,
         }
     ],
     "notes": {
@@ -71,9 +71,9 @@ FORM_SCHEMA_3_1_1 = {
             {"label": "   2.", "text": "SK Chairperson"},
             {"label": "   3.", "text": "Public School Principal/Representative"},
             {"label": "   4.", "text": "At least 2 representatives of NGOs/CSOs"},
-            {"label": "   5.", "text": "Representative of Faith-Based Organization"}
-        ]
-    }
+            {"label": "   5.", "text": "Representative of Faith-Based Organization"},
+        ],
+    },
 }
 
 

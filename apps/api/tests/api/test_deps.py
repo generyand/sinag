@@ -2,16 +2,16 @@
 Tests for FastAPI dependency functions (app/api/deps.py)
 """
 
-import pytest
 import uuid
-from sqlalchemy.orm import Session
+
+import pytest
 from fastapi import HTTPException
 from passlib.context import CryptContext
+from sqlalchemy.orm import Session
 
-from app.db.models.user import User
-from app.db.enums import UserRole
 from app.api.deps import get_current_external_user
-
+from app.db.enums import UserRole
+from app.db.models.user import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

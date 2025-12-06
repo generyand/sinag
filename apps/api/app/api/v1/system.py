@@ -1,15 +1,16 @@
 # 🔧 System API Routes
 # System-level endpoints for health checks and basic info
 
-from fastapi import APIRouter
 from datetime import datetime
 
-from app.schemas.system import ApiResponse, HealthCheck
+from fastapi import APIRouter
+
 from app.db.base import (
     check_all_connections,
     check_database_connection,
     check_supabase_connection,
 )
+from app.schemas.system import ApiResponse, HealthCheck
 
 router = APIRouter()
 

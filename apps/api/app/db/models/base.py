@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from typing import Optional
 
 
 class ApiResponse(BaseModel):
@@ -7,4 +6,4 @@ class ApiResponse(BaseModel):
 
     message: str
     status: str = "success"
-    data: Optional[dict] = None
+    data: dict | None = None

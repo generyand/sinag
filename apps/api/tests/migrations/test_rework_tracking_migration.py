@@ -11,8 +11,8 @@ Tests verify that the rework tracking migration:
 
 import pytest
 from sqlalchemy import inspect, text
-from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
 
 class TestReworkTrackingMigration:
@@ -43,7 +43,9 @@ class TestReworkTrackingMigration:
 
         # Should be NOT NULL with default 0
         assert not rework_count["nullable"], "rework_count should be NOT NULL"
-        assert rework_count["default"] is not None or "0" in str(rework_count), "rework_count should have default 0"
+        assert rework_count["default"] is not None or "0" in str(rework_count), (
+            "rework_count should have default 0"
+        )
 
     def test_rework_requested_at_column_properties(self, db_session: Session):
         """Test that rework_requested_at column has correct properties."""
@@ -55,9 +57,10 @@ class TestReworkTrackingMigration:
         # Should be nullable TIMESTAMP
         assert rework_requested_at["nullable"], "rework_requested_at should be nullable"
         # Type should be DateTime/TIMESTAMP
-        assert "TIMESTAMP" in str(rework_requested_at["type"]).upper() or \
-               "DATETIME" in str(rework_requested_at["type"]).upper(), \
-               "rework_requested_at should be TIMESTAMP/DATETIME type"
+        assert (
+            "TIMESTAMP" in str(rework_requested_at["type"]).upper()
+            or "DATETIME" in str(rework_requested_at["type"]).upper()
+        ), "rework_requested_at should be TIMESTAMP/DATETIME type"
 
     def test_rework_requested_by_column_properties(self, db_session: Session):
         """Test that rework_requested_by column has correct properties."""
@@ -67,11 +70,14 @@ class TestReworkTrackingMigration:
         rework_requested_by = columns["rework_requested_by"]
 
         # Should be nullable INTEGER
-        assert rework_requested_by["nullable"], "rework_requested_by should be nullable (SET NULL on delete)"
+        assert rework_requested_by["nullable"], (
+            "rework_requested_by should be nullable (SET NULL on delete)"
+        )
         # Type should be Integer
-        assert "INTEGER" in str(rework_requested_by["type"]).upper() or \
-               "INT" in str(rework_requested_by["type"]).upper(), \
-               "rework_requested_by should be INTEGER type"
+        assert (
+            "INTEGER" in str(rework_requested_by["type"]).upper()
+            or "INT" in str(rework_requested_by["type"]).upper()
+        ), "rework_requested_by should be INTEGER type"
 
     def test_rework_comments_column_properties(self, db_session: Session):
         """Test that rework_comments column has correct properties."""
@@ -83,8 +89,7 @@ class TestReworkTrackingMigration:
         # Should be nullable TEXT
         assert rework_comments["nullable"], "rework_comments should be nullable"
         # Type should be Text
-        assert "TEXT" in str(rework_comments["type"]).upper(), \
-               "rework_comments should be TEXT type"
+        assert "TEXT" in str(rework_comments["type"]).upper(), "rework_comments should be TEXT type"
 
     def test_rework_count_check_constraint(self, db_session: Session):
         """Test that CHECK constraint enforces rework_count <= 1."""
@@ -124,9 +129,10 @@ class TestReworkTrackingMigration:
         db_session.rollback()
 
         # Verify the error is about the check constraint
-        assert "chk_rework_count_limit" in str(exc_info.value).lower() or \
-               "check constraint" in str(exc_info.value).lower(), \
-               "Should fail with check constraint violation"
+        assert (
+            "chk_rework_count_limit" in str(exc_info.value).lower()
+            or "check constraint" in str(exc_info.value).lower()
+        ), "Should fail with check constraint violation"
 
         # Cleanup
         db_session.execute(text("DELETE FROM assessments WHERE id = :id"), {"id": assessment_id_0})
@@ -149,9 +155,10 @@ class TestReworkTrackingMigration:
         db_session.rollback()
 
         # Verify the error is about the check constraint
-        assert "chk_rework_count_limit" in str(exc_info.value).lower() or \
-               "check constraint" in str(exc_info.value).lower(), \
-               "Should fail with check constraint violation for negative values"
+        assert (
+            "chk_rework_count_limit" in str(exc_info.value).lower()
+            or "check constraint" in str(exc_info.value).lower()
+        ), "Should fail with check constraint violation for negative values"
 
     def test_rework_requested_by_foreign_key(self, db_session: Session):
         """Test that rework_requested_by has foreign key to users table."""
@@ -169,7 +176,9 @@ class TestReworkTrackingMigration:
         assert rework_fk["referred_table"] == "users", "FK should reference users table"
         assert rework_fk["referred_columns"] == ["id"], "FK should reference users.id"
         assert rework_fk["options"]["ondelete"] == "SET NULL", "FK should have SET NULL on delete"
-        assert rework_fk["name"] == "fk_assessment_rework_requested_by", "FK should have correct name"
+        assert rework_fk["name"] == "fk_assessment_rework_requested_by", (
+            "FK should have correct name"
+        )
 
     def test_rework_requested_by_index_exists(self, db_session: Session):
         """Test that performance index on rework_requested_by exists."""
@@ -180,13 +189,15 @@ class TestReworkTrackingMigration:
         index_dict = {idx["name"]: idx for idx in indexes}
 
         # Check index exists
-        assert "idx_assessments_rework_requested_by" in index_dict, \
-               "Index 'idx_assessments_rework_requested_by' should exist"
+        assert "idx_assessments_rework_requested_by" in index_dict, (
+            "Index 'idx_assessments_rework_requested_by' should exist"
+        )
 
         # Verify index columns
         idx = index_dict["idx_assessments_rework_requested_by"]
-        assert "rework_requested_by" in idx["column_names"], \
-               "Index should be on rework_requested_by column"
+        assert "rework_requested_by" in idx["column_names"], (
+            "Index should be on rework_requested_by column"
+        )
         assert not idx["unique"], "Index should not be unique"
 
     def test_insert_assessment_with_rework_tracking_data(self, db_session: Session):
@@ -215,7 +226,7 @@ class TestReworkTrackingMigration:
                 FROM assessments
                 WHERE id = :id
             """),
-            {"id": assessment_id}
+            {"id": assessment_id},
         )
         row = result.fetchone()
 
@@ -248,7 +259,7 @@ class TestReworkTrackingMigration:
                 FROM assessments
                 WHERE id = :id
             """),
-            {"id": assessment_id}
+            {"id": assessment_id},
         )
         row = result.fetchone()
 
@@ -277,7 +288,7 @@ class TestReworkTrackingMigration:
         # Step 2: BLGU submits (no rework data yet)
         db_session.execute(
             text("UPDATE assessments SET status = 'SUBMITTED' WHERE id = :id"),
-            {"id": assessment_id}
+            {"id": assessment_id},
         )
         db_session.commit()
 
@@ -292,7 +303,7 @@ class TestReworkTrackingMigration:
                     rework_comments = 'Please provide additional supporting documents'
                 WHERE id = :id
             """),
-            {"id": assessment_id}
+            {"id": assessment_id},
         )
         db_session.commit()
 
@@ -303,7 +314,7 @@ class TestReworkTrackingMigration:
                 FROM assessments
                 WHERE id = :id
             """),
-            {"id": assessment_id}
+            {"id": assessment_id},
         )
         row = result.fetchone()
 
@@ -315,14 +326,14 @@ class TestReworkTrackingMigration:
         # Step 4: BLGU resubmits
         db_session.execute(
             text("UPDATE assessments SET status = 'SUBMITTED' WHERE id = :id"),
-            {"id": assessment_id}
+            {"id": assessment_id},
         )
         db_session.commit()
 
         # Verify rework_count is still 1 (no additional rework allowed)
         result = db_session.execute(
             text("SELECT rework_count FROM assessments WHERE id = :id"),
-            {"id": assessment_id}
+            {"id": assessment_id},
         )
         count = result.scalar_one()
         assert count == 1, "rework_count should remain 1 after resubmission"
@@ -354,7 +365,7 @@ class TestReworkTrackingMigration:
                 VALUES (1, 'REWORK', 1, :user_id, 'Test comment')
                 RETURNING id
             """),
-            {"user_id": user_id}
+            {"user_id": user_id},
         )
         assessment_id = result.scalar_one()
         db_session.commit()
@@ -362,7 +373,7 @@ class TestReworkTrackingMigration:
         # Verify rework_requested_by is set
         result = db_session.execute(
             text("SELECT rework_requested_by FROM assessments WHERE id = :id"),
-            {"id": assessment_id}
+            {"id": assessment_id},
         )
         requester = result.scalar_one()
         assert requester == user_id, "rework_requested_by should be set to user_id"
@@ -374,7 +385,7 @@ class TestReworkTrackingMigration:
         # Verify rework_requested_by was set to NULL
         result = db_session.execute(
             text("SELECT rework_requested_by FROM assessments WHERE id = :id"),
-            {"id": assessment_id}
+            {"id": assessment_id},
         )
         requester = result.scalar_one_or_none()
         assert requester is None, "rework_requested_by should be NULL after user deletion"
@@ -401,7 +412,9 @@ class TestReworkTrackingMigration:
         # Verify index exists
         indexes = inspector.get_indexes("assessments")
         index_names = [idx["name"] for idx in indexes]
-        assert "idx_assessments_rework_requested_by" in index_names, "Index should exist before downgrade"
+        assert "idx_assessments_rework_requested_by" in index_names, (
+            "Index should exist before downgrade"
+        )
 
         # Verify foreign key exists
         foreign_keys = inspector.get_foreign_keys("assessments")

@@ -5,15 +5,15 @@ Revises: 705e8dc66d6a
 Create Date: 2025-11-16 23:15:00.000000
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'cc04769d7a0a'
-down_revision: Union[str, None] = '705e8dc66d6a'
+revision: str = "cc04769d7a0a"
+down_revision: Union[str, None] = "705e8dc66d6a"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -40,7 +40,7 @@ def upgrade() -> None:
     print("\n2️⃣  Deleting ALL indicators (old 1.1226 format AND new 1.1.1 format)...")
     op.execute("DELETE FROM checklist_items")
     op.execute("DELETE FROM indicators WHERE parent_id IS NOT NULL")  # Children first
-    op.execute("DELETE FROM indicators WHERE parent_id IS NULL")      # Then parents
+    op.execute("DELETE FROM indicators WHERE parent_id IS NULL")  # Then parents
     print("   ✅ All indicators deleted (old + new)")
 
     # Step 3: Reseed with ONLY the new hierarchical indicators

@@ -2,10 +2,11 @@
 # Business logic for audit logging and tracking administrative actions
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
+
+from sqlalchemy.orm import Session
 
 from app.db.models.admin import AuditLog
-from sqlalchemy.orm import Session
 
 
 class AuditService:
@@ -16,10 +17,10 @@ class AuditService:
         db: Session,
         user_id: int,
         entity_type: str,
-        entity_id: Optional[int],
+        entity_id: int | None,
         action: str,
-        changes: Optional[Dict[str, Any]] = None,
-        ip_address: Optional[str] = None,
+        changes: dict[str, Any] | None = None,
+        ip_address: str | None = None,
     ) -> AuditLog:
         """
         Log an audit event to the database.
@@ -53,8 +54,8 @@ class AuditService:
         return audit_log
 
     def calculate_json_diff(
-        self, before: Optional[Dict[str, Any]], after: Optional[Dict[str, Any]]
-    ) -> Dict[str, Dict[str, Any]]:
+        self, before: dict[str, Any] | None, after: dict[str, Any] | None
+    ) -> dict[str, dict[str, Any]]:
         """
         Calculate the difference between two JSON objects (before and after states).
 
@@ -93,13 +94,13 @@ class AuditService:
         db: Session,
         skip: int = 0,
         limit: int = 100,
-        user_id: Optional[int] = None,
-        entity_type: Optional[str] = None,
-        entity_id: Optional[int] = None,
-        action: Optional[str] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
-    ) -> tuple[List[AuditLog], int]:
+        user_id: int | None = None,
+        entity_type: str | None = None,
+        entity_id: int | None = None,
+        action: str | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ) -> tuple[list[AuditLog], int]:
         """
         Get audit logs with optional filtering and pagination.
 
@@ -149,13 +150,11 @@ class AuditService:
 
         return audit_logs, total
 
-    def get_audit_log_by_id(self, db: Session, log_id: int) -> Optional[AuditLog]:
+    def get_audit_log_by_id(self, db: Session, log_id: int) -> AuditLog | None:
         """Get a single audit log by ID."""
         return db.query(AuditLog).filter(AuditLog.id == log_id).first()
 
-    def get_entity_history(
-        self, db: Session, entity_type: str, entity_id: int
-    ) -> List[AuditLog]:
+    def get_entity_history(self, db: Session, entity_type: str, entity_id: int) -> list[AuditLog]:
         """
         Get the complete audit history for a specific entity.
 
@@ -169,9 +168,7 @@ class AuditService:
         """
         return (
             db.query(AuditLog)
-            .filter(
-                AuditLog.entity_type == entity_type, AuditLog.entity_id == entity_id
-            )
+            .filter(AuditLog.entity_type == entity_type, AuditLog.entity_id == entity_id)
             .order_by(AuditLog.created_at.desc())
             .all()
         )

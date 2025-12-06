@@ -1,17 +1,17 @@
 # 👥 User Service
 # Business logic for user management operations
 
-from typing import List, Optional
 
-from app.core.security import get_password_hash, verify_password
-from app.db.enums import UserRole
-from app.db.models.user import User
-from app.db.models.governance_area import GovernanceArea
-from app.db.models.barangay import Barangay
-from app.schemas.user import UserAdminCreate, UserAdminUpdate, UserCreate, UserUpdate
 from fastapi import HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
+
+from app.core.security import get_password_hash, verify_password
+from app.db.enums import UserRole
+from app.db.models.barangay import Barangay
+from app.db.models.governance_area import GovernanceArea
+from app.db.models.user import User
+from app.schemas.user import UserAdminCreate, UserAdminUpdate, UserCreate, UserUpdate
 
 
 class UserService:
@@ -39,7 +39,7 @@ class UserService:
         - CLAUDE.md: Complete RBAC documentation
     """
 
-    def get_user_by_id(self, db: Session, user_id: int) -> Optional[User]:
+    def get_user_by_id(self, db: Session, user_id: int) -> User | None:
         """Get a user by their ID.
 
         Args:
@@ -56,7 +56,7 @@ class UserService:
         """
         return db.query(User).filter(User.id == user_id).first()
 
-    def get_user_by_email(self, db: Session, email: str) -> Optional[User]:
+    def get_user_by_email(self, db: Session, email: str) -> User | None:
         """Get a user by their email address.
 
         Used for authentication lookups and email uniqueness validation.
@@ -81,10 +81,10 @@ class UserService:
         db: Session,
         skip: int = 0,
         limit: int = 100,
-        search: Optional[str] = None,
-        role: Optional[str] = None,
-        is_active: Optional[bool] = None,
-    ) -> tuple[List[User], int]:
+        search: str | None = None,
+        role: str | None = None,
+        is_active: bool | None = None,
+    ) -> tuple[list[User], int]:
         """Get a paginated list of users with optional filtering.
 
         Supports filtering by search term (name/email), role, and active status.
@@ -247,9 +247,11 @@ class UserService:
                     detail="Governance area is required for Validator role.",
                 )
             # Verify governance area exists
-            governance_area = db.query(GovernanceArea).filter(
-                GovernanceArea.id == user_create.validator_area_id
-            ).first()
+            governance_area = (
+                db.query(GovernanceArea)
+                .filter(GovernanceArea.id == user_create.validator_area_id)
+                .first()
+            )
             if not governance_area:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -265,9 +267,7 @@ class UserService:
                     detail="Barangay is required for BLGU User role.",
                 )
             # Verify barangay exists
-            barangay = db.query(Barangay).filter(
-                Barangay.id == user_create.barangay_id
-            ).first()
+            barangay = db.query(Barangay).filter(Barangay.id == user_create.barangay_id).first()
             if not barangay:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -294,9 +294,7 @@ class UserService:
         db.refresh(db_user)
         return db_user
 
-    def update_user(
-        self, db: Session, user_id: int, user_update: UserUpdate
-    ) -> Optional[User]:
+    def update_user(self, db: Session, user_id: int, user_update: UserUpdate) -> User | None:
         """Update user information (regular user update)."""
         db_user = self.get_user_by_id(db, user_id)
         if not db_user:
@@ -321,7 +319,7 @@ class UserService:
 
     def update_user_admin(
         self, db: Session, user_id: int, user_update: UserAdminUpdate
-    ) -> Optional[User]:
+    ) -> User | None:
         """Update user information with admin privileges (can update all fields)."""
         db_user = self.get_user_by_id(db, user_id)
         if not db_user:
@@ -342,9 +340,11 @@ class UserService:
                 )
             # Verify governance area exists if it's being updated
             if "validator_area_id" in update_data and update_data["validator_area_id"]:
-                governance_area = db.query(GovernanceArea).filter(
-                    GovernanceArea.id == update_data["validator_area_id"]
-                ).first()
+                governance_area = (
+                    db.query(GovernanceArea)
+                    .filter(GovernanceArea.id == update_data["validator_area_id"])
+                    .first()
+                )
                 if not governance_area:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
@@ -362,9 +362,9 @@ class UserService:
                 )
             # Verify barangay exists if it's being updated
             if "barangay_id" in update_data and update_data["barangay_id"]:
-                barangay = db.query(Barangay).filter(
-                    Barangay.id == update_data["barangay_id"]
-                ).first()
+                barangay = (
+                    db.query(Barangay).filter(Barangay.id == update_data["barangay_id"]).first()
+                )
                 if not barangay:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
@@ -396,7 +396,7 @@ class UserService:
         db.refresh(db_user)
         return db_user
 
-    def deactivate_user(self, db: Session, user_id: int) -> Optional[User]:
+    def deactivate_user(self, db: Session, user_id: int) -> User | None:
         """Deactivate a user (soft delete)."""
         db_user = self.get_user_by_id(db, user_id)
         if not db_user:
@@ -407,7 +407,7 @@ class UserService:
         db.refresh(db_user)
         return db_user
 
-    def activate_user(self, db: Session, user_id: int) -> Optional[User]:
+    def activate_user(self, db: Session, user_id: int) -> User | None:
         """Activate a user."""
         db_user = self.get_user_by_id(db, user_id)
         if not db_user:
@@ -468,9 +468,7 @@ class UserService:
         db.commit()
         return True
 
-    def reset_password(
-        self, db: Session, user_id: int, new_password: str
-    ) -> Optional[User]:
+    def reset_password(self, db: Session, user_id: int, new_password: str) -> User | None:
         """Reset user password without current password verification (admin function).
 
         This is an admin-only function that bypasses current password verification.

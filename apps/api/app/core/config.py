@@ -3,7 +3,6 @@
 
 import secrets
 import warnings
-from typing import List, Optional
 
 from pydantic import ConfigDict, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings
@@ -67,7 +66,7 @@ class Settings(BaseSettings):
         return v
 
     # CORS
-    BACKEND_CORS_ORIGINS: List[str] = [
+    BACKEND_CORS_ORIGINS: list[str] = [
         # Development
         "http://localhost:3000",
         "http://localhost:3001",
@@ -97,7 +96,7 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_ROLE_KEY: str = ""
 
     # Database (Supabase PostgreSQL)
-    DATABASE_URL: Optional[str] = None
+    DATABASE_URL: str | None = None
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
@@ -123,17 +122,17 @@ class Settings(BaseSettings):
 
     # Email Configuration (for notifications)
     SMTP_TLS: bool = True
-    SMTP_PORT: Optional[int] = None
-    SMTP_HOST: Optional[str] = None
-    SMTP_USER: Optional[str] = None
-    SMTP_PASSWORD: Optional[str] = None
-    EMAILS_FROM_EMAIL: Optional[str] = None
-    EMAILS_FROM_NAME: Optional[str] = None
+    SMTP_PORT: int | None = None
+    SMTP_HOST: str | None = None
+    SMTP_USER: str | None = None
+    SMTP_PASSWORD: str | None = None
+    EMAILS_FROM_EMAIL: str | None = None
+    EMAILS_FROM_NAME: str | None = None
 
     # File Upload
     MAX_FILE_SIZE: int = 100 * 1024 * 1024  # 100MB
     UPLOAD_FOLDER: str = "uploads"
-    ALLOWED_EXTENSIONS: List[str] = [".mov", ".mp4", ".avi", ".mkv"]
+    ALLOWED_EXTENSIONS: list[str] = [".mov", ".mp4", ".avi", ".mkv"]
 
     # Background Tasks (Celery)
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
@@ -144,7 +143,7 @@ class Settings(BaseSettings):
     REDIS_CACHE_URL: str = "redis://localhost:6380/0"
 
     # Gemini AI Configuration
-    GEMINI_API_KEY: Optional[str] = None
+    GEMINI_API_KEY: str | None = None
     REQUIRE_GEMINI: bool = True  # If False, Gemini failures only log warnings
 
     # Environment

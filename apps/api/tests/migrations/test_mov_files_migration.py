@@ -12,7 +12,6 @@ The migration works correctly with Postgres, but test database uses SQLite + Bas
 which requires the MOVFile model to exist.
 """
 
-import pytest
 from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
@@ -55,7 +54,9 @@ class TestMOVFilesMigration:
         # Check foreign keys are not nullable (except uploaded_by)
         assert not columns["assessment_id"]["nullable"], "assessment_id should be NOT NULL"
         assert not columns["indicator_id"]["nullable"], "indicator_id should be NOT NULL"
-        assert columns["uploaded_by"]["nullable"], "uploaded_by should be nullable (for SET NULL on delete)"
+        assert columns["uploaded_by"]["nullable"], (
+            "uploaded_by should be nullable (for SET NULL on delete)"
+        )
 
         # Check file metadata columns
         assert not columns["file_name"]["nullable"], "file_name should be NOT NULL"
@@ -153,7 +154,7 @@ class TestMOVFilesMigration:
         # Query the inserted file
         result = db_session.execute(
             text("SELECT file_name, file_size FROM mov_files WHERE id = :id"),
-            {"id": file_id}
+            {"id": file_id},
         )
         row = result.fetchone()
 
@@ -188,30 +189,25 @@ class TestMOVFilesMigration:
                 VALUES (:assessment_id, 1, 1, 'test.pdf', 'https://example.com/test.pdf', 'application/pdf', 1024)
                 RETURNING id
             """),
-            {"assessment_id": assessment_id}
+            {"assessment_id": assessment_id},
         )
         file_id = result.scalar_one()
         db_session.commit()
 
         # Verify file exists
         result = db_session.execute(
-            text("SELECT COUNT(*) FROM mov_files WHERE id = :id"),
-            {"id": file_id}
+            text("SELECT COUNT(*) FROM mov_files WHERE id = :id"), {"id": file_id}
         )
         count = result.scalar_one()
         assert count == 1, "File should exist before assessment deletion"
 
         # Delete the assessment
-        db_session.execute(
-            text("DELETE FROM assessments WHERE id = :id"),
-            {"id": assessment_id}
-        )
+        db_session.execute(text("DELETE FROM assessments WHERE id = :id"), {"id": assessment_id})
         db_session.commit()
 
         # Verify file was cascade deleted
         result = db_session.execute(
-            text("SELECT COUNT(*) FROM mov_files WHERE id = :id"),
-            {"id": file_id}
+            text("SELECT COUNT(*) FROM mov_files WHERE id = :id"), {"id": file_id}
         )
         count = result.scalar_one()
         assert count == 0, "File should be cascade deleted when assessment is deleted"
@@ -234,8 +230,7 @@ class TestMOVFilesMigration:
 
         # Verify deleted_at is initially NULL
         result = db_session.execute(
-            text("SELECT deleted_at FROM mov_files WHERE id = :id"),
-            {"id": file_id}
+            text("SELECT deleted_at FROM mov_files WHERE id = :id"), {"id": file_id}
         )
         deleted_at = result.scalar_one()
         assert deleted_at is None, "deleted_at should be NULL for new files"
@@ -243,14 +238,13 @@ class TestMOVFilesMigration:
         # Soft delete the file
         db_session.execute(
             text("UPDATE mov_files SET deleted_at = NOW() WHERE id = :id"),
-            {"id": file_id}
+            {"id": file_id},
         )
         db_session.commit()
 
         # Verify deleted_at is now set
         result = db_session.execute(
-            text("SELECT deleted_at FROM mov_files WHERE id = :id"),
-            {"id": file_id}
+            text("SELECT deleted_at FROM mov_files WHERE id = :id"), {"id": file_id}
         )
         deleted_at = result.scalar_one()
         assert deleted_at is not None, "deleted_at should be set after soft delete"

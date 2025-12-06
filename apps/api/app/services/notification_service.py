@@ -3,16 +3,15 @@
 
 import logging
 from datetime import datetime
-from typing import List, Optional, Tuple
 
-from sqlalchemy import and_, func
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.enums import NotificationType, UserRole
-from app.db.models.notification import Notification
-from app.db.models.user import User
 from app.db.models.assessment import Assessment
 from app.db.models.governance_area import GovernanceArea
+from app.db.models.notification import Notification
+from app.db.models.user import User
 from app.schemas.notification import NotificationResponse
 from app.services.email_service import email_service
 
@@ -42,8 +41,8 @@ class NotificationService:
         notification_type: NotificationType,
         title: str,
         message: str,
-        assessment_id: Optional[int] = None,
-        governance_area_id: Optional[int] = None,
+        assessment_id: int | None = None,
+        governance_area_id: int | None = None,
         send_email: bool = True,
     ) -> Notification:
         """
@@ -83,9 +82,7 @@ class NotificationService:
             if recipient and recipient.email:
                 try:
                     # Build email context
-                    context = self._build_email_context(
-                        db, assessment_id, governance_area_id
-                    )
+                    context = self._build_email_context(db, assessment_id, governance_area_id)
 
                     subject, html_body, text_body = email_service.build_notification_email(
                         notification_type=notification_type,
@@ -116,8 +113,8 @@ class NotificationService:
         title: str,
         message: str,
         assessment_id: int,
-        exclude_user_id: Optional[int] = None,
-    ) -> List[Notification]:
+        exclude_user_id: int | None = None,
+    ) -> list[Notification]:
         """
         Send notification to ALL active assessors.
 
@@ -172,7 +169,7 @@ class NotificationService:
         message: str,
         governance_area_id: int,
         assessment_id: int,
-    ) -> List[Notification]:
+    ) -> list[Notification]:
         """
         Send notification to validators assigned to a specific governance area.
 
@@ -188,11 +185,15 @@ class NotificationService:
             List of created Notification objects
         """
         # Get validators for this governance area
-        validators = db.query(User).filter(
-            User.role == UserRole.VALIDATOR,
-            User.validator_area_id == governance_area_id,
-            User.is_active == True,
-        ).all()
+        validators = (
+            db.query(User)
+            .filter(
+                User.role == UserRole.VALIDATOR,
+                User.validator_area_id == governance_area_id,
+                User.is_active == True,
+            )
+            .all()
+        )
 
         notifications = []
         for validator in validators:
@@ -253,7 +254,7 @@ class NotificationService:
         message: str,
         validator_id: int,
         assessment_id: int,
-        governance_area_id: Optional[int] = None,
+        governance_area_id: int | None = None,
     ) -> Notification:
         """
         Send notification to a specific validator (for calibration resubmissions).
@@ -287,7 +288,7 @@ class NotificationService:
         title: str,
         message: str,
         assessment_id: int,
-    ) -> List[Notification]:
+    ) -> list[Notification]:
         """
         Send notification to ALL active MLGOO_DILG users.
 
@@ -304,10 +305,14 @@ class NotificationService:
             List of created Notification objects
         """
         # Get all active MLGOO users
-        mlgoo_users = db.query(User).filter(
-            User.role == UserRole.MLGOO_DILG,
-            User.is_active == True,
-        ).all()
+        mlgoo_users = (
+            db.query(User)
+            .filter(
+                User.role == UserRole.MLGOO_DILG,
+                User.is_active == True,
+            )
+            .all()
+        )
 
         notifications = []
         for user in mlgoo_users:
@@ -336,7 +341,7 @@ class NotificationService:
         skip: int = 0,
         limit: int = 50,
         unread_only: bool = False,
-    ) -> Tuple[List[NotificationResponse], int, int]:
+    ) -> tuple[list[NotificationResponse], int, int]:
         """
         Get notifications for a user with pagination and enriched data.
 
@@ -360,17 +365,18 @@ class NotificationService:
         total = query.count()
 
         # Get unread count (always)
-        unread_count = db.query(Notification).filter(
-            Notification.recipient_id == user_id,
-            Notification.is_read == False,
-        ).count()
+        unread_count = (
+            db.query(Notification)
+            .filter(
+                Notification.recipient_id == user_id,
+                Notification.is_read == False,
+            )
+            .count()
+        )
 
         # Get paginated results ordered by created_at desc
         notifications = (
-            query.order_by(Notification.created_at.desc())
-            .offset(skip)
-            .limit(limit)
-            .all()
+            query.order_by(Notification.created_at.desc()).offset(skip).limit(limit).all()
         )
 
         # Enrich with related data
@@ -380,17 +386,19 @@ class NotificationService:
 
             # Add assessment barangay name
             if notification.assessment_id:
-                assessment = db.query(Assessment).filter(
-                    Assessment.id == notification.assessment_id
-                ).first()
+                assessment = (
+                    db.query(Assessment).filter(Assessment.id == notification.assessment_id).first()
+                )
                 if assessment and assessment.blgu_user and assessment.blgu_user.barangay:
                     response.assessment_barangay_name = assessment.blgu_user.barangay.name
 
             # Add governance area name
             if notification.governance_area_id:
-                area = db.query(GovernanceArea).filter(
-                    GovernanceArea.id == notification.governance_area_id
-                ).first()
+                area = (
+                    db.query(GovernanceArea)
+                    .filter(GovernanceArea.id == notification.governance_area_id)
+                    .first()
+                )
                 if area:
                     response.governance_area_name = area.name
 
@@ -410,10 +418,14 @@ class NotificationService:
         Returns:
             Number of unread notifications
         """
-        return db.query(func.count(Notification.id)).filter(
-            Notification.recipient_id == user_id,
-            Notification.is_read == False,
-        ).scalar()
+        return (
+            db.query(func.count(Notification.id))
+            .filter(
+                Notification.recipient_id == user_id,
+                Notification.is_read == False,
+            )
+            .scalar()
+        )
 
     def get_total_count(self, db: Session, user_id: int) -> int:
         """
@@ -426,13 +438,15 @@ class NotificationService:
         Returns:
             Total number of notifications
         """
-        return db.query(func.count(Notification.id)).filter(
-            Notification.recipient_id == user_id
-        ).scalar()
+        return (
+            db.query(func.count(Notification.id))
+            .filter(Notification.recipient_id == user_id)
+            .scalar()
+        )
 
     def get_notification_by_id(
         self, db: Session, notification_id: int, user_id: int
-    ) -> Optional[Notification]:
+    ) -> Notification | None:
         """
         Get a single notification by ID (with ownership verification).
 
@@ -444,16 +458,18 @@ class NotificationService:
         Returns:
             Notification object or None if not found/not owned
         """
-        return db.query(Notification).filter(
-            Notification.id == notification_id,
-            Notification.recipient_id == user_id,
-        ).first()
+        return (
+            db.query(Notification)
+            .filter(
+                Notification.id == notification_id,
+                Notification.recipient_id == user_id,
+            )
+            .first()
+        )
 
     # ==================== UPDATE METHODS ====================
 
-    def mark_as_read(
-        self, db: Session, user_id: int, notification_ids: List[int]
-    ) -> int:
+    def mark_as_read(self, db: Session, user_id: int, notification_ids: list[int]) -> int:
         """
         Mark specific notifications as read.
 
@@ -465,16 +481,20 @@ class NotificationService:
         Returns:
             Number of notifications marked as read
         """
-        result = db.query(Notification).filter(
-            Notification.id.in_(notification_ids),
-            Notification.recipient_id == user_id,
-            Notification.is_read == False,
-        ).update(
-            {
-                Notification.is_read: True,
-                Notification.read_at: datetime.utcnow(),
-            },
-            synchronize_session=False,
+        result = (
+            db.query(Notification)
+            .filter(
+                Notification.id.in_(notification_ids),
+                Notification.recipient_id == user_id,
+                Notification.is_read == False,
+            )
+            .update(
+                {
+                    Notification.is_read: True,
+                    Notification.read_at: datetime.utcnow(),
+                },
+                synchronize_session=False,
+            )
         )
         db.commit()
         return result
@@ -490,15 +510,19 @@ class NotificationService:
         Returns:
             Number of notifications marked as read
         """
-        result = db.query(Notification).filter(
-            Notification.recipient_id == user_id,
-            Notification.is_read == False,
-        ).update(
-            {
-                Notification.is_read: True,
-                Notification.read_at: datetime.utcnow(),
-            },
-            synchronize_session=False,
+        result = (
+            db.query(Notification)
+            .filter(
+                Notification.recipient_id == user_id,
+                Notification.is_read == False,
+            )
+            .update(
+                {
+                    Notification.is_read: True,
+                    Notification.read_at: datetime.utcnow(),
+                },
+                synchronize_session=False,
+            )
         )
         db.commit()
         return result
@@ -508,8 +532,8 @@ class NotificationService:
     def _build_email_context(
         self,
         db: Session,
-        assessment_id: Optional[int],
-        governance_area_id: Optional[int],
+        assessment_id: int | None,
+        governance_area_id: int | None,
     ) -> dict:
         """
         Build email template context from related entities.
@@ -529,16 +553,12 @@ class NotificationService:
         }
 
         if assessment_id:
-            assessment = db.query(Assessment).filter(
-                Assessment.id == assessment_id
-            ).first()
+            assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
             if assessment and assessment.blgu_user and assessment.blgu_user.barangay:
                 context["barangay_name"] = assessment.blgu_user.barangay.name
 
         if governance_area_id:
-            area = db.query(GovernanceArea).filter(
-                GovernanceArea.id == governance_area_id
-            ).first()
+            area = db.query(GovernanceArea).filter(GovernanceArea.id == governance_area_id).first()
             if area:
                 context["governance_area_name"] = area.name
 

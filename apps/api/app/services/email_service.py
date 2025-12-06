@@ -5,7 +5,6 @@ import logging
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from typing import Dict, Optional, Tuple
 
 from app.core.config import settings
 from app.db.enums import NotificationType
@@ -38,21 +37,23 @@ class EmailService:
         Returns:
             True if all required SMTP settings are present
         """
-        return all([
-            self.smtp_host,
-            self.smtp_port,
-            self.smtp_user,
-            self.smtp_password,
-            self.from_email,
-        ])
+        return all(
+            [
+                self.smtp_host,
+                self.smtp_port,
+                self.smtp_user,
+                self.smtp_password,
+                self.from_email,
+            ]
+        )
 
     def send_email(
         self,
         to_email: str,
         subject: str,
         body_html: str,
-        body_text: Optional[str] = None
-    ) -> Dict[str, any]:
+        body_text: str | None = None,
+    ) -> dict[str, any]:
         """
         Send email via SMTP.
 
@@ -67,11 +68,7 @@ class EmailService:
         """
         if not self.is_configured():
             logger.warning("SMTP not configured, skipping email send")
-            return {
-                "success": False,
-                "error": "SMTP not configured",
-                "skipped": True
-            }
+            return {"success": False, "error": "SMTP not configured", "skipped": True}
 
         try:
             # Create message
@@ -117,8 +114,8 @@ class EmailService:
         self,
         notification_type: NotificationType,
         recipient_name: str,
-        context: Dict[str, any]
-    ) -> Tuple[str, str, str]:
+        context: dict[str, any],
+    ) -> tuple[str, str, str]:
         """
         Build email content for a notification.
 
@@ -142,56 +139,56 @@ class EmailService:
             title=template["title"].format(**context),
             message=template["message"].format(**context),
             cta_text=template.get("cta_text"),
-            cta_url=context.get("cta_url")
+            cta_url=context.get("cta_url"),
         )
 
         # Build plain text body
         text_body = self._build_text_email(
             recipient_name=recipient_name,
             title=template["title"].format(**context),
-            message=template["message"].format(**context)
+            message=template["message"].format(**context),
         )
 
         return subject, html_body, text_body
 
-    def _get_email_templates(self) -> Dict[NotificationType, Dict[str, str]]:
+    def _get_email_templates(self) -> dict[NotificationType, dict[str, str]]:
         """Get email templates for each notification type."""
         return {
             NotificationType.NEW_SUBMISSION: {
                 "subject": "New SGLGB Assessment Submission from {barangay_name}",
                 "title": "New Assessment Submission",
                 "message": "Barangay {barangay_name} has submitted their SGLGB assessment for review. Please log in to the SINAG platform to begin your assessment.",
-                "cta_text": "Review Submission"
+                "cta_text": "Review Submission",
             },
             NotificationType.REWORK_REQUESTED: {
                 "subject": "Action Required: Your SGLGB Assessment Needs Revision",
                 "title": "Assessment Needs Revision",
                 "message": "The assessor has reviewed your submission and requested some revisions. Please log in to see the feedback and make the necessary corrections.",
-                "cta_text": "View Feedback"
+                "cta_text": "View Feedback",
             },
             NotificationType.REWORK_RESUBMITTED: {
                 "subject": "Rework Resubmission from {barangay_name}",
                 "title": "Rework Resubmission Ready",
                 "message": "Barangay {barangay_name} has resubmitted their assessment after addressing the requested revisions. Please review the updated submission.",
-                "cta_text": "Review Resubmission"
+                "cta_text": "Review Resubmission",
             },
             NotificationType.READY_FOR_VALIDATION: {
                 "subject": "Assessment Ready for Final Validation - {governance_area_name}",
                 "title": "Ready for Final Validation",
                 "message": "An assessment for {governance_area_name} is ready for your final validation. The assessor has completed their review for Barangay {barangay_name}.",
-                "cta_text": "Start Validation"
+                "cta_text": "Start Validation",
             },
             NotificationType.CALIBRATION_REQUESTED: {
                 "subject": "Calibration Required: Your SGLGB Assessment",
                 "title": "Calibration Required",
                 "message": "The validator has requested calibration for specific indicators in your assessment. Please log in to see the details and make the necessary corrections.",
-                "cta_text": "View Calibration Details"
+                "cta_text": "View Calibration Details",
             },
             NotificationType.CALIBRATION_RESUBMITTED: {
                 "subject": "Calibration Resubmission from {barangay_name}",
                 "title": "Calibration Resubmission Ready",
                 "message": "Barangay {barangay_name} has resubmitted their assessment after calibration. Please review the updated indicators.",
-                "cta_text": "Review Calibration"
+                "cta_text": "Review Calibration",
             },
         }
 
@@ -200,8 +197,8 @@ class EmailService:
         recipient_name: str,
         title: str,
         message: str,
-        cta_text: Optional[str] = None,
-        cta_url: Optional[str] = None
+        cta_text: str | None = None,
+        cta_url: str | None = None,
     ) -> str:
         """Build HTML email body with DILG branding."""
         cta_button = ""
@@ -216,7 +213,7 @@ class EmailService:
             </tr>
             '''
 
-        return f'''
+        return f"""
 <!DOCTYPE html>
 <html>
 <head>
@@ -263,16 +260,11 @@ class EmailService:
   </table>
 </body>
 </html>
-'''
+"""
 
-    def _build_text_email(
-        self,
-        recipient_name: str,
-        title: str,
-        message: str
-    ) -> str:
+    def _build_text_email(self, recipient_name: str, title: str, message: str) -> str:
         """Build plain text email body."""
-        return f'''
+        return f"""
 SINAG - SGLGB Assessment Platform
 ================================
 
@@ -285,7 +277,7 @@ Dear {recipient_name},
 ---
 This is an automated notification from SINAG. Please do not reply to this email.
 Department of the Interior and Local Government (DILG)
-'''
+"""
 
 
 # Singleton instance

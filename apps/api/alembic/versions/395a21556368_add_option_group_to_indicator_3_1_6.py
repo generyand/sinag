@@ -5,6 +5,7 @@ Revises: cf0d97bf099d
 Create Date: 2025-12-02 18:13:38.214806
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -12,8 +13,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '395a21556368'
-down_revision: Union[str, Sequence[str], None] = 'cf0d97bf099d'
+revision: str = "395a21556368"
+down_revision: Union[str, Sequence[str], None] = "cf0d97bf099d"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -43,7 +44,7 @@ def upgrade() -> None:
                 SET option_group = 'Option 1'
                 WHERE indicator_id = :indicator_id AND item_id = '3_1_6_option_1'
             """),
-            {"indicator_id": indicator_id}
+            {"indicator_id": indicator_id},
         )
 
         # Update checklist item 3_1_6_option_2 to have option_group = "Option 2"
@@ -53,7 +54,7 @@ def upgrade() -> None:
                 SET option_group = 'Option 2'
                 WHERE indicator_id = :indicator_id AND item_id = '3_1_6_option_2'
             """),
-            {"indicator_id": indicator_id}
+            {"indicator_id": indicator_id},
         )
 
 
@@ -74,5 +75,5 @@ def downgrade() -> None:
                 SET option_group = NULL
                 WHERE indicator_id = :indicator_id AND item_id IN ('3_1_6_option_1', '3_1_6_option_2')
             """),
-            {"indicator_id": indicator_id}
+            {"indicator_id": indicator_id},
         )

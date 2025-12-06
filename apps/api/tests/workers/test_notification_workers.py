@@ -2,18 +2,18 @@
 Tests for notification Celery workers (app/workers/notifications.py)
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 from sqlalchemy.orm import Session
 
-from app.db.models.user import User
-from app.db.models.notification import Notification
+from app.core.security import get_password_hash
+from app.db.enums import AreaType, AssessmentStatus, NotificationType, UserRole
 from app.db.models.assessment import Assessment
 from app.db.models.barangay import Barangay
 from app.db.models.governance_area import GovernanceArea
-from app.db.enums import UserRole, NotificationType, AssessmentStatus, AreaType
-from app.core.security import get_password_hash
-
+from app.db.models.notification import Notification
+from app.db.models.user import User
 
 # ====================================================================
 # Test Fixtures
@@ -243,7 +243,9 @@ def test_send_rework_resubmission_notification_success(
     assert len(notifications) >= 1
 
 
-def test_send_rework_resubmission_notification_assessment_not_found(db_session: Session):
+def test_send_rework_resubmission_notification_assessment_not_found(
+    db_session: Session,
+):
     """Test resubmission notification when assessment doesn't exist"""
     from app.workers.notifications import send_rework_resubmission_notification
 
@@ -273,9 +275,7 @@ def test_send_ready_for_validation_notification_success(
     validator_user_id = validator_user.id
 
     with patch("app.workers.notifications.SessionLocal", return_value=db_session):
-        result = send_ready_for_validation_notification(
-            assessment_id, governance_area_id
-        )
+        result = send_ready_for_validation_notification(assessment_id, governance_area_id)
 
     assert result["success"] is True
     assert result["assessment_id"] == assessment_id
@@ -303,9 +303,7 @@ def test_send_ready_for_validation_notification_no_validators(
     governance_area_id = governance_area.id
 
     with patch("app.workers.notifications.SessionLocal", return_value=db_session):
-        result = send_ready_for_validation_notification(
-            assessment_id, governance_area_id
-        )
+        result = send_ready_for_validation_notification(assessment_id, governance_area_id)
 
     # Should succeed but with 0 notifications
     assert result["success"] is True
@@ -382,9 +380,7 @@ def test_send_calibration_resubmission_notification_success(
     validator_user_id = validator_user.id
 
     with patch("app.workers.notifications.SessionLocal", return_value=db_session):
-        result = send_calibration_resubmission_notification(
-            assessment_id, validator_user_id
-        )
+        result = send_calibration_resubmission_notification(assessment_id, validator_user_id)
 
     assert result["success"] is True
     assert result["assessment_id"] == assessment_id

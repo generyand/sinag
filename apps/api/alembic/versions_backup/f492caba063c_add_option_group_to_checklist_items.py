@@ -5,6 +5,7 @@ Revises: bf1d501ee4c3
 Create Date: 2025-11-27 17:07:16.494556
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -12,8 +13,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'f492caba063c'
-down_revision: Union[str, Sequence[str], None] = 'bf1d501ee4c3'
+revision: str = "f492caba063c"
+down_revision: Union[str, Sequence[str], None] = "bf1d501ee4c3"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -21,7 +22,10 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Add option_group column to checklist_items and update indicator 4.8.4."""
     # Add option_group column
-    op.add_column('checklist_items', sa.Column('option_group', sa.String(length=50), nullable=True))
+    op.add_column(
+        "checklist_items",
+        sa.Column("option_group", sa.String(length=50), nullable=True),
+    )
 
     # Update indicator 4.8.4 checklist items with option_group values
     # Option A items
@@ -41,4 +45,4 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Remove option_group column from checklist_items."""
-    op.drop_column('checklist_items', 'option_group')
+    op.drop_column("checklist_items", "option_group")

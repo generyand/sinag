@@ -36,8 +36,7 @@ IMPORTANT NOTES FOR PHASE 9 (VALIDATION SERVICE):
    - Both sub-indicators must pass for overall indicator to pass
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
-
+from app.indicators.base import ChecklistItem, Indicator, SubIndicator
 
 # Indicator 3.5: Barangay Initiatives During Health Emergencies
 INDICATOR_3_5 = Indicator(
@@ -72,7 +71,7 @@ INDICATOR_3_5 = Indicator(
                     mov_description="Verification of uploaded Executive Order or similar issuance organizing the BHERT",
                     item_type="checkbox",
                     required=False,
-                    display_order=1
+                    display_order=1,
                 ),
                 ChecklistItem(
                     id="3_5_1_date_of_approval",
@@ -80,11 +79,10 @@ INDICATOR_3_5 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="date_input",
                     required=False,
-                    display_order=2
+                    display_order=2,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 3.5.2
         SubIndicator(
             code="3.5.2",
@@ -106,7 +104,7 @@ INDICATOR_3_5 = Indicator(
                     required=False,  # OR logic - only one option is required
                     requires_document_count=False,
                     display_order=1,
-                    option_group="Option A"
+                    option_group="Option A",
                 ),
                 # OR Separator
                 ChecklistItem(
@@ -114,7 +112,7 @@ INDICATOR_3_5 = Indicator(
                     label="OR",
                     item_type="info_text",
                     required=False,
-                    display_order=2
+                    display_order=2,
                 ),
                 # Option B: Social Media Screenshot
                 ChecklistItem(
@@ -124,9 +122,9 @@ INDICATOR_3_5 = Indicator(
                     required=False,  # OR logic - only one option is required
                     requires_document_count=False,
                     display_order=3,
-                    option_group="Option B"
+                    option_group="Option B",
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

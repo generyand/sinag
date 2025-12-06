@@ -11,7 +11,6 @@ Remark Structure:
 - Template placeholders: Dynamic values from assessment data
 """
 
-from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 
 
@@ -29,6 +28,7 @@ class ConditionalRemark(BaseModel):
     - {{ score }}: Numeric score (if applicable)
     - {{ status }}: Pass/Fail status
     """
+
     condition: str = Field(
         ...,
         description="Condition when this remark should be used (e.g., 'pass', 'fail')",
@@ -41,7 +41,7 @@ class ConditionalRemark(BaseModel):
         min_length=1,
         max_length=2000,
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         None,
         max_length=500,
         description="Human-readable description of when this remark is used",
@@ -52,7 +52,7 @@ class ConditionalRemark(BaseModel):
             "example": {
                 "condition": "pass",
                 "template": "{{ indicator_name }} has been successfully completed with a score of {{ score }}%.",
-                "description": "Remark for passing assessments"
+                "description": "Remark for passing assessments",
             }
         }
 
@@ -70,7 +70,8 @@ class RemarkSchema(BaseModel):
     3. If no match, use default_template
     4. Render template with assessment data
     """
-    conditional_remarks: List[ConditionalRemark] = Field(
+
+    conditional_remarks: list[ConditionalRemark] = Field(
         default_factory=list,
         description="List of conditional remark templates",
     )
@@ -88,14 +89,14 @@ class RemarkSchema(BaseModel):
                     {
                         "condition": "pass",
                         "template": "Congratulations! {{ indicator_name }} has been successfully completed.",
-                        "description": "Success message"
+                        "description": "Success message",
                     },
                     {
                         "condition": "fail",
                         "template": "{{ indicator_name }} requires improvement. Please review the feedback provided.",
-                        "description": "Failure message"
-                    }
+                        "description": "Failure message",
+                    },
                 ],
-                "default_template": "{{ indicator_name }} assessment is under review."
+                "default_template": "{{ indicator_name }} assessment is under review.",
             }
         }

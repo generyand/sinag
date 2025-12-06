@@ -2,17 +2,18 @@
 # Reusable dependency injection functions for authentication, database sessions, etc.
 
 import logging
-from typing import Generator, Optional
+from collections.abc import Generator
 
-from app.core.security import verify_token, is_token_blacklisted
-from app.db.base import get_db as get_db_session
-from app.db.base import get_supabase, get_supabase_admin
-from app.db.enums import UserRole
-from app.db.models.user import User
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session, joinedload
 from supabase import Client
+
+from app.core.security import is_token_blacklisted, verify_token
+from app.db.base import get_db as get_db_session
+from app.db.base import get_supabase, get_supabase_admin
+from app.db.enums import UserRole
+from app.db.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 security = HTTPBearer()
 
 
-def get_db() -> Generator[Session, None, None]:
+def get_db() -> Generator[Session]:
     """
     Database session dependency.
     Creates a new database session for each request and closes it when done.
@@ -65,7 +66,7 @@ async def get_current_user(
     try:
         # Verify and decode the JWT token
         payload = verify_token(token)
-        user_id: Optional[str] = payload.get("sub")
+        user_id: str | None = payload.get("sub")
         if user_id is None:
             raise credentials_exception
     except Exception:
@@ -95,9 +96,7 @@ async def get_current_active_user(
         HTTPException: If user is inactive
     """
     if not getattr(current_user, "is_active"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
     return current_user
 
 
@@ -179,11 +178,8 @@ async def get_current_validator_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    if (
-        getattr(user_with_area, "role", None) is None
-        or user_with_area.role != UserRole.VALIDATOR
-    ):
-         raise HTTPException(
+    if getattr(user_with_area, "role", None) is None or user_with_area.role != UserRole.VALIDATOR:
+        raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions. Validator access required.",
         )
@@ -332,7 +328,7 @@ async def require_mlgoo_dilg(
     return current_user
 
 
-def get_client_ip(request: Request) -> Optional[str]:
+def get_client_ip(request: Request) -> str | None:
     """
     Extract client IP address from request.
 

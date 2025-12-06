@@ -8,8 +8,7 @@ Note: This indicator assesses the implementation of the Kasambahay Law through
 the establishment of a Kasambahay Desk and maintenance of a Kasambahay Masterlist.
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
-
+from app.indicators.base import ChecklistItem, Indicator, SubIndicator
 
 # Indicator 4.4: Implementation of the Kasambahay Law
 INDICATOR_4_4 = Indicator(
@@ -34,11 +33,10 @@ INDICATOR_4_4 = Indicator(
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) designating a KDO to manage the Kasambahay Desk, signed by the PB, Barangay Secretary and SBMs",
                     required=True,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 4.4.2: Maintenance/updating of a Kasambahay Masterlist
         SubIndicator(
             code="4.4.2",
@@ -55,7 +53,7 @@ INDICATOR_4_4 = Indicator(
                     label="Copy of the Updated Kasambahay Report for the 3rd Quarter",
                     required=True,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
                 ),
                 ChecklistItem(
                     id="4_4_2_count",
@@ -63,9 +61,9 @@ INDICATOR_4_4 = Indicator(
                     mov_description="Please supply the number of documents submitted:",
                     item_type="document_count",
                     required=True,
-                    display_order=2
+                    display_order=2,
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

@@ -5,6 +5,7 @@ Revises: 7f4420e1e7b0
 Create Date: 2025-12-03 21:55:00.000000
 
 """
+
 from typing import Sequence, Union
 import json
 
@@ -13,8 +14,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'ed5f44166ed0'
-down_revision: Union[str, Sequence[str], None] = '7f4420e1e7b0'
+revision: str = "ed5f44166ed0"
+down_revision: Union[str, Sequence[str], None] = "7f4420e1e7b0"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -29,7 +30,7 @@ NOTES = {
         {
             "text": "Barangay officials have the option to submit both the physical and financial reports. However, for the SGLGB Assessment, only one of the documents is required."
         }
-    ]
+    ],
 }
 
 
@@ -44,7 +45,7 @@ def upgrade() -> None:
             SET name = :new_name
             WHERE indicator_code = '4.1.6'
         """),
-        {"new_name": NEW_NAME}
+        {"new_name": NEW_NAME},
     )
 
     # Add notes to form_schema using JSONB merge (preserves all other fields)
@@ -55,7 +56,7 @@ def upgrade() -> None:
             SET form_schema = (form_schema::jsonb || CAST(:notes_json AS jsonb))::json
             WHERE indicator_code = '4.1.6'
         """),
-        {"notes_json": notes_json}
+        {"notes_json": notes_json},
     )
 
 

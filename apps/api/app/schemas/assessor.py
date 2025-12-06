@@ -4,8 +4,9 @@
 from datetime import datetime
 from typing import Any
 
-from app.db.enums import ValidationStatus
 from pydantic import BaseModel
+
+from app.db.enums import ValidationStatus
 
 
 class AssessorQueueItem(BaseModel):
@@ -23,7 +24,9 @@ class AssessorQueueItem(BaseModel):
 class ValidationRequest(BaseModel):
     """Request schema for validating an assessment response."""
 
-    validation_status: ValidationStatus | None = None  # Optional for assessors, required for validators
+    validation_status: ValidationStatus | None = (
+        None  # Optional for assessors, required for validators
+    )
     public_comment: str | None = None
     assessor_remarks: str | None = None
     response_data: dict[str, Any] | None = None  # Allow assessors to update checklist data

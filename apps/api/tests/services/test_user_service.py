@@ -3,15 +3,14 @@ Tests for user service layer (app/services/user_service.py)
 """
 
 import pytest
-from sqlalchemy.orm import Session
 from fastapi import HTTPException
+from sqlalchemy.orm import Session
 
-from app.db.models.user import User
-from app.db.enums import UserRole
-from app.services.user_service import user_service
-from app.schemas.user import UserAdminCreate, UserAdminUpdate, UserUpdate
 from app.core.security import get_password_hash, verify_password
-
+from app.db.enums import UserRole
+from app.db.models.user import User
+from app.schemas.user import UserAdminCreate, UserAdminUpdate, UserUpdate
+from app.services.user_service import user_service
 
 # ====================================================================
 # Test Fixtures
@@ -108,9 +107,7 @@ def test_get_user_by_email_not_found(db_session: Session):
 # ====================================================================
 
 
-def test_get_users_returns_all_users(
-    db_session: Session, sample_user: User, admin_user: User
-):
+def test_get_users_returns_all_users(db_session: Session, sample_user: User, admin_user: User):
     """Test getting list of all users"""
     users, total = user_service.get_users(db_session)
 
@@ -121,9 +118,7 @@ def test_get_users_returns_all_users(
     assert "admin@example.com" in emails
 
 
-def test_get_users_with_pagination(
-    db_session: Session, sample_user: User, admin_user: User
-):
+def test_get_users_with_pagination(db_session: Session, sample_user: User, admin_user: User):
     """Test user list pagination"""
     users, total = user_service.get_users(db_session, skip=0, limit=1)
 
@@ -149,17 +144,13 @@ def test_get_users_with_search_by_email(db_session: Session, admin_user: User):
 
 def test_get_users_with_role_filter(db_session: Session, admin_user: User):
     """Test filtering users by role"""
-    users, total = user_service.get_users(
-        db_session, role=UserRole.MLGOO_DILG.value
-    )
+    users, total = user_service.get_users(db_session, role=UserRole.MLGOO_DILG.value)
 
     assert total >= 1
     assert all(user.role == UserRole.MLGOO_DILG for user in users)
 
 
-def test_get_users_with_active_filter(
-    db_session: Session, sample_user: User, inactive_user: User
-):
+def test_get_users_with_active_filter(db_session: Session, sample_user: User, inactive_user: User):
     """Test filtering users by active status"""
     # Get only active users
     active_users, active_total = user_service.get_users(db_session, is_active=True)
@@ -226,9 +217,7 @@ def test_create_user_admin_success(db_session: Session, mock_barangay):
     assert verify_password("Password123", result.hashed_password)
 
 
-def test_create_user_admin_duplicate_email_raises_error(
-    db_session: Session, sample_user: User
-):
+def test_create_user_admin_duplicate_email_raises_error(db_session: Session, sample_user: User):
     """Test that creating user with duplicate email raises error"""
     user_data = UserAdminCreate(
         email="sample@example.com",  # Duplicate
@@ -244,9 +233,7 @@ def test_create_user_admin_duplicate_email_raises_error(
     assert "Email already registered" in exc_info.value.detail
 
 
-def test_create_user_admin_validator_requires_validator_area(
-    db_session: Session
-):
+def test_create_user_admin_validator_requires_validator_area(db_session: Session):
     """Test that creating Validator requires validator_area_id"""
     user_data = UserAdminCreate(
         email="validator@example.com",
@@ -300,7 +287,9 @@ def test_create_katuparan_center_user_without_assignments(db_session: Session):
     assert result.is_active is True
 
 
-def test_create_katuparan_center_user_clears_assignments(db_session: Session, mock_barangay, mock_governance_area):
+def test_create_katuparan_center_user_clears_assignments(
+    db_session: Session, mock_barangay, mock_governance_area
+):
     """Test that creating Katuparan Center user clears any provided assignments"""
     user_data = UserAdminCreate(
         email="katuparan2@sulop.gov.ph",
@@ -363,9 +352,7 @@ def test_update_user_admin_success(db_session: Session, sample_user: User):
     db_session.commit()
 
     # Just update name without changing role
-    update_data = UserAdminUpdate(
-        name="Admin Updated Name"
-    )
+    update_data = UserAdminUpdate(name="Admin Updated Name")
 
     result = user_service.update_user_admin(db_session, sample_user.id, update_data)
 
@@ -434,7 +421,7 @@ def test_update_user_admin_clears_validator_area_for_non_validator(
 
     update_data = UserAdminUpdate(
         role=UserRole.BLGU_USER,
-        barangay_id=mock_barangay.id  # Required for BLGU_USER role
+        barangay_id=mock_barangay.id,  # Required for BLGU_USER role
     )
 
     result = user_service.update_user_admin(db_session, validator.id, update_data)
@@ -443,9 +430,7 @@ def test_update_user_admin_clears_validator_area_for_non_validator(
     assert result.validator_area_id is None
 
 
-def test_update_user_to_katuparan_center_clears_assignments(
-    db_session: Session, sample_user: User
-):
+def test_update_user_to_katuparan_center_clears_assignments(db_session: Session, sample_user: User):
     """Test that changing to Katuparan Center role clears both assignments"""
     # Give user both assignments
     sample_user.validator_area_id = 1
@@ -515,9 +500,7 @@ def test_change_password_success(db_session: Session, sample_user: User):
     assert sample_user.must_change_password is False
 
 
-def test_change_password_incorrect_current_password(
-    db_session: Session, sample_user: User
-):
+def test_change_password_incorrect_current_password(db_session: Session, sample_user: User):
     """Test changing password with wrong current password fails"""
     result = user_service.change_password(
         db_session, sample_user.id, "wrongpassword", "newpassword456"
@@ -528,18 +511,14 @@ def test_change_password_incorrect_current_password(
 
 def test_change_password_user_not_found(db_session: Session):
     """Test changing password for non-existent user returns False"""
-    result = user_service.change_password(
-        db_session, 99999, "oldpass", "newpass"
-    )
+    result = user_service.change_password(db_session, 99999, "oldpass", "newpass")
 
     assert result is False
 
 
 def test_reset_password_success(db_session: Session, sample_user: User):
     """Test admin resetting user password"""
-    result = user_service.reset_password(
-        db_session, sample_user.id, "resetpassword123"
-    )
+    result = user_service.reset_password(db_session, sample_user.id, "resetpassword123")
 
     assert result is not None
 
@@ -597,9 +576,7 @@ def test_get_user_stats_tracks_password_change_requirement(db_session: Session):
     assert stats["users_need_password_change"] >= 1
 
 
-def test_get_user_stats_users_by_role(
-    db_session: Session, sample_user: User, admin_user: User
-):
+def test_get_user_stats_users_by_role(db_session: Session, sample_user: User, admin_user: User):
     """Test that stats correctly count users by role"""
     stats = user_service.get_user_stats(db_session)
 

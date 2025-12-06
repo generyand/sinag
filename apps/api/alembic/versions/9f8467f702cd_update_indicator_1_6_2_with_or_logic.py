@@ -11,32 +11,33 @@ Updates indicator 1.6.2 to add info_text headers and OR separator:
 - Updates labels to be cleaner (without the condition prefix)
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
 
 # revision identifiers, used by Alembic.
-revision: str = '9f8467f702cd'
-down_revision: Union[str, Sequence[str], None] = 'd29d91428996'
+revision: str = "9f8467f702cd"
+down_revision: Union[str, Sequence[str], None] = "d29d91428996"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
     """Update indicator 1.6.2 checklist items with OR logic headers."""
-    from app.db.models.governance_area import Indicator, ChecklistItem as ChecklistItemModel
+    from app.db.models.governance_area import (
+        Indicator,
+        ChecklistItem as ChecklistItemModel,
+    )
 
     bind = op.get_bind()
     session = Session(bind=bind)
 
     try:
         # Get indicator 1.6.2
-        indicator = session.query(Indicator).filter(
-            Indicator.indicator_code == "1.6.2"
-        ).first()
+        indicator = session.query(Indicator).filter(Indicator.indicator_code == "1.6.2").first()
 
         if not indicator:
             print("Indicator 1.6.2 not found, skipping...")
@@ -59,7 +60,7 @@ def upgrade() -> None:
                 item_type="info_text",
                 required=False,
                 display_order=1,
-                option_group="Option A"
+                option_group="Option A",
             ),
             ChecklistItemModel(
                 indicator_id=indicator.id,
@@ -69,7 +70,7 @@ def upgrade() -> None:
                 mov_description="Approved Resolution for 2023 SK Annual/Supplemental Budget (Required if 5+ SK officials)",
                 required=False,
                 display_order=2,
-                option_group="Option A"
+                option_group="Option A",
             ),
             ChecklistItemModel(
                 indicator_id=indicator.id,
@@ -79,7 +80,7 @@ def upgrade() -> None:
                 mov_description="Approved 2023 ABYIP with signatures of SK Chairperson and members (Required if 5+ SK officials)",
                 required=False,
                 display_order=3,
-                option_group="Option A"
+                option_group="Option A",
             ),
             # OR separator
             ChecklistItemModel(
@@ -88,7 +89,7 @@ def upgrade() -> None:
                 label="OR",
                 item_type="info_text",
                 required=False,
-                display_order=4
+                display_order=4,
             ),
             # Option B: 4 and below SK Officials
             ChecklistItemModel(
@@ -98,7 +99,7 @@ def upgrade() -> None:
                 item_type="info_text",
                 required=False,
                 display_order=5,
-                option_group="Option B"
+                option_group="Option B",
             ),
             ChecklistItemModel(
                 indicator_id=indicator.id,
@@ -108,7 +109,7 @@ def upgrade() -> None:
                 mov_description="Certification from City/Municipal LGOO confirming number of SK officials (Required if 4 or fewer SK officials)",
                 required=False,
                 display_order=6,
-                option_group="Option B"
+                option_group="Option B",
             ),
         ]
 

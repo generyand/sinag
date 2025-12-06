@@ -4,6 +4,7 @@ Test the "3+1" SGLGB compliance rule with comprehensive edge cases
 """
 
 import pytest
+
 from app.db.enums import AreaType, AssessmentStatus, ComplianceStatus, ValidationStatus
 from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.barangay import Barangay
@@ -178,9 +179,7 @@ def test_classification_algorithm(test_data, core_passed, essential_passed, expe
 
     # Essential responses
     for i, indicator in enumerate(essential_indicators):
-        status = (
-            ValidationStatus.PASS if i < essential_passed * 2 else ValidationStatus.FAIL
-        )
+        status = ValidationStatus.PASS if i < essential_passed * 2 else ValidationStatus.FAIL
         response = AssessmentResponse(
             id=response_id,
             assessment_id=assessment.id,

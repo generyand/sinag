@@ -3,10 +3,19 @@
 Tests for analytics service layer - dashboard KPI calculations
 """
 
-import pytest
 from datetime import datetime
-from app.db.enums import ComplianceStatus, UserRole, AreaType
-from app.db.models import Assessment, AssessmentResponse, GovernanceArea, Indicator, User, Barangay
+
+import pytest
+
+from app.db.enums import AreaType, ComplianceStatus, UserRole
+from app.db.models import (
+    Assessment,
+    AssessmentResponse,
+    Barangay,
+    GovernanceArea,
+    Indicator,
+    User,
+)
 from app.services.analytics_service import analytics_service
 
 
@@ -34,7 +43,7 @@ def indicators(db_session, governance_areas):
         for j in range(3):  # 3 indicators per area
             ind = Indicator(
                 id=(i * 3) + j + 1,
-                name=f"{area.name} Indicator {j+1}",
+                name=f"{area.name} Indicator {j + 1}",
                 description=f"Test indicator for {area.name}",
                 form_schema={"type": "object", "properties": {}},
                 governance_area_id=area.id,
@@ -56,7 +65,7 @@ def barangays_with_assessments(db_session, indicators):
 
     for i in range(10):
         # Create barangay
-        barangay = Barangay(name=f"Test Barangay {i+1}")
+        barangay = Barangay(name=f"Test Barangay {i + 1}")
         db_session.add(barangay)
         db_session.commit()
         db_session.refresh(barangay)
@@ -64,8 +73,8 @@ def barangays_with_assessments(db_session, indicators):
 
         # Create user for barangay
         user = User(
-            email=f"blgu{i+1}@test.com",
-            name=f"BLGU User {i+1}",
+            email=f"blgu{i + 1}@test.com",
+            name=f"BLGU User {i + 1}",
             hashed_password="hashed",
             role=UserRole.BLGU_USER,
             barangay_id=barangay.id,
@@ -110,18 +119,20 @@ def barangays_with_assessments(db_session, indicators):
     return barangays, assessments
 
 
-def test_get_dashboard_kpis_with_data(db_session, governance_areas, indicators, barangays_with_assessments):
+def test_get_dashboard_kpis_with_data(
+    db_session, governance_areas, indicators, barangays_with_assessments
+):
     """Test get_dashboard_kpis returns correct data structure with valid data"""
     # Act
     result = analytics_service.get_dashboard_kpis(db_session, cycle_id=None)
 
     # Assert
     assert result is not None
-    assert hasattr(result, 'overall_compliance_rate')
-    assert hasattr(result, 'completion_status')
-    assert hasattr(result, 'area_breakdown')
-    assert hasattr(result, 'top_failed_indicators')
-    assert hasattr(result, 'trends')
+    assert hasattr(result, "overall_compliance_rate")
+    assert hasattr(result, "completion_status")
+    assert hasattr(result, "area_breakdown")
+    assert hasattr(result, "top_failed_indicators")
+    assert hasattr(result, "trends")
 
     # Check overall compliance rate
     assert result.overall_compliance_rate.total_barangays == 10
@@ -134,14 +145,14 @@ def test_calculate_overall_compliance_all_passed(db_session):
     """Test overall compliance calculation when all assessments pass"""
     # Arrange: Create 5 passing assessments
     for i in range(5):
-        barangay = Barangay(name=f"Pass Barangay {i+1}")
+        barangay = Barangay(name=f"Pass Barangay {i + 1}")
         db_session.add(barangay)
         db_session.commit()
         db_session.refresh(barangay)
 
         user = User(
-            email=f"pass{i+1}@test.com",
-            name=f"Pass User {i+1}",
+            email=f"pass{i + 1}@test.com",
+            name=f"Pass User {i + 1}",
             hashed_password="hashed",
             role=UserRole.BLGU_USER,
             barangay_id=barangay.id,
@@ -180,22 +191,28 @@ def test_calculate_overall_compliance_no_assessments(db_session):
     assert result.pass_percentage == 0.0
 
 
-def test_calculate_area_breakdown(db_session, governance_areas, indicators, barangays_with_assessments):
+def test_calculate_area_breakdown(
+    db_session, governance_areas, indicators, barangays_with_assessments
+):
     """Test area breakdown calculation with multiple governance areas"""
     # Act
     result = analytics_service._calculate_area_breakdown(db_session, None)
 
     # Assert
     assert len(result) == 3  # 3 governance areas
-    assert all(hasattr(area, 'area_code') for area in result)
-    assert all(hasattr(area, 'area_name') for area in result)
-    assert all(hasattr(area, 'passed') for area in result)
-    assert all(hasattr(area, 'failed') for area in result)
-    assert all(hasattr(area, 'percentage') for area in result)
+    assert all(hasattr(area, "area_code") for area in result)
+    assert all(hasattr(area, "area_name") for area in result)
+    assert all(hasattr(area, "passed") for area in result)
+    assert all(hasattr(area, "failed") for area in result)
+    assert all(hasattr(area, "percentage") for area in result)
 
     # Check area names match
     area_names = [area.area_name for area in result]
-    expected_names = ["Financial Administration", "Disaster Preparedness", "Social Protection"]
+    expected_names = [
+        "Financial Administration",
+        "Disaster Preparedness",
+        "Social Protection",
+    ]
     for expected in expected_names:
         assert expected in area_names
 
@@ -209,7 +226,9 @@ def test_calculate_area_breakdown_no_areas(db_session):
     assert result == []
 
 
-def test_calculate_top_failed_indicators(db_session, governance_areas, indicators, barangays_with_assessments):
+def test_calculate_top_failed_indicators(
+    db_session, governance_areas, indicators, barangays_with_assessments
+):
     """Test top failed indicators returns max 5 items"""
     # Act
     result = analytics_service._calculate_top_failed_indicators(db_session, None)
@@ -223,10 +242,10 @@ def test_calculate_top_failed_indicators(db_session, governance_areas, indicator
 
         # Each item should have required fields
         for item in result:
-            assert hasattr(item, 'indicator_id')
-            assert hasattr(item, 'indicator_name')
-            assert hasattr(item, 'failure_count')
-            assert hasattr(item, 'percentage')
+            assert hasattr(item, "indicator_id")
+            assert hasattr(item, "indicator_name")
+            assert hasattr(item, "failure_count")
+            assert hasattr(item, "percentage")
             assert item.failure_count > 0
 
 
@@ -274,7 +293,9 @@ def test_calculate_top_failed_indicators_no_failures(db_session, governance_area
     assert result == []
 
 
-def test_calculate_completion_status(db_session, governance_areas, indicators, barangays_with_assessments):
+def test_calculate_completion_status(
+    db_session, governance_areas, indicators, barangays_with_assessments
+):
     """Test completion status calculation"""
     # Act
     result = analytics_service._calculate_completion_status(db_session, None)
@@ -290,14 +311,14 @@ def test_calculate_completion_status_mixed(db_session, governance_areas, indicat
     """Test completion status with mixed validated/in-progress assessments"""
     # Arrange: Create mix of validated and in-progress
     for i in range(5):
-        barangay = Barangay(name=f"Mixed Barangay {i+1}")
+        barangay = Barangay(name=f"Mixed Barangay {i + 1}")
         db_session.add(barangay)
         db_session.commit()
         db_session.refresh(barangay)
 
         user = User(
-            email=f"mixed{i+1}@test.com",
-            name=f"Mixed User {i+1}",
+            email=f"mixed{i + 1}@test.com",
+            name=f"Mixed User {i + 1}",
             hashed_password="hashed",
             role=UserRole.BLGU_USER,
             barangay_id=barangay.id,
@@ -334,14 +355,16 @@ def test_calculate_trends_empty(db_session):
     assert result == []
 
 
-def test_get_dashboard_kpis_cycle_filtering(db_session, governance_areas, indicators, barangays_with_assessments):
+def test_get_dashboard_kpis_cycle_filtering(
+    db_session, governance_areas, indicators, barangays_with_assessments
+):
     """Test that cycle_id parameter is accepted (even if not filtering yet)"""
     # Act - should not crash with cycle_id parameter
     result = analytics_service.get_dashboard_kpis(db_session, cycle_id=1)
 
     # Assert - should return data structure
     assert result is not None
-    assert hasattr(result, 'overall_compliance_rate')
+    assert hasattr(result, "overall_compliance_rate")
 
 
 # =============================================================================
@@ -401,7 +424,9 @@ def blgu_user_test(db_session):
     return user
 
 
-def test_get_reports_data_empty_filters_mlgoo(db_session, governance_areas, indicators, barangays_with_assessments, mlgoo_user):
+def test_get_reports_data_empty_filters_mlgoo(
+    db_session, governance_areas, indicators, barangays_with_assessments, mlgoo_user
+):
     """Test get_reports_data with empty filters returns all accessible data for MLGOO_DILG"""
     from app.services.analytics_service import ReportsFilters
 
@@ -419,10 +444,10 @@ def test_get_reports_data_empty_filters_mlgoo(db_session, governance_areas, indi
 
     # Assert
     assert result is not None
-    assert hasattr(result, 'chart_data')
-    assert hasattr(result, 'map_data')
-    assert hasattr(result, 'table_data')
-    assert hasattr(result, 'metadata')
+    assert hasattr(result, "chart_data")
+    assert hasattr(result, "map_data")
+    assert hasattr(result, "table_data")
+    assert hasattr(result, "metadata")
 
     # Should have data from all 10 barangays
     assert result.table_data.total_count == 10
@@ -436,7 +461,9 @@ def test_get_reports_data_empty_filters_mlgoo(db_session, governance_areas, indi
     assert len(result.map_data.barangays) > 0
 
 
-def test_get_reports_data_with_status_filter(db_session, governance_areas, indicators, barangays_with_assessments, mlgoo_user):
+def test_get_reports_data_with_status_filter(
+    db_session, governance_areas, indicators, barangays_with_assessments, mlgoo_user
+):
     """Test get_reports_data filters by status correctly"""
     from app.services.analytics_service import ReportsFilters
 
@@ -462,10 +489,13 @@ def test_get_reports_data_with_status_filter(db_session, governance_areas, indic
         assert row.status == "Pass"
 
 
-def test_get_reports_data_with_date_range_filter(db_session, governance_areas, indicators, barangays_with_assessments, mlgoo_user):
+def test_get_reports_data_with_date_range_filter(
+    db_session, governance_areas, indicators, barangays_with_assessments, mlgoo_user
+):
     """Test get_reports_data filters by date range"""
-    from app.services.analytics_service import ReportsFilters
     from datetime import date
+
+    from app.services.analytics_service import ReportsFilters
 
     # Arrange - filter for specific date range
     # Assessments in fixture have validated_at = 2024-01-01
@@ -495,7 +525,9 @@ def test_get_reports_data_with_date_range_filter(db_session, governance_areas, i
     assert len(result.table_data.rows) == 1
 
 
-def test_get_reports_data_rbac_mlgoo_sees_all(db_session, governance_areas, indicators, barangays_with_assessments, mlgoo_user):
+def test_get_reports_data_rbac_mlgoo_sees_all(
+    db_session, governance_areas, indicators, barangays_with_assessments, mlgoo_user
+):
     """Test RBAC: MLGOO_DILG user sees all data"""
     from app.services.analytics_service import ReportsFilters
 
@@ -515,7 +547,9 @@ def test_get_reports_data_rbac_mlgoo_sees_all(db_session, governance_areas, indi
     assert result.table_data.total_count == 10
 
 
-def test_get_reports_data_rbac_blgu_sees_own_only(db_session, governance_areas, indicators, blgu_user_test):
+def test_get_reports_data_rbac_blgu_sees_own_only(
+    db_session, governance_areas, indicators, blgu_user_test
+):
     """Test RBAC: BLGU user sees only their own barangay"""
     from app.services.analytics_service import ReportsFilters
 
@@ -544,7 +578,9 @@ def test_get_reports_data_rbac_blgu_sees_own_only(db_session, governance_areas, 
     assert result.table_data.rows[0].barangay_id == blgu_user_test.barangay_id
 
 
-def test_get_reports_data_chart_structure(db_session, governance_areas, indicators, barangays_with_assessments, mlgoo_user):
+def test_get_reports_data_chart_structure(
+    db_session, governance_areas, indicators, barangays_with_assessments, mlgoo_user
+):
     """Test chart data aggregation returns correct structure"""
     from app.services.analytics_service import ReportsFilters
 
@@ -564,29 +600,31 @@ def test_get_reports_data_chart_structure(db_session, governance_areas, indicato
     chart_data = result.chart_data
 
     # Bar chart data
-    assert hasattr(chart_data, 'bar_chart')
+    assert hasattr(chart_data, "bar_chart")
     assert len(chart_data.bar_chart) == 3  # 3 governance areas
     for bar in chart_data.bar_chart:
-        assert hasattr(bar, 'area_code')
-        assert hasattr(bar, 'area_name')
-        assert hasattr(bar, 'passed')
-        assert hasattr(bar, 'failed')
-        assert hasattr(bar, 'pass_percentage')
+        assert hasattr(bar, "area_code")
+        assert hasattr(bar, "area_name")
+        assert hasattr(bar, "passed")
+        assert hasattr(bar, "failed")
+        assert hasattr(bar, "pass_percentage")
 
     # Pie chart data
-    assert hasattr(chart_data, 'pie_chart')
+    assert hasattr(chart_data, "pie_chart")
     assert len(chart_data.pie_chart) > 0
     for pie in chart_data.pie_chart:
-        assert hasattr(pie, 'status')
-        assert hasattr(pie, 'count')
-        assert hasattr(pie, 'percentage')
+        assert hasattr(pie, "status")
+        assert hasattr(pie, "count")
+        assert hasattr(pie, "percentage")
         assert pie.status in ["Pass", "Fail", "In Progress"]
 
     # Line chart data
-    assert hasattr(chart_data, 'line_chart')
+    assert hasattr(chart_data, "line_chart")
 
 
-def test_get_reports_data_map_includes_coordinates(db_session, governance_areas, indicators, barangays_with_assessments, mlgoo_user):
+def test_get_reports_data_map_includes_coordinates(
+    db_session, governance_areas, indicators, barangays_with_assessments, mlgoo_user
+):
     """Test map data includes coordinates for barangays"""
     from app.services.analytics_service import ReportsFilters
 
@@ -610,20 +648,22 @@ def test_get_reports_data_map_includes_coordinates(db_session, governance_areas,
 
     # Assert map data structure
     map_data = result.map_data
-    assert hasattr(map_data, 'barangays')
+    assert hasattr(map_data, "barangays")
     assert len(map_data.barangays) > 0
 
     for point in map_data.barangays:
-        assert hasattr(point, 'barangay_id')
-        assert hasattr(point, 'name')
-        assert hasattr(point, 'lat')  # May be None if not set
-        assert hasattr(point, 'lng')  # May be None if not set
-        assert hasattr(point, 'status')
-        assert hasattr(point, 'score')
+        assert hasattr(point, "barangay_id")
+        assert hasattr(point, "name")
+        assert hasattr(point, "lat")  # May be None if not set
+        assert hasattr(point, "lng")  # May be None if not set
+        assert hasattr(point, "status")
+        assert hasattr(point, "score")
         assert point.status in ["Pass", "Fail", "In Progress"]
 
 
-def test_get_reports_data_pagination_page_1(db_session, governance_areas, indicators, barangays_with_assessments, mlgoo_user):
+def test_get_reports_data_pagination_page_1(
+    db_session, governance_areas, indicators, barangays_with_assessments, mlgoo_user
+):
     """Test table data pagination - page 1"""
     from app.services.analytics_service import ReportsFilters
 
@@ -646,7 +686,9 @@ def test_get_reports_data_pagination_page_1(db_session, governance_areas, indica
     assert len(result.table_data.rows) == 5  # Only 5 rows on page 1
 
 
-def test_get_reports_data_pagination_page_2(db_session, governance_areas, indicators, barangays_with_assessments, mlgoo_user):
+def test_get_reports_data_pagination_page_2(
+    db_session, governance_areas, indicators, barangays_with_assessments, mlgoo_user
+):
     """Test table data pagination - page 2"""
     from app.services.analytics_service import ReportsFilters
 
@@ -669,7 +711,9 @@ def test_get_reports_data_pagination_page_2(db_session, governance_areas, indica
     assert len(result.table_data.rows) == 5  # Only 5 rows on page 2
 
 
-def test_get_reports_data_pagination_last_page(db_session, governance_areas, indicators, barangays_with_assessments, mlgoo_user):
+def test_get_reports_data_pagination_last_page(
+    db_session, governance_areas, indicators, barangays_with_assessments, mlgoo_user
+):
     """Test table data pagination - last page with fewer rows"""
     from app.services.analytics_service import ReportsFilters
 
@@ -692,7 +736,9 @@ def test_get_reports_data_pagination_last_page(db_session, governance_areas, ind
     assert len(result.table_data.rows) == 3  # Only 3 rows remaining on page 2
 
 
-def test_get_reports_data_combined_filters(db_session, governance_areas, indicators, barangays_with_assessments, mlgoo_user):
+def test_get_reports_data_combined_filters(
+    db_session, governance_areas, indicators, barangays_with_assessments, mlgoo_user
+):
     """Test get_reports_data with multiple filters combined"""
     from app.services.analytics_service import ReportsFilters
 
@@ -715,7 +761,9 @@ def test_get_reports_data_combined_filters(db_session, governance_areas, indicat
     assert all(row.status == "Fail" for row in result.table_data.rows)
 
 
-def test_get_reports_data_table_row_structure(db_session, governance_areas, indicators, barangays_with_assessments, mlgoo_user):
+def test_get_reports_data_table_row_structure(
+    db_session, governance_areas, indicators, barangays_with_assessments, mlgoo_user
+):
     """Test table data rows have correct structure"""
     from app.services.analytics_service import ReportsFilters
 
@@ -733,21 +781,24 @@ def test_get_reports_data_table_row_structure(db_session, governance_areas, indi
 
     # Assert row structure
     for row in result.table_data.rows:
-        assert hasattr(row, 'barangay_id')
-        assert hasattr(row, 'barangay_name')
-        assert hasattr(row, 'governance_area')
-        assert hasattr(row, 'status')
-        assert hasattr(row, 'score')
+        assert hasattr(row, "barangay_id")
+        assert hasattr(row, "barangay_name")
+        assert hasattr(row, "governance_area")
+        assert hasattr(row, "status")
+        assert hasattr(row, "score")
         assert row.status in ["Pass", "Fail", "In Progress"]
         # Score should be between 0 and 100 if present
         if row.score is not None:
             assert 0 <= row.score <= 100
 
 
-def test_get_reports_data_metadata_structure(db_session, governance_areas, indicators, barangays_with_assessments, mlgoo_user):
+def test_get_reports_data_metadata_structure(
+    db_session, governance_areas, indicators, barangays_with_assessments, mlgoo_user
+):
     """Test metadata structure in reports response"""
-    from app.services.analytics_service import ReportsFilters
     from datetime import date
+
+    from app.services.analytics_service import ReportsFilters
 
     # Arrange
     filters = ReportsFilters(
@@ -768,11 +819,11 @@ def test_get_reports_data_metadata_structure(db_session, governance_areas, indic
 
     # Assert metadata
     metadata = result.metadata
-    assert hasattr(metadata, 'generated_at')
-    assert hasattr(metadata, 'cycle_id')
-    assert hasattr(metadata, 'start_date')
-    assert hasattr(metadata, 'end_date')
-    assert hasattr(metadata, 'status')
+    assert hasattr(metadata, "generated_at")
+    assert hasattr(metadata, "cycle_id")
+    assert hasattr(metadata, "start_date")
+    assert hasattr(metadata, "end_date")
+    assert hasattr(metadata, "status")
 
     # Check filter values are reflected in metadata
     assert metadata.cycle_id == 1

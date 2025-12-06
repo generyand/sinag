@@ -7,14 +7,13 @@ import pytest
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from app.db.models.user import User
-from app.db.models.governance_area import GovernanceArea
-from app.db.models.barangay import Barangay
-from app.db.enums import UserRole
-from app.services.user_service import user_service
-from app.schemas.user import UserAdminCreate, UserAdminUpdate
 from app.core.security import get_password_hash
-
+from app.db.enums import UserRole
+from app.db.models.barangay import Barangay
+from app.db.models.governance_area import GovernanceArea
+from app.db.models.user import User
+from app.schemas.user import UserAdminCreate, UserAdminUpdate
+from app.services.user_service import user_service
 
 # ====================================================================
 # Test Fixtures
@@ -95,9 +94,7 @@ class TestCreateUserFKValidation:
         assert result.role == UserRole.VALIDATOR
         assert result.validator_area_id == governance_area.id
 
-    def test_create_validator_with_nonexistent_governance_area(
-        self, db_session: Session
-    ):
+    def test_create_validator_with_nonexistent_governance_area(self, db_session: Session):
         """Test creating VALIDATOR with non-existent governance area fails."""
         user_data = UserAdminCreate(
             email="validator@example.com",
@@ -113,9 +110,7 @@ class TestCreateUserFKValidation:
         assert exc_info.value.status_code == 400
         assert "Governance area with ID 99999 does not exist" in exc_info.value.detail
 
-    def test_create_blgu_user_with_valid_barangay(
-        self, db_session: Session, barangay: Barangay
-    ):
+    def test_create_blgu_user_with_valid_barangay(self, db_session: Session, barangay: Barangay):
         """Test creating BLGU_USER with existing barangay succeeds."""
         user_data = UserAdminCreate(
             email="blgu@example.com",
@@ -131,9 +126,7 @@ class TestCreateUserFKValidation:
         assert result.role == UserRole.BLGU_USER
         assert result.barangay_id == barangay.id
 
-    def test_create_blgu_user_with_nonexistent_barangay(
-        self, db_session: Session
-    ):
+    def test_create_blgu_user_with_nonexistent_barangay(self, db_session: Session):
         """Test creating BLGU_USER with non-existent barangay fails."""
         user_data = UserAdminCreate(
             email="blgu@example.com",
@@ -149,9 +142,7 @@ class TestCreateUserFKValidation:
         assert exc_info.value.status_code == 400
         assert "Barangay with ID 99999 does not exist" in exc_info.value.detail
 
-    def test_create_assessor_does_not_validate_fks(
-        self, db_session: Session
-    ):
+    def test_create_assessor_does_not_validate_fks(self, db_session: Session):
         """Test creating ASSESSOR ignores FK assignments (no validation needed)."""
         user_data = UserAdminCreate(
             email="assessor@example.com",
@@ -168,9 +159,7 @@ class TestCreateUserFKValidation:
         assert result.validator_area_id is None
         assert result.barangay_id is None
 
-    def test_create_mlgoo_dilg_does_not_validate_fks(
-        self, db_session: Session
-    ):
+    def test_create_mlgoo_dilg_does_not_validate_fks(self, db_session: Session):
         """Test creating MLGOO_DILG ignores FK assignments (no validation needed)."""
         user_data = UserAdminCreate(
             email="admin@example.com",
@@ -335,9 +324,7 @@ class TestUpdateUserFKValidation:
         assert exc_info.value.status_code == 400
         assert "Barangay with ID 99999 does not exist" in exc_info.value.detail
 
-    def test_update_barangay_with_valid_id(
-        self, db_session: Session, sample_user: User
-    ):
+    def test_update_barangay_with_valid_id(self, db_session: Session, sample_user: User):
         """Test updating barangay_id with existing barangay succeeds."""
         # Create another barangay
         new_barangay = Barangay(
@@ -355,9 +342,7 @@ class TestUpdateUserFKValidation:
         assert result is not None
         assert result.barangay_id == new_barangay.id
 
-    def test_update_barangay_with_nonexistent_id(
-        self, db_session: Session, sample_user: User
-    ):
+    def test_update_barangay_with_nonexistent_id(self, db_session: Session, sample_user: User):
         """Test updating barangay_id with non-existent barangay fails."""
         update_data = UserAdminUpdate(barangay_id=99999)
 
@@ -395,9 +380,7 @@ class TestFKValidationEdgeCases:
         assert exc_info.value.status_code == 400
         assert "Governance area is required" in exc_info.value.detail
 
-    def test_blgu_user_without_barangay_initially(
-        self, db_session: Session
-    ):
+    def test_blgu_user_without_barangay_initially(self, db_session: Session):
         """Test that barangay_id requirement is checked at service level."""
         # This should fail at service level (BLGU_USER requires barangay)
         user_data = UserAdminCreate(

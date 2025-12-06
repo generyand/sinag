@@ -8,7 +8,6 @@ Tests verify that the assessment status enum migration:
 - Downgrade correctly handles status updates
 """
 
-import pytest
 from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
@@ -49,7 +48,7 @@ class TestAssessmentStatusMigration:
         enum_values = [row[0] for row in result.fetchall()]
 
         # Check new Epic 5.0 values
-        new_values = ['DRAFT', 'SUBMITTED', 'IN_REVIEW', 'REWORK', 'COMPLETED']
+        new_values = ["DRAFT", "SUBMITTED", "IN_REVIEW", "REWORK", "COMPLETED"]
         for value in new_values:
             assert value in enum_values, f"Enum value '{value}' should exist"
 
@@ -69,7 +68,7 @@ class TestAssessmentStatusMigration:
         enum_values = [row[0] for row in result.fetchall()]
 
         # Check legacy values are preserved
-        legacy_values = ['SUBMITTED_FOR_REVIEW', 'VALIDATED', 'NEEDS_REWORK']
+        legacy_values = ["SUBMITTED_FOR_REVIEW", "VALIDATED", "NEEDS_REWORK"]
         for value in legacy_values:
             assert value in enum_values, f"Legacy enum value '{value}' should be preserved"
 
@@ -87,7 +86,7 @@ class TestAssessmentStatusMigration:
 
     def test_insert_assessment_with_new_status_values(self, db_session: Session):
         """Test that assessments table accepts all new status enum values."""
-        new_statuses = ['DRAFT', 'SUBMITTED', 'IN_REVIEW', 'REWORK', 'COMPLETED']
+        new_statuses = ["DRAFT", "SUBMITTED", "IN_REVIEW", "REWORK", "COMPLETED"]
 
         created_ids = []
 
@@ -99,7 +98,7 @@ class TestAssessmentStatusMigration:
                     VALUES (1, :status)
                     RETURNING id
                 """),
-                {"status": status}
+                {"status": status},
             )
             assessment_id = result.scalar_one()
             created_ids.append(assessment_id)
@@ -108,7 +107,7 @@ class TestAssessmentStatusMigration:
             # Verify the status was set correctly
             result = db_session.execute(
                 text("SELECT status FROM assessments WHERE id = :id"),
-                {"id": assessment_id}
+                {"id": assessment_id},
             )
             stored_status = result.scalar_one()
 
@@ -117,14 +116,13 @@ class TestAssessmentStatusMigration:
         # Cleanup
         for assessment_id in created_ids:
             db_session.execute(
-                text("DELETE FROM assessments WHERE id = :id"),
-                {"id": assessment_id}
+                text("DELETE FROM assessments WHERE id = :id"), {"id": assessment_id}
             )
         db_session.commit()
 
     def test_insert_assessment_with_legacy_status_values(self, db_session: Session):
         """Test that assessments table still accepts legacy status values."""
-        legacy_statuses = ['SUBMITTED_FOR_REVIEW', 'VALIDATED', 'NEEDS_REWORK']
+        legacy_statuses = ["SUBMITTED_FOR_REVIEW", "VALIDATED", "NEEDS_REWORK"]
 
         created_ids = []
 
@@ -136,7 +134,7 @@ class TestAssessmentStatusMigration:
                     VALUES (1, :status)
                     RETURNING id
                 """),
-                {"status": status}
+                {"status": status},
             )
             assessment_id = result.scalar_one()
             created_ids.append(assessment_id)
@@ -145,7 +143,7 @@ class TestAssessmentStatusMigration:
             # Verify the status was set correctly
             result = db_session.execute(
                 text("SELECT status FROM assessments WHERE id = :id"),
-                {"id": assessment_id}
+                {"id": assessment_id},
             )
             stored_status = result.scalar_one()
 
@@ -154,8 +152,7 @@ class TestAssessmentStatusMigration:
         # Cleanup
         for assessment_id in created_ids:
             db_session.execute(
-                text("DELETE FROM assessments WHERE id = :id"),
-                {"id": assessment_id}
+                text("DELETE FROM assessments WHERE id = :id"), {"id": assessment_id}
             )
         db_session.commit()
 
@@ -175,73 +172,65 @@ class TestAssessmentStatusMigration:
         # Workflow step 1: DRAFT → SUBMITTED
         db_session.execute(
             text("UPDATE assessments SET status = 'SUBMITTED' WHERE id = :id"),
-            {"id": assessment_id}
+            {"id": assessment_id},
         )
         db_session.commit()
 
         result = db_session.execute(
-            text("SELECT status FROM assessments WHERE id = :id"),
-            {"id": assessment_id}
+            text("SELECT status FROM assessments WHERE id = :id"), {"id": assessment_id}
         )
-        assert result.scalar_one() == 'SUBMITTED'
+        assert result.scalar_one() == "SUBMITTED"
 
         # Workflow step 2: SUBMITTED → REWORK
         db_session.execute(
             text("UPDATE assessments SET status = 'REWORK' WHERE id = :id"),
-            {"id": assessment_id}
+            {"id": assessment_id},
         )
         db_session.commit()
 
         result = db_session.execute(
-            text("SELECT status FROM assessments WHERE id = :id"),
-            {"id": assessment_id}
+            text("SELECT status FROM assessments WHERE id = :id"), {"id": assessment_id}
         )
-        assert result.scalar_one() == 'REWORK'
+        assert result.scalar_one() == "REWORK"
 
         # Workflow step 3: REWORK → SUBMITTED (resubmission)
         db_session.execute(
             text("UPDATE assessments SET status = 'SUBMITTED' WHERE id = :id"),
-            {"id": assessment_id}
+            {"id": assessment_id},
         )
         db_session.commit()
 
         result = db_session.execute(
-            text("SELECT status FROM assessments WHERE id = :id"),
-            {"id": assessment_id}
+            text("SELECT status FROM assessments WHERE id = :id"), {"id": assessment_id}
         )
-        assert result.scalar_one() == 'SUBMITTED'
+        assert result.scalar_one() == "SUBMITTED"
 
         # Workflow step 4: SUBMITTED → IN_REVIEW
         db_session.execute(
             text("UPDATE assessments SET status = 'IN_REVIEW' WHERE id = :id"),
-            {"id": assessment_id}
+            {"id": assessment_id},
         )
         db_session.commit()
 
         result = db_session.execute(
-            text("SELECT status FROM assessments WHERE id = :id"),
-            {"id": assessment_id}
+            text("SELECT status FROM assessments WHERE id = :id"), {"id": assessment_id}
         )
-        assert result.scalar_one() == 'IN_REVIEW'
+        assert result.scalar_one() == "IN_REVIEW"
 
         # Workflow step 5: IN_REVIEW → COMPLETED
         db_session.execute(
             text("UPDATE assessments SET status = 'COMPLETED' WHERE id = :id"),
-            {"id": assessment_id}
+            {"id": assessment_id},
         )
         db_session.commit()
 
         result = db_session.execute(
-            text("SELECT status FROM assessments WHERE id = :id"),
-            {"id": assessment_id}
+            text("SELECT status FROM assessments WHERE id = :id"), {"id": assessment_id}
         )
-        assert result.scalar_one() == 'COMPLETED'
+        assert result.scalar_one() == "COMPLETED"
 
         # Cleanup
-        db_session.execute(
-            text("DELETE FROM assessments WHERE id = :id"),
-            {"id": assessment_id}
-        )
+        db_session.execute(text("DELETE FROM assessments WHERE id = :id"), {"id": assessment_id})
         db_session.commit()
 
     def test_downgrade_resets_new_statuses_to_draft(self, db_session: Session):
@@ -252,7 +241,7 @@ class TestAssessmentStatusMigration:
         which updates all new statuses to DRAFT rather than removing enum values.
         """
         # Create assessments with new status values
-        new_statuses = ['SUBMITTED', 'IN_REVIEW', 'REWORK', 'COMPLETED']
+        new_statuses = ["SUBMITTED", "IN_REVIEW", "REWORK", "COMPLETED"]
         created_ids = []
 
         for status in new_statuses:
@@ -262,7 +251,7 @@ class TestAssessmentStatusMigration:
                     VALUES (1, :status)
                     RETURNING id
                 """),
-                {"status": status}
+                {"status": status},
             )
             assessment_id = result.scalar_one()
             created_ids.append((assessment_id, status))
@@ -282,16 +271,17 @@ class TestAssessmentStatusMigration:
         for assessment_id, original_status in created_ids:
             result = db_session.execute(
                 text("SELECT status FROM assessments WHERE id = :id"),
-                {"id": assessment_id}
+                {"id": assessment_id},
             )
             status = result.scalar_one()
-            assert status == 'DRAFT', f"Assessment with original status '{original_status}' should be DRAFT after downgrade simulation"
+            assert status == "DRAFT", (
+                f"Assessment with original status '{original_status}' should be DRAFT after downgrade simulation"
+            )
 
         # Cleanup
         for assessment_id, _ in created_ids:
             db_session.execute(
-                text("DELETE FROM assessments WHERE id = :id"),
-                {"id": assessment_id}
+                text("DELETE FROM assessments WHERE id = :id"), {"id": assessment_id}
             )
         db_session.commit()
 
@@ -310,4 +300,6 @@ class TestAssessmentStatusMigration:
 
         # Expected: 5 new values + 3 legacy values = 8 total
         expected_count = 8
-        assert count == expected_count, f"Should have {expected_count} total enum values (5 new + 3 legacy)"
+        assert count == expected_count, (
+            f"Should have {expected_count} total enum values (5 new + 3 legacy)"
+        )

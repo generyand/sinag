@@ -2,7 +2,6 @@
 # Pydantic models for notification-related API requests and responses
 
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -15,8 +14,8 @@ class NotificationBase(BaseModel):
     notification_type: NotificationType
     title: str = Field(..., max_length=255)
     message: str
-    assessment_id: Optional[int] = None
-    governance_area_id: Optional[int] = None
+    assessment_id: int | None = None
+    governance_area_id: int | None = None
 
 
 class NotificationCreate(NotificationBase):
@@ -35,15 +34,15 @@ class NotificationResponse(BaseModel):
     notification_type: NotificationType
     title: str
     message: str
-    assessment_id: Optional[int] = None
-    governance_area_id: Optional[int] = None
+    assessment_id: int | None = None
+    governance_area_id: int | None = None
     is_read: bool
-    read_at: Optional[datetime] = None
+    read_at: datetime | None = None
     created_at: datetime
 
     # Enriched fields for frontend display (populated by service)
-    assessment_barangay_name: Optional[str] = None
-    governance_area_name: Optional[str] = None
+    assessment_barangay_name: str | None = None
+    governance_area_name: str | None = None
 
 
 class NotificationListResponse(BaseModel):

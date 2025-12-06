@@ -9,13 +9,12 @@ Tests file access control and authorization:
 - Assessment-level file access control
 """
 
-import pytest
 from io import BytesIO
+
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
-from typing import Dict
 
-from app.db.models.assessment import Assessment, MOVFile
+from app.db.models.assessment import Assessment
 from app.db.models.governance_area import Indicator
 from app.db.models.user import User
 
@@ -28,7 +27,7 @@ class TestCrossUserFileAccess:
     def test_blgu_cannot_access_other_blgu_file(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_blgu_user: User,
         db_session: Session,
         test_indicator: Indicator,
@@ -43,6 +42,7 @@ class TestCrossUserFileAccess:
         """
         # Create second BLGU user
         import uuid
+
         from app.db.enums import UserRole
 
         user_b_email = f"blgu_b_{uuid.uuid4().hex[:8]}@example.com"
@@ -97,9 +97,7 @@ class TestCrossUserFileAccess:
 
                 # Now User A (auth_headers_blgu) attempts to access User B's file
                 # Attempt 1: Access via API endpoint
-                access_response = client.get(
-                    f"/api/v1/movs/{file_id}", headers=auth_headers_blgu
-                )
+                access_response = client.get(f"/api/v1/movs/{file_id}", headers=auth_headers_blgu)
 
                 # Should be forbidden
                 assert access_response.status_code in [403, 404]
@@ -115,8 +113,8 @@ class TestCrossUserFileAccess:
     def test_assessor_cannot_access_other_assessment_files(
         self,
         client: TestClient,
-        auth_headers_assessor: Dict[str, str],
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_assessor: dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
         db_session: Session,
@@ -143,9 +141,7 @@ class TestCrossUserFileAccess:
             file_id = file_data.get("id")
 
             # Assessor (not assigned to this assessment) attempts access
-            access_response = client.get(
-                f"/api/v1/movs/{file_id}", headers=auth_headers_assessor
-            )
+            access_response = client.get(f"/api/v1/movs/{file_id}", headers=auth_headers_assessor)
 
             # Should check if assessor is assigned to this assessment
             # May be 403 or 200 depending on assignment
@@ -154,8 +150,8 @@ class TestCrossUserFileAccess:
     def test_validator_can_access_assigned_area_files(
         self,
         client: TestClient,
-        auth_headers_validator: Dict[str, str],
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_validator: dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
         test_validator_user: User,
@@ -188,9 +184,7 @@ class TestCrossUserFileAccess:
             file_id = file_data.get("id")
 
             # Validator accesses file
-            access_response = client.get(
-                f"/api/v1/movs/{file_id}", headers=auth_headers_validator
-            )
+            access_response = client.get(f"/api/v1/movs/{file_id}", headers=auth_headers_validator)
 
             # Validator should have access if assigned to governance area
             # assert access_response.status_code in [200, 403]
@@ -198,8 +192,8 @@ class TestCrossUserFileAccess:
     def test_mlgoo_admin_can_access_all_files(
         self,
         client: TestClient,
-        auth_headers_mlgoo: Dict[str, str],
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_mlgoo: dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
     ):
@@ -225,9 +219,7 @@ class TestCrossUserFileAccess:
             file_id = file_data.get("id")
 
             # MLGOO admin accesses file
-            access_response = client.get(
-                f"/api/v1/movs/{file_id}", headers=auth_headers_mlgoo
-            )
+            access_response = client.get(f"/api/v1/movs/{file_id}", headers=auth_headers_mlgoo)
 
             # Admin should have access
             assert access_response.status_code in [200, 404]
@@ -241,7 +233,7 @@ class TestDirectURLAccess:
     def test_cannot_access_file_via_direct_storage_url(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
     ):
@@ -296,7 +288,7 @@ class TestAssessmentLevelFileAccess:
     def test_cannot_access_file_from_different_assessment(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_blgu_user: User,
         test_indicator: Indicator,
         db_session: Session,
@@ -352,7 +344,7 @@ class TestFileListingAuthorization:
     def test_list_files_only_shows_authorized_files(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
     ):
         """
@@ -380,7 +372,7 @@ class TestFileListingAuthorization:
     def test_unauthorized_user_gets_empty_file_list(
         self,
         client: TestClient,
-        auth_headers_assessor: Dict[str, str],
+        auth_headers_assessor: dict[str, str],
         test_draft_assessment: Assessment,
     ):
         """
@@ -412,7 +404,7 @@ class TestFileMetadataProtection:
     def test_file_metadata_does_not_leak_storage_path(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         test_indicator: Indicator,
     ):

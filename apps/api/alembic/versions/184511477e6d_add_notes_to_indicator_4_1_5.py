@@ -5,6 +5,7 @@ Revises: ca5f6c4af14d
 Create Date: 2025-12-03 21:45:00.000000
 
 """
+
 from typing import Sequence, Union
 import json
 
@@ -13,8 +14,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '184511477e6d'
-down_revision: Union[str, Sequence[str], None] = 'ca5f6c4af14d'
+revision: str = "184511477e6d"
+down_revision: Union[str, Sequence[str], None] = "ca5f6c4af14d"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -25,9 +26,12 @@ NOTES = {
     "items": [
         {"label": "a)", "text": "total number of VAW cases received"},
         {"label": "   -", "text": "number of cases documented for violating RA 9262"},
-        {"label": "   -", "text": "number of cases documented for violating other VAW-related laws"},
-        {"label": "b)", "text": "assistance provided to victim-survivors"}
-    ]
+        {
+            "label": "   -",
+            "text": "number of cases documented for violating other VAW-related laws",
+        },
+        {"label": "b)", "text": "assistance provided to victim-survivors"},
+    ],
 }
 
 
@@ -43,7 +47,7 @@ def upgrade() -> None:
             SET form_schema = (form_schema::jsonb || CAST(:notes_json AS jsonb))::json
             WHERE indicator_code = '4.1.5'
         """),
-        {"notes_json": notes_json}
+        {"notes_json": notes_json},
     )
 
 

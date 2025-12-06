@@ -9,8 +9,7 @@ barangay clearance not covered by DILG MC No. 2019-177 (such as: residency, indi
 within seven (7) working days.
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
-
+from app.indicators.base import ChecklistItem, Indicator, SubIndicator
 
 # Indicator 5.3: Issuance of Barangay Clearance not covered by DILG MC No. 2019-177
 INDICATOR_5_3 = Indicator(
@@ -38,9 +37,9 @@ INDICATOR_5_3 = Indicator(
                     label="Photo documentation of the Citizens' Charter on the issuance of barangay clearance only (name of the barangay should be visible)",
                     mov_description="Verification of uploaded photo documentation of the Citizens' Charter on the issuance of barangay clearance only",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

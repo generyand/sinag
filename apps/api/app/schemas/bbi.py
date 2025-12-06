@@ -2,11 +2,11 @@
 # Pydantic models for BBI-related API requests and responses
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from app.db.enums import BBIStatus
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.db.enums import BBIStatus
 
 # ============================================================================
 # BBI Schemas
@@ -18,14 +18,14 @@ class BBIBase(BaseModel):
 
     name: str = Field(..., description="BBI name")
     abbreviation: str = Field(..., description="BBI abbreviation")
-    description: Optional[str] = Field(None, description="BBI description")
+    description: str | None = Field(None, description="BBI description")
     governance_area_id: int = Field(..., description="ID of the governance area")
 
 
 class BBICreate(BBIBase):
     """Schema for creating a new BBI."""
 
-    mapping_rules: Optional[Dict[str, Any]] = Field(
+    mapping_rules: dict[str, Any] | None = Field(
         None,
         description="JSON mapping rules for BBI functionality calculation",
     )
@@ -34,10 +34,10 @@ class BBICreate(BBIBase):
 class BBIUpdate(BaseModel):
     """Schema for updating BBI information."""
 
-    name: Optional[str] = Field(None, description="BBI name")
-    abbreviation: Optional[str] = Field(None, description="BBI abbreviation")
-    description: Optional[str] = Field(None, description="BBI description")
-    mapping_rules: Optional[Dict[str, Any]] = Field(
+    name: str | None = Field(None, description="BBI name")
+    abbreviation: str | None = Field(None, description="BBI abbreviation")
+    description: str | None = Field(None, description="BBI description")
+    mapping_rules: dict[str, Any] | None = Field(
         None,
         description="JSON mapping rules for BBI functionality calculation",
     )
@@ -50,7 +50,7 @@ class BBIResponse(BBIBase):
 
     id: int
     is_active: bool
-    mapping_rules: Optional[Dict[str, Any]] = None
+    mapping_rules: dict[str, Any] | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -81,23 +81,21 @@ class BBIResultResponse(BBIResultBase):
 
     id: int
     # New compliance fields (DILG MC 2024-417)
-    compliance_percentage: Optional[float] = Field(
-        None, description="Compliance rate 0-100%"
-    )
-    compliance_rating: Optional[str] = Field(
+    compliance_percentage: float | None = Field(None, description="Compliance rate 0-100%")
+    compliance_rating: str | None = Field(
         None,
         description="3-tier rating: HIGHLY_FUNCTIONAL, MODERATELY_FUNCTIONAL, LOW_FUNCTIONAL",
     )
-    sub_indicators_passed: Optional[int] = Field(
+    sub_indicators_passed: int | None = Field(
         None, description="Number of sub-indicators that passed"
     )
-    sub_indicators_total: Optional[int] = Field(
+    sub_indicators_total: int | None = Field(
         None, description="Total number of sub-indicators evaluated"
     )
-    sub_indicator_results: Optional[List[Dict[str, Any]]] = Field(
+    sub_indicator_results: list[dict[str, Any]] | None = Field(
         None, description="Detailed pass/fail results for each sub-indicator"
     )
-    calculation_details: Optional[Dict[str, Any]] = None
+    calculation_details: dict[str, Any] | None = None
     calculation_date: datetime
 
 
@@ -118,10 +116,11 @@ class SubIndicatorResult(BaseModel):
     code: str = Field(..., description="Sub-indicator code (e.g., '2.1.1')")
     name: str = Field(..., description="Sub-indicator name (e.g., 'Structure')")
     passed: bool = Field(..., description="Whether the sub-indicator passed")
-    validation_rule: Optional[str] = Field(
-        None, description="Validation rule used (ALL_ITEMS_REQUIRED or ANY_ITEM_REQUIRED)"
+    validation_rule: str | None = Field(
+        None,
+        description="Validation rule used (ALL_ITEMS_REQUIRED or ANY_ITEM_REQUIRED)",
     )
-    checklist_summary: Optional[Dict[str, Any]] = Field(
+    checklist_summary: dict[str, Any] | None = Field(
         None, description="Summary of checklist item results"
     )
 
@@ -135,22 +134,16 @@ class BBIComplianceResult(BaseModel):
     bbi_name: str = Field(..., description="BBI name")
     bbi_abbreviation: str = Field(..., description="BBI abbreviation (indicator code)")
     governance_area_id: int = Field(..., description="Governance area ID")
-    governance_area_name: Optional[str] = Field(None, description="Governance area name")
+    governance_area_name: str | None = Field(None, description="Governance area name")
     assessment_id: int = Field(..., description="Assessment ID")
-    compliance_percentage: float = Field(
-        ..., description="Compliance rate 0-100%"
-    )
+    compliance_percentage: float = Field(..., description="Compliance rate 0-100%")
     compliance_rating: str = Field(
         ...,
         description="3-tier rating: HIGHLY_FUNCTIONAL, MODERATELY_FUNCTIONAL, LOW_FUNCTIONAL",
     )
-    sub_indicators_passed: int = Field(
-        ..., description="Number of sub-indicators that passed"
-    )
-    sub_indicators_total: int = Field(
-        ..., description="Total number of sub-indicators evaluated"
-    )
-    sub_indicator_results: List[SubIndicatorResult] = Field(
+    sub_indicators_passed: int = Field(..., description="Number of sub-indicators that passed")
+    sub_indicators_total: int = Field(..., description="Total number of sub-indicators evaluated")
+    sub_indicator_results: list[SubIndicatorResult] = Field(
         ..., description="Detailed pass/fail results for each sub-indicator"
     )
     calculation_date: datetime
@@ -166,9 +159,7 @@ class BBIComplianceSummary(BaseModel):
     moderately_functional_count: int = Field(
         ..., description="Number of BBIs with MODERATELY_FUNCTIONAL rating"
     )
-    low_functional_count: int = Field(
-        ..., description="Number of BBIs with LOW_FUNCTIONAL rating"
-    )
+    low_functional_count: int = Field(..., description="Number of BBIs with LOW_FUNCTIONAL rating")
     average_compliance_percentage: float = Field(
         ..., description="Average compliance percentage across all BBIs"
     )
@@ -178,14 +169,12 @@ class AssessmentBBIComplianceResponse(BaseModel):
     """Complete BBI compliance response for an assessment."""
 
     assessment_id: int = Field(..., description="Assessment ID")
-    barangay_id: Optional[int] = Field(None, description="Barangay ID")
-    barangay_name: Optional[str] = Field(None, description="Barangay name")
-    bbi_results: List[BBIComplianceResult] = Field(
+    barangay_id: int | None = Field(None, description="Barangay ID")
+    barangay_name: str | None = Field(None, description="Barangay name")
+    bbi_results: list[BBIComplianceResult] = Field(
         ..., description="Compliance results for each BBI"
     )
-    summary: BBIComplianceSummary = Field(
-        ..., description="Summary statistics for BBI compliance"
-    )
+    summary: BBIComplianceSummary = Field(..., description="Summary statistics for BBI compliance")
     calculated_at: datetime = Field(..., description="When the compliance was calculated")
 
 
@@ -211,11 +200,11 @@ class GovernanceAreaSummary(BaseModel):
 class TestBBICalculationRequest(BaseModel):
     """Request schema for testing BBI calculation logic."""
 
-    mapping_rules: Dict[str, Any] = Field(
+    mapping_rules: dict[str, Any] = Field(
         ...,
         description="Mapping rules to test",
     )
-    indicator_statuses: Dict[int, str] = Field(
+    indicator_statuses: dict[int, str] = Field(
         ...,
         description="Sample indicator statuses (indicator_id -> Pass/Fail)",
     )
@@ -228,7 +217,7 @@ class TestBBICalculationResponse(BaseModel):
         ...,
         description="Predicted BBI status based on test inputs",
     )
-    evaluation_details: Dict[str, Any] = Field(
+    evaluation_details: dict[str, Any] = Field(
         ...,
         description="Details of how the calculation was performed",
     )

@@ -8,8 +8,7 @@ Note: This indicator assesses the barangay's power to levy taxes, fees, or charg
 pursuant to Section 129 of the Local Government Code.
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
-
+from app.indicators.base import ChecklistItem, Indicator, SubIndicator
 
 # Indicator 5.1: Power to Levy Other Taxes, Fees or Charges
 INDICATOR_5_1 = Indicator(
@@ -34,9 +33,9 @@ INDICATOR_5_1 = Indicator(
                     label="Enacted Barangay Tax Ordinance signed by the PB, Barangay Secretary and SBMs",
                     mov_description="Verification of uploaded Enacted Barangay Tax Ordinance signed by the PB, Barangay Secretary and SBMs",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

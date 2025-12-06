@@ -2,19 +2,25 @@
 Tests for BBI API endpoints (app/api/v1/bbis.py)
 """
 
-import pytest
 import uuid
+
+import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
 from passlib.context import CryptContext
+from sqlalchemy.orm import Session
 
-from app.db.models.user import User
-from app.db.models.governance_area import GovernanceArea, Indicator
-from app.db.models.bbi import BBI, BBIResult
-from app.db.models.assessment import Assessment, AssessmentResponse
-from app.db.enums import UserRole, AreaType, BBIStatus, ValidationStatus, AssessmentStatus
 from app.api import deps
-
+from app.db.enums import (
+    AreaType,
+    AssessmentStatus,
+    BBIStatus,
+    UserRole,
+    ValidationStatus,
+)
+from app.db.models.assessment import Assessment, AssessmentResponse
+from app.db.models.bbi import BBI, BBIResult
+from app.db.models.governance_area import GovernanceArea, Indicator
+from app.db.models.user import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -103,6 +109,7 @@ def sample_bbi(db_session: Session, governance_area: GovernanceArea):
 
 def _override_admin(client, user: User, db_session: Session):
     """Override authentication and database dependencies for admin users"""
+
     def _override_current_active_user():
         return user
 
@@ -122,7 +129,12 @@ def _override_admin(client, user: User, db_session: Session):
 # ====================================================================
 
 
-def test_create_bbi_success(client: TestClient, db_session: Session, admin_user: User, governance_area: GovernanceArea):
+def test_create_bbi_success(
+    client: TestClient,
+    db_session: Session,
+    admin_user: User,
+    governance_area: GovernanceArea,
+):
     """Test successful BBI creation"""
     _override_admin(client, admin_user, db_session)
 
@@ -159,7 +171,11 @@ def test_create_bbi_unauthorized(client: TestClient):
 
 
 def test_create_bbi_duplicate_name(
-    client: TestClient, db_session: Session, admin_user: User, sample_bbi: BBI, governance_area: GovernanceArea
+    client: TestClient,
+    db_session: Session,
+    admin_user: User,
+    sample_bbi: BBI,
+    governance_area: GovernanceArea,
 ):
     """Test BBI creation with duplicate name"""
     _override_admin(client, admin_user, db_session)
@@ -177,7 +193,9 @@ def test_create_bbi_duplicate_name(
     assert "already exists" in response.json()["detail"].lower()
 
 
-def test_create_bbi_invalid_governance_area(client: TestClient, db_session: Session, admin_user: User):
+def test_create_bbi_invalid_governance_area(
+    client: TestClient, db_session: Session, admin_user: User
+):
     """Test BBI creation with invalid governance area"""
     _override_admin(client, admin_user, db_session)
 
@@ -198,7 +216,9 @@ def test_create_bbi_invalid_governance_area(client: TestClient, db_session: Sess
 # ====================================================================
 
 
-def test_list_bbis_success(client: TestClient, db_session: Session, admin_user: User, sample_bbi: BBI):
+def test_list_bbis_success(
+    client: TestClient, db_session: Session, admin_user: User, sample_bbi: BBI
+):
     """Test listing all BBIs"""
     _override_admin(client, admin_user, db_session)
 
@@ -213,7 +233,11 @@ def test_list_bbis_success(client: TestClient, db_session: Session, admin_user: 
 
 
 def test_list_bbis_filter_by_governance_area(
-    client: TestClient, db_session: Session, admin_user: User, sample_bbi: BBI, governance_area: GovernanceArea
+    client: TestClient,
+    db_session: Session,
+    admin_user: User,
+    sample_bbi: BBI,
+    governance_area: GovernanceArea,
 ):
     """Test listing BBIs filtered by governance area"""
     _override_admin(client, admin_user, db_session)
@@ -239,7 +263,10 @@ def test_list_bbis_filter_by_active_status(
 
 
 def test_list_bbis_pagination(
-    client: TestClient, db_session: Session, admin_user: User, governance_area: GovernanceArea
+    client: TestClient,
+    db_session: Session,
+    admin_user: User,
+    governance_area: GovernanceArea,
 ):
     """Test BBI list pagination"""
     _override_admin(client, admin_user, db_session)
@@ -272,7 +299,9 @@ def test_list_bbis_pagination(
 # ====================================================================
 
 
-def test_get_bbi_success(client: TestClient, db_session: Session, admin_user: User, sample_bbi: BBI):
+def test_get_bbi_success(
+    client: TestClient, db_session: Session, admin_user: User, sample_bbi: BBI
+):
     """Test getting BBI details"""
     _override_admin(client, admin_user, db_session)
 
@@ -299,7 +328,9 @@ def test_get_bbi_not_found(client: TestClient, db_session: Session, admin_user: 
 # ====================================================================
 
 
-def test_update_bbi_success(client: TestClient, db_session: Session, admin_user: User, sample_bbi: BBI):
+def test_update_bbi_success(
+    client: TestClient, db_session: Session, admin_user: User, sample_bbi: BBI
+):
     """Test successful BBI update"""
     _override_admin(client, admin_user, db_session)
 
@@ -369,7 +400,9 @@ def test_update_bbi_mapping_rules(
 # ====================================================================
 
 
-def test_deactivate_bbi_success(client: TestClient, db_session: Session, admin_user: User, sample_bbi: BBI):
+def test_deactivate_bbi_success(
+    client: TestClient, db_session: Session, admin_user: User, sample_bbi: BBI
+):
     """Test successful BBI deactivation"""
     _override_admin(client, admin_user, db_session)
 
@@ -529,7 +562,9 @@ def test_get_bbi_results_success(
     assert data[0]["status"] == "FUNCTIONAL"
 
 
-def test_get_bbi_results_no_results(client: TestClient, db_session: Session, admin_user: User, mock_blgu_user):
+def test_get_bbi_results_no_results(
+    client: TestClient, db_session: Session, admin_user: User, mock_blgu_user
+):
     """Test getting BBI results for assessment with no results"""
     _override_admin(client, admin_user, db_session)
 
@@ -573,7 +608,9 @@ def bbi_indicator(db_session: Session, governance_area: GovernanceArea):
 
 
 @pytest.fixture
-def bbi_sub_indicators(db_session: Session, bbi_indicator: Indicator, governance_area: GovernanceArea):
+def bbi_sub_indicators(
+    db_session: Session, bbi_indicator: Indicator, governance_area: GovernanceArea
+):
     """Create sub-indicators for the BBI indicator"""
     sub_indicators = []
     for i, name in enumerate(["Structure", "Meetings", "Plans"], start=1):
@@ -750,6 +787,7 @@ def test_calculate_assessment_bbi_compliance_unauthorized(
     client: TestClient, db_session: Session, mock_blgu_user
 ):
     """Test that calculate compliance requires admin privileges"""
+
     # Override with non-admin user
     def _override_regular_user():
         return mock_blgu_user

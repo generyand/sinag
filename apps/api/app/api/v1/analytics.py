@@ -2,16 +2,16 @@
 # Endpoints for analytics and dashboard data
 
 from datetime import date
-from typing import List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import status as http_status
+from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.db.enums import UserRole
 from app.db.models.user import User
 from app.schemas.analytics import DashboardKPIResponse, ReportsDataResponse
 from app.services.analytics_service import ReportsFilters, analytics_service
-from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi import status as http_status
-from sqlalchemy.orm import Session
 
 router = APIRouter()
 
@@ -117,7 +117,7 @@ async def get_current_mlgoo_dilg_user(
     },
 )
 async def get_dashboard(
-    cycle_id: Optional[int] = Query(
+    cycle_id: int | None = Query(
         None,
         description="Assessment cycle ID (defaults to latest cycle if not provided)",
     ),
@@ -196,7 +196,11 @@ async def get_dashboard(
                             "pie_chart": [
                                 {"status": "Pass", "count": 30, "percentage": 60.0},
                                 {"status": "Fail", "count": 15, "percentage": 30.0},
-                                {"status": "In Progress", "count": 5, "percentage": 10.0},
+                                {
+                                    "status": "In Progress",
+                                    "count": 5,
+                                    "percentage": 10.0,
+                                },
                             ],
                             "line_chart": [
                                 {
@@ -251,32 +255,32 @@ async def get_dashboard(
     },
 )
 async def get_reports(
-    cycle_id: Optional[int] = Query(
+    cycle_id: int | None = Query(
         None,
         description="Filter by assessment cycle ID",
         examples=[1],
     ),
-    start_date: Optional[date] = Query(
+    start_date: date | None = Query(
         None,
         description="Filter by start date (inclusive)",
         examples=["2025-01-01"],
     ),
-    end_date: Optional[date] = Query(
+    end_date: date | None = Query(
         None,
         description="Filter by end date (inclusive)",
         examples=["2025-12-31"],
     ),
-    governance_area: Optional[List[str]] = Query(
+    governance_area: list[str] | None = Query(
         None,
         description="Filter by governance area codes (e.g., 'GA-1', 'GA-2'). Can specify multiple.",
         examples=[["GA-1", "GA-2"]],
     ),
-    barangay_id: Optional[List[int]] = Query(
+    barangay_id: list[int] | None = Query(
         None,
         description="Filter by barangay IDs. Can specify multiple.",
         examples=[[1, 2, 3]],
     ),
-    status: Optional[str] = Query(
+    status: str | None = Query(
         None,
         description="Filter by assessment status",
         examples=["Pass"],

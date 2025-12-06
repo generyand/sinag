@@ -4,17 +4,16 @@
 
 import logging
 from collections import Counter
-from datetime import datetime, UTC
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
 
-from sqlalchemy import func, case, and_
+from sqlalchemy import and_, case, func
 from sqlalchemy.orm import Session, joinedload
 
+from app.db.enums import AreaType, AssessmentStatus, ComplianceStatus, ValidationStatus
 from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.barangay import Barangay
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
-from app.db.enums import AssessmentStatus, ComplianceStatus, ValidationStatus, AreaType
 from app.schemas.municipal_insights import (
     AggregatedCapDevSummary,
     BarangayAssessmentStatus,
@@ -41,7 +40,7 @@ class MunicipalAnalyticsService:
     def get_compliance_summary(
         self,
         db: Session,
-        assessment_cycle: Optional[str] = None,
+        assessment_cycle: str | None = None,
     ) -> MunicipalComplianceSummary:
         """
         Get municipal-wide compliance summary statistics.
@@ -57,20 +56,16 @@ class MunicipalAnalyticsService:
         total_barangays = db.query(func.count(Barangay.id)).scalar() or 0
 
         # Base query for completed assessments
-        base_query = db.query(Assessment).filter(
-            Assessment.status == AssessmentStatus.COMPLETED
-        )
+        base_query = db.query(Assessment).filter(Assessment.status == AssessmentStatus.COMPLETED)
 
         # Get completed assessments with compliance status
         completed_assessments = base_query.all()
 
         passed_count = sum(
-            1 for a in completed_assessments
-            if a.final_compliance_status == ComplianceStatus.PASSED
+            1 for a in completed_assessments if a.final_compliance_status == ComplianceStatus.PASSED
         )
         failed_count = sum(
-            1 for a in completed_assessments
-            if a.final_compliance_status == ComplianceStatus.FAILED
+            1 for a in completed_assessments if a.final_compliance_status == ComplianceStatus.FAILED
         )
         assessed_count = len(completed_assessments)
 
@@ -98,12 +93,8 @@ class MunicipalAnalyticsService:
         )
 
         # Calculate rates
-        compliance_rate = (
-            (passed_count / assessed_count * 100) if assessed_count > 0 else 0.0
-        )
-        assessment_rate = (
-            (assessed_count / total_barangays * 100) if total_barangays > 0 else 0.0
-        )
+        compliance_rate = (passed_count / assessed_count * 100) if assessed_count > 0 else 0.0
+        assessment_rate = (assessed_count / total_barangays * 100) if total_barangays > 0 else 0.0
 
         return MunicipalComplianceSummary(
             total_barangays=total_barangays,
@@ -119,7 +110,7 @@ class MunicipalAnalyticsService:
     def get_governance_area_performance(
         self,
         db: Session,
-        assessment_cycle: Optional[str] = None,
+        assessment_cycle: str | None = None,
     ) -> GovernanceAreaPerformanceList:
         """
         Get performance breakdown by governance area.
@@ -136,9 +127,7 @@ class MunicipalAnalyticsService:
 
         # Get completed assessments
         completed_assessments = (
-            db.query(Assessment)
-            .filter(Assessment.status == AssessmentStatus.COMPLETED)
-            .all()
+            db.query(Assessment).filter(Assessment.status == AssessmentStatus.COMPLETED).all()
         )
 
         if not completed_assessments:
@@ -149,8 +138,9 @@ class MunicipalAnalyticsService:
                     name=ga.name,
                     area_type=ga.area_type.value if ga.area_type else "CORE",
                     total_indicators=db.query(func.count(Indicator.id))
-                        .filter(Indicator.governance_area_id == ga.id)
-                        .scalar() or 0,
+                    .filter(Indicator.governance_area_id == ga.id)
+                    .scalar()
+                    or 0,
                     passed_count=0,
                     failed_count=0,
                     pass_rate=0.0,
@@ -190,14 +180,10 @@ class MunicipalAnalyticsService:
                         failed_count += 1
 
             total_assessed = passed_count + failed_count
-            pass_rate = (
-                (passed_count / total_assessed * 100) if total_assessed > 0 else 0.0
-            )
+            pass_rate = (passed_count / total_assessed * 100) if total_assessed > 0 else 0.0
 
             # Collect common weaknesses from CapDev insights
-            common_weaknesses = self._extract_area_weaknesses(
-                db, ga.id, completed_assessments
-            )
+            common_weaknesses = self._extract_area_weaknesses(db, ga.id, completed_assessments)
 
             area_performance = GovernanceAreaPerformance(
                 id=ga.id,
@@ -220,9 +206,7 @@ class MunicipalAnalyticsService:
         # Calculate average pass rates
         core_avg = sum(core_pass_rates) / len(core_pass_rates) if core_pass_rates else 0.0
         essential_avg = (
-            sum(essential_pass_rates) / len(essential_pass_rates)
-            if essential_pass_rates
-            else 0.0
+            sum(essential_pass_rates) / len(essential_pass_rates) if essential_pass_rates else 0.0
         )
 
         return GovernanceAreaPerformanceList(
@@ -235,8 +219,8 @@ class MunicipalAnalyticsService:
         self,
         db: Session,
         governance_area_id: int,
-        assessments: List[Assessment],
-    ) -> List[str]:
+        assessments: list[Assessment],
+    ) -> list[str]:
         """Extract common weaknesses for a governance area from CapDev insights."""
         weaknesses = []
 
@@ -269,7 +253,7 @@ class MunicipalAnalyticsService:
         self,
         db: Session,
         limit: int = 10,
-        assessment_cycle: Optional[str] = None,
+        assessment_cycle: str | None = None,
     ) -> TopFailingIndicatorsList:
         """
         Get the most frequently failed indicators.
@@ -288,8 +272,11 @@ class MunicipalAnalyticsService:
                 AssessmentResponse.indicator_id,
                 func.count(
                     case(
-                        (AssessmentResponse.validation_status == ValidationStatus.FAIL, 1),
-                        else_=None
+                        (
+                            AssessmentResponse.validation_status == ValidationStatus.FAIL,
+                            1,
+                        ),
+                        else_=None,
                     )
                 ).label("fail_count"),
                 func.count(AssessmentResponse.id).label("total_count"),
@@ -300,17 +287,26 @@ class MunicipalAnalyticsService:
             .having(
                 func.count(
                     case(
-                        (AssessmentResponse.validation_status == ValidationStatus.FAIL, 1),
-                        else_=None
+                        (
+                            AssessmentResponse.validation_status == ValidationStatus.FAIL,
+                            1,
+                        ),
+                        else_=None,
                     )
-                ) > 0
-            )
-            .order_by(func.count(
-                case(
-                    (AssessmentResponse.validation_status == ValidationStatus.FAIL, 1),
-                    else_=None
                 )
-            ).desc())
+                > 0
+            )
+            .order_by(
+                func.count(
+                    case(
+                        (
+                            AssessmentResponse.validation_status == ValidationStatus.FAIL,
+                            1,
+                        ),
+                        else_=None,
+                    )
+                ).desc()
+            )
             .limit(limit)
             .all()
         )
@@ -346,7 +342,9 @@ class MunicipalAnalyticsService:
                     indicator_id=indicator.id,
                     indicator_code=indicator.indicator_code or f"IND-{indicator.id}",
                     indicator_name=indicator.name,
-                    governance_area=indicator.governance_area.name if indicator.governance_area else "Unknown",
+                    governance_area=indicator.governance_area.name
+                    if indicator.governance_area
+                    else "Unknown",
                     governance_area_id=indicator.governance_area_id,
                     fail_count=fail_count,
                     total_assessed=total_count,
@@ -365,7 +363,7 @@ class MunicipalAnalyticsService:
         db: Session,
         indicator_id: int,
         limit: int = 5,
-    ) -> List[str]:
+    ) -> list[str]:
         """Extract common issues from assessor remarks for an indicator."""
         # Get failed responses with remarks
         failed_responses = (
@@ -390,7 +388,7 @@ class MunicipalAnalyticsService:
     def get_aggregated_capdev_summary(
         self,
         db: Session,
-        assessment_cycle: Optional[str] = None,
+        assessment_cycle: str | None = None,
     ) -> AggregatedCapDevSummary:
         """
         Get aggregated capacity development summary across all completed assessments.
@@ -419,7 +417,7 @@ class MunicipalAnalyticsService:
 
         # Aggregate recommendations
         all_recommendations = []
-        all_weaknesses_by_area: Dict[str, List[str]] = {}
+        all_weaknesses_by_area: dict[str, list[str]] = {}
         all_interventions = []
         all_skills = []
 
@@ -438,12 +436,14 @@ class MunicipalAnalyticsService:
             # Aggregate recommendations
             for rec in insights.get("recommendations", []):
                 if isinstance(rec, dict) and rec.get("title"):
-                    all_recommendations.append({
-                        "title": rec.get("title"),
-                        "description": rec.get("description", ""),
-                        "priority": rec.get("priority", "medium"),
-                        "governance_area": rec.get("governance_area"),
-                    })
+                    all_recommendations.append(
+                        {
+                            "title": rec.get("title"),
+                            "description": rec.get("description", ""),
+                            "priority": rec.get("priority", "medium"),
+                            "governance_area": rec.get("governance_area"),
+                        }
+                    )
 
             # Aggregate weaknesses by area
             for weakness in insights.get("governance_weaknesses", []):
@@ -458,12 +458,14 @@ class MunicipalAnalyticsService:
             # Aggregate interventions
             for intervention in insights.get("suggested_interventions", []):
                 if isinstance(intervention, dict) and intervention.get("title"):
-                    all_interventions.append({
-                        "type": intervention.get("intervention_type", "training"),
-                        "title": intervention.get("title"),
-                        "description": intervention.get("description", ""),
-                        "target_audience": intervention.get("target_audience", ""),
-                    })
+                    all_interventions.append(
+                        {
+                            "type": intervention.get("intervention_type", "training"),
+                            "title": intervention.get("title"),
+                            "description": intervention.get("description", ""),
+                            "target_audience": intervention.get("target_audience", ""),
+                        }
+                    )
 
             # Aggregate skills needs
             for need in insights.get("capacity_development_needs", []):
@@ -536,11 +538,7 @@ class MunicipalAnalyticsService:
 
         for barangay in barangays:
             # Find the BLGU user for this barangay
-            blgu_user = (
-                db.query(User)
-                .filter(User.barangay_id == barangay.id)
-                .first()
-            )
+            blgu_user = db.query(User).filter(User.barangay_id == barangay.id).first()
 
             if not blgu_user:
                 # No user assigned to this barangay
@@ -594,7 +592,8 @@ class MunicipalAnalyticsService:
             overall_score = None
             if assessment.area_results:
                 passed_areas = sum(
-                    1 for result in assessment.area_results.values()
+                    1
+                    for result in assessment.area_results.values()
                     if isinstance(result, dict) and result.get("passed", False)
                 )
                 total_areas = len(assessment.area_results)
@@ -628,7 +627,7 @@ class MunicipalAnalyticsService:
     def get_municipal_overview_dashboard(
         self,
         db: Session,
-        assessment_cycle: Optional[str] = None,
+        assessment_cycle: str | None = None,
         include_draft: bool = False,
     ) -> MunicipalOverviewDashboard:
         """
@@ -648,9 +647,7 @@ class MunicipalAnalyticsService:
 
         # Gather all dashboard sections
         compliance_summary = self.get_compliance_summary(db, assessment_cycle)
-        governance_area_performance = self.get_governance_area_performance(
-            db, assessment_cycle
-        )
+        governance_area_performance = self.get_governance_area_performance(db, assessment_cycle)
         top_failing_indicators = self.get_top_failing_indicators(
             db, limit=10, assessment_cycle=assessment_cycle
         )

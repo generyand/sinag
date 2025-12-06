@@ -34,8 +34,7 @@ IMPORTANT NOTES FOR PHASE 9 (VALIDATION SERVICE):
      * Approval date within acceptable timeframe (considering grace period)
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
-
+from app.indicators.base import ChecklistItem, Indicator, SubIndicator
 
 # Indicator 1.3: Approval of the Barangay Budget on the Specified Timeframe
 INDICATOR_1_3 = Indicator(
@@ -62,7 +61,7 @@ INDICATOR_1_3 = Indicator(
                     mov_description="Verify that the Barangay Appropriation Ordinance contains all required signatures",
                     required=True,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
                 ),
                 ChecklistItem(
                     id="1_3_1_date_approval",
@@ -70,9 +69,9 @@ INDICATOR_1_3 = Indicator(
                     mov_description="CONSIDERATION: Approval until March 31, 2023",
                     required=True,
                     item_type="date_input",
-                    display_order=2
+                    display_order=2,
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

@@ -2,14 +2,27 @@
 # SQLAlchemy model for the governance_areas table
 
 from datetime import datetime
+from typing import Optional
 from uuid import UUID, uuid4
+
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
+    func,
+)
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.db.enums import AreaType
-from sqlalchemy import JSON, Boolean, Column, DateTime, Enum, ForeignKey, Integer, String, UniqueConstraint, func
-from sqlalchemy.dialects.postgresql import JSONB, UUID as PostgresUUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from typing import Optional
 
 
 class GovernanceArea(Base):
@@ -90,9 +103,7 @@ class Indicator(Base):
     )
 
     # Self-referencing hierarchy
-    parent_id: Mapped[int | None] = mapped_column(
-        ForeignKey("indicators.id"), nullable=True
-    )
+    parent_id: Mapped[int | None] = mapped_column(ForeignKey("indicators.id"), nullable=True)
 
     # Hierarchical tree fields (Phase 6)
     indicator_code: Mapped[str | None] = mapped_column(
@@ -104,7 +115,7 @@ class Indicator(Base):
     )  # For maintaining tree order within siblings
 
     selection_mode: Mapped[str | None] = mapped_column(
-        String(20), nullable=True, default='none'
+        String(20), nullable=True, default="none"
     )  # 'single', 'multiple', 'none'
 
     # MOV checklist items (JSON array) - Phase 6
@@ -114,15 +125,15 @@ class Indicator(Base):
 
     # Hard-coded indicator fields (added for simplified approach)
     validation_rule: Mapped[str] = mapped_column(
-        String(50), nullable=False, server_default='ALL_ITEMS_REQUIRED'
+        String(50), nullable=False, server_default="ALL_ITEMS_REQUIRED"
     )  # Validation strategy: ALL_ITEMS_REQUIRED, ANY_ITEM_REQUIRED, CUSTOM
     is_bbi: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, server_default='false'
+        Boolean, nullable=False, server_default="false"
     )  # Is this a BBI indicator
-    effective_date: Mapped[Optional[datetime]] = mapped_column(
+    effective_date: Mapped[datetime | None] = mapped_column(
         DateTime, nullable=True
     )  # When this version became active
-    retired_date: Mapped[Optional[datetime]] = mapped_column(
+    retired_date: Mapped[datetime | None] = mapped_column(
         DateTime, nullable=True
     )  # When this version was retired
 
@@ -147,7 +158,9 @@ class Indicator(Base):
     history = relationship("IndicatorHistory", back_populates="indicator")
     deadline_overrides = relationship("DeadlineOverride", back_populates="indicator")
     mov_files = relationship("MOVFile", back_populates="indicator")
-    checklist_items = relationship("ChecklistItem", back_populates="indicator", cascade="all, delete-orphan")
+    checklist_items = relationship(
+        "ChecklistItem", back_populates="indicator", cascade="all, delete-orphan"
+    )
 
 
 class IndicatorHistory(Base):
@@ -160,9 +173,7 @@ class IndicatorHistory(Base):
     """
 
     __tablename__ = "indicators_history"
-    __table_args__ = (
-        UniqueConstraint('indicator_id', 'version', name='uq_indicator_version'),
-    )
+    __table_args__ = (UniqueConstraint("indicator_id", "version", name="uq_indicator_version"),)
 
     # Primary key
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
@@ -209,12 +220,8 @@ class IndicatorHistory(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
     # Archive metadata
-    archived_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.utcnow
-    )
-    archived_by: Mapped[int | None] = mapped_column(
-        ForeignKey("users.id"), nullable=True
-    )
+    archived_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+    archived_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
 
     # Relationships
     indicator = relationship("Indicator", back_populates="history")
@@ -233,15 +240,11 @@ class IndicatorDraft(Base):
 
     # Primary key
     id: Mapped[UUID] = mapped_column(
-        PostgresUUID(as_uuid=True),
-        primary_key=True,
-        default=lambda: uuid4()
+        PostgresUUID(as_uuid=True), primary_key=True, default=lambda: uuid4()
     )
 
     # User who created the draft
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"), nullable=False, index=True
-    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
 
     # Governance area for this indicator set
     governance_area_id: Mapped[int] = mapped_column(
@@ -251,14 +254,10 @@ class IndicatorDraft(Base):
     # Wizard state
     creation_mode: Mapped[str] = mapped_column(String(50), nullable=False)
     current_step: Mapped[int] = mapped_column(nullable=False, default=1)
-    status: Mapped[str] = mapped_column(
-        String(50), nullable=False, default="in_progress"
-    )
+    status: Mapped[str] = mapped_column(String(50), nullable=False, default="in_progress")
 
     # Draft data stored as JSONB (array of indicator nodes)
-    data: Mapped[dict] = mapped_column(
-        JSON, nullable=False, server_default="[]"
-    )
+    data: Mapped[dict] = mapped_column(JSON, nullable=False, server_default="[]")
 
     # Optional title for the draft
     title: Mapped[str | None] = mapped_column(String(200), nullable=True)
@@ -278,15 +277,9 @@ class IndicatorDraft(Base):
     version: Mapped[int] = mapped_column(nullable=False, default=1)
 
     # Draft locking to prevent concurrent edits
-    lock_token: Mapped[UUID | None] = mapped_column(
-        PostgresUUID(as_uuid=True), nullable=True
-    )
-    locked_by_user_id: Mapped[int | None] = mapped_column(
-        ForeignKey("users.id"), nullable=True
-    )
-    locked_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    lock_token: Mapped[UUID | None] = mapped_column(PostgresUUID(as_uuid=True), nullable=True)
+    locked_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    locked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     user = relationship("User", foreign_keys=[user_id])
@@ -306,9 +299,7 @@ class ChecklistItem(Base):
     """
 
     __tablename__ = "checklist_items"
-    __table_args__ = (
-        UniqueConstraint('indicator_id', 'item_id', name='uq_indicator_item_id'),
-    )
+    __table_args__ = (UniqueConstraint("indicator_id", "item_id", name="uq_indicator_item_id"),)
 
     # Primary key
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
@@ -325,7 +316,7 @@ class ChecklistItem(Base):
     label: Mapped[str] = mapped_column(String, nullable=False)
 
     # Item type (checkbox, info_text, assessment_field, document_count, calculation_field)
-    item_type: Mapped[str] = mapped_column(String(30), nullable=False, server_default='checkbox')
+    item_type: Mapped[str] = mapped_column(String(30), nullable=False, server_default="checkbox")
 
     # Optional group name for visual organization (e.g., "ANNUAL REPORT", "QUARTERLY REPORT")
     group_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
@@ -334,13 +325,15 @@ class ChecklistItem(Base):
     mov_description: Mapped[str | None] = mapped_column(String, nullable=True)
 
     # Required for indicator to pass
-    required: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default='true')
+    required: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
 
     # Requires document count input from validator
-    requires_document_count: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default='false')
+    requires_document_count: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="false"
+    )
 
     # Sort order within indicator
-    display_order: Mapped[int] = mapped_column(Integer, nullable=False, server_default='0')
+    display_order: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
 
     # Option group for OR logic (e.g., "Option A", "Option B")
     option_group: Mapped[str | None] = mapped_column(String(50), nullable=True)
@@ -349,8 +342,12 @@ class ChecklistItem(Base):
     field_notes: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     # Timestamps
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
 
     # Relationships
     indicator = relationship("Indicator", back_populates="checklist_items")

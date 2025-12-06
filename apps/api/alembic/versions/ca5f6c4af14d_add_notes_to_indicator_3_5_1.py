@@ -5,6 +5,7 @@ Revises: 7318b8932c0f
 Create Date: 2025-12-03 21:40:00.000000
 
 """
+
 from typing import Sequence, Union
 import json
 
@@ -13,8 +14,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'ca5f6c4af14d'
-down_revision: Union[str, Sequence[str], None] = '7318b8932c0f'
+revision: str = "ca5f6c4af14d"
+down_revision: Union[str, Sequence[str], None] = "7318b8932c0f"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -25,8 +26,8 @@ NOTES = {
     "items": [
         {"label": "1.", "text": "Executive Officer"},
         {"label": "2.", "text": "A Barangay Tanod"},
-        {"label": "3.", "text": "2 BHWs"}
-    ]
+        {"label": "3.", "text": "2 BHWs"},
+    ],
 }
 
 
@@ -42,7 +43,7 @@ def upgrade() -> None:
             SET form_schema = (form_schema::jsonb || CAST(:notes_json AS jsonb))::json
             WHERE indicator_code = '3.5.1'
         """),
-        {"notes_json": notes_json}
+        {"notes_json": notes_json},
     )
 
 

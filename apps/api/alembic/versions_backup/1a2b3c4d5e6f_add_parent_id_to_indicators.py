@@ -47,5 +47,3 @@ def downgrade() -> None:
         type_="foreignkey",
     )
     op.drop_column("indicators", "parent_id")
-
-

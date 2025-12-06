@@ -28,8 +28,7 @@ IMPORTANT NOTES FOR PHASE 9 (VALIDATION SERVICE):
    - DILG MC No. 2019-177 (Guidelines on the implementation of Section 11 of RA 11032)
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
-
+from app.indicators.base import ChecklistItem, Indicator, SubIndicator
 
 # Indicator 5.2: Compliance to Section 11 of RA 11032 or the Ease of Doing Business Law
 INDICATOR_5_2 = Indicator(
@@ -54,11 +53,10 @@ INDICATOR_5_2 = Indicator(
                     label="Enacted Barangay Ordinance (signed by the PB, Barangay Secretary and SBMs) relative to Barangay Clearance fees on business permit and locational clearance for building permit",
                     required=True,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 5.2.2
         SubIndicator(
             code="5.2.2",
@@ -73,9 +71,9 @@ INDICATOR_5_2 = Indicator(
                     label="Approved resolution authorizing the City/Municipal Treasurer to collect fees for Barangay Clearance for Business permit and locational clearance purposes signed by PB, Barangay Secretary and SBMs",
                     required=True,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

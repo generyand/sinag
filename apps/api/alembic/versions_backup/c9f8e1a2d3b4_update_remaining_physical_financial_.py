@@ -14,7 +14,6 @@ This supports auto-calculation of accomplishment percentages.
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "c9f8e1a2d3b4"
@@ -55,8 +54,16 @@ def upgrade() -> None:
             ],
             "rename_items": [
                 # Financial fields - rename to consistent naming
-                ("3_2_3_calc_b1", "3_2_3_financial_utilized", "Total amount utilized (as of Dec. 31, 2023)"),
-                ("3_2_3_calc_b2", "3_2_3_financial_allocated", "Total amount allocated for FPAs in the BPOPS Plan for CY 2023"),
+                (
+                    "3_2_3_calc_b1",
+                    "3_2_3_financial_utilized",
+                    "Total amount utilized (as of Dec. 31, 2023)",
+                ),
+                (
+                    "3_2_3_calc_b2",
+                    "3_2_3_financial_allocated",
+                    "Total amount allocated for FPAs in the BPOPS Plan for CY 2023",
+                ),
             ],
         },
         # 4.1.6 - GAD Accomplishment
@@ -85,8 +92,16 @@ def upgrade() -> None:
             ],
             "rename_items": [
                 # Financial fields - rename to consistent naming
-                ("4_1_6_calc_b1", "4_1_6_financial_utilized", "Total amount utilized (as of Dec. 31, 2023)"),
-                ("4_1_6_calc_b2", "4_1_6_financial_allocated", "Total amount allocated for PPAs in the GAD Plan"),
+                (
+                    "4_1_6_calc_b1",
+                    "4_1_6_financial_utilized",
+                    "Total amount utilized (as of Dec. 31, 2023)",
+                ),
+                (
+                    "4_1_6_calc_b2",
+                    "4_1_6_financial_allocated",
+                    "Total amount allocated for PPAs in the GAD Plan",
+                ),
             ],
         },
         # 4.3.4 - BDP Accomplishment
@@ -115,8 +130,16 @@ def upgrade() -> None:
             ],
             "rename_items": [
                 # Financial fields - rename to consistent naming
-                ("4_3_4_calc_b1", "4_3_4_financial_utilized", "Total amount utilized (as of Dec 31, 2023)"),
-                ("4_3_4_calc_b2", "4_3_4_financial_allocated", "Total amount allocated for PPAs in the BDP"),
+                (
+                    "4_3_4_calc_b1",
+                    "4_3_4_financial_utilized",
+                    "Total amount utilized (as of Dec 31, 2023)",
+                ),
+                (
+                    "4_3_4_calc_b2",
+                    "4_3_4_financial_allocated",
+                    "Total amount allocated for PPAs in the BDP",
+                ),
             ],
         },
         # 4.5.6 - BCPC Accomplishment
@@ -145,8 +168,16 @@ def upgrade() -> None:
             ],
             "rename_items": [
                 # Financial fields - rename to consistent naming
-                ("4_5_6_calc_b1", "4_5_6_financial_utilized", "Total amount utilized (as of Dec 31, 2023)"),
-                ("4_5_6_calc_b2", "4_5_6_financial_allocated", "Total amount allocated for PPAs in the BCPC AWFP"),
+                (
+                    "4_5_6_calc_b1",
+                    "4_5_6_financial_utilized",
+                    "Total amount utilized (as of Dec 31, 2023)",
+                ),
+                (
+                    "4_5_6_calc_b2",
+                    "4_5_6_financial_allocated",
+                    "Total amount allocated for PPAs in the BCPC AWFP",
+                ),
             ],
         },
     ]
@@ -157,7 +188,7 @@ def upgrade() -> None:
         # Get the indicator ID
         result = conn.execute(
             sa.text("SELECT id FROM indicators WHERE indicator_code = :code"),
-            {"code": indicator_code}
+            {"code": indicator_code},
         )
         row = result.fetchone()
         if not row:
@@ -170,8 +201,10 @@ def upgrade() -> None:
         # Remove old items
         for item_id in update.get("remove_items", []):
             result = conn.execute(
-                sa.text("DELETE FROM checklist_items WHERE indicator_id = :ind_id AND item_id = :item_id"),
-                {"ind_id": indicator_id, "item_id": item_id}
+                sa.text(
+                    "DELETE FROM checklist_items WHERE indicator_id = :ind_id AND item_id = :item_id"
+                ),
+                {"ind_id": indicator_id, "item_id": item_id},
             )
             print(f"  Removed item: {item_id} (rows affected: {result.rowcount})")
 
@@ -183,7 +216,12 @@ def upgrade() -> None:
                     SET item_id = :new_id, label = :new_label
                     WHERE indicator_id = :ind_id AND item_id = :old_id
                 """),
-                {"ind_id": indicator_id, "old_id": old_id, "new_id": new_id, "new_label": new_label}
+                {
+                    "ind_id": indicator_id,
+                    "old_id": old_id,
+                    "new_id": new_id,
+                    "new_label": new_label,
+                },
             )
             print(f"  Renamed: {old_id} -> {new_id} (rows affected: {result.rowcount})")
 
@@ -191,8 +229,10 @@ def upgrade() -> None:
         for item in update.get("add_items", []):
             # Check if item already exists
             existing = conn.execute(
-                sa.text("SELECT id FROM checklist_items WHERE indicator_id = :ind_id AND item_id = :item_id"),
-                {"ind_id": indicator_id, "item_id": item["item_id"]}
+                sa.text(
+                    "SELECT id FROM checklist_items WHERE indicator_id = :ind_id AND item_id = :item_id"
+                ),
+                {"ind_id": indicator_id, "item_id": item["item_id"]},
             ).fetchone()
 
             if existing:
@@ -213,7 +253,7 @@ def upgrade() -> None:
                     "required": item.get("required", False),
                     "display_order": item.get("display_order", 0),
                     "option_group": item.get("option_group"),
-                }
+                },
             )
             print(f"  Added item: {item['item_id']}")
 

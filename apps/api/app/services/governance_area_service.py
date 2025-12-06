@@ -2,8 +2,9 @@
 # Business logic for governance areas management and seeding
 
 from sqlalchemy.orm import Session
-from app.db.models.governance_area import GovernanceArea
+
 from app.db.enums import AreaType
+from app.db.models.governance_area import GovernanceArea
 
 
 class GovernanceAreaService:
@@ -70,9 +71,7 @@ class GovernanceAreaService:
         """Get all governance areas."""
         return db.query(GovernanceArea).order_by(GovernanceArea.id).all()
 
-    def get_governance_area_by_id(
-        self, db: Session, area_id: int
-    ) -> GovernanceArea | None:
+    def get_governance_area_by_id(self, db: Session, area_id: int) -> GovernanceArea | None:
         """Get a governance area by ID."""
         return db.query(GovernanceArea).filter(GovernanceArea.id == area_id).first()
 

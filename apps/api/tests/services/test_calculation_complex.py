@@ -10,6 +10,7 @@ Tests complex calculation schemas with deeply nested conditions:
 """
 
 import pytest
+
 from app.db.enums import ValidationStatus
 from app.services.calculation_engine_service import calculation_engine_service
 
@@ -19,7 +20,9 @@ class TestComplexNestedConditions:
     Test suite for complex nested calculation conditions
     """
 
-    @pytest.mark.skip(reason="Test expects OR between condition groups but engine uses implicit AND (see calculation_engine_service.py line 92)")
+    @pytest.mark.skip(
+        reason="Test expects OR between condition groups but engine uses implicit AND (see calculation_engine_service.py line 92)"
+    )
     def test_three_level_nested_and_or(self):
         """
         Test: Three levels of nested AND/OR conditions.
@@ -163,9 +166,7 @@ class TestComplexNestedConditions:
             "approved": True,
         }
 
-        result = calculation_engine_service.execute_calculation(
-            calculation_schema, response_data
-        )
+        result = calculation_engine_service.execute_calculation(calculation_schema, response_data)
 
         assert result == ValidationStatus.PASS
 
@@ -296,9 +297,7 @@ class TestComplexNestedConditions:
             "path_4_score": 70,
         }
 
-        result = calculation_engine_service.execute_calculation(
-            calculation_schema, response_data
-        )
+        result = calculation_engine_service.execute_calculation(calculation_schema, response_data)
 
         assert result == ValidationStatus.PASS
 
@@ -372,7 +371,9 @@ class TestComplexNestedConditions:
         )
         assert result_fail == ValidationStatus.FAIL
 
-    @pytest.mark.skip(reason="CONDITIONAL output status not supported - schema only allows 'Pass' or 'Fail' per SGLGB methodology")
+    @pytest.mark.skip(
+        reason="CONDITIONAL output status not supported - schema only allows 'Pass' or 'Fail' per SGLGB methodology"
+    )
     def test_conditional_status_output(self):
         """
         Test: Schema that outputs CONDITIONAL status.
@@ -408,9 +409,7 @@ class TestComplexNestedConditions:
         # Score is 60 (between 50 and 75)
         response_data = {"score": 60}
 
-        result = calculation_engine_service.execute_calculation(
-            calculation_schema, response_data
-        )
+        result = calculation_engine_service.execute_calculation(calculation_schema, response_data)
 
         assert result == ValidationStatus.CONDITIONAL
 
@@ -453,9 +452,7 @@ class TestRemarkMappingWithComplexConditions:
 
         response_data = {"completion": 95}
 
-        result = calculation_engine_service.execute_calculation(
-            calculation_schema, response_data
-        )
+        result = calculation_engine_service.execute_calculation(calculation_schema, response_data)
 
         assert result == ValidationStatus.PASS
 
@@ -496,16 +493,16 @@ class TestRemarkMappingWithComplexConditions:
 
         response_data = {"completion": 60}
 
-        result = calculation_engine_service.execute_calculation(
-            calculation_schema, response_data
-        )
+        result = calculation_engine_service.execute_calculation(calculation_schema, response_data)
 
         assert result == ValidationStatus.FAIL
 
         expected_remark = remark_schema[result.name]
         assert expected_remark == "Below minimum requirements - improvement needed"
 
-    @pytest.mark.skip(reason="CONDITIONAL output status not supported - schema only allows 'Pass' or 'Fail' per SGLGB methodology")
+    @pytest.mark.skip(
+        reason="CONDITIONAL output status not supported - schema only allows 'Pass' or 'Fail' per SGLGB methodology"
+    )
     def test_remark_mapping_for_conditional(self):
         """
         Test: Remark schema correctly maps CONDITIONAL status.
@@ -539,19 +536,16 @@ class TestRemarkMappingWithComplexConditions:
 
         response_data = {"score": 65}
 
-        result = calculation_engine_service.execute_calculation(
-            calculation_schema, response_data
-        )
+        result = calculation_engine_service.execute_calculation(calculation_schema, response_data)
 
         assert result == ValidationStatus.CONDITIONAL
 
         expected_remark = remark_schema[result.name]
-        assert (
-            expected_remark
-            == "Meets minimum requirements - additional documentation needed"
-        )
+        assert expected_remark == "Meets minimum requirements - additional documentation needed"
 
-    @pytest.mark.skip(reason="CONDITIONAL output status not supported - schema only allows 'Pass' or 'Fail' per SGLGB methodology")
+    @pytest.mark.skip(
+        reason="CONDITIONAL output status not supported - schema only allows 'Pass' or 'Fail' per SGLGB methodology"
+    )
     def test_complex_condition_with_multiple_remark_paths(self):
         """
         Test: Complex schema with different remark for each outcome.
@@ -587,13 +581,9 @@ class TestRemarkMappingWithComplexConditions:
         }
 
         data_pass = {"score": 95}
-        result_pass = calculation_engine_service.execute_calculation(
-            schema_pass, data_pass
-        )
+        result_pass = calculation_engine_service.execute_calculation(schema_pass, data_pass)
         assert result_pass == ValidationStatus.PASS
-        assert (
-            remark_schema[result_pass.name] == "Outstanding - exceeds all expectations"
-        )
+        assert remark_schema[result_pass.name] == "Outstanding - exceeds all expectations"
 
         # Same schema, lower score for CONDITIONAL
         data_conditional = {"score": 70}
@@ -601,7 +591,4 @@ class TestRemarkMappingWithComplexConditions:
             schema_pass, data_conditional
         )
         assert result_conditional == ValidationStatus.CONDITIONAL
-        assert (
-            remark_schema[result_conditional.name]
-            == "Satisfactory - meets basic requirements"
-        )
+        assert remark_schema[result_conditional.name] == "Satisfactory - meets basic requirements"

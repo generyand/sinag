@@ -12,18 +12,18 @@ Coverage:
 - Error handling for incorrect current password
 """
 
-import pytest
 import uuid
-import jwt
-from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
-from passlib.context import CryptContext
 
-from app.db.models.user import User
-from app.db.enums import UserRole
+import jwt
+import pytest
+from fastapi.testclient import TestClient
+from passlib.context import CryptContext
+from sqlalchemy.orm import Session
+
 from app.api import deps
 from app.core.security import verify_password
-
+from app.db.enums import UserRole
+from app.db.models.user import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -40,6 +40,7 @@ def clear_user_overrides(client):
 
 def _override_user_and_db(client, user: User, db_session: Session):
     """Override authentication and database dependencies"""
+
     def _override_current_active_user():
         return user
 
@@ -55,6 +56,7 @@ def _override_user_and_db(client, user: User, db_session: Session):
 
 def _override_db(client, db_session: Session):
     """Override database dependency only"""
+
     def _override_get_db():
         try:
             yield db_session
@@ -106,17 +108,18 @@ def create_test_user(db_session: Session, role: UserRole, password: str = "oldpa
 # ====================================================================
 
 
-@pytest.mark.parametrize("user_role", [
-    UserRole.MLGOO_DILG,
-    UserRole.ASSESSOR,
-    UserRole.VALIDATOR,
-    UserRole.BLGU_USER,
-    UserRole.KATUPARAN_CENTER_USER,
-])
+@pytest.mark.parametrize(
+    "user_role",
+    [
+        UserRole.MLGOO_DILG,
+        UserRole.ASSESSOR,
+        UserRole.VALIDATOR,
+        UserRole.BLGU_USER,
+        UserRole.KATUPARAN_CENTER_USER,
+    ],
+)
 def test_password_change_success_all_roles(
-    client: TestClient,
-    db_session: Session,
-    user_role: UserRole
+    client: TestClient, db_session: Session, user_role: UserRole
 ):
     """
     CRITICAL: Test that password change succeeds for all user roles
@@ -135,7 +138,7 @@ def test_password_change_success_all_roles(
     _override_user_and_db(client, user, db_session)
     response = client.post(
         "/api/v1/auth/change-password",
-        json={"current_password": "oldpass123", "new_password": "newpass456"}
+        json={"current_password": "oldpass123", "new_password": "newpass456"},
     )
 
     assert response.status_code == 200
@@ -150,8 +153,7 @@ def test_password_change_success_all_roles(
     _override_db(client, db_session)
 
     login_response = client.post(
-        "/api/v1/auth/login",
-        json={"email": original_email, "password": "newpass456"}
+        "/api/v1/auth/login", json={"email": original_email, "password": "newpass456"}
     )
 
     assert login_response.status_code == 200
@@ -165,8 +167,7 @@ def test_password_change_success_all_roles(
 
     # Verify old password no longer works
     old_password_response = client.post(
-        "/api/v1/auth/login",
-        json={"email": original_email, "password": "oldpass123"}
+        "/api/v1/auth/login", json={"email": original_email, "password": "oldpass123"}
     )
     assert old_password_response.status_code == 401
 
@@ -176,9 +177,7 @@ def test_password_change_success_all_roles(
 # ====================================================================
 
 
-def test_token_remains_valid_after_password_change(
-    client: TestClient, db_session: Session
-):
+def test_token_remains_valid_after_password_change(client: TestClient, db_session: Session):
     """
     Test that existing tokens remain valid after password change
 
@@ -191,8 +190,7 @@ def test_token_remains_valid_after_password_change(
     # Login to get initial token
     _override_db(client, db_session)
     login_response = client.post(
-        "/api/v1/auth/login",
-        json={"email": user.email, "password": "oldpass123"}
+        "/api/v1/auth/login", json={"email": user.email, "password": "oldpass123"}
     )
     initial_token = login_response.json()["access_token"]
 
@@ -200,7 +198,7 @@ def test_token_remains_valid_after_password_change(
     _override_user_and_db(client, user, db_session)
     change_response = client.post(
         "/api/v1/auth/change-password",
-        json={"current_password": "oldpass123", "new_password": "newpass456"}
+        json={"current_password": "oldpass123", "new_password": "newpass456"},
     )
     assert change_response.status_code == 200
 
@@ -210,8 +208,7 @@ def test_token_remains_valid_after_password_change(
     _override_db(client, db_session)
 
     protected_response = client.get(
-        "/api/v1/users/me",
-        headers={"Authorization": f"Bearer {initial_token}"}
+        "/api/v1/users/me", headers={"Authorization": f"Bearer {initial_token}"}
     )
 
     # Current behavior: old token still works
@@ -224,11 +221,14 @@ def test_token_remains_valid_after_password_change(
 # ====================================================================
 
 
-@pytest.mark.parametrize("user_role", [
-    UserRole.MLGOO_DILG,
-    UserRole.KATUPARAN_CENTER_USER,
-    UserRole.VALIDATOR,
-])
+@pytest.mark.parametrize(
+    "user_role",
+    [
+        UserRole.MLGOO_DILG,
+        UserRole.KATUPARAN_CENTER_USER,
+        UserRole.VALIDATOR,
+    ],
+)
 def test_password_change_fails_with_wrong_current_password(
     client: TestClient, db_session: Session, user_role: UserRole
 ):
@@ -242,7 +242,7 @@ def test_password_change_fails_with_wrong_current_password(
 
     response = client.post(
         "/api/v1/auth/change-password",
-        json={"current_password": "wrongpassword", "new_password": "newpass456"}
+        json={"current_password": "wrongpassword", "new_password": "newpass456"},
     )
 
     assert response.status_code == 400
@@ -280,7 +280,7 @@ def test_katuparan_user_can_access_external_analytics_after_password_change(
     _override_user_and_db(client, user, db_session)
     change_response = client.post(
         "/api/v1/auth/change-password",
-        json={"current_password": "oldpass123", "new_password": "newpass456"}
+        json={"current_password": "oldpass123", "new_password": "newpass456"},
     )
     assert change_response.status_code == 200
 
@@ -288,8 +288,7 @@ def test_katuparan_user_can_access_external_analytics_after_password_change(
     client.app.dependency_overrides.clear()
     _override_db(client, db_session)
     login_response = client.post(
-        "/api/v1/auth/login",
-        json={"email": user.email, "password": "newpass456"}
+        "/api/v1/auth/login", json={"email": user.email, "password": "newpass456"}
     )
     assert login_response.status_code == 200
     token = login_response.json()["access_token"]
@@ -306,14 +305,15 @@ def test_katuparan_user_can_access_external_analytics_after_password_change(
     # The actual endpoint that KATUPARAN_CENTER_USER should access
     analytics_response = client.get(
         "/api/v1/external/analytics/dashboard",
-        headers={"Authorization": f"Bearer {token}"}
+        headers={"Authorization": f"Bearer {token}"},
     )
 
     # CRITICAL: Should NOT get 403 Forbidden
     # This was the reported bug - access denied after password change
-    assert analytics_response.status_code == 200, \
-        f"Expected 200, got {analytics_response.status_code}. " \
+    assert analytics_response.status_code == 200, (
+        f"Expected 200, got {analytics_response.status_code}. "
         f"Error: {analytics_response.json() if analytics_response.status_code != 200 else 'N/A'}"
+    )
 
 
 def test_katuparan_user_cannot_access_blgu_endpoints_after_password_change(
@@ -331,14 +331,13 @@ def test_katuparan_user_cannot_access_blgu_endpoints_after_password_change(
     _override_user_and_db(client, user, db_session)
     client.post(
         "/api/v1/auth/change-password",
-        json={"current_password": "oldpass123", "new_password": "newpass456"}
+        json={"current_password": "oldpass123", "new_password": "newpass456"},
     )
 
     client.app.dependency_overrides.clear()
     _override_db(client, db_session)
     login_response = client.post(
-        "/api/v1/auth/login",
-        json={"email": user.email, "password": "newpass456"}
+        "/api/v1/auth/login", json={"email": user.email, "password": "newpass456"}
     )
     token = login_response.json()["access_token"]
 
@@ -346,13 +345,13 @@ def test_katuparan_user_cannot_access_blgu_endpoints_after_password_change(
     client.app.dependency_overrides.clear()
     _override_db(client, db_session)
     blgu_response = client.get(
-        "/api/v1/blgu/dashboard",
-        headers={"Authorization": f"Bearer {token}"}
+        "/api/v1/blgu/dashboard", headers={"Authorization": f"Bearer {token}"}
     )
 
     # Should get 403 Forbidden or 404 Not Found (depending on endpoint existence)
-    assert blgu_response.status_code in [403, 404], \
+    assert blgu_response.status_code in [403, 404], (
         "KATUPARAN_CENTER_USER should not access BLGU endpoints"
+    )
 
 
 # ====================================================================
@@ -360,18 +359,24 @@ def test_katuparan_user_cannot_access_blgu_endpoints_after_password_change(
 # ====================================================================
 
 
-@pytest.mark.parametrize("user_role,expected_can_access_endpoint", [
-    (UserRole.MLGOO_DILG, "/api/v1/users/"),  # Admin endpoint
-    (UserRole.ASSESSOR, "/api/v1/assessor/queue"),  # Assessor endpoint
-    (UserRole.VALIDATOR, "/api/v1/validator/queue"),  # Validator endpoint
-    (UserRole.BLGU_USER, "/api/v1/blgu/dashboard"),  # BLGU endpoint
-    (UserRole.KATUPARAN_CENTER_USER, "/api/v1/external/analytics/dashboard"),  # External endpoint
-])
+@pytest.mark.parametrize(
+    "user_role,expected_can_access_endpoint",
+    [
+        (UserRole.MLGOO_DILG, "/api/v1/users/"),  # Admin endpoint
+        (UserRole.ASSESSOR, "/api/v1/assessor/queue"),  # Assessor endpoint
+        (UserRole.VALIDATOR, "/api/v1/validator/queue"),  # Validator endpoint
+        (UserRole.BLGU_USER, "/api/v1/blgu/dashboard"),  # BLGU endpoint
+        (
+            UserRole.KATUPARAN_CENTER_USER,
+            "/api/v1/external/analytics/dashboard",
+        ),  # External endpoint
+    ],
+)
 def test_role_based_access_after_password_change(
     client: TestClient,
     db_session: Session,
     user_role: UserRole,
-    expected_can_access_endpoint: str
+    expected_can_access_endpoint: str,
 ):
     """
     Test that each role can access their appropriate endpoints
@@ -386,15 +391,14 @@ def test_role_based_access_after_password_change(
     _override_user_and_db(client, user, db_session)
     client.post(
         "/api/v1/auth/change-password",
-        json={"current_password": "oldpass123", "new_password": "newpass456"}
+        json={"current_password": "oldpass123", "new_password": "newpass456"},
     )
 
     # Login with new password
     client.app.dependency_overrides.clear()
     _override_db(client, db_session)
     login_response = client.post(
-        "/api/v1/auth/login",
-        json={"email": user.email, "password": "newpass456"}
+        "/api/v1/auth/login", json={"email": user.email, "password": "newpass456"}
     )
     token = login_response.json()["access_token"]
 
@@ -402,13 +406,13 @@ def test_role_based_access_after_password_change(
     client.app.dependency_overrides.clear()
     _override_db(client, db_session)
     endpoint_response = client.get(
-        expected_can_access_endpoint,
-        headers={"Authorization": f"Bearer {token}"}
+        expected_can_access_endpoint, headers={"Authorization": f"Bearer {token}"}
     )
 
     # Should be able to access (200 or 404 if endpoint doesn't exist yet)
-    assert endpoint_response.status_code in [200, 404], \
+    assert endpoint_response.status_code in [200, 404], (
         f"{user_role.value} should be able to access {expected_can_access_endpoint}"
+    )
 
 
 # ====================================================================
@@ -416,9 +420,7 @@ def test_role_based_access_after_password_change(
 # ====================================================================
 
 
-def test_must_change_password_flag_cleared_after_change(
-    client: TestClient, db_session: Session
-):
+def test_must_change_password_flag_cleared_after_change(client: TestClient, db_session: Session):
     """
     Test that must_change_password flag is properly cleared after
     user changes their password
@@ -445,7 +447,7 @@ def test_must_change_password_flag_cleared_after_change(
     _override_user_and_db(client, user, db_session)
     response = client.post(
         "/api/v1/auth/change-password",
-        json={"current_password": "temppass123", "new_password": "newpass456"}
+        json={"current_password": "temppass123", "new_password": "newpass456"},
     )
     assert response.status_code == 200
 
@@ -457,8 +459,7 @@ def test_must_change_password_flag_cleared_after_change(
     client.app.dependency_overrides.clear()
     _override_db(client, db_session)
     login_response = client.post(
-        "/api/v1/auth/login",
-        json={"email": user.email, "password": "newpass456"}
+        "/api/v1/auth/login", json={"email": user.email, "password": "newpass456"}
     )
     token = login_response.json()["access_token"]
     decoded = jwt.decode(token, options={"verify_signature": False})
@@ -470,9 +471,7 @@ def test_must_change_password_flag_cleared_after_change(
 # ====================================================================
 
 
-def test_password_change_validation_errors(
-    client: TestClient, db_session: Session
-):
+def test_password_change_validation_errors(client: TestClient, db_session: Session):
     """
     Test validation errors for password change endpoint
     """
@@ -480,17 +479,11 @@ def test_password_change_validation_errors(
     _override_user_and_db(client, user, db_session)
 
     # Missing current_password
-    response = client.post(
-        "/api/v1/auth/change-password",
-        json={"new_password": "newpass123"}
-    )
+    response = client.post("/api/v1/auth/change-password", json={"new_password": "newpass123"})
     assert response.status_code == 422  # Validation error
 
     # Missing new_password
-    response = client.post(
-        "/api/v1/auth/change-password",
-        json={"current_password": "oldpass123"}
-    )
+    response = client.post("/api/v1/auth/change-password", json={"current_password": "oldpass123"})
     assert response.status_code == 422  # Validation error
 
     # Empty body
@@ -503,9 +496,7 @@ def test_password_change_validation_errors(
 # ====================================================================
 
 
-def test_rapid_password_changes(
-    client: TestClient, db_session: Session
-):
+def test_rapid_password_changes(client: TestClient, db_session: Session):
     """
     Test that user can change password multiple times in succession
 
@@ -517,7 +508,7 @@ def test_rapid_password_changes(
     # First password change
     response1 = client.post(
         "/api/v1/auth/change-password",
-        json={"current_password": "oldpass123", "new_password": "newpass1"}
+        json={"current_password": "oldpass123", "new_password": "newpass1"},
     )
     assert response1.status_code == 200
 
@@ -525,7 +516,7 @@ def test_rapid_password_changes(
     db_session.refresh(user)
     response2 = client.post(
         "/api/v1/auth/change-password",
-        json={"current_password": "newpass1", "new_password": "newpass2"}
+        json={"current_password": "newpass1", "new_password": "newpass2"},
     )
     assert response2.status_code == 200
 

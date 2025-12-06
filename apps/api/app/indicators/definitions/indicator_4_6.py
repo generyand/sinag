@@ -8,8 +8,7 @@ Note: This indicator assesses the establishment of a Barangay GAD Focal Point Sy
 through the organization and designation of a GAD focal point.
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
-
+from app.indicators.base import ChecklistItem, Indicator, SubIndicator
 
 # Indicator 4.6: Mechanism for Gender and Development (GAD)
 INDICATOR_4_6 = Indicator(
@@ -36,7 +35,7 @@ INDICATOR_4_6 = Indicator(
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the Barangay GAD Focal Point System",
                     mov_description="Verification of uploaded EO or similar issuance organizing the Barangay GAD Focal Point System",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
                 ChecklistItem(
                     id="4_6_1_date_of_approval",
@@ -44,9 +43,9 @@ INDICATOR_4_6 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="date_input",
                     required=True,
-                    display_order=2
+                    display_order=2,
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

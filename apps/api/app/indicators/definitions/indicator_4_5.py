@@ -47,8 +47,7 @@ IMPORTANT NOTES FOR PHASE 9 (VALIDATION SERVICE):
    - Failing means BCPC is "Non-Functional"
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
-
+from app.indicators.base import ChecklistItem, Indicator, SubIndicator
 
 # Indicator 4.5: Functionality of the Barangay Council for the Protection of Children (BCPC)
 INDICATOR_4_5 = Indicator(
@@ -73,11 +72,10 @@ INDICATOR_4_5 = Indicator(
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the establishment of BCPC",
                     required=True,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 4.5.2
         SubIndicator(
             code="4.5.2",
@@ -92,18 +90,15 @@ INDICATOR_4_5 = Indicator(
                     label="At least one (1) copy of proof of training such as Certificate of Completion and/or Participation",
                     required=True,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 4.5.3
         SubIndicator(
             code="4.5.3",
             name="Plan: Presence of an approved BCPC Annual Work and Financial Plan",
-            upload_instructions=(
-                "Upload: Approved BCPC Annual Work and Financial Plan (AWFP)"
-            ),
+            upload_instructions=("Upload: Approved BCPC Annual Work and Financial Plan (AWFP)"),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
@@ -111,11 +106,10 @@ INDICATOR_4_5 = Indicator(
                     label="Approved BCPC Annual Work and Financial Plan (AWFP)",
                     required=True,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 4.5.4
         SubIndicator(
             code="4.5.4",
@@ -130,11 +124,10 @@ INDICATOR_4_5 = Indicator(
                     label="Copy of the generated report or screenshot of the updated database on children",
                     required=True,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 4.5.5
         SubIndicator(
             code="4.5.5",
@@ -153,7 +146,7 @@ INDICATOR_4_5 = Indicator(
                     mov_description="Verification of uploaded Localized Flow Chart of Referral System",
                     item_type="checkbox",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
                 ChecklistItem(
                     id="4_5_5_b",
@@ -161,7 +154,7 @@ INDICATOR_4_5 = Indicator(
                     mov_description="Verification of uploaded Comprehensive Barangay Juvenile Intervention Program",
                     item_type="checkbox",
                     required=True,
-                    display_order=2
+                    display_order=2,
                 ),
                 ChecklistItem(
                     id="4_5_5_c",
@@ -169,11 +162,10 @@ INDICATOR_4_5 = Indicator(
                     mov_description="Verification of uploaded CAR and CICL registry",
                     item_type="checkbox",
                     required=True,
-                    display_order=3
+                    display_order=3,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 4.5.6
         SubIndicator(
             code="4.5.6",
@@ -191,7 +183,7 @@ INDICATOR_4_5 = Indicator(
                     mov_description="Verification of uploaded Accomplishment Report with received stamp by IMTF",
                     item_type="checkbox",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
                 # OPTION A - Physical Accomplishment
                 ChecklistItem(
@@ -201,7 +193,7 @@ INDICATOR_4_5 = Indicator(
                     item_type="assessment_field",
                     required=False,
                     display_order=3,
-                    option_group="Option A"
+                    option_group="Option A",
                 ),
                 ChecklistItem(
                     id="4_5_6_physical_accomplished",
@@ -210,7 +202,7 @@ INDICATOR_4_5 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=4.1,
-                    option_group="Option A"
+                    option_group="Option A",
                 ),
                 ChecklistItem(
                     id="4_5_6_physical_reflected",
@@ -218,7 +210,7 @@ INDICATOR_4_5 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=4.2,
-                    option_group="Option A"
+                    option_group="Option A",
                 ),
                 # OR separator (info_text)
                 ChecklistItem(
@@ -227,7 +219,7 @@ INDICATOR_4_5 = Indicator(
                     mov_description="OR",
                     item_type="info_text",
                     required=False,
-                    display_order=5
+                    display_order=5,
                 ),
                 # OPTION B - Fund Utilization
                 ChecklistItem(
@@ -237,7 +229,7 @@ INDICATOR_4_5 = Indicator(
                     item_type="assessment_field",
                     required=False,
                     display_order=6,
-                    option_group="Option B"
+                    option_group="Option B",
                 ),
                 ChecklistItem(
                     id="4_5_6_financial_utilized",
@@ -246,7 +238,7 @@ INDICATOR_4_5 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=7.1,
-                    option_group="Option B"
+                    option_group="Option B",
                 ),
                 ChecklistItem(
                     id="4_5_6_financial_allocated",
@@ -254,9 +246,9 @@ INDICATOR_4_5 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=7.2,
-                    option_group="Option B"
+                    option_group="Option B",
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

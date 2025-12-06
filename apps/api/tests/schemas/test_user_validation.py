@@ -6,17 +6,16 @@ Tests the new validation features added to user schemas
 import pytest
 from pydantic import ValidationError
 
+from app.db.enums import UserRole
 from app.schemas.user import (
-    UserCreate,
+    PasswordResetRequest,
     UserAdminCreate,
     UserAdminUpdate,
+    UserCreate,
     UserUpdate,
-    PasswordResetRequest,
     coerce_to_optional_int,
     validate_password_strength,
 )
-from app.db.enums import UserRole
-
 
 # ====================================================================
 # Email Validation Tests (EmailStr)
@@ -135,10 +134,10 @@ class TestPasswordStrengthValidation:
     def test_password_too_short_rejected(self):
         """Test that passwords shorter than 8 characters are rejected."""
         short_passwords = [
-            "Short1",      # 6 chars
-            "Pass1",       # 5 chars
-            "Abc123",      # 6 chars
-            "Test1",       # 5 chars
+            "Short1",  # 6 chars
+            "Pass1",  # 5 chars
+            "Abc123",  # 6 chars
+            "Test1",  # 5 chars
         ]
 
         for password in short_passwords:
@@ -486,4 +485,6 @@ class TestEdgeCases:
         )
         # EmailStr preserves case but validates format
         # (case-insensitive comparison happens at DB level via collation)
-        assert user.email == "Test.User@example.com"  # Domain is normalized to lowercase by EmailStr
+        assert (
+            user.email == "Test.User@example.com"
+        )  # Domain is normalized to lowercase by EmailStr

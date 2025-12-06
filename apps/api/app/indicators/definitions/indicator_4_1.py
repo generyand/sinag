@@ -60,8 +60,13 @@ IMPORTANT NOTES FOR PHASE 9 (VALIDATION SERVICE):
    - Failing means VAW Desk is "Non-Functional"
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem, FormNotes, NoteItem
-
+from app.indicators.base import (
+    ChecklistItem,
+    FormNotes,
+    Indicator,
+    NoteItem,
+    SubIndicator,
+)
 
 # Indicator 4.1: Functionality of Barangay Violence Against Women (VAW) Desk
 INDICATOR_4_1 = Indicator(
@@ -88,11 +93,10 @@ INDICATOR_4_1 = Indicator(
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the establishment of Barangay VAW Desk and designated VAW Desk Officer",
                     mov_description="Verification of uploaded Executive Order or similar issuance establishing the Barangay VAW Desk and designating the VAW Desk Officer",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 4.1.2
         SubIndicator(
             code="4.1.2",
@@ -108,18 +112,15 @@ INDICATOR_4_1 = Indicator(
                     label="At least one (1) copy of proof of training such as Certificate of Completion and/or Participation",
                     mov_description="Verification of uploaded proof of training for the Barangay VAW Desk Officer related to gender-sensitive handling of VAW cases not earlier than CY 2020",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 4.1.3
         SubIndicator(
             code="4.1.3",
             name="Plan and Budget: Approved CY 2023 Barangay Gender and Development (GAD) Plan and Budget",
-            upload_instructions=(
-                "Upload: Approved Barangay GAD Plan and Budget for CY 2023"
-            ),
+            upload_instructions=("Upload: Approved Barangay GAD Plan and Budget for CY 2023"),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 # Upload Verification
@@ -128,11 +129,10 @@ INDICATOR_4_1 = Indicator(
                     label="Approved Barangay GAD Plan and Budget",
                     mov_description="Verification of uploaded Approved Barangay Gender and Development (GAD) Plan and Budget",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 4.1.4
         SubIndicator(
             code="4.1.4",
@@ -152,7 +152,7 @@ INDICATOR_4_1 = Indicator(
                     label="Accomplishment Report covering 1st to 3rd quarter with received stamp by the C/MSWDO and C/MLGOO",
                     mov_description="Verification of uploaded quarterly accomplishment reports based on VAW cases database/records",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
                 # Text Input Field
                 ChecklistItem(
@@ -161,11 +161,10 @@ INDICATOR_4_1 = Indicator(
                     mov_description="Please supply the number of documents submitted:",
                     required=True,
                     requires_document_count=True,  # This is a text input field
-                    display_order=2
+                    display_order=2,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 4.1.5
         SubIndicator(
             code="4.1.5",
@@ -186,7 +185,7 @@ INDICATOR_4_1 = Indicator(
                     label="Copy of the generated report or screenshot of the updated database on VAW cases reported to the barangay with the following information at the minimum:",
                     mov_description="Verification of uploaded database report or screenshot showing VAW cases and assistance provided",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
                 # Text Input Fields
                 ChecklistItem(
@@ -195,7 +194,7 @@ INDICATOR_4_1 = Indicator(
                     mov_description="Please supply the number of documents submitted:",
                     required=True,
                     requires_document_count=True,  # This is a text input field
-                    display_order=2
+                    display_order=2,
                 ),
                 ChecklistItem(
                     id="4_1_5_ra_9262",
@@ -203,7 +202,7 @@ INDICATOR_4_1 = Indicator(
                     mov_description=None,
                     required=True,
                     requires_document_count=True,  # This is a text input field
-                    display_order=3
+                    display_order=3,
                 ),
                 ChecklistItem(
                     id="4_1_5_other_laws",
@@ -211,7 +210,7 @@ INDICATOR_4_1 = Indicator(
                     mov_description=None,
                     required=True,
                     requires_document_count=True,  # This is a text input field
-                    display_order=4
+                    display_order=4,
                 ),
                 ChecklistItem(
                     id="4_1_5_assistance",
@@ -219,20 +218,25 @@ INDICATOR_4_1 = Indicator(
                     mov_description=None,
                     required=True,
                     requires_document_count=True,  # This is a text input field
-                    display_order=5
+                    display_order=5,
                 ),
             ],
             notes=FormNotes(
                 title="Minimum Information:",
                 items=[
                     NoteItem(label="a.", text="Total number of VAW cases received"),
-                    NoteItem(label="", text="i. Number of cases documented for violating RA 9262"),
-                    NoteItem(label="", text="ii. Number of cases documented for violating other VAW-related laws"),
+                    NoteItem(
+                        label="",
+                        text="i. Number of cases documented for violating RA 9262",
+                    ),
+                    NoteItem(
+                        label="",
+                        text="ii. Number of cases documented for violating other VAW-related laws",
+                    ),
                     NoteItem(label="b.", text="Assistance provided to victim-survivors"),
-                ]
-            )
+                ],
+            ),
         ),
-
         # Sub-Indicator 4.1.6
         SubIndicator(
             code="4.1.6",
@@ -258,7 +262,7 @@ INDICATOR_4_1 = Indicator(
                     item_type="checkbox",
                     required=True,
                     display_order=1,
-                    option_group="shared"
+                    option_group="shared",
                 ),
                 # Option A: Physical Accomplishment - YES/NO assessment
                 ChecklistItem(
@@ -268,7 +272,7 @@ INDICATOR_4_1 = Indicator(
                     item_type="assessment_field",
                     required=False,
                     display_order=4,
-                    option_group="option_a"
+                    option_group="option_a",
                 ),
                 ChecklistItem(
                     id="4_1_6_cert_physical",
@@ -277,7 +281,7 @@ INDICATOR_4_1 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=5,
-                    option_group="option_a"
+                    option_group="option_a",
                 ),
                 ChecklistItem(
                     id="4_1_6_physical_accomplished",
@@ -286,7 +290,7 @@ INDICATOR_4_1 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=6,
-                    option_group="option_a"
+                    option_group="option_a",
                 ),
                 ChecklistItem(
                     id="4_1_6_physical_reflected",
@@ -294,7 +298,7 @@ INDICATOR_4_1 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=7,
-                    option_group="option_a"
+                    option_group="option_a",
                 ),
                 # OR Separator (info_text)
                 ChecklistItem(
@@ -303,7 +307,7 @@ INDICATOR_4_1 = Indicator(
                     mov_description="OR",
                     item_type="info_text",
                     required=False,
-                    display_order=8
+                    display_order=8,
                 ),
                 # Option B: Fund Utilization - YES/NO assessment
                 ChecklistItem(
@@ -313,7 +317,7 @@ INDICATOR_4_1 = Indicator(
                     item_type="assessment_field",
                     required=False,
                     display_order=9,
-                    option_group="option_b"
+                    option_group="option_b",
                 ),
                 ChecklistItem(
                     id="4_1_6_cert_financial",
@@ -322,7 +326,7 @@ INDICATOR_4_1 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=10,
-                    option_group="option_b"
+                    option_group="option_b",
                 ),
                 ChecklistItem(
                     id="4_1_6_financial_utilized",
@@ -331,7 +335,7 @@ INDICATOR_4_1 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=11,
-                    option_group="option_b"
+                    option_group="option_b",
                 ),
                 ChecklistItem(
                     id="4_1_6_financial_allocated",
@@ -339,11 +343,10 @@ INDICATOR_4_1 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=12,
-                    option_group="option_b"
+                    option_group="option_b",
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 4.1.7 (FOR PROFILING ONLY)
         SubIndicator(
             code="4.1.7",
@@ -361,7 +364,7 @@ INDICATOR_4_1 = Indicator(
                     label="4.1.7.1. Presence of Referral System Flow Chart (For profiling) - Flow Chart based on Annex C - Establishment of Referral System",
                     mov_description="Verification of uploaded Flow Chart based on Annex C (For profiling only)",
                     required=False,  # Not required for pass/fail - profiling only
-                    display_order=1
+                    display_order=1,
                 ),
                 # Upload Verification for Directory
                 ChecklistItem(
@@ -369,9 +372,9 @@ INDICATOR_4_1 = Indicator(
                     label="4.1.7.2. Presence of Directory of agencies/individuals providing services to victim-survivors (For profiling) - Annex J - Directory Form",
                     mov_description="Verification of uploaded Annex J - Directory Form (For profiling only)",
                     required=False,  # Not required for pass/fail - profiling only
-                    display_order=2
+                    display_order=2,
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

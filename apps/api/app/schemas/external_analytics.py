@@ -2,8 +2,8 @@
 # Pydantic models for external stakeholder analytics (Katuparan Center)
 # These schemas provide aggregated, anonymized SGLGB data for research purposes
 
+
 from pydantic import BaseModel, ConfigDict, Field
-from typing import List, Optional
 
 
 class OverallComplianceResponse(BaseModel):
@@ -21,7 +21,7 @@ class OverallComplianceResponse(BaseModel):
     failed_count: int = Field(description="Number of barangays that failed SGLGB")
     pass_percentage: float = Field(description="Percentage of barangays that passed (0-100)")
     fail_percentage: float = Field(description="Percentage of barangays that failed (0-100)")
-    assessment_cycle: Optional[str] = Field(None, description="Assessment cycle identifier")
+    assessment_cycle: str | None = Field(None, description="Assessment cycle identifier")
 
 
 class GovernanceAreaPerformance(BaseModel):
@@ -43,9 +43,8 @@ class GovernanceAreaPerformance(BaseModel):
     pass_percentage: float = Field(description="Percentage that passed this area (0-100)")
     fail_percentage: float = Field(description="Percentage that failed this area (0-100)")
     indicator_count: int = Field(description="Total number of indicators in this area")
-    indicators_breakdown: Optional[List[dict]] = Field(
-        None,
-        description="Breakdown showing % of barangays passing each indicator"
+    indicators_breakdown: list[dict] | None = Field(
+        None, description="Breakdown showing % of barangays passing each indicator"
     )
 
 
@@ -54,7 +53,9 @@ class GovernanceAreaPerformanceResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    areas: List[GovernanceAreaPerformance] = Field(description="Performance data for all 6 governance areas")
+    areas: list[GovernanceAreaPerformance] = Field(
+        description="Performance data for all 6 governance areas"
+    )
 
 
 class TopFailingIndicator(BaseModel):
@@ -80,7 +81,7 @@ class TopFailingIndicatorsResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    top_failing_indicators: List[TopFailingIndicator] = Field(
+    top_failing_indicators: list[TopFailingIndicator] = Field(
         description="Top 5 indicators with highest failure rates"
     )
 
@@ -96,10 +97,12 @@ class AnonymizedInsight(BaseModel):
 
     governance_area_code: str = Field(description="Associated governance area")
     governance_area_name: str = Field(description="Full governance area name")
-    theme: str = Field(description="Common theme (e.g., 'Budget Transparency', 'Disaster Preparedness')")
+    theme: str = Field(
+        description="Common theme (e.g., 'Budget Transparency', 'Disaster Preparedness')"
+    )
     insight_summary: str = Field(description="Aggregated insight text")
     frequency: int = Field(description="Number of assessments this theme appeared in")
-    priority: Optional[str] = Field(None, description="Priority level: High, Medium, Low")
+    priority: str | None = Field(None, description="Priority level: High, Medium, Low")
 
 
 class AnonymizedAIInsightsResponse(BaseModel):
@@ -109,7 +112,7 @@ class AnonymizedAIInsightsResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    insights: List[AnonymizedInsight] = Field(description="Aggregated AI-generated insights")
+    insights: list[AnonymizedInsight] = Field(description="Aggregated AI-generated insights")
     total_assessments_analyzed: int = Field(
         description="Total number of assessments used to generate these insights"
     )
@@ -131,5 +134,5 @@ class ExternalAnalyticsDashboardResponse(BaseModel):
     ai_insights: AnonymizedAIInsightsResponse
     data_disclaimer: str = Field(
         default="This data is aggregated and anonymized. Individual barangay performance cannot be identified.",
-        description="Privacy disclaimer"
+        description="Privacy disclaimer",
     )

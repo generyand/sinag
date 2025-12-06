@@ -3,22 +3,21 @@
 # All endpoints return aggregated, anonymized data for research purposes
 
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
-from typing import Optional
 
-from app.api.deps import get_db, get_current_external_user
+from app.api.deps import get_current_external_user, get_db
 from app.db.models.user import User
-from app.db.enums import UserRole
-from app.services.external_analytics_service import external_analytics_service
 from app.schemas.external_analytics import (
-    OverallComplianceResponse,
-    GovernanceAreaPerformanceResponse,
-    TopFailingIndicatorsResponse,
     AnonymizedAIInsightsResponse,
     ExternalAnalyticsDashboardResponse,
+    GovernanceAreaPerformanceResponse,
+    OverallComplianceResponse,
+    TopFailingIndicatorsResponse,
 )
+from app.services.external_analytics_service import external_analytics_service
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +31,9 @@ router = APIRouter(prefix="/external/analytics", tags=["external-analytics"])
     description="Returns aggregated SGLGB compliance statistics for all barangays. Data is anonymized and cannot be used to identify individual barangay performance.",
 )
 async def get_overall_compliance(
-    assessment_cycle: Optional[str] = Query(None, description="Assessment cycle filter (defaults to most recent)"),
+    assessment_cycle: str | None = Query(
+        None, description="Assessment cycle filter (defaults to most recent)"
+    ),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_external_user),
 ):
@@ -86,7 +87,7 @@ async def get_overall_compliance(
     description="Returns aggregated pass/fail rates for all 6 governance areas, including indicator-level breakdowns.",
 )
 async def get_governance_area_performance(
-    assessment_cycle: Optional[str] = Query(None, description="Assessment cycle filter"),
+    assessment_cycle: str | None = Query(None, description="Assessment cycle filter"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_external_user),
 ):
@@ -131,7 +132,7 @@ async def get_governance_area_performance(
     description="Returns the 5 indicators with the highest failure rates across all barangays, highlighting systemic weaknesses.",
 )
 async def get_top_failing_indicators(
-    assessment_cycle: Optional[str] = Query(None, description="Assessment cycle filter"),
+    assessment_cycle: str | None = Query(None, description="Assessment cycle filter"),
     limit: int = Query(5, ge=1, le=10, description="Number of top failing indicators to return"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_external_user),
@@ -177,7 +178,7 @@ async def get_top_failing_indicators(
     description="Returns aggregated AI-generated recommendations and capacity development needs for research purposes.",
 )
 async def get_ai_insights_summary(
-    assessment_cycle: Optional[str] = Query(None, description="Assessment cycle filter"),
+    assessment_cycle: str | None = Query(None, description="Assessment cycle filter"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_external_user),
 ):
@@ -203,9 +204,7 @@ async def get_ai_insights_summary(
             f"requesting AI insights (cycle: {assessment_cycle or 'latest'})"
         )
 
-        result = external_analytics_service.get_anonymized_ai_insights(
-            db, assessment_cycle
-        )
+        result = external_analytics_service.get_anonymized_ai_insights(db, assessment_cycle)
 
         return result
 
@@ -224,7 +223,7 @@ async def get_ai_insights_summary(
     description="Returns all dashboard sections in a single response (overall compliance, governance areas, top failing indicators, AI insights). Optimized for dashboard loading.",
 )
 async def get_complete_dashboard(
-    assessment_cycle: Optional[str] = Query(None, description="Assessment cycle filter"),
+    assessment_cycle: str | None = Query(None, description="Assessment cycle filter"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_external_user),
 ):
@@ -255,9 +254,7 @@ async def get_complete_dashboard(
             f"requesting complete dashboard (cycle: {assessment_cycle or 'latest'})"
         )
 
-        result = external_analytics_service.get_complete_dashboard(
-            db, assessment_cycle
-        )
+        result = external_analytics_service.get_complete_dashboard(db, assessment_cycle)
 
         return result
 
@@ -282,7 +279,7 @@ async def get_complete_dashboard(
     response_class=Response,
 )
 async def export_csv(
-    assessment_cycle: Optional[str] = Query(None, description="Assessment cycle filter"),
+    assessment_cycle: str | None = Query(None, description="Assessment cycle filter"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_external_user),
 ):
@@ -317,7 +314,7 @@ async def export_csv(
             db=db,
             assessment_cycle=assessment_cycle,
             user_email=current_user.email,
-            user_role=current_user.role.value
+            user_role=current_user.role.value,
         )
 
         # Create filename with timestamp
@@ -355,7 +352,7 @@ async def export_csv(
     response_class=Response,
 )
 async def export_pdf(
-    assessment_cycle: Optional[str] = Query(None, description="Assessment cycle filter"),
+    assessment_cycle: str | None = Query(None, description="Assessment cycle filter"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_external_user),
 ):
@@ -390,7 +387,7 @@ async def export_pdf(
             db=db,
             assessment_cycle=assessment_cycle,
             user_email=current_user.email,
-            user_role=current_user.role.value
+            user_role=current_user.role.value,
         )
 
         # Create filename with timestamp

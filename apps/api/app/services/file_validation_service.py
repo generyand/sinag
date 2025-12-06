@@ -6,7 +6,7 @@ Validates file types, sizes, and performs basic security checks.
 """
 
 import mimetypes
-from typing import BinaryIO
+
 from fastapi import UploadFile
 
 from app.schemas.system import ValidationResult
@@ -140,9 +140,7 @@ class FileValidationService:
             filename_lower = file.filename.lower()
             expected_extensions = self.MIME_TO_EXTENSIONS[content_type]
 
-            has_valid_extension = any(
-                filename_lower.endswith(ext) for ext in expected_extensions
-            )
+            has_valid_extension = any(filename_lower.endswith(ext) for ext in expected_extensions)
 
             if not has_valid_extension:
                 return ValidationResult(

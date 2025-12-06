@@ -3,10 +3,11 @@
 
 from datetime import datetime
 
-from app.db.base import Base
-from app.db.enums import AssessmentStatus, ComplianceStatus, MOVStatus, ValidationStatus
 from sqlalchemy import JSON, Boolean, DateTime, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
+
+from app.db.base import Base
+from app.db.enums import AssessmentStatus, ComplianceStatus, MOVStatus, ValidationStatus
 
 
 class Assessment(Base):
@@ -50,10 +51,10 @@ class Assessment(Base):
     # Files uploaded AFTER this timestamp are shown as "New Files (After Calibration)" in Validator view
     # IMPORTANT: In Validator view, use calibration_requested_at for calibrated indicators (validation_status=null),
     # and rework_requested_at for non-calibrated indicators (to show files from Assessor rework stage)
-    calibration_requested_at: Mapped[datetime | None] = mapped_column(
-        DateTime, nullable=True
-    )
-    calibration_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)  # Legacy: global count (deprecated)
+    calibration_requested_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    calibration_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0
+    )  # Legacy: global count (deprecated)
     # Track calibration per governance area - stores list of area IDs that have been calibrated
     # Each area can only be calibrated once (max 1 per area)
     calibrated_area_ids: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
@@ -78,9 +79,15 @@ class Assessment(Base):
     mlgoo_recalibration_requested_by: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
-    mlgoo_recalibration_requested_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    mlgoo_recalibration_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)  # Max 1
-    mlgoo_recalibration_indicator_ids: Mapped[list | None] = mapped_column(JSON, nullable=True)  # Specific indicators unlocked
+    mlgoo_recalibration_requested_at: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True
+    )
+    mlgoo_recalibration_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0
+    )  # Max 1
+    mlgoo_recalibration_indicator_ids: Mapped[list | None] = mapped_column(
+        JSON, nullable=True
+    )  # Specific indicators unlocked
     mlgoo_recalibration_comments: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Grace Period & Auto-lock tracking
@@ -119,9 +126,7 @@ class Assessment(Base):
     )
 
     # Timestamps
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.utcnow
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
     )
@@ -130,19 +135,13 @@ class Assessment(Base):
 
     # Relationships
     blgu_user = relationship("User", foreign_keys=[blgu_user_id], back_populates="assessments")
-    rework_requester = relationship(
-        "User", foreign_keys=[rework_requested_by], post_update=True
-    )
-    reviewer = relationship(
-        "User", foreign_keys=[reviewed_by], post_update=True
-    )
+    rework_requester = relationship("User", foreign_keys=[rework_requested_by], post_update=True)
+    reviewer = relationship("User", foreign_keys=[reviewed_by], post_update=True)
     calibration_validator = relationship(
         "User", foreign_keys=[calibration_validator_id], post_update=True
     )
     # MLGOO approval relationships
-    mlgoo_approver = relationship(
-        "User", foreign_keys=[mlgoo_approved_by], post_update=True
-    )
+    mlgoo_approver = relationship("User", foreign_keys=[mlgoo_approved_by], post_update=True)
     mlgoo_recalibration_requester = relationship(
         "User", foreign_keys=[mlgoo_recalibration_requested_by], post_update=True
     )
@@ -152,12 +151,10 @@ class Assessment(Base):
     bbi_results = relationship(
         "BBIResult", back_populates="assessment", cascade="all, delete-orphan"
     )
-    mov_files = relationship(
-        "MOVFile", back_populates="assessment", cascade="all, delete-orphan"
-    )
+    mov_files = relationship("MOVFile", back_populates="assessment", cascade="all, delete-orphan")
 
     # Validation methods (Epic 5.0)
-    @validates('rework_count')
+    @validates("rework_count")
     def validate_rework_count(self, key, value):
         """
         Validate that rework_count does not exceed 1.
@@ -182,7 +179,7 @@ class Assessment(Base):
             raise ValueError("rework_count cannot be negative.")
         return value
 
-    @validates('mlgoo_recalibration_count')
+    @validates("mlgoo_recalibration_count")
     def validate_mlgoo_recalibration_count(self, key, value):
         """
         Validate that mlgoo_recalibration_count does not exceed 1.
@@ -303,17 +300,11 @@ class AssessmentResponse(Base):
     assessor_remarks: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Foreign keys
-    assessment_id: Mapped[int] = mapped_column(
-        ForeignKey("assessments.id"), nullable=False
-    )
-    indicator_id: Mapped[int] = mapped_column(
-        ForeignKey("indicators.id"), nullable=False
-    )
+    assessment_id: Mapped[int] = mapped_column(ForeignKey("assessments.id"), nullable=False)
+    indicator_id: Mapped[int] = mapped_column(ForeignKey("indicators.id"), nullable=False)
 
     # Timestamps
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.utcnow
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
     )
@@ -356,14 +347,10 @@ class MOV(Base):
     )
 
     # Foreign key to assessment response
-    response_id: Mapped[int] = mapped_column(
-        ForeignKey("assessment_responses.id"), nullable=False
-    )
+    response_id: Mapped[int] = mapped_column(ForeignKey("assessment_responses.id"), nullable=False)
 
     # Timestamps
-    uploaded_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.utcnow
-    )
+    uploaded_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
 
     # Relationships
     response = relationship("AssessmentResponse", back_populates="movs")
@@ -401,12 +388,12 @@ class MOVFile(Base):
     file_url: Mapped[str] = mapped_column(String, nullable=False)
     file_type: Mapped[str] = mapped_column(String(50), nullable=False)
     file_size: Mapped[int] = mapped_column(Integer, nullable=False)  # Size in bytes
-    field_id: Mapped[str | None] = mapped_column(String, nullable=True)  # Field identifier for multi-field uploads
+    field_id: Mapped[str | None] = mapped_column(
+        String, nullable=True
+    )  # Field identifier for multi-field uploads
 
     # Timestamps
-    uploaded_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.utcnow
-    )
+    uploaded_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
     deleted_at: Mapped[datetime | None] = mapped_column(
         DateTime, nullable=True, index=True
     )  # Soft delete support
@@ -437,20 +424,14 @@ class FeedbackComment(Base):
     comment_type: Mapped[str] = mapped_column(String, nullable=False, default="general")
 
     # Internal note flag - distinguishes internal assessor notes from public feedback
-    is_internal_note: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
-    )
+    is_internal_note: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     # Foreign keys
-    response_id: Mapped[int] = mapped_column(
-        ForeignKey("assessment_responses.id"), nullable=False
-    )
+    response_id: Mapped[int] = mapped_column(ForeignKey("assessment_responses.id"), nullable=False)
     assessor_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
 
     # Timestamps
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.utcnow
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
 
     # Relationships
     response = relationship("AssessmentResponse", back_populates="feedback_comments")
@@ -497,9 +478,7 @@ class MOVAnnotation(Base):
     comment: Mapped[str] = mapped_column(Text, nullable=False)
 
     # Timestamps
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.utcnow
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
     )

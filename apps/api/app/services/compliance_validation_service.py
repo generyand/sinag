@@ -28,19 +28,22 @@ Usage:
     )
 """
 
-from typing import Dict, Any, List, Optional
+import logging
+from typing import Any
+
 from sqlalchemy.orm import Session
+
+from app.db.enums import ValidationStatus
 from app.db.models.assessment import AssessmentResponse
 from app.db.models.governance_area import Indicator
-from app.db.enums import ValidationStatus
 from app.services.calculation_engine_service import calculation_engine_service
-import logging
 
 logger = logging.getLogger(__name__)
 
 
 class ComplianceValidationError(Exception):
     """Custom exception for compliance validation errors"""
+
     pass
 
 
@@ -62,8 +65,8 @@ class ComplianceValidationService:
         db: Session,
         assessment_id: int,
         indicator_id: int,
-        bbi_statuses: Optional[Dict[int, str]] = None
-    ) -> Dict[str, Any]:
+        bbi_statuses: dict[int, str] | None = None,
+    ) -> dict[str, Any]:
         """
         Validate compliance for a single indicator response.
 
@@ -108,14 +111,18 @@ class ComplianceValidationService:
                     "calculated_status": None,
                     "generated_remark": None,
                     "was_updated": False,
-                    "skip_reason": "Not auto-calculable"
+                    "skip_reason": "Not auto-calculable",
                 }
 
             # Retrieve the assessment response
-            response = db.query(AssessmentResponse).filter(
-                AssessmentResponse.assessment_id == assessment_id,
-                AssessmentResponse.indicator_id == indicator_id
-            ).first()
+            response = (
+                db.query(AssessmentResponse)
+                .filter(
+                    AssessmentResponse.assessment_id == assessment_id,
+                    AssessmentResponse.indicator_id == indicator_id,
+                )
+                .first()
+            )
 
             if not response:
                 raise ComplianceValidationError(
@@ -126,13 +133,12 @@ class ComplianceValidationService:
             calculated_status = self.calculation_engine.execute_calculation(
                 calculation_schema=indicator.calculation_schema,
                 response_data=response.response_data,
-                bbi_statuses=bbi_statuses or {}
+                bbi_statuses=bbi_statuses or {},
             )
 
             # Generate remark
             generated_remark = self.calculation_engine.get_remark_for_status(
-                remark_schema=indicator.remark_schema,
-                status=calculated_status
+                remark_schema=indicator.remark_schema, status=calculated_status
             )
 
             # Update the response record
@@ -158,7 +164,7 @@ class ComplianceValidationService:
                 "indicator_id": indicator_id,
                 "calculated_status": calculated_status.value,
                 "generated_remark": generated_remark,
-                "was_updated": was_updated
+                "was_updated": was_updated,
             }
 
         except ComplianceValidationError:
@@ -168,7 +174,7 @@ class ComplianceValidationService:
             self.logger.error(
                 f"Error validating compliance for indicator {indicator_id} "
                 f"in assessment {assessment_id}: {str(e)}",
-                exc_info=True
+                exc_info=True,
             )
             # Don't fail the entire operation, just log and continue
             return {
@@ -177,15 +183,15 @@ class ComplianceValidationService:
                 "calculated_status": None,
                 "generated_remark": None,
                 "was_updated": False,
-                "error": str(e)
+                "error": str(e),
             }
 
     def bulk_validate_assessment(
         self,
         db: Session,
         assessment_id: int,
-        bbi_statuses: Optional[Dict[int, str]] = None
-    ) -> Dict[str, Any]:
+        bbi_statuses: dict[int, str] | None = None,
+    ) -> dict[str, Any]:
         """
         Validate compliance for all auto-calculable indicators in an assessment.
 
@@ -213,9 +219,11 @@ class ComplianceValidationService:
         """
         try:
             # Get all responses for this assessment with their indicators
-            responses = db.query(AssessmentResponse).filter(
-                AssessmentResponse.assessment_id == assessment_id
-            ).all()
+            responses = (
+                db.query(AssessmentResponse)
+                .filter(AssessmentResponse.assessment_id == assessment_id)
+                .all()
+            )
 
             if not responses:
                 self.logger.warning(f"No responses found for assessment {assessment_id}")
@@ -228,7 +236,7 @@ class ComplianceValidationService:
                     "failed_count": 0,
                     "conditional_count": 0,
                     "error_count": 0,
-                    "results": []
+                    "results": [],
                 }
 
             # Validate each auto-calculable indicator
@@ -254,7 +262,7 @@ class ComplianceValidationService:
                     db=db,
                     assessment_id=assessment_id,
                     indicator_id=indicator.id,
-                    bbi_statuses=bbi_statuses
+                    bbi_statuses=bbi_statuses,
                 )
 
                 results.append(result)
@@ -287,13 +295,13 @@ class ComplianceValidationService:
                 "failed_count": failed_count,
                 "conditional_count": conditional_count,
                 "error_count": error_count,
-                "results": results
+                "results": results,
             }
 
         except Exception as e:
             self.logger.error(
                 f"Error during bulk validation for assessment {assessment_id}: {str(e)}",
-                exc_info=True
+                exc_info=True,
             )
             raise ComplianceValidationError(
                 f"Failed to bulk validate assessment {assessment_id}: {str(e)}"
@@ -303,8 +311,8 @@ class ComplianceValidationService:
         self,
         db: Session,
         indicator_id: int,
-        bbi_statuses: Optional[Dict[int, str]] = None
-    ) -> Dict[str, Any]:
+        bbi_statuses: dict[int, str] | None = None,
+    ) -> dict[str, Any]:
         """
         Recalculate compliance for all responses to a specific indicator.
 
@@ -335,13 +343,15 @@ class ComplianceValidationService:
                     "failed_count": 0,
                     "conditional_count": 0,
                     "error_count": 0,
-                    "results": []
+                    "results": [],
                 }
 
             # Get all responses for this indicator
-            responses = db.query(AssessmentResponse).filter(
-                AssessmentResponse.indicator_id == indicator_id
-            ).all()
+            responses = (
+                db.query(AssessmentResponse)
+                .filter(AssessmentResponse.indicator_id == indicator_id)
+                .all()
+            )
 
             results = []
             recalculated_count = 0
@@ -356,13 +366,12 @@ class ComplianceValidationService:
                     calculated_status = self.calculation_engine.execute_calculation(
                         calculation_schema=indicator.calculation_schema,
                         response_data=response.response_data,
-                        bbi_statuses=bbi_statuses or {}
+                        bbi_statuses=bbi_statuses or {},
                     )
 
                     # Generate remark
                     generated_remark = self.calculation_engine.get_remark_for_status(
-                        remark_schema=indicator.remark_schema,
-                        status=calculated_status
+                        remark_schema=indicator.remark_schema, status=calculated_status
                     )
 
                     # Update the response
@@ -382,24 +391,28 @@ class ComplianceValidationService:
                     elif calculated_status == ValidationStatus.CONDITIONAL:
                         conditional_count += 1
 
-                    results.append({
-                        "response_id": response.id,
-                        "assessment_id": response.assessment_id,
-                        "calculated_status": calculated_status.value,
-                        "generated_remark": generated_remark
-                    })
+                    results.append(
+                        {
+                            "response_id": response.id,
+                            "assessment_id": response.assessment_id,
+                            "calculated_status": calculated_status.value,
+                            "generated_remark": generated_remark,
+                        }
+                    )
 
                 except Exception as e:
                     self.logger.error(
                         f"Error recalculating response {response.id}: {str(e)}",
-                        exc_info=True
+                        exc_info=True,
                     )
                     error_count += 1
-                    results.append({
-                        "response_id": response.id,
-                        "assessment_id": response.assessment_id,
-                        "error": str(e)
-                    })
+                    results.append(
+                        {
+                            "response_id": response.id,
+                            "assessment_id": response.assessment_id,
+                            "error": str(e),
+                        }
+                    )
 
             self.logger.info(
                 f"Recalculated {recalculated_count}/{len(responses)} responses for indicator {indicator_id}"
@@ -413,13 +426,13 @@ class ComplianceValidationService:
                 "failed_count": failed_count,
                 "conditional_count": conditional_count,
                 "error_count": error_count,
-                "results": results
+                "results": results,
             }
 
         except Exception as e:
             self.logger.error(
                 f"Error recalculating responses for indicator {indicator_id}: {str(e)}",
-                exc_info=True
+                exc_info=True,
             )
             raise ComplianceValidationError(
                 f"Failed to recalculate responses for indicator {indicator_id}: {str(e)}"

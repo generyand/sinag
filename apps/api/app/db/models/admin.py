@@ -3,21 +3,22 @@
 
 from datetime import datetime
 
-from app.db.base import Base
 from sqlalchemy import (
+    JSON,
     Boolean,
     Column,
     DateTime,
     ForeignKey,
     Index,
     Integer,
-    JSON,
     SmallInteger,
     String,
     Text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
+
+from app.db.base import Base
 
 
 class AuditLog(Base):
@@ -46,15 +47,13 @@ class AuditLog(Base):
     )  # FK to the entity (may be null for bulk operations)
 
     # What action was performed
-    action = Column(
-        String(50), nullable=False
-    )  # e.g., "create", "update", "delete", "deactivate"
+    action = Column(String(50), nullable=False)  # e.g., "create", "update", "delete", "deactivate"
 
     # What changed (JSON diff of before/after states)
     # Use JSON.with_variant() to support both PostgreSQL (JSONB) and SQLite (JSON)
     changes = Column(
         JSON().with_variant(JSONB(astext_type=Text), "postgresql"),  # type: ignore[arg-type]
-        nullable=True
+        nullable=True,
     )  # Store structured change data: {"field": {"before": X, "after": Y}}
 
     # Request metadata
@@ -68,8 +67,8 @@ class AuditLog(Base):
 
     # Composite indexes for efficient queries
     __table_args__ = (
-        Index('ix_audit_logs_created_at_desc', created_at.desc()),  # For time-based sorting
-        Index('ix_audit_logs_entity_lookup', entity_type, entity_id),  # For entity-specific queries
+        Index("ix_audit_logs_created_at_desc", created_at.desc()),  # For time-based sorting
+        Index("ix_audit_logs_entity_lookup", entity_type, entity_id),  # For entity-specific queries
     )
 
     def __repr__(self):
@@ -95,15 +94,9 @@ class AssessmentCycle(Base):
     year = Column(SmallInteger, nullable=False, index=True)  # e.g., 2025
 
     # Phase deadlines (all stored in UTC)
-    phase1_deadline = Column(
-        DateTime(timezone=True), nullable=False
-    )  # Initial submission deadline
-    rework_deadline = Column(
-        DateTime(timezone=True), nullable=False
-    )  # Rework submission deadline
-    phase2_deadline = Column(
-        DateTime(timezone=True), nullable=False
-    )  # Final submission deadline
+    phase1_deadline = Column(DateTime(timezone=True), nullable=False)  # Initial submission deadline
+    rework_deadline = Column(DateTime(timezone=True), nullable=False)  # Rework submission deadline
+    phase2_deadline = Column(DateTime(timezone=True), nullable=False)  # Final submission deadline
     calibration_deadline = Column(
         DateTime(timezone=True), nullable=False
     )  # Calibration/validation deadline
@@ -127,15 +120,15 @@ class AssessmentCycle(Base):
 
     # Indexes for efficient queries
     __table_args__ = (
-        Index('ix_assessment_cycles_is_active', is_active),  # Fast active cycle lookup
-        Index('ix_assessment_cycles_year_desc', year.desc()),  # Year-based queries
+        Index("ix_assessment_cycles_is_active", is_active),  # Fast active cycle lookup
+        Index("ix_assessment_cycles_year_desc", year.desc()),  # Year-based queries
         # Partial unique index: Only one cycle can have is_active=True
         # This prevents multiple active cycles at the same time
         Index(
-            'uq_assessment_cycles_single_active',
+            "uq_assessment_cycles_single_active",
             is_active,
             unique=True,
-            postgresql_where=(is_active == True)  # noqa: E712 - SQLAlchemy requires == not is
+            postgresql_where=(is_active == True),  # noqa: E712 - SQLAlchemy requires == not is
         ),
     )
 
@@ -158,26 +151,16 @@ class DeadlineOverride(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
 
     # Foreign keys
-    cycle_id = Column(
-        Integer, ForeignKey("assessment_cycles.id"), nullable=False, index=True
-    )
-    barangay_id = Column(
-        Integer, ForeignKey("barangays.id"), nullable=False, index=True
-    )
-    indicator_id = Column(
-        Integer, ForeignKey("indicators.id"), nullable=False, index=True
-    )
+    cycle_id = Column(Integer, ForeignKey("assessment_cycles.id"), nullable=False, index=True)
+    barangay_id = Column(Integer, ForeignKey("barangays.id"), nullable=False, index=True)
+    indicator_id = Column(Integer, ForeignKey("indicators.id"), nullable=False, index=True)
     created_by = Column(
         Integer, ForeignKey("users.id"), nullable=False, index=True
     )  # MLGOO-DILG user who created the override
 
     # Deadline information
-    original_deadline = Column(
-        DateTime(timezone=True), nullable=False
-    )  # Original phase deadline
-    new_deadline = Column(
-        DateTime(timezone=True), nullable=False
-    )  # Extended deadline
+    original_deadline = Column(DateTime(timezone=True), nullable=False)  # Original phase deadline
+    new_deadline = Column(DateTime(timezone=True), nullable=False)  # Extended deadline
 
     # Justification
     reason = Column(Text, nullable=False)  # Required reason for extension
@@ -189,20 +172,22 @@ class DeadlineOverride(Base):
     cycle = relationship("AssessmentCycle", back_populates="deadline_overrides")
     barangay = relationship("Barangay", back_populates="deadline_overrides")
     indicator = relationship("Indicator", back_populates="deadline_overrides")
-    creator = relationship("User", back_populates="created_deadline_overrides", foreign_keys=[created_by])
+    creator = relationship(
+        "User", back_populates="created_deadline_overrides", foreign_keys=[created_by]
+    )
 
     # Composite indexes for efficient queries
     __table_args__ = (
         Index(
-            'ix_deadline_overrides_barangay_indicator',
+            "ix_deadline_overrides_barangay_indicator",
             barangay_id,
             indicator_id,
         ),  # Lookup overrides for specific barangay-indicator pairs
         Index(
-            'ix_deadline_overrides_created_at_desc', created_at.desc()
+            "ix_deadline_overrides_created_at_desc", created_at.desc()
         ),  # Time-based audit queries
         Index(
-            'ix_deadline_overrides_cycle_barangay', cycle_id, barangay_id
+            "ix_deadline_overrides_cycle_barangay", cycle_id, barangay_id
         ),  # Cycle-specific queries
     )
 

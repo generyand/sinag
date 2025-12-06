@@ -10,10 +10,11 @@ This script demonstrates how to use the three core services:
 Run this script to see the services in action with sample data.
 """
 
+import json
+
+from app.db.enums import ValidationStatus
 from app.services.calculation_engine_service import calculation_engine_service
 from app.services.completeness_validation_service import completeness_validation_service
-from app.db.enums import ValidationStatus
-import json
 
 
 def test_calculation_engine():
@@ -33,32 +34,30 @@ def test_calculation_engine():
                         "field_id": "completion_rate",
                         "operator": ">=",
                         "threshold": 75.0,
-                        "description": "Completion rate must be at least 75%"
+                        "description": "Completion rate must be at least 75%",
                     },
                     {
                         "rule_type": "COUNT_THRESHOLD",
                         "field_id": "required_documents",
                         "operator": ">=",
                         "threshold": 3,
-                        "description": "At least 3 documents required"
-                    }
-                ]
+                        "description": "At least 3 documents required",
+                    },
+                ],
             }
         ],
         "output_status_on_pass": "PASS",
-        "output_status_on_fail": "FAIL"
+        "output_status_on_fail": "FAIL",
     }
 
     # Test Case 1: Both conditions met (should PASS)
     print("\n📝 Test Case 1: Both conditions met")
     response_data_pass = {
         "completion_rate": 85.0,
-        "required_documents": ["doc1", "doc2", "doc3", "doc4"]
+        "required_documents": ["doc1", "doc2", "doc3", "doc4"],
     }
 
-    result = calculation_engine_service.execute_calculation(
-        calculation_schema, response_data_pass
-    )
+    result = calculation_engine_service.execute_calculation(calculation_schema, response_data_pass)
 
     print(f"   Response data: {json.dumps(response_data_pass, indent=2)}")
     print(f"   ✅ Result: {result.value}")
@@ -68,12 +67,10 @@ def test_calculation_engine():
     print("\n📝 Test Case 2: Missing required documents")
     response_data_fail = {
         "completion_rate": 85.0,
-        "required_documents": ["doc1", "doc2"]  # Only 2 documents
+        "required_documents": ["doc1", "doc2"],  # Only 2 documents
     }
 
-    result = calculation_engine_service.execute_calculation(
-        calculation_schema, response_data_fail
-    )
+    result = calculation_engine_service.execute_calculation(calculation_schema, response_data_fail)
 
     print(f"   Response data: {json.dumps(response_data_fail, indent=2)}")
     print(f"   ❌ Result: {result.value}")
@@ -84,14 +81,12 @@ def test_calculation_engine():
     remark_schema = {
         "PASS": "✅ All requirements met. Excellent work!",
         "FAIL": "❌ Requirements not met. Please review and resubmit.",
-        "CONDITIONAL": "⚠️ Partially compliant. Additional review needed."
+        "CONDITIONAL": "⚠️ Partially compliant. Additional review needed.",
     }
 
-    remark = calculation_engine_service.get_remark_for_status(
-        remark_schema, ValidationStatus.PASS
-    )
+    remark = calculation_engine_service.get_remark_for_status(remark_schema, ValidationStatus.PASS)
 
-    print(f"   Status: PASS")
+    print("   Status: PASS")
     print(f"   Remark: {remark}")
 
     print("\n✅ Calculation Engine Service tests passed!")
@@ -111,14 +106,14 @@ def test_completeness_validation():
                 "field_type": "text_input",
                 "label": "Project Name",
                 "required": True,
-                "help_text": "Enter the name of your project"
+                "help_text": "Enter the name of your project",
             },
             {
                 "field_id": "project_description",
                 "field_type": "text_area",
                 "label": "Project Description",
                 "required": True,
-                "help_text": "Provide a detailed description"
+                "help_text": "Provide a detailed description",
             },
             {
                 "field_id": "project_type",
@@ -128,15 +123,15 @@ def test_completeness_validation():
                 "options": [
                     {"label": "Infrastructure", "value": "infrastructure"},
                     {"label": "Social Services", "value": "social_services"},
-                    {"label": "Environmental", "value": "environmental"}
-                ]
+                    {"label": "Environmental", "value": "environmental"},
+                ],
             },
             {
                 "field_id": "budget_amount",
                 "field_type": "number_input",
                 "label": "Budget Amount",
-                "required": False
-            }
+                "required": False,
+            },
         ]
     }
 
@@ -146,16 +141,16 @@ def test_completeness_validation():
         "project_name": "Community Health Center",
         "project_description": "A new health center for the barangay",
         "project_type": "social_services",
-        "budget_amount": 500000
+        "budget_amount": 500000,
     }
 
-    result = completeness_validation_service.validate_completeness(
-        form_schema, complete_response
-    )
+    result = completeness_validation_service.validate_completeness(form_schema, complete_response)
 
     print(f"   Response data: {json.dumps(complete_response, indent=2)}")
     print(f"   ✅ Is complete: {result['is_complete']}")
-    print(f"   📊 Completion: {result['filled_field_count']}/{result['required_field_count']} required fields")
+    print(
+        f"   📊 Completion: {result['filled_field_count']}/{result['required_field_count']} required fields"
+    )
     assert result["is_complete"] == True, "Should be complete"
 
     # Test Case 2: Missing required fields
@@ -163,17 +158,17 @@ def test_completeness_validation():
     incomplete_response = {
         "project_name": "Community Health Center",
         # Missing project_description and project_type
-        "budget_amount": 500000
+        "budget_amount": 500000,
     }
 
-    result = completeness_validation_service.validate_completeness(
-        form_schema, incomplete_response
-    )
+    result = completeness_validation_service.validate_completeness(form_schema, incomplete_response)
 
     print(f"   Response data: {json.dumps(incomplete_response, indent=2)}")
     print(f"   ❌ Is complete: {result['is_complete']}")
-    print(f"   📊 Completion: {result['filled_field_count']}/{result['required_field_count']} required fields")
-    print(f"   Missing fields:")
+    print(
+        f"   📊 Completion: {result['filled_field_count']}/{result['required_field_count']} required fields"
+    )
+    print("   Missing fields:")
     for field in result["missing_fields"]:
         print(f"      - {field['label']} ({field['field_id']}): {field['reason']}")
 
@@ -293,6 +288,7 @@ def main():
     except Exception as e:
         print(f"\n💥 ERROR: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
 

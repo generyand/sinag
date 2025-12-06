@@ -2,15 +2,16 @@
 # Tests for the validation endpoint functionality
 
 import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
 from app.api import deps
 from app.db.enums import AssessmentStatus, UserRole, ValidationStatus
 from app.db.models.assessment import Assessment, AssessmentResponse, FeedbackComment
 from app.db.models.barangay import Barangay
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
-from fastapi.testclient import TestClient
 from main import app
-from sqlalchemy.orm import Session
 
 
 @pytest.fixture
@@ -53,9 +54,7 @@ def create_test_assessment_response(db_session: Session) -> AssessmentResponse:
     db_session.commit()
     db_session.refresh(indicator)
 
-    assessment = Assessment(
-        blgu_user_id=blgu_user.id, status=AssessmentStatus.SUBMITTED_FOR_REVIEW
-    )
+    assessment = Assessment(blgu_user_id=blgu_user.id, status=AssessmentStatus.SUBMITTED_FOR_REVIEW)
     db_session.add(assessment)
     db_session.commit()
     db_session.refresh(assessment)
@@ -127,24 +126,18 @@ def test_validate_assessment_response_success(client, db_session):
 
     # Check that the validation status was updated in the database
     updated_response = (
-        db_session.query(AssessmentResponse)
-        .filter(AssessmentResponse.id == response.id)
-        .first()
+        db_session.query(AssessmentResponse).filter(AssessmentResponse.id == response.id).first()
     )
     assert updated_response.validation_status == ValidationStatus.PASS
 
     # Check that feedback comments were created
     feedback_comments = (
-        db_session.query(FeedbackComment)
-        .filter(FeedbackComment.response_id == response.id)
-        .all()
+        db_session.query(FeedbackComment).filter(FeedbackComment.response_id == response.id).all()
     )
     assert len(feedback_comments) == 2
 
     # Check public comment
-    public_comment = next(
-        (fc for fc in feedback_comments if not fc.is_internal_note), None
-    )
+    public_comment = next((fc for fc in feedback_comments if not fc.is_internal_note), None)
     assert public_comment is not None
     assert public_comment.comment == "Great work!"
     assert public_comment.is_internal_note is False

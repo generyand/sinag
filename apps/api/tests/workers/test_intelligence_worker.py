@@ -49,9 +49,7 @@ class TestIntelligenceWorker:
         mock_intelligence_service.get_insights_with_caching.assert_called_once()
 
     @patch("app.workers.intelligence_worker.intelligence_service")
-    def test_raises_error_for_invalid_assessment(
-        self, mock_intelligence_service, db_session
-    ):
+    def test_raises_error_for_invalid_assessment(self, mock_intelligence_service, db_session):
         """Test that logic returns error for non-existent assessment."""
         # Execute with invalid assessment ID
         result = _generate_insights_logic(
@@ -125,14 +123,10 @@ class TestIntelligenceWorker:
         assert result["insights"] == mock_insights
 
     @patch("app.workers.intelligence_worker.intelligence_service")
-    def test_propagates_exception(
-        self, mock_intelligence_service, db_session, mock_assessment
-    ):
+    def test_propagates_exception(self, mock_intelligence_service, db_session, mock_assessment):
         """Test that logic propagates exceptions properly."""
         # Mock intelligence service to raise exception
-        mock_intelligence_service.get_insights_with_caching.side_effect = Exception(
-            "Test error"
-        )
+        mock_intelligence_service.get_insights_with_caching.side_effect = Exception("Test error")
 
         # Execute and verify exception is returned as error
         result = _generate_insights_logic(

@@ -2,17 +2,19 @@
 # Tests for the POST /api/v1/assessor/assessment-responses/{response_id}/movs/upload endpoint
 
 import io
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
 from app.api import deps
-from app.db.enums import AssessmentStatus, UserRole, MOVStatus
-from app.db.models.assessment import Assessment, AssessmentResponse, MOV
+from app.db.enums import AssessmentStatus, MOVStatus, UserRole
+from app.db.models.assessment import MOV, Assessment, AssessmentResponse
 from app.db.models.barangay import Barangay
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
-from fastapi.testclient import TestClient
 from main import app
-from sqlalchemy.orm import Session
 
 
 @pytest.fixture
@@ -57,9 +59,7 @@ def create_test_assessment_response_for_multipart_upload(
     db_session.commit()
     db_session.refresh(indicator)
 
-    assessment = Assessment(
-        blgu_user_id=blgu_user.id, status=AssessmentStatus.SUBMITTED_FOR_REVIEW
-    )
+    assessment = Assessment(blgu_user_id=blgu_user.id, status=AssessmentStatus.SUBMITTED_FOR_REVIEW)
     db_session.add(assessment)
     db_session.commit()
     db_session.refresh(assessment)
@@ -122,7 +122,7 @@ def test_upload_mov_file_multipart_success(
         "filename": "123-test_video.mp4",
         "original_filename": "test_video.mp4",
     }
-    
+
     # Note: The assessor_service will create the MOV in DB and return mov_dict with id, status, uploaded_at
     # So we don't need to mock that part - it will be created in the database
 
@@ -139,7 +139,9 @@ def test_upload_mov_file_multipart_success(
     )
 
     # Assertions
-    assert response_result.status_code == 200, f"Expected 200, got {response_result.status_code}. Response: {response_result.json() if response_result.status_code != 200 else 'OK'}"
+    assert response_result.status_code == 200, (
+        f"Expected 200, got {response_result.status_code}. Response: {response_result.json() if response_result.status_code != 200 else 'OK'}"
+    )
     data_result = response_result.json()
     assert data_result["success"] is True
     assert data_result["message"] == "MOV uploaded successfully by assessor"
@@ -503,4 +505,3 @@ def test_upload_mov_file_missing_file(
     # Cleanup
     client.app.dependency_overrides.pop(deps.get_current_area_assessor_user, None)
     client.app.dependency_overrides.pop(deps.get_db, None)
-

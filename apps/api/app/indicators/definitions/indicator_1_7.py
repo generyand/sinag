@@ -55,8 +55,7 @@ IMPORTANT NOTES FOR PHASE 9 (VALIDATION SERVICE):
    - Consider parameterizing the year in future refactoring
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem
-
+from app.indicators.base import ChecklistItem, Indicator, SubIndicator
 
 # Indicator 1.7: Conduct of Barangay Assembly
 INDICATOR_1_7 = Indicator(
@@ -82,9 +81,9 @@ INDICATOR_1_7 = Indicator(
                     label="Post Activity Report/ Minutes on the conduct of the 1st semester Barangay Assembly duly approved by the Punong Barangay",
                     mov_description="Verification of uploaded Post Activity Report or Minutes of the 1st semester Barangay Assembly with approval from the Punong Barangay",
                     required=True,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

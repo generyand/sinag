@@ -5,15 +5,13 @@ Revises: 383d9bdd5c19
 Create Date: 2025-11-19 09:21:49.511374
 
 """
-from typing import Sequence, Union
 
-from alembic import op
-import sqlalchemy as sa
+from typing import Sequence, Union
 
 
 # revision identifiers, used by Alembic.
-revision: str = '6da076270c03'
-down_revision: Union[str, Sequence[str], None] = '383d9bdd5c19'
+revision: str = "6da076270c03"
+down_revision: Union[str, Sequence[str], None] = "383d9bdd5c19"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -36,7 +34,7 @@ def upgrade() -> None:
 
     db = SessionLocal()
     try:
-        indicator = db.query(Indicator).filter(Indicator.indicator_code == '6.2.1').first()
+        indicator = db.query(Indicator).filter(Indicator.indicator_code == "6.2.1").first()
 
         if indicator:
             sub_def = INDICATOR_6_2.children[0]
@@ -45,19 +43,19 @@ def upgrade() -> None:
             new_form_schema = _generate_form_schema_from_checklist(
                 sub_def.checklist_items,
                 sub_def.upload_instructions,
-                sub_def.validation_rule
+                sub_def.validation_rule,
             )
 
             indicator.form_schema = new_form_schema
             db.commit()
 
-            print(f"✅ Added option_group to 6.2.1 upload fields")
+            print("✅ Added option_group to 6.2.1 upload fields")
 
             # Show which fields have option_group
-            if 'fields' in new_form_schema:
-                for field in new_form_schema['fields']:
-                    if field.get('field_type') == 'file_upload':
-                        option_group = field.get('option_group', 'none')
+            if "fields" in new_form_schema:
+                for field in new_form_schema["fields"]:
+                    if field.get("field_type") == "file_upload":
+                        option_group = field.get("option_group", "none")
                         print(f"   {field['field_id']}: option_group={option_group}")
         else:
             print("⚠️  Indicator 6.2.1 not found")
@@ -73,13 +71,13 @@ def downgrade() -> None:
 
     db = SessionLocal()
     try:
-        indicator = db.query(Indicator).filter(Indicator.indicator_code == '6.2.1').first()
+        indicator = db.query(Indicator).filter(Indicator.indicator_code == "6.2.1").first()
 
-        if indicator and indicator.form_schema and 'fields' in indicator.form_schema:
+        if indicator and indicator.form_schema and "fields" in indicator.form_schema:
             # Remove option_group from all fields
-            for field in indicator.form_schema['fields']:
-                if 'option_group' in field:
-                    del field['option_group']
+            for field in indicator.form_schema["fields"]:
+                if "option_group" in field:
+                    del field["option_group"]
 
             db.commit()
             print("✅ Removed option_group from 6.2.1 fields")

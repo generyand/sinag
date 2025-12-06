@@ -7,17 +7,17 @@ Create Date: 2025-11-06 13:20:31.644314
 Data migration to populate indicators_history with initial version snapshots.
 This ensures existing indicators have version 1 archived for historical reference.
 """
+
 from typing import Sequence, Union
 from datetime import datetime
 
 from alembic import op
-import sqlalchemy as sa
 from sqlalchemy import text
 
 
 # revision identifiers, used by Alembic.
-revision: str = '64a5bb7d4b4d'
-down_revision: Union[str, Sequence[str], None] = '04567af303c9'
+revision: str = "64a5bb7d4b4d"
+down_revision: Union[str, Sequence[str], None] = "04567af303c9"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -41,7 +41,8 @@ def upgrade() -> None:
     # Use raw SQL for data migration (more reliable than ORM for migrations)
     # Insert version 1 snapshot for each indicator into indicators_history
     # Only insert if not already exists (idempotent)
-    connection.execute(text("""
+    connection.execute(
+        text("""
         INSERT INTO indicators_history (
             indicator_id,
             version,
@@ -82,7 +83,9 @@ def upgrade() -> None:
             WHERE indicators_history.indicator_id = indicators.id
             AND indicators_history.version = 1
         );
-    """), {"migration_timestamp": migration_timestamp})
+    """),
+        {"migration_timestamp": migration_timestamp},
+    )
 
     # Commit is handled automatically by Alembic
 
@@ -100,8 +103,10 @@ def downgrade() -> None:
     connection = op.get_bind()
 
     # Delete version 1 records that were created by migration (archived_by is NULL)
-    connection.execute(text("""
+    connection.execute(
+        text("""
         DELETE FROM indicators_history
         WHERE version = 1
         AND archived_by IS NULL;
-    """))
+    """)
+    )

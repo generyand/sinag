@@ -5,12 +5,8 @@ Tests tree structure validation, cycle detection, parent-child relationships,
 indicator code format, sort order, schema completeness, and weight sum validation.
 """
 
-import pytest
 from app.services.indicator_validation_service import (
     indicator_validation_service,
-    ValidationResult,
-    SchemaValidationResult,
-    WeightValidationResult,
 )
 
 
@@ -139,7 +135,7 @@ class TestIndicatorCodeFormat:
             {"id": "1", "indicator_code": "1."},  # Trailing dot
             {"id": "2", "indicator_code": "A.1"},  # Letter instead of number
             {"id": "3", "indicator_code": "1.a"},  # Letter in second position
-            {"id": "4", "indicator_code": ""},     # Empty code (should be warning)
+            {"id": "4", "indicator_code": ""},  # Empty code (should be warning)
         ]
 
         errors, warnings = indicator_validation_service.validate_indicator_codes(indicators)
@@ -190,7 +186,12 @@ class TestSortOrderValidation:
         """Detect gaps in sort order."""
         indicators = [
             {"id": "1", "parent_id": None, "indicator_code": "1", "sort_order": 0},
-            {"id": "2", "parent_id": None, "indicator_code": "2", "sort_order": 2},  # Gap!
+            {
+                "id": "2",
+                "parent_id": None,
+                "indicator_code": "2",
+                "sort_order": 2,
+            },  # Gap!
         ]
 
         errors = indicator_validation_service.validate_sort_order(indicators)
@@ -219,7 +220,12 @@ class TestSortOrderValidation:
             {"id": "4", "parent_id": "1", "indicator_code": "1.2", "sort_order": 1},
             # Children of 2: BAD (gap)
             {"id": "5", "parent_id": "2", "indicator_code": "2.1", "sort_order": 0},
-            {"id": "6", "parent_id": "2", "indicator_code": "2.2", "sort_order": 2},  # Gap!
+            {
+                "id": "6",
+                "parent_id": "2",
+                "indicator_code": "2.2",
+                "sort_order": 2,
+            },  # Gap!
         ]
 
         errors = indicator_validation_service.validate_sort_order(indicators)
@@ -247,9 +253,19 @@ class TestTreeStructureValidation:
     def test_multiple_errors(self):
         """Tree with multiple errors detected."""
         indicators = [
-            {"id": "1", "parent_id": "2", "indicator_code": "1.", "sort_order": 1},  # Circular, bad code, bad sort
+            {
+                "id": "1",
+                "parent_id": "2",
+                "indicator_code": "1.",
+                "sort_order": 1,
+            },  # Circular, bad code, bad sort
             {"id": "2", "parent_id": "1", "indicator_code": "2", "sort_order": 0},
-            {"id": "3", "parent_id": "999", "indicator_code": "3", "sort_order": 0},  # Bad parent
+            {
+                "id": "3",
+                "parent_id": "999",
+                "indicator_code": "3",
+                "sort_order": 0,
+            },  # Bad parent
         ]
 
         result = indicator_validation_service.validate_tree_structure(indicators)
@@ -295,7 +311,11 @@ class TestSchemaValidation:
         indicator = {
             "form_schema": {
                 "fields": [
-                    {"field_id": "upload1", "label": "Upload", "field_type": "file_upload"},
+                    {
+                        "field_id": "upload1",
+                        "label": "Upload",
+                        "field_type": "file_upload",
+                    },
                 ]
             }
         }
@@ -311,9 +331,12 @@ class TestSchemaValidation:
             "mov_checklist_items": {
                 "items": [
                     {"id": "item1", "label": "Item 1", "type": "checkbox"},
-                    {"id": "group1", "label": "Group 1", "type": "group", "children": [
-                        {"id": "child1", "label": "Child 1", "type": "checkbox"}
-                    ]},
+                    {
+                        "id": "group1",
+                        "label": "Group 1",
+                        "type": "group",
+                        "children": [{"id": "child1", "label": "Child 1", "type": "checkbox"}],
+                    },
                 ]
             }
         }
@@ -328,7 +351,12 @@ class TestSchemaValidation:
         indicator = {
             "mov_checklist_items": {
                 "items": [
-                    {"id": "group1", "label": "Group 1", "type": "group", "children": []},
+                    {
+                        "id": "group1",
+                        "label": "Group 1",
+                        "type": "group",
+                        "children": [],
+                    },
                 ]
             }
         }
@@ -357,12 +385,11 @@ class TestSchemaValidation:
                         ]
                     }
                 ]
-            }
+            },
         }
 
         errors = indicator_validation_service.validate_calculation_schema(
-            indicator.get("calculation_schema"),
-            indicator.get("form_schema")
+            indicator.get("calculation_schema"), indicator.get("form_schema")
         )
         assert len(errors) == 1
         assert "field999" in errors[0]
@@ -380,12 +407,11 @@ class TestSchemaValidation:
                     {"template": "Score: {{ score }}, Field: {{ form.field1 }}"},  # OK
                     {"template": "Invalid: {{ unknown_var }}"},  # Invalid
                 ]
-            }
+            },
         }
 
         errors = indicator_validation_service.validate_remark_schema(
-            indicator.get("remark_schema"),
-            indicator.get("form_schema")
+            indicator.get("remark_schema"), indicator.get("form_schema")
         )
         assert len(errors) == 1
         assert "unknown_var" in errors[0]
@@ -403,16 +429,8 @@ class TestSchemaValidation:
                     {"id": "item1", "label": "Item 1", "type": "checkbox"},
                 ]
             },
-            "calculation_schema": {
-                "condition_groups": [
-                    {"rules": [{"field_id": "field1"}]}
-                ]
-            },
-            "remark_schema": {
-                "conditional_remarks": [
-                    {"template": "Score: {{ score }}"}
-                ]
-            }
+            "calculation_schema": {"condition_groups": [{"rules": [{"field_id": "field1"}]}]},
+            "remark_schema": {"conditional_remarks": [{"template": "Score: {{ score }}"}]},
         }
 
         result = indicator_validation_service.validate_schemas(indicator)

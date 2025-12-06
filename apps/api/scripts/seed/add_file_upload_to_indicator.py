@@ -10,6 +10,7 @@ Example:
 """
 
 import sys
+
 from app.db.base import SessionLocal
 from app.db.models.governance_area import Indicator
 
@@ -35,31 +36,33 @@ def add_file_upload_to_indicator(indicator_id: int):
             return
 
         # Get or create sections
-        sections = indicator.form_schema.get('sections', [])
+        sections = indicator.form_schema.get("sections", [])
 
         if not sections:
             print("⚠️  No sections found. Creating a new section...")
-            sections = [{
-                "section_id": "mov_section",
-                "title": "Means of Verification",
-                "description": "Upload supporting documents for this indicator",
-                "order": 1,
-                "fields": []
-            }]
+            sections = [
+                {
+                    "section_id": "mov_section",
+                    "title": "Means of Verification",
+                    "description": "Upload supporting documents for this indicator",
+                    "order": 1,
+                    "fields": [],
+                }
+            ]
 
         # Add file_upload field to the first section
         target_section = sections[0]
-        fields = target_section.get('fields', [])
+        fields = target_section.get("fields", [])
 
         # Check if file_upload field already exists
-        has_file_upload = any(f.get('field_type') == 'file_upload' for f in fields)
+        has_file_upload = any(f.get("field_type") == "file_upload" for f in fields)
 
         if has_file_upload:
             print("✅ This indicator already has a file_upload field")
             return
 
         # Find the next order number
-        max_order = max([f.get('order', 0) for f in fields], default=0)
+        max_order = max([f.get("order", 0) for f in fields], default=0)
 
         # Add the file_upload field
         file_upload_field = {
@@ -69,12 +72,20 @@ def add_file_upload_to_indicator(indicator_id: int):
             "help_text": "Upload Means of Verification documents (PDF, DOCX, XLSX, images, or video). Maximum file size: 50MB",
             "required": False,
             "order": max_order + 1,
-            "allowed_file_types": [".pdf", ".docx", ".xlsx", ".jpg", ".jpeg", ".png", ".mp4"],
-            "max_file_size_mb": 50
+            "allowed_file_types": [
+                ".pdf",
+                ".docx",
+                ".xlsx",
+                ".jpg",
+                ".jpeg",
+                ".png",
+                ".mp4",
+            ],
+            "max_file_size_mb": 50,
         }
 
         fields.append(file_upload_field)
-        target_section['fields'] = fields
+        target_section["fields"] = fields
 
         # Update the indicator
         indicator.form_schema = {"sections": sections}
@@ -82,7 +93,7 @@ def add_file_upload_to_indicator(indicator_id: int):
 
         print(f"✅ Successfully added file_upload field to indicator {indicator_id}")
         print(f"   Section: {target_section.get('title', 'Unnamed Section')}")
-        print(f"   Field ID: mov_files")
+        print("   Field ID: mov_files")
         print(f"   Field Order: {max_order + 1}")
 
     except Exception as e:
@@ -106,13 +117,13 @@ def list_indicators_without_file_upload():
             if not indicator.form_schema:
                 continue
 
-            sections = indicator.form_schema.get('sections', [])
+            sections = indicator.form_schema.get("sections", [])
             has_file_upload = False
 
             for section in sections:
-                fields = section.get('fields', [])
+                fields = section.get("fields", [])
                 for field in fields:
-                    if field.get('field_type') == 'file_upload':
+                    if field.get("field_type") == "file_upload":
                         has_file_upload = True
                         break
                 if has_file_upload:

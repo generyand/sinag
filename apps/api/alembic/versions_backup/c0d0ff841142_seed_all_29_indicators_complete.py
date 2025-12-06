@@ -8,15 +8,15 @@ Revises: 469f24e4f57a
 Create Date: 2025-11-16 18:15:00.000000
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'c0d0ff841142'
-down_revision: Union[str, Sequence[str], None] = '469f24e4f57a'
+revision: str = "c0d0ff841142"
+down_revision: Union[str, Sequence[str], None] = "469f24e4f57a"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -83,9 +83,9 @@ def upgrade() -> None:
 
         print("\n" + "=" * 70)
         print("📊 Summary:")
-        print(f"   Total Indicators: 29")
-        print(f"   BBI Indicators: 9")
-        print(f"   Profiling Only: 1 (Indicator 4.9)")
+        print("   Total Indicators: 29")
+        print("   BBI Indicators: 9")
+        print("   Profiling Only: 1 (Indicator 4.9)")
         print("=" * 70)
         print("\n🎉 All indicators ready for SGLGB assessment workflow!")
 

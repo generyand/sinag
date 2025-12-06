@@ -20,6 +20,7 @@ from app.db.models.user import User
 
 def authenticate_user(client: TestClient, user: User):
     """Helper to override authentication dependency"""
+
     def override_get_current_user():
         return user
 
@@ -39,6 +40,7 @@ def clear_user_override(client):
 
 def use_test_db_session(client: TestClient, db_session):
     """Override get_db to use the test's db_session"""
+
     def override_get_db():
         try:
             yield db_session
@@ -162,7 +164,10 @@ class TestUploadMOVFile:
 
             assert response.status_code == status.HTTP_201_CREATED
             data = response.json()
-            assert data["file_type"] == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            assert (
+                data["file_type"]
+                == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
 
     def test_upload_valid_jpg_file(self, client, assessment, auth_headers):
         """Test successful upload of a valid JPG file."""
@@ -180,7 +185,7 @@ class TestUploadMOVFile:
             )
             mock_upload.return_value = mock_mov_file
 
-            file_content = b"\xFF\xD8\xFF"  # JPEG signature
+            file_content = b"\xff\xd8\xff"  # JPEG signature
             file_data = io.BytesIO(file_content)
 
             response = client.post(
@@ -307,7 +312,10 @@ class TestUploadMOVFile:
         )
 
         # Accept either 401 or 403 - both indicate authentication/authorization failure
-        assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
+        assert response.status_code in [
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_403_FORBIDDEN,
+        ]
 
     def test_upload_with_valid_png_file(self, client, assessment, auth_headers):
         """Test successful upload of a valid PNG file."""
@@ -443,9 +451,7 @@ class TestListMOVFiles:
         authenticate_user(client, blgu_user)
 
         # List files as BLGU user
-        response = client.get(
-            f"/api/v1/movs/assessments/{assessment.id}/indicators/1/files"
-        )
+        response = client.get(f"/api/v1/movs/assessments/{assessment.id}/indicators/1/files")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -493,9 +499,7 @@ class TestListMOVFiles:
         authenticate_user(client, assessor_user)
 
         # List files as assessor
-        response = client.get(
-            f"/api/v1/movs/assessments/{assessment.id}/indicators/1/files"
-        )
+        response = client.get(f"/api/v1/movs/assessments/{assessment.id}/indicators/1/files")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -507,9 +511,7 @@ class TestListMOVFiles:
         assert "blgu1_file.pdf" in file_names
         assert "blgu2_file.pdf" in file_names
 
-    def test_list_files_excludes_soft_deleted(
-        self, client, db_session, assessment, blgu_user
-    ):
+    def test_list_files_excludes_soft_deleted(self, client, db_session, assessment, blgu_user):
         """Test that soft-deleted files are excluded from the list."""
         # Create active file
         active_file = MOVFile(
@@ -544,9 +546,7 @@ class TestListMOVFiles:
         authenticate_user(client, blgu_user)
 
         # List files
-        response = client.get(
-            f"/api/v1/movs/assessments/{assessment.id}/indicators/1/files"
-        )
+        response = client.get(f"/api/v1/movs/assessments/{assessment.id}/indicators/1/files")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -556,9 +556,7 @@ class TestListMOVFiles:
         # Verify only active file is returned
         assert data["files"][0]["file_name"] == "active_file.pdf"
 
-    def test_list_files_ordered_by_upload_time(
-        self, client, db_session, assessment, blgu_user
-    ):
+    def test_list_files_ordered_by_upload_time(self, client, db_session, assessment, blgu_user):
         """Test that files are ordered by upload time (most recent first)."""
         from datetime import timedelta
 
@@ -605,9 +603,7 @@ class TestListMOVFiles:
         authenticate_user(client, blgu_user)
 
         # List files
-        response = client.get(
-            f"/api/v1/movs/assessments/{assessment.id}/indicators/1/files"
-        )
+        response = client.get(f"/api/v1/movs/assessments/{assessment.id}/indicators/1/files")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -626,18 +622,14 @@ class TestListMOVFiles:
         # Authenticate as BLGU user
         authenticate_user(client, blgu_user)
 
-        response = client.get(
-            f"/api/v1/movs/assessments/{assessment.id}/indicators/1/files"
-        )
+        response = client.get(f"/api/v1/movs/assessments/{assessment.id}/indicators/1/files")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert "files" in data
         assert len(data["files"]) == 0
 
-    def test_list_files_filters_by_indicator(
-        self, client, db_session, assessment, blgu_user
-    ):
+    def test_list_files_filters_by_indicator(self, client, db_session, assessment, blgu_user):
         """Test that files are filtered by indicator_id."""
         # Create files for different indicators
         file_indicator1 = MOVFile(
@@ -670,9 +662,7 @@ class TestListMOVFiles:
         authenticate_user(client, blgu_user)
 
         # List files for indicator 1
-        response = client.get(
-            f"/api/v1/movs/assessments/{assessment.id}/indicators/1/files"
-        )
+        response = client.get(f"/api/v1/movs/assessments/{assessment.id}/indicators/1/files")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()

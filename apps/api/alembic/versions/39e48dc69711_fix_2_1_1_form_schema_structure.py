@@ -5,15 +5,15 @@ Revises: 36cc2d19ae83
 Create Date: 2025-12-03 20:23:14.666452
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
 import json
 
 # revision identifiers, used by Alembic.
-revision: str = '39e48dc69711'
-down_revision: Union[str, Sequence[str], None] = '36cc2d19ae83'
+revision: str = "39e48dc69711"
+down_revision: Union[str, Sequence[str], None] = "36cc2d19ae83"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -32,9 +32,9 @@ FORM_SCHEMA_2_1_1 = {
                     "required": True,
                     "accept": ".pdf,.doc,.docx,.jpg,.jpeg,.png",
                     "maxFiles": 5,
-                    "maxSizeMB": 50
+                    "maxSizeMB": 50,
                 }
-            ]
+            ],
         }
     ],
     "checklist_items": [
@@ -43,17 +43,23 @@ FORM_SCHEMA_2_1_1 = {
             "label": "EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the BDRRMC with its composition compliant to the provisions of JMC No. 2014-01, covering January to October 2023",
             "required": True,
             "requires_document_count": False,
-            "display_order": 1
+            "display_order": 1,
         }
     ],
     "notes": {
         "title": "Minimum Composition of the BDRRMC:",
         "items": [
             {"label": "1.", "text": "Punong Barangay;"},
-            {"label": "2.", "text": "A Representative from the Sangguniang Barangay; and"},
-            {"label": "3.", "text": "2 CSO representatives from the existing and active community-based people's organizations representing the most vulnerable and marginalized groups in the barangay (Item 5.7. of NDRRMC, DILG, DBM, and CSC JMC No. 2014-01)"}
-        ]
-    }
+            {
+                "label": "2.",
+                "text": "A Representative from the Sangguniang Barangay; and",
+            },
+            {
+                "label": "3.",
+                "text": "2 CSO representatives from the existing and active community-based people's organizations representing the most vulnerable and marginalized groups in the barangay (Item 5.7. of NDRRMC, DILG, DBM, and CSC JMC No. 2014-01)",
+            },
+        ],
+    },
 }
 
 

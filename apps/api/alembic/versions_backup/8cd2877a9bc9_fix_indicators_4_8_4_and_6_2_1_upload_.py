@@ -5,15 +5,15 @@ Revises: 99c48749bb2a
 Create Date: 2025-11-17 03:14:55.819101
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '8cd2877a9bc9'
-down_revision: Union[str, Sequence[str], None] = '99c48749bb2a'
+revision: str = "8cd2877a9bc9"
+down_revision: Union[str, Sequence[str], None] = "99c48749bb2a"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -46,8 +46,12 @@ def upgrade() -> None:
         seed_indicators(ALL_INDICATORS, session)
 
         print("\n✅ Successfully fixed indicators!")
-        print("   - 4.8.4: Now shows 2 upload fields (Accomplishment Report AND Certification with OR logic)")
-        print("   - 6.2.1: Now shows 3 upload fields with OR logic (MRF operated, MRS, or Clustered MRFs)")
+        print(
+            "   - 4.8.4: Now shows 2 upload fields (Accomplishment Report AND Certification with OR logic)"
+        )
+        print(
+            "   - 6.2.1: Now shows 3 upload fields with OR logic (MRF operated, MRS, or Clustered MRFs)"
+        )
         print("=" * 70)
 
     except Exception as e:

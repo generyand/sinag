@@ -22,26 +22,28 @@ Usage:
     )
 """
 
-from typing import Dict, Any, List, Optional
+import logging
+from typing import Any
+
 from app.db.enums import ValidationStatus
 from app.schemas.calculation_schema import (
-    CalculationSchema,
-    CalculationRule,
-    ConditionGroup,
     AndAllRule,
-    OrAnyRule,
-    PercentageThresholdRule,
+    BBIFunctionalityCheckRule,
+    CalculationRule,
+    CalculationSchema,
+    ConditionGroup,
     CountThresholdRule,
     MatchValueRule,
-    BBIFunctionalityCheckRule,
+    OrAnyRule,
+    PercentageThresholdRule,
 )
-import logging
 
 logger = logging.getLogger(__name__)
 
 
 class CalculationEngineError(Exception):
     """Custom exception for calculation engine errors"""
+
     pass
 
 
@@ -59,9 +61,9 @@ class CalculationEngineService:
 
     def execute_calculation(
         self,
-        calculation_schema: Optional[Dict[str, Any]],
-        response_data: Optional[Dict[str, Any]],
-        bbi_statuses: Optional[Dict[int, str]] = None
+        calculation_schema: dict[str, Any] | None,
+        response_data: dict[str, Any] | None,
+        bbi_statuses: dict[int, str] | None = None,
     ) -> ValidationStatus:
         """
         Execute a calculation schema against response data.
@@ -92,16 +94,26 @@ class CalculationEngineService:
             # Evaluate all condition groups (implicit AND between groups)
             all_groups_pass = True
             for group in schema_obj.condition_groups:
-                group_result = self._evaluate_condition_group(group, response_data, bbi_statuses or {})
+                group_result = self._evaluate_condition_group(
+                    group, response_data, bbi_statuses or {}
+                )
                 if not group_result:
                     all_groups_pass = False
                     break
 
             # Return appropriate status based on evaluation result
             if all_groups_pass:
-                return ValidationStatus.PASS if schema_obj.output_status_on_pass == "PASS" else ValidationStatus.FAIL
+                return (
+                    ValidationStatus.PASS
+                    if schema_obj.output_status_on_pass == "PASS"
+                    else ValidationStatus.FAIL
+                )
             else:
-                return ValidationStatus.FAIL if schema_obj.output_status_on_fail == "FAIL" else ValidationStatus.PASS
+                return (
+                    ValidationStatus.FAIL
+                    if schema_obj.output_status_on_fail == "FAIL"
+                    else ValidationStatus.PASS
+                )
 
         except Exception as e:
             self.logger.error(f"Error executing calculation schema: {str(e)}", exc_info=True)
@@ -110,8 +122,8 @@ class CalculationEngineService:
     def _evaluate_condition_group(
         self,
         group: ConditionGroup,
-        response_data: Dict[str, Any],
-        bbi_statuses: Dict[int, str]
+        response_data: dict[str, Any],
+        bbi_statuses: dict[int, str],
     ) -> bool:
         """
         Evaluate a condition group (list of rules with AND/OR operator).
@@ -141,8 +153,8 @@ class CalculationEngineService:
     def _evaluate_rule(
         self,
         rule: CalculationRule,
-        response_data: Dict[str, Any],
-        bbi_statuses: Dict[int, str]
+        response_data: dict[str, Any],
+        bbi_statuses: dict[int, str],
     ) -> bool:
         """
         Evaluate a single calculation rule.
@@ -173,8 +185,8 @@ class CalculationEngineService:
     def _evaluate_and_all_rule(
         self,
         rule: AndAllRule,
-        response_data: Dict[str, Any],
-        bbi_statuses: Dict[int, str]
+        response_data: dict[str, Any],
+        bbi_statuses: dict[int, str],
     ) -> bool:
         """
         Evaluate an AND_ALL rule - all nested conditions must be true.
@@ -197,8 +209,8 @@ class CalculationEngineService:
     def _evaluate_or_any_rule(
         self,
         rule: OrAnyRule,
-        response_data: Dict[str, Any],
-        bbi_statuses: Dict[int, str]
+        response_data: dict[str, Any],
+        bbi_statuses: dict[int, str],
     ) -> bool:
         """
         Evaluate an OR_ANY rule - at least one nested condition must be true.
@@ -219,9 +231,7 @@ class CalculationEngineService:
         return any(results)
 
     def _evaluate_percentage_threshold_rule(
-        self,
-        rule: PercentageThresholdRule,
-        response_data: Dict[str, Any]
+        self, rule: PercentageThresholdRule, response_data: dict[str, Any]
     ) -> bool:
         """
         Evaluate a PERCENTAGE_THRESHOLD rule.
@@ -252,9 +262,7 @@ class CalculationEngineService:
         return self._compare_values(numeric_value, rule.operator, rule.threshold)
 
     def _evaluate_count_threshold_rule(
-        self,
-        rule: CountThresholdRule,
-        response_data: Dict[str, Any]
+        self, rule: CountThresholdRule, response_data: dict[str, Any]
     ) -> bool:
         """
         Evaluate a COUNT_THRESHOLD rule - count selected checkboxes.
@@ -286,16 +294,16 @@ class CalculationEngineService:
             # Already a count
             count = int(field_value)
         else:
-            self.logger.error(f"Field '{rule.field_id}' value is not a valid count type: {type(field_value)}")
+            self.logger.error(
+                f"Field '{rule.field_id}' value is not a valid count type: {type(field_value)}"
+            )
             return False
 
         # Evaluate based on operator
         return self._compare_values(count, rule.operator, rule.threshold)
 
     def _evaluate_match_value_rule(
-        self,
-        rule: MatchValueRule,
-        response_data: Dict[str, Any]
+        self, rule: MatchValueRule, response_data: dict[str, Any]
     ) -> bool:
         """
         Evaluate a MATCH_VALUE rule - check if field matches expected value.
@@ -340,9 +348,7 @@ class CalculationEngineService:
             raise CalculationEngineError(f"Invalid operator for MATCH_VALUE: {rule.operator}")
 
     def _evaluate_bbi_functionality_rule(
-        self,
-        rule: BBIFunctionalityCheckRule,
-        bbi_statuses: Dict[int, str]
+        self, rule: BBIFunctionalityCheckRule, bbi_statuses: dict[int, str]
     ) -> bool:
         """
         Evaluate a BBI_FUNCTIONALITY_CHECK rule.
@@ -364,12 +370,7 @@ class CalculationEngineService:
         # Compare with expected status
         return bbi_status == rule.expected_status
 
-    def _compare_values(
-        self,
-        actual: float,
-        operator: str,
-        expected: float
-    ) -> bool:
+    def _compare_values(self, actual: float, operator: str, expected: float) -> bool:
         """
         Compare two numeric values using the specified operator.
 
@@ -395,10 +396,8 @@ class CalculationEngineService:
             raise CalculationEngineError(f"Invalid comparison operator: {operator}")
 
     def get_remark_for_status(
-        self,
-        remark_schema: Optional[Dict[str, str]],
-        status: ValidationStatus
-    ) -> Optional[str]:
+        self, remark_schema: dict[str, str] | None, status: ValidationStatus
+    ) -> str | None:
         """
         Get the appropriate remark template for a given validation status.
 

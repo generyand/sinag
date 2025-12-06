@@ -17,10 +17,9 @@ MOV Item Types:
 """
 
 from datetime import date
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
-
 
 # =============================================================================
 # Common Base Schemas
@@ -38,6 +37,7 @@ class DisplayCondition(BaseModel):
         "value": true
     }
     """
+
     field_id: str = Field(..., description="ID of field to check")
     operator: Literal["equals", "not_equals", "contains", "greater_than", "less_than"] = Field(
         ..., description="Comparison operator"
@@ -47,6 +47,7 @@ class DisplayCondition(BaseModel):
 
 class OptionItem(BaseModel):
     """Option for radio groups and dropdowns."""
+
     label: str = Field(..., min_length=1, description="Display label for option")
     value: str = Field(..., description="Value submitted when option selected")
 
@@ -56,10 +57,12 @@ class MOVItemBase(BaseModel):
 
     id: str = Field(..., description="Unique identifier for this MOV item")
     type: str = Field(..., description="MOV item type discriminator")
-    label: str = Field(..., min_length=1, max_length=500, description="Label displayed to validator")
+    label: str = Field(
+        ..., min_length=1, max_length=500, description="Label displayed to validator"
+    )
     required: bool = Field(default=True, description="Whether this item must be completed")
-    help_text: Optional[str] = Field(None, max_length=1000, description="Help text for validators")
-    display_condition: Optional[DisplayCondition] = Field(
+    help_text: str | None = Field(None, max_length=1000, description="Help text for validators")
+    display_condition: DisplayCondition | None = Field(
         None, description="Conditional display logic"
     )
 
@@ -75,6 +78,7 @@ class MOVCheckboxItem(MOVItemBase):
 
     Example: "BFR signed and stamped by C/M Accountant"
     """
+
     type: Literal["checkbox"] = "checkbox"
     default_value: bool = Field(default=False, description="Default checked state")
 
@@ -86,14 +90,15 @@ class MOVGroupItem(MOVItemBase):
     Used to group related items where only some need to pass (OR logic).
     Example: "Posted CY 2023 financial documents (any 5 of 7)"
     """
+
     type: Literal["group"] = "group"
     logic_operator: Literal["AND", "OR"] = Field(
         default="AND", description="How to combine child validations"
     )
-    min_required: Optional[int] = Field(
+    min_required: int | None = Field(
         None, ge=1, description="Minimum items required to pass (for OR logic)"
     )
-    children: List["MOVItem"] = Field(
+    children: list["MOVItem"] = Field(
         default_factory=list, description="Child MOV items in this group"
     )
 
@@ -119,10 +124,11 @@ class MOVCurrencyInputItem(MOVItemBase):
     - min_value <= value < threshold → "Considered"
     - value < min_value → "Failed"
     """
+
     type: Literal["currency_input"] = "currency_input"
-    min_value: Optional[float] = Field(None, description="Minimum acceptable value")
-    max_value: Optional[float] = Field(None, description="Maximum acceptable value")
-    threshold: Optional[float] = Field(
+    min_value: float | None = Field(None, description="Minimum acceptable value")
+    max_value: float | None = Field(None, description="Maximum acceptable value")
+    threshold: float | None = Field(
         None, description="Threshold for 'Passed' vs 'Considered' status"
     )
     currency_code: Literal["PHP"] = Field(
@@ -145,13 +151,14 @@ class MOVNumberInputItem(MOVItemBase):
 
     Example: "Trees planted this year (threshold: 100)"
     """
+
     type: Literal["number_input"] = "number_input"
-    min_value: Optional[float] = Field(None, description="Minimum acceptable value")
-    max_value: Optional[float] = Field(None, description="Maximum acceptable value")
-    threshold: Optional[float] = Field(
+    min_value: float | None = Field(None, description="Minimum acceptable value")
+    max_value: float | None = Field(None, description="Maximum acceptable value")
+    threshold: float | None = Field(
         None, description="Threshold for 'Passed' vs 'Considered' status"
     )
-    unit: Optional[str] = Field(None, max_length=50, description="Unit label (e.g., 'trees', 'kg')")
+    unit: str | None = Field(None, max_length=50, description="Unit label (e.g., 'trees', 'kg')")
 
     @field_validator("max_value")
     @classmethod
@@ -169,10 +176,11 @@ class MOVTextInputItem(MOVItemBase):
 
     Example: "Barangay Resolution Number"
     """
+
     type: Literal["text_input"] = "text_input"
-    placeholder: Optional[str] = Field(None, max_length=200, description="Placeholder text")
-    max_length: Optional[int] = Field(None, ge=1, le=10000, description="Maximum character count")
-    validation_pattern: Optional[str] = Field(
+    placeholder: str | None = Field(None, max_length=200, description="Placeholder text")
+    max_length: int | None = Field(None, ge=1, le=10000, description="Maximum character count")
+    validation_pattern: str | None = Field(
         None, description="Regex pattern for validation (e.g., for resolution numbers)"
     )
 
@@ -187,10 +195,11 @@ class MOVDateInputItem(MOVItemBase):
     - date within grace period → "Considered"
     - date after grace period → "Failed"
     """
+
     type: Literal["date_input"] = "date_input"
-    min_date: Optional[date] = Field(None, description="Earliest acceptable date")
-    max_date: Optional[date] = Field(None, description="Latest acceptable date (deadline)")
-    grace_period_days: Optional[int] = Field(
+    min_date: date | None = Field(None, description="Earliest acceptable date")
+    max_date: date | None = Field(None, description="Latest acceptable date (deadline)")
+    grace_period_days: int | None = Field(
         None, ge=0, description="Grace period in days after deadline"
     )
     considered_status_enabled: bool = Field(
@@ -203,9 +212,7 @@ class MOVDateInputItem(MOVItemBase):
         """Ensure grace period is set when considered status is enabled."""
         considered_enabled = info.data.get("considered_status_enabled")
         if considered_enabled and v is None:
-            raise ValueError(
-                "grace_period_days must be set when considered_status_enabled is True"
-            )
+            raise ValueError("grace_period_days must be set when considered_status_enabled is True")
         return v
 
 
@@ -218,6 +225,7 @@ class MOVAssessmentItem(MOVItemBase):
 
     Example: "BDRRMC is organized and functional (Assessor judgment)"
     """
+
     type: Literal["assessment"] = "assessment"
     assessment_type: Literal["YES_NO", "COMPLIANT_NON_COMPLIANT"] = Field(
         default="YES_NO", description="Type of assessment judgment"
@@ -230,9 +238,10 @@ class MOVRadioGroupItem(MOVItemBase):
 
     Example: "Type of business permit: [New, Renewal, Amendment]"
     """
+
     type: Literal["radio_group"] = "radio_group"
-    options: List[OptionItem] = Field(..., min_length=2, description="Radio button options")
-    default_value: Optional[str] = Field(None, description="Default selected option value")
+    options: list[OptionItem] = Field(..., min_length=2, description="Radio button options")
+    default_value: str | None = Field(None, description="Default selected option value")
 
     @field_validator("options")
     @classmethod
@@ -250,11 +259,10 @@ class MOVDropdownItem(MOVItemBase):
 
     Example: "Select required documents: [Dropdown with 20+ options, searchable]"
     """
+
     type: Literal["dropdown"] = "dropdown"
-    options: List[OptionItem] = Field(..., min_length=1, description="Dropdown options")
-    allow_multiple: bool = Field(
-        default=False, description="Allow selecting multiple options"
-    )
+    options: list[OptionItem] = Field(..., min_length=1, description="Dropdown options")
+    allow_multiple: bool = Field(default=False, description="Allow selecting multiple options")
     searchable: bool = Field(
         default=False, description="Enable search functionality for large option lists"
     )
@@ -275,17 +283,17 @@ class MOVDropdownItem(MOVItemBase):
 
 
 # Discriminated union of all MOV item types
-MOVItem = Union[
-    MOVCheckboxItem,
-    MOVGroupItem,
-    MOVCurrencyInputItem,
-    MOVNumberInputItem,
-    MOVTextInputItem,
-    MOVDateInputItem,
-    MOVAssessmentItem,
-    MOVRadioGroupItem,
-    MOVDropdownItem,
-]
+MOVItem = (
+    MOVCheckboxItem
+    | MOVGroupItem
+    | MOVCurrencyInputItem
+    | MOVNumberInputItem
+    | MOVTextInputItem
+    | MOVDateInputItem
+    | MOVAssessmentItem
+    | MOVRadioGroupItem
+    | MOVDropdownItem
+)
 
 # Update forward references for recursive types
 MOVGroupItem.model_rebuild()
@@ -297,10 +305,11 @@ class MOVChecklistConfig(BaseModel):
 
     Stored in Indicator.mov_checklist_items JSONB field.
     """
-    items: List[MOVItem] = Field(default_factory=list, description="List of MOV items")
+
+    items: list[MOVItem] = Field(default_factory=list, description="List of MOV items")
     validation_mode: Literal["strict", "lenient"] = Field(
         default="strict",
-        description="Validation mode: 'strict' requires all items, 'lenient' allows partial completion"
+        description="Validation mode: 'strict' requires all items, 'lenient' allows partial completion",
     )
 
     class Config:
@@ -373,12 +382,10 @@ class MOVValidationStatus(BaseModel):
     status: Literal["Passed", "Considered", "Failed", "Not Applicable", "Pending"] = Field(
         ..., description="Overall validation status"
     )
-    item_results: Dict[str, str] = Field(
+    item_results: dict[str, str] = Field(
         default_factory=dict, description="Validation status for each item by ID"
     )
-    errors: List[str] = Field(
-        default_factory=list, description="List of validation error messages"
-    )
-    warnings: List[str] = Field(
+    errors: list[str] = Field(default_factory=list, description="List of validation error messages")
+    warnings: list[str] = Field(
         default_factory=list, description="List of validation warning messages"
     )

@@ -9,20 +9,19 @@ Tests the AI-powered capacity development insights API including:
 - Admin regeneration
 """
 
-import json
 import uuid
 from datetime import datetime
-from typing import Dict
 
 import pytest
+from fastapi.testclient import TestClient
+from passlib.context import CryptContext
+from sqlalchemy.orm import Session
+
 from app.api import deps
 from app.db.enums import AssessmentStatus, UserRole
 from app.db.models.assessment import Assessment
 from app.db.models.barangay import Barangay
 from app.db.models.user import User
-from fastapi.testclient import TestClient
-from passlib.context import CryptContext
-from sqlalchemy.orm import Session
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -251,12 +250,8 @@ def _override_user_and_db(client, user: User, db_session: Session):
         finally:
             pass
 
-    client.app.dependency_overrides[deps.get_current_active_user] = (
-        _override_current_active_user
-    )
-    client.app.dependency_overrides[deps.get_current_admin_user] = (
-        _override_current_admin_user
-    )
+    client.app.dependency_overrides[deps.get_current_active_user] = _override_current_active_user
+    client.app.dependency_overrides[deps.get_current_admin_user] = _override_current_admin_user
     client.app.dependency_overrides[deps.get_db] = _override_get_db
 
 
@@ -479,7 +474,9 @@ def test_get_capdev_status_completed(
     """Test status endpoint for completed insights"""
     _override_user_and_db(client, mlgoo_user, db_session)
 
-    response = client.get(f"/api/v1/capdev/assessments/{completed_assessment_with_capdev.id}/status")
+    response = client.get(
+        f"/api/v1/capdev/assessments/{completed_assessment_with_capdev.id}/status"
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -532,7 +529,9 @@ def test_get_capdev_status_blgu_own_assessment(
     """Test BLGU can check status of their own assessment"""
     _override_user_and_db(client, blgu_user, db_session)
 
-    response = client.get(f"/api/v1/capdev/assessments/{completed_assessment_with_capdev.id}/status")
+    response = client.get(
+        f"/api/v1/capdev/assessments/{completed_assessment_with_capdev.id}/status"
+    )
 
     assert response.status_code == 200
 
@@ -546,7 +545,9 @@ def test_get_capdev_status_blgu_forbidden(
     """Test BLGU cannot check status of another BLGU's assessment"""
     _override_user_and_db(client, other_blgu_user, db_session)
 
-    response = client.get(f"/api/v1/capdev/assessments/{completed_assessment_with_capdev.id}/status")
+    response = client.get(
+        f"/api/v1/capdev/assessments/{completed_assessment_with_capdev.id}/status"
+    )
 
     assert response.status_code == 403
 
@@ -761,7 +762,9 @@ def test_capdev_status_response_schema_validation(
     """Test that status response matches CapDevStatusResponse schema"""
     _override_user_and_db(client, mlgoo_user, db_session)
 
-    response = client.get(f"/api/v1/capdev/assessments/{completed_assessment_with_capdev.id}/status")
+    response = client.get(
+        f"/api/v1/capdev/assessments/{completed_assessment_with_capdev.id}/status"
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -795,7 +798,10 @@ def test_capdev_insights_persisted_correctly(
 
     # Verify it matches what's in the database
     db_session.refresh(completed_assessment_with_capdev)
-    assert data["insights"]["ceb"]["summary"] == completed_assessment_with_capdev.capdev_insights["ceb"]["summary"]
+    assert (
+        data["insights"]["ceb"]["summary"]
+        == completed_assessment_with_capdev.capdev_insights["ceb"]["summary"]
+    )
 
 
 def test_generated_at_timestamp_included(

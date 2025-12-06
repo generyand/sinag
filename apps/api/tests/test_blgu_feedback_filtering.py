@@ -2,12 +2,19 @@ from datetime import datetime
 
 from fastapi.testclient import TestClient  # type: ignore[reportMissingImports]
 
-from main import app
 from app.api import deps
 from app.api.v1 import assessments as assessments_module
 from app.db.base import SessionLocal
-from app.db.models import Assessment, AssessmentResponse, FeedbackComment, GovernanceArea, Indicator, User
 from app.db.enums import AreaType, AssessmentStatus, UserRole
+from app.db.models import (
+    Assessment,
+    AssessmentResponse,
+    FeedbackComment,
+    GovernanceArea,
+    Indicator,
+    User,
+)
+from main import app
 
 
 def override_get_db():
@@ -23,6 +30,7 @@ app.dependency_overrides[deps.get_db] = override_get_db
 
 def create_user_and_assessment(db):
     import time
+
     timestamp = int(time.time() * 1000000)  # microseconds for uniqueness
 
     # Create governance area first
@@ -116,7 +124,9 @@ def test_blgu_does_not_receive_internal_notes():
             finally:
                 pass
 
-        client.app.dependency_overrides[assessments_module.get_current_blgu_user] = _override_current_blgu_user
+        client.app.dependency_overrides[assessments_module.get_current_blgu_user] = (
+            _override_current_blgu_user
+        )
         client.app.dependency_overrides[deps.get_db] = _override_get_db
 
         # Test the dashboard endpoint which is simpler and doesn't trigger sample indicator creation
@@ -130,5 +140,3 @@ def test_blgu_does_not_receive_internal_notes():
 
         # Clear overrides
         client.app.dependency_overrides.clear()
-
-

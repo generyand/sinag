@@ -12,23 +12,26 @@ Adds/updates date input fields for:
 - 3.1.4: Update existing field to date_input type
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
 
 # revision identifiers, used by Alembic.
-revision: str = '91539f62d6e3'
-down_revision: Union[str, Sequence[str], None] = '9f8467f702cd'
+revision: str = "91539f62d6e3"
+down_revision: Union[str, Sequence[str], None] = "9f8467f702cd"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
     """Add/update date input fields."""
-    from app.db.models.governance_area import Indicator, ChecklistItem as ChecklistItemModel
+    from app.db.models.governance_area import (
+        Indicator,
+        ChecklistItem as ChecklistItemModel,
+    )
 
     bind = op.get_bind()
     session = Session(bind=bind)
@@ -37,14 +40,16 @@ def upgrade() -> None:
         print("Adding/updating date input fields...")
 
         # === 2.1.1: Add new date field ===
-        indicator_2_1_1 = session.query(Indicator).filter(
-            Indicator.indicator_code == "2.1.1"
-        ).first()
+        indicator_2_1_1 = (
+            session.query(Indicator).filter(Indicator.indicator_code == "2.1.1").first()
+        )
         if indicator_2_1_1:
             # Check if date field already exists
-            existing = session.query(ChecklistItemModel).filter(
-                ChecklistItemModel.item_id == "2_1_1_date"
-            ).first()
+            existing = (
+                session.query(ChecklistItemModel)
+                .filter(ChecklistItemModel.item_id == "2_1_1_date")
+                .first()
+            )
             if not existing:
                 new_item = ChecklistItemModel(
                     indicator_id=indicator_2_1_1.id,
@@ -52,20 +57,22 @@ def upgrade() -> None:
                     label="Date of approval",
                     item_type="date_input",
                     required=True,
-                    display_order=2
+                    display_order=2,
                 )
                 session.add(new_item)
                 print("  - Added 2_1_1_date field")
 
         # === 3.1.1: Add new date field ===
-        indicator_3_1_1 = session.query(Indicator).filter(
-            Indicator.indicator_code == "3.1.1"
-        ).first()
+        indicator_3_1_1 = (
+            session.query(Indicator).filter(Indicator.indicator_code == "3.1.1").first()
+        )
         if indicator_3_1_1:
             # Check if date field already exists
-            existing = session.query(ChecklistItemModel).filter(
-                ChecklistItemModel.item_id == "3_1_1_date"
-            ).first()
+            existing = (
+                session.query(ChecklistItemModel)
+                .filter(ChecklistItemModel.item_id == "3_1_1_date")
+                .first()
+            )
             if not existing:
                 new_item = ChecklistItemModel(
                     indicator_id=indicator_3_1_1.id,
@@ -73,33 +80,39 @@ def upgrade() -> None:
                     label="Date of approval",
                     item_type="date_input",
                     required=True,
-                    display_order=2
+                    display_order=2,
                 )
                 session.add(new_item)
                 print("  - Added 3_1_1_date field")
 
         # === 3.1.2: Update existing date field ===
-        checklist_3_1_2 = session.query(ChecklistItemModel).filter(
-            ChecklistItemModel.item_id == "3_1_2_date"
-        ).first()
+        checklist_3_1_2 = (
+            session.query(ChecklistItemModel)
+            .filter(ChecklistItemModel.item_id == "3_1_2_date")
+            .first()
+        )
         if checklist_3_1_2:
             checklist_3_1_2.item_type = "date_input"
             checklist_3_1_2.requires_document_count = False
             print("  - Updated 3_1_2_date to date_input type")
 
         # === 3.1.3: Update existing date field ===
-        checklist_3_1_3 = session.query(ChecklistItemModel).filter(
-            ChecklistItemModel.item_id == "3_1_3_date"
-        ).first()
+        checklist_3_1_3 = (
+            session.query(ChecklistItemModel)
+            .filter(ChecklistItemModel.item_id == "3_1_3_date")
+            .first()
+        )
         if checklist_3_1_3:
             checklist_3_1_3.item_type = "date_input"
             checklist_3_1_3.requires_document_count = False
             print("  - Updated 3_1_3_date to date_input type")
 
         # === 3.1.4: Update existing date field ===
-        checklist_3_1_4 = session.query(ChecklistItemModel).filter(
-            ChecklistItemModel.item_id == "3_1_4_date"
-        ).first()
+        checklist_3_1_4 = (
+            session.query(ChecklistItemModel)
+            .filter(ChecklistItemModel.item_id == "3_1_4_date")
+            .first()
+        )
         if checklist_3_1_4:
             checklist_3_1_4.item_type = "date_input"
             checklist_3_1_4.requires_document_count = False

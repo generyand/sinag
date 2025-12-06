@@ -1,11 +1,10 @@
 # 🧪 Access Control Tests
 # Tests for MLGOO_DILG role-based access control middleware
 
-import pytest
-from app.core.security import create_access_token
-from app.db.enums import UserRole
 from fastapi import status
 from fastapi.testclient import TestClient
+
+from app.core.security import create_access_token
 
 
 class TestAccessControl:
@@ -29,9 +28,7 @@ class TestAccessControl:
         assert data["success"] is True
         assert data["data"]["admin_user"] == mlgoo_user.email
 
-    def test_non_mlgoo_user_denied_access(
-        self, client: TestClient, blgu_user, db_session
-    ):
+    def test_non_mlgoo_user_denied_access(self, client: TestClient, blgu_user, db_session):
         """Test that non-MLGOO_DILG users are denied access to admin endpoints."""
         # Create token for BLGU user
         token = create_access_token(str(blgu_user.id))
@@ -91,9 +88,7 @@ class TestAccessControl:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    def test_audit_logs_endpoint_requires_mlgoo(
-        self, client: TestClient, blgu_user, db_session
-    ):
+    def test_audit_logs_endpoint_requires_mlgoo(self, client: TestClient, blgu_user, db_session):
         """Test that audit logs endpoint requires MLGOO_DILG role."""
         # Create token for BLGU user
         token = create_access_token(str(blgu_user.id))
@@ -106,9 +101,7 @@ class TestAccessControl:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    def test_mlgoo_can_access_audit_logs(
-        self, client: TestClient, mlgoo_user, db_session
-    ):
+    def test_mlgoo_can_access_audit_logs(self, client: TestClient, mlgoo_user, db_session):
         """Test that MLGOO_DILG users can access audit logs."""
         # Create token for MLGOO user
         token = create_access_token(str(mlgoo_user.id))
@@ -124,9 +117,7 @@ class TestAccessControl:
         assert "items" in data
         assert "total" in data
 
-    def test_inactive_mlgoo_user_denied(
-        self, client: TestClient, mlgoo_user, db_session
-    ):
+    def test_inactive_mlgoo_user_denied(self, client: TestClient, mlgoo_user, db_session):
         """Test that inactive MLGOO_DILG users are denied access."""
         # Deactivate user
         mlgoo_user.is_active = False

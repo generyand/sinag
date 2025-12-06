@@ -12,6 +12,7 @@ import json
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+
 from app.core.config import settings
 from app.services.intelligence_service import intelligence_service
 
@@ -47,9 +48,7 @@ class TestGeminiAPIIntegration:
 
         # Configure mock settings
         with patch.object(settings, "GEMINI_API_KEY", "test_api_key"):
-            result = intelligence_service.call_gemini_api(
-                db_session, mock_assessment.id
-            )
+            result = intelligence_service.call_gemini_api(db_session, mock_assessment.id)
 
         # Verify response structure
         assert "summary" in result
@@ -84,9 +83,7 @@ class TestGeminiAPIIntegration:
         mock_generative_model.return_value = mock_model
 
         with patch.object(settings, "GEMINI_API_KEY", "test_api_key"):
-            result = intelligence_service.call_gemini_api(
-                db_session, mock_assessment.id
-            )
+            result = intelligence_service.call_gemini_api(db_session, mock_assessment.id)
 
         assert result["summary"] == "Summary text"
         assert len(result["recommendations"]) == 1
@@ -136,23 +133,20 @@ class TestGeminiAPIIntegration:
             with pytest.raises(ValueError, match="missing required keys"):
                 intelligence_service.call_gemini_api(db_session, mock_assessment.id)
 
-    def test_get_insights_with_caching_returns_cached_data(
-        self, db_session, mock_assessment
-    ):
+    def test_get_insights_with_caching_returns_cached_data(self, db_session, mock_assessment):
         """Test that get_insights_with_caching returns cached data if available."""
-        # Set ai_recommendations on the assessment
+        # Set ai_recommendations on the assessment (language-keyed format)
         cached_insights = {
             "summary": "Cached summary",
             "recommendations": ["Cached rec"],
             "capacity_development_needs": ["Cached need"],
         }
-        mock_assessment.ai_recommendations = cached_insights
+        # Store under the language key (ceb is default)
+        mock_assessment.ai_recommendations = {"ceb": cached_insights}
         db_session.commit()
 
         # Call get_insights_with_caching
-        result = intelligence_service.get_insights_with_caching(
-            db_session, mock_assessment.id
-        )
+        result = intelligence_service.get_insights_with_caching(db_session, mock_assessment.id)
 
         # Should return cached data
         assert result == cached_insights
@@ -168,6 +162,7 @@ class TestGeminiAPIIntegration:
             "summary": "API generated summary",
             "recommendations": ["API rec"],
             "capacity_development_needs": ["API need"],
+            "language": "ceb",
         }
         mock_call_api.return_value = mock_insights
 
@@ -175,21 +170,20 @@ class TestGeminiAPIIntegration:
         mock_assessment.ai_recommendations = None
         db_session.commit()
 
-        # Call get_insights_with_caching
-        result = intelligence_service.get_insights_with_caching(
-            db_session, mock_assessment.id
-        )
+        # Call get_insights_with_caching (default language is ceb)
+        result = intelligence_service.get_insights_with_caching(db_session, mock_assessment.id)
 
-        # Verify API was called
-        mock_call_api.assert_called_once_with(db_session, mock_assessment.id)
+        # Verify API was called with correct arguments (including language)
+        mock_call_api.assert_called_once_with(db_session, mock_assessment.id, "ceb")
 
         # Verify result and that the result matches the mocked data
         assert result == mock_insights
         assert result["summary"] == "API generated summary"
 
-        # Verify data was stored in database
+        # Verify data was stored in database under the language key
         db_session.refresh(mock_assessment)
         assert mock_assessment.ai_recommendations is not None
+        assert "ceb" in mock_assessment.ai_recommendations
 
     @patch("app.services.intelligence_service.intelligence_service.call_gemini_api")
     def test_get_insights_with_caching_saves_to_database(
@@ -201,6 +195,7 @@ class TestGeminiAPIIntegration:
             "summary": "Test summary",
             "recommendations": ["Test recommendation"],
             "capacity_development_needs": ["Test need"],
+            "language": "ceb",
         }
         mock_call_api.return_value = mock_insights
 
@@ -209,22 +204,19 @@ class TestGeminiAPIIntegration:
         db_session.commit()
 
         # Call get_insights_with_caching (result not needed for this test)
-        _result = intelligence_service.get_insights_with_caching(
-            db_session, mock_assessment.id
-        )
+        _result = intelligence_service.get_insights_with_caching(db_session, mock_assessment.id)
 
         # Refresh assessment from database
         db_session.refresh(mock_assessment)
 
-        # Verify data was saved
-        assert mock_assessment.ai_recommendations == mock_insights
-        saved_insights = mock_assessment.ai_recommendations
+        # Verify data was saved under the language key
+        assert mock_assessment.ai_recommendations is not None
+        assert "ceb" in mock_assessment.ai_recommendations
+        saved_insights = mock_assessment.ai_recommendations["ceb"]
         assert saved_insights is not None
         assert saved_insights["summary"] == "Test summary"
 
-    def test_get_insights_with_caching_raises_error_for_invalid_assessment_id(
-        self, db_session
-    ):
+    def test_get_insights_with_caching_raises_error_for_invalid_assessment_id(self, db_session):
         """Test that get_insights_with_caching raises error for non-existent assessment."""
         with pytest.raises(ValueError, match="Assessment.*not found"):
             intelligence_service.get_insights_with_caching(db_session, 99999)
@@ -243,9 +235,7 @@ class TestGeminiAPIIntegration:
 
         # Should raise the error
         with pytest.raises(Exception, match="API Error"):
-            intelligence_service.get_insights_with_caching(
-                db_session, mock_assessment.id
-            )
+            intelligence_service.get_insights_with_caching(db_session, mock_assessment.id)
 
     @patch("app.services.intelligence_service.genai.configure")
     @patch("app.services.intelligence_service.genai.GenerativeModel")
@@ -275,7 +265,8 @@ class TestGeminiAPIIntegration:
         mock_generative_model.return_value = mock_model
 
         with patch.object(settings, "GEMINI_API_KEY", "test_api_key"):
-            with pytest.raises(Exception, match="empty or invalid response"):
+            # Error message now wrapped by _handle_gemini_error helper
+            with pytest.raises(Exception, match="Gemini API call failed"):
                 intelligence_service.call_gemini_api(db_session, mock_assessment.id)
 
 
@@ -300,10 +291,14 @@ class TestMultiLanguageSupport:
         from app.services.intelligence_service import LANGUAGE_INSTRUCTIONS
 
         # Bisaya instructions should contain Bisaya keywords
-        assert "Binisaya" in LANGUAGE_INSTRUCTIONS["ceb"] or "Cebuano" in LANGUAGE_INSTRUCTIONS["ceb"]
+        assert (
+            "Binisaya" in LANGUAGE_INSTRUCTIONS["ceb"] or "Cebuano" in LANGUAGE_INSTRUCTIONS["ceb"]
+        )
 
         # Tagalog instructions should contain Filipino/Tagalog keywords
-        assert "Tagalog" in LANGUAGE_INSTRUCTIONS["fil"] or "Filipino" in LANGUAGE_INSTRUCTIONS["fil"]
+        assert (
+            "Tagalog" in LANGUAGE_INSTRUCTIONS["fil"] or "Filipino" in LANGUAGE_INSTRUCTIONS["fil"]
+        )
 
         # English instructions should be straightforward
         assert "English" in LANGUAGE_INSTRUCTIONS["en"]
@@ -324,7 +319,8 @@ class TestMultiLanguageSupport:
 
         # Mock the prompt to return language-specific instructions
         mock_build_prompt.return_value = (
-            f"{LANGUAGE_INSTRUCTIONS['ceb']} test prompt", []
+            f"{LANGUAGE_INSTRUCTIONS['ceb']} test prompt",
+            [],
         )
 
         prompt, _ = mock_build_prompt(None, 1, language="ceb")
@@ -340,7 +336,8 @@ class TestMultiLanguageSupport:
         from app.services.intelligence_service import LANGUAGE_INSTRUCTIONS
 
         mock_build_prompt.return_value = (
-            f"{LANGUAGE_INSTRUCTIONS['fil']} test prompt", []
+            f"{LANGUAGE_INSTRUCTIONS['fil']} test prompt",
+            [],
         )
 
         prompt, _ = mock_build_prompt(None, 1, language="fil")
@@ -349,14 +346,13 @@ class TestMultiLanguageSupport:
         assert "Tagalog" in prompt or "Filipino" in prompt
 
     @patch("app.services.intelligence_service.intelligence_service.build_rework_summary_prompt")
-    def test_build_rework_summary_prompt_includes_language_instructions_en(
-        self, mock_build_prompt
-    ):
+    def test_build_rework_summary_prompt_includes_language_instructions_en(self, mock_build_prompt):
         """Test that build_rework_summary_prompt includes English language instructions."""
         from app.services.intelligence_service import LANGUAGE_INSTRUCTIONS
 
         mock_build_prompt.return_value = (
-            f"{LANGUAGE_INSTRUCTIONS['en']} test prompt", []
+            f"{LANGUAGE_INSTRUCTIONS['en']} test prompt",
+            [],
         )
 
         prompt, _ = mock_build_prompt(None, 1, language="en")
@@ -365,14 +361,13 @@ class TestMultiLanguageSupport:
         assert "English" in prompt
 
     @patch("app.services.intelligence_service.intelligence_service.build_rework_summary_prompt")
-    def test_build_rework_summary_prompt_defaults_to_ceb(
-        self, mock_build_prompt
-    ):
+    def test_build_rework_summary_prompt_defaults_to_ceb(self, mock_build_prompt):
         """Test that build_rework_summary_prompt defaults to Bisaya when no language specified."""
         from app.services.intelligence_service import LANGUAGE_INSTRUCTIONS
 
         mock_build_prompt.return_value = (
-            f"{LANGUAGE_INSTRUCTIONS['ceb']} test prompt", []
+            f"{LANGUAGE_INSTRUCTIONS['ceb']} test prompt",
+            [],
         )
 
         # Call without language parameter (should default to "ceb")
@@ -391,8 +386,15 @@ class TestMultiLanguageSupport:
         assert LANGUAGE_INSTRUCTIONS["fil"] != LANGUAGE_INSTRUCTIONS["en"]
 
         # Verify all three languages are distinct
-        assert len(set([
-            LANGUAGE_INSTRUCTIONS["ceb"],
-            LANGUAGE_INSTRUCTIONS["fil"],
-            LANGUAGE_INSTRUCTIONS["en"]
-        ])) == 3
+        assert (
+            len(
+                set(
+                    [
+                        LANGUAGE_INSTRUCTIONS["ceb"],
+                        LANGUAGE_INSTRUCTIONS["fil"],
+                        LANGUAGE_INSTRUCTIONS["en"],
+                    ]
+                )
+            )
+            == 3
+        )

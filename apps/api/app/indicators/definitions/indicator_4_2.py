@@ -9,8 +9,13 @@ the presence of health facilities, appointment of health personnel, and availabi
 of essential health services.
 """
 
-from app.indicators.base import Indicator, SubIndicator, ChecklistItem, FormNotes, NoteItem
-
+from app.indicators.base import (
+    ChecklistItem,
+    FormNotes,
+    Indicator,
+    NoteItem,
+    SubIndicator,
+)
 
 # Indicator 4.2: Access to Health and Social Welfare Services in the Barangay
 INDICATOR_4_2 = Indicator(
@@ -41,7 +46,7 @@ INDICATOR_4_2 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=1,
-                    option_group="option_a"
+                    option_group="option_a",
                 ),
                 ChecklistItem(
                     id="4_2_1_option_a",
@@ -50,7 +55,7 @@ INDICATOR_4_2 = Indicator(
                     item_type="assessment_field",
                     required=False,
                     display_order=2,
-                    option_group="option_a"
+                    option_group="option_a",
                 ),
                 # Option B - Clustered BHS/C (both items must be complete for this option)
                 ChecklistItem(
@@ -60,7 +65,7 @@ INDICATOR_4_2 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=3,
-                    option_group="option_b"
+                    option_group="option_b",
                 ),
                 ChecklistItem(
                     id="4_2_1_option_b",
@@ -69,11 +74,10 @@ INDICATOR_4_2 = Indicator(
                     item_type="assessment_field",
                     required=False,
                     display_order=4,
-                    option_group="option_b"
+                    option_group="option_b",
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 4.2.2: Appointment of Barangay Health Personnel (FOR PROFILING)
         SubIndicator(
             code="4.2.2",
@@ -90,7 +94,7 @@ INDICATOR_4_2 = Indicator(
                     required=False,
                     requires_document_count=False,
                     display_order=1,
-                    option_group="option_a"
+                    option_group="option_a",
                 ),
                 # AND/OR Separator
                 ChecklistItem(
@@ -98,7 +102,7 @@ INDICATOR_4_2 = Indicator(
                     label="AND/OR",
                     item_type="info_text",
                     required=False,
-                    display_order=2
+                    display_order=2,
                 ),
                 ChecklistItem(
                     id="4_2_2_bho",
@@ -107,7 +111,7 @@ INDICATOR_4_2 = Indicator(
                     required=False,
                     requires_document_count=False,
                     display_order=3,
-                    option_group="option_b"
+                    option_group="option_b",
                 ),
             ],
             notes=FormNotes(
@@ -115,11 +119,13 @@ INDICATOR_4_2 = Indicator(
                 items=[
                     NoteItem(label="1.", text="Accredited Barangay Health Worker (BHW);"),
                     NoteItem(text="AND/OR"),
-                    NoteItem(label="2.", text="Barangay Health Officer (BHO) or Barangay Health Assistant (BHAsst)"),
-                ]
-            )
+                    NoteItem(
+                        label="2.",
+                        text="Barangay Health Officer (BHO) or Barangay Health Assistant (BHAsst)",
+                    ),
+                ],
+            ),
         ),
-
         # Sub-Indicator 4.2.3: Appointment of a Barangay Nutrition Scholar (BNS)
         SubIndicator(
             code="4.2.3",
@@ -134,11 +140,10 @@ INDICATOR_4_2 = Indicator(
                     label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the appointment of BNS",
                     required=True,
                     requires_document_count=False,
-                    display_order=1
+                    display_order=1,
                 ),
-            ]
+            ],
         ),
-
         # Sub-Indicator 4.2.4: Availability of health services in the BHS/C
         SubIndicator(
             code="4.2.4",
@@ -160,15 +165,15 @@ INDICATOR_4_2 = Indicator(
                     mov_description="Verification of uploaded certification",
                     item_type="checkbox",
                     required=False,
-                    display_order=1
-                ),                # Health services - each with YES/NO assessment
+                    display_order=1,
+                ),  # Health services - each with YES/NO assessment
                 ChecklistItem(
                     id="4_2_4_a",
                     label="a. Immunization",
                     mov_description="Assessment for Immunization service",
                     item_type="assessment_field",
                     required=False,
-                    display_order=3
+                    display_order=3,
                 ),
                 ChecklistItem(
                     id="4_2_4_b",
@@ -176,7 +181,7 @@ INDICATOR_4_2 = Indicator(
                     mov_description="Assessment for Maternal and child healthcare service",
                     item_type="assessment_field",
                     required=False,
-                    display_order=4
+                    display_order=4,
                 ),
                 ChecklistItem(
                     id="4_2_4_c",
@@ -184,7 +189,7 @@ INDICATOR_4_2 = Indicator(
                     mov_description="Assessment for Family Planning service",
                     item_type="assessment_field",
                     required=False,
-                    display_order=5
+                    display_order=5,
                 ),
                 ChecklistItem(
                     id="4_2_4_d",
@@ -192,9 +197,9 @@ INDICATOR_4_2 = Indicator(
                     mov_description="Assessment for Health Education service",
                     item_type="assessment_field",
                     required=False,
-                    display_order=6
+                    display_order=6,
                 ),
-            ]
+            ],
         ),
-    ]
+    ],
 )

@@ -6,15 +6,16 @@ Tests upload performance for files near the 50MB limit.
 
 import io
 import time
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.core.security import create_access_token
-from app.db.models.user import User
-from app.db.models.barangay import Barangay
 from app.db.models.assessment import Assessment, MOVFile
-from app.db.models.governance_area import Indicator, GovernanceArea
+from app.db.models.barangay import Barangay
+from app.db.models.governance_area import Indicator
+from app.db.models.user import User
 
 
 @pytest.fixture
@@ -24,15 +25,15 @@ def large_pdf_file():
     file_size = 45 * 1024 * 1024  # 45MB
 
     # PDF header
-    pdf_header = b'%PDF-1.4\n'
+    pdf_header = b"%PDF-1.4\n"
 
     # Fill with zeros to reach desired size
-    content = pdf_header + b'0' * (file_size - len(pdf_header) - 6)
+    content = pdf_header + b"0" * (file_size - len(pdf_header) - 6)
 
     # PDF EOF
-    pdf_eof = b'\n%%EOF'
+    pdf_eof = b"\n%%EOF"
 
-    full_content = pdf_header + content[:file_size - len(pdf_header) - len(pdf_eof)] + pdf_eof
+    full_content = pdf_header + content[: file_size - len(pdf_header) - len(pdf_eof)] + pdf_eof
 
     return io.BytesIO(full_content)
 
@@ -81,7 +82,9 @@ class TestLargeFileUploadPerformance:
         upload_duration = end_time - start_time
 
         # Assert
-        assert response.status_code == 201, f"Expected 201, got {response.status_code}: {response.json()}"
+        assert response.status_code == 201, (
+            f"Expected 201, got {response.status_code}: {response.json()}"
+        )
 
         # Performance assertion
         assert upload_duration < 30, f"Upload took {upload_duration:.2f}s, expected < 30s"
@@ -98,7 +101,9 @@ class TestLargeFileUploadPerformance:
         assert mov_file.filename == "large-document.pdf"
         assert mov_file.file_size > 45 * 1024 * 1024
 
-        print(f"\n✅ Large file upload performance: {upload_duration:.2f}s for {mov_file.file_size / (1024*1024):.2f}MB")
+        print(
+            f"\n✅ Large file upload performance: {upload_duration:.2f}s for {mov_file.file_size / (1024 * 1024):.2f}MB"
+        )
 
     def test_upload_multiple_large_files_sequentially(
         self,
@@ -128,7 +133,7 @@ class TestLargeFileUploadPerformance:
         for i in range(3):
             # Create 15MB file
             file_size = 15 * 1024 * 1024
-            content = b'%PDF-1.4\n' + b'0' * (file_size - 12) + b'\n%%EOF'
+            content = b"%PDF-1.4\n" + b"0" * (file_size - 12) + b"\n%%EOF"
             file_obj = io.BytesIO(content)
 
             # Upload
@@ -136,12 +141,12 @@ class TestLargeFileUploadPerformance:
             response = client.post(
                 f"/api/v1/assessments/{assessment_id}/indicators/{indicator_id}/upload",
                 headers=headers,
-                files={"file": (f"document-{i+1}.pdf", file_obj, "application/pdf")},
+                files={"file": (f"document-{i + 1}.pdf", file_obj, "application/pdf")},
             )
             upload_time = time.time() - start_time
             upload_times.append(upload_time)
 
-            assert response.status_code == 201, f"Upload {i+1} failed: {response.json()}"
+            assert response.status_code == 201, f"Upload {i + 1} failed: {response.json()}"
 
         total_time = time.time() - total_start_time
 
@@ -150,12 +155,12 @@ class TestLargeFileUploadPerformance:
         assert all(t < 20 for t in upload_times), f"Some uploads took > 20s: {upload_times}"
 
         # Verify all files in database
-        mov_files = test_db.query(MOVFile).filter(
-            MOVFile.response_id == test_indicator.id
-        ).all()
+        mov_files = test_db.query(MOVFile).filter(MOVFile.response_id == test_indicator.id).all()
         assert len(mov_files) >= 3
 
-        print(f"\n✅ Sequential large file uploads: {total_time:.2f}s total, individual times: {[f'{t:.2f}s' for t in upload_times]}")
+        print(
+            f"\n✅ Sequential large file uploads: {total_time:.2f}s total, individual times: {[f'{t:.2f}s' for t in upload_times]}"
+        )
 
     def test_upload_performance_with_concurrent_requests(
         self,
@@ -183,13 +188,13 @@ class TestLargeFileUploadPerformance:
         start_time = time.time()
 
         for i in range(5):
-            content = b'%PDF-1.4\n' + b'0' * (file_size - 12) + b'\n%%EOF'
+            content = b"%PDF-1.4\n" + b"0" * (file_size - 12) + b"\n%%EOF"
             file_obj = io.BytesIO(content)
 
             response = client.post(
                 f"/api/v1/assessments/{assessment_id}/indicators/{indicator_id}/upload",
                 headers=headers,
-                files={"file": (f"rapid-{i+1}.pdf", file_obj, "application/pdf")},
+                files={"file": (f"rapid-{i + 1}.pdf", file_obj, "application/pdf")},
             )
 
             assert response.status_code == 201
@@ -198,7 +203,9 @@ class TestLargeFileUploadPerformance:
 
         assert total_time < 30, f"5 rapid uploads took {total_time:.2f}s, expected < 30s"
 
-        print(f"\n✅ Rapid sequential uploads: 5 files in {total_time:.2f}s ({total_time/5:.2f}s avg)")
+        print(
+            f"\n✅ Rapid sequential uploads: 5 files in {total_time:.2f}s ({total_time / 5:.2f}s avg)"
+        )
 
     def test_upload_performance_degrades_gracefully(
         self,
@@ -224,14 +231,14 @@ class TestLargeFileUploadPerformance:
         last_upload_time = None
 
         for i in range(10):
-            content = b'%PDF-1.4\n' + b'0' * (file_size - 12) + b'\n%%EOF'
+            content = b"%PDF-1.4\n" + b"0" * (file_size - 12) + b"\n%%EOF"
             file_obj = io.BytesIO(content)
 
             start_time = time.time()
             response = client.post(
                 f"/api/v1/assessments/{assessment_id}/indicators/{indicator_id}/upload",
                 headers=headers,
-                files={"file": (f"perf-test-{i+1}.pdf", file_obj, "application/pdf")},
+                files={"file": (f"perf-test-{i + 1}.pdf", file_obj, "application/pdf")},
             )
             upload_time = time.time() - start_time
 
@@ -244,10 +251,13 @@ class TestLargeFileUploadPerformance:
 
         # Assert last upload isn't significantly slower than first
         # Allow 50% degradation maximum
-        assert last_upload_time < first_upload_time * 1.5, \
+        assert last_upload_time < first_upload_time * 1.5, (
             f"Performance degraded: first={first_upload_time:.2f}s, last={last_upload_time:.2f}s"
+        )
 
-        print(f"\n✅ Performance stability: first={first_upload_time:.2f}s, last={last_upload_time:.2f}s")
+        print(
+            f"\n✅ Performance stability: first={first_upload_time:.2f}s, last={last_upload_time:.2f}s"
+        )
 
     def test_memory_efficient_large_file_handling(
         self,
@@ -286,4 +296,6 @@ class TestLargeFileUploadPerformance:
         assert mov_file is not None
         assert mov_file.file_size > 40 * 1024 * 1024
 
-        print(f"\n✅ Memory-efficient upload verified for {mov_file.file_size / (1024*1024):.2f}MB file")
+        print(
+            f"\n✅ Memory-efficient upload verified for {mov_file.file_size / (1024 * 1024):.2f}MB file"
+        )

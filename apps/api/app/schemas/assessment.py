@@ -2,10 +2,11 @@
 # Pydantic models for assessment-related API requests and responses
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from app.db.enums import AssessmentStatus, ComplianceStatus, MOVStatus
-from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 # ============================================================================
 # Indicator Schemas
@@ -19,8 +20,8 @@ class Indicator(BaseModel):
 
     id: int
     name: str
-    description: Optional[str] = None
-    form_schema: Dict[str, Any]
+    description: str | None = None
+    form_schema: dict[str, Any]
     governance_area_id: int
 
 
@@ -31,10 +32,10 @@ class IndicatorRead(BaseModel):
 
     id: int
     name: str
-    description: Optional[str] = None
-    form_schema: Dict[str, Any]
+    description: str | None = None
+    form_schema: dict[str, Any]
     governance_area_id: int
-    children: List["IndicatorRead"] = []
+    children: list["IndicatorRead"] = []
 
 
 # ============================================================================
@@ -52,22 +53,22 @@ class Assessment(BaseModel):
     blgu_user_id: int
     created_at: datetime
     updated_at: datetime
-    submitted_at: Optional[datetime] = None
-    validated_at: Optional[datetime] = None
-    final_compliance_status: Optional[ComplianceStatus] = None
-    area_results: Optional[Dict[str, Any]] = None
-    ai_recommendations: Optional[Dict[str, Any]] = None
+    submitted_at: datetime | None = None
+    validated_at: datetime | None = None
+    final_compliance_status: ComplianceStatus | None = None
+    area_results: dict[str, Any] | None = None
+    ai_recommendations: dict[str, Any] | None = None
     # Rework tracking (Assessor stage)
-    rework_requested_at: Optional[datetime] = None
+    rework_requested_at: datetime | None = None
     rework_count: int = 0
     # Calibration tracking (Validator stage)
-    calibration_requested_at: Optional[datetime] = None
-    calibrated_area_ids: Optional[List[int]] = None
+    calibration_requested_at: datetime | None = None
+    calibrated_area_ids: list[int] | None = None
     # MLGOO RE-calibration tracking
     is_mlgoo_recalibration: bool = False
-    mlgoo_recalibration_requested_at: Optional[datetime] = None
-    mlgoo_recalibration_indicator_ids: Optional[List[int]] = None
-    mlgoo_recalibration_comments: Optional[str] = None
+    mlgoo_recalibration_requested_at: datetime | None = None
+    mlgoo_recalibration_indicator_ids: list[int] | None = None
+    mlgoo_recalibration_comments: str | None = None
     mlgoo_recalibration_count: int = 0
 
 
@@ -80,13 +81,13 @@ class AssessmentCreate(BaseModel):
 class AssessmentUpdate(BaseModel):
     """Schema for updating assessment information."""
 
-    status: Optional[AssessmentStatus] = None
+    status: AssessmentStatus | None = None
 
 
 class AssessmentWithResponses(Assessment):
     """Assessment model including all responses."""
 
-    responses: List["AssessmentResponse"] = []
+    responses: list["AssessmentResponse"] = []
 
 
 # ============================================================================
@@ -100,12 +101,12 @@ class AssessmentResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    response_data: Optional[Dict[str, Any]] = None
+    response_data: dict[str, Any] | None = None
     is_completed: bool
     requires_rework: bool
-    validation_status: Optional[str] = None
-    generated_remark: Optional[str] = None
-    assessor_remarks: Optional[str] = None
+    validation_status: str | None = None
+    generated_remark: str | None = None
+    assessor_remarks: str | None = None
     assessment_id: int
     indicator_id: int
     created_at: datetime
@@ -115,7 +116,7 @@ class AssessmentResponse(BaseModel):
 class AssessmentResponseCreate(BaseModel):
     """Schema for creating a new assessment response."""
 
-    response_data: Optional[Dict[str, Any]] = None
+    response_data: dict[str, Any] | None = None
     assessment_id: int
     indicator_id: int
 
@@ -123,19 +124,19 @@ class AssessmentResponseCreate(BaseModel):
 class AssessmentResponseUpdate(BaseModel):
     """Schema for updating assessment response data."""
 
-    response_data: Optional[Dict[str, Any]] = None
-    is_completed: Optional[bool] = None
-    requires_rework: Optional[bool] = None
-    validation_status: Optional[str] = None
-    assessor_remarks: Optional[str] = None
+    response_data: dict[str, Any] | None = None
+    is_completed: bool | None = None
+    requires_rework: bool | None = None
+    validation_status: str | None = None
+    assessor_remarks: str | None = None
 
 
 class AssessmentResponseWithDetails(AssessmentResponse):
     """AssessmentResponse model including related data."""
 
-    indicator: Optional[Indicator] = None
-    movs: List["MOV"] = []
-    feedback_comments: List["FeedbackComment"] = []
+    indicator: Indicator | None = None
+    movs: list["MOV"] = []
+    feedback_comments: list["FeedbackComment"] = []
 
 
 # ============================================================================
@@ -168,13 +169,13 @@ class MOVCreate(BaseModel):
     content_type: str
     storage_path: str
     response_id: int
-    field_id: Optional[str] = None  # Field identifier for multi-field uploads
+    field_id: str | None = None  # Field identifier for multi-field uploads
 
 
 class MOVUpdate(BaseModel):
     """Schema for updating MOV information."""
 
-    status: Optional[MOVStatus] = None
+    status: MOVStatus | None = None
 
 
 # ============================================================================
@@ -207,8 +208,8 @@ class FeedbackCommentCreate(BaseModel):
 class FeedbackCommentUpdate(BaseModel):
     """Schema for updating feedback comment."""
 
-    comment: Optional[str] = None
-    comment_type: Optional[str] = None
+    comment: str | None = None
+    comment_type: str | None = None
 
 
 # ============================================================================
@@ -222,7 +223,7 @@ class AssessmentWithIndicators(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     assessment: Assessment
-    governance_areas: List[Dict[str, Any]]  # Will include indicators and responses
+    governance_areas: list[dict[str, Any]]  # Will include indicators and responses
 
 
 class IndicatorWithResponse(BaseModel):
@@ -231,9 +232,9 @@ class IndicatorWithResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     indicator: Indicator
-    response: Optional[AssessmentResponse] = None
-    movs: List[MOV] = []
-    feedback_comments: List[FeedbackComment] = []
+    response: AssessmentResponse | None = None
+    movs: list[MOV] = []
+    feedback_comments: list[FeedbackComment] = []
 
 
 class GovernanceAreaWithIndicators(BaseModel):
@@ -244,7 +245,7 @@ class GovernanceAreaWithIndicators(BaseModel):
     id: int
     name: str
     area_type: str
-    indicators: List[IndicatorWithResponse] = []
+    indicators: list[IndicatorWithResponse] = []
 
 
 # ============================================================================
@@ -257,7 +258,7 @@ class AssessmentListResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    assessments: List[Assessment]
+    assessments: list[Assessment]
     total: int
     page: int
     size: int
@@ -269,7 +270,7 @@ class AssessmentResponseListResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    responses: List[AssessmentResponseWithDetails]
+    responses: list[AssessmentResponseWithDetails]
     total: int
     page: int
     size: int
@@ -281,7 +282,7 @@ class MOVListResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    movs: List[MOV]
+    movs: list[MOV]
     total: int
     page: int
     size: int
@@ -293,7 +294,7 @@ class FeedbackCommentListResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    comments: List[FeedbackComment]
+    comments: list[FeedbackComment]
     total: int
     page: int
     size: int
@@ -309,16 +310,16 @@ class AssessmentSubmissionValidation(BaseModel):
     """Schema for assessment submission validation response."""
 
     is_valid: bool
-    errors: List[Dict[str, Any]] = []
-    warnings: List[Dict[str, Any]] = []
+    errors: list[dict[str, Any]] = []
+    warnings: list[dict[str, Any]] = []
 
 
 class FormSchemaValidation(BaseModel):
     """Schema for form schema validation."""
 
     is_valid: bool
-    errors: List[str] = []
-    warnings: List[str] = []
+    errors: list[str] = []
+    warnings: list[str] = []
 
 
 class SubmissionValidationResult(BaseModel):
@@ -330,9 +331,9 @@ class SubmissionValidationResult(BaseModel):
     """
 
     is_valid: bool
-    incomplete_indicators: List[str] = []  # List of indicator names/IDs that are incomplete
-    missing_movs: List[str] = []  # List of indicator names/IDs missing required MOV files
-    error_message: Optional[str] = None
+    incomplete_indicators: list[str] = []  # List of indicator names/IDs that are incomplete
+    missing_movs: list[str] = []  # List of indicator names/IDs missing required MOV files
+    error_message: str | None = None
 
 
 # ============================================================================
@@ -383,13 +384,13 @@ class AssessmentDashboardStats(BaseModel):
     responses_with_movs: int
 
     # Governance area progress
-    governance_areas: List[GovernanceAreaProgress]
+    governance_areas: list[GovernanceAreaProgress]
 
     # Assessment metadata
     assessment_status: AssessmentStatus
     created_at: datetime
     updated_at: datetime
-    submitted_at: Optional[datetime] = None
+    submitted_at: datetime | None = None
 
 
 class AssessmentDashboardResponse(BaseModel):
@@ -403,10 +404,8 @@ class AssessmentDashboardResponse(BaseModel):
     performance_year: int
     assessment_year: int
     stats: AssessmentDashboardStats
-    feedback: List[
-        Dict[str, Any]
-    ] = []  # Enhanced feedback array with assessor comments
-    upcoming_deadlines: List[Dict[str, Any]] = []  # Any upcoming deadlines
+    feedback: list[dict[str, Any]] = []  # Enhanced feedback array with assessor comments
+    upcoming_deadlines: list[dict[str, Any]] = []  # Any upcoming deadlines
 
 
 # ============================================================================
@@ -424,7 +423,7 @@ class FieldAnswerInput(BaseModel):
 class SaveAnswersRequest(BaseModel):
     """Request schema for saving form answers."""
 
-    responses: List[FieldAnswerInput]
+    responses: list[FieldAnswerInput]
 
 
 class SaveAnswersResponse(BaseModel):
@@ -448,9 +447,9 @@ class GetAnswersResponse(BaseModel):
 
     assessment_id: int
     indicator_id: int
-    responses: List[AnswerResponse]
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    responses: list[AnswerResponse]
+    created_at: str | None = None
+    updated_at: str | None = None
 
 
 class IncompleteIndicatorDetail(BaseModel):
@@ -458,7 +457,7 @@ class IncompleteIndicatorDetail(BaseModel):
 
     indicator_id: int
     indicator_title: str
-    missing_required_fields: List[str]
+    missing_required_fields: list[str]
 
 
 class CompletenessValidationResponse(BaseModel):
@@ -468,7 +467,7 @@ class CompletenessValidationResponse(BaseModel):
     total_indicators: int
     complete_indicators: int
     incomplete_indicators: int
-    incomplete_details: List[IncompleteIndicatorDetail]
+    incomplete_details: list[IncompleteIndicatorDetail]
 
 
 # ============================================================================
@@ -490,22 +489,21 @@ class MOVFileResponse(BaseModel):
     file_size: int
     uploaded_by: int
     uploaded_at: datetime
-    deleted_at: Optional[datetime] = None
-    field_id: Optional[str] = None
+    deleted_at: datetime | None = None
+    field_id: str | None = None
 
-    @field_serializer('uploaded_at', 'deleted_at')
-    def serialize_datetime(self, dt: Optional[datetime], _info) -> Optional[str]:
+    @field_serializer("uploaded_at", "deleted_at")
+    def serialize_datetime(self, dt: datetime | None, _info) -> str | None:
         """Serialize datetime to ISO format with Z suffix for UTC."""
         if dt is None:
             return None
-        return dt.isoformat() + 'Z'
-
+        return dt.isoformat() + "Z"
 
 
 class MOVFileListResponse(BaseModel):
     """Response schema for listing MOV files."""
 
-    files: List[MOVFileResponse]
+    files: list[MOVFileResponse]
 
 
 # ============================================================================
@@ -638,9 +636,9 @@ class SubmissionStatusResponse(BaseModel):
     status: AssessmentStatus
     is_locked: bool
     rework_count: int
-    rework_comments: Optional[str] = None
-    rework_requested_at: Optional[datetime] = None
-    rework_requested_by: Optional[int] = None
+    rework_comments: str | None = None
+    rework_requested_at: datetime | None = None
+    rework_requested_by: int | None = None
     validation_result: SubmissionValidationResult
 
 
@@ -656,18 +654,20 @@ class IndicatorSummary(BaseModel):
     """
 
     indicator_id: int = Field(..., description="ID of the indicator requiring rework")
-    indicator_name: str = Field(..., description="Full name of the indicator (e.g., '1.1 Budget Ordinance')")
-    key_issues: List[str] = Field(
-        default_factory=list,
-        description="List of specific issues identified by the assessor"
+    indicator_name: str = Field(
+        ..., description="Full name of the indicator (e.g., '1.1 Budget Ordinance')"
     )
-    suggested_actions: List[str] = Field(
+    key_issues: list[str] = Field(
         default_factory=list,
-        description="Actionable steps the BLGU should take to address the issues"
+        description="List of specific issues identified by the assessor",
     )
-    affected_movs: List[str] = Field(
+    suggested_actions: list[str] = Field(
         default_factory=list,
-        description="List of MOV filenames that have annotations or issues"
+        description="Actionable steps the BLGU should take to address the issues",
+    )
+    affected_movs: list[str] = Field(
+        default_factory=list,
+        description="List of MOV filenames that have annotations or issues",
     )
 
 
@@ -681,28 +681,25 @@ class ReworkSummaryResponse(BaseModel):
 
     overall_summary: str = Field(
         ...,
-        description="Brief 2-3 sentence overview of the main issues across all indicators"
+        description="Brief 2-3 sentence overview of the main issues across all indicators",
     )
-    indicator_summaries: List[IndicatorSummary] = Field(
+    indicator_summaries: list[IndicatorSummary] = Field(
         default_factory=list,
-        description="Detailed summaries for each indicator requiring rework"
+        description="Detailed summaries for each indicator requiring rework",
     )
-    priority_actions: List[str] = Field(
+    priority_actions: list[str] = Field(
         default_factory=list,
         description="Top 3-5 most critical actions the BLGU should prioritize",
-        max_length=5
+        max_length=5,
     )
-    estimated_time: Optional[str] = Field(
+    estimated_time: str | None = Field(
         None,
-        description="Estimated time to complete all rework (e.g., '30-45 minutes')"
+        description="Estimated time to complete all rework (e.g., '30-45 minutes')",
     )
-    generated_at: datetime = Field(
-        ...,
-        description="Timestamp when the summary was generated"
-    )
-    language: Optional[str] = Field(
+    generated_at: datetime = Field(..., description="Timestamp when the summary was generated")
+    language: str | None = Field(
         None,
-        description="Language code of this summary (ceb=Bisaya, fil=Tagalog, en=English)"
+        description="Language code of this summary (ceb=Bisaya, fil=Tagalog, en=English)",
     )
 
 
@@ -717,36 +714,31 @@ class CalibrationSummaryResponse(BaseModel):
 
     overall_summary: str = Field(
         ...,
-        description="Brief 2-3 sentence overview of the main issues in the governance area"
+        description="Brief 2-3 sentence overview of the main issues in the governance area",
     )
-    governance_area: Optional[str] = Field(
-        None,
-        description="Name of the governance area being calibrated"
+    governance_area: str | None = Field(
+        None, description="Name of the governance area being calibrated"
     )
-    governance_area_id: Optional[int] = Field(
-        None,
-        description="ID of the governance area being calibrated"
+    governance_area_id: int | None = Field(
+        None, description="ID of the governance area being calibrated"
     )
-    indicator_summaries: List[IndicatorSummary] = Field(
+    indicator_summaries: list[IndicatorSummary] = Field(
         default_factory=list,
-        description="Detailed summaries for each indicator requiring calibration"
+        description="Detailed summaries for each indicator requiring calibration",
     )
-    priority_actions: List[str] = Field(
+    priority_actions: list[str] = Field(
         default_factory=list,
         description="Top 3 most critical actions the BLGU should prioritize",
-        max_length=5
+        max_length=5,
     )
-    estimated_time: Optional[str] = Field(
+    estimated_time: str | None = Field(
         None,
-        description="Estimated time to complete calibration corrections (e.g., '15-30 minutes')"
+        description="Estimated time to complete calibration corrections (e.g., '15-30 minutes')",
     )
-    generated_at: datetime = Field(
-        ...,
-        description="Timestamp when the summary was generated"
-    )
-    language: Optional[str] = Field(
+    generated_at: datetime = Field(..., description="Timestamp when the summary was generated")
+    language: str | None = Field(
         None,
-        description="Language code of this summary (ceb=Bisaya, fil=Tagalog, en=English)"
+        description="Language code of this summary (ceb=Bisaya, fil=Tagalog, en=English)",
     )
 
 

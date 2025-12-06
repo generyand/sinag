@@ -2,6 +2,9 @@
 # Tests for the assessor assessment details endpoint functionality
 
 import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
 from app.api import deps
 from app.db.enums import AssessmentStatus, UserRole
 from app.db.models.assessment import (
@@ -13,9 +16,7 @@ from app.db.models.assessment import (
 from app.db.models.barangay import Barangay
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
-from fastapi.testclient import TestClient
 from main import app
-from sqlalchemy.orm import Session
 
 
 @pytest.fixture
@@ -58,9 +59,7 @@ def create_test_assessment_for_details(db_session: Session) -> Assessment:
     db_session.commit()
     db_session.refresh(indicator)
 
-    assessment = Assessment(
-        blgu_user_id=blgu_user.id, status=AssessmentStatus.SUBMITTED_FOR_REVIEW
-    )
+    assessment = Assessment(blgu_user_id=blgu_user.id, status=AssessmentStatus.SUBMITTED_FOR_REVIEW)
     db_session.add(assessment)
     db_session.commit()
     db_session.refresh(assessment)
@@ -171,14 +170,8 @@ def test_get_assessment_details_success(client, db_session):
     # Check indicator data with technical notes
     indicator_data = response_data["indicator"]
     assert indicator_data["name"] == "Test Indicator Details"
-    assert (
-        indicator_data["description"]
-        == "Test indicator description with technical notes"
-    )
-    assert (
-        indicator_data["technical_notes"]
-        == "Test indicator description with technical notes"
-    )
+    assert indicator_data["description"] == "Test indicator description with technical notes"
+    assert indicator_data["technical_notes"] == "Test indicator description with technical notes"
     assert indicator_data["governance_area"]["name"] == "Test Area Details"
 
     # Check MOVs data
@@ -279,9 +272,7 @@ def test_get_assessment_details_access_denied(client, db_session):
     db_session.commit()
     db_session.refresh(indicator)
 
-    assessment = Assessment(
-        blgu_user_id=blgu_user.id, status=AssessmentStatus.SUBMITTED_FOR_REVIEW
-    )
+    assessment = Assessment(blgu_user_id=blgu_user.id, status=AssessmentStatus.SUBMITTED_FOR_REVIEW)
     db_session.add(assessment)
     db_session.commit()
     db_session.refresh(assessment)
@@ -297,9 +288,7 @@ def test_get_assessment_details_access_denied(client, db_session):
     db_session.refresh(response)
 
     # Create assessor user with different governance area
-    different_area = GovernanceArea(
-        name="Different Area Details", area_type="Essential"
-    )
+    different_area = GovernanceArea(name="Different Area Details", area_type="Essential")
     db_session.add(different_area)
     db_session.commit()
     db_session.refresh(different_area)
@@ -337,10 +326,7 @@ def test_get_assessment_details_access_denied(client, db_session):
     assert response_result.status_code == 200
     data = response_result.json()
     assert data["success"] is False
-    assert (
-        data["message"]
-        == "Access denied. You can only view assessments in your governance area"
-    )
+    assert data["message"] == "Access denied. You can only view assessments in your governance area"
     assert data["assessment_id"] == assessment.id
     assert data["assessment"] is None
 

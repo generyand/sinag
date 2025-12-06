@@ -14,11 +14,11 @@ Compliance Rate Calculation (DILG MC 2024-417):
 """
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from fastapi import HTTPException, status
 from loguru import logger
-from sqlalchemy import and_, or_
+from sqlalchemy import and_
 from sqlalchemy.orm import Session, joinedload
 
 from app.db.enums import BBIStatus, ValidationStatus
@@ -39,9 +39,7 @@ class BBIService:
     # CRUD Operations
     # ========================================================================
 
-    def create_bbi(
-        self, db: Session, data: Dict[str, Any]
-    ) -> BBI:
+    def create_bbi(self, db: Session, data: dict[str, Any]) -> BBI:
         """
         Create a new BBI.
 
@@ -118,7 +116,7 @@ class BBIService:
         logger.info(f"Created BBI: {bbi.name} (ID: {bbi.id})")
         return bbi
 
-    def get_bbi(self, db: Session, bbi_id: int) -> Optional[BBI]:
+    def get_bbi(self, db: Session, bbi_id: int) -> BBI | None:
         """
         Get a BBI by ID.
 
@@ -130,20 +128,17 @@ class BBIService:
             BBI instance or None if not found
         """
         return (
-            db.query(BBI)
-            .options(joinedload(BBI.governance_area))
-            .filter(BBI.id == bbi_id)
-            .first()
+            db.query(BBI).options(joinedload(BBI.governance_area)).filter(BBI.id == bbi_id).first()
         )
 
     def list_bbis(
         self,
         db: Session,
-        governance_area_id: Optional[int] = None,
-        is_active: Optional[bool] = None,
+        governance_area_id: int | None = None,
+        is_active: bool | None = None,
         skip: int = 0,
         limit: int = 100,
-    ) -> List[BBI]:
+    ) -> list[BBI]:
         """
         List BBIs with optional filters.
 
@@ -168,9 +163,7 @@ class BBIService:
         # Apply pagination and return
         return query.offset(skip).limit(limit).all()
 
-    def update_bbi(
-        self, db: Session, bbi_id: int, data: Dict[str, Any]
-    ) -> BBI:
+    def update_bbi(self, db: Session, bbi_id: int, data: dict[str, Any]) -> BBI:
         """
         Update a BBI.
 
@@ -286,7 +279,7 @@ class BBIService:
         db: Session,
         assessment_id: int,
         bbi_indicator: Indicator,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate BBI compliance rate based on sub-indicator checklist results.
 
@@ -343,7 +336,9 @@ class BBIService:
             passed = response and response.validation_status == ValidationStatus.PASS
             return {
                 "compliance_percentage": 100.0 if passed else 0.0,
-                "compliance_rating": BBIStatus.HIGHLY_FUNCTIONAL.value if passed else BBIStatus.LOW_FUNCTIONAL.value,
+                "compliance_rating": BBIStatus.HIGHLY_FUNCTIONAL.value
+                if passed
+                else BBIStatus.LOW_FUNCTIONAL.value,
                 "sub_indicators_passed": 1 if passed else 0,
                 "sub_indicators_total": 1,
                 "sub_indicator_results": [
@@ -361,9 +356,7 @@ class BBIService:
         passed_count = 0
 
         for sub_indicator in sub_indicators:
-            result = self._evaluate_sub_indicator_compliance(
-                db, assessment_id, sub_indicator
-            )
+            result = self._evaluate_sub_indicator_compliance(db, assessment_id, sub_indicator)
             sub_indicator_results.append(result)
             if result["passed"]:
                 passed_count += 1
@@ -385,7 +378,7 @@ class BBIService:
         db: Session,
         assessment_id: int,
         sub_indicator: Indicator,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Evaluate if a sub-indicator passes based on its checklist items.
 
@@ -453,11 +446,10 @@ class BBIService:
 
         if validation_rule == "ANY_ITEM_REQUIRED":
             # For OR logic, check if at least one required item is satisfied
-            required_items = [
-                item for item in checklist_items if item.required
-            ]
+            required_items = [item for item in checklist_items if item.required]
             satisfied_required = [
-                item for item in required_items
+                item
+                for item in required_items
                 if self._is_checklist_item_satisfied(item, response_data)
             ]
             passed = len(satisfied_required) > 0 if required_items else True
@@ -476,7 +468,7 @@ class BBIService:
     def _is_checklist_item_satisfied(
         self,
         item: ChecklistItem,
-        response_data: Dict[str, Any],
+        response_data: dict[str, Any],
     ) -> bool:
         """
         Check if a single checklist item is satisfied based on response data.
@@ -535,9 +527,7 @@ class BBIService:
         else:
             return BBIStatus.LOW_FUNCTIONAL
 
-    def calculate_all_bbi_compliance(
-        self, db: Session, assessment_id: int
-    ) -> List[BBIResult]:
+    def calculate_all_bbi_compliance(self, db: Session, assessment_id: int) -> list[BBIResult]:
         """
         Calculate compliance for all BBI indicators for an assessment.
 
@@ -586,9 +576,7 @@ class BBIService:
                 bbi = self._get_or_create_bbi_for_indicator(db, bbi_indicator)
 
                 # Calculate compliance
-                compliance = self.calculate_bbi_compliance(
-                    db, assessment_id, bbi_indicator
-                )
+                compliance = self.calculate_bbi_compliance(db, assessment_id, bbi_indicator)
 
                 # Create BBIResult with compliance data
                 bbi_result = BBIResult(
@@ -625,9 +613,7 @@ class BBIService:
         db.commit()
         return bbi_results
 
-    def _get_or_create_bbi_for_indicator(
-        self, db: Session, indicator: Indicator
-    ) -> BBI:
+    def _get_or_create_bbi_for_indicator(self, db: Session, indicator: Indicator) -> BBI:
         """
         Get or create a BBI record for a given BBI indicator.
 
@@ -718,17 +704,13 @@ class BBIService:
 
         # Evaluate mapping rules
         try:
-            is_functional = self._evaluate_mapping_rules(
-                bbi.mapping_rules, indicator_statuses
-            )
+            is_functional = self._evaluate_mapping_rules(bbi.mapping_rules, indicator_statuses)
             return BBIStatus.FUNCTIONAL if is_functional else BBIStatus.NON_FUNCTIONAL
         except Exception as e:
             logger.error(f"Error evaluating BBI mapping rules: {str(e)}")
             return BBIStatus.NON_FUNCTIONAL
 
-    def _get_indicator_statuses(
-        self, db: Session, assessment_id: int
-    ) -> Dict[int, str]:
+    def _get_indicator_statuses(self, db: Session, assessment_id: int) -> dict[int, str]:
         """
         Get all indicator validation statuses for an assessment.
 
@@ -753,7 +735,7 @@ class BBIService:
         return indicator_statuses
 
     def _evaluate_mapping_rules(
-        self, mapping_rules: Dict[str, Any], indicator_statuses: Dict[int, str]
+        self, mapping_rules: dict[str, Any], indicator_statuses: dict[int, str]
     ) -> bool:
         """
         Evaluate mapping rules to determine if BBI is functional.
@@ -805,9 +787,7 @@ class BBIService:
             logger.warning(f"Unknown operator '{operator}', defaulting to AND logic")
             return all(results)
 
-    def calculate_all_bbi_statuses(
-        self, db: Session, assessment_id: int
-    ) -> List[BBIResult]:
+    def calculate_all_bbi_statuses(self, db: Session, assessment_id: int) -> list[BBIResult]:
         """
         Calculate all BBI statuses for a finalized assessment.
 
@@ -866,9 +846,7 @@ class BBIService:
     # BBI Results
     # ========================================================================
 
-    def get_bbi_results(
-        self, db: Session, assessment_id: int
-    ) -> List[BBIResult]:
+    def get_bbi_results(self, db: Session, assessment_id: int) -> list[BBIResult]:
         """
         Get all BBI results for an assessment.
 

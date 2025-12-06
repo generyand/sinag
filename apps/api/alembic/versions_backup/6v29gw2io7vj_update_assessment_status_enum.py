@@ -5,6 +5,7 @@ Revises: 5562d6674781
 Create Date: 2025-11-09 00:00:00.000000
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -12,8 +13,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '6v29gw2io7vj'
-down_revision: Union[str, Sequence[str], None] = '5562d6674781'
+revision: str = "6v29gw2io7vj"
+down_revision: Union[str, Sequence[str], None] = "5562d6674781"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -31,11 +32,19 @@ def upgrade() -> None:
     connection = op.get_bind()
 
     # The enum is named 'assessment_status_enum' in the database
-    enum_type_name = 'assessment_status_enum'
+    enum_type_name = "assessment_status_enum"
 
     # Check and add new enum values one by one
-    new_values = ['SUBMITTED', 'IN_REVIEW', 'REWORK', 'COMPLETED', 'DRAFT',
-                  'SUBMITTED_FOR_REVIEW', 'VALIDATED', 'NEEDS_REWORK']
+    new_values = [
+        "SUBMITTED",
+        "IN_REVIEW",
+        "REWORK",
+        "COMPLETED",
+        "DRAFT",
+        "SUBMITTED_FOR_REVIEW",
+        "VALIDATED",
+        "NEEDS_REWORK",
+    ]
 
     for value in new_values:
         # Check if enum value already exists
@@ -50,16 +59,14 @@ def upgrade() -> None:
                     AND e.enumlabel = :value
                 )
             """),
-            {"enum_name": enum_type_name, "value": value}
+            {"enum_name": enum_type_name, "value": value},
         ).scalar()
 
         if not result:
             # Add the enum value
             # Note: This must be done outside a transaction in production,
             # but for migrations we'll use COMMIT to handle it
-            connection.execute(
-                sa.text(f"ALTER TYPE {enum_type_name} ADD VALUE '{value}'")
-            )
+            connection.execute(sa.text(f"ALTER TYPE {enum_type_name} ADD VALUE '{value}'"))
             connection.commit()
 
 

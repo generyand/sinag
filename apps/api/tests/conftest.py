@@ -30,20 +30,20 @@ class JSONBCompatible(JSON):
 postgresql.JSONB = JSONBCompatible
 
 import pytest
-from app.db.base import Base, get_db
-# Ensure all ORM models are registered on Base.metadata before creating tables
-from app.db import models  # noqa: F401
 from fastapi.testclient import TestClient
-from main import app
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
+
+# Ensure all ORM models are registered on Base.metadata before creating tables
+from app.db import models  # noqa: F401
+from app.db.base import Base, get_db
+from main import app
 
 # Test database URL (use SQLite for simplicity in tests)
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
+engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+
 
 # Enable foreign key support in SQLite
 @event.listens_for(engine, "connect")
@@ -82,6 +82,7 @@ def clear_rate_limits():
 def disable_startup_seeding():
     """Disable data seeding during test runs to speed up tests"""
     import os
+
     # Set environment variable to skip startup seeding
     old_value = os.environ.get("SKIP_STARTUP_SEEDING")
     os.environ["SKIP_STARTUP_SEEDING"] = "true"
@@ -178,9 +179,10 @@ def mock_blgu_user(db_session, mock_barangay):
     """Create a mock BLGU user for testing"""
     import uuid
 
+    from passlib.context import CryptContext
+
     from app.db.enums import UserRole
     from app.db.models.user import User
-    from passlib.context import CryptContext
 
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -245,10 +247,11 @@ def mock_assessment_without_barangay(db_session):
     import uuid
     from datetime import datetime
 
+    from passlib.context import CryptContext
+
     from app.db.enums import AssessmentStatus, UserRole
     from app.db.models.assessment import Assessment
     from app.db.models.user import User
-    from passlib.context import CryptContext
 
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -293,9 +296,10 @@ def mlgoo_user(db_session):
     """Create a MLGOO_DILG admin user for testing"""
     import uuid
 
+    from passlib.context import CryptContext
+
     from app.db.enums import UserRole
     from app.db.models.user import User
-    from passlib.context import CryptContext
 
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -319,8 +323,8 @@ def mock_governance_area(db_session):
     """Create a mock governance area for testing"""
     import uuid
 
-    from app.db.models.governance_area import GovernanceArea
     from app.db.enums import AreaType
+    from app.db.models.governance_area import GovernanceArea
 
     unique_id = uuid.uuid4().hex[:8]
     unique_name = f"Test Governance Area {unique_id}"
@@ -338,9 +342,10 @@ def validator_user(db_session, mock_governance_area):
     """Create a VALIDATOR user for testing"""
     import uuid
 
+    from passlib.context import CryptContext
+
     from app.db.enums import UserRole
     from app.db.models.user import User
-    from passlib.context import CryptContext
 
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -365,9 +370,10 @@ def assessor_user(db_session):
     """Create an ASSESSOR user for testing"""
     import uuid
 
+    from passlib.context import CryptContext
+
     from app.db.enums import UserRole
     from app.db.models.user import User
-    from passlib.context import CryptContext
 
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -391,9 +397,10 @@ def blgu_user(db_session, mock_barangay):
     """Alias for mock_blgu_user for consistency in naming"""
     import uuid
 
+    from passlib.context import CryptContext
+
     from app.db.enums import UserRole
     from app.db.models.user import User
-    from passlib.context import CryptContext
 
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

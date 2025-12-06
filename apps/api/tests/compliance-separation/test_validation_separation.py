@@ -9,14 +9,11 @@ BLGU submission uses completeness validation only.
 Assessor review uses compliance calculation.
 """
 
-import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
-from typing import Dict
 
 from app.db.models.assessment import Assessment
 from app.db.models.governance_area import Indicator
-from app.db.enums import ValidationStatus
 
 
 class TestCompletenessValidation:
@@ -28,7 +25,7 @@ class TestCompletenessValidation:
     def test_completeness_checks_required_fields_only(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
         db_session: Session,
     ):
@@ -56,8 +53,7 @@ class TestCompletenessValidation:
 
             # Completeness terminology
             assert any(
-                term in error_message
-                for term in ["incomplete", "required", "missing", "empty"]
+                term in error_message for term in ["incomplete", "required", "missing", "empty"]
             )
 
             # Should NOT use compliance terminology
@@ -68,7 +64,7 @@ class TestCompletenessValidation:
     def test_assessment_with_failing_compliance_can_submit_if_complete(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_assessment_with_responses: Assessment,
         db_session: Session,
     ):
@@ -124,7 +120,7 @@ class TestCompletenessValidation:
     def test_completeness_validation_fast(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
     ):
         """
@@ -163,7 +159,7 @@ class TestComplianceCalculation:
     def test_compliance_executes_calculation_schema(
         self,
         client: TestClient,
-        auth_headers_assessor: Dict[str, str],
+        auth_headers_assessor: dict[str, str],
         test_assessment_with_responses: Assessment,
         test_indicator: Indicator,
         db_session: Session,
@@ -275,7 +271,7 @@ class TestSubmissionValidationSeparation:
     def test_submission_uses_completeness_validation(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
     ):
         """
@@ -302,7 +298,7 @@ class TestSubmissionValidationSeparation:
     def test_submission_calculates_compliance_but_doesnt_block(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_assessment_with_responses: Assessment,
         db_session: Session,
     ):
@@ -333,7 +329,7 @@ class TestSubmissionValidationSeparation:
     def test_resubmission_also_uses_completeness_only(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_rework_assessment: Assessment,
     ):
         """
@@ -424,8 +420,8 @@ class TestTwoTierValidationExample:
     def test_complete_assessment_with_fail_compliance_workflow(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
-        auth_headers_assessor: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
+        auth_headers_assessor: dict[str, str],
         test_assessment_with_responses: Assessment,
         db_session: Session,
     ):

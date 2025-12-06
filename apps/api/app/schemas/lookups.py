@@ -2,10 +2,10 @@
 # Pydantic models for representing data from lookup tables like
 # governance areas and barangays in API responses.
 
-from typing import Optional
-from pydantic import BaseModel
-from app.db.enums import AreaType, UserRole
 
+from pydantic import BaseModel
+
+from app.db.enums import AreaType, UserRole
 
 # --- Governance Area Schemas ---
 
@@ -66,7 +66,7 @@ class UserRoleOption(BaseModel):
 
     value: UserRole
     label: str
-    description: Optional[str] = None
+    description: str | None = None
 
     class Config:
         """Pydantic configuration."""

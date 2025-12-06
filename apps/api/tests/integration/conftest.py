@@ -3,25 +3,25 @@
 Comprehensive fixtures for backend API integration testing (Epic 6.0 - Story 6.3)
 """
 
-import pytest
 import uuid
 from datetime import datetime
-from typing import Dict, Any
-from sqlalchemy.orm import Session
+from typing import Any
+
+import pytest
 from fastapi.testclient import TestClient
 from passlib.context import CryptContext
+from sqlalchemy.orm import Session
 
-from app.db.models.governance_area import GovernanceArea, Indicator
-from app.db.models.user import User
-from app.db.models.barangay import Barangay
-from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.enums import (
     AreaType,
-    UserRole,
     AssessmentStatus,
-    ComplianceStatus,
+    UserRole,
     ValidationStatus,
 )
+from app.db.models.assessment import Assessment, AssessmentResponse
+from app.db.models.barangay import Barangay
+from app.db.models.governance_area import GovernanceArea, Indicator
+from app.db.models.user import User
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -149,7 +149,9 @@ def _override_db_for_auth(client: TestClient, db_session: Session):
 
 
 @pytest.fixture
-def auth_headers_blgu(client: TestClient, db_session: Session, test_blgu_user: User) -> Dict[str, str]:
+def auth_headers_blgu(
+    client: TestClient, db_session: Session, test_blgu_user: User
+) -> dict[str, str]:
     """Get authentication headers for BLGU user."""
     _override_db_for_auth(client, db_session)
 
@@ -166,7 +168,9 @@ def auth_headers_blgu(client: TestClient, db_session: Session, test_blgu_user: U
 
 
 @pytest.fixture
-def auth_headers_assessor(client: TestClient, db_session: Session, test_assessor_user: User) -> Dict[str, str]:
+def auth_headers_assessor(
+    client: TestClient, db_session: Session, test_assessor_user: User
+) -> dict[str, str]:
     """Get authentication headers for ASSESSOR user."""
     _override_db_for_auth(client, db_session)
 
@@ -183,7 +187,9 @@ def auth_headers_assessor(client: TestClient, db_session: Session, test_assessor
 
 
 @pytest.fixture
-def auth_headers_validator(client: TestClient, db_session: Session, test_validator_user: User) -> Dict[str, str]:
+def auth_headers_validator(
+    client: TestClient, db_session: Session, test_validator_user: User
+) -> dict[str, str]:
     """Get authentication headers for VALIDATOR user."""
     _override_db_for_auth(client, db_session)
 
@@ -200,7 +206,9 @@ def auth_headers_validator(client: TestClient, db_session: Session, test_validat
 
 
 @pytest.fixture
-def auth_headers_mlgoo(client: TestClient, db_session: Session, test_mlgoo_user: User) -> Dict[str, str]:
+def auth_headers_mlgoo(
+    client: TestClient, db_session: Session, test_mlgoo_user: User
+) -> dict[str, str]:
     """Get authentication headers for MLGOO admin user."""
     _override_db_for_auth(client, db_session)
 
@@ -298,7 +306,7 @@ def test_indicator(db_session: Session, governance_area: GovernanceArea) -> Indi
 
 
 @pytest.fixture
-def test_assessment_data() -> Dict[str, Any]:
+def test_assessment_data() -> dict[str, Any]:
     """
     Provide sample assessment response data for testing.
     """
@@ -310,9 +318,7 @@ def test_assessment_data() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def test_draft_assessment(
-    db_session: Session, test_blgu_user: User
-) -> Assessment:
+def test_draft_assessment(db_session: Session, test_blgu_user: User) -> Assessment:
     """
     Create a DRAFT assessment for integration tests.
     """
@@ -328,9 +334,7 @@ def test_draft_assessment(
 
 
 @pytest.fixture
-def test_submitted_assessment(
-    db_session: Session, test_blgu_user: User
-) -> Assessment:
+def test_submitted_assessment(db_session: Session, test_blgu_user: User) -> Assessment:
     """
     Create a SUBMITTED assessment for integration tests.
     """
@@ -372,7 +376,7 @@ def test_assessment_with_responses(
     db_session: Session,
     test_draft_assessment: Assessment,
     test_indicator: Indicator,
-    test_assessment_data: Dict[str, Any],
+    test_assessment_data: dict[str, Any],
 ) -> Assessment:
     """
     Create an assessment with saved responses for integration tests.

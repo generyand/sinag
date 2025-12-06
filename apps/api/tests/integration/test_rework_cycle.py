@@ -16,16 +16,14 @@ Tests the integration of:
 - Comment storage and retrieval
 """
 
+from datetime import datetime, timedelta
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
-from typing import Dict
-from datetime import datetime, timedelta
 
-from app.db.models.assessment import Assessment, AssessmentResponse
-from app.db.models.governance_area import Indicator
-from app.db.models.user import User
 from app.db.enums import AssessmentStatus
+from app.db.models.assessment import Assessment
 
 
 class TestReworkCycleWithResubmission:
@@ -36,7 +34,7 @@ class TestReworkCycleWithResubmission:
     def test_assessor_can_request_rework_on_submitted_assessment(
         self,
         client: TestClient,
-        auth_headers_assessor: Dict[str, str],
+        auth_headers_assessor: dict[str, str],
         test_submitted_assessment: Assessment,
         db_session: Session,
     ):
@@ -58,7 +56,7 @@ class TestReworkCycleWithResubmission:
         response = client.post(
             f"/api/v1/assessments/{test_submitted_assessment.id}/request-rework",
             headers=auth_headers_assessor,
-            json=rework_request
+            json=rework_request,
         )
 
         assert response.status_code == 200
@@ -85,7 +83,7 @@ class TestReworkCycleWithResubmission:
     def test_rework_request_requires_minimum_comment_length(
         self,
         client: TestClient,
-        auth_headers_assessor: Dict[str, str],
+        auth_headers_assessor: dict[str, str],
         test_submitted_assessment: Assessment,
     ):
         """
@@ -103,16 +101,19 @@ class TestReworkCycleWithResubmission:
         response = client.post(
             f"/api/v1/assessments/{test_submitted_assessment.id}/request-rework",
             headers=auth_headers_assessor,
-            json=short_comment
+            json=short_comment,
         )
 
         # Should fail validation
-        assert response.status_code in [400, 422]  # 422 for Pydantic validation, 400 for business logic
+        assert response.status_code in [
+            400,
+            422,
+        ]  # 422 for Pydantic validation, 400 for business logic
 
     def test_blgu_cannot_request_rework(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_submitted_assessment: Assessment,
     ):
         """
@@ -122,14 +123,12 @@ class TestReworkCycleWithResubmission:
         - BLGU user receives 403 Forbidden
         - Only ASSESSOR, VALIDATOR, MLGOO_DILG can request rework
         """
-        rework_request = {
-            "comments": "BLGU trying to request rework - should fail"
-        }
+        rework_request = {"comments": "BLGU trying to request rework - should fail"}
 
         response = client.post(
             f"/api/v1/assessments/{test_submitted_assessment.id}/request-rework",
             headers=auth_headers_blgu,
-            json=rework_request
+            json=rework_request,
         )
 
         # Should be forbidden
@@ -140,7 +139,7 @@ class TestReworkCycleWithResubmission:
     def test_rework_unlocks_assessment_for_blgu_editing(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_rework_assessment: Assessment,
         db_session: Session,
     ):
@@ -154,7 +153,7 @@ class TestReworkCycleWithResubmission:
         """
         response = client.get(
             f"/api/v1/assessments/{test_rework_assessment.id}/submission-status",
-            headers=auth_headers_blgu
+            headers=auth_headers_blgu,
         )
 
         assert response.status_code == 200
@@ -169,7 +168,7 @@ class TestReworkCycleWithResubmission:
     def test_blgu_can_resubmit_after_rework(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_rework_assessment: Assessment,
         db_session: Session,
     ):
@@ -185,7 +184,7 @@ class TestReworkCycleWithResubmission:
         """
         response = client.post(
             f"/api/v1/assessments/{test_rework_assessment.id}/resubmit",
-            headers=auth_headers_blgu
+            headers=auth_headers_blgu,
         )
 
         # Resubmission may fail if validation requires complete data/MOVs
@@ -211,7 +210,7 @@ class TestReworkCycleWithResubmission:
         # Verify locked state
         status_response = client.get(
             f"/api/v1/assessments/{test_rework_assessment.id}/submission-status",
-            headers=auth_headers_blgu
+            headers=auth_headers_blgu,
         )
         assert status_response.status_code == 200
         status_data = status_response.json()
@@ -220,7 +219,7 @@ class TestReworkCycleWithResubmission:
     def test_cannot_resubmit_draft_assessment(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_draft_assessment: Assessment,
     ):
         """
@@ -233,7 +232,7 @@ class TestReworkCycleWithResubmission:
         """
         response = client.post(
             f"/api/v1/assessments/{test_draft_assessment.id}/resubmit",
-            headers=auth_headers_blgu
+            headers=auth_headers_blgu,
         )
 
         assert response.status_code == 400
@@ -243,7 +242,7 @@ class TestReworkCycleWithResubmission:
     def test_second_rework_request_fails_limit_reached(
         self,
         client: TestClient,
-        auth_headers_assessor: Dict[str, str],
+        auth_headers_assessor: dict[str, str],
         test_submitted_assessment: Assessment,
         db_session: Session,
     ):
@@ -263,14 +262,12 @@ class TestReworkCycleWithResubmission:
         - Returns 400 with "rework limit reached" message
         """
         # Step 1: First rework request
-        first_rework = {
-            "comments": "First rework request - please update documentation"
-        }
+        first_rework = {"comments": "First rework request - please update documentation"}
 
         response1 = client.post(
             f"/api/v1/assessments/{test_submitted_assessment.id}/request-rework",
             headers=auth_headers_assessor,
-            json=first_rework
+            json=first_rework,
         )
 
         assert response1.status_code == 200
@@ -286,14 +283,12 @@ class TestReworkCycleWithResubmission:
         db_session.refresh(test_submitted_assessment)
 
         # Step 3: Attempt second rework request
-        second_rework = {
-            "comments": "Second rework request - should fail due to limit"
-        }
+        second_rework = {"comments": "Second rework request - should fail due to limit"}
 
         response2 = client.post(
             f"/api/v1/assessments/{test_submitted_assessment.id}/request-rework",
             headers=auth_headers_assessor,
-            json=second_rework
+            json=second_rework,
         )
 
         # Should fail with 400 Bad Request
@@ -309,8 +304,8 @@ class TestReworkCycleWithResubmission:
     def test_complete_rework_cycle_end_to_end(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
-        auth_headers_assessor: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
+        auth_headers_assessor: dict[str, str],
         test_submitted_assessment: Assessment,
         db_session: Session,
     ):
@@ -340,7 +335,7 @@ class TestReworkCycleWithResubmission:
         rework_response = client.post(
             f"/api/v1/assessments/{test_submitted_assessment.id}/request-rework",
             headers=auth_headers_assessor,
-            json=rework_request
+            json=rework_request,
         )
 
         assert rework_response.status_code == 200
@@ -351,7 +346,7 @@ class TestReworkCycleWithResubmission:
         # Step 2: BLGU views submission status (sees rework comments)
         status_response = client.get(
             f"/api/v1/assessments/{test_submitted_assessment.id}/submission-status",
-            headers=auth_headers_blgu
+            headers=auth_headers_blgu,
         )
 
         assert status_response.status_code == 200
@@ -363,7 +358,7 @@ class TestReworkCycleWithResubmission:
         # Step 3: BLGU resubmits after making changes
         resubmit_response = client.post(
             f"/api/v1/assessments/{test_submitted_assessment.id}/resubmit",
-            headers=auth_headers_blgu
+            headers=auth_headers_blgu,
         )
 
         # Resubmission may fail if validation requires complete data
@@ -376,14 +371,12 @@ class TestReworkCycleWithResubmission:
         assert test_submitted_assessment.rework_count == 1  # Remains 1
 
         # Step 4: Assessor attempts second rework (should fail)
-        second_rework = {
-            "comments": "Attempting second rework - should be rejected"
-        }
+        second_rework = {"comments": "Attempting second rework - should be rejected"}
 
         second_rework_response = client.post(
             f"/api/v1/assessments/{test_submitted_assessment.id}/request-rework",
             headers=auth_headers_assessor,
-            json=second_rework
+            json=second_rework,
         )
 
         assert second_rework_response.status_code == 400
@@ -394,7 +387,7 @@ class TestReworkCycleWithResubmission:
     def test_rework_request_on_draft_fails(
         self,
         client: TestClient,
-        auth_headers_assessor: Dict[str, str],
+        auth_headers_assessor: dict[str, str],
         test_draft_assessment: Assessment,
     ):
         """
@@ -405,14 +398,12 @@ class TestReworkCycleWithResubmission:
         - Returns 400 for DRAFT assessment
         - Appropriate error message about status requirement
         """
-        rework_request = {
-            "comments": "Trying to request rework on DRAFT - should fail"
-        }
+        rework_request = {"comments": "Trying to request rework on DRAFT - should fail"}
 
         response = client.post(
             f"/api/v1/assessments/{test_draft_assessment.id}/request-rework",
             headers=auth_headers_assessor,
-            json=rework_request
+            json=rework_request,
         )
 
         assert response.status_code == 400
@@ -423,7 +414,7 @@ class TestReworkCycleWithResubmission:
     def test_assessor_cannot_resubmit_assessment(
         self,
         client: TestClient,
-        auth_headers_assessor: Dict[str, str],
+        auth_headers_assessor: dict[str, str],
         test_rework_assessment: Assessment,
     ):
         """
@@ -435,7 +426,7 @@ class TestReworkCycleWithResubmission:
         """
         response = client.post(
             f"/api/v1/assessments/{test_rework_assessment.id}/resubmit",
-            headers=auth_headers_assessor
+            headers=auth_headers_assessor,
         )
 
         assert response.status_code == 403
@@ -445,8 +436,8 @@ class TestReworkCycleWithResubmission:
     def test_rework_comments_persist_across_resubmission(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
-        auth_headers_assessor: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
+        auth_headers_assessor: dict[str, str],
         test_submitted_assessment: Assessment,
         db_session: Session,
     ):
@@ -459,14 +450,12 @@ class TestReworkCycleWithResubmission:
         - Historical record of rework request is maintained
         """
         # Step 1: Request rework with comments
-        rework_request = {
-            "comments": "These specific comments should persist after resubmission"
-        }
+        rework_request = {"comments": "These specific comments should persist after resubmission"}
 
         client.post(
             f"/api/v1/assessments/{test_submitted_assessment.id}/request-rework",
             headers=auth_headers_assessor,
-            json=rework_request
+            json=rework_request,
         )
 
         db_session.refresh(test_submitted_assessment)
@@ -478,7 +467,7 @@ class TestReworkCycleWithResubmission:
 
         resubmit_response = client.post(
             f"/api/v1/assessments/{test_submitted_assessment.id}/resubmit",
-            headers=auth_headers_blgu
+            headers=auth_headers_blgu,
         )
 
         if resubmit_response.status_code == 400:

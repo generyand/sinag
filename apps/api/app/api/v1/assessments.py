@@ -1,39 +1,41 @@
 # 📋 Assessments API Routes
 # Endpoints for assessment management and assessment data
 
-from datetime import datetime
-from typing import Any, Dict, List
+from datetime import UTC, datetime
+from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.db.enums import AssessmentStatus, UserRole
+from app.db.models.assessment import MOV as MOVModel
+from app.db.models.assessment import Assessment, FeedbackComment
 from app.db.models.user import User
 from app.schemas.assessment import (
     MOV,
+    AnswerResponse,
     AssessmentDashboardResponse,
     AssessmentResponse,
     AssessmentResponseCreate,
     AssessmentResponseUpdate,
     AssessmentSubmissionValidation,
     CalibrationSummaryResponse,
-    MOVCreate,
-    SaveAnswersRequest,
-    SaveAnswersResponse,
-    GetAnswersResponse,
-    AnswerResponse,
     CompletenessValidationResponse,
+    GetAnswersResponse,
     IncompleteIndicatorDetail,
-    SubmitAssessmentResponse,
+    MOVCreate,
     RequestReworkRequest,
     RequestReworkResponse,
     ResubmitAssessmentResponse,
-    SubmissionStatusResponse,
     ReworkSummaryResponse,
+    SaveAnswersRequest,
+    SaveAnswersResponse,
+    SubmissionStatusResponse,
+    SubmitAssessmentResponse,
 )
-from app.db.models.assessment import MOV as MOVModel, Assessment, FeedbackComment
 from app.services.assessment_service import assessment_service
 from app.services.submission_validation_service import submission_validation_service
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
 
 router = APIRouter()
 
@@ -63,9 +65,7 @@ async def get_current_blgu_user(
     return current_user
 
 
-@router.get(
-    "/dashboard", response_model=AssessmentDashboardResponse, tags=["assessments"]
-)
+@router.get("/dashboard", response_model=AssessmentDashboardResponse, tags=["assessments"])
 async def get_assessment_dashboard(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(get_current_blgu_user),
@@ -103,7 +103,7 @@ async def get_assessment_dashboard(
         ) from e
 
 
-@router.get("/my-assessment", response_model=Dict[str, Any], tags=["assessments"])
+@router.get("/my-assessment", response_model=dict[str, Any], tags=["assessments"])
 async def get_my_assessment(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(get_current_blgu_user),
@@ -142,9 +142,7 @@ async def get_my_assessment(
         ) from e
 
 
-@router.get(
-    "/responses/{response_id}", response_model=AssessmentResponse, tags=["assessments"]
-)
+@router.get("/responses/{response_id}", response_model=AssessmentResponse, tags=["assessments"])
 async def get_assessment_response(
     response_id: int,
     db: Session = Depends(deps.get_db),
@@ -168,9 +166,7 @@ async def get_assessment_response(
         )
 
     # Verify that the response belongs to the current user's assessment
-    assessment = assessment_service.get_assessment_for_blgu(
-        db, getattr(current_user, "id")
-    )
+    assessment = assessment_service.get_assessment_for_blgu(db, getattr(current_user, "id"))
     if assessment is None or response.assessment_id != assessment.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -180,9 +176,7 @@ async def get_assessment_response(
     return response
 
 
-@router.put(
-    "/responses/{response_id}", response_model=AssessmentResponse, tags=["assessments"]
-)
+@router.put("/responses/{response_id}", response_model=AssessmentResponse, tags=["assessments"])
 async def update_assessment_response(
     response_id: int,
     response_update: AssessmentResponseUpdate,
@@ -210,9 +204,7 @@ async def update_assessment_response(
         )
 
     # Verify ownership
-    assessment = assessment_service.get_assessment_for_blgu(
-        db, getattr(current_user, "id")
-    )
+    assessment = assessment_service.get_assessment_for_blgu(db, getattr(current_user, "id"))
     if assessment is None or response.assessment_id != assessment.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -264,9 +256,7 @@ async def create_assessment_response(
     The response data is validated against the indicator's form schema.
     """
     # Verify the assessment belongs to the current user
-    assessment = assessment_service.get_assessment_for_blgu(
-        db, getattr(current_user, "id")
-    )
+    assessment = assessment_service.get_assessment_for_blgu(db, getattr(current_user, "id"))
     if not assessment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -291,10 +281,8 @@ async def create_assessment_response(
         ) from e
 
 
-@router.post(
-    "/submit", response_model=AssessmentSubmissionValidation, tags=["assessments"]
-)
-async def submit_assessment(
+@router.post("/submit", response_model=AssessmentSubmissionValidation, tags=["assessments"])
+async def submit_current_user_assessment(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(get_current_blgu_user),
 ):
@@ -308,9 +296,7 @@ async def submit_assessment(
 
     Returns validation results with any errors or warnings.
     """
-    assessment = assessment_service.get_assessment_for_blgu(
-        db, getattr(current_user, "id")
-    )
+    assessment = assessment_service.get_assessment_for_blgu(db, getattr(current_user, "id"))
     if not assessment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -322,9 +308,7 @@ async def submit_assessment(
         if not getattr(validation_result, "is_valid", False):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=(
-                    "Submission failed: YES answers without MOV detected."
-                ),
+                detail=("Submission failed: YES answers without MOV detected."),
             )
         return validation_result
 
@@ -339,6 +323,7 @@ async def submit_assessment(
 
 # NOTE: Old duplicate submit endpoint removed (was at line 339-357)
 # Epic 5.0 submit_assessment endpoint is the correct one (now at line ~1070)
+
 
 @router.post("/responses/{response_id}/movs", response_model=MOV, tags=["assessments"])
 async def upload_mov(
@@ -362,9 +347,7 @@ async def upload_mov(
             detail="Assessment response not found",
         )
 
-    assessment = assessment_service.get_assessment_for_blgu(
-        db, getattr(current_user, "id")
-    )
+    assessment = assessment_service.get_assessment_for_blgu(db, getattr(current_user, "id"))
     if assessment is None or response.assessment_id != assessment.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -387,7 +370,7 @@ async def upload_mov(
         ) from e
 
 
-@router.delete("/movs/{mov_id}", response_model=Dict[str, str], tags=["assessments"])
+@router.delete("/movs/{mov_id}", response_model=dict[str, str], tags=["assessments"])
 async def delete_mov(
     mov_id: int,
     db: Session = Depends(deps.get_db),
@@ -402,9 +385,7 @@ async def delete_mov(
     # First get the MOV to verify ownership
     mov = db.query(MOVModel).filter(MOVModel.id == mov_id).first()
     if mov is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="MOV not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="MOV not found")
 
     # Verify the MOV belongs to the current user's assessment
     response = assessment_service.get_assessment_response(db, mov.response_id)
@@ -414,9 +395,7 @@ async def delete_mov(
             detail="Assessment response not found",
         )
 
-    assessment = assessment_service.get_assessment_for_blgu(
-        db, getattr(current_user, "id")
-    )
+    assessment = assessment_service.get_assessment_for_blgu(db, getattr(current_user, "id"))
     if assessment is None or response.assessment_id != assessment.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -426,9 +405,7 @@ async def delete_mov(
     try:
         success = assessment_service.delete_mov(db, mov_id)
         if not success:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="MOV not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="MOV not found")
 
         return {"message": "MOV deleted successfully"}
 
@@ -466,7 +443,7 @@ async def get_current_admin_user(
     return current_user
 
 
-@router.get("/list", response_model=List[Dict[str, Any]], tags=["assessments"])
+@router.get("/list", response_model=list[dict[str, Any]], tags=["assessments"])
 async def get_all_validated_assessments(
     assessment_status: AssessmentStatus | None = Query(
         None, description="Filter by assessment status (returns all if not specified)"
@@ -489,9 +466,7 @@ async def get_all_validated_assessments(
         List of assessment dictionaries with compliance data
     """
     try:
-        assessments = assessment_service.get_all_validated_assessments(
-            db, status=assessment_status
-        )
+        assessments = assessment_service.get_all_validated_assessments(db, status=assessment_status)
         return assessments
     except Exception as e:
         raise HTTPException(
@@ -502,7 +477,7 @@ async def get_all_validated_assessments(
 
 @router.post(
     "/{id}/generate-insights",
-    response_model=Dict[str, Any],
+    response_model=dict[str, Any],
     status_code=status.HTTP_202_ACCEPTED,
     tags=["assessments"],
 )
@@ -543,9 +518,7 @@ async def generate_insights(
     assessment = db.query(Assessment).filter(Assessment.id == id).first()
 
     if not assessment:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Assessment not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assessment not found")
 
     # Verify assessment is validated (required for insights)
     if assessment.status != AssessmentStatus.VALIDATED:
@@ -635,7 +608,7 @@ async def save_assessment_answers(
     if not assessment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Assessment with ID {assessment_id} not found"
+            detail=f"Assessment with ID {assessment_id} not found",
         )
 
     # Permission check: BLGU users can only save their own assessments
@@ -644,16 +617,19 @@ async def save_assessment_answers(
         if assessment.blgu_user_id != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You are not authorized to modify this assessment"
+                detail="You are not authorized to modify this assessment",
             )
     # Assessors and other roles are allowed
 
     # Status check: Only DRAFT or NEEDS_REWORK assessments can be edited
-    locked_statuses = [AssessmentStatus.SUBMITTED_FOR_REVIEW, AssessmentStatus.VALIDATED]
+    locked_statuses = [
+        AssessmentStatus.SUBMITTED_FOR_REVIEW,
+        AssessmentStatus.VALIDATED,
+    ]
     if assessment.status in locked_statuses:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Assessment is locked for editing. Current status: {assessment.status.value}"
+            detail=f"Assessment is locked for editing. Current status: {assessment.status.value}",
         )
 
     # Retrieve indicator and form_schema for validation
@@ -662,7 +638,7 @@ async def save_assessment_answers(
     if not indicator:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Indicator with ID {indicator_id} not found"
+            detail=f"Indicator with ID {indicator_id} not found",
         )
 
     # Parse form_schema to extract field definitions
@@ -684,10 +660,12 @@ async def save_assessment_answers(
 
         # Check if field_id exists in form_schema
         if field_id not in field_map:
-            validation_errors.append({
-                "field_id": field_id,
-                "error": f"Field '{field_id}' not found in form schema"
-            })
+            validation_errors.append(
+                {
+                    "field_id": field_id,
+                    "error": f"Field '{field_id}' not found in form schema",
+                }
+            )
             continue
 
         field_definition = field_map[field_id]
@@ -696,79 +674,94 @@ async def save_assessment_answers(
         # Validate value type matches field type
         if field_type == "text" or field_type == "textarea":
             if not isinstance(value, str):
-                validation_errors.append({
-                    "field_id": field_id,
-                    "error": f"Field '{field_id}' expects string value, got {type(value).__name__}"
-                })
+                validation_errors.append(
+                    {
+                        "field_id": field_id,
+                        "error": f"Field '{field_id}' expects string value, got {type(value).__name__}",
+                    }
+                )
 
         elif field_type == "number":
             if not isinstance(value, (int, float)):
-                validation_errors.append({
-                    "field_id": field_id,
-                    "error": f"Field '{field_id}' expects numeric value, got {type(value).__name__}"
-                })
+                validation_errors.append(
+                    {
+                        "field_id": field_id,
+                        "error": f"Field '{field_id}' expects numeric value, got {type(value).__name__}",
+                    }
+                )
 
         elif field_type == "date":
             if not isinstance(value, str):
-                validation_errors.append({
-                    "field_id": field_id,
-                    "error": f"Field '{field_id}' expects date string (ISO format), got {type(value).__name__}"
-                })
+                validation_errors.append(
+                    {
+                        "field_id": field_id,
+                        "error": f"Field '{field_id}' expects date string (ISO format), got {type(value).__name__}",
+                    }
+                )
             # Note: Additional date format validation can be added here
 
         elif field_type == "select" or field_type == "radio":
             # For select/radio, value should be a string matching one of the options
             if not isinstance(value, str):
-                validation_errors.append({
-                    "field_id": field_id,
-                    "error": f"Field '{field_id}' expects string value (option ID), got {type(value).__name__}"
-                })
+                validation_errors.append(
+                    {
+                        "field_id": field_id,
+                        "error": f"Field '{field_id}' expects string value (option ID), got {type(value).__name__}",
+                    }
+                )
             else:
                 # Validate that selected option exists
                 options = field_definition.get("options", [])
                 option_ids = [opt.get("id") for opt in options]
                 if value not in option_ids:
-                    validation_errors.append({
-                        "field_id": field_id,
-                        "error": f"Field '{field_id}' has invalid option '{value}'. Valid options: {option_ids}"
-                    })
+                    validation_errors.append(
+                        {
+                            "field_id": field_id,
+                            "error": f"Field '{field_id}' has invalid option '{value}'. Valid options: {option_ids}",
+                        }
+                    )
 
         elif field_type == "checkbox":
             # For checkbox, value should be an array of option IDs
             if not isinstance(value, list):
-                validation_errors.append({
-                    "field_id": field_id,
-                    "error": f"Field '{field_id}' expects array of option IDs, got {type(value).__name__}"
-                })
+                validation_errors.append(
+                    {
+                        "field_id": field_id,
+                        "error": f"Field '{field_id}' expects array of option IDs, got {type(value).__name__}",
+                    }
+                )
             else:
                 # Validate that all selected options exist
                 options = field_definition.get("options", [])
                 option_ids = [opt.get("id") for opt in options]
                 for selected_option in value:
                     if selected_option not in option_ids:
-                        validation_errors.append({
-                            "field_id": field_id,
-                            "error": f"Field '{field_id}' has invalid option '{selected_option}'. Valid options: {option_ids}"
-                        })
+                        validation_errors.append(
+                            {
+                                "field_id": field_id,
+                                "error": f"Field '{field_id}' has invalid option '{selected_option}'. Valid options: {option_ids}",
+                            }
+                        )
 
     # If validation errors found, raise 422
     if validation_errors:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail={
-                "message": "Field validation failed",
-                "errors": validation_errors
-            }
+            detail={"message": "Field validation failed", "errors": validation_errors},
         )
 
     # Upsert assessment_response record
     from app.db.models.assessment import AssessmentResponse
 
     # Check if assessment_response already exists for this assessment + indicator
-    existing_response = db.query(AssessmentResponse).filter(
-        AssessmentResponse.assessment_id == assessment_id,
-        AssessmentResponse.indicator_id == indicator_id
-    ).first()
+    existing_response = (
+        db.query(AssessmentResponse)
+        .filter(
+            AssessmentResponse.assessment_id == assessment_id,
+            AssessmentResponse.indicator_id == indicator_id,
+        )
+        .first()
+    )
 
     # Build response_data dictionary from field responses
     response_data = {response.field_id: response.value for response in field_responses}
@@ -796,7 +789,7 @@ async def save_assessment_answers(
         message="Responses saved successfully",
         assessment_id=assessment_id,
         indicator_id=indicator_id,
-        saved_count=len(field_responses)
+        saved_count=len(field_responses),
     )
 
 
@@ -853,7 +846,7 @@ async def get_assessment_answers(
     if not assessment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Assessment with ID {assessment_id} not found"
+            detail=f"Assessment with ID {assessment_id} not found",
         )
 
     # Permission check: BLGU users can only view their own assessments
@@ -862,33 +855,32 @@ async def get_assessment_answers(
         if assessment.blgu_user_id != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You are not authorized to view this assessment"
+                detail="You are not authorized to view this assessment",
             )
     # Assessors and other roles are allowed
 
     # Query assessment_response for this assessment + indicator
     from app.db.models.assessment import AssessmentResponse
 
-    assessment_response = db.query(AssessmentResponse).filter(
-        AssessmentResponse.assessment_id == assessment_id,
-        AssessmentResponse.indicator_id == indicator_id
-    ).first()
+    assessment_response = (
+        db.query(AssessmentResponse)
+        .filter(
+            AssessmentResponse.assessment_id == assessment_id,
+            AssessmentResponse.indicator_id == indicator_id,
+        )
+        .first()
+    )
 
     # If no response exists yet, return empty array
     if not assessment_response or not assessment_response.response_data:
         return GetAnswersResponse(
-            assessment_id=assessment_id,
-            indicator_id=indicator_id,
-            responses=[]
+            assessment_id=assessment_id, indicator_id=indicator_id, responses=[]
         )
 
     # Extract field responses from response_data (stored as dict)
     # Format: {"field_id": value, ...} -> [{"field_id": ..., "value": ...}, ...]
     field_responses = [
-        AnswerResponse(
-            field_id=field_id,
-            value=value
-        )
+        AnswerResponse(field_id=field_id, value=value)
         for field_id, value in assessment_response.response_data.items()
     ]
 
@@ -896,8 +888,8 @@ async def get_assessment_answers(
         assessment_id=assessment_id,
         indicator_id=indicator_id,
         responses=field_responses,
-        created_at=assessment_response.created_at.isoformat() + 'Z',
-        updated_at=assessment_response.updated_at.isoformat() + 'Z'
+        created_at=assessment_response.created_at.isoformat() + "Z",
+        updated_at=assessment_response.updated_at.isoformat() + "Z",
     )
 
 
@@ -943,10 +935,11 @@ async def validate_assessment_completeness(
     **Raises**:
     - 404: Assessment not found
     """
+    from sqlalchemy.orm import joinedload
+
     from app.db.models import Assessment
     from app.db.models.assessment import AssessmentResponse
     from app.db.models.governance_area import Indicator
-    from sqlalchemy.orm import joinedload
 
     # Retrieve assessment
     assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
@@ -954,7 +947,7 @@ async def validate_assessment_completeness(
     if not assessment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Assessment with ID {assessment_id} not found"
+            detail=f"Assessment with ID {assessment_id} not found",
         )
 
     # Retrieve all active indicators, sorted by governance area, sort_order, and indicator_code
@@ -967,15 +960,17 @@ async def validate_assessment_completeness(
     )
 
     # Retrieve all assessment_responses for this assessment
-    assessment_responses = db.query(AssessmentResponse).filter(
-        AssessmentResponse.assessment_id == assessment_id
-    ).all()
+    assessment_responses = (
+        db.query(AssessmentResponse).filter(AssessmentResponse.assessment_id == assessment_id).all()
+    )
 
     # Create a map of indicator_id -> assessment_response for easy lookup
     response_map = {resp.indicator_id: resp for resp in assessment_responses}
 
     # Validate completeness for each indicator using the service
-    from app.services.completeness_validation_service import CompletenessValidationService
+    from app.services.completeness_validation_service import (
+        CompletenessValidationService,
+    )
 
     completeness_service = CompletenessValidationService()
 
@@ -994,14 +989,16 @@ async def validate_assessment_completeness(
         validation_result = completeness_service.validate_completeness(
             form_schema=indicator.form_schema,
             response_data=response_data,
-            uploaded_movs=uploaded_movs
+            uploaded_movs=uploaded_movs,
         )
 
-        indicator_results.append({
-            "indicator": indicator,
-            "is_complete": validation_result["is_complete"],
-            "missing_fields": validation_result["missing_fields"]
-        })
+        indicator_results.append(
+            {
+                "indicator": indicator,
+                "is_complete": validation_result["is_complete"],
+                "missing_fields": validation_result["missing_fields"],
+            }
+        )
 
     # Aggregate completeness results across all indicators
     complete_count = sum(1 for r in indicator_results if r["is_complete"])
@@ -1016,9 +1013,8 @@ async def validate_assessment_completeness(
                     indicator_id=result["indicator"].id,
                     indicator_title=result["indicator"].name,
                     missing_required_fields=[
-                        field["field_id"]
-                        for field in result["missing_fields"]
-                    ]
+                        field["field_id"] for field in result["missing_fields"]
+                    ],
                 )
             )
 
@@ -1031,7 +1027,7 @@ async def validate_assessment_completeness(
         total_indicators=len(indicators),
         complete_indicators=complete_count,
         incomplete_indicators=incomplete_count,
-        incomplete_details=incomplete_details
+        incomplete_details=incomplete_details,
     )
 
 
@@ -1044,7 +1040,7 @@ async def validate_assessment_completeness(
     "/{assessment_id}/submit",
     response_model=SubmitAssessmentResponse,
     tags=["assessments"],
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
 )
 def submit_assessment(
     assessment_id: int,
@@ -1086,7 +1082,7 @@ def submit_assessment(
     if current_user.role != UserRole.BLGU_USER:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only BLGU users can submit assessments"
+            detail="Only BLGU users can submit assessments",
         )
 
     # Load the assessment
@@ -1094,20 +1090,19 @@ def submit_assessment(
     if not assessment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Assessment {assessment_id} not found"
+            detail=f"Assessment {assessment_id} not found",
         )
 
     # Check ownership: user must own this assessment
     if assessment.blgu_user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only submit your own assessments"
+            detail="You can only submit your own assessments",
         )
 
     # Validate assessment completeness using SubmissionValidationService
     validation_result = submission_validation_service.validate_submission(
-        assessment_id=assessment_id,
-        db=db
+        assessment_id=assessment_id, db=db
     )
 
     if not validation_result.is_valid:
@@ -1116,8 +1111,8 @@ def submit_assessment(
             detail={
                 "message": validation_result.error_message,
                 "incomplete_indicators": validation_result.incomplete_indicators,
-                "missing_movs": validation_result.missing_movs
-            }
+                "missing_movs": validation_result.missing_movs,
+            },
         )
 
     # Update assessment status to SUBMITTED
@@ -1132,7 +1127,7 @@ def submit_assessment(
         success=True,
         message="Assessment submitted successfully",
         assessment_id=assessment.id,
-        submitted_at=assessment.submitted_at
+        submitted_at=assessment.submitted_at,
     )
 
 
@@ -1140,7 +1135,7 @@ def submit_assessment(
     "/{assessment_id}/request-rework",
     response_model=RequestReworkResponse,
     tags=["assessments"],
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
 )
 def request_rework(
     assessment_id: int,
@@ -1192,7 +1187,7 @@ def request_rework(
     if current_user.role not in allowed_roles:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only assessors and validators can request rework"
+            detail="Only assessors and validators can request rework",
         )
 
     # Load the assessment
@@ -1200,21 +1195,21 @@ def request_rework(
     if not assessment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Assessment {assessment_id} not found"
+            detail=f"Assessment {assessment_id} not found",
         )
 
     # Check assessment status is SUBMITTED
     if assessment.status != AssessmentStatus.SUBMITTED:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Assessment must be in SUBMITTED status to request rework. Current status: {assessment.status.value}"
+            detail=f"Assessment must be in SUBMITTED status to request rework. Current status: {assessment.status.value}",
         )
 
     # Check rework limit using model property
     if not assessment.can_request_rework:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Rework limit reached. Only one rework cycle is allowed per assessment."
+            detail="Rework limit reached. Only one rework cycle is allowed per assessment.",
         )
 
     # Validate comments (already validated by Pydantic, but double-check)
@@ -1222,7 +1217,7 @@ def request_rework(
     if len(comments) < 10:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Rework comments must be at least 10 characters long"
+            detail="Rework comments must be at least 10 characters long",
         )
 
     # Update assessment to REWORK status
@@ -1241,7 +1236,7 @@ def request_rework(
         message="Rework requested successfully",
         assessment_id=assessment.id,
         rework_count=assessment.rework_count,
-        rework_requested_at=assessment.rework_requested_at
+        rework_requested_at=assessment.rework_requested_at,
     )
 
 
@@ -1249,7 +1244,7 @@ def request_rework(
     "/{assessment_id}/resubmit",
     response_model=ResubmitAssessmentResponse,
     tags=["assessments"],
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
 )
 def resubmit_assessment(
     assessment_id: int,
@@ -1298,7 +1293,7 @@ def resubmit_assessment(
     if current_user.role != UserRole.BLGU_USER:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only BLGU users can resubmit assessments"
+            detail="Only BLGU users can resubmit assessments",
         )
 
     # Load the assessment
@@ -1306,21 +1301,21 @@ def resubmit_assessment(
     if not assessment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Assessment {assessment_id} not found"
+            detail=f"Assessment {assessment_id} not found",
         )
 
     # Check ownership
     if assessment.blgu_user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only resubmit your own assessments"
+            detail="You can only resubmit your own assessments",
         )
 
     # Check assessment status is REWORK
     if assessment.status != AssessmentStatus.REWORK:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Assessment must be in REWORK status to resubmit. Current status: {assessment.status.value}"
+            detail=f"Assessment must be in REWORK status to resubmit. Current status: {assessment.status.value}",
         )
 
     # Check if this is an MLGOO RE-calibration (distinct from assessor rework)
@@ -1328,8 +1323,7 @@ def resubmit_assessment(
 
     # Validate assessment completeness again
     validation_result = submission_validation_service.validate_submission(
-        assessment_id=assessment_id,
-        db=db
+        assessment_id=assessment_id, db=db
     )
 
     if not validation_result.is_valid:
@@ -1338,8 +1332,8 @@ def resubmit_assessment(
             detail={
                 "message": validation_result.error_message,
                 "incomplete_indicators": validation_result.incomplete_indicators,
-                "missing_movs": validation_result.missing_movs
-            }
+                "missing_movs": validation_result.missing_movs,
+            },
         )
 
     # MLGOO RE-calibration routes back to MLGOO approval
@@ -1351,6 +1345,7 @@ def resubmit_assessment(
         # Keep mlgoo_recalibration_indicator_ids and comments for audit trail
         assessment.submitted_at = datetime.utcnow()
         import logging
+
         logging.getLogger(__name__).info(
             f"[MLGOO RECALIBRATION] Assessment {assessment_id} resubmitted - routing to AWAITING_MLGOO_APPROVAL"
         )
@@ -1365,22 +1360,29 @@ def resubmit_assessment(
     if is_mlgoo_recalibration:
         # TODO: Send notification to MLGOO about recalibration resubmission
         import logging
-        logging.getLogger(__name__).info(f"[MLGOO RECALIBRATION] Notification would be sent for assessment {assessment_id}")
+
+        logging.getLogger(__name__).info(
+            f"[MLGOO RECALIBRATION] Notification would be sent for assessment {assessment_id}"
+        )
     else:
         # Send notification to assessors about resubmission (Notification #3)
         try:
             from app.workers.notifications import send_rework_resubmission_notification
+
             send_rework_resubmission_notification.delay(assessment_id)
         except Exception as e:
             import logging
-            logging.getLogger(__name__).error(f"Failed to queue rework resubmission notification: {e}")
+
+            logging.getLogger(__name__).error(
+                f"Failed to queue rework resubmission notification: {e}"
+            )
 
     return ResubmitAssessmentResponse(
         success=True,
         message="Assessment resubmitted successfully",
         assessment_id=assessment.id,
         resubmitted_at=assessment.submitted_at,
-        rework_count=assessment.rework_count
+        rework_count=assessment.rework_count,
     )
 
 
@@ -1388,7 +1390,7 @@ def resubmit_assessment(
     "/{assessment_id}/submit-for-calibration",
     response_model=ResubmitAssessmentResponse,
     tags=["assessments"],
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
 )
 def submit_for_calibration_review(
     assessment_id: int,
@@ -1435,7 +1437,7 @@ def submit_for_calibration_review(
     if current_user.role != UserRole.BLGU_USER:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only BLGU users can submit for calibration review"
+            detail="Only BLGU users can submit for calibration review",
         )
 
     # Load the assessment
@@ -1443,28 +1445,28 @@ def submit_for_calibration_review(
     if not assessment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Assessment {assessment_id} not found"
+            detail=f"Assessment {assessment_id} not found",
         )
 
     # Check ownership
     if assessment.blgu_user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only submit your own assessments"
+            detail="You can only submit your own assessments",
         )
 
     # Check assessment status is REWORK
     if assessment.status != AssessmentStatus.REWORK:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Assessment must be in REWORK status. Current status: {assessment.status.value}"
+            detail=f"Assessment must be in REWORK status. Current status: {assessment.status.value}",
         )
 
     # CRITICAL: Check that this is a calibration rework (from Validator)
     if not assessment.is_calibration_rework:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="This assessment was not sent for calibration. Use the regular 'resubmit' endpoint instead."
+            detail="This assessment was not sent for calibration. Use the regular 'resubmit' endpoint instead.",
         )
 
     # Validate only the indicators that were marked for calibration
@@ -1477,7 +1479,9 @@ def submit_for_calibration_review(
         pass
     else:
         # Validate only the rework indicators using completeness check
-        from app.services.completeness_validation_service import completeness_validation_service
+        from app.services.completeness_validation_service import (
+            completeness_validation_service,
+        )
 
         incomplete_indicators = []
         for response in rework_responses:
@@ -1490,31 +1494,32 @@ def submit_for_calibration_review(
 
             # Get MOVs for this indicator
             indicator_movs = [
-                mf for mf in assessment.mov_files
-                if mf.indicator_id == response.indicator_id
+                mf for mf in assessment.mov_files if mf.indicator_id == response.indicator_id
             ]
 
             # Validate using the completeness service
             validation = completeness_validation_service.validate_completeness(
                 form_schema=form_schema,
                 response_data=response.response_data,
-                uploaded_movs=indicator_movs
+                uploaded_movs=indicator_movs,
             )
 
             if not validation.get("is_complete", False):
-                incomplete_indicators.append({
-                    "indicator_id": response.indicator_id,
-                    "indicator_name": indicator.name,
-                    "missing_fields": validation.get("missing_fields", [])
-                })
+                incomplete_indicators.append(
+                    {
+                        "indicator_id": response.indicator_id,
+                        "indicator_name": indicator.name,
+                        "missing_fields": validation.get("missing_fields", []),
+                    }
+                )
 
         if incomplete_indicators:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail={
                     "message": f"{len(incomplete_indicators)} indicator(s) still incomplete",
-                    "incomplete_indicators": incomplete_indicators
-                }
+                    "incomplete_indicators": incomplete_indicators,
+                },
             )
 
     # Update assessment status to AWAITING_FINAL_VALIDATION (goes to Validator, not Assessor)
@@ -1528,13 +1533,12 @@ def submit_for_calibration_review(
 
     if pending_calibrations:
         from sqlalchemy.orm.attributes import flag_modified
-        from datetime import timezone
 
         updated_calibrations = []
         for pc in pending_calibrations:
             # Mark as approved
             pc["approved"] = True
-            pc["approved_at"] = datetime.now(timezone.utc).isoformat()
+            pc["approved_at"] = datetime.now(UTC).isoformat()
             updated_calibrations.append(pc)
 
             # Collect validator IDs to notify
@@ -1544,7 +1548,7 @@ def submit_for_calibration_review(
 
         assessment.pending_calibrations = updated_calibrations
         # CRITICAL: Flag the JSON column as modified so SQLAlchemy detects the change
-        flag_modified(assessment, 'pending_calibrations')
+        flag_modified(assessment, "pending_calibrations")
 
     # Clear calibration flags after successful submission
     assessment.is_calibration_rework = False
@@ -1564,7 +1568,7 @@ def submit_for_calibration_review(
     if rework_response_ids:
         db.query(FeedbackComment).filter(
             FeedbackComment.response_id.in_(rework_response_ids)
-        ).delete(synchronize_session='fetch')
+        ).delete(synchronize_session="fetch")
 
     # Store legacy validator_id before clearing (we need it for notification)
     legacy_validator_id = assessment.calibration_validator_id
@@ -1576,36 +1580,49 @@ def submit_for_calibration_review(
     notification_count = 0
     if validator_ids_to_notify:
         try:
-            from app.workers.notifications import send_calibration_resubmission_notification
+            from app.workers.notifications import (
+                send_calibration_resubmission_notification,
+            )
 
             for vid in validator_ids_to_notify:
                 send_calibration_resubmission_notification.delay(assessment_id, vid)
                 notification_count += 1
         except Exception as e:
             import logging
-            logging.getLogger(__name__).error(f"Failed to queue calibration resubmission notification: {e}")
+
+            logging.getLogger(__name__).error(
+                f"Failed to queue calibration resubmission notification: {e}"
+            )
     elif legacy_validator_id:
         # Fallback for legacy single-validator calibration
         try:
-            from app.workers.notifications import send_calibration_resubmission_notification
+            from app.workers.notifications import (
+                send_calibration_resubmission_notification,
+            )
+
             send_calibration_resubmission_notification.delay(assessment_id, legacy_validator_id)
             notification_count = 1
         except Exception as e:
             import logging
-            logging.getLogger(__name__).error(f"Failed to queue calibration resubmission notification: {e}")
+
+            logging.getLogger(__name__).error(
+                f"Failed to queue calibration resubmission notification: {e}"
+            )
 
     # Build message based on number of validators notified
     if notification_count > 1:
         message = f"Assessment submitted for calibration review. {notification_count} validators will be notified."
     else:
-        message = "Assessment submitted for calibration review. It will be reviewed by the Validator."
+        message = (
+            "Assessment submitted for calibration review. It will be reviewed by the Validator."
+        )
 
     return ResubmitAssessmentResponse(
         success=True,
         message=message,
         assessment_id=assessment.id,
         resubmitted_at=assessment.submitted_at,
-        rework_count=assessment.rework_count
+        rework_count=assessment.rework_count,
     )
 
 
@@ -1613,7 +1630,7 @@ def submit_for_calibration_review(
     "/{assessment_id}/submission-status",
     response_model=SubmissionStatusResponse,
     tags=["assessments"],
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
 )
 def get_submission_status(
     assessment_id: int,
@@ -1660,7 +1677,7 @@ def get_submission_status(
     if not assessment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Assessment {assessment_id} not found"
+            detail=f"Assessment {assessment_id} not found",
         )
 
     # Authorization check
@@ -1669,15 +1686,14 @@ def get_submission_status(
         if assessment.blgu_user_id != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You can only check the status of your own assessments"
+                detail="You can only check the status of your own assessments",
             )
 
     # Assessors/Validators can check any assessment (no additional check needed)
 
     # Run validation check to get current completeness status
     validation_result = submission_validation_service.validate_submission(
-        assessment_id=assessment_id,
-        db=db
+        assessment_id=assessment_id, db=db
     )
 
     # Return comprehensive status response
@@ -1689,20 +1705,20 @@ def get_submission_status(
         rework_comments=assessment.rework_comments,
         rework_requested_at=assessment.rework_requested_at,
         rework_requested_by=assessment.rework_requested_by,
-        validation_result=validation_result
+        validation_result=validation_result,
     )
 
 
 @router.get(
     "/{assessment_id}/rework-summary",
     response_model=ReworkSummaryResponse,
-    tags=["assessments"]
+    tags=["assessments"],
 )
 async def get_rework_summary(
     assessment_id: int,
     language: str = Query(
         None,
-        description="Language code for the summary: ceb (Bisaya), fil (Tagalog), en (English). Defaults to user's preferred language."
+        description="Language code for the summary: ceb (Bisaya), fil (Tagalog), en (English). Defaults to user's preferred language.",
     ),
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(get_current_blgu_user),
@@ -1747,28 +1763,28 @@ async def get_rework_summary(
     if not assessment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Assessment {assessment_id} not found"
+            detail=f"Assessment {assessment_id} not found",
         )
 
     # Authorization check: BLGU users can only access their own assessments
     if assessment.blgu_user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only access rework summaries for your own assessments"
+            detail="You can only access rework summaries for your own assessments",
         )
 
     # Check if assessment is in rework status
     if assessment.status != AssessmentStatus.REWORK:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Assessment is not in rework status. Current status: {assessment.status.value}"
+            detail=f"Assessment is not in rework status. Current status: {assessment.status.value}",
         )
 
     # Check if rework summary exists
     if not assessment.rework_summary:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Rework summary is still being generated. Please try again in a few moments."
+            detail="Rework summary is still being generated. Please try again in a few moments.",
         )
 
     # Determine target language (parameter > user preference > default)
@@ -1778,7 +1794,7 @@ async def get_rework_summary(
     if target_lang not in ["ceb", "fil", "en"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid language code: {target_lang}. Use 'ceb', 'fil', or 'en'."
+            detail=f"Invalid language code: {target_lang}. Use 'ceb', 'fil', or 'en'.",
         )
 
     # Handle the rework summary data structure
@@ -1823,20 +1839,20 @@ async def get_rework_summary(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate summary in {target_lang}: {str(e)}"
+            detail=f"Failed to generate summary in {target_lang}: {str(e)}",
         )
 
 
 @router.get(
     "/{assessment_id}/calibration-summary",
     response_model=CalibrationSummaryResponse,
-    tags=["assessments"]
+    tags=["assessments"],
 )
 async def get_calibration_summary(
     assessment_id: int,
     language: str = Query(
         None,
-        description="Language code for the summary: ceb (Bisaya), fil (Tagalog), en (English). Defaults to user's preferred language."
+        description="Language code for the summary: ceb (Bisaya), fil (Tagalog), en (English). Defaults to user's preferred language.",
     ),
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(get_current_blgu_user),
@@ -1885,34 +1901,34 @@ async def get_calibration_summary(
     if not assessment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Assessment {assessment_id} not found"
+            detail=f"Assessment {assessment_id} not found",
         )
 
     # Authorization check: BLGU users can only access their own assessments
     if assessment.blgu_user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only access calibration summaries for your own assessments"
+            detail="You can only access calibration summaries for your own assessments",
         )
 
     # Check if assessment is in rework status with calibration flag
     if assessment.status != AssessmentStatus.REWORK:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Assessment is not in rework status. Current status: {assessment.status.value}"
+            detail=f"Assessment is not in rework status. Current status: {assessment.status.value}",
         )
 
     if not assessment.is_calibration_rework:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="This assessment is not a calibration. Use the rework-summary endpoint instead."
+            detail="This assessment is not a calibration. Use the rework-summary endpoint instead.",
         )
 
     # Check if calibration summary exists
     if not assessment.calibration_summary:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Calibration summary is still being generated. Please try again in a few moments."
+            detail="Calibration summary is still being generated. Please try again in a few moments.",
         )
 
     # Determine target language (parameter > user preference > default)
@@ -1922,7 +1938,7 @@ async def get_calibration_summary(
     if target_lang not in ["ceb", "fil", "en"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid language code: {target_lang}. Use 'ceb', 'fil', or 'en'."
+            detail=f"Invalid language code: {target_lang}. Use 'ceb', 'fil', or 'en'.",
         )
 
     # Handle the calibration summary data structure
@@ -1968,7 +1984,7 @@ async def get_calibration_summary(
     if not governance_area_id:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Could not determine governance area for calibration summary generation"
+            detail="Could not determine governance area for calibration summary generation",
         )
 
     try:
@@ -1987,5 +2003,5 @@ async def get_calibration_summary(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate calibration summary in {target_lang}: {str(e)}"
+            detail=f"Failed to generate calibration summary in {target_lang}: {str(e)}",
         )

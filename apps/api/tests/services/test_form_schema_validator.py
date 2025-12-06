@@ -7,23 +7,23 @@ This module tests all validation functions in form_schema_validator.py
 import pytest
 
 from app.schemas.form_schema import (
-    FormSchema,
     CheckboxGroupField,
-    RadioButtonField,
-    NumberInputField,
-    TextInputField,
-    TextAreaField,
-    DatePickerField,
-    FileUploadField,
-    FieldOption,
     ConditionalMOVLogic,
+    DatePickerField,
+    FieldOption,
+    FileUploadField,
+    FormSchema,
+    NumberInputField,
+    RadioButtonField,
+    TextAreaField,
+    TextInputField,
 )
 from app.services.form_schema_validator import (
-    validate_field_ids_unique,
-    validate_no_circular_references,
-    validate_conditional_mov_logic,
     detect_circular_references,
     generate_validation_errors,
+    validate_conditional_mov_logic,
+    validate_field_ids_unique,
+    validate_no_circular_references,
 )
 
 
@@ -89,9 +89,7 @@ class TestValidateNoCircularReferences:
                 label="Upload File",
                 required=True,
                 conditional_mov_requirement=ConditionalMOVLogic(
-                    field_id="field1",
-                    operator="equals",
-                    value="yes"
+                    field_id="field1", operator="equals", value="yes"
                 ),
             ),
         ]
@@ -107,9 +105,7 @@ class TestValidateNoCircularReferences:
                 label="Upload File",
                 required=True,
                 conditional_mov_requirement=ConditionalMOVLogic(
-                    field_id="field1",
-                    operator="equals",
-                    value="yes"
+                    field_id="field1", operator="equals", value="yes"
                 ),
             ),
         ]
@@ -133,9 +129,7 @@ class TestValidateNoCircularReferences:
                 label="Upload 1",
                 required=True,
                 conditional_mov_requirement=ConditionalMOVLogic(
-                    field_id="field1",
-                    operator="equals",
-                    value="yes"
+                    field_id="field1", operator="equals", value="yes"
                 ),
             ),
         ]
@@ -164,9 +158,7 @@ class TestValidateConditionalMovLogic:
             label="Upload File",
             required=True,
             conditional_mov_requirement=ConditionalMOVLogic(
-                field_id="field1",
-                operator="equals",
-                value="yes"
+                field_id="field1", operator="equals", value="yes"
             ),
         )
         all_fields = [field1, field2]
@@ -190,9 +182,7 @@ class TestValidateConditionalMovLogic:
             label="Upload File",
             required=True,
             conditional_mov_requirement=ConditionalMOVLogic(
-                field_id="nonexistent",
-                operator="equals",
-                value="yes"
+                field_id="nonexistent", operator="equals", value="yes"
             ),
         )
         assert validate_conditional_mov_logic(field, [field]) is False
@@ -205,9 +195,7 @@ class TestValidateConditionalMovLogic:
             label="Upload File",
             required=True,
             conditional_mov_requirement=ConditionalMOVLogic(
-                field_id="field1",
-                operator="equals",
-                value="yes"
+                field_id="field1", operator="equals", value="yes"
             ),
         )
         assert validate_conditional_mov_logic(field, [field]) is False
@@ -247,9 +235,7 @@ class TestDetectCircularReferences:
                     label="Upload File",
                     required=True,
                     conditional_mov_requirement=ConditionalMOVLogic(
-                        field_id="field1",
-                        operator="equals",
-                        value="yes"
+                        field_id="field1", operator="equals", value="yes"
                     ),
                 ),
             ]
@@ -331,9 +317,7 @@ class TestGenerateValidationErrors:
                         required=True,
                         is_means_of_verification=True,
                         conditional_mov_requirement=ConditionalMOVLogic(
-                            field_id="nonexistent",
-                            operator="equals",
-                            value="yes"
+                            field_id="nonexistent", operator="equals", value="yes"
                         ),
                     ),
                 ]
@@ -360,9 +344,7 @@ class TestGenerateValidationErrors:
                     label="Upload File",
                     required=True,
                     conditional_mov_requirement=ConditionalMOVLogic(
-                        field_id="field1",
-                        operator="equals",
-                        value="yes"
+                        field_id="field1", operator="equals", value="yes"
                     ),
                 ),
             ]
@@ -461,9 +443,7 @@ class TestFormSchemaIntegration:
                     label="Upload Experience Proof",
                     required=False,
                     conditional_mov_requirement=ConditionalMOVLogic(
-                        field_id="has_experience",
-                        operator="equals",
-                        value="yes"
+                        field_id="has_experience", operator="equals", value="yes"
                     ),
                 ),
             ]

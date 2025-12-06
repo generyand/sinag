@@ -9,13 +9,11 @@ This is the complement to test_blgu_response_filtering.py:
 - ASSESSOR/VALIDATOR/MLGOO: compliance visible
 """
 
-import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
-from typing import Dict
 
-from app.db.models.assessment import Assessment
 from app.db.enums import ValidationStatus
+from app.db.models.assessment import Assessment
 
 
 class TestAssessorResponseFields:
@@ -26,7 +24,7 @@ class TestAssessorResponseFields:
     def test_assessor_get_assessment_includes_calculated_status(
         self,
         client: TestClient,
-        auth_headers_assessor: Dict[str, str],
+        auth_headers_assessor: dict[str, str],
         test_submitted_assessment: Assessment,
         db_session: Session,
     ):
@@ -60,7 +58,7 @@ class TestAssessorResponseFields:
     def test_validator_get_assessment_includes_compliance(
         self,
         client: TestClient,
-        auth_headers_validator: Dict[str, str],
+        auth_headers_validator: dict[str, str],
         test_submitted_assessment: Assessment,
         db_session: Session,
     ):
@@ -89,7 +87,7 @@ class TestAssessorResponseFields:
     def test_mlgoo_admin_get_assessment_includes_compliance(
         self,
         client: TestClient,
-        auth_headers_mlgoo: Dict[str, str],
+        auth_headers_mlgoo: dict[str, str],
         test_submitted_assessment: Assessment,
         db_session: Session,
     ):
@@ -118,7 +116,7 @@ class TestAssessorResponseFields:
     def test_assessor_list_includes_compliance_statistics(
         self,
         client: TestClient,
-        auth_headers_assessor: Dict[str, str],
+        auth_headers_assessor: dict[str, str],
     ):
         """
         Test: GET /assessor/dashboard includes compliance statistics.
@@ -128,9 +126,7 @@ class TestAssessorResponseFields:
         - Compliance metrics visible
         - Different from BLGU dashboard
         """
-        response = client.get(
-            "/api/v1/assessor/dashboard", headers=auth_headers_assessor
-        )
+        response = client.get("/api/v1/assessor/dashboard", headers=auth_headers_assessor)
 
         if response.status_code == 200:
             data = response.json()
@@ -141,7 +137,7 @@ class TestAssessorResponseFields:
     def test_assessor_can_filter_by_calculated_status(
         self,
         client: TestClient,
-        auth_headers_assessor: Dict[str, str],
+        auth_headers_assessor: dict[str, str],
     ):
         """
         Test: Assessors can filter assessments by calculated_status.
@@ -169,7 +165,7 @@ class TestComplianceFieldValues:
     def test_calculated_status_enum_values(
         self,
         client: TestClient,
-        auth_headers_assessor: Dict[str, str],
+        auth_headers_assessor: dict[str, str],
         test_submitted_assessment: Assessment,
         db_session: Session,
     ):
@@ -194,13 +190,20 @@ class TestComplianceFieldValues:
 
             if "calculated_status" in data:
                 status = data["calculated_status"]
-                valid_statuses = ["PASS", "FAIL", "CONDITIONAL", "Pass", "Fail", "Conditional"]
+                valid_statuses = [
+                    "PASS",
+                    "FAIL",
+                    "CONDITIONAL",
+                    "Pass",
+                    "Fail",
+                    "Conditional",
+                ]
                 assert status in valid_statuses
 
     def test_calculated_remark_contains_useful_text(
         self,
         client: TestClient,
-        auth_headers_assessor: Dict[str, str],
+        auth_headers_assessor: dict[str, str],
         test_submitted_assessment: Assessment,
         db_session: Session,
     ):
@@ -213,7 +216,9 @@ class TestComplianceFieldValues:
         - Remark comes from remark_schema
         """
         test_submitted_assessment.calculated_status = ValidationStatus.PASS
-        test_submitted_assessment.calculated_remark = "All governance requirements met - excellent performance"
+        test_submitted_assessment.calculated_remark = (
+            "All governance requirements met - excellent performance"
+        )
         db_session.commit()
 
         response = client.get(
@@ -240,8 +245,8 @@ class TestRoleBasedFieldFiltering:
     def test_same_endpoint_different_fields_by_role(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
-        auth_headers_assessor: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
+        auth_headers_assessor: dict[str, str],
         test_submitted_assessment: Assessment,
         db_session: Session,
     ):
@@ -287,7 +292,7 @@ class TestComplianceDataIntegrity:
     def test_calculated_status_persists_in_database(
         self,
         client: TestClient,
-        auth_headers_assessor: Dict[str, str],
+        auth_headers_assessor: dict[str, str],
         test_submitted_assessment: Assessment,
         db_session: Session,
     ):
@@ -322,8 +327,8 @@ class TestComplianceDataIntegrity:
     def test_compliance_updated_on_response_change(
         self,
         client: TestClient,
-        auth_headers_assessor: Dict[str, str],
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_assessor: dict[str, str],
+        auth_headers_blgu: dict[str, str],
         test_assessment_with_responses: Assessment,
         db_session: Session,
     ):
@@ -375,7 +380,7 @@ class TestAssessorOnlyEndpoints:
     def test_blgu_cannot_access_assessor_dashboard(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
     ):
         """
         Test: BLGU user cannot access assessor dashboard.
@@ -393,7 +398,7 @@ class TestAssessorOnlyEndpoints:
     def test_blgu_cannot_access_compliance_analytics(
         self,
         client: TestClient,
-        auth_headers_blgu: Dict[str, str],
+        auth_headers_blgu: dict[str, str],
     ):
         """
         Test: BLGU cannot access compliance analytics endpoints.
@@ -402,9 +407,7 @@ class TestAssessorOnlyEndpoints:
         - Analytics showing PASS/FAIL rates blocked for BLGU
         - Compliance reporting restricted to assessors
         """
-        response = client.get(
-            "/api/v1/analytics/compliance-rates", headers=auth_headers_blgu
-        )
+        response = client.get("/api/v1/analytics/compliance-rates", headers=auth_headers_blgu)
 
         # Should be forbidden or not found for BLGU
         assert response.status_code in [403, 404]
