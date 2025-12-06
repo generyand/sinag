@@ -1,11 +1,16 @@
 # 📊 Analytics Service
 # Business logic for analytics and dashboard KPI calculations
 
+import logging
 from dataclasses import dataclass
 from datetime import date, datetime
 
 from sqlalchemy import case, desc, func
 from sqlalchemy.orm import Session, joinedload, selectinload
+
+from app.core.cache import CACHE_TTL_DASHBOARD, cache
+
+logger = logging.getLogger(__name__)
 
 from app.db.enums import (
     AssessmentStatus,
@@ -64,9 +69,21 @@ class AnalyticsService:
 
         Returns:
             DashboardKPIResponse containing all KPI data
+
+        PERFORMANCE: Results are cached in Redis for 30 minutes to reduce
+        database load and improve response times for the dashboard.
         """
-        # TODO: When cycle_id is None, fetch the latest cycle from the database
-        # For now, we'll use None as a valid filter (all assessments)
+        # Build cache key based on cycle_id
+        cache_key = f"dashboard_kpis:cycle_{cycle_id or 'all'}"
+
+        # Try to get from cache first
+        if cache.is_available:
+            cached_data = cache.get(cache_key)
+            if cached_data is not None:
+                logger.info(f"🎯 Dashboard KPIs cache HIT for {cache_key}")
+                return DashboardKPIResponse(**cached_data)
+
+        logger.info(f"📊 Computing dashboard KPIs (cache miss for {cache_key})")
 
         # Calculate all KPIs
         overall_compliance = self._calculate_overall_compliance(db, cycle_id)
@@ -80,7 +97,7 @@ class AnalyticsService:
         bbi_analytics = self._calculate_bbi_analytics(db, cycle_id)
         total_barangays = self._get_total_barangays(db)
 
-        return DashboardKPIResponse(
+        response = DashboardKPIResponse(
             overall_compliance_rate=overall_compliance,
             completion_status=completion_status,
             area_breakdown=area_breakdown,
@@ -92,6 +109,17 @@ class AnalyticsService:
             bbi_analytics=bbi_analytics,
             total_barangays=total_barangays,
         )
+
+        # Cache the result for 30 minutes
+        if cache.is_available:
+            try:
+                # Convert Pydantic model to dict for caching
+                cache.set(cache_key, response.model_dump(), ttl=CACHE_TTL_DASHBOARD)
+                logger.info(f"💾 Dashboard KPIs cached for {cache_key} (TTL: {CACHE_TTL_DASHBOARD}s)")
+            except Exception as e:
+                logger.warning(f"⚠️  Failed to cache dashboard KPIs: {e}")
+
+        return response
 
     def _calculate_overall_compliance(
         self, db: Session, cycle_id: int | None = None
