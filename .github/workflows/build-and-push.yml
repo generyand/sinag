@@ -3,13 +3,19 @@
 # ==============================================================================
 # This workflow builds Docker images and pushes them to GHCR when:
 #   - Code is pushed to main branch
+#   - Code is pushed to develop branch
 #   - A new release/tag is created
 #   - Manually triggered
 #
 # Images are tagged with:
-#   - 'latest' for main branch
+#   - 'latest' for main branch (production)
+#   - 'develop' for develop branch (staging)
 #   - Version tag (e.g., 'v1.0.0') for releases
 #   - Git SHA for traceability
+#
+# Web images are built per-environment with environment-specific API URLs:
+#   - sinag-web:develop uses staging environment variables
+#   - sinag-web:latest uses production environment variables
 # ==============================================================================
 
 name: Build and Push to GHCR
@@ -18,18 +24,30 @@ on:
   push:
     branches:
       - main
-      - develop  # Also build on develop branch
+      - develop
     tags:
       - 'v*'
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to build for (web image only)'
+        required: false
+        default: 'both'
+        type: choice
+        options:
+          - staging
+          - production
+          - both
 
 env:
   REGISTRY: ghcr.io
 
 jobs:
-  build-and-push:
+  # ============================================================================
+  # Build API and Nginx images (shared across environments)
+  # ============================================================================
+  build-shared:
     runs-on: ubuntu-latest
-
     permissions:
       contents: read
       packages: write
@@ -41,31 +59,18 @@ jobs:
             context: ./apps/api
             dockerfile: ./apps/api/Dockerfile
             target: production
-          - image: sinag-web
-            context: .
-            dockerfile: ./apps/web/Dockerfile
-            target: production
           - image: sinag-nginx
             context: ./nginx
             dockerfile: ./nginx/Dockerfile
             target: ""
 
     steps:
-      # ----------------------------------------------------------------------
-      # Checkout code
-      # ----------------------------------------------------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ----------------------------------------------------------------------
-      # Set up Docker Buildx for multi-platform builds
-      # ----------------------------------------------------------------------
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # ----------------------------------------------------------------------
-      # Login to GitHub Container Registry
-      # ----------------------------------------------------------------------
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
@@ -73,28 +78,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # ----------------------------------------------------------------------
-      # Extract metadata for tags and labels
-      # ----------------------------------------------------------------------
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.image }}
           tags: |
-            # Tag with 'latest' for main branch (production)
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            # Tag with 'develop' for develop branch (staging)
             type=raw,value=develop,enable=${{ github.ref == 'refs/heads/develop' }}
-            # Tag with version for releases (v1.0.0 -> 1.0.0)
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            # Tag with short SHA for traceability
             type=sha,prefix=sha-
 
-      # ----------------------------------------------------------------------
-      # Build and push Docker image
-      # ----------------------------------------------------------------------
       - name: Build and push ${{ matrix.image }}
         uses: docker/build-push-action@v5
         with:
@@ -109,38 +104,159 @@ jobs:
           build-args: |
             BUILD_DATE=${{ github.event.head_commit.timestamp }}
             VERSION=${{ github.ref_name }}
-            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL || '' }}
-            NEXT_PUBLIC_API_V1_URL=${{ vars.NEXT_PUBLIC_API_V1_URL || '' }}
 
-      # ----------------------------------------------------------------------
-      # Output image info
-      # ----------------------------------------------------------------------
       - name: Image digest
         run: echo "Pushed ${{ matrix.image }} with digest ${{ steps.meta.outputs.digest }}"
+
+  # ============================================================================
+  # Build Web image for STAGING environment
+  # ============================================================================
+  build-web-staging:
+    runs-on: ubuntu-latest
+    # Build staging on develop branch, manual trigger, or tags
+    if: |
+      github.ref == 'refs/heads/develop' ||
+      (github.event_name == 'workflow_dispatch' && (inputs.environment == 'staging' || inputs.environment == 'both')) ||
+      startsWith(github.ref, 'refs/tags/')
+    environment: staging  # Access staging environment variables
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/sinag-web
+          tags: |
+            type=raw,value=develop
+            type=sha,prefix=staging-sha-
+
+      - name: Build and push sinag-web (staging)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/web/Dockerfile
+          target: production
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=web-staging
+          cache-to: type=gha,mode=max,scope=web-staging
+          build-args: |
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            VERSION=${{ github.ref_name }}-staging
+            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_API_V1_URL=${{ vars.NEXT_PUBLIC_API_V1_URL }}
+
+      - name: Output build info
+        run: |
+          echo "## Staging Web Image Built" >> $GITHUB_STEP_SUMMARY
+          echo "- **API URL:** ${{ vars.NEXT_PUBLIC_API_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **API V1 URL:** ${{ vars.NEXT_PUBLIC_API_V1_URL }}" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
+  # Build Web image for PRODUCTION environment
+  # ============================================================================
+  build-web-production:
+    runs-on: ubuntu-latest
+    # Build production on main branch, manual trigger, or tags
+    if: |
+      github.ref == 'refs/heads/main' ||
+      (github.event_name == 'workflow_dispatch' && (inputs.environment == 'production' || inputs.environment == 'both')) ||
+      startsWith(github.ref, 'refs/tags/')
+    environment: production  # Access production environment variables
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/sinag-web
+          tags: |
+            type=raw,value=latest
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=prod-sha-
+
+      - name: Build and push sinag-web (production)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/web/Dockerfile
+          target: production
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=web-production
+          cache-to: type=gha,mode=max,scope=web-production
+          build-args: |
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            VERSION=${{ github.ref_name }}
+            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_API_V1_URL=${{ vars.NEXT_PUBLIC_API_V1_URL }}
+
+      - name: Output build info
+        run: |
+          echo "## Production Web Image Built" >> $GITHUB_STEP_SUMMARY
+          echo "- **API URL:** ${{ vars.NEXT_PUBLIC_API_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **API V1 URL:** ${{ vars.NEXT_PUBLIC_API_V1_URL }}" >> $GITHUB_STEP_SUMMARY
 
   # ============================================================================
   # Summary job - runs after all images are built
   # ============================================================================
   summary:
     runs-on: ubuntu-latest
-    needs: build-and-push
+    needs: [build-shared, build-web-staging, build-web-production]
+    if: always() && needs.build-shared.result == 'success'
 
     steps:
       - name: Deployment Summary
         run: |
           echo "## 🚀 Images pushed to GHCR" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "The following images are now available:" >> $GITHUB_STEP_SUMMARY
+          echo "### Shared Images (all environments)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/${{ github.repository }}/sinag-api\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/${{ github.repository }}/sinag-nginx\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- \`ghcr.io/${{ github.repository }}/sinag-api:latest\`" >> $GITHUB_STEP_SUMMARY
-          echo "- \`ghcr.io/${{ github.repository }}/sinag-web:latest\`" >> $GITHUB_STEP_SUMMARY
-          echo "- \`ghcr.io/${{ github.repository }}/sinag-nginx:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "### Environment-Specific Web Images" >> $GITHUB_STEP_SUMMARY
+          echo "- **Staging:** \`ghcr.io/${{ github.repository }}/sinag-web:develop\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Production:** \`ghcr.io/${{ github.repository }}/sinag-web:latest\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Deploy to EC2" >> $GITHUB_STEP_SUMMARY
+          echo "### Deploy Commands" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Staging:**" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "# On your EC2 instance:" >> $GITHUB_STEP_SUMMARY
-          echo "cd /home/ec2-user/sinag" >> $GITHUB_STEP_SUMMARY
           echo "docker compose -f docker-compose.prod.yml pull" >> $GITHUB_STEP_SUMMARY
           echo "docker compose -f docker-compose.prod.yml up -d" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
