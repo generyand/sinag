@@ -3,8 +3,15 @@
 Essential testing setup for 2-person team
 """
 
+import os
 import sys
 from pathlib import Path
+
+# CRITICAL: Set TESTING mode BEFORE any app imports
+# This ensures the Settings object is created with TESTING=true
+# which skips all external connection checks (PostgreSQL, Redis, Gemini, Supabase)
+os.environ["TESTING"] = "true"
+os.environ["SKIP_STARTUP_SEEDING"] = "true"
 
 # Add the parent directory to Python path so we can import main and app modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -79,19 +86,15 @@ def clear_rate_limits():
 
 
 @pytest.fixture(scope="session", autouse=True)
-def disable_startup_seeding():
-    """Disable data seeding during test runs to speed up tests"""
-    import os
+def enable_testing_mode():
+    """
+    Placeholder fixture for test mode.
 
-    # Set environment variable to skip startup seeding
-    old_value = os.environ.get("SKIP_STARTUP_SEEDING")
-    os.environ["SKIP_STARTUP_SEEDING"] = "true"
+    Note: TESTING=true and SKIP_STARTUP_SEEDING=true are set at the TOP of this file
+    (before any imports) to ensure they're active before the Settings object is created.
+    This fixture exists for documentation and potential future cleanup needs.
+    """
     yield
-    # Restore old value after session
-    if old_value is None:
-        os.environ.pop("SKIP_STARTUP_SEEDING", None)
-    else:
-        os.environ["SKIP_STARTUP_SEEDING"] = old_value
 
 
 @pytest.fixture(scope="session")
@@ -328,7 +331,7 @@ def mock_governance_area(db_session):
 
     unique_id = uuid.uuid4().hex[:8]
     unique_name = f"Test Governance Area {unique_id}"
-    unique_code = f"T{unique_id[:1].upper()}"  # 2-letter code like "TA", "TB", etc.
+    unique_code = unique_id[:2].upper()  # 2-letter code from UUID hex
 
     area = GovernanceArea(name=unique_name, code=unique_code, area_type=AreaType.CORE)
     db_session.add(area)

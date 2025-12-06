@@ -39,7 +39,7 @@ def create_test_assessment_response(db_session: Session) -> AssessmentResponse:
     db_session.commit()
     db_session.refresh(blgu_user)
 
-    area = GovernanceArea(name="Test Area", area_type="Core")
+    area = GovernanceArea(name="Test Area", code="TA", area_type="Core")
     db_session.add(area)
     db_session.commit()
     db_session.refresh(area)

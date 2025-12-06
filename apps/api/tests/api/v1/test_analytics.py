@@ -99,8 +99,8 @@ def test_data(db_session: Session):
     """Create test data for analytics tests"""
     # Create governance areas
     areas = [
-        GovernanceArea(id=1, name="Financial Administration", area_type=AreaType.CORE),
-        GovernanceArea(id=2, name="Disaster Preparedness", area_type=AreaType.CORE),
+        GovernanceArea(id=1, code="T1", name="Financial Administration", area_type=AreaType.CORE),
+        GovernanceArea(id=2, code="T2", name="Disaster Preparedness", area_type=AreaType.CORE),
     ]
     for area in areas:
         db_session.add(area)

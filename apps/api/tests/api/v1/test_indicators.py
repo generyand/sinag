@@ -67,8 +67,10 @@ def assessor_user(db_session: Session):
 @pytest.fixture
 def governance_area(db_session: Session):
     """Create a governance area for testing"""
+    unique_code = uuid.uuid4().hex[:2].upper()
     area = GovernanceArea(
         name=f"Test Area {uuid.uuid4().hex[:8]}",
+        code=unique_code,
         area_type=AreaType.CORE,
     )
     db_session.add(area)

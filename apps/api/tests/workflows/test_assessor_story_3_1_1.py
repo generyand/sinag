@@ -32,7 +32,9 @@ def create_test_data_for_rework(db_session: Session) -> dict:
 
     # Create governance area
     governance_area = GovernanceArea(
-        name=f"Test Governance Area Rework 3.1.1 {timestamp}", area_type=AreaType.CORE
+        name=f"Test Governance Area Rework 3.1.1 {timestamp}",
+        code=str(timestamp)[:2].upper(),
+        area_type=AreaType.CORE
     )
     db_session.add(governance_area)
     db_session.commit()

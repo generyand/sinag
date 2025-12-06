@@ -24,7 +24,7 @@ def client():
 
 def create_test_assessor_with_area(db_session: Session) -> User:
     """Create a test assessor user with governance area."""
-    area = GovernanceArea(name="Test Governance Area Analytics", area_type="Core")
+    area = GovernanceArea(name="Test Governance Area Analytics", code="TG", area_type="Core")
     db_session.add(area)
     db_session.commit()
     db_session.refresh(area)
@@ -457,7 +457,7 @@ def test_get_analytics_filters_by_governance_area(client, db_session):
     assessor = create_test_assessor_with_area(db_session)
 
     # Create another governance area
-    other_area = GovernanceArea(name="Other Governance Area", area_type="Essential")
+    other_area = GovernanceArea(name="Other Governance Area", code="OG", area_type="Essential")
     db_session.add(other_area)
     db_session.commit()
     db_session.refresh(other_area)

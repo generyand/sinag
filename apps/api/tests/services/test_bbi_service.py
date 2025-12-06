@@ -24,6 +24,7 @@ def sample_governance_area(db_session: Session):
 
     area = GovernanceArea(
         name="Test Governance Area",
+        code="TG",
         area_type=AreaType.CORE,
     )
     db_session.add(area)

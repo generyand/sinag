@@ -152,6 +152,7 @@ class Settings(BaseSettings):
 
     # Startup Behavior
     FAIL_FAST: bool = True  # If True, crash on startup errors. If False, log warnings and continue.
+    TESTING: bool = False  # If True, skip all external connection checks (for pytest)
 
     # First Superuser
     FIRST_SUPERUSER: str = "admin@sinag.dilg.gov.ph"

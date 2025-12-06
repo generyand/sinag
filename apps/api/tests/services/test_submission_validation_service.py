@@ -41,7 +41,7 @@ class TestSubmissionValidationService:
         db_session.commit()
 
         # Create governance area and indicator with simple form schema
-        gov_area = GovernanceArea(name="Test Area", area_type=AreaType.CORE)
+        gov_area = GovernanceArea(name="Test Area", code="TA", area_type=AreaType.CORE)
         db_session.add(gov_area)
         db_session.commit()
 
@@ -106,7 +106,7 @@ class TestSubmissionValidationService:
         db_session.add(assessment)
         db_session.commit()
 
-        gov_area = GovernanceArea(name="Test Area 2", area_type=AreaType.CORE)
+        gov_area = GovernanceArea(name="Test Area 2", code="TA", area_type=AreaType.CORE)
         db_session.add(gov_area)
         db_session.commit()
 
@@ -171,7 +171,7 @@ class TestSubmissionValidationService:
         db_session.add(assessment)
         db_session.commit()
 
-        gov_area = GovernanceArea(name="Test Area 3", area_type=AreaType.CORE)
+        gov_area = GovernanceArea(name="Test Area 3", code="TA", area_type=AreaType.CORE)
         db_session.add(gov_area)
         db_session.commit()
 
@@ -239,7 +239,7 @@ class TestSubmissionValidationService:
         db_session.add(assessment)
         db_session.commit()
 
-        gov_area = GovernanceArea(name="Test Area 4", area_type=AreaType.CORE)
+        gov_area = GovernanceArea(name="Test Area 4", code="TA", area_type=AreaType.CORE)
         db_session.add(gov_area)
         db_session.commit()
 
@@ -316,7 +316,7 @@ class TestSubmissionValidationService:
         db_session.add(assessment)
         db_session.commit()
 
-        gov_area = GovernanceArea(name="Test Area 5", area_type=AreaType.CORE)
+        gov_area = GovernanceArea(name="Test Area 5", code="TA", area_type=AreaType.CORE)
         db_session.add(gov_area)
         db_session.commit()
 
@@ -421,7 +421,7 @@ class TestSubmissionValidationService:
         db_session.add(assessment)
         db_session.commit()
 
-        gov_area = GovernanceArea(name="Test Area 6", area_type=AreaType.CORE)
+        gov_area = GovernanceArea(name="Test Area 6", code="TA", area_type=AreaType.CORE)
         db_session.add(gov_area)
         db_session.commit()
 

@@ -1,6 +1,7 @@
 # 📋 Assessment Service
 # Business logic for assessment management operations
 
+import logging
 from datetime import UTC, datetime
 from typing import Any
 
@@ -63,6 +64,10 @@ class AssessmentService:
         - docs/workflows/assessor-validation.md: Assessor review process
         - apps/api/app/api/v1/assessments.py: API endpoints
     """
+
+    def __init__(self) -> None:
+        """Initialize the AssessmentService with logging."""
+        self.logger = logging.getLogger(__name__)
 
     # ----- Serialization helpers -----
     def _serialize_response_obj(self, response: AssessmentResponse | None) -> dict[str, Any] | None:

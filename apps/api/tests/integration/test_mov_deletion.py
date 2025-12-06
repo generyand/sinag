@@ -18,7 +18,7 @@ from app.services.assessment_service import AssessmentService
 @pytest.fixture
 def setup_assessment_with_mov(db_session: Session):
     """Creates a GovernanceArea, indicator that requires MOV, an assessment response, and one MOV attached."""
-    area = GovernanceArea(name="Test GOV AREA for MOV", area_type=AreaType.CORE)
+    area = GovernanceArea(name="Test GOV AREA for MOV", code="TG", area_type=AreaType.CORE)
     db_session.add(area)
     db_session.commit()
     db_session.refresh(area)

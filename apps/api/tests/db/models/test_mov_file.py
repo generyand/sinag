@@ -27,7 +27,7 @@ class TestMOVFileModel:
         # Get or create a governance area and indicator
         governance_area = db_session.query(GovernanceArea).first()
         if not governance_area:
-            governance_area = GovernanceArea(name="Test Governance Area", area_type=AreaType.CORE)
+            governance_area = GovernanceArea(name="Test Governance Area", code="TG", area_type=AreaType.CORE)
             db_session.add(governance_area)
             db_session.flush()
 
@@ -71,7 +71,7 @@ class TestMOVFileModel:
     ):
         """Test that MOVFile has correct relationship with Assessment."""
         # Get or create indicator
-        governance_area = GovernanceArea(name="Test Area", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Test Area", code="TA", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 
@@ -110,7 +110,7 @@ class TestMOVFileModel:
     ):
         """Test that MOVFile has correct relationship with Indicator."""
         # Create governance area and indicator
-        governance_area = GovernanceArea(name="Financial Governance", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Financial Governance", code="FG", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 
@@ -151,7 +151,7 @@ class TestMOVFileModel:
     ):
         """Test that MOVFile has correct relationship with User (uploader)."""
         # Create indicator
-        governance_area = GovernanceArea(name="Test Area", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Test Area", code="TA", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 
@@ -182,7 +182,7 @@ class TestMOVFileModel:
     def test_cascade_delete_assessment(self, db_session: Session, mock_assessment, mock_blgu_user):
         """Test that deleting an assessment cascades to delete mov_files."""
         # Create indicator
-        governance_area = GovernanceArea(name="Test Area", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Test Area", code="TA", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 
@@ -225,7 +225,7 @@ class TestMOVFileModel:
         This test verifies the model relationship is set up correctly.
         """
         # Create indicator
-        governance_area = GovernanceArea(name="Test Area for Cascade", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Test Area for Cascade", code="TA", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 
@@ -277,7 +277,7 @@ class TestMOVFileModel:
         db_session.flush()
 
         # Create indicator
-        governance_area = GovernanceArea(name="Test Area", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Test Area", code="TA", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 
@@ -321,7 +321,7 @@ class TestMOVFileModel:
     def test_soft_delete_pattern(self, db_session: Session, mock_assessment, mock_blgu_user):
         """Test that the deleted_at column supports soft delete pattern."""
         # Create indicator
-        governance_area = GovernanceArea(name="Test Area", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Test Area", code="TA", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 
@@ -365,7 +365,7 @@ class TestMOVFileModel:
     ):
         """Test that multiple files can be uploaded for the same indicator."""
         # Create indicator
-        governance_area = GovernanceArea(name="Test Area", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Test Area", code="TA", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 
@@ -421,7 +421,7 @@ class TestMOVFileModel:
     def test_timestamps_auto_populate(self, db_session: Session, mock_assessment, mock_blgu_user):
         """Test that uploaded_at timestamp is automatically populated."""
         # Create indicator
-        governance_area = GovernanceArea(name="Test Area", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Test Area", code="TA", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 

@@ -60,7 +60,7 @@ def governance_area(db_session):
     """Create a test governance area."""
     from app.db.enums import AreaType
 
-    area = GovernanceArea(id=1, name="Test Area", area_type=AreaType.CORE)
+    area = GovernanceArea(id=1, code="T1", name="Test Area", area_type=AreaType.CORE)
     db_session.add(area)
     db_session.commit()
     db_session.refresh(area)

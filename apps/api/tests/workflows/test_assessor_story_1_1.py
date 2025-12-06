@@ -61,7 +61,7 @@ class DummyCreds:
 @pytest.mark.asyncio
 async def test_get_current_area_assessor_user_requires_role_and_area(db_session, monkeypatch):
     # Arrange: create governance area and users
-    area = GovernanceArea(id=1, name="Core A", area_type=AreaType.CORE)
+    area = GovernanceArea(id=1, code="T1", name="Core A", area_type=AreaType.CORE)
     db_session.add(area)
     db_session.commit()
     db_session.refresh(area)
@@ -109,8 +109,8 @@ async def test_get_current_area_assessor_user_requires_role_and_area(db_session,
 
 def test_get_assessor_queue_filters_by_governance_area(client, db_session, monkeypatch):
     # Arrange: setup two areas and indicators
-    area_a = GovernanceArea(name="Area A", area_type=AreaType.CORE)
-    area_b = GovernanceArea(name="Area B", area_type=AreaType.ESSENTIAL)
+    area_a = GovernanceArea(name="Area A", code="AA", area_type=AreaType.CORE)
+    area_b = GovernanceArea(name="Area B", code="AB", area_type=AreaType.ESSENTIAL)
     db_session.add_all([area_a, area_b])
     db_session.commit()
     db_session.refresh(area_a)

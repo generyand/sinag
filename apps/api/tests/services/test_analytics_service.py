@@ -23,9 +23,9 @@ from app.services.analytics_service import analytics_service
 def governance_areas(db_session):
     """Create test governance areas"""
     areas = [
-        GovernanceArea(id=1, name="Financial Administration", area_type=AreaType.CORE),
-        GovernanceArea(id=2, name="Disaster Preparedness", area_type=AreaType.CORE),
-        GovernanceArea(id=3, name="Social Protection", area_type=AreaType.ESSENTIAL),
+        GovernanceArea(id=1, code="T1", name="Financial Administration", area_type=AreaType.CORE),
+        GovernanceArea(id=2, code="T2", name="Disaster Preparedness", area_type=AreaType.CORE),
+        GovernanceArea(id=3, code="T3", name="Social Protection", area_type=AreaType.ESSENTIAL),
     ]
     for area in areas:
         db_session.add(area)

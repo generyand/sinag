@@ -44,7 +44,7 @@ def create_test_assessment_response_for_multipart_upload(
     db_session.commit()
     db_session.refresh(blgu_user)
 
-    area = GovernanceArea(name="Test Area Multipart", area_type="Core")
+    area = GovernanceArea(name="Test Area Multipart", code="TA", area_type="Core")
     db_session.add(area)
     db_session.commit()
     db_session.refresh(area)
@@ -296,7 +296,7 @@ def test_upload_mov_file_access_denied(
     response = create_test_assessment_response_for_multipart_upload(db_session)
 
     # Create assessor with different governance area
-    different_area = GovernanceArea(name="Different Area Multipart", area_type="Essential")
+    different_area = GovernanceArea(name="Different Area Multipart", code="DA", area_type="Essential")
     db_session.add(different_area)
     db_session.commit()
     db_session.refresh(different_area)

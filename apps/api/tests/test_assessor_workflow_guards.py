@@ -40,6 +40,7 @@ def seed_assessment(
     # Create governance area first
     gov_area = GovernanceArea(
         name=f"Test Governance Area {timestamp}",
+        code=str(timestamp)[:2].upper(),
         area_type=AreaType.CORE,
     )
     db.add(gov_area)

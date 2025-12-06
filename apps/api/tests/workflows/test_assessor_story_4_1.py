@@ -58,7 +58,7 @@ def create_test_assessment_response_for_storage(
     db_session.commit()
     db_session.refresh(blgu_user)
 
-    area = GovernanceArea(name="Test Area Storage", area_type="Core")
+    area = GovernanceArea(name="Test Area Storage", code="TA", area_type="Core")
     db_session.add(area)
     db_session.commit()
     db_session.refresh(area)

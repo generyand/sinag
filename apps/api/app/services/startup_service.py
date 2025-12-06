@@ -84,6 +84,12 @@ class StartupService:
         # Log startup initiation
         self._log_startup_info()
 
+        # In test mode, skip all external connection checks
+        if settings.TESTING:
+            logger.info("🧪 TESTING mode enabled - skipping external connection checks")
+            self._log_startup_success()
+            return
+
         # CRITICAL: Validate environment variables first
         self._validate_environment_variables()
 

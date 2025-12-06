@@ -58,6 +58,7 @@ def governance_area(db_session: Session):
     """Create a governance area for testing"""
     area = GovernanceArea(
         name=f"Test Governance Area {uuid.uuid4().hex[:8]}",
+        code=uuid.uuid4().hex[:2].upper(),
         area_type=AreaType.CORE,
     )
     db_session.add(area)

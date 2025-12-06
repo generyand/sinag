@@ -59,7 +59,7 @@ def test_governance_area(db_session):
     """Create a test governance area."""
     from app.db.enums import AreaType
 
-    area = GovernanceArea(id=1, name="Test Governance Area", area_type=AreaType.CORE)
+    area = GovernanceArea(id=1, code="T1", name="Test Governance Area", area_type=AreaType.CORE)
     db_session.add(area)
     db_session.commit()
     db_session.refresh(area)
@@ -443,8 +443,8 @@ class TestDraftListing:
         from app.db.enums import AreaType
 
         # Create two governance areas
-        area1 = GovernanceArea(id=1, name="Area 1", area_type=AreaType.CORE)
-        area2 = GovernanceArea(id=2, name="Area 2", area_type=AreaType.ESSENTIAL)
+        area1 = GovernanceArea(id=1, code="T1", name="Area 1", area_type=AreaType.CORE)
+        area2 = GovernanceArea(id=2, code="T2", name="Area 2", area_type=AreaType.ESSENTIAL)
         db_session.add_all([area1, area2])
         db_session.commit()
 

@@ -236,6 +236,7 @@ def governance_area(db_session: Session) -> GovernanceArea:
 
     area = GovernanceArea(
         name=unique_name,
+        code=unique_name[-2:].upper(),
         area_type=AreaType.CORE,
     )
     db_session.add(area)

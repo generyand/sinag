@@ -38,6 +38,7 @@ def sample_governance_area(db_session: Session):
 
     area = GovernanceArea(
         name="Test Area Notification",
+        code="TN",
         area_type=AreaType.CORE,
     )
     db_session.add(area)

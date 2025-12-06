@@ -48,21 +48,24 @@ def test_data(db_session):
         {
             "id": 1,
             "name": "Financial Administration and Sustainability",
+            "code": "FI",
             "area_type": AreaType.CORE,
         },
-        {"id": 2, "name": "Disaster Preparedness", "area_type": AreaType.CORE},
-        {"id": 3, "name": "Safety, Peace and Order", "area_type": AreaType.CORE},
+        {"id": 2, "name": "Disaster Preparedness", "code": "DI", "area_type": AreaType.CORE},
+        {"id": 3, "name": "Safety, Peace and Order", "code": "SA", "area_type": AreaType.CORE},
         {
             "id": 4,
             "name": "Social Protection and Sensitivity",
+            "code": "SO",
             "area_type": AreaType.ESSENTIAL,
         },
         {
             "id": 5,
             "name": "Business-Friendliness and Competitiveness",
+            "code": "BU",
             "area_type": AreaType.ESSENTIAL,
         },
-        {"id": 6, "name": "Environmental Management", "area_type": AreaType.ESSENTIAL},
+        {"id": 6, "name": "Environmental Management", "code": "EN", "area_type": AreaType.ESSENTIAL},
     ]
 
     for area_data in core_areas:

@@ -347,7 +347,7 @@ class TestStorageServiceFileDeletion:
         db_session.commit()
 
         # Create indicator
-        governance_area = GovernanceArea(name="Test Area", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Test Area", code="TA", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 
@@ -405,7 +405,7 @@ class TestStorageServiceFileDeletion:
         db_session.commit()
 
         # Create indicator
-        governance_area = GovernanceArea(name="Test Area", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Test Area", code="TA", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 
@@ -468,7 +468,7 @@ class TestStorageServiceFileDeletion:
         db_session.flush()
 
         # Create indicator
-        governance_area = GovernanceArea(name="Test Area", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Test Area", code="TA", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 
@@ -518,7 +518,7 @@ class TestStorageServiceFileDeletion:
         db_session.commit()
 
         # Create indicator
-        governance_area = GovernanceArea(name="Test Area", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Test Area", code="TA", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 
@@ -572,7 +572,7 @@ class TestStorageServiceFileDeletion:
         db_session.commit()
 
         # Create indicator
-        governance_area = GovernanceArea(name="Test Area", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(name="Test Area", code="TA", area_type=AreaType.CORE)
         db_session.add(governance_area)
         db_session.flush()
 

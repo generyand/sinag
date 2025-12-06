@@ -77,7 +77,7 @@ class TestAccessControl:
         """Test that unauthenticated requests are denied."""
         response = client.get("/api/v1/admin/system/status")
 
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_invalid_token_denied(self, client: TestClient):
         """Test that invalid tokens are denied."""

@@ -44,7 +44,7 @@ def create_test_assessment_for_details(db_session: Session) -> Assessment:
     db_session.commit()
     db_session.refresh(blgu_user)
 
-    area = GovernanceArea(name="Test Area Details", area_type="Core")
+    area = GovernanceArea(name="Test Area Details", code="TA", area_type="Core")
     db_session.add(area)
     db_session.commit()
     db_session.refresh(area)
@@ -257,7 +257,7 @@ def test_get_assessment_details_access_denied(client, db_session):
     db_session.commit()
     db_session.refresh(blgu_user)
 
-    area = GovernanceArea(name="Test Area Details Access", area_type="Core")
+    area = GovernanceArea(name="Test Area Details Access", code="TA", area_type="Core")
     db_session.add(area)
     db_session.commit()
     db_session.refresh(area)
@@ -288,7 +288,7 @@ def test_get_assessment_details_access_denied(client, db_session):
     db_session.refresh(response)
 
     # Create assessor user with different governance area
-    different_area = GovernanceArea(name="Different Area Details", area_type="Essential")
+    different_area = GovernanceArea(name="Different Area Details", code="DA", area_type="Essential")
     db_session.add(different_area)
     db_session.commit()
     db_session.refresh(different_area)
@@ -354,7 +354,7 @@ def test_get_assessment_details_empty_responses(client, db_session):
     db_session.commit()
     db_session.refresh(blgu_user)
 
-    area = GovernanceArea(name="Test Area Empty", area_type="Core")
+    area = GovernanceArea(name="Test Area Empty", code="TA", area_type="Core")
     db_session.add(area)
     db_session.commit()
     db_session.refresh(area)

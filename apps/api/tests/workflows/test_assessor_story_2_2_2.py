@@ -39,7 +39,7 @@ def create_test_assessment_response_for_mov(db_session: Session) -> AssessmentRe
     db_session.commit()
     db_session.refresh(blgu_user)
 
-    area = GovernanceArea(name="Test Area MOV", area_type="Core")
+    area = GovernanceArea(name="Test Area MOV", code="TA", area_type="Core")
     db_session.add(area)
     db_session.commit()
     db_session.refresh(area)
@@ -213,7 +213,7 @@ def test_upload_mov_access_denied(client, db_session):
     db_session.commit()
     db_session.refresh(blgu_user)
 
-    area = GovernanceArea(name="Test Area MOV Access", area_type="Core")
+    area = GovernanceArea(name="Test Area MOV Access", code="TA", area_type="Core")
     db_session.add(area)
     db_session.commit()
     db_session.refresh(area)
@@ -244,7 +244,7 @@ def test_upload_mov_access_denied(client, db_session):
     db_session.refresh(response)
 
     # Create assessor user with different governance area
-    different_area = GovernanceArea(name="Different Area MOV", area_type="Essential")
+    different_area = GovernanceArea(name="Different Area MOV", code="DA", area_type="Essential")
     db_session.add(different_area)
     db_session.commit()
     db_session.refresh(different_area)

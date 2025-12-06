@@ -28,7 +28,7 @@ def _create_base_graph(db_session: Session, *, with_mov: bool) -> dict:
     db_session.commit()
     db_session.refresh(barangay)
 
-    ga = GovernanceArea(name=f"Gov Area Submit {ts}", area_type=AreaType.CORE)
+    ga = GovernanceArea(name=f"Gov Area Submit {ts}", code=f"G{ts % 100:02d}"[:2].upper(), area_type=AreaType.CORE)
     db_session.add(ga)
     db_session.commit()
     db_session.refresh(ga)
