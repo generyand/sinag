@@ -53,7 +53,7 @@ export const getExternalAnalyticsOverall = (
       
       
       return mutator<OverallComplianceResponse>(
-      {url: `http://localhost:8000/api/v1/external/analytics/overall`, method: 'GET',
+      {url: `/api/v1/external/analytics/overall`, method: 'GET',
         params, signal
     },
       options);
@@ -61,7 +61,7 @@ export const getExternalAnalyticsOverall = (
   
 
 export const getGetExternalAnalyticsOverallQueryKey = (params?: GetExternalAnalyticsOverallParams,) => {
-    return [`http://localhost:8000/api/v1/external/analytics/overall`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/external/analytics/overall`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -118,7 +118,7 @@ export const getExternalAnalyticsGovernanceAreas = (
       
       
       return mutator<GovernanceAreaPerformanceResponse>(
-      {url: `http://localhost:8000/api/v1/external/analytics/governance-areas`, method: 'GET',
+      {url: `/api/v1/external/analytics/governance-areas`, method: 'GET',
         params, signal
     },
       options);
@@ -126,7 +126,7 @@ export const getExternalAnalyticsGovernanceAreas = (
   
 
 export const getGetExternalAnalyticsGovernanceAreasQueryKey = (params?: GetExternalAnalyticsGovernanceAreasParams,) => {
-    return [`http://localhost:8000/api/v1/external/analytics/governance-areas`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/external/analytics/governance-areas`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -183,7 +183,7 @@ export const getExternalAnalyticsTopFailingIndicators = (
       
       
       return mutator<TopFailingIndicatorsResponse>(
-      {url: `http://localhost:8000/api/v1/external/analytics/top-failing-indicators`, method: 'GET',
+      {url: `/api/v1/external/analytics/top-failing-indicators`, method: 'GET',
         params, signal
     },
       options);
@@ -191,7 +191,7 @@ export const getExternalAnalyticsTopFailingIndicators = (
   
 
 export const getGetExternalAnalyticsTopFailingIndicatorsQueryKey = (params?: GetExternalAnalyticsTopFailingIndicatorsParams,) => {
-    return [`http://localhost:8000/api/v1/external/analytics/top-failing-indicators`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/external/analytics/top-failing-indicators`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -248,7 +248,7 @@ export const getExternalAnalyticsAiInsightsSummary = (
       
       
       return mutator<AnonymizedAIInsightsResponse>(
-      {url: `http://localhost:8000/api/v1/external/analytics/ai-insights/summary`, method: 'GET',
+      {url: `/api/v1/external/analytics/ai-insights/summary`, method: 'GET',
         params, signal
     },
       options);
@@ -256,7 +256,7 @@ export const getExternalAnalyticsAiInsightsSummary = (
   
 
 export const getGetExternalAnalyticsAiInsightsSummaryQueryKey = (params?: GetExternalAnalyticsAiInsightsSummaryParams,) => {
-    return [`http://localhost:8000/api/v1/external/analytics/ai-insights/summary`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/external/analytics/ai-insights/summary`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -313,7 +313,7 @@ export const getExternalAnalyticsDashboard = (
       
       
       return mutator<ExternalAnalyticsDashboardResponse>(
-      {url: `http://localhost:8000/api/v1/external/analytics/dashboard`, method: 'GET',
+      {url: `/api/v1/external/analytics/dashboard`, method: 'GET',
         params, signal
     },
       options);
@@ -321,7 +321,7 @@ export const getExternalAnalyticsDashboard = (
   
 
 export const getGetExternalAnalyticsDashboardQueryKey = (params?: GetExternalAnalyticsDashboardParams,) => {
-    return [`http://localhost:8000/api/v1/external/analytics/dashboard`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/external/analytics/dashboard`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -378,7 +378,7 @@ export const getExternalAnalyticsExportCsv = (
       
       
       return mutator<void>(
-      {url: `http://localhost:8000/api/v1/external/analytics/export/csv`, method: 'GET',
+      {url: `/api/v1/external/analytics/export/csv`, method: 'GET',
         params, signal
     },
       options);
@@ -386,7 +386,7 @@ export const getExternalAnalyticsExportCsv = (
   
 
 export const getGetExternalAnalyticsExportCsvQueryKey = (params?: GetExternalAnalyticsExportCsvParams,) => {
-    return [`http://localhost:8000/api/v1/external/analytics/export/csv`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/external/analytics/export/csv`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -443,7 +443,7 @@ export const getExternalAnalyticsExportPdf = (
       
       
       return mutator<void>(
-      {url: `http://localhost:8000/api/v1/external/analytics/export/pdf`, method: 'GET',
+      {url: `/api/v1/external/analytics/export/pdf`, method: 'GET',
         params, signal
     },
       options);
@@ -451,7 +451,7 @@ export const getExternalAnalyticsExportPdf = (
   
 
 export const getGetExternalAnalyticsExportPdfQueryKey = (params?: GetExternalAnalyticsExportPdfParams,) => {
-    return [`http://localhost:8000/api/v1/external/analytics/export/pdf`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/external/analytics/export/pdf`, ...(params ? [params]: [])] as const;
     }
 
     

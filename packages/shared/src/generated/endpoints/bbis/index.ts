@@ -61,7 +61,7 @@ export const postBbis = (
       
       
       return mutator<BBIResponse>(
-      {url: `http://localhost:8000/api/v1/bbis/`, method: 'POST',
+      {url: `/api/v1/bbis/`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: bBICreate, signal
     },
@@ -132,7 +132,7 @@ export const getBbis = (
       
       
       return mutator<BBIListResponse>(
-      {url: `http://localhost:8000/api/v1/bbis/`, method: 'GET',
+      {url: `/api/v1/bbis/`, method: 'GET',
         params, signal
     },
       options);
@@ -140,7 +140,7 @@ export const getBbis = (
   
 
 export const getGetBbisQueryKey = (params?: GetBbisParams,) => {
-    return [`http://localhost:8000/api/v1/bbis/`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/bbis/`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -202,14 +202,14 @@ export const getBbis$BbiId = (
       
       
       return mutator<BBIWithGovernanceArea>(
-      {url: `http://localhost:8000/api/v1/bbis/${bbiId}`, method: 'GET', signal
+      {url: `/api/v1/bbis/${bbiId}`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetBbisBbiIdQueryKey = (bbiId: number,) => {
-    return [`http://localhost:8000/api/v1/bbis/${bbiId}`] as const;
+    return [`/api/v1/bbis/${bbiId}`] as const;
     }
 
     
@@ -271,7 +271,7 @@ export const putBbis$BbiId = (
       
       
       return mutator<BBIResponse>(
-      {url: `http://localhost:8000/api/v1/bbis/${bbiId}`, method: 'PUT',
+      {url: `/api/v1/bbis/${bbiId}`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
       data: bBIUpdate
     },
@@ -340,7 +340,7 @@ export const deleteBbis$BbiId = (
       
       
       return mutator<BBIResponse>(
-      {url: `http://localhost:8000/api/v1/bbis/${bbiId}`, method: 'DELETE'
+      {url: `/api/v1/bbis/${bbiId}`, method: 'DELETE'
     },
       options);
     }
@@ -417,7 +417,7 @@ export const postBbisTestCalculation = (
       
       
       return mutator<TestBBICalculationResponse>(
-      {url: `http://localhost:8000/api/v1/bbis/test-calculation`, method: 'POST',
+      {url: `/api/v1/bbis/test-calculation`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: testBBICalculationRequest, signal
     },
@@ -487,14 +487,14 @@ export const getBbisResultsAssessment$AssessmentId = (
       
       
       return mutator<BBIResultResponse[]>(
-      {url: `http://localhost:8000/api/v1/bbis/results/assessment/${assessmentId}`, method: 'GET', signal
+      {url: `/api/v1/bbis/results/assessment/${assessmentId}`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetBbisResultsAssessmentAssessmentIdQueryKey = (assessmentId: number,) => {
-    return [`http://localhost:8000/api/v1/bbis/results/assessment/${assessmentId}`] as const;
+    return [`/api/v1/bbis/results/assessment/${assessmentId}`] as const;
     }
 
     
@@ -560,14 +560,14 @@ export const getBbisComplianceAssessment$AssessmentId = (
       
       
       return mutator<AssessmentBBIComplianceResponse>(
-      {url: `http://localhost:8000/api/v1/bbis/compliance/assessment/${assessmentId}`, method: 'GET', signal
+      {url: `/api/v1/bbis/compliance/assessment/${assessmentId}`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetBbisComplianceAssessmentAssessmentIdQueryKey = (assessmentId: number,) => {
-    return [`http://localhost:8000/api/v1/bbis/compliance/assessment/${assessmentId}`] as const;
+    return [`/api/v1/bbis/compliance/assessment/${assessmentId}`] as const;
     }
 
     
@@ -633,7 +633,7 @@ export const postBbisComplianceCalculate$AssessmentId = (
       
       
       return mutator<AssessmentBBIComplianceResponse>(
-      {url: `http://localhost:8000/api/v1/bbis/compliance/calculate/${assessmentId}`, method: 'POST', signal
+      {url: `/api/v1/bbis/compliance/calculate/${assessmentId}`, method: 'POST', signal
     },
       options);
     }

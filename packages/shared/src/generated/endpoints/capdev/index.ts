@@ -50,14 +50,14 @@ export const getCapdevAssessments$AssessmentId = (
       
       
       return mutator<CapDevInsightsResponse>(
-      {url: `http://localhost:8000/api/v1/capdev/assessments/${assessmentId}`, method: 'GET', signal
+      {url: `/api/v1/capdev/assessments/${assessmentId}`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetCapdevAssessmentsAssessmentIdQueryKey = (assessmentId: number,) => {
-    return [`http://localhost:8000/api/v1/capdev/assessments/${assessmentId}`] as const;
+    return [`/api/v1/capdev/assessments/${assessmentId}`] as const;
     }
 
     
@@ -115,7 +115,7 @@ export const getCapdevAssessments$AssessmentIdLanguage$Language = (
       
       
       return mutator<CapDevInsightsByLanguage>(
-      {url: `http://localhost:8000/api/v1/capdev/assessments/${assessmentId}/language/${language}`, method: 'GET', signal
+      {url: `/api/v1/capdev/assessments/${assessmentId}/language/${language}`, method: 'GET', signal
     },
       options);
     }
@@ -123,7 +123,7 @@ export const getCapdevAssessments$AssessmentIdLanguage$Language = (
 
 export const getGetCapdevAssessmentsAssessmentIdLanguageLanguageQueryKey = (assessmentId: number,
     language: string,) => {
-    return [`http://localhost:8000/api/v1/capdev/assessments/${assessmentId}/language/${language}`] as const;
+    return [`/api/v1/capdev/assessments/${assessmentId}/language/${language}`] as const;
     }
 
     
@@ -182,14 +182,14 @@ export const getCapdevAssessments$AssessmentIdStatus = (
       
       
       return mutator<CapDevStatusResponse>(
-      {url: `http://localhost:8000/api/v1/capdev/assessments/${assessmentId}/status`, method: 'GET', signal
+      {url: `/api/v1/capdev/assessments/${assessmentId}/status`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetCapdevAssessmentsAssessmentIdStatusQueryKey = (assessmentId: number,) => {
-    return [`http://localhost:8000/api/v1/capdev/assessments/${assessmentId}/status`] as const;
+    return [`/api/v1/capdev/assessments/${assessmentId}/status`] as const;
     }
 
     
@@ -247,7 +247,7 @@ export const postCapdevAssessments$AssessmentIdRegenerate = (
       
       
       return mutator<CapDevTriggerResponse>(
-      {url: `http://localhost:8000/api/v1/capdev/assessments/${assessmentId}/regenerate`, method: 'POST',
+      {url: `/api/v1/capdev/assessments/${assessmentId}/regenerate`, method: 'POST',
         params, signal
     },
       options);
@@ -312,7 +312,7 @@ export const postCapdevAssessments$AssessmentIdGenerateLanguage$Language = (
       
       
       return mutator<CapDevTriggerResponse>(
-      {url: `http://localhost:8000/api/v1/capdev/assessments/${assessmentId}/generate-language/${language}`, method: 'POST', signal
+      {url: `/api/v1/capdev/assessments/${assessmentId}/generate-language/${language}`, method: 'POST', signal
     },
       options);
     }

@@ -39,14 +39,14 @@ export const getHealth = (
       
       
       return mutator<unknown>(
-      {url: `http://localhost:8000/health`, method: 'GET', signal
+      {url: `/health`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetHealthQueryKey = () => {
-    return [`http://localhost:8000/health`] as const;
+    return [`/health`] as const;
     }
 
     

@@ -61,7 +61,7 @@ export const getAdminAuditLogs = (
       
       
       return mutator<AuditLogListResponse>(
-      {url: `http://localhost:8000/api/v1/admin/audit-logs`, method: 'GET',
+      {url: `/api/v1/admin/audit-logs`, method: 'GET',
         params, signal
     },
       options);
@@ -69,7 +69,7 @@ export const getAdminAuditLogs = (
   
 
 export const getGetAdminAuditLogsQueryKey = (params?: GetAdminAuditLogsParams,) => {
-    return [`http://localhost:8000/api/v1/admin/audit-logs`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/admin/audit-logs`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -126,14 +126,14 @@ export const getAdminAuditLogs$LogId = (
       
       
       return mutator<AuditLogResponse>(
-      {url: `http://localhost:8000/api/v1/admin/audit-logs/${logId}`, method: 'GET', signal
+      {url: `/api/v1/admin/audit-logs/${logId}`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetAdminAuditLogsLogIdQueryKey = (logId: number,) => {
-    return [`http://localhost:8000/api/v1/admin/audit-logs/${logId}`] as const;
+    return [`/api/v1/admin/audit-logs/${logId}`] as const;
     }
 
     
@@ -191,7 +191,7 @@ export const getAdminAuditLogsEntity$EntityType$EntityId = (
       
       
       return mutator<AuditLogResponse[]>(
-      {url: `http://localhost:8000/api/v1/admin/audit-logs/entity/${entityType}/${entityId}`, method: 'GET', signal
+      {url: `/api/v1/admin/audit-logs/entity/${entityType}/${entityId}`, method: 'GET', signal
     },
       options);
     }
@@ -199,7 +199,7 @@ export const getAdminAuditLogsEntity$EntityType$EntityId = (
 
 export const getGetAdminAuditLogsEntityEntityTypeEntityIdQueryKey = (entityType: string,
     entityId: number,) => {
-    return [`http://localhost:8000/api/v1/admin/audit-logs/entity/${entityType}/${entityId}`] as const;
+    return [`/api/v1/admin/audit-logs/entity/${entityType}/${entityId}`] as const;
     }
 
     
@@ -258,7 +258,7 @@ export const getAdminAuditLogsExport = (
       
       
       return mutator<unknown>(
-      {url: `http://localhost:8000/api/v1/admin/audit-logs/export`, method: 'GET',
+      {url: `/api/v1/admin/audit-logs/export`, method: 'GET',
         params, signal
     },
       options);
@@ -266,7 +266,7 @@ export const getAdminAuditLogsExport = (
   
 
 export const getGetAdminAuditLogsExportQueryKey = (params?: GetAdminAuditLogsExportParams,) => {
-    return [`http://localhost:8000/api/v1/admin/audit-logs/export`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/admin/audit-logs/export`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -323,7 +323,7 @@ export const postAdminCycles = (
       
       
       return mutator<AssessmentCycleResponse>(
-      {url: `http://localhost:8000/api/v1/admin/cycles`, method: 'POST',
+      {url: `/api/v1/admin/cycles`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: assessmentCycleCreate, signal
     },
@@ -388,7 +388,7 @@ export const getAdminCycles = (
       
       
       return mutator<AssessmentCycleResponse[]>(
-      {url: `http://localhost:8000/api/v1/admin/cycles`, method: 'GET',
+      {url: `/api/v1/admin/cycles`, method: 'GET',
         params, signal
     },
       options);
@@ -396,7 +396,7 @@ export const getAdminCycles = (
   
 
 export const getGetAdminCyclesQueryKey = (params?: GetAdminCyclesParams,) => {
-    return [`http://localhost:8000/api/v1/admin/cycles`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/admin/cycles`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -453,14 +453,14 @@ export const getAdminCyclesActive = (
       
       
       return mutator<AssessmentCycleResponse>(
-      {url: `http://localhost:8000/api/v1/admin/cycles/active`, method: 'GET', signal
+      {url: `/api/v1/admin/cycles/active`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetAdminCyclesActiveQueryKey = () => {
-    return [`http://localhost:8000/api/v1/admin/cycles/active`] as const;
+    return [`/api/v1/admin/cycles/active`] as const;
     }
 
     
@@ -517,7 +517,7 @@ export const putAdminCycles$CycleId = (
       
       
       return mutator<AssessmentCycleResponse>(
-      {url: `http://localhost:8000/api/v1/admin/cycles/${cycleId}`, method: 'PUT',
+      {url: `/api/v1/admin/cycles/${cycleId}`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
       data: assessmentCycleUpdate
     },
@@ -582,7 +582,7 @@ export const getAdminDeadlinesStatus = (
       
       
       return mutator<DeadlineStatusListResponse>(
-      {url: `http://localhost:8000/api/v1/admin/deadlines/status`, method: 'GET',
+      {url: `/api/v1/admin/deadlines/status`, method: 'GET',
         params, signal
     },
       options);
@@ -590,7 +590,7 @@ export const getAdminDeadlinesStatus = (
   
 
 export const getGetAdminDeadlinesStatusQueryKey = (params?: GetAdminDeadlinesStatusParams,) => {
-    return [`http://localhost:8000/api/v1/admin/deadlines/status`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/admin/deadlines/status`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -647,7 +647,7 @@ export const postAdminDeadlinesOverride = (
       
       
       return mutator<DeadlineOverrideResponse>(
-      {url: `http://localhost:8000/api/v1/admin/deadlines/override`, method: 'POST',
+      {url: `/api/v1/admin/deadlines/override`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: deadlineOverrideCreate, signal
     },
@@ -712,7 +712,7 @@ export const getAdminDeadlinesOverrides = (
       
       
       return mutator<DeadlineOverrideListResponse>(
-      {url: `http://localhost:8000/api/v1/admin/deadlines/overrides`, method: 'GET',
+      {url: `/api/v1/admin/deadlines/overrides`, method: 'GET',
         params, signal
     },
       options);
@@ -720,7 +720,7 @@ export const getAdminDeadlinesOverrides = (
   
 
 export const getGetAdminDeadlinesOverridesQueryKey = (params?: GetAdminDeadlinesOverridesParams,) => {
-    return [`http://localhost:8000/api/v1/admin/deadlines/overrides`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/admin/deadlines/overrides`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -777,7 +777,7 @@ export const getAdminDeadlinesOverridesExport = (
       
       
       return mutator<unknown>(
-      {url: `http://localhost:8000/api/v1/admin/deadlines/overrides/export`, method: 'GET',
+      {url: `/api/v1/admin/deadlines/overrides/export`, method: 'GET',
         params, signal
     },
       options);
@@ -785,7 +785,7 @@ export const getAdminDeadlinesOverridesExport = (
   
 
 export const getGetAdminDeadlinesOverridesExportQueryKey = (params?: GetAdminDeadlinesOverridesExportParams,) => {
-    return [`http://localhost:8000/api/v1/admin/deadlines/overrides/export`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/admin/deadlines/overrides/export`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -842,14 +842,14 @@ export const getAdminSystemStatus = (
       
       
       return mutator<AdminSuccessResponse>(
-      {url: `http://localhost:8000/api/v1/admin/system/status`, method: 'GET', signal
+      {url: `/api/v1/admin/system/status`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetAdminSystemStatusQueryKey = () => {
-    return [`http://localhost:8000/api/v1/admin/system/status`] as const;
+    return [`/api/v1/admin/system/status`] as const;
     }
 
     

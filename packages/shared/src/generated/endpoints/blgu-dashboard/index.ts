@@ -56,7 +56,7 @@ export const getBlguDashboard$AssessmentId = (
       
       
       return mutator<BLGUDashboardResponse>(
-      {url: `http://localhost:8000/api/v1/blgu-dashboard/${assessmentId}`, method: 'GET',
+      {url: `/api/v1/blgu-dashboard/${assessmentId}`, method: 'GET',
         params, signal
     },
       options);
@@ -65,7 +65,7 @@ export const getBlguDashboard$AssessmentId = (
 
 export const getGetBlguDashboardAssessmentIdQueryKey = (assessmentId: number,
     params?: GetBlguDashboardAssessmentIdParams,) => {
-    return [`http://localhost:8000/api/v1/blgu-dashboard/${assessmentId}`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/blgu-dashboard/${assessmentId}`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -134,14 +134,14 @@ export const getBlguDashboard$AssessmentIdIndicatorsNavigation = (
       
       
       return mutator<IndicatorNavigationItem[]>(
-      {url: `http://localhost:8000/api/v1/blgu-dashboard/${assessmentId}/indicators/navigation`, method: 'GET', signal
+      {url: `/api/v1/blgu-dashboard/${assessmentId}/indicators/navigation`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetBlguDashboardAssessmentIdIndicatorsNavigationQueryKey = (assessmentId: number,) => {
-    return [`http://localhost:8000/api/v1/blgu-dashboard/${assessmentId}/indicators/navigation`] as const;
+    return [`/api/v1/blgu-dashboard/${assessmentId}/indicators/navigation`] as const;
     }
 
     

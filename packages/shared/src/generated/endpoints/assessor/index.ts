@@ -58,14 +58,14 @@ export const getAssessorQueue = (
       
       
       return mutator<AssessorQueueItem[]>(
-      {url: `http://localhost:8000/api/v1/assessor/queue`, method: 'GET', signal
+      {url: `/api/v1/assessor/queue`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetAssessorQueueQueryKey = () => {
-    return [`http://localhost:8000/api/v1/assessor/queue`] as const;
+    return [`/api/v1/assessor/queue`] as const;
     }
 
     
@@ -128,14 +128,14 @@ export const getAssessorStats = (
       
       
       return mutator<unknown>(
-      {url: `http://localhost:8000/api/v1/assessor/stats`, method: 'GET', signal
+      {url: `/api/v1/assessor/stats`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetAssessorStatsQueryKey = () => {
-    return [`http://localhost:8000/api/v1/assessor/stats`] as const;
+    return [`/api/v1/assessor/stats`] as const;
     }
 
     
@@ -202,7 +202,7 @@ export const postAssessorAssessmentResponses$ResponseIdValidate = (
       
       
       return mutator<ValidationResponse>(
-      {url: `http://localhost:8000/api/v1/assessor/assessment-responses/${responseId}/validate`, method: 'POST',
+      {url: `/api/v1/assessor/assessment-responses/${responseId}/validate`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: validationRequest, signal
     },
@@ -276,7 +276,7 @@ export const postAssessorAssessmentResponses$ResponseIdMovs = (
       
       
       return mutator<MOVUploadResponse>(
-      {url: `http://localhost:8000/api/v1/assessor/assessment-responses/${responseId}/movs`, method: 'POST',
+      {url: `/api/v1/assessor/assessment-responses/${responseId}/movs`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: mOVCreate, signal
     },
@@ -365,7 +365,7 @@ if(bodyUploadMovFileForAssessorApiV1AssessorAssessmentResponsesResponseIdMovsUpl
  }
 
       return mutator<MOVUploadResponse>(
-      {url: `http://localhost:8000/api/v1/assessor/assessment-responses/${responseId}/movs/upload`, method: 'POST',
+      {url: `/api/v1/assessor/assessment-responses/${responseId}/movs/upload`, method: 'POST',
       headers: {'Content-Type': 'multipart/form-data', },
        data: formData, signal
     },
@@ -441,14 +441,14 @@ export const getAssessorAssessments$AssessmentId = (
       
       
       return mutator<AssessmentDetailsResponse>(
-      {url: `http://localhost:8000/api/v1/assessor/assessments/${assessmentId}`, method: 'GET', signal
+      {url: `/api/v1/assessor/assessments/${assessmentId}`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetAssessorAssessmentsAssessmentIdQueryKey = (assessmentId: number,) => {
-    return [`http://localhost:8000/api/v1/assessor/assessments/${assessmentId}`] as const;
+    return [`/api/v1/assessor/assessments/${assessmentId}`] as const;
     }
 
     
@@ -511,7 +511,7 @@ export const postAssessorAssessments$AssessmentIdRework = (
       
       
       return mutator<unknown>(
-      {url: `http://localhost:8000/api/v1/assessor/assessments/${assessmentId}/rework`, method: 'POST', signal
+      {url: `/api/v1/assessor/assessments/${assessmentId}/rework`, method: 'POST', signal
     },
       options);
     }
@@ -585,7 +585,7 @@ export const postAssessorAssessments$AssessmentIdCalibrate = (
       
       
       return mutator<unknown>(
-      {url: `http://localhost:8000/api/v1/assessor/assessments/${assessmentId}/calibrate`, method: 'POST', signal
+      {url: `/api/v1/assessor/assessments/${assessmentId}/calibrate`, method: 'POST', signal
     },
       options);
     }
@@ -654,7 +654,7 @@ export const postAssessorAssessments$AssessmentIdFinalize = (
       
       
       return mutator<unknown>(
-      {url: `http://localhost:8000/api/v1/assessor/assessments/${assessmentId}/finalize`, method: 'POST', signal
+      {url: `/api/v1/assessor/assessments/${assessmentId}/finalize`, method: 'POST', signal
     },
       options);
     }
@@ -723,7 +723,7 @@ export const postAssessorAssessments$AssessmentIdClassify = (
       
       
       return mutator<unknown>(
-      {url: `http://localhost:8000/api/v1/assessor/assessments/${assessmentId}/classify`, method: 'POST', signal
+      {url: `/api/v1/assessor/assessments/${assessmentId}/classify`, method: 'POST', signal
     },
       options);
     }
@@ -795,14 +795,14 @@ export const getAssessorAnalytics = (
       
       
       return mutator<AssessorAnalyticsResponse>(
-      {url: `http://localhost:8000/api/v1/assessor/analytics`, method: 'GET', signal
+      {url: `/api/v1/assessor/analytics`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetAssessorAnalyticsQueryKey = () => {
-    return [`http://localhost:8000/api/v1/assessor/analytics`] as const;
+    return [`/api/v1/assessor/analytics`] as const;
     }
 
     
@@ -864,7 +864,7 @@ export const postAssessorMovs$MovFileIdAnnotations = (
       
       
       return mutator<AnnotationResponse>(
-      {url: `http://localhost:8000/api/v1/assessor/movs/${movFileId}/annotations`, method: 'POST',
+      {url: `/api/v1/assessor/movs/${movFileId}/annotations`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: annotationCreate, signal
     },
@@ -932,14 +932,14 @@ export const getAssessorMovs$MovFileIdAnnotations = (
       
       
       return mutator<AnnotationResponse[]>(
-      {url: `http://localhost:8000/api/v1/assessor/movs/${movFileId}/annotations`, method: 'GET', signal
+      {url: `/api/v1/assessor/movs/${movFileId}/annotations`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetAssessorMovsMovFileIdAnnotationsQueryKey = (movFileId: number,) => {
-    return [`http://localhost:8000/api/v1/assessor/movs/${movFileId}/annotations`] as const;
+    return [`/api/v1/assessor/movs/${movFileId}/annotations`] as const;
     }
 
     
@@ -999,14 +999,14 @@ export const getAssessorAssessments$AssessmentIdAnnotations = (
       
       
       return mutator<AnnotationResponse[]>(
-      {url: `http://localhost:8000/api/v1/assessor/assessments/${assessmentId}/annotations`, method: 'GET', signal
+      {url: `/api/v1/assessor/assessments/${assessmentId}/annotations`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetAssessorAssessmentsAssessmentIdAnnotationsQueryKey = (assessmentId: number,) => {
-    return [`http://localhost:8000/api/v1/assessor/assessments/${assessmentId}/annotations`] as const;
+    return [`/api/v1/assessor/assessments/${assessmentId}/annotations`] as const;
     }
 
     
@@ -1066,7 +1066,7 @@ export const patchAssessorAnnotations$AnnotationId = (
       
       
       return mutator<AnnotationResponse>(
-      {url: `http://localhost:8000/api/v1/assessor/annotations/${annotationId}`, method: 'PATCH',
+      {url: `/api/v1/assessor/annotations/${annotationId}`, method: 'PATCH',
       headers: {'Content-Type': 'application/json', },
       data: annotationUpdate
     },
@@ -1133,7 +1133,7 @@ export const deleteAssessorAnnotations$AnnotationId = (
       
       
       return mutator<unknown>(
-      {url: `http://localhost:8000/api/v1/assessor/annotations/${annotationId}`, method: 'DELETE'
+      {url: `/api/v1/assessor/annotations/${annotationId}`, method: 'DELETE'
     },
       options);
     }

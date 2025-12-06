@@ -54,7 +54,7 @@ export const getNotifications = (
       
       
       return mutator<NotificationListResponse>(
-      {url: `http://localhost:8000/api/v1/notifications/`, method: 'GET',
+      {url: `/api/v1/notifications/`, method: 'GET',
         params, signal
     },
       options);
@@ -62,7 +62,7 @@ export const getNotifications = (
   
 
 export const getGetNotificationsQueryKey = (params?: GetNotificationsParams,) => {
-    return [`http://localhost:8000/api/v1/notifications/`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/notifications/`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -122,14 +122,14 @@ export const getNotificationsCount = (
       
       
       return mutator<NotificationCountResponse>(
-      {url: `http://localhost:8000/api/v1/notifications/count`, method: 'GET', signal
+      {url: `/api/v1/notifications/count`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetNotificationsCountQueryKey = () => {
-    return [`http://localhost:8000/api/v1/notifications/count`] as const;
+    return [`/api/v1/notifications/count`] as const;
     }
 
     
@@ -189,7 +189,7 @@ export const postNotificationsMarkRead = (
       
       
       return mutator<MarkReadResponse>(
-      {url: `http://localhost:8000/api/v1/notifications/mark-read`, method: 'POST',
+      {url: `/api/v1/notifications/mark-read`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: markReadRequest, signal
     },
@@ -256,7 +256,7 @@ export const postNotificationsMarkAllRead = (
       
       
       return mutator<MarkReadResponse>(
-      {url: `http://localhost:8000/api/v1/notifications/mark-all-read`, method: 'POST', signal
+      {url: `/api/v1/notifications/mark-all-read`, method: 'POST', signal
     },
       options);
     }
@@ -321,14 +321,14 @@ export const getNotifications$NotificationId = (
       
       
       return mutator<NotificationResponse>(
-      {url: `http://localhost:8000/api/v1/notifications/${notificationId}`, method: 'GET', signal
+      {url: `/api/v1/notifications/${notificationId}`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetNotificationsNotificationIdQueryKey = (notificationId: number,) => {
-    return [`http://localhost:8000/api/v1/notifications/${notificationId}`] as const;
+    return [`/api/v1/notifications/${notificationId}`] as const;
     }
 
     

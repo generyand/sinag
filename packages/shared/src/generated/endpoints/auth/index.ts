@@ -6,12 +6,17 @@
  * 
  */
 import {
-  useMutation
+  useMutation,
+  useQuery
 } from '@tanstack/react-query';
 import type {
   MutationFunction,
+  QueryFunction,
+  QueryKey,
   UseMutationOptions,
-  UseMutationResult
+  UseMutationResult,
+  UseQueryOptions,
+  UseQueryResult
 } from '@tanstack/react-query';
 
 import type {
@@ -36,11 +41,11 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 /**
  * Login endpoint - authenticate user and return JWT token.
 
-This endpoint:
-1. Validates user credentials against the database
-2. Checks if the user account is active
-3. Generates a secure JWT token
-4. Returns token with expiration info
+Security features:
+1. Account lockout after 5 failed attempts (15 minute window)
+2. Failed login attempt tracking
+3. Audit logging for security events
+4. Generic error messages to prevent user enumeration
  * @summary Login
  */
 export const postAuthLogin = (
@@ -50,7 +55,7 @@ export const postAuthLogin = (
       
       
       return mutator<AuthToken>(
-      {url: `http://localhost:8000/api/v1/auth/login`, method: 'POST',
+      {url: `/api/v1/auth/login`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: loginRequest, signal
     },
@@ -111,7 +116,7 @@ This endpoint:
 1. Verifies the current password
 2. Updates the user's password
 3. Sets must_change_password to False
-4. Returns success message
+4. Logs the password change event
  * @summary Change Password
  */
 export const postAuthChangePassword = (
@@ -121,7 +126,7 @@ export const postAuthChangePassword = (
       
       
       return mutator<ApiResponse>(
-      {url: `http://localhost:8000/api/v1/auth/change-password`, method: 'POST',
+      {url: `/api/v1/auth/change-password`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: changePasswordRequest, signal
     },
@@ -176,12 +181,12 @@ export const usePostAuthChangePassword = <TError = HTTPValidationError,
       return useMutation(mutationOptions );
     }
     /**
- * Logout endpoint - invalidate user session.
+ * Logout endpoint - invalidate user session by blacklisting the token.
 
-In production, this will:
-1. Blacklist the JWT token
-2. Clear any session data
-3. Log the logout event
+This endpoint:
+1. Blacklists the JWT token in Redis
+2. Token remains blacklisted until its original expiration
+3. Logs the logout event for audit purposes
  * @summary Logout
  */
 export const postAuthLogout = (
@@ -191,7 +196,7 @@ export const postAuthLogout = (
       
       
       return mutator<ApiResponse>(
-      {url: `http://localhost:8000/api/v1/auth/logout`, method: 'POST', signal
+      {url: `/api/v1/auth/logout`, method: 'POST', signal
     },
       options);
     }
@@ -243,4 +248,70 @@ export const usePostAuthLogout = <TError = unknown,
 
       return useMutation(mutationOptions );
     }
+    /**
+ * Verify authentication status.
+
+Returns basic user info if the token is valid and not blacklisted.
+Useful for frontend to check if user session is still active.
+ * @summary Verify Auth
+ */
+export const getAuthVerify = (
     
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<unknown>(
+      {url: `/api/v1/auth/verify`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+export const getGetAuthVerifyQueryKey = () => {
+    return [`/api/v1/auth/verify`] as const;
+    }
+
+    
+export const getGetAuthVerifyQueryOptions = <TData = Awaited<ReturnType<typeof getAuthVerify>>, TError = unknown>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthVerify>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAuthVerifyQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAuthVerify>>> = ({ signal }) => getAuthVerify(requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthVerify>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAuthVerifyQueryResult = NonNullable<Awaited<ReturnType<typeof getAuthVerify>>>
+export type GetAuthVerifyQueryError = unknown
+
+
+/**
+ * @summary Verify Auth
+ */
+
+export function useGetAuthVerify<TData = Awaited<ReturnType<typeof getAuthVerify>>, TError = unknown>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthVerify>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAuthVerifyQueryOptions(options)
+
+  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+

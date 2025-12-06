@@ -17,7 +17,7 @@ export default defineConfig({
       schemas: 'packages/shared/src/generated/schemas',
       
       client: 'react-query',
-      baseUrl: 'http://localhost:8000',
+      baseUrl: '',
       
       override: {
         // 🔧 Use our custom Axios instance with authentication & error handling

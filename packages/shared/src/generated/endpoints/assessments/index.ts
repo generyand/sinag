@@ -82,14 +82,14 @@ export const getAssessmentsDashboard = (
       
       
       return mutator<AssessmentDashboardResponse>(
-      {url: `http://localhost:8000/api/v1/assessments/dashboard`, method: 'GET', signal
+      {url: `/api/v1/assessments/dashboard`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetAssessmentsDashboardQueryKey = () => {
-    return [`http://localhost:8000/api/v1/assessments/dashboard`] as const;
+    return [`/api/v1/assessments/dashboard`] as const;
     }
 
     
@@ -157,14 +157,14 @@ export const getAssessmentsMyAssessment = (
       
       
       return mutator<GetAssessmentsMyAssessment200>(
-      {url: `http://localhost:8000/api/v1/assessments/my-assessment`, method: 'GET', signal
+      {url: `/api/v1/assessments/my-assessment`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetAssessmentsMyAssessmentQueryKey = () => {
-    return [`http://localhost:8000/api/v1/assessments/my-assessment`] as const;
+    return [`/api/v1/assessments/my-assessment`] as const;
     }
 
     
@@ -227,14 +227,14 @@ export const getAssessmentsResponses$ResponseId = (
       
       
       return mutator<AssessmentResponse>(
-      {url: `http://localhost:8000/api/v1/assessments/responses/${responseId}`, method: 'GET', signal
+      {url: `/api/v1/assessments/responses/${responseId}`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetAssessmentsResponsesResponseIdQueryKey = (responseId: number,) => {
-    return [`http://localhost:8000/api/v1/assessments/responses/${responseId}`] as const;
+    return [`/api/v1/assessments/responses/${responseId}`] as const;
     }
 
     
@@ -300,7 +300,7 @@ export const putAssessmentsResponses$ResponseId = (
       
       
       return mutator<AssessmentResponse>(
-      {url: `http://localhost:8000/api/v1/assessments/responses/${responseId}`, method: 'PUT',
+      {url: `/api/v1/assessments/responses/${responseId}`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
       data: assessmentResponseUpdate
     },
@@ -368,7 +368,7 @@ export const postAssessmentsResponses = (
       
       
       return mutator<AssessmentResponse>(
-      {url: `http://localhost:8000/api/v1/assessments/responses`, method: 'POST',
+      {url: `/api/v1/assessments/responses`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: assessmentResponseCreate, signal
     },
@@ -431,7 +431,7 @@ Runs a preliminary compliance check before submission:
 - Sets submission timestamp
 
 Returns validation results with any errors or warnings.
- * @summary Submit Assessment
+ * @summary Submit Current User Assessment
  */
 export const postAssessmentsSubmit = (
     
@@ -440,7 +440,7 @@ export const postAssessmentsSubmit = (
       
       
       return mutator<AssessmentSubmissionValidation>(
-      {url: `http://localhost:8000/api/v1/assessments/submit`, method: 'POST', signal
+      {url: `/api/v1/assessments/submit`, method: 'POST', signal
     },
       options);
     }
@@ -477,7 +477,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type PostAssessmentsSubmitMutationError = unknown
 
     /**
- * @summary Submit Assessment
+ * @summary Submit Current User Assessment
  */
 export const usePostAssessmentsSubmit = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessmentsSubmit>>, TError,void, TContext>, request?: SecondParameter<typeof mutator>}
@@ -508,7 +508,7 @@ export const postAssessmentsResponses$ResponseIdMovs = (
       
       
       return mutator<Mov>(
-      {url: `http://localhost:8000/api/v1/assessments/responses/${responseId}/movs`, method: 'POST',
+      {url: `/api/v1/assessments/responses/${responseId}/movs`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: mOVCreate, signal
     },
@@ -575,7 +575,7 @@ export const deleteAssessmentsMovs$MovId = (
       
       
       return mutator<DeleteAssessmentsMovsMovId200>(
-      {url: `http://localhost:8000/api/v1/assessments/movs/${movId}`, method: 'DELETE'
+      {url: `/api/v1/assessments/movs/${movId}`, method: 'DELETE'
     },
       options);
     }
@@ -649,7 +649,7 @@ export const getAssessmentsList = (
       
       
       return mutator<GetAssessmentsList200Item[]>(
-      {url: `http://localhost:8000/api/v1/assessments/list`, method: 'GET',
+      {url: `/api/v1/assessments/list`, method: 'GET',
         params, signal
     },
       options);
@@ -657,7 +657,7 @@ export const getAssessmentsList = (
   
 
 export const getGetAssessmentsListQueryKey = (params?: GetAssessmentsListParams,) => {
-    return [`http://localhost:8000/api/v1/assessments/list`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/assessments/list`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -736,7 +736,7 @@ export const postAssessments$IdGenerateInsights = (
       
       
       return mutator<PostAssessmentsIdGenerateInsights202>(
-      {url: `http://localhost:8000/api/v1/assessments/${id}/generate-insights`, method: 'POST', signal
+      {url: `/api/v1/assessments/${id}/generate-insights`, method: 'POST', signal
     },
       options);
     }
@@ -837,7 +837,7 @@ export const postAssessments$AssessmentIdAnswers = (
       
       
       return mutator<SaveAnswersResponse>(
-      {url: `http://localhost:8000/api/v1/assessments/${assessmentId}/answers`, method: 'POST',
+      {url: `/api/v1/assessments/${assessmentId}/answers`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: saveAnswersRequest,
         params, signal
@@ -934,7 +934,7 @@ export const getAssessments$AssessmentIdAnswers = (
       
       
       return mutator<GetAnswersResponse>(
-      {url: `http://localhost:8000/api/v1/assessments/${assessmentId}/answers`, method: 'GET',
+      {url: `/api/v1/assessments/${assessmentId}/answers`, method: 'GET',
         params, signal
     },
       options);
@@ -943,7 +943,7 @@ export const getAssessments$AssessmentIdAnswers = (
 
 export const getGetAssessmentsAssessmentIdAnswersQueryKey = (assessmentId: number,
     params: GetAssessmentsAssessmentIdAnswersParams,) => {
-    return [`http://localhost:8000/api/v1/assessments/${assessmentId}/answers`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/assessments/${assessmentId}/answers`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -1030,7 +1030,7 @@ export const postAssessments$AssessmentIdValidateCompleteness = (
       
       
       return mutator<CompletenessValidationResponse>(
-      {url: `http://localhost:8000/api/v1/assessments/${assessmentId}/validate-completeness`, method: 'POST', signal
+      {url: `/api/v1/assessments/${assessmentId}/validate-completeness`, method: 'POST', signal
     },
       options);
     }
@@ -1121,7 +1121,7 @@ export const postAssessments$AssessmentIdSubmit = (
       
       
       return mutator<SubmitAssessmentResponse>(
-      {url: `http://localhost:8000/api/v1/assessments/${assessmentId}/submit`, method: 'POST', signal
+      {url: `/api/v1/assessments/${assessmentId}/submit`, method: 'POST', signal
     },
       options);
     }
@@ -1221,7 +1221,7 @@ export const postAssessments$AssessmentIdRequestRework = (
       
       
       return mutator<RequestReworkResponse>(
-      {url: `http://localhost:8000/api/v1/assessments/${assessmentId}/request-rework`, method: 'POST',
+      {url: `/api/v1/assessments/${assessmentId}/request-rework`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: requestReworkRequest, signal
     },
@@ -1321,7 +1321,7 @@ export const postAssessments$AssessmentIdResubmit = (
       
       
       return mutator<ResubmitAssessmentResponse>(
-      {url: `http://localhost:8000/api/v1/assessments/${assessmentId}/resubmit`, method: 'POST', signal
+      {url: `/api/v1/assessments/${assessmentId}/resubmit`, method: 'POST', signal
     },
       options);
     }
@@ -1417,7 +1417,7 @@ export const postAssessments$AssessmentIdSubmitForCalibration = (
       
       
       return mutator<ResubmitAssessmentResponse>(
-      {url: `http://localhost:8000/api/v1/assessments/${assessmentId}/submit-for-calibration`, method: 'POST', signal
+      {url: `/api/v1/assessments/${assessmentId}/submit-for-calibration`, method: 'POST', signal
     },
       options);
     }
@@ -1512,14 +1512,14 @@ export const getAssessments$AssessmentIdSubmissionStatus = (
       
       
       return mutator<SubmissionStatusResponse>(
-      {url: `http://localhost:8000/api/v1/assessments/${assessmentId}/submission-status`, method: 'GET', signal
+      {url: `/api/v1/assessments/${assessmentId}/submission-status`, method: 'GET', signal
     },
       options);
     }
   
 
 export const getGetAssessmentsAssessmentIdSubmissionStatusQueryKey = (assessmentId: number,) => {
-    return [`http://localhost:8000/api/v1/assessments/${assessmentId}/submission-status`] as const;
+    return [`/api/v1/assessments/${assessmentId}/submission-status`] as const;
     }
 
     
@@ -1609,7 +1609,7 @@ export const getAssessments$AssessmentIdReworkSummary = (
       
       
       return mutator<ReworkSummaryResponse>(
-      {url: `http://localhost:8000/api/v1/assessments/${assessmentId}/rework-summary`, method: 'GET',
+      {url: `/api/v1/assessments/${assessmentId}/rework-summary`, method: 'GET',
         params, signal
     },
       options);
@@ -1618,7 +1618,7 @@ export const getAssessments$AssessmentIdReworkSummary = (
 
 export const getGetAssessmentsAssessmentIdReworkSummaryQueryKey = (assessmentId: number,
     params?: GetAssessmentsAssessmentIdReworkSummaryParams,) => {
-    return [`http://localhost:8000/api/v1/assessments/${assessmentId}/rework-summary`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/assessments/${assessmentId}/rework-summary`, ...(params ? [params]: [])] as const;
     }
 
     
@@ -1714,7 +1714,7 @@ export const getAssessments$AssessmentIdCalibrationSummary = (
       
       
       return mutator<CalibrationSummaryResponse>(
-      {url: `http://localhost:8000/api/v1/assessments/${assessmentId}/calibration-summary`, method: 'GET',
+      {url: `/api/v1/assessments/${assessmentId}/calibration-summary`, method: 'GET',
         params, signal
     },
       options);
@@ -1723,7 +1723,7 @@ export const getAssessments$AssessmentIdCalibrationSummary = (
 
 export const getGetAssessmentsAssessmentIdCalibrationSummaryQueryKey = (assessmentId: number,
     params?: GetAssessmentsAssessmentIdCalibrationSummaryParams,) => {
-    return [`http://localhost:8000/api/v1/assessments/${assessmentId}/calibration-summary`, ...(params ? [params]: [])] as const;
+    return [`/api/v1/assessments/${assessmentId}/calibration-summary`, ...(params ? [params]: [])] as const;
     }
 
     
