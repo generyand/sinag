@@ -81,20 +81,32 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     for distributed systems.
     """
 
+    # Class-level store to allow clearing in tests
+    _rate_limit_store: Dict[str, Dict[str, list]] = defaultdict(
+        lambda: defaultdict(list)
+    )
+
     def __init__(self, app):
         super().__init__(app)
-        # Store: {ip_address: {endpoint: [(timestamp, count)]}}
-        self.rate_limit_store: Dict[str, Dict[str, list]] = defaultdict(
-            lambda: defaultdict(list)
-        )
+        # Use class-level store for easier testing
+        self.rate_limit_store = RateLimitMiddleware._rate_limit_store
 
         # Rate limit configurations
+        # SECURITY: Stricter limits for auth endpoints to prevent brute-force
         self.limits = {
-            "/api/v1/auth": {"requests": 20, "window": 60},  # 20 requests per minute
+            "/api/v1/auth/login": {"requests": 5, "window": 300},  # 5 per 5 min (strict)
+            "/api/v1/auth/change-password": {"requests": 3, "window": 300},  # 3 per 5 min
+            "/api/v1/auth": {"requests": 10, "window": 60},  # 10 per minute (other auth)
             "/api/v1/admin": {"requests": 50, "window": 60},  # 50 requests per minute
+            "/api/v1/users": {"requests": 30, "window": 60},  # 30 per minute (user mgmt)
             "/health": {"requests": 1000, "window": 60},  # 1000 requests per minute
             "default": {"requests": 100, "window": 60},  # 100 requests per minute
         }
+
+    @classmethod
+    def clear_rate_limits(cls):
+        """Clear all rate limit data. Useful for testing."""
+        cls._rate_limit_store.clear()
 
     def _get_client_ip(self, request: Request) -> str:
         """Extract client IP from request."""

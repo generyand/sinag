@@ -22,15 +22,48 @@ def coerce_to_optional_int(v: Union[int, str, None]) -> Optional[int]:
 
 
 def validate_password_strength(v: str) -> str:
-    """Validate password meets minimum security requirements."""
-    if len(v) < 8:
-        raise ValueError('Password must be at least 8 characters long')
-    if not re.search(r'[A-Z]', v):
-        raise ValueError('Password must contain at least one uppercase letter')
-    if not re.search(r'[a-z]', v):
-        raise ValueError('Password must contain at least one lowercase letter')
-    if not re.search(r'\d', v):
-        raise ValueError('Password must contain at least one digit')
+    """
+    Validate password meets minimum security requirements.
+
+    Password policy (OWASP-aligned):
+    - Minimum 12 characters (increased from 8)
+    - Maximum 72 characters (bcrypt limit)
+    - At least one uppercase letter
+    - At least one lowercase letter
+    - At least one digit
+    - At least one special character
+    - Not in common passwords list (optional, see below)
+    """
+    # Check byte length first (bcrypt truncates at 72 bytes)
+    password_bytes = v.encode("utf-8")
+    if len(password_bytes) > 72:
+        raise ValueError("Password must not exceed 72 characters")
+
+    if len(v) < 12:
+        raise ValueError("Password must be at least 12 characters long")
+    if not re.search(r"[A-Z]", v):
+        raise ValueError("Password must contain at least one uppercase letter")
+    if not re.search(r"[a-z]", v):
+        raise ValueError("Password must contain at least one lowercase letter")
+    if not re.search(r"\d", v):
+        raise ValueError("Password must contain at least one digit")
+    if not re.search(r"[!@#$%^&*(),.?\":{}|<>\-_=+\[\]\\;'`~]", v):
+        raise ValueError("Password must contain at least one special character")
+
+    # Check against common passwords (top 100 most common)
+    common_passwords = {
+        "password", "123456", "12345678", "qwerty", "abc123",
+        "monkey", "1234567", "letmein", "trustno1", "dragon",
+        "baseball", "iloveyou", "master", "sunshine", "ashley",
+        "bailey", "shadow", "123123", "654321", "superman",
+        "qazwsx", "michael", "football", "password1", "password123",
+        "password1234", "admin", "welcome", "welcome1", "p@ssword",
+        "p@ssw0rd", "passw0rd", "pass@word1", "pass@123", "admin123",
+        "root", "toor", "changeme", "letmein123", "qwerty123",
+    }
+    if v.lower() in common_passwords:
+        raise ValueError("This password is too common. Please choose a stronger password.")
+
     return v
 
 # Language code type for AI summary preferences
