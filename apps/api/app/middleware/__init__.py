@@ -1,6 +1,8 @@
 # 🔒 Middleware Package
-# Security and request processing middleware
+# Security, caching, metrics, and request processing middleware
 
+from app.middleware.cache_headers import CacheHeadersMiddleware
+from app.middleware.metrics import MetricsMiddleware, get_prometheus_metrics, get_metrics_summary
 from app.middleware.security import (
     RateLimitMiddleware,
     RequestLoggingMiddleware,
@@ -11,4 +13,8 @@ __all__ = [
     "SecurityHeadersMiddleware",
     "RateLimitMiddleware",
     "RequestLoggingMiddleware",
+    "CacheHeadersMiddleware",
+    "MetricsMiddleware",
+    "get_prometheus_metrics",
+    "get_metrics_summary",
 ]

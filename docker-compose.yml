@@ -4,21 +4,23 @@
 
 services:
   # ============================================================================
-  # Redis - Message Broker for Celery
+  # Redis - Message Broker for Celery (Task Queue)
   # ============================================================================
-  redis:
+  # PERFORMANCE: Dedicated Redis instance for Celery to prevent cache operations
+  # from blocking task queue processing
+  redis-celery:
     image: redis:7-alpine
-    container_name: sinag-redis
+    container_name: sinag-redis-celery
     restart: unless-stopped
 
     ports:
       - "6379:6379"
 
     volumes:
-      - redis-data:/data
+      - redis-celery-data:/data
 
-    # Use default Redis configuration (no custom config needed for dev)
-    command: redis-server --appendonly yes
+    # Celery broker: persistence enabled, no eviction (tasks must not be lost)
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy noeviction
 
     # Health check
     healthcheck:
@@ -33,10 +35,10 @@ services:
       resources:
         limits:
           cpus: '0.50'
-          memory: 512M
+          memory: 384M
         reservations:
           cpus: '0.25'
-          memory: 256M
+          memory: 128M
 
     # Security: Run as non-root user
     user: "999:999"
@@ -53,17 +55,76 @@ services:
         ipv4_address: 172.28.0.10
 
   # ============================================================================
+  # Redis - Application Cache (Separate from Celery)
+  # ============================================================================
+  # PERFORMANCE: Dedicated Redis instance for application caching
+  # Uses LRU eviction policy to automatically manage memory
+  redis-cache:
+    image: redis:7-alpine
+    container_name: sinag-redis-cache
+    restart: unless-stopped
+
+    ports:
+      - "6380:6379"
+
+    volumes:
+      - redis-cache-data:/data
+
+    # Cache: LRU eviction, no persistence needed (cache can be rebuilt)
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --save ""
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 640M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    # Security: Run as non-root user
+    user: "999:999"
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    networks:
+      sinag-network:
+        ipv4_address: 172.28.0.11
+
+  # ============================================================================
   # FastAPI Backend
   # ============================================================================
+  # PERFORMANCE: Configured for horizontal scaling
+  # Scale with: docker compose up --scale api=3
+  # Note: container_name removed to allow multiple instances
   api:
     build:
       context: apps/api
       dockerfile: Dockerfile
       target: development
 
-    container_name: sinag-api
+    # container_name removed to enable scaling with docker compose --scale
     restart: unless-stopped
 
+    # Expose port internally (accessed via Nginx)
+    expose:
+      - "8000"
+
+    # Also expose directly for development (first instance only)
     ports:
       - "8000:8000"
 
@@ -75,16 +136,18 @@ services:
       - apps/api/.env
 
     environment:
-      # Override Redis URLs for Docker network
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      - REDIS_URL=redis://redis:6379/0
+      # Override Redis URLs for Docker network (separate instances)
+      - CELERY_BROKER_URL=redis://redis-celery:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis-celery:6379/0
+      - REDIS_CACHE_URL=redis://redis-cache:6379/0
       # Fail fast in Docker
       - FAIL_FAST=true
       - REQUIRE_CELERY=true
 
     depends_on:
-      redis:
+      redis-celery:
+        condition: service_healthy
+      redis-cache:
         condition: service_healthy
 
     # Health check
@@ -94,15 +157,17 @@ services:
           "CMD",
           "python",
           "-c",
-          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')",
         ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
 
-    # Resource limits
+    # PERFORMANCE: Resource limits and scaling configuration
     deploy:
+      # Uncomment for production scaling:
+      # replicas: 3
       resources:
         limits:
           cpus: '1.0'
@@ -110,6 +175,16 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
+      # Rolling update configuration
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      # Restart policy
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
 
     # Logging
     logging:
@@ -119,8 +194,7 @@ services:
         max-file: "5"
 
     networks:
-      sinag-network:
-        ipv4_address: 172.28.0.20
+      - sinag-network
 
   # ============================================================================
   # Celery Worker - Background Task Processor
@@ -154,10 +228,10 @@ services:
       - apps/api/.env
 
     environment:
-      # Override Redis URLs for Docker network
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      - REDIS_URL=redis://redis:6379/0
+      # Override Redis URLs for Docker network (separate instances)
+      - CELERY_BROKER_URL=redis://redis-celery:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis-celery:6379/0
+      - REDIS_CACHE_URL=redis://redis-cache:6379/0
       # Celery optimizations
       - CELERY_WORKER_PREFETCH_MULTIPLIER=4
       - CELERY_WORKER_MAX_TASKS_PER_CHILD=1000
@@ -167,7 +241,7 @@ services:
     depends_on:
       api:
         condition: service_healthy
-      redis:
+      redis-celery:
         condition: service_healthy
 
     # Health check - verify worker is responsive
@@ -375,13 +449,17 @@ networks:
 # Volumes
 # ==============================================================================
 volumes:
-  redis-data:
+  redis-celery-data:
+    driver: local
+  redis-cache-data:
     driver: local
   web-next-cache:
     driver: local
   web-turbo-cache:
     driver: local
   nginx-logs:
+    driver: local
+  nginx-cache:
     driver: local
   # celery-beat-schedule:
   #   driver: local

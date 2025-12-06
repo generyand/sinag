@@ -49,23 +49,35 @@ if settings.DATABASE_URL:
     is_local_db = "localhost" in settings.DATABASE_URL or "127.0.0.1" in settings.DATABASE_URL
 
     # Connection arguments - SSL required for remote, optional for local
-    connect_args = {"options": "-c timezone=utc"}
+    connect_args = {
+        "options": "-c timezone=utc",
+        "connect_timeout": 10,  # PERFORMANCE: Timeout for initial connection
+        "application_name": "sinag-api",  # Identify connections in pg_stat_activity
+    }
     if not is_local_db:
         connect_args["sslmode"] = "require"
 
     # Create database engine with optimized connection pool
-    # PERFORMANCE FIX: Increased pool_size and max_overflow for better concurrency
+    # PERFORMANCE: Tuned for high concurrency with connection reuse
     engine = create_engine(
         settings.DATABASE_URL,
-        pool_pre_ping=True,  # Validates connections before use
-        pool_recycle=300,    # Recycles connections every 5 min (prevents stale connections)
-        pool_size=20,        # Increased from 10 - base number of connections to keep
-        max_overflow=40,     # Increased from 20 - additional connections under load (max 60 total)
+        pool_pre_ping=True,      # Validates connections before use (prevents stale connections)
+        pool_recycle=300,        # Recycles connections every 5 min (prevents idle timeout issues)
+        pool_size=30,            # INCREASED: Base number of connections to keep in pool
+        max_overflow=70,         # INCREASED: Additional connections under load (max 100 total)
+        pool_timeout=30,         # ADDED: Wait up to 30s for a connection from pool
+        pool_use_lifo=True,      # ADDED: Use LIFO for better connection reuse (warmer connections)
+        echo_pool=settings.DEBUG,  # Log pool events in debug mode
         connect_args=connect_args,
     )
 
-    # Create session factory
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    # Create session factory with optimized settings
+    SessionLocal = sessionmaker(
+        autocommit=False,
+        autoflush=False,
+        bind=engine,
+        expire_on_commit=False,  # PERFORMANCE: Don't expire objects after commit (reduces queries)
+    )
 
 # Base class for SQLAlchemy models
 Base = declarative_base()
@@ -356,5 +368,74 @@ async def check_redis_connection() -> Dict[str, Any]:
         return {
             "connected": False,
             "error": "Redis connection failed",
+            "details": str(e),
+        }
+
+
+def get_db_pool_stats() -> Dict[str, Any]:
+    """
+    Get database connection pool statistics.
+
+    PERFORMANCE: Useful for monitoring connection pool health and sizing.
+
+    Returns:
+        Dict containing pool status and metrics
+    """
+    if not engine:
+        return {
+            "available": False,
+            "error": "Database engine not configured",
+        }
+
+    try:
+        pool = engine.pool
+        return {
+            "available": True,
+            "pool_size": pool.size(),  # Current pool size
+            "checked_in": pool.checkedin(),  # Available connections
+            "checked_out": pool.checkedout(),  # Connections in use
+            "overflow": pool.overflow(),  # Connections beyond pool_size
+            "invalid": pool.invalidatedcount() if hasattr(pool, 'invalidatedcount') else 0,
+            "config": {
+                # Read actual pool configuration (avoid hardcoded duplicates)
+                "size": pool.size(),
+                "max_overflow": getattr(pool, '_max_overflow', 70),
+                "timeout": getattr(pool, '_timeout', 30),
+            },
+        }
+    except Exception as e:
+        logger.error(f"Failed to get pool stats: {str(e)}")
+        return {
+            "available": False,
+            "error": str(e),
+        }
+
+
+async def check_redis_cache_connection() -> Dict[str, Any]:
+    """
+    Check Redis cache connection health (separate from Celery Redis).
+
+    Returns:
+        Dict containing connection status and details
+    """
+    try:
+        from app.core.cache import cache
+        if cache.is_available:
+            return {
+                "connected": True,
+                "service": "Redis Cache",
+                "status": "healthy",
+                "metrics": cache.get_metrics(),
+            }
+        else:
+            return {
+                "connected": False,
+                "error": "Redis cache not available",
+            }
+    except Exception as e:
+        logger.error(f"Redis cache connection check failed: {str(e)}")
+        return {
+            "connected": False,
+            "error": "Redis cache connection failed",
             "details": str(e),
         }

@@ -28,8 +28,9 @@ RUN rm -f /etc/nginx/conf.d/default.conf
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY conf.d/ /etc/nginx/conf.d/
 
-# Create directories for logs and cache (if needed)
-RUN mkdir -p /var/cache/nginx /var/log/nginx && \
+# Create directories for logs and cache
+# PERFORMANCE: Separate cache directories for API and static assets
+RUN mkdir -p /var/cache/nginx/api /var/cache/nginx/static /var/log/nginx && \
     chown -R nginx:nginx /var/cache/nginx /var/log/nginx
 
 # Create a simple health check HTML page

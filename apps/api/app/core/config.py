@@ -135,10 +135,13 @@ class Settings(BaseSettings):
     UPLOAD_FOLDER: str = "uploads"
     ALLOWED_EXTENSIONS: List[str] = [".mov", ".mp4", ".avi", ".mkv"]
 
-    # Background Tasks
+    # Background Tasks (Celery)
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
     REQUIRE_CELERY: bool = True  # If False, Redis failures only log warnings
+
+    # Application Cache (separate from Celery for performance isolation)
+    REDIS_CACHE_URL: str = "redis://localhost:6380/0"
 
     # Gemini AI Configuration
     GEMINI_API_KEY: Optional[str] = None
