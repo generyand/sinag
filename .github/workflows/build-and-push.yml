@@ -82,8 +82,10 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.image }}
           tags: |
-            # Tag with 'latest' for main branch
+            # Tag with 'latest' for main branch (production)
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            # Tag with 'develop' for develop branch (staging)
+            type=raw,value=develop,enable=${{ github.ref == 'refs/heads/develop' }}
             # Tag with version for releases (v1.0.0 -> 1.0.0)
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
