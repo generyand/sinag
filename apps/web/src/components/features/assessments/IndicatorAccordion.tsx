@@ -1,6 +1,7 @@
 "use client";
 
 import FileUploader from "@/components/shared/FileUploader";
+import { IndicatorFormSkeleton } from "@/components/shared/skeletons";
 import {
     Accordion,
     AccordionContent,
@@ -17,9 +18,18 @@ import { uploadMovFile } from "@/lib/uploadMov";
 import { Assessment, ComplianceAnswer, Indicator } from "@/types/assessment";
 import { postAssessmentsResponses, useGetAssessmentsMyAssessment } from "@sinag/shared";
 import { AlertCircle, CheckCircle, Circle } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { DynamicFormRenderer } from "../forms/DynamicFormRenderer";
-import { DynamicIndicatorForm } from "./DynamicIndicatorForm";
+
+// Lazy load heavy DynamicIndicatorForm component (1100+ LOC)
+const DynamicIndicatorForm = dynamic(
+  () => import("./DynamicIndicatorForm").then(mod => ({ default: mod.DynamicIndicatorForm })),
+  {
+    loading: () => <IndicatorFormSkeleton />,
+    ssr: false,
+  }
+);
 
 interface IndicatorAccordionProps {
   indicator: Indicator;

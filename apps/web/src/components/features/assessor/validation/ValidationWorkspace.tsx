@@ -1,6 +1,7 @@
 "use client";
 
 import { StatusBadge } from '@/components/shared';
+import { ValidationPanelSkeleton } from '@/components/shared/skeletons';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useQueryClient } from '@tanstack/react-query';
@@ -11,11 +12,20 @@ import {
   usePostAssessorAssessmentsAssessmentIdRework,
 } from '@sinag/shared';
 import { ChevronLeft } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import * as React from 'react';
 import { LeftSubmissionView } from './LeftSubmissionView';
 import { MiddleMovFilesPanel } from './MiddleMovFilesPanel';
-import { RightAssessorPanel } from './RightAssessorPanel';
+
+// Lazy load heavy RightAssessorPanel component (1400+ LOC)
+const RightAssessorPanel = dynamic(
+  () => import('./RightAssessorPanel').then(mod => ({ default: mod.RightAssessorPanel })),
+  {
+    loading: () => <ValidationPanelSkeleton />,
+    ssr: false,
+  }
+);
 
 interface ValidationWorkspaceProps {
   assessment: AssessmentDetailsResponse;

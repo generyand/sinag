@@ -2,6 +2,7 @@
 
 import { TreeNavigator } from '@/components/features/assessments/tree-navigation';
 import { StatusBadge } from '@/components/shared';
+import { ValidationPanelSkeleton } from '@/components/shared/skeletons';
 import { BBIPreviewPanel, BBIPreviewData } from './BBIPreviewPanel';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -9,12 +10,21 @@ import { useGetAssessorAssessmentsAssessmentId, usePostAssessorAssessmentRespons
 import { useQueryClient } from '@tanstack/react-query';
 import { classifyError } from '@/lib/error-utils';
 import { ChevronLeft } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { MiddleMovFilesPanel } from '../assessor/validation/MiddleMovFilesPanel';
-import { RightAssessorPanel } from '../assessor/validation/RightAssessorPanel';
+
+// Lazy load heavy RightAssessorPanel component (1400+ LOC)
+const RightAssessorPanel = dynamic(
+  () => import('../assessor/validation/RightAssessorPanel').then(mod => ({ default: mod.RightAssessorPanel })),
+  {
+    loading: () => <ValidationPanelSkeleton />,
+    ssr: false,
+  }
+);
 
 interface ValidatorValidationClientProps {
   assessmentId: number;
