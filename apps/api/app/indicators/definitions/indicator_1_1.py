@@ -15,12 +15,12 @@ INDICATOR_1_1 = Indicator(
     governance_area_id=1,  # Financial Administration and Sustainability
     is_bbi=False,  # BFDP is NOT a BBI - it's a policy compliance requirement
     sort_order=1,
-    description="Posted the following CY 2023 financial documents in the BFDP board, pursuant to DILG MC No. 2014-81 and DILG MC No. 2022-027",
+    description="Posted the following financial documents in the BFDP board, pursuant to DILG MC No. 2014-81 and DILG MC No. 2022-027",
     children=[
         # Sub-Indicator 1.1.1
         SubIndicator(
             code="1.1.1",
-            name="Posted the following CY 2023 financial documents in the BFDP board",
+            name="Posted the following financial documents in the BFDP board",
             upload_instructions=(
                 "Upload the following documents:\n"
                 "1. BFDP Monitoring Form A of the DILG Advisory (covering 1st - 3rd quarter monitoring data)\n"
@@ -61,28 +61,28 @@ INDICATOR_1_1 = Indicator(
                     id="1_1_1_a",
                     label="a. Barangay Financial Report",
                     group_name="ANNUAL REPORT",
-                    mov_description="Barangay Financial Report for CY 2023",
+                    mov_description="Barangay Financial Report",
                     required=True,
                     display_order=4
                 ),
                 ChecklistItem(
                     id="1_1_1_b",
                     label="b. Barangay Budget",
-                    mov_description="Barangay Budget for CY 2023",
+                    mov_description="Barangay Budget",
                     required=True,
                     display_order=5
                 ),
                 ChecklistItem(
                     id="1_1_1_c",
                     label="c. Summary of Income and Expenditures",
-                    mov_description="Summary of Income and Expenditures for CY 2023",
+                    mov_description="Summary of Income and Expenditures",
                     required=True,
                     display_order=6
                 ),
                 ChecklistItem(
                     id="1_1_1_d",
                     label="d. 20% Component of the NTA Utilization",
-                    mov_description="20% Component of the NTA Utilization for CY 2023",
+                    mov_description="20% Component of the NTA Utilization",
                     required=True,
                     display_order=7
                 ),
@@ -96,9 +96,9 @@ INDICATOR_1_1 = Indicator(
                 # QUARTERLY REPORT Group - checkbox first, then count field
                 ChecklistItem(
                     id="1_1_1_f",
-                    label="f. List of Notices of Award (1st - 3rd Quarter of CY 2023)",
+                    label="f. List of Notices of Award (1st - 3rd Quarter)",
                     group_name="QUARTERLY REPORT",
-                    mov_description="List of Notices of Award (1st - 3rd Quarter of CY 2023)",
+                    mov_description="List of Notices of Award (1st - 3rd Quarter)",
                     required=True,
                     display_order=9
                 ),
@@ -113,9 +113,9 @@ INDICATOR_1_1 = Indicator(
                 # MONTHLY REPORT Group - checkbox first, then count field
                 ChecklistItem(
                     id="1_1_1_g",
-                    label="g. Itemized Monthly Collections and Disbursements (January to September 2023)",
+                    label="g. Itemized Monthly Collections and Disbursements (January to September)",
                     group_name="MONTHLY REPORT",
-                    mov_description="Itemized Monthly Collections and Disbursements (January to September 2023)",
+                    mov_description="Itemized Monthly Collections and Disbursements (January to September)",
                     required=True,
                     display_order=11
                 ),
@@ -136,8 +136,8 @@ INDICATOR_1_1 = Indicator(
                     NoteItem(label="c)", text="Summary of Income and Expenditures"),
                     NoteItem(label="d)", text="20% CoUtilization"),
                     NoteItem(label="e)", text="Annual Procurement Plan or Procurement List"),
-                    NoteItem(label="f)", text="List of Notices of Award (1st - 3rd Quarter of CY 2023)"),
-                    NoteItem(label="g)", text="Itemized Monthly Collections and Disbursements (January to September 2023)"),
+                    NoteItem(label="f)", text="List of Notices of Award (1st - 3rd Quarter)"),
+                    NoteItem(label="g)", text="Itemized Monthly Collections and Disbursements (January to September)"),
                 ]
             )
         ),

@@ -88,13 +88,13 @@ INDICATOR_6_1 = Indicator(
             code="6.1.2",
             name="Plan: Approved Solid Waste Management Program/Plan with corresponding fund allocation",
             upload_instructions=(
-                "Upload: Approved Solid Waste Management Program/Plan covering CY 2023 with corresponding fund allocation"
+                "Upload: Approved Solid Waste Management Program/Plan with corresponding fund allocation"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
                     id="6_1_2_a",
-                    label="Approved Solid Waste Management Program/Plan covering CY 2023 with corresponding fund allocation",
+                    label="Approved Solid Waste Management Program/Plan with corresponding fund allocation",
                     required=True,
                     requires_document_count=False,
                     display_order=1
@@ -127,7 +127,7 @@ INDICATOR_6_1 = Indicator(
             name="Accomplishment Reports: Physical accomplishment OR fund utilization (only 1 of the below reports is required)",
             upload_instructions=(
                 "Upload:\n"
-                "- Three (3) Monthly Accomplishment Reports covering July-September 2023\n\n"
+                "- Three (3) Monthly Accomplishment Reports\n\n"
                 "OPTION A - PHYSICAL:\n"
                 "To compute Physical Accomplishment Rate:\n"
                 "(Total number of activities/projects accomplished / Total number of activities/projects reflected in the BESWMP) × 100\n\n"
@@ -143,7 +143,7 @@ INDICATOR_6_1 = Indicator(
                 # Document checkbox
                 ChecklistItem(
                     id="6_1_4_upload",
-                    label="Three (3) Monthly Accomplishment Reports covering July-September 2023",
+                    label="Three (3) Monthly Accomplishment Reports",
                     item_type="checkbox",
                     mov_description=None,
                     required=False,
@@ -198,7 +198,7 @@ INDICATOR_6_1 = Indicator(
                 # OPTION B: YES/NO, then amount calculations
                 ChecklistItem(
                     id="6_1_4_option_b",
-                    label="b. At least 50% utilization rate of CY 2023 BESWM Budget",
+                    label="b. At least 50% utilization rate of BESWM Budget",
                     item_type="assessment_field",
                     mov_description="Assessment for fund utilization option",
                     required=False,

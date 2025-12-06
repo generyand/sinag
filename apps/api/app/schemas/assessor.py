@@ -14,6 +14,7 @@ class AssessorQueueItem(BaseModel):
     submission_date: datetime | None
     status: str
     updated_at: datetime
+    area_progress: int = 0  # Progress percentage (0-100) of indicators reviewed
 
     class Config:
         from_attributes = True

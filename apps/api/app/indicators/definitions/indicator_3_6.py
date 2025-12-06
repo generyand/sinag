@@ -32,8 +32,8 @@ INDICATOR_3_6 = Indicator(
                 # Upload Verification
                 ChecklistItem(
                     id="3_6_1_upload_1",
-                    label="Monthly BaRCo Reports covering July-September 2023",
-                    mov_description="Verification of uploaded Monthly BaRCo Reports covering July-September 2023",
+                    label="Monthly BaRCo Reports",
+                    mov_description="Verification of uploaded Monthly BaRCo Reports",
                     required=True,
                     display_order=1
                 ),

@@ -25,7 +25,7 @@ INDICATOR_4_6 = Indicator(
             code="4.6.1",
             name="Organized Barangay GAD Focal Point System",
             upload_instructions=(
-                "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the Barangay GAD Focal Point System covering January to October 2023\n\n"
+                "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the Barangay GAD Focal Point System\n\n"
                 "Please supply the required information:\n"
                 "Date of approval"
             ),
@@ -33,8 +33,8 @@ INDICATOR_4_6 = Indicator(
             checklist_items=[
                 ChecklistItem(
                     id="4_6_1_upload_1",
-                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the Barangay GAD Focal Point System covering January to October 2023",
-                    mov_description="Verification of uploaded EO or similar issuance organizing the Barangay GAD Focal Point System covering January to October 2023",
+                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the Barangay GAD Focal Point System",
+                    mov_description="Verification of uploaded EO or similar issuance organizing the Barangay GAD Focal Point System",
                     required=True,
                     display_order=1
                 ),

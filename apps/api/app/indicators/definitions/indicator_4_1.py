@@ -85,7 +85,7 @@ INDICATOR_4_1 = Indicator(
                 # Upload Verification
                 ChecklistItem(
                     id="4_1_1_upload_1",
-                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the establishment of Barangay VAW Desk and designated VAW Desk Officer covering January to October 2023",
+                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the establishment of Barangay VAW Desk and designated VAW Desk Officer",
                     mov_description="Verification of uploaded Executive Order or similar issuance establishing the Barangay VAW Desk and designating the VAW Desk Officer",
                     required=True,
                     display_order=1
@@ -125,8 +125,8 @@ INDICATOR_4_1 = Indicator(
                 # Upload Verification
                 ChecklistItem(
                     id="4_1_3_upload_1",
-                    label="Approved Barangay GAD Plan and Budget for CY 2023",
-                    mov_description="Verification of uploaded Approved Barangay Gender and Development (GAD) Plan and Budget for CY 2023",
+                    label="Approved Barangay GAD Plan and Budget",
+                    mov_description="Verification of uploaded Approved Barangay Gender and Development (GAD) Plan and Budget",
                     required=True,
                     display_order=1
                 ),
@@ -149,7 +149,7 @@ INDICATOR_4_1 = Indicator(
                 # Upload Verification
                 ChecklistItem(
                     id="4_1_4_upload_1",
-                    label="Accomplishment Report covering 1st to 3rd quarter of CY 2023 with received stamp by the C/MSWDO and C/MLGOO",
+                    label="Accomplishment Report covering 1st to 3rd quarter with received stamp by the C/MSWDO and C/MLGOO",
                     mov_description="Verification of uploaded quarterly accomplishment reports based on VAW cases database/records",
                     required=True,
                     display_order=1
@@ -240,21 +240,21 @@ INDICATOR_4_1 = Indicator(
             upload_instructions=(
                 "Upload the following:\n\n"
                 "SHARED (Required):\n"
-                "- 2023 GAD Accomplishment Report\n\n"
+                "- GAD Accomplishment Report\n\n"
                 "PLUS ONE of the following (PHYSICAL or FINANCIAL):\n\n"
                 "OPTION A - PHYSICAL:\n"
-                "- Certification on the submitted CY 2023 GAD Accomplishment Report indicating at least 50% accomplishment of the physical targets in the GAD Plan signed by the C/MSWDO or C/MLGOO\n\n"
+                "- Certification on the submitted GAD Accomplishment Report indicating at least 50% accomplishment of the physical targets in the GAD Plan signed by the C/MSWDO or C/MLGOO\n\n"
                 "OR\n\n"
                 "OPTION B - FINANCIAL:\n"
-                "- Certification on the submitted CY 2023 GAD Accomplishment Report indicating at least 50% fund utilization of the CY 2023 GAD Budget signed by the C/MSWDO or C/MLGOO"
+                "- Certification on the submitted GAD Accomplishment Report indicating at least 50% fund utilization of the GAD Budget signed by the C/MSWDO or C/MLGOO"
             ),
             validation_rule="SHARED_PLUS_OR_LOGIC",  # SHARED + (A OR B)
             checklist_items=[
                 # SHARED document verification
                 ChecklistItem(
                     id="4_1_6_report",
-                    label="2023 GAD Accomplishment Report",
-                    mov_description="Verification of uploaded 2023 GAD Accomplishment Report",
+                    label="GAD Accomplishment Report",
+                    mov_description="Verification of uploaded GAD Accomplishment Report",
                     item_type="checkbox",
                     required=True,
                     display_order=1,
@@ -272,7 +272,7 @@ INDICATOR_4_1 = Indicator(
                 ),
                 ChecklistItem(
                     id="4_1_6_cert_physical",
-                    label="Certification on the submitted CY 2023 GAD Accomplishment Report indicating at least 50% accomplishment of the physical targets in the GAD Plan signed by the C/MSWDO or C/MLGOO",
+                    label="Certification on the submitted GAD Accomplishment Report indicating at least 50% accomplishment of the physical targets in the GAD Plan signed by the C/MSWDO or C/MLGOO",
                     mov_description="Verification of certification for physical accomplishment",
                     item_type="checkbox",
                     required=False,
@@ -308,7 +308,7 @@ INDICATOR_4_1 = Indicator(
                 # Option B: Fund Utilization - YES/NO assessment
                 ChecklistItem(
                     id="4_1_6_option_b",
-                    label="b. At least 50% fund utilization of the CY 2023 GAD Budget",
+                    label="b. At least 50% fund utilization of the GAD Budget",
                     mov_description="Checkbox for fund utilization option",
                     item_type="assessment_field",
                     required=False,
@@ -317,7 +317,7 @@ INDICATOR_4_1 = Indicator(
                 ),
                 ChecklistItem(
                     id="4_1_6_cert_financial",
-                    label="Certification on the submitted CY 2023 GAD Accomplishment Report indicating at least 50% fund utilization of the CY 2023 GAD Budget signed by the C/MSWDO or C/MLGOO",
+                    label="Certification on the submitted GAD Accomplishment Report indicating at least 50% fund utilization of the GAD Budget signed by the C/MSWDO or C/MLGOO",
                     mov_description="Verification of certification for 50% fund utilization",
                     item_type="checkbox",
                     required=False,

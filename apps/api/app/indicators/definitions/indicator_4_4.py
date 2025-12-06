@@ -25,13 +25,13 @@ INDICATOR_4_4 = Indicator(
             code="4.4.1",
             name="Presence of Kasambahay Desk with designated Kasambahay Desk Officer (KDO)",
             upload_instructions=(
-                "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) designating a KDO to manage the Kasambahay Desk, signed by the PB, Barangay Secretary and SBMs covering January to October 2023"
+                "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) designating a KDO to manage the Kasambahay Desk, signed by the PB, Barangay Secretary and SBMs"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
                     id="4_4_1_eo",
-                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) designating a KDO to manage the Kasambahay Desk, signed by the PB, Barangay Secretary and SBMs covering January to October 2023",
+                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) designating a KDO to manage the Kasambahay Desk, signed by the PB, Barangay Secretary and SBMs",
                     required=True,
                     requires_document_count=False,
                     display_order=1
@@ -44,7 +44,7 @@ INDICATOR_4_4 = Indicator(
             code="4.4.2",
             name="Maintenance/updating of a Kasambahay Masterlist",
             upload_instructions=(
-                "Upload: Copy of the Updated Kasambahay Report for the 3rd Quarter (July-September 2023)\n\n"
+                "Upload: Copy of the Updated Kasambahay Report for the 3rd Quarter\n\n"
                 "Please supply the number of documents submitted:\n"
                 "_____ Kasambahay Reports were submitted"
             ),
@@ -52,7 +52,7 @@ INDICATOR_4_4 = Indicator(
             checklist_items=[
                 ChecklistItem(
                     id="4_4_2_report",
-                    label="Copy of the Updated Kasambahay Report for the 3rd Quarter (July-September 2023)",
+                    label="Copy of the Updated Kasambahay Report for the 3rd Quarter",
                     required=True,
                     requires_document_count=False,
                     display_order=1

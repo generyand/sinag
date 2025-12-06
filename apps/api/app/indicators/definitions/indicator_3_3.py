@@ -91,7 +91,17 @@ INDICATOR_3_3 = Indicator(
                     label="For barangays of cities: Complete database with searchable information",
                     mov_description="Verification of uploaded photos showing computer database with searchable information for barangays of cities (2 photos: Distant View and Close-up View)",
                     required=False,  # OR logic - only one of the two options is required
-                    display_order=1
+                    display_order=1,
+                    option_group="Option A"
+                ),
+                # OR Separator
+                ChecklistItem(
+                    id="3_3_2_or_separator",
+                    label="OR",
+                    mov_description="OR",
+                    item_type="info_text",
+                    required=False,
+                    display_order=2
                 ),
                 # Upload Verification for Municipalities (3.3.2.2)
                 ChecklistItem(
@@ -99,7 +109,8 @@ INDICATOR_3_3 = Indicator(
                     label="For barangays of municipalities: Manual Records (Case Record Book) OR Digital Record Filing (scanned copy of KP files)",
                     mov_description="Verification of uploaded photo showing manual record or digital file for barangays of municipalities (1 photo)",
                     required=False,  # OR logic - only one of the two options is required
-                    display_order=2
+                    display_order=3,
+                    option_group="Option B"
                 ),
             ]
         ),
@@ -116,7 +127,7 @@ INDICATOR_3_3 = Indicator(
                 # Upload Verification
                 ChecklistItem(
                     id="3_3_3_upload_1",
-                    label="Copies of minutes of meetings with attendance sheets (at least 3 minutes covering meetings conducted in CY 2023)",
+                    label="Copies of minutes of meetings with attendance sheets (at least 3 minutes covering meetings conducted)",
                     mov_description="Verification of uploaded copies of minutes of meetings with attendance sheets for at least 3 monthly meetings",
                     required=True,
                     display_order=1

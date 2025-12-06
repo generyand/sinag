@@ -60,13 +60,13 @@ INDICATOR_3_1 = Indicator(
             code="3.1.1",
             name="Organized BADAC with its composition and appropriate committees (Committees on Operations and on Advocacy) compliant to DILG-DDB JMC No. 2018-01",
             upload_instructions=(
-                "1. EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) creating the BADAC with its composition and appropriate committees, covering January to October 2023"
+                "1. EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) creating the BADAC with its composition and appropriate committees"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
                     id="3_1_1_upload",
-                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) creating the BADAC with its composition and appropriate committees, covering January to October 2023",
+                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) creating the BADAC with its composition and appropriate committees",
                     mov_description="Verification that the EO/issuance creates BADAC with proper composition and committees",
                     item_type="checkbox",
                     required=False,
@@ -114,7 +114,7 @@ INDICATOR_3_1 = Indicator(
             code="3.1.2",
             name="Established Barangay Rehabilitation Referral Desk with Designated Barangay Duty Officer",
             upload_instructions=(
-                "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) establishing the Rehabilitation Referral Desk covering CY 2023\n\n"
+                "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) establishing the Rehabilitation Referral Desk\n\n"
                 "Please supply the required information:\n"
                 "Date of approval"
             ),
@@ -122,7 +122,7 @@ INDICATOR_3_1 = Indicator(
             checklist_items=[
                 ChecklistItem(
                     id="3_1_2_a",
-                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) establishing the Rehabilitation Referral Desk covering CY 2023",
+                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) establishing the Rehabilitation Referral Desk",
                     required=True,
                     requires_document_count=False,
                     display_order=1
@@ -199,15 +199,15 @@ INDICATOR_3_1 = Indicator(
         # Sub-Indicator 3.1.5
         SubIndicator(
             code="3.1.5",
-            name="Plan: Formulation of BADAC Plan of Action (BADPA) covering CY 2023",
+            name="Plan: Formulation of BADAC Plan of Action (BADPA)",
             upload_instructions=(
-                "Upload: Copy of approved BADPA Summary or copy of approved BPOPs Plan with BADPA covering CY 2023"
+                "Upload: Copy of approved BADPA Summary or copy of approved BPOPs Plan with BADPA"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
                     id="3_1_5_a",
-                    label="Copy of approved BADPA Summary or copy of approved BPOPs Plan with BADPA covering CY 2023",
+                    label="Copy of approved BADPA Summary or copy of approved BPOPs Plan with BADPA",
                     required=True,
                     requires_document_count=False,
                     display_order=1
@@ -362,7 +362,7 @@ INDICATOR_3_1 = Indicator(
             code="3.1.10",
             name="Conduct of Monthly Meetings",
             upload_instructions=(
-                "Upload: Copy of the BADAC monthly minutes of the meeting with attendance sheets (at least 3 minutes covering CY 2023)\n\n"
+                "Upload: Copy of the BADAC monthly minutes of the meeting with attendance sheets (at least 3 minutes)\n\n"
                 "Please supply the required information:\n"
                 "Number of BADAC monthly minutes submitted"
             ),
@@ -370,7 +370,7 @@ INDICATOR_3_1 = Indicator(
             checklist_items=[
                 ChecklistItem(
                     id="3_1_10_a",
-                    label="Copy of the BADAC monthly minutes of the meeting with attendance sheets (at least 3 minutes covering CY 2023)",
+                    label="Copy of the BADAC monthly minutes of the meeting with attendance sheets (at least 3 minutes)",
                     required=True,
                     requires_document_count=False,
                     display_order=1

@@ -141,6 +141,26 @@ class AssessorService:
             # Add extra info for parallel calibration
             pending_count = len(a.pending_calibrations or []) if a.is_calibration_rework else 0
 
+            # Calculate area progress based on reviewed indicators
+            if assessor.validator_area_id is not None:
+                # Validator: progress based on their governance area
+                area_responses = [
+                    r for r in a.responses
+                    if r.indicator and r.indicator.governance_area_id == assessor.validator_area_id
+                ]
+                reviewed_count = sum(1 for r in area_responses if r.validation_status is not None)
+                total_count = len(area_responses)
+            else:
+                # Assessor: progress based on all indicators with response_data filled
+                area_responses = a.responses
+                reviewed_count = sum(
+                    1 for r in area_responses
+                    if r.response_data is not None and r.response_data != {}
+                )
+                total_count = len(area_responses)
+
+            area_progress = round((reviewed_count / total_count * 100) if total_count > 0 else 0)
+
             items.append(
                 {
                     "assessment_id": a.id,
@@ -152,6 +172,7 @@ class AssessorService:
                     "updated_at": a.updated_at,
                     "is_calibration_rework": a.is_calibration_rework,
                     "pending_calibrations_count": pending_count,
+                    "area_progress": area_progress,
                 }
             )
 

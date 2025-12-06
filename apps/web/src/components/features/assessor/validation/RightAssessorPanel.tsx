@@ -1057,11 +1057,7 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                                 </span>
                                               )}
                                             </div>
-                                            {item.mov_description && (
-                                              <div className="text-[11px] text-muted-foreground italic mt-0.5">
-                                                {item.mov_description}
-                                              </div>
-                                            )}
+                                            {/* MOV descriptions removed - redundant with label */}
                                           </div>
                                         </div>
                                       </div>
@@ -1122,11 +1118,7 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                         )}
                                         {item.label}
                                       </Label>
-                                      {item.mov_description && (
-                                        <div className="text-[11px] text-muted-foreground italic mt-1">
-                                          {item.mov_description}
-                                        </div>
-                                      )}
+                                      {/* MOV descriptions removed - redundant with label */}
                                     </div>
                                   </div>
                                 )}
