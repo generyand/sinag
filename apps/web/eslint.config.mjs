@@ -19,7 +19,7 @@ const eslintConfig = [
       "react/no-unescaped-entities": "off",
       "jsx-a11y/alt-text": "warn",
       "@next/next/no-img-element": "warn",
-      "react-hooks/rules-of-hooks": "warn",
+      "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "warn",
     },
   },
