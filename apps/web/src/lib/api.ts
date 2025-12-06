@@ -3,19 +3,24 @@ import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import { useAuthStore } from "../store/useAuthStore";
 
 // Get the appropriate API base URL based on environment
-const getBaseURL = () => {
+export const getBaseURL = () => {
   const isServer = typeof window === 'undefined';
-  
+
   // Server-side (Next.js SSR/API Routes running in Docker)
   if (isServer) {
     // In Docker, use the internal service name
     // This comes from docker-compose.yml environment variable
     return process.env.API_BASE_URL || 'http://api:8000';
   }
-  
+
   // Client-side (browser) - use the public environment variable
   // This is exposed by NEXT_PUBLIC_ prefix and accessible to the browser
   return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+};
+
+// Get the API V1 URL (base URL + /api/v1)
+export const getApiV1URL = () => {
+  return `${getBaseURL()}/api/v1`;
 };
 
 const axiosInstance = axios.create({

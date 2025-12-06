@@ -1,9 +1,12 @@
 import { defineConfig } from 'orval';
 
+// Allow overriding the OpenAPI URL via environment variable for CI/CD
+const openApiUrl = process.env.ORVAL_API_URL || 'http://localhost:8000/openapi.json';
+
 export default defineConfig({
   sinag: {
     input: {
-      target: 'http://localhost:8000/openapi.json',
+      target: openApiUrl,
     },
     output: {
       // 🎯 Professional scaling approach: Split by FastAPI tags automatically!

@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select';
 import { GARReportDisplay } from '@/components/features/gar/GARReportDisplay';
 import { GARSkeleton } from '@/components/features/gar/GARSkeleton';
+import { getApiV1URL } from '@/lib/api';
 
 export default function GARPage() {
   const router = useRouter();
@@ -64,7 +65,7 @@ export default function GARPage() {
     if (format === 'excel') setExportingExcel(true);
     if (format === 'pdf') setExportingPdf(true);
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/api/v1` : 'http://localhost:8000/api/v1';
+    const baseUrl = getApiV1URL();
     const areaParam = selectedAreaId === 'all' ? '' : `?governance_area_id=${selectedAreaId}`;
     const url = `${baseUrl}/gar/${selectedAssessmentId}/export/${format}${areaParam}`;
 
