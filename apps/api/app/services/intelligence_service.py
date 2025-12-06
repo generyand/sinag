@@ -43,11 +43,14 @@ ESSENTIAL_AREAS = [
 # Language instructions for AI-generated summaries
 LANGUAGE_INSTRUCTIONS = {
     "ceb": """
-IMPORTANTE: Isulat ang TANAN nga output sa Binisaya (Cebuano). Gamita ang natural nga
-Binisaya nga dali masabtan sa mga opisyal sa barangay sa Sugbo. Ayaw gamita ang
-English gawas lang sa mga technical nga pulong nga walay direktang Binisaya nga
-katumbas (sama sa "MOV" o "SGLGB"). Ang JSON keys kinahanglan magpabilin sa English,
-pero ang mga values kinahanglan sa Binisaya.
+IMPORTANTE: Isulat ang TANAN nga output sa Binisaya (Cebuano). Gamita ang casual ug moderno
+nga Binisaya nga ginagamit sa adlaw-adlaw nga pakigpulong - ang klase nga Binisaya nga
+dali masabtan sa ordinaryo nga tawo ug mga opisyal sa barangay. Ayaw gamita ang deep o
+formal nga Binisaya. Gamita lang ang simple, casual nga Binisaya nga parehas sa
+ginagamit sa mga tawo karon. Ayaw gamita ang English gawas lang sa mga technical nga
+pulong nga walay direktang Binisaya nga katumbas (sama sa "MOV" o "SGLGB"). Ang JSON
+keys kinahanglan magpabilin sa English, pero ang mga values kinahanglan sa casual nga
+Binisaya.
 """,
     "fil": """
 IMPORTANTE: Isulat ang LAHAT ng output sa Tagalog (Filipino). Gumamit ng natural na
