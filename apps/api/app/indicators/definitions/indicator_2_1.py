@@ -25,7 +25,7 @@ INDICATOR_2_1 = Indicator(
             code="2.1.1",
             name="Structure: Organized BDRRMC with its composition compliant to the provisions of NDRRMC, DILG, DBM, and CSC JMC No. 2014-01",
             upload_instructions=(
-                "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the BDRRMC with its composition compliant to the provisions of JMC No. 2014-01, covering January to October 2023\n\n"
+                "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the BDRRMC with its composition compliant to the provisions of JMC No. 2014-01\n\n"
                 "Minimum Composition of the BDRRMC:\n"
                 "- Punong Barangay\n"
                 "- A Representative from the Sangguniang Barangay; and\n"
@@ -37,7 +37,7 @@ INDICATOR_2_1 = Indicator(
             checklist_items=[
                 ChecklistItem(
                     id="2_1_1_eo",
-                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the BDRRMC with its composition compliant to the provisions of JMC No. 2014-01, covering January to October 2023",
+                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the BDRRMC with its composition compliant to the provisions of JMC No. 2014-01",
                     required=True,
                     requires_document_count=False,
                     display_order=1
@@ -63,12 +63,12 @@ INDICATOR_2_1 = Indicator(
         # Sub-Indicator 2.1.2: Plan
         SubIndicator(
             code="2.1.2",
-            name="Plan: Approved Barangay Disaster Risk Reduction and Management (BDRRM) Plan covering CY 2023, adopted by the Sangguniang Barangay",
+            name="Plan: Approved Barangay Disaster Risk Reduction and Management (BDRRM) Plan adopted by the Sangguniang Barangay",
             upload_instructions=(
                 "Upload the following documents:\n"
                 "1. Approved BDRRM Plan adopted by the Sangguniang Barangay\n"
                 "2. Resolution adopting the BDRRM Plan signed by the Sangguniang Barangay with received stamp from the C/MDRRMO; and\n"
-                "3. Certification on the list of barangays with approved BDRRM Plan covering CY 2023 signed by the C/MDRRMO"
+                "3. Certification on the list of barangays with approved BDRRM Plan signed by the C/MDRRMO"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
@@ -88,7 +88,7 @@ INDICATOR_2_1 = Indicator(
                 ),
                 ChecklistItem(
                     id="2_1_2_certification",
-                    label="Certification on the list of barangays with approved BDRRM Plan covering CY 2023 signed by the C/MDRRMO",
+                    label="Certification on the list of barangays with approved BDRRM Plan signed by the C/MDRRMO",
                     required=True,
                     requires_document_count=False,
                     display_order=3
@@ -192,7 +192,6 @@ INDICATOR_2_1 = Indicator(
                 ChecklistItem(
                     id="2_1_4_physical_reflected",
                     label="Total number of activities/projects reflected in the Plan",
-                    mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
                     display_order=5.2,
@@ -212,7 +211,7 @@ INDICATOR_2_1 = Indicator(
                 # Option B: Financial Accomplishment (with YES/NO assessment)
                 ChecklistItem(
                     id="2_1_4_option_b",
-                    label="b. At least 50% fund utilization of the 70% component of CY 2023 BDRRMF - Preparedness component as of December 31, 2023",
+                    label="b. At least 50% fund utilization of the 70% component of BDRRMF",
                     mov_description="Option B label - informational only",
                     item_type="assessment_field",
                     required=False,
@@ -239,7 +238,7 @@ INDICATOR_2_1 = Indicator(
                 ),
                 ChecklistItem(
                     id="2_1_4_financial_utilized",
-                    label="Total amount utilized (as of Dec. 31, 2023)",
+                    label="Total amount utilized",
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
@@ -248,8 +247,7 @@ INDICATOR_2_1 = Indicator(
                 ),
                 ChecklistItem(
                     id="2_1_4_financial_allocated",
-                    label="Total amount allocated for PPAs in the BDRRM Plan for CY 2023",
-                    mov_description="Please supply the required information:",
+                    label="Total amount allocated for PPAs in the BDRRMF Plan",
                     item_type="calculation_field",
                     required=False,
                     display_order=10.2,

@@ -199,7 +199,7 @@ export function FileFieldComponent({
         uploadMutation.mutate({
           assessmentId,
           indicatorId,
-          data: { file: fileToUpload, field_id: field.field_id },
+          data: { file: fileToUpload, field_id: field.field_id, field_label: field.label },
         });
       },
     });
@@ -216,7 +216,7 @@ export function FileFieldComponent({
     uploadMutation.mutate({
       assessmentId,
       indicatorId,
-      data: { file: selectedFile },
+      data: { file: selectedFile, field_id: field.field_id, field_label: field.label },
     });
   };
 
@@ -424,11 +424,11 @@ export function FileFieldComponent({
 
       {/* Rework Alert (show if there are annotations on uploaded files) */}
       {hasAnnotations && (normalizedStatus === 'REWORK' || normalizedStatus === 'NEEDS_REWORK') && (
-        <Alert className="border-orange-200 bg-orange-50" role="alert">
-          <AlertCircle className="h-4 w-4 text-orange-600" aria-hidden="true" />
-          <AlertDescription className="text-orange-900">
+        <Alert className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/30" role="alert">
+          <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400" aria-hidden="true" />
+          <AlertDescription className="text-orange-900 dark:text-orange-200">
             <p className="font-medium mb-1">Assessor feedback on your files</p>
-            <p className="text-sm">
+            <p className="text-sm dark:text-orange-300">
               The assessor has left {fieldAnnotations.length} comment{fieldAnnotations.length !== 1 ? 's' : ''} on your uploaded files.
               Please review the feedback by clicking the eye icon on each file. You can upload new corrected files and delete old ones as needed.
             </p>
@@ -438,9 +438,9 @@ export function FileFieldComponent({
 
       {/* Upload Instructions (show what documents are needed) */}
       {(field as any).instructions && (
-        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
-          <h4 className="font-medium text-sm text-blue-900 mb-2">Required Documents:</h4>
-          <div className="text-sm text-gray-700 whitespace-pre-line">
+        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 dark:bg-blue-950/30 dark:border-blue-800 rounded-md">
+          <h4 className="font-medium text-sm text-blue-900 dark:text-blue-100 mb-2">Required Documents:</h4>
+          <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">
             {(field as any).instructions}
           </div>
         </div>
@@ -448,9 +448,9 @@ export function FileFieldComponent({
 
       {/* Permission Info (show if upload is disabled) */}
       {uploadDisabledReason && (
-        <Alert className="border-blue-200 bg-blue-50" role="status">
-          <Info className="h-4 w-4 text-blue-600" aria-hidden="true" />
-          <AlertDescription className="text-blue-900">{uploadDisabledReason}</AlertDescription>
+        <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30" role="status">
+          <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" aria-hidden="true" />
+          <AlertDescription className="text-blue-900 dark:text-blue-200">{uploadDisabledReason}</AlertDescription>
         </Alert>
       )}
 
@@ -469,9 +469,9 @@ export function FileFieldComponent({
 
       {/* Queue Status (show when files are queued) */}
       {(currentUpload || queue.length > 0) && currentUpload?.fieldId === field.field_id && (
-        <Alert className="border-blue-200 bg-blue-50" role="status" aria-live="polite">
-          <Info className="h-4 w-4 text-blue-600" aria-hidden="true" />
-          <AlertDescription className="text-blue-900">
+        <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30" role="status" aria-live="polite">
+          <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" aria-hidden="true" />
+          <AlertDescription className="text-blue-900 dark:text-blue-200">
             {uploadMutation.isPending
               ? `Uploading...`
               : `${queue.length} file(s) in global queue`
@@ -496,9 +496,9 @@ export function FileFieldComponent({
 
       {/* Success Indicator */}
       {showSuccess && (
-        <Alert className="border-green-500 bg-green-50" role="status" aria-live="polite">
-          <CheckCircle2 className="h-4 w-4 text-green-600" aria-hidden="true" />
-          <AlertDescription className="text-green-700">
+        <Alert className="border-green-500 bg-green-50 dark:border-green-700 dark:bg-green-950/30" role="status" aria-live="polite">
+          <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" aria-hidden="true" />
+          <AlertDescription className="text-green-700 dark:text-green-300">
             File uploaded successfully! The file will appear in the list below.
           </AlertDescription>
         </Alert>
@@ -532,7 +532,7 @@ export function FileFieldComponent({
             <AlertCircle className="h-4 w-4" aria-hidden="true" />
             <span>Previous Files</span>
           </h4>
-          <div className="border-2 border-orange-200 rounded-md bg-orange-50/30 p-3">
+          <div className="border-2 border-orange-200 dark:border-orange-800 rounded-md bg-orange-50/30 dark:bg-orange-950/20 p-3">
             <FileList
               files={previousFiles}
               onPreview={handlePreview}
@@ -558,9 +558,9 @@ export function FileFieldComponent({
           normalizedStatus === 'VALIDATED' ||
           normalizedStatus === 'SUBMITTED' ||
           normalizedStatus === 'COMPLETED') && (
-          <Alert className="border-blue-200 bg-blue-50" role="status">
-            <Info className="h-4 w-4 text-blue-600" aria-hidden="true" />
-            <AlertDescription className="text-blue-900">
+          <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30" role="status">
+            <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" aria-hidden="true" />
+            <AlertDescription className="text-blue-900 dark:text-blue-200">
               Files cannot be deleted after assessment submission. If you need to
               modify files, request the assessment to be sent back for rework.
             </AlertDescription>
@@ -570,13 +570,13 @@ export function FileFieldComponent({
       {/* File Preview Modal (same as assessor view) */}
       {isPreviewOpen && selectedFileForPreview && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-lg shadow-xl w-[70vw] h-[90vh] flex flex-row gap-4 p-4">
+          <div className="bg-white dark:bg-[var(--card)] rounded-lg shadow-xl w-[70vw] h-[90vh] flex flex-row gap-4 p-4">
             {/* Left: File Viewer */}
             <div className="flex-1 flex flex-col">
               {/* Header */}
-              <div className="flex items-center justify-between pb-3 border-b border-gray-200 mb-3">
+              <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-700 mb-3">
                 <div className="flex-1">
-                  <h2 className="text-base font-semibold">{selectedFileForPreview.file_name}</h2>
+                  <h2 className="text-base font-semibold text-[var(--foreground)]">{selectedFileForPreview.file_name}</h2>
                   <p className="text-xs text-muted-foreground">
                     {selectedFileForPreview.file_type === 'application/pdf'
                       ? 'PDF preview with assessor comments'
@@ -649,8 +649,8 @@ export function FileFieldComponent({
             {/* Right: Comments Sidebar */}
             {(selectedFileForPreview.file_type === 'application/pdf' ||
               selectedFileForPreview.file_type?.startsWith('image/')) && (
-              <div className="w-80 flex flex-col border-l border-gray-200 pl-4">
-                <h3 className="font-semibold text-sm mb-3 pb-2 border-b border-gray-200">
+              <div className="w-80 flex flex-col border-l border-gray-200 dark:border-gray-700 pl-4">
+                <h3 className="font-semibold text-sm mb-3 pb-2 border-b border-gray-200 dark:border-gray-700 text-[var(--foreground)]">
                   Assessor Comments ({movAnnotations.filter((ann: any) => ann.mov_file_id === selectedFileForPreview.id).length})
                 </h3>
                 <div className="flex-1 overflow-y-auto space-y-3">
@@ -662,13 +662,13 @@ export function FileFieldComponent({
                     movAnnotations
                       .filter((ann: any) => ann.mov_file_id === selectedFileForPreview.id)
                       .map((ann: any, idx: number) => (
-                        <div key={ann.id} className="p-3 rounded-sm bg-gray-50 border border-gray-200">
+                        <div key={ann.id} className="p-3 rounded-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
                           <div className="flex items-start gap-2 mb-2">
-                            <span className="shrink-0 font-bold text-yellow-600 text-sm">#{idx + 1}</span>
+                            <span className="shrink-0 font-bold text-yellow-600 dark:text-yellow-400 text-sm">#{idx + 1}</span>
                           </div>
-                          <p className="text-sm text-gray-800 leading-relaxed mb-2">{ann.comment || '(No comment)'}</p>
+                          <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed mb-2">{ann.comment || '(No comment)'}</p>
                           {ann.page_number !== undefined && (
-                            <p className="text-xs text-gray-500">Page {ann.page_number + 1}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Page {ann.page_number + 1}</p>
                           )}
                         </div>
                       ))

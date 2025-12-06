@@ -35,6 +35,7 @@ export interface AssessorQueueItem {
   submission_date: AssessorQueueItemSubmissionDate;
   status: string;
   updated_at: string;
+  area_progress?: number;
 }
 
 

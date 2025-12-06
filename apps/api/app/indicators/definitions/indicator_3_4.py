@@ -36,7 +36,7 @@ INDICATOR_3_4 = Indicator(
                 # Simplified checklist - only 1 checkbox for the main EO requirement
                 ChecklistItem(
                     id="3_4_1_upload",
-                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the organization of the Barangay Tanod covering January to October 2023",
+                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the organization of the Barangay Tanod",
                     mov_description="Verification that the EO/issuance creates Barangay Tanod with proper composition",
                     item_type="checkbox",
                     required=False,

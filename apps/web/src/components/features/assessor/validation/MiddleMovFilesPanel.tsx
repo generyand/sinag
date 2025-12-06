@@ -2,6 +2,12 @@
 
 import { FileList } from '@/components/features/movs/FileList';
 import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useMovAnnotations } from '@/hooks/useMovAnnotations';
 import type { AssessmentDetailsResponse } from '@sinag/shared';
 import { FileIcon, X } from 'lucide-react';
@@ -308,13 +314,22 @@ export function MiddleMovFilesPanel({ assessment, expandedId, calibrationRequest
       {/* File Preview Modal (PDF with annotations or Image) */}
       {isAnnotating && selectedFile && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-lg shadow-xl w-[70vw] h-[90vh] flex flex-row gap-4 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-[85vw] max-w-[1400px] h-[90vh] flex flex-row p-4 overflow-hidden">
             {/* Left: File Viewer */}
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col min-w-0 mr-4">
               {/* Header */}
-              <div className="flex items-center justify-between pb-3 border-b border-gray-200 mb-3">
-                <div className="flex-1">
-                  <h2 className="text-base font-semibold">{selectedFile.file_name}</h2>
+              <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-700 mb-3">
+                <div className="flex-1 min-w-0 mr-4 overflow-hidden">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <h2 className="text-base font-semibold text-[var(--foreground)] truncate cursor-default">{selectedFile.file_name}</h2>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-[500px] break-words">
+                        <p>{selectedFile.file_name}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                   <p className="text-xs text-muted-foreground">
                     {selectedFile.file_type === 'application/pdf'
                       ? 'Select text to add highlight and comment'
@@ -379,10 +394,10 @@ export function MiddleMovFilesPanel({ assessment, expandedId, calibrationRequest
               </div>
             </div>
 
-            {/* Right: Comments Sidebar */}
+            {/* Right: Comments Sidebar - Fixed width, won't shrink */}
             {selectedFile.file_type === 'application/pdf' ? (
               // PDF Annotations Sidebar
-              <div className="w-80 flex flex-col border-l border-gray-200 pl-4">
+              <div className="w-72 shrink-0 flex flex-col border-l border-gray-200 pl-4">
                 <h3 className="font-semibold text-sm mb-3 pb-2 border-b border-gray-200">
                   Comments ({pdfAnnotations.length})
                 </h3>
@@ -414,7 +429,7 @@ export function MiddleMovFilesPanel({ assessment, expandedId, calibrationRequest
               </div>
             ) : selectedFile.file_type?.startsWith('image/') ? (
               // Image Annotations Sidebar
-              <div className="w-80 flex flex-col border-l border-gray-200 pl-4">
+              <div className="w-72 shrink-0 flex flex-col border-l border-gray-200 pl-4">
                 <h3 className="font-semibold text-sm mb-3 pb-2 border-b border-gray-200">
                   Annotations ({imageAnnotations.length})
                 </h3>

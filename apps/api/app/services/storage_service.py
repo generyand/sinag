@@ -59,6 +59,56 @@ class StorageService:
     # Bucket name for MOV files (Epic 4.0)
     MOV_FILES_BUCKET = "mov-files"
 
+    def _sanitize_display_filename(
+        self, indicator_code: str, field_label: str, extension: str, sequence_number: int = 1
+    ) -> str:
+        """
+        Generate a sanitized display filename from indicator code and field label.
+
+        The filename format is: "{indicator_code} {sanitized_label} ({n}).{extension}"
+        Example: "6.1.3 At least one (1) copy of proof of training such as Certificate of Completion and-or Participation (1).pdf"
+
+        Special character handling:
+        - "/" → "-" (common in "and/or")
+        - "\\" → "-"
+        - ":" → " -" (colon often precedes a list)
+        - "*", "?", '"', "<", ">", "|" → removed (Windows reserved chars)
+        - Multiple spaces → single space
+        - Trim leading/trailing spaces
+
+        Args:
+            indicator_code: The indicator code (e.g., "6.1.3")
+            field_label: The upload field label
+            extension: File extension without dot (e.g., "pdf")
+            sequence_number: File sequence number for multiple files (default: 1)
+
+        Returns:
+            str: Sanitized display filename
+        """
+        # Sanitize the field label
+        sanitized_label = field_label
+
+        # Replace forward/backward slashes with dashes
+        sanitized_label = sanitized_label.replace("/", "-").replace("\\", "-")
+
+        # Replace colon with " -"
+        sanitized_label = sanitized_label.replace(":", " -")
+
+        # Remove Windows reserved characters
+        for char in ['*', '?', '"', '<', '>', '|']:
+            sanitized_label = sanitized_label.replace(char, '')
+
+        # Collapse multiple spaces into single space
+        sanitized_label = re.sub(r'\s+', ' ', sanitized_label)
+
+        # Trim leading/trailing whitespace
+        sanitized_label = sanitized_label.strip()
+
+        # Construct the display filename with sequence number
+        display_filename = f"{indicator_code} {sanitized_label} ({sequence_number}).{extension}"
+
+        return display_filename
+
     def upload_mov(
         self, file: UploadFile, *, response_id: int, db: Session
     ) -> Dict[str, str | int]:
@@ -211,6 +261,8 @@ class StorageService:
         indicator_id: int,
         user_id: int,
         field_id: str | None = None,
+        indicator_code: str | None = None,
+        field_label: str | None = None,
     ) -> MOVFile:
         """
         Upload a MOV file to Supabase Storage and create database record.
@@ -228,6 +280,9 @@ class StorageService:
             assessment_id: ID of the assessment
             indicator_id: ID of the indicator
             user_id: ID of the user uploading the file
+            field_id: Optional field identifier for multi-field uploads
+            indicator_code: Optional indicator code (e.g., "6.1.3") for display filename
+            field_label: Optional field label for display filename
 
         Returns:
             MOVFile: The created MOVFile database record
@@ -241,6 +296,32 @@ class StorageService:
 
         # Preserve original filename for display
         original_filename = file.filename or "file"
+
+        # Generate display filename from indicator code + field label if provided
+        if indicator_code and field_label:
+            # Extract file extension from original filename
+            extension = original_filename.rsplit('.', 1)[-1] if '.' in original_filename else 'file'
+
+            # Count existing files for this field to determine sequence number
+            existing_count = (
+                db.query(MOVFile)
+                .filter(
+                    MOVFile.assessment_id == assessment_id,
+                    MOVFile.indicator_id == indicator_id,
+                    MOVFile.field_id == field_id,
+                    MOVFile.deleted_at.is_(None),
+                )
+                .count()
+            )
+
+            # Sequence number is existing count + 1
+            sequence_number = existing_count + 1
+
+            display_filename = self._sanitize_display_filename(
+                indicator_code, field_label, extension, sequence_number
+            )
+        else:
+            display_filename = original_filename
 
         # Generate unique filename for storage (with UUID prefix)
         unique_filename = self._generate_unique_filename(original_filename)
@@ -301,7 +382,7 @@ class StorageService:
             mov_file = self._save_mov_file_record(
                 db=db,
                 file_url=file_url,
-                file_name=original_filename,  # Store clean filename for display
+                file_name=display_filename,  # Store display filename (indicator code + field label)
                 file_type=content_type,
                 file_size=file_size,
                 assessment_id=assessment_id,

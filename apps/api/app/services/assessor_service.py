@@ -141,6 +141,26 @@ class AssessorService:
             # Add extra info for parallel calibration
             pending_count = len(a.pending_calibrations or []) if a.is_calibration_rework else 0
 
+            # Calculate area progress based on reviewed indicators
+            if assessor.validator_area_id is not None:
+                # Validator: progress based on their governance area
+                area_responses = [
+                    r for r in a.responses
+                    if r.indicator and r.indicator.governance_area_id == assessor.validator_area_id
+                ]
+                reviewed_count = sum(1 for r in area_responses if r.validation_status is not None)
+                total_count = len(area_responses)
+            else:
+                # Assessor: progress based on all indicators with response_data filled
+                area_responses = a.responses
+                reviewed_count = sum(
+                    1 for r in area_responses
+                    if r.response_data is not None and r.response_data != {}
+                )
+                total_count = len(area_responses)
+
+            area_progress = round((reviewed_count / total_count * 100) if total_count > 0 else 0)
+
             items.append(
                 {
                     "assessment_id": a.id,
@@ -152,6 +172,7 @@ class AssessorService:
                     "updated_at": a.updated_at,
                     "is_calibration_rework": a.is_calibration_rework,
                     "pending_calibrations_count": pending_count,
+                    "area_progress": area_progress,
                 }
             )
 
@@ -574,26 +595,23 @@ class AssessorService:
         """
         # Get the assessment with all related data
         # PERFORMANCE FIX: Eager load assessor on feedback_comments to prevent N+1
+        # NOTE: Use a single selectinload for responses with subqueryload for nested relations
         assessment = (
             db.query(Assessment)
             .options(
                 joinedload(Assessment.blgu_user).joinedload(User.barangay),
-                joinedload(Assessment.responses)
-                .joinedload(AssessmentResponse.indicator)
-                .joinedload(Indicator.governance_area),
-                joinedload(Assessment.responses)
-                .joinedload(AssessmentResponse.indicator)
-                .joinedload(Indicator.checklist_items),
-                joinedload(Assessment.responses)
-                .joinedload(AssessmentResponse.indicator)
-                .joinedload(Indicator.children),
+                # Single selectinload for responses, then branch out with subqueryload
+                selectinload(Assessment.responses).options(
+                    selectinload(AssessmentResponse.indicator).options(
+                        selectinload(Indicator.governance_area),
+                        selectinload(Indicator.checklist_items),
+                        selectinload(Indicator.children),
+                    ),
+                    selectinload(AssessmentResponse.feedback_comments)
+                    .selectinload(FeedbackComment.assessor),
+                ),
                 # Epic 4.0: Load MOV files from the new mov_files table
-                # Use selectinload for better performance with many files
                 selectinload(Assessment.mov_files),
-                # Eager load feedback_comments with assessor to prevent N+1
-                selectinload(Assessment.responses)
-                .selectinload(AssessmentResponse.feedback_comments)
-                .joinedload(FeedbackComment.assessor),
             )
             .filter(Assessment.id == assessment_id)
             .first()
@@ -794,6 +812,7 @@ class AssessorService:
                             "requires_document_count": item.requires_document_count,
                             "display_order": item.display_order,
                             "option_group": item.option_group,
+                            "field_notes": item.field_notes,
                         }
                         for item in sorted(response.indicator.checklist_items, key=lambda x: x.display_order)
                     ],

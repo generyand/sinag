@@ -64,13 +64,13 @@ INDICATOR_4_5 = Indicator(
             code="4.5.1",
             name="Structure: Organized BCPC with its composition compliant to the provisions of DILG MC No. 2021-039",
             upload_instructions=(
-                "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the establishment of BCPC covering January to October 2023"
+                "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the establishment of BCPC"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
                     id="4_5_1_a",
-                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the establishment of BCPC covering January to October 2023",
+                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the establishment of BCPC",
                     required=True,
                     requires_document_count=False,
                     display_order=1
@@ -102,13 +102,13 @@ INDICATOR_4_5 = Indicator(
             code="4.5.3",
             name="Plan: Presence of an approved BCPC Annual Work and Financial Plan",
             upload_instructions=(
-                "Upload: Approved BCPC Annual Work and Financial Plan (AWFP) for CY 2023"
+                "Upload: Approved BCPC Annual Work and Financial Plan (AWFP)"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
                     id="4_5_3_a",
-                    label="Approved BCPC Annual Work and Financial Plan (AWFP) for CY 2023",
+                    label="Approved BCPC Annual Work and Financial Plan (AWFP)",
                     required=True,
                     requires_document_count=False,
                     display_order=1
@@ -121,13 +121,13 @@ INDICATOR_4_5 = Indicator(
             code="4.5.4",
             name="Database: Establishment and maintenance of updated Database on Children disaggregated by age, sex, ethnicity, with or without disabilities, OSCY, etc.",
             upload_instructions=(
-                "Upload: Copy of the generated report or screenshot of the updated database on children covering January to October 31, 2023"
+                "Upload: Copy of the generated report or screenshot of the updated database on children"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
                     id="4_5_4_a",
-                    label="Copy of the generated report or screenshot of the updated database on children covering January to October 31, 2023",
+                    label="Copy of the generated report or screenshot of the updated database on children",
                     required=True,
                     requires_document_count=False,
                     display_order=1
@@ -180,14 +180,14 @@ INDICATOR_4_5 = Indicator(
             name="Accomplishment Reports: Physical accomplishment OR financial utilization (only 1 of the below reports is required)",
             upload_instructions=(
                 "Upload:\n"
-                "- (PHYSICAL or/and FINANCIAL) Approved Accomplishment Report on BCPC AWFP for CY 2023 with received stamp by the City/Municipality Inter-Agency Monitoring Task Force (IMTF)"
+                "- (PHYSICAL or/and FINANCIAL) Approved Accomplishment Report on BCPC AWFP with received stamp by the City/Municipality Inter-Agency Monitoring Task Force (IMTF)"
             ),
             validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # OR logic: Physical OR Financial
             checklist_items=[
                 # Single shared upload field for PHYSICAL or/and FINANCIAL
                 ChecklistItem(
                     id="4_5_6_upload",
-                    label="Approved Accomplishment Report on BCPC AWFP for CY 2023 with received stamp by the City/Municipality Inter-Agency Monitoring Task Force (IMTF)",
+                    label="Approved Accomplishment Report on BCPC AWFP with received stamp by the City/Municipality Inter-Agency Monitoring Task Force (IMTF)",
                     mov_description="Verification of uploaded Accomplishment Report with received stamp by IMTF",
                     item_type="checkbox",
                     required=True,
@@ -215,7 +215,6 @@ INDICATOR_4_5 = Indicator(
                 ChecklistItem(
                     id="4_5_6_physical_reflected",
                     label="Total number of activities/projects reflected in the Plan",
-                    mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
                     display_order=4.2,
@@ -233,7 +232,7 @@ INDICATOR_4_5 = Indicator(
                 # OPTION B - Fund Utilization
                 ChecklistItem(
                     id="4_5_6_b",
-                    label="b. At least 50% utilization rate of CY 2023 BCPC AWFP Budget",
+                    label="b. At least 50% utilization rate of BCPC AWFP Budget",
                     mov_description="Assessment for fund utilization option",
                     item_type="assessment_field",
                     required=False,
@@ -252,7 +251,6 @@ INDICATOR_4_5 = Indicator(
                 ChecklistItem(
                     id="4_5_6_financial_allocated",
                     label="Total amount allocated for PPAs in the BCPC AWFP",
-                    mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
                     display_order=7.2,

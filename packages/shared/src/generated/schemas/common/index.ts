@@ -665,6 +665,12 @@ export type FormSchemaNotes = FormNotes | null;
 
 
 /**
+ * FormSchemaSecondaryNotes
+ */
+export type FormSchemaSecondaryNotes = FormNotes | null;
+
+
+/**
  * GetMunicipalOverviewBarangayStatusesParams
  */
 export type GetMunicipalOverviewBarangayStatusesParams = {

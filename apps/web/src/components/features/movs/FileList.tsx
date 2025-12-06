@@ -17,6 +17,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { formatDistanceToNow } from "date-fns";
 import { MOVFileResponse } from "@sinag/shared";
 import dynamic from "next/dynamic";
@@ -192,17 +198,26 @@ export function FileList({
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-gray-900 break-words">
-                          {file.file_name}
-                        </p>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <p className="text-sm font-medium text-[var(--text-primary)] truncate max-w-[200px] cursor-default">
+                                {file.file_name}
+                              </p>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-[400px] break-words">
+                              <p>{file.file_name}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                         {hasAnnotations && (
-                          <Badge variant="destructive" className="text-xs">
+                          <Badge variant="destructive" className="text-xs shrink-0">
                             <MessageSquare className="h-3 w-3 mr-1" />
                             {fileAnnotations.length} {fileAnnotations.length === 1 ? "note" : "notes"}
                           </Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                         <span>{formatFileSize(file.file_size)}</span>
                         <span>•</span>
                         <span>

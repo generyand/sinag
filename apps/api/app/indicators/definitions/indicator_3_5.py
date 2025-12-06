@@ -68,7 +68,7 @@ INDICATOR_3_5 = Indicator(
                 # Simplified checklist - only 1 checkbox for the main EO requirement
                 ChecklistItem(
                     id="3_5_1_upload",
-                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the organization of BHERTs covering January to October 2023",
+                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the organization of BHERT",
                     mov_description="Verification of uploaded Executive Order or similar issuance organizing the BHERT",
                     item_type="checkbox",
                     required=False,
@@ -119,8 +119,8 @@ INDICATOR_3_5 = Indicator(
                 # Option B: Social Media Screenshot
                 ChecklistItem(
                     id="3_5_2_b_upload",
-                    label="Screenshot of the posting on social media with date covering CY 2023",
-                    mov_description="Verification of uploaded screenshot showing social media posting with contact information and date covering CY 2023 (Option 2)",
+                    label="Screenshot of the posting on social media with date",
+                    mov_description="Verification of uploaded screenshot showing social media posting with contact information and date (Option 2)",
                     required=False,  # OR logic - only one option is required
                     requires_document_count=False,
                     display_order=3,

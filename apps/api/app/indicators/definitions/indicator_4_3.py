@@ -60,14 +60,14 @@ INDICATOR_4_3 = Indicator(
             name="Structure: Organized BDC with its composition compliant to Section 107 of RA 7160",
             upload_instructions=(
                 "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) "
-                "organizing/reconstituting the BDC with its composition compliant to Section 107 of RA 7160 covering January to October 2023"
+                "organizing/reconstituting the BDC with its composition compliant to Section 107 of RA 7160"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 # Upload Verification
                 ChecklistItem(
                     id="4_3_1_upload_1",
-                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing/reconstituting the BDC with its composition compliant to Section 107 of RA 7160 covering January to October 2023",
+                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing/reconstituting the BDC with its composition compliant to Section 107 of RA 7160",
                     mov_description="Verification of uploaded Executive Order or similar issuance organizing/reconstituting the BDC",
                     required=True,
                     display_order=1
@@ -80,14 +80,14 @@ INDICATOR_4_3 = Indicator(
             code="4.3.2",
             name="Meeting: Conducted meetings, public hearings, and/or barangay assemblies for public consultation",
             upload_instructions=(
-                "Upload: Post activity report or Minutes with attendance sheet, covering CY 2023"
+                "Upload: Post activity report or Minutes with attendance sheet"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
                     id="4_3_2_upload_1",
-                    label="Post activity report or Minutes with attendance sheet, covering CY 2023",
-                    mov_description="Verification of uploaded Post activity report or Minutes with attendance sheet for CY 2023",
+                    label="Post activity report or Minutes with attendance sheet",
+                    mov_description="Verification of uploaded Post activity report or Minutes with attendance sheet",
                     required=True,
                     display_order=1
                 ),
@@ -100,15 +100,15 @@ INDICATOR_4_3 = Indicator(
             name="Plan: Approved Barangay Development Plan",
             upload_instructions=(
                 "Upload the following (both required):\n\n"
-                "1. Approved Barangay Development Plan covering CY 2023\n"
+                "1. Approved Barangay Development Plan\n"
                 "2. SB Resolution adopting the approved BDP"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
                     id="4_3_3_upload_1",
-                    label="a. Approved Barangay Development Plan covering CY 2023; and",
-                    mov_description="Verification of uploaded Approved Barangay Development Plan covering CY 2023",
+                    label="a. Approved Barangay Development Plan",
+                    mov_description="Verification of uploaded Approved Barangay Development Plan",
                     required=True,
                     display_order=1
                 ),
@@ -128,27 +128,18 @@ INDICATOR_4_3 = Indicator(
             name="Accomplishment Reports: Physical accomplishment OR fund utilization (only 1 of the below reports is required)",
             upload_instructions=(
                 "Upload:\n"
-                "- (PHYSICAL or/and FINANCIAL) CY 2023 Accomplishment Report with received stamp by the C/MPDC"
+                "- (PHYSICAL or/and FINANCIAL) Accomplishment Report with received stamp by the C/MPDC"
             ),
             validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # OR logic: Physical OR Financial
             checklist_items=[
                 # Single shared upload field for PHYSICAL or/and FINANCIAL (ungrouped - always required)
                 ChecklistItem(
                     id="4_3_4_upload",
-                    label="(PHYSICAL or/and FINANCIAL) CY 2023 Accomplishment Report with received stamp by the C/MPDC",
-                    mov_description="Verification of uploaded CY 2023 Accomplishment Report (PHYSICAL or/and FINANCIAL)",
+                    label="(PHYSICAL or/and FINANCIAL) Accomplishment Report with received stamp by the C/MPDC",
+                    mov_description="Verification of uploaded Accomplishment Report (PHYSICAL or/and FINANCIAL)",
                     item_type="checkbox",
                     required=True,
                     display_order=1
-                ),
-                # Important note (info_text)
-                ChecklistItem(
-                    id="4_3_4_important",
-                    label="IMPORTANT: Only ONE (1) of the options below is required",
-                    mov_description="Instruction item - informational only",
-                    item_type="info_text",
-                    required=False,
-                    display_order=2
                 ),
                 # OPTION A: YES/NO assessment first, then calculation
                 ChecklistItem(
@@ -163,7 +154,6 @@ INDICATOR_4_3 = Indicator(
                 ChecklistItem(
                     id="4_3_4_physical_reflected",
                     label="Total number of activities/projects reflected in the Plan",
-                    mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
                     display_order=4,
@@ -190,7 +180,7 @@ INDICATOR_4_3 = Indicator(
                 # OPTION B: YES/NO assessment first, then calculations
                 ChecklistItem(
                     id="4_3_4_option_b",
-                    label="b. At least 50% fund utilization rate of the CY 2023 BDP Budget",
+                    label="b. At least 50% fund utilization rate of the BDP Budget",
                     mov_description="Verification that at least 50% of BDP Budget is utilized",
                     item_type="assessment_field",
                     required=False,
@@ -200,7 +190,6 @@ INDICATOR_4_3 = Indicator(
                 ChecklistItem(
                     id="4_3_4_financial_allocated",
                     label="Total amount allocated for PPAs in the BDP",
-                    mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
                     display_order=8,

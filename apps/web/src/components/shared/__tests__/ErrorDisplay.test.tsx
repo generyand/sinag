@@ -6,7 +6,7 @@
  * - Shows appropriate icons for different error types
  * - Applies correct colors (orange for network, red for server, amber for validation)
  * - Includes accessibility attributes (role="alert", aria-live="polite")
- * - Handles light and dark modes
+ * - Includes dark mode classes via Tailwind's dark: variant
  * - Returns null when no error is provided
  */
 
@@ -48,20 +48,20 @@ describe("ErrorDisplay", () => {
       ).toBeInTheDocument();
     });
 
-    it("should apply orange styling for network errors in light mode", () => {
-      const { container } = render(<ErrorDisplay error={networkError} isDarkMode={false} />);
+    it("should apply orange styling for network errors", () => {
+      const { container } = render(<ErrorDisplay error={networkError} />);
       const alert = container.querySelector('[role="alert"]');
 
       expect(alert?.className).toContain("bg-orange-50");
       expect(alert?.className).toContain("border-orange-200");
     });
 
-    it("should apply orange styling for network errors in dark mode", () => {
-      const { container } = render(<ErrorDisplay error={networkError} isDarkMode={true} />);
+    it("should include dark mode classes for network errors", () => {
+      const { container } = render(<ErrorDisplay error={networkError} />);
       const alert = container.querySelector('[role="alert"]');
 
-      expect(alert?.className).toContain("bg-orange-900/10");
-      expect(alert?.className).toContain("border-orange-500/20");
+      expect(alert?.className).toContain("dark:bg-orange-950/30");
+      expect(alert?.className).toContain("dark:border-orange-800");
     });
 
     it("should show WifiOff icon for network errors (via aria-hidden)", () => {
@@ -69,7 +69,7 @@ describe("ErrorDisplay", () => {
       const icon = container.querySelector('[aria-hidden="true"]');
 
       expect(icon).toBeInTheDocument();
-      // WifiOff icon should have orange color class (using getAttribute for SVG)
+      // WifiOff icon should have orange color class
       const iconClass = icon?.getAttribute("class") || "";
       expect(iconClass).toContain("text-orange");
     });
@@ -87,20 +87,20 @@ describe("ErrorDisplay", () => {
       ).toBeInTheDocument();
     });
 
-    it("should apply red styling for server errors in light mode", () => {
-      const { container } = render(<ErrorDisplay error={serverError} isDarkMode={false} />);
+    it("should apply red styling for server errors", () => {
+      const { container } = render(<ErrorDisplay error={serverError} />);
       const alert = container.querySelector('[role="alert"]');
 
       expect(alert?.className).toContain("bg-red-50");
       expect(alert?.className).toContain("border-red-200");
     });
 
-    it("should apply red styling for server errors in dark mode", () => {
-      const { container } = render(<ErrorDisplay error={serverError} isDarkMode={true} />);
+    it("should include dark mode classes for server errors", () => {
+      const { container } = render(<ErrorDisplay error={serverError} />);
       const alert = container.querySelector('[role="alert"]');
 
-      expect(alert?.className).toContain("bg-red-900/10");
-      expect(alert?.className).toContain("border-red-500/20");
+      expect(alert?.className).toContain("dark:bg-red-950/30");
+      expect(alert?.className).toContain("dark:border-red-800");
     });
 
     it("should show ServerCrash icon for server errors", () => {
@@ -126,7 +126,7 @@ describe("ErrorDisplay", () => {
     });
 
     it("should apply red styling for auth errors", () => {
-      const { container } = render(<ErrorDisplay error={authError} isDarkMode={false} />);
+      const { container } = render(<ErrorDisplay error={authError} />);
       const alert = container.querySelector('[role="alert"]');
 
       expect(alert?.className).toContain("bg-red-50");
@@ -159,22 +159,20 @@ describe("ErrorDisplay", () => {
       expect(screen.getByText("Email is required")).toBeInTheDocument();
     });
 
-    it("should apply amber styling for validation errors in light mode", () => {
-      const { container } = render(
-        <ErrorDisplay error={validationError} isDarkMode={false} />
-      );
+    it("should apply amber styling for validation errors", () => {
+      const { container } = render(<ErrorDisplay error={validationError} />);
       const alert = container.querySelector('[role="alert"]');
 
       expect(alert?.className).toContain("bg-amber-50");
       expect(alert?.className).toContain("border-amber-200");
     });
 
-    it("should apply amber styling for validation errors in dark mode", () => {
-      const { container } = render(<ErrorDisplay error={validationError} isDarkMode={true} />);
+    it("should include dark mode classes for validation errors", () => {
+      const { container } = render(<ErrorDisplay error={validationError} />);
       const alert = container.querySelector('[role="alert"]');
 
-      expect(alert?.className).toContain("bg-amber-900/10");
-      expect(alert?.className).toContain("border-amber-500/20");
+      expect(alert?.className).toContain("dark:bg-amber-950/30");
+      expect(alert?.className).toContain("dark:border-amber-800");
     });
 
     it("should show AlertCircle icon for validation errors", () => {
@@ -197,7 +195,7 @@ describe("ErrorDisplay", () => {
     });
 
     it("should apply red styling for rate limit errors (not validation)", () => {
-      const { container } = render(<ErrorDisplay error={rateLimitError} isDarkMode={false} />);
+      const { container } = render(<ErrorDisplay error={rateLimitError} />);
       const alert = container.querySelector('[role="alert"]');
 
       // Rate limit errors should use red, not amber/yellow
@@ -218,7 +216,7 @@ describe("ErrorDisplay", () => {
     });
 
     it("should apply red styling for permission errors", () => {
-      const { container } = render(<ErrorDisplay error={permissionError} isDarkMode={false} />);
+      const { container } = render(<ErrorDisplay error={permissionError} />);
       const alert = container.querySelector('[role="alert"]');
 
       expect(alert?.className).toContain("bg-red-50");
@@ -245,7 +243,7 @@ describe("ErrorDisplay", () => {
     });
 
     it("should apply red styling for unknown errors", () => {
-      const { container } = render(<ErrorDisplay error={unknownError} isDarkMode={false} />);
+      const { container } = render(<ErrorDisplay error={unknownError} />);
       const alert = container.querySelector('[role="alert"]');
 
       expect(alert?.className).toContain("bg-red-50");
@@ -349,59 +347,49 @@ describe("ErrorDisplay", () => {
     });
   });
 
-  describe("Dark Mode", () => {
-    it("should default to light mode when isDarkMode is not specified", () => {
+  describe("Dark Mode Support", () => {
+    it("should include dark mode Tailwind classes for automatic theme switching", () => {
       const error = { message: "Network Error" };
       const { container } = render(<ErrorDisplay error={error} />);
       const alert = container.querySelector('[role="alert"]');
 
-      // Should have light mode classes
+      // Should have both light mode and dark: variant classes
       expect(alert?.className).toContain("bg-orange-50");
+      expect(alert?.className).toContain("dark:bg-orange-950/30");
     });
 
-    it("should apply dark mode classes when isDarkMode is true", () => {
+    it("should include dark mode icon color classes", () => {
       const error = { message: "Network Error" };
-      const { container } = render(<ErrorDisplay error={error} isDarkMode={true} />);
-      const alert = container.querySelector('[role="alert"]');
+      const { container } = render(<ErrorDisplay error={error} />);
+      const icon = container.querySelector('[aria-hidden="true"]');
 
-      expect(alert?.className).toContain("bg-orange-900/10");
-      expect(alert?.className).toContain("border-orange-500/20");
+      const iconClass = icon?.getAttribute("class") || "";
+      expect(iconClass).toContain("text-orange-500");
+      expect(iconClass).toContain("dark:text-orange-400");
     });
 
-    it("should apply different icon colors in dark mode", () => {
+    it("should include dark mode text color classes", () => {
       const error = { message: "Network Error" };
-      const { container: lightContainer } = render(
-        <ErrorDisplay error={error} isDarkMode={false} />
-      );
-      const { container: darkContainer } = render(
-        <ErrorDisplay error={error} isDarkMode={true} />
-      );
+      render(<ErrorDisplay error={error} />);
 
-      const lightIcon = lightContainer.querySelector('[aria-hidden="true"]');
-      const darkIcon = darkContainer.querySelector('[aria-hidden="true"]');
-
-      const lightIconClass = lightIcon?.getAttribute("class") || "";
-      const darkIconClass = darkIcon?.getAttribute("class") || "";
-
-      // Light mode should have darker text
-      expect(lightIconClass).toContain("text-orange-500");
-      // Dark mode should have lighter text
-      expect(darkIconClass).toContain("text-orange-400");
-    });
-
-    it("should apply different text colors in dark mode", () => {
-      const error = { message: "Network Error" };
-      const { container } = render(<ErrorDisplay error={error} isDarkMode={true} />);
-
-      // Find the title and message elements
       const titleElement = screen.getByText("Unable to connect to server");
       const messageElement = screen.getByText(
         "The server may be down or unreachable. Please check your connection and try again."
       );
 
-      // Dark mode should use lighter text colors
-      expect(titleElement.className).toContain("text-orange-400");
-      expect(messageElement.className).toContain("text-orange-300");
+      expect(titleElement.className).toContain("text-orange-700");
+      expect(titleElement.className).toContain("dark:text-orange-300");
+      expect(messageElement.className).toContain("text-orange-600");
+      expect(messageElement.className).toContain("dark:text-orange-400/80");
+    });
+
+    it("should support deprecated isDarkMode prop without breaking (backwards compat)", () => {
+      const error = { message: "Network Error" };
+      // This should not throw - the prop is accepted but ignored
+      const { container } = render(<ErrorDisplay error={error} isDarkMode={true} />);
+      const alert = container.querySelector('[role="alert"]');
+
+      expect(alert).toBeInTheDocument();
     });
   });
 

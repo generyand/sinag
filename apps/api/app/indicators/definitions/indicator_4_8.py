@@ -26,7 +26,7 @@ INDICATOR_4_8 = Indicator(
             code="4.8.1",
             name="Structure: Organized BNC",
             upload_instructions=(
-                "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the Barangay Nutrition Committee (BNC) covering January to October 2023\n\n"
+                "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the Barangay Nutrition Committee (BNC)\n\n"
                 "Minimum Composition of BNC:\n"
                 "1. Barangay Captain (as chair)\n"
                 "2. President of the Rural Improvement Club (RIC)\n"
@@ -46,7 +46,7 @@ INDICATOR_4_8 = Indicator(
             checklist_items=[
                 ChecklistItem(
                     id="4_8_1_upload",
-                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the Barangay Nutrition Committee (BNC) covering January to October 2023",
+                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the Barangay Nutrition Committee (BNC)",
                     mov_description="Verification that the EO/issuance creates BNC with proper composition as per minimum requirement",
                     item_type="checkbox",
                     required=True,
@@ -73,19 +73,19 @@ INDICATOR_4_8 = Indicator(
             )
         ),
 
-        # Sub-Indicator 4.8.2: Plan - Presence of approved CY 2023 BNAP
+        # Sub-Indicator 4.8.2: Plan - Presence of approved BNAP
         SubIndicator(
             code="4.8.2",
-            name="Plan: Presence of approved CY 2023 BNAP",
+            name="Plan: Presence of approved BNAP",
             upload_instructions=(
-                "Upload: Approved CY 2023 BNAP signed by the BNC"
+                "Upload: Approved BNAP signed by the BNC"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
                     id="4_8_2_upload_1",
-                    label="Approved CY 2023 BNAP signed by the BNC",
-                    mov_description="Verification of uploaded Approved CY 2023 BNAP signed by the BNC",
+                    label="Approved BNAP signed by the BNC",
+                    mov_description="Verification of uploaded Approved BNAP signed by the BNC",
                     required=True,
                     display_order=1
                 ),
@@ -163,21 +163,21 @@ INDICATOR_4_8 = Indicator(
             upload_instructions=(
                 "Upload the following:\n\n"
                 "SHARED (Required):\n"
-                "- Accomplishment Report on CY 2023 BNAP\n\n"
+                "- Accomplishment Report on BNAP\n\n"
                 "PLUS ONE of the following (PHYSICAL or FINANCIAL):\n\n"
                 "OPTION A - PHYSICAL:\n"
-                "- Certification on the submitted BNAP Accomplishment Report for CY 2023 indicating at least 50% accomplishment of the physical targets in the BNAP signed by the C/MLGOO\n\n"
+                "- Certification on the submitted BNAP Accomplishment Report indicating at least 50% accomplishment of the physical targets in the BNAP signed by the C/MLGOO\n\n"
                 "OR\n\n"
                 "OPTION B - FINANCIAL:\n"
-                "- Certification on the submitted BNAP Accomplishment Report for CY 2023 indicating at least 50% fund utilization rate of the CY 2023 BNAP Budget signed by the C/MLGOO"
+                "- Certification on the submitted BNAP Accomplishment Report indicating at least 50% fund utilization rate of the BNAP Budget signed by the C/MLGOO"
             ),
             validation_rule="SHARED_PLUS_OR_LOGIC",  # SHARED + (A OR B)
             checklist_items=[
                 # SHARED: Accomplishment Report
                 ChecklistItem(
                     id="4_8_4_upload_report",
-                    label="Accomplishment Report on CY 2023 BNAP",
-                    mov_description="Verification of uploaded Accomplishment Report on CY 2023 BNAP",
+                    label="Accomplishment Report on BNAP",
+                    mov_description="Verification of uploaded Accomplishment Report on BNAP",
                     item_type="checkbox",
                     required=True,
                     display_order=1,
@@ -186,7 +186,7 @@ INDICATOR_4_8 = Indicator(
                 # OPTION A: YES/NO, then CERTIFICATION, then calculation
                 ChecklistItem(
                     id="4_8_4_option_a_check",
-                    label="a. At least 50% accomplishment of the physical targets in the CY 2023 BNAP",
+                    label="a. At least 50% accomplishment of the physical targets in the BNAP",
                     mov_description="Verify at least 50% accomplishment of physical targets (Option A)",
                     item_type="assessment_field",
                     required=False,
@@ -195,7 +195,7 @@ INDICATOR_4_8 = Indicator(
                 ),
                 ChecklistItem(
                     id="4_8_4_cert_a",
-                    label="Certification on the submitted BNAP Accomplishment Report for CY 2023 indicating at least 50% accomplishment of the physical targets in the BNAP signed by the C/MLGOO",
+                    label="Certification on the submitted BNAP Accomplishment Report indicating at least 50% accomplishment of the physical targets in the BNAP signed by the C/MLGOO",
                     mov_description="Verification of certification for option A",
                     item_type="checkbox",
                     required=False,
@@ -214,7 +214,6 @@ INDICATOR_4_8 = Indicator(
                 ChecklistItem(
                     id="4_8_4_physical_reflected",
                     label="Total number of activities/projects reflected in the Plan",
-                    mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
                     display_order=5,
@@ -232,7 +231,7 @@ INDICATOR_4_8 = Indicator(
                 # OPTION B: YES/NO, then CERTIFICATION, then calculations
                 ChecklistItem(
                     id="4_8_4_option_b_check",
-                    label="b. At least 50% fund utilization rate of the CY 2023 BNAP Budget",
+                    label="b. At least 50% fund utilization rate of the BNAP Budget",
                     mov_description="Verify at least 50% fund utilization rate (Option B)",
                     item_type="assessment_field",
                     required=False,
@@ -241,7 +240,7 @@ INDICATOR_4_8 = Indicator(
                 ),
                 ChecklistItem(
                     id="4_8_4_cert_b",
-                    label="Certification on the submitted BNAP Accomplishment Report for CY 2023 indicating at least 50% fund utilization rate of the CY 2023 BNAP Budget signed by the C/MLGOO",
+                    label="Certification on the submitted BNAP Accomplishment Report indicating at least 50% fund utilization rate of the BNAP Budget signed by the C/MLGOO",
                     mov_description="Verification of certification for option B",
                     item_type="checkbox",
                     required=False,
@@ -260,7 +259,6 @@ INDICATOR_4_8 = Indicator(
                 ChecklistItem(
                     id="4_8_4_financial_allocated",
                     label="Total amount allocated for PPAs in the BNAP",
-                    mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
                     display_order=10,

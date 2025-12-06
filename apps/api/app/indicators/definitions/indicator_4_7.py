@@ -48,7 +48,7 @@ INDICATOR_4_7 = Indicator(
             upload_instructions=(
                 "Upload the following documents:\n"
                 "1. RBI Monitoring Form C, and\n"
-                "2. List of barangays with RBI covering the 1st Semester of CY 2023 (generated from the BIS-BPS) certified by the C/MLGOO"
+                "2. List of barangays with RBI covering the 1st Semester (generated from the BIS-BPS) certified by the C/MLGOO"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
@@ -61,7 +61,7 @@ INDICATOR_4_7 = Indicator(
                 ),
                 ChecklistItem(
                     id="4_7_1_b",
-                    label="List of barangays with RBI covering the 1st Semester of CY 2023 (generated from the BIS-BPS) certified by the C/MLGOO",
+                    label="List of barangays with RBI covering the 1st Semester (generated from the BIS-BPS) certified by the C/MLGOO",
                     required=True,
                     requires_document_count=False,
                     display_order=2

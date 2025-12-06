@@ -79,13 +79,13 @@ INDICATOR_4_2 = Indicator(
             code="4.2.2",
             name="Appointment of the following Barangay Health Personnel (FOR PROFILING)",
             upload_instructions=(
-                "Upload EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the Appointment of BHW and/or BHO or BHAsst covering January to October 2023"
+                "Upload EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the Appointment of BHW and/or BHO or BHAsst"
             ),
             validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # At least one of the two personnel types
             checklist_items=[
                 ChecklistItem(
                     id="4_2_2_bhw",
-                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the Appointment of BHW covering January to October 2023",
+                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the Appointment of BHW",
                     mov_description=None,
                     required=False,
                     requires_document_count=False,
@@ -102,7 +102,7 @@ INDICATOR_4_2 = Indicator(
                 ),
                 ChecklistItem(
                     id="4_2_2_bho",
-                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the Appointment of BHO or BHAsst covering January to October 2023",
+                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the Appointment of BHO or BHAsst",
                     mov_description=None,
                     required=False,
                     requires_document_count=False,

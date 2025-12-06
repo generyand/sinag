@@ -46,7 +46,7 @@ INDICATOR_1_6 = Indicator(
                     upload_instructions=(
                         "Upload the following documents:\n"
                         "1. Copy of the written agreement\n"
-                        "2. Proof of deposit reflecting the Account No./Name of Barangay SK and the total allocated amount for the 2023 SK funds"
+                        "2. Proof of deposit reflecting the Account No./Name of Barangay SK and the total allocated amount for SK funds"
                     ),
                     validation_rule="ALL_ITEMS_REQUIRED",
                     checklist_items=[
@@ -59,8 +59,8 @@ INDICATOR_1_6 = Indicator(
                         ),
                         ChecklistItem(
                             id="1_6_1_1_b",
-                            label="b) Proof of deposit reflecting the Account No./Name of Barangay SK and the total allocated amount for the 2023 SK funds",
-                            mov_description="Proof of deposit with Account No./Name and total 2023 SK funds amount",
+                            label="b) Proof of deposit reflecting the Account No./Name of Barangay SK and the total allocated amount for SK funds",
+                            mov_description="Proof of deposit with Account No./Name and total SK funds amount",
                             required=True,
                             display_order=2,
                             field_notes=FieldNotes(
@@ -78,14 +78,14 @@ INDICATOR_1_6 = Indicator(
                     code="1.6.1.2",
                     name="The barangay does not have Barangay-SK Agreement but with current account",
                     upload_instructions=(
-                        "Upload: Deposit slips reflecting the Account No./Name of Barangay SK and the total allocated amount for the 2023 SK funds"
+                        "Upload: Deposit slips reflecting the Account No./Name of Barangay SK and the total allocated amount for SK funds"
                     ),
                     validation_rule="ALL_ITEMS_REQUIRED",
                     checklist_items=[
                         ChecklistItem(
                             id="1_6_1_2_deposit",
-                            label="Deposit slips reflecting the Account No./Name of Barangay SK and the total allocated amount for the 2023 SK funds",
-                            mov_description="Deposit slips with Account No./Name and total 2023 SK funds",
+                            label="Deposit slips reflecting the Account No./Name of Barangay SK and the total allocated amount for SK funds",
+                            mov_description="Deposit slips with Account No./Name and total SK funds",
                             required=True,
                             display_order=1,
                             field_notes=FieldNotes(
@@ -117,11 +117,18 @@ INDICATOR_1_6 = Indicator(
                             display_order=1
                         ),
                         ChecklistItem(
+                            id="1_6_1_3_or",
+                            label="OR",
+                            item_type="info_text",
+                            required=False,
+                            display_order=2
+                        ),
+                        ChecklistItem(
                             id="1_6_1_3_b",
                             label="b) Proof of transfer or corresponding legal forms/documents issued by the city/municipal treasurer if the barangay opted that the corresponding SK fund be kept as trust fund in the custody of the C/M treasurer",
                             mov_description="Legal forms/documents from city/municipal treasurer if SK fund kept as trust fund in C/M custody",
                             required=False,
-                            display_order=2
+                            display_order=3
                         ),
                     ],
                     notes=FormNotes(
@@ -137,11 +144,11 @@ INDICATOR_1_6 = Indicator(
         # === 1.6.2 Single Indicator with Conditional Logic (OR between 5+ and 4-below) ===
         SubIndicator(
             code="1.6.2",
-            name="Presence of Approved Annual Barangay Youth Investment Program (ABYIP) for 2023",
+            name="Presence of Approved Annual Barangay Youth Investment Program (ABYIP)",
             upload_instructions=(
                 "Upload based on the number of SK Officials:\n\n"
-                "1. (If 5+ SK Officials) Approved Resolution approving the 2023 SK Annual/Supplemental Budget\n"
-                "2. (If 5+ SK Officials) An Approved 2023 ABYIP signed by the SK Chairperson and its members\n"
+                "1. (If 5+ SK Officials) Approved Resolution approving the SK Annual/Supplemental Budget\n"
+                "2. (If 5+ SK Officials) An Approved ABYIP signed by the SK Chairperson and its members\n"
                 "3. (If 4 or fewer SK Officials) Certification from the C/MLGOO on number of SK officials"
             ),
             validation_rule="ANY_ITEM_REQUIRED",  # OR logic between the two option groups
@@ -157,16 +164,16 @@ INDICATOR_1_6 = Indicator(
                 ),
                 ChecklistItem(
                     id="1_6_2_5above_a",
-                    label="Approved Resolution approving the 2023 SK Annual/Supplemental Budget",
-                    mov_description="Approved Resolution for 2023 SK Annual/Supplemental Budget (Required if 5+ SK officials)",
+                    label="Approved Resolution approving the SK Annual/Supplemental Budget",
+                    mov_description="Approved Resolution for SK Annual/Supplemental Budget (Required if 5+ SK officials)",
                     required=False,  # Conditionally required
                     display_order=2,
                     option_group="Option A"
                 ),
                 ChecklistItem(
                     id="1_6_2_5above_b",
-                    label="An Approved 2023 ABYIP signed by the SK Chairperson and its members",
-                    mov_description="Approved 2023 ABYIP with signatures of SK Chairperson and members (Required if 5+ SK officials)",
+                    label="An Approved ABYIP signed by the SK Chairperson and its members",
+                    mov_description="Approved ABYIP with signatures of SK Chairperson and members (Required if 5+ SK officials)",
                     required=False,  # Conditionally required
                     display_order=3,
                     option_group="Option A"

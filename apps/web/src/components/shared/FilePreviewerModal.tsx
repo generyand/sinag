@@ -60,9 +60,9 @@ export function FilePreviewerModal({
     if (hasError) {
       return (
         <div className="flex flex-col items-center justify-center h-96 text-center">
-          <FileText className="h-16 w-16 text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Unable to Preview</h3>
-          <p className="text-gray-500 mb-4">
+          <FileText className="h-16 w-16 text-gray-400 dark:text-gray-500 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">Unable to Preview</h3>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">
             This file type cannot be previewed in the browser.
           </p>
           <Button onClick={() => window.open(fileUrl, '_blank')} className="flex items-center gap-2">
@@ -76,14 +76,14 @@ export function FilePreviewerModal({
     if (isLoading) {
       return (
         <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>
         </div>
       );
     }
 
     if (isImage(detectedFileType)) {
       return (
-        <div className="flex items-center justify-center h-96 bg-gray-50">
+        <div className="flex items-center justify-center h-96 bg-gray-50 dark:bg-gray-800/50">
           <img
             src={fileUrl}
             alt={fileName}
@@ -97,7 +97,7 @@ export function FilePreviewerModal({
 
     if (isVideo(detectedFileType)) {
       return (
-        <div className="flex items-center justify-center h-96 bg-gray-50">
+        <div className="flex items-center justify-center h-96 bg-gray-50 dark:bg-gray-800/50">
           <video
             src={fileUrl}
             controls
@@ -113,7 +113,7 @@ export function FilePreviewerModal({
 
     if (isPDF(detectedFileType)) {
       return (
-        <div className="h-96 bg-gray-50 rounded-lg">
+        <div className="h-96 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
           <iframe
             src={`${fileUrl}#toolbar=0&navpanes=0&scrollbar=1`}
             className="w-full h-full rounded-lg"
@@ -129,8 +129,8 @@ export function FilePreviewerModal({
     return (
       <div className="flex flex-col items-center justify-center h-96 text-center">
         {getFileIcon(detectedFileType)}
-        <h3 className="text-lg font-medium text-gray-900 mb-2 mt-4">{fileName}</h3>
-        <p className="text-gray-500 mb-4">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2 mt-4">{fileName}</h3>
+        <p className="text-gray-500 dark:text-gray-400 mb-4">
           This file type cannot be previewed in the browser.
         </p>
         <Button onClick={() => window.open(fileUrl, '_blank')} className="flex items-center gap-2">

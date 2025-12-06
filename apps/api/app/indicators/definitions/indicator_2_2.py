@@ -127,7 +127,7 @@ INDICATOR_2_2 = Indicator(
                 ChecklistItem(
                     id="2_2_3_top_1_hazard",
                     label="TOP 1 Hazard:",
-                    mov_description="Input the first top hazard that the Early Warning System addresses",
+                    mov_description="Please supply the required information",
                     required=True,
                     requires_document_count=True,  # This is a text input field
                     display_order=2
@@ -136,7 +136,7 @@ INDICATOR_2_2 = Indicator(
                 ChecklistItem(
                     id="2_2_3_top_2_hazard",
                     label="TOP 2 Hazard:",
-                    mov_description="Input the second top hazard that the Early Warning System addresses",
+                    mov_description=None,  # Removed - only first field needs label
                     required=True,
                     requires_document_count=True,  # This is a text input field
                     display_order=3

@@ -66,7 +66,7 @@ export default function ValidatorSubmissionsPage() {
     const submissions: BarangaySubmission[] = queueData.map((item) => ({
       id: item.assessment_id.toString(),
       barangayName: item.barangay_name || 'Unknown',
-      areaProgress: 0, // Not provided by API, default to 0
+      areaProgress: item.area_progress ?? 0, // Progress from API
       areaStatus: mapStatusToAreaStatus(item.status),
       overallStatus: mapStatusToOverallStatus(item.status),
       lastUpdated: item.updated_at,

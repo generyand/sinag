@@ -58,8 +58,11 @@ export const postMovsAssessments$AssessmentIdIndicators$IndicatorIdUpload = (
       
       const formData = new FormData();
 formData.append(`file`, bodyUploadMovFileApiV1MovsAssessmentsAssessmentIdIndicatorsIndicatorIdUploadPost.file)
-if(bodyUploadMovFileApiV1MovsAssessmentsAssessmentIdIndicatorsIndicatorIdUploadPost.field_id !== undefined) {
+if(bodyUploadMovFileApiV1MovsAssessmentsAssessmentIdIndicatorsIndicatorIdUploadPost.field_id !== undefined && bodyUploadMovFileApiV1MovsAssessmentsAssessmentIdIndicatorsIndicatorIdUploadPost.field_id !== null) {
  formData.append(`field_id`, bodyUploadMovFileApiV1MovsAssessmentsAssessmentIdIndicatorsIndicatorIdUploadPost.field_id)
+ }
+if(bodyUploadMovFileApiV1MovsAssessmentsAssessmentIdIndicatorsIndicatorIdUploadPost.field_label !== undefined && bodyUploadMovFileApiV1MovsAssessmentsAssessmentIdIndicatorsIndicatorIdUploadPost.field_label !== null) {
+ formData.append(`field_label`, bodyUploadMovFileApiV1MovsAssessmentsAssessmentIdIndicatorsIndicatorIdUploadPost.field_label)
  }
 
       return mutator<MOVFileResponse>(

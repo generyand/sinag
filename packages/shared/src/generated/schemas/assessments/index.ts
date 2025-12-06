@@ -618,8 +618,21 @@ export type BodyTestCalculationApiV1IndicatorsTestCalculationPostAssessmentData 
  */
 export interface BodyUploadMovFileApiV1MovsAssessmentsAssessmentIdIndicatorsIndicatorIdUploadPost {
   file: Blob;
-  field_id?: string;
+  field_id?: BodyUploadMovFileApiV1MovsAssessmentsAssessmentIdIndicatorsIndicatorIdUploadPostFieldId;
+  field_label?: BodyUploadMovFileApiV1MovsAssessmentsAssessmentIdIndicatorsIndicatorIdUploadPostFieldLabel;
 }
+
+
+/**
+ * BodyUploadMovFileApiV1MovsAssessmentsAssessmentIdIndicatorsIndicatorIdUploadPostFieldId
+ */
+export type BodyUploadMovFileApiV1MovsAssessmentsAssessmentIdIndicatorsIndicatorIdUploadPostFieldId = string | null;
+
+
+/**
+ * BodyUploadMovFileApiV1MovsAssessmentsAssessmentIdIndicatorsIndicatorIdUploadPostFieldLabel
+ */
+export type BodyUploadMovFileApiV1MovsAssessmentsAssessmentIdIndicatorsIndicatorIdUploadPostFieldLabel = string | null;
 
 
 /**

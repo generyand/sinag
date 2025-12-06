@@ -77,11 +77,11 @@ INDICATOR_3_3 = Indicator(
             code="3.3.2",
             name="System: Systematic maintenance of records of cases",
             upload_instructions=(
-                "Upload ONE of the following (only 1 required):\n\n"
-                "1. For barangays of cities: Two (2) photos with caption of the computer database with searchable information "
-                "(Photo Requirements: One photo with Distant View and one photo with Close-up View. "
-                "Note: Photos of the computer database using MS Excel and such are acceptable)\n"
-                "2. For barangays of municipalities: One (1) photo with caption on the manual record (Case Record Book) OR digital file (scanned copy of KP files)"
+                "OPTION A - For barangays of cities:\n"
+                "- Two (2) photos with caption of the computer database with searchable information\n\n"
+                "OR\n\n"
+                "OPTION B - For barangays of municipalities:\n"
+                "- One (1) photo with caption on the manual record (Case Record Book) OR digital file (scanned copy of KP files)"
             ),
             validation_rule="ANY_ITEM_REQUIRED",  # OR logic: either cities OR municipalities option
             checklist_items=[
@@ -91,7 +91,17 @@ INDICATOR_3_3 = Indicator(
                     label="For barangays of cities: Complete database with searchable information",
                     mov_description="Verification of uploaded photos showing computer database with searchable information for barangays of cities (2 photos: Distant View and Close-up View)",
                     required=False,  # OR logic - only one of the two options is required
-                    display_order=1
+                    display_order=1,
+                    option_group="Option A"
+                ),
+                # OR Separator
+                ChecklistItem(
+                    id="3_3_2_or_separator",
+                    label="OR",
+                    mov_description="OR",
+                    item_type="info_text",
+                    required=False,
+                    display_order=2
                 ),
                 # Upload Verification for Municipalities (3.3.2.2)
                 ChecklistItem(
@@ -99,7 +109,8 @@ INDICATOR_3_3 = Indicator(
                     label="For barangays of municipalities: Manual Records (Case Record Book) OR Digital Record Filing (scanned copy of KP files)",
                     mov_description="Verification of uploaded photo showing manual record or digital file for barangays of municipalities (1 photo)",
                     required=False,  # OR logic - only one of the two options is required
-                    display_order=2
+                    display_order=3,
+                    option_group="Option B"
                 ),
             ]
         ),
@@ -116,7 +127,7 @@ INDICATOR_3_3 = Indicator(
                 # Upload Verification
                 ChecklistItem(
                     id="3_3_3_upload_1",
-                    label="Copies of minutes of meetings with attendance sheets (at least 3 minutes covering meetings conducted in CY 2023)",
+                    label="Copies of minutes of meetings with attendance sheets (at least 3 minutes covering meetings conducted)",
                     mov_description="Verification of uploaded copies of minutes of meetings with attendance sheets for at least 3 monthly meetings",
                     required=True,
                     display_order=1

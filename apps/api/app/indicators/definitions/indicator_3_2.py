@@ -27,7 +27,7 @@ INDICATOR_3_2 = Indicator(
             upload_instructions=(
                 "Upload the following:\n\n"
                 "1. EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) "
-                "indicating correct membership in accordance to the EO 366 s. of 1996, covering January to October 2023\n\n"
+                "indicating correct membership in accordance to the EO 366 s. of 1996\n\n"
                 "The BPOC must include the following minimum composition:\n"
                 "- Punong Barangay\n"
                 "- Sangguniang Kabataan Chairperson\n"
@@ -45,7 +45,7 @@ INDICATOR_3_2 = Indicator(
             checklist_items=[
                 ChecklistItem(
                     id="3_2_1_upload",
-                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) indicating correct membership in accordance to the EO 366 s. of 1996, covering January to October 2023",
+                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) indicating correct membership in accordance to the EO 366 s. of 1996",
                     mov_description="Verification of uploaded Executive Order or similar issuance organizing BPOC with compliant composition",
                     item_type="checkbox",
                     required=False,
@@ -79,17 +79,17 @@ INDICATOR_3_2 = Indicator(
         # Sub-Indicator 3.2.2: Plan
         SubIndicator(
             code="3.2.2",
-            name="Plan: Formulated Barangay Peace and Order and Public Safety (BPOPS) Plan in accordance to DILG MC 2017-142 covering CY 2023",
+            name="Plan: Formulated Barangay Peace and Order and Public Safety (BPOPS) Plan in accordance to DILG MC 2017-142",
             upload_instructions=(
-                "Upload: Approved BPOPS Plan, covering CY 2023"
+                "Upload: Approved BPOPS Plan"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 # Upload Verification
                 ChecklistItem(
                     id="3_2_2_upload_1",
-                    label="Approved BPOPS Plan, covering CY 2023",
-                    mov_description="Verification of uploaded Approved Barangay Peace and Order and Public Safety Plan covering CY 2023",
+                    label="Approved BPOPS Plan",
+                    mov_description="Verification of uploaded Approved Barangay Peace and Order and Public Safety Plan",
                     required=True,
                     display_order=1
                 ),
@@ -138,7 +138,7 @@ INDICATOR_3_2 = Indicator(
                 ChecklistItem(
                     id="3_2_3_physical_reflected",
                     label="Total number of activities/projects reflected in the Plan",
-                    mov_description="Please supply the required information:",
+                    mov_description=None,  # Removed - only first field in each option needs label
                     item_type="calculation_field",
                     required=False,
                     display_order=4,
@@ -158,7 +158,7 @@ INDICATOR_3_2 = Indicator(
                 # Option B: Financial Accomplishment - YES/NO assessment
                 ChecklistItem(
                     id="3_2_3_option_b",
-                    label="b. At least 50% fund utilization rate of the CY 2023 BPOPs Budget",
+                    label="b. At least 50% fund utilization rate of the BPOPs Budget",
                     mov_description="Checkbox for financial accomplishment option",
                     item_type="assessment_field",
                     required=False,
@@ -167,8 +167,8 @@ INDICATOR_3_2 = Indicator(
                 ),
                 ChecklistItem(
                     id="3_2_3_financial_allocated",
-                    label="Total amount allocated for FPAs in the BPOPS Plan for CY 2023",
-                    mov_description="Please supply the required information:",
+                    label="Total amount allocated for FPAs in the BPOPS Plan",
+                    mov_description=None,  # Removed - only first field in each option needs label
                     item_type="calculation_field",
                     required=False,
                     display_order=7,
@@ -176,7 +176,7 @@ INDICATOR_3_2 = Indicator(
                 ),
                 ChecklistItem(
                     id="3_2_3_financial_utilized",
-                    label="Total amount utilized (as of Dec. 31, 2023)",
+                    label="Total amount utilized",
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,

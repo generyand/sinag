@@ -161,9 +161,9 @@ export function CapDevInsightsCard({
       <CardContent className="p-0">
         {/* Language Selector - Sticky */}
         {availableLanguages.length > 1 && (
-          <div className="flex items-center gap-3 px-6 py-3 bg-gray-50 border-b">
-            <Globe className="h-4 w-4 text-gray-500" />
-            <span className="text-sm font-medium text-gray-600">Language:</span>
+          <div className="flex items-center gap-3 px-6 py-3 bg-gray-50 dark:bg-gray-800/50 border-b border-[var(--border)]">
+            <Globe className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+            <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Language:</span>
             <div className="flex gap-1.5">
               {availableLanguages.map((lang) => (
                 <Button
@@ -184,10 +184,10 @@ export function CapDevInsightsCard({
 
         {insights.status === 'generating' ? (
           <div className="p-8">
-            <Alert className="bg-blue-50 border-blue-200">
-              <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
-              <AlertTitle className="text-blue-800">Generating Insights</AlertTitle>
-              <AlertDescription className="text-blue-700">
+            <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800">
+              <RefreshCw className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
+              <AlertTitle className="text-blue-800 dark:text-blue-200">Generating Insights</AlertTitle>
+              <AlertDescription className="text-blue-700 dark:text-blue-300">
                 AI is analyzing the assessment data and generating personalized recommendations.
                 This typically takes 1-2 minutes...
               </AlertDescription>
@@ -207,38 +207,38 @@ export function CapDevInsightsCard({
           <Tabs defaultValue="summary" className="w-full">
             {/* Enhanced Tab List */}
             <div className="px-6 pt-4">
-              <TabsList className="grid w-full grid-cols-5 bg-gray-100/80 p-1 h-auto">
+              <TabsList className="grid w-full grid-cols-5 bg-gray-100/80 dark:bg-gray-800/50 p-1 h-auto">
                 <TabsTrigger
                   value="summary"
-                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm py-2.5 gap-1.5"
+                  className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm py-2.5 gap-1.5"
                 >
                   <BookOpen className="h-4 w-4" />
                   <span className="hidden sm:inline">Summary</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="weaknesses"
-                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm py-2.5 gap-1.5"
+                  className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm py-2.5 gap-1.5"
                 >
                   <AlertTriangle className="h-4 w-4" />
                   <span className="hidden sm:inline">Weaknesses</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="recommendations"
-                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm py-2.5 gap-1.5"
+                  className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm py-2.5 gap-1.5"
                 >
                   <Lightbulb className="h-4 w-4" />
                   <span className="hidden sm:inline">Actions</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="interventions"
-                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm py-2.5 gap-1.5"
+                  className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm py-2.5 gap-1.5"
                 >
                   <GraduationCap className="h-4 w-4" />
                   <span className="hidden sm:inline">Training</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="priorities"
-                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm py-2.5 gap-1.5"
+                  className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm py-2.5 gap-1.5"
                 >
                   <Zap className="h-4 w-4" />
                   <span className="hidden sm:inline">Priorities</span>
@@ -280,10 +280,10 @@ export function CapDevInsightsCard({
           </Tabs>
         ) : (
           <div className="p-8">
-            <Alert className="bg-gray-50 border-gray-200">
-              <AlertTriangle className="h-4 w-4 text-gray-500" />
-              <AlertTitle className="text-gray-700">Content Not Available</AlertTitle>
-              <AlertDescription className="text-gray-600">
+            <Alert className="bg-gray-50 border-gray-200 dark:bg-gray-800/50 dark:border-gray-700">
+              <AlertTriangle className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+              <AlertTitle className="text-gray-700 dark:text-gray-200">Content Not Available</AlertTitle>
+              <AlertDescription className="text-gray-600 dark:text-gray-400">
                 Insights in {languageLabels[selectedLanguage]} are not available yet.
               </AlertDescription>
             </Alert>
@@ -292,12 +292,12 @@ export function CapDevInsightsCard({
 
         {/* Footer with timestamp */}
         {insights.generated_at && (
-          <div className="px-6 py-3 bg-gray-50 border-t flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs text-gray-500">
+          <div className="px-6 py-3 bg-gray-50 dark:bg-gray-800/50 border-t border-[var(--border)] flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
               <Sparkles className="h-3 w-3" />
               <span>Powered by Gemini AI</span>
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-gray-400">
+            <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
               <Clock className="h-3 w-3" />
               Generated: {new Date(insights.generated_at).toLocaleString()}
             </div>

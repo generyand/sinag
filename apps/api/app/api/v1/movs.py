@@ -4,7 +4,7 @@ MOV File Management API Endpoints (Epic 4.0)
 Provides endpoints for uploading, listing, and deleting MOV (Means of Verification) files.
 """
 
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session, joinedload
@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.api import deps
 from app.db.enums import UserRole
 from app.db.models.assessment import MOVFile
+from app.db.models.governance_area import Indicator
 from app.db.models.user import User
 from app.schemas.assessment import MOVFileListResponse, MOVFileResponse
 from app.services.file_validation_service import file_validation_service
@@ -42,7 +43,8 @@ def upload_mov_file(
     assessment_id: int,
     indicator_id: int,
     file: UploadFile = File(...),
-    field_id: str = Form(None),
+    field_id: Optional[str] = Form(None),
+    field_label: Optional[str] = Form(None),
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
 ) -> MOVFileResponse:
@@ -53,6 +55,8 @@ def upload_mov_file(
         assessment_id: ID of the assessment
         indicator_id: ID of the indicator
         file: The file to upload (multipart/form-data)
+        field_id: Optional field identifier for multi-field uploads
+        field_label: Optional field label for generating display filename
         db: Database session
         current_user: Currently authenticated user
 
@@ -75,6 +79,13 @@ def upload_mov_file(
             },
         )
 
+    # Look up indicator code for display filename generation
+    indicator_code: Optional[str] = None
+    if field_label:
+        indicator = db.query(Indicator).filter(Indicator.id == indicator_id).first()
+        if indicator and indicator.indicator_code:
+            indicator_code = indicator.indicator_code
+
     # Upload file to storage and create database record
     try:
         mov_file = storage_service.upload_mov_file(
@@ -84,6 +95,8 @@ def upload_mov_file(
             indicator_id=indicator_id,
             user_id=current_user.id,
             field_id=field_id,
+            indicator_code=indicator_code,
+            field_label=field_label,
         )
 
         return MOVFileResponse.model_validate(mov_file)
