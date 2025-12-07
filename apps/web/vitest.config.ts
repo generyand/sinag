@@ -11,13 +11,23 @@ export default defineConfig({
     css: true,
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
+      reporter: ['text', 'json', 'html', 'lcov'],
       exclude: [
         'node_modules/',
         'vitest.setup.ts',
         '**/*.config.{ts,js}',
         '**/types/**',
+        '**/*.test.{ts,tsx}',
+        '**/__tests__/**',
+        '**/generated/**',
       ],
+      thresholds: {
+        // Start with achievable thresholds, increase over time
+        lines: 50,
+        functions: 50,
+        branches: 50,
+        statements: 50,
+      },
     },
   },
   resolve: {
