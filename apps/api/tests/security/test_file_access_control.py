@@ -43,13 +43,14 @@ class TestCrossUserFileAccess:
         # Create second BLGU user
         import uuid
 
+        from app.core.security import pwd_context
         from app.db.enums import UserRole
 
         user_b_email = f"blgu_b_{uuid.uuid4().hex[:8]}@example.com"
         user_b = User(
             email=user_b_email,
             name=f"BLGU User B {uuid.uuid4().hex[:8]}",
-            hashed_password="hashed_password_placeholder",
+            hashed_password=pwd_context.hash("password"),
             role=UserRole.BLGU_USER,
             is_active=True,
         )
@@ -382,8 +383,8 @@ class TestFileListingAuthorization:
             headers=auth_headers_assessor,
         )
 
-        # Should either return empty list or 403
-        assert response.status_code in [200, 403]
+        # Should either return empty list, 403, or 404 (not leaking info about existence)
+        assert response.status_code in [200, 403, 404]
 
         if response.status_code == 200:
             files = response.json()
