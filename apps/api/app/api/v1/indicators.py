@@ -516,13 +516,26 @@ def get_indicator_form_schema(
     # Extract form_schema and metadata
     # Note: Do NOT include calculation_schema or remark_schema (assessor-only fields)
     from app.schemas.indicator import FormSchemaMetadata
+    from app.core.year_resolver import get_year_resolver
+
+    # Apply year placeholder resolution
+    try:
+        year_resolver = get_year_resolver(db)
+        resolved_name = year_resolver.resolve_string(indicator.name)
+        resolved_description = year_resolver.resolve_string(indicator.description)
+        resolved_form_schema = year_resolver.resolve_schema(indicator.form_schema)
+    except ValueError:
+        # If no active assessment year config, use raw values
+        resolved_name = indicator.name
+        resolved_description = indicator.description
+        resolved_form_schema = indicator.form_schema
 
     return FormSchemaResponse(
         indicator_id=indicator.id,
-        form_schema=indicator.form_schema or {},
+        form_schema=resolved_form_schema or {},
         metadata=FormSchemaMetadata(
-            title=indicator.name,
-            description=indicator.description,
+            title=resolved_name,
+            description=resolved_description,
             governance_area_name=indicator.governance_area.name
             if indicator.governance_area
             else None,

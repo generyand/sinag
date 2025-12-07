@@ -191,7 +191,6 @@ INDICATOR_1_6 = Indicator(
                     item_type="info_text",
                     required=False,
                     display_order=1,
-                    option_group="Option A",
                 ),
                 ChecklistItem(
                     id="1_6_2_5above_a",
@@ -199,7 +198,6 @@ INDICATOR_1_6 = Indicator(
                     mov_description="Approved Resolution for SK Annual/Supplemental Budget (Required if 5+ SK officials)",
                     required=False,  # Conditionally required
                     display_order=2,
-                    option_group="Option A",
                 ),
                 ChecklistItem(
                     id="1_6_2_5above_b",
@@ -207,7 +205,6 @@ INDICATOR_1_6 = Indicator(
                     mov_description="Approved ABYIP with signatures of SK Chairperson and members (Required if 5+ SK officials)",
                     required=False,  # Conditionally required
                     display_order=3,
-                    option_group="Option A",
                 ),
                 # OR separator (visual indicator)
                 ChecklistItem(
@@ -224,7 +221,6 @@ INDICATOR_1_6 = Indicator(
                     item_type="info_text",
                     required=False,
                     display_order=5,
-                    option_group="Option B",
                 ),
                 ChecklistItem(
                     id="1_6_2_4below_cert",
@@ -232,7 +228,6 @@ INDICATOR_1_6 = Indicator(
                     mov_description="Certification from City/Municipal LGOO confirming number of SK officials (Required if 4 or fewer SK officials)",
                     required=False,  # Conditionally required
                     display_order=6,
-                    option_group="Option B",
                 ),
             ],
         ),

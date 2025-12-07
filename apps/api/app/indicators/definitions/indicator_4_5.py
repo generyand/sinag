@@ -193,7 +193,6 @@ INDICATOR_4_5 = Indicator(
                     item_type="assessment_field",
                     required=False,
                     display_order=3,
-                    option_group="Option A",
                 ),
                 ChecklistItem(
                     id="4_5_6_physical_accomplished",
@@ -201,16 +200,14 @@ INDICATOR_4_5 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=41,  # Order: accomplished first
-                    option_group="Option A",
+                    display_order=4,
                 ),
                 ChecklistItem(
                     id="4_5_6_physical_reflected",
                     label="Total number of activities/projects reflected in the Plan",
                     item_type="calculation_field",
                     required=False,
-                    display_order=42,  # Order: reflected second
-                    option_group="Option A",
+                    display_order=5,
                 ),
                 # OR separator (info_text)
                 ChecklistItem(
@@ -219,7 +216,7 @@ INDICATOR_4_5 = Indicator(
                     mov_description="OR",
                     item_type="info_text",
                     required=False,
-                    display_order=5,
+                    display_order=6,
                 ),
                 # OPTION B - Fund Utilization
                 ChecklistItem(
@@ -228,8 +225,7 @@ INDICATOR_4_5 = Indicator(
                     mov_description="Assessment for fund utilization option",
                     item_type="assessment_field",
                     required=False,
-                    display_order=6,
-                    option_group="Option B",
+                    display_order=7,
                 ),
                 ChecklistItem(
                     id="4_5_6_financial_utilized",
@@ -237,16 +233,14 @@ INDICATOR_4_5 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=71,  # Order: utilized first
-                    option_group="Option B",
+                    display_order=8,
                 ),
                 ChecklistItem(
                     id="4_5_6_financial_allocated",
                     label="Total amount allocated for PPAs in the BCPC AWFP for {CY_CURRENT_YEAR}",
                     item_type="calculation_field",
                     required=False,
-                    display_order=72,  # Order: allocated second
-                    option_group="Option B",
+                    display_order=9,
                 ),
             ],
         ),

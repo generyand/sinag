@@ -105,18 +105,24 @@ def _parse_upload_sections_from_instructions(
                         "required": False,
                     }
                 )
-            # Detect option headers (e.g., "OPTION A - PHYSICAL:")
+            # Detect option headers (e.g., "OPTION A - PHYSICAL:" or "OPTION 1:")
             elif "OPTION" in line_upper and (
                 not line_stripped[0].isdigit() if line_stripped else True
             ):
                 current_section = line_stripped
-                # Extract option letter (A, B, C) for grouping
+                # Extract option letter (A, B, C) or number (1, 2, 3) for grouping
                 if "OPTION A" in line_upper:
                     current_option_id = "option_a"
                 elif "OPTION B" in line_upper:
                     current_option_id = "option_b"
                 elif "OPTION C" in line_upper:
                     current_option_id = "option_c"
+                elif "OPTION 1" in line_upper:
+                    current_option_id = "Option 1"
+                elif "OPTION 2" in line_upper:
+                    current_option_id = "Option 2"
+                elif "OPTION 3" in line_upper:
+                    current_option_id = "Option 3"
                 else:
                     current_option_id = f"option_{len(upload_sections) + 1}"
 

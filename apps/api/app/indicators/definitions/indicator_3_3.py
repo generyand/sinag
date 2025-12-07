@@ -90,7 +90,6 @@ INDICATOR_3_3 = Indicator(
                     mov_description="Verification of uploaded photos showing computer database with searchable information for barangays of cities (2 photos: Distant View and Close-up View)",
                     required=False,  # OR logic - only one of the two options is required
                     display_order=1,
-                    option_group="Option A",
                 ),
                 # OR Separator
                 ChecklistItem(
@@ -108,7 +107,6 @@ INDICATOR_3_3 = Indicator(
                     mov_description="Verification of uploaded photo showing manual record or digital file for barangays of municipalities (1 photo)",
                     required=False,  # OR logic - only one of the two options is required
                     display_order=3,
-                    option_group="Option B",
                 ),
             ],
         ),

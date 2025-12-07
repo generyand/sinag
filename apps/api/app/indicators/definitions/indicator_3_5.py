@@ -104,7 +104,6 @@ INDICATOR_3_5 = Indicator(
                     required=False,  # OR logic - only one option is required
                     requires_document_count=False,
                     display_order=1,
-                    option_group="Option A",
                 ),
                 # OR Separator
                 ChecklistItem(
@@ -122,7 +121,6 @@ INDICATOR_3_5 = Indicator(
                     required=False,  # OR logic - only one option is required
                     requires_document_count=False,
                     display_order=3,
-                    option_group="Option B",
                 ),
             ],
         ),

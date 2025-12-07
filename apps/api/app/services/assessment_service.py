@@ -184,6 +184,15 @@ class AssessmentService:
         total_start = time.time()
         from sqlalchemy import text
 
+        # Initialize year placeholder resolver for dynamic year resolution
+        from app.core.year_resolver import get_year_resolver
+
+        try:
+            year_resolver = get_year_resolver(db)
+        except ValueError:
+            # If no active assessment year config, skip resolution
+            year_resolver = None
+
         try:
             # QUERY 1a: Ensure assessment exists (INSERT if not exists)
             step_start = time.time()
@@ -276,12 +285,22 @@ class AssessmentService:
                         "area_type": row[2],
                     }
                 if row[3]:  # has indicator
+                    # Apply year placeholder resolution to name, description, and form_schema
+                    ind_name = row[4]
+                    ind_description = row[5]
+                    ind_form_schema = row[7]
+
+                    if year_resolver:
+                        ind_name = year_resolver.resolve_string(ind_name)
+                        ind_description = year_resolver.resolve_string(ind_description)
+                        ind_form_schema = year_resolver.resolve_schema(ind_form_schema)
+
                     indicators_raw.append({
                         "id": row[3],
-                        "name": row[4],
-                        "description": row[5],
+                        "name": ind_name,
+                        "description": ind_description,
                         "indicator_code": row[6],
-                        "form_schema": row[7],
+                        "form_schema": ind_form_schema,
                         "governance_area_id": row[8],
                         "parent_id": row[9],
                         "sort_order": row[10],

@@ -128,7 +128,6 @@ INDICATOR_3_2 = Indicator(
                     item_type="assessment_field",
                     required=False,
                     display_order=2,
-                    option_group="Option A",
                 ),
                 ChecklistItem(
                     id="3_2_3_physical_accomplished",
@@ -137,7 +136,6 @@ INDICATOR_3_2 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=3,
-                    option_group="Option A",
                 ),
                 ChecklistItem(
                     id="3_2_3_physical_reflected",
@@ -146,7 +144,6 @@ INDICATOR_3_2 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=4,
-                    option_group="Option A",
                 ),
                 # OR Separator (info_text)
                 ChecklistItem(
@@ -165,7 +162,6 @@ INDICATOR_3_2 = Indicator(
                     item_type="assessment_field",
                     required=False,
                     display_order=6,
-                    option_group="Option B",
                 ),
                 ChecklistItem(
                     id="3_2_3_financial_utilized",
@@ -174,7 +170,6 @@ INDICATOR_3_2 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=7,
-                    option_group="Option B",
                 ),
                 ChecklistItem(
                     id="3_2_3_financial_allocated",
@@ -183,7 +178,6 @@ INDICATOR_3_2 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=8,
-                    option_group="Option B",
                 ),
             ],
         ),

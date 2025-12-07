@@ -228,7 +228,7 @@ INDICATOR_3_1 = Indicator(
             ),
             validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # OR logic: either BAO OR AIP
             checklist_items=[
-                # Option 1 - option_group="Option 1" for OR-logic grouping
+                # Option 1
                 ChecklistItem(
                     id="3_1_6_option_1",
                     label="Approved Barangay Appropriation Ordinance signed by the PB, Barangay Secretary and SBMs",
@@ -236,7 +236,6 @@ INDICATOR_3_1 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=1,
-                    option_group="Option 1",
                 ),
                 # OR separator
                 ChecklistItem(
@@ -247,7 +246,7 @@ INDICATOR_3_1 = Indicator(
                     required=False,
                     display_order=2,
                 ),
-                # Option 2 - option_group="Option 2" for OR-logic grouping
+                # Option 2
                 ChecklistItem(
                     id="3_1_6_option_2",
                     label="Copy of Barangay Annual Investment Plan (AIP)",
@@ -255,7 +254,6 @@ INDICATOR_3_1 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=3,
-                    option_group="Option 2",
                 ),
                 # YES/NO assessment for allocated amount (ungrouped - always required)
                 ChecklistItem(

@@ -75,6 +75,20 @@ def update_indicator_from_def(
                     db_item.mov_description = item_def.mov_description
                     changed = True
 
+                # Update option_group if different
+                item_def_option_group = getattr(item_def, 'option_group', None)
+                if db_item.option_group != item_def_option_group:
+                    print(f"      Updating option_group for {item_def.id}: {db_item.option_group} -> {item_def_option_group}")
+                    db_item.option_group = item_def_option_group
+                    changed = True
+
+                # Update display_order if different
+                item_def_display_order = getattr(item_def, 'display_order', None)
+                if item_def_display_order is not None and db_item.display_order != item_def_display_order:
+                    print(f"      Updating display_order for {item_def.id}: {db_item.display_order} -> {item_def_display_order}")
+                    db_item.display_order = item_def_display_order
+                    changed = True
+
     return changed
 
 

@@ -184,7 +184,6 @@ INDICATOR_4_8 = Indicator(
                     item_type="checkbox",
                     required=True,
                     display_order=1,
-                    option_group="shared",
                 ),
                 # OPTION A: YES/NO, then CERTIFICATION, then calculation
                 ChecklistItem(
@@ -194,7 +193,6 @@ INDICATOR_4_8 = Indicator(
                     item_type="assessment_field",
                     required=False,
                     display_order=2,
-                    option_group="option_a",
                 ),
                 ChecklistItem(
                     id="4_8_4_cert_a",
@@ -203,7 +201,6 @@ INDICATOR_4_8 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=3,
-                    option_group="option_a",
                 ),
                 ChecklistItem(
                     id="4_8_4_physical_accomplished",
@@ -212,7 +209,6 @@ INDICATOR_4_8 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=4,
-                    option_group="option_a",
                 ),
                 ChecklistItem(
                     id="4_8_4_physical_reflected",
@@ -220,7 +216,6 @@ INDICATOR_4_8 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=5,
-                    option_group="option_a",
                 ),
                 # OR separator
                 ChecklistItem(
@@ -239,7 +234,6 @@ INDICATOR_4_8 = Indicator(
                     item_type="assessment_field",
                     required=False,
                     display_order=7,
-                    option_group="option_b",
                 ),
                 ChecklistItem(
                     id="4_8_4_cert_b",
@@ -248,7 +242,6 @@ INDICATOR_4_8 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=8,
-                    option_group="option_b",
                 ),
                 ChecklistItem(
                     id="4_8_4_financial_utilized",
@@ -257,7 +250,6 @@ INDICATOR_4_8 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=9,
-                    option_group="option_b",
                 ),
                 ChecklistItem(
                     id="4_8_4_financial_allocated",
@@ -265,7 +257,6 @@ INDICATOR_4_8 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=10,
-                    option_group="option_b",
                 ),
             ],
         ),

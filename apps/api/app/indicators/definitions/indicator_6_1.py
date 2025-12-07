@@ -162,7 +162,6 @@ INDICATOR_6_1 = Indicator(
                     mov_description="Assessment for physical accomplishment option",
                     required=False,
                     display_order=3,
-                    option_group="Option A",
                 ),
                 ChecklistItem(
                     id="6_1_4_physical_accomplished",
@@ -170,8 +169,7 @@ INDICATOR_6_1 = Indicator(
                     item_type="calculation_field",
                     mov_description="Please supply the required information:",
                     required=False,
-                    display_order=41,  # Order: accomplished first
-                    option_group="Option A",
+                    display_order=4,
                 ),
                 ChecklistItem(
                     id="6_1_4_physical_reflected",
@@ -179,8 +177,7 @@ INDICATOR_6_1 = Indicator(
                     item_type="calculation_field",
                     mov_description=None,
                     required=False,
-                    display_order=42,  # Order: reflected second
-                    option_group="Option A",
+                    display_order=5,
                 ),
                 # OR separator
                 ChecklistItem(
@@ -189,7 +186,7 @@ INDICATOR_6_1 = Indicator(
                     item_type="info_text",
                     mov_description="OR",
                     required=False,
-                    display_order=5,
+                    display_order=6,
                 ),
                 # OPTION B: YES/NO, then amount calculations
                 ChecklistItem(
@@ -198,8 +195,7 @@ INDICATOR_6_1 = Indicator(
                     item_type="assessment_field",
                     mov_description="Assessment for fund utilization option",
                     required=False,
-                    display_order=6,
-                    option_group="Option B",
+                    display_order=7,
                 ),
                 ChecklistItem(
                     id="6_1_4_financial_utilized",
@@ -207,8 +203,7 @@ INDICATOR_6_1 = Indicator(
                     item_type="calculation_field",
                     mov_description="Please supply the required information:",
                     required=False,
-                    display_order=71,  # Order: utilized first, then allocated
-                    option_group="Option B",
+                    display_order=8,
                 ),
                 ChecklistItem(
                     id="6_1_4_financial_allocated",
@@ -216,8 +211,7 @@ INDICATOR_6_1 = Indicator(
                     item_type="calculation_field",
                     mov_description=None,
                     required=False,
-                    display_order=72,  # Order: allocated below utilized
-                    option_group="Option B",
+                    display_order=9,
                 ),
             ],
         ),

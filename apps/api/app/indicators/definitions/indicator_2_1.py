@@ -168,7 +168,6 @@ INDICATOR_2_1 = Indicator(
                     item_type="assessment_field",
                     required=False,
                     display_order=2,
-                    option_group="Option A",
                 ),
                 ChecklistItem(
                     id="2_1_4_upload_1",
@@ -177,7 +176,6 @@ INDICATOR_2_1 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=3,
-                    option_group="Option A",
                 ),
                 ChecklistItem(
                     id="2_1_4_upload_2",
@@ -186,7 +184,6 @@ INDICATOR_2_1 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=4,
-                    option_group="Option A",
                 ),
                 ChecklistItem(
                     id="2_1_4_physical_accomplished",
@@ -194,16 +191,14 @@ INDICATOR_2_1 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=51,  # Order: accomplished first
-                    option_group="Option A",
+                    display_order=5,
                 ),
                 ChecklistItem(
                     id="2_1_4_physical_reflected",
                     label="Total number of activities/projects reflected in the Plan",
                     item_type="calculation_field",
                     required=False,
-                    display_order=52,  # Order: reflected second
-                    option_group="Option A",
+                    display_order=6,
                 ),
                 # OR Separator (informational)
                 ChecklistItem(
@@ -212,7 +207,7 @@ INDICATOR_2_1 = Indicator(
                     mov_description="OR",
                     item_type="info_text",
                     required=False,
-                    display_order=6,
+                    display_order=7,
                 ),
                 # Option B: Financial Accomplishment (with YES/NO assessment)
                 ChecklistItem(
@@ -221,8 +216,7 @@ INDICATOR_2_1 = Indicator(
                     mov_description="Option B label - informational only",
                     item_type="assessment_field",
                     required=False,
-                    display_order=7,
-                    option_group="Option B",
+                    display_order=8,
                 ),
                 ChecklistItem(
                     id="2_1_4_upload_3",
@@ -230,8 +224,7 @@ INDICATOR_2_1 = Indicator(
                     mov_description="Verification of uploaded Annual LDRRMF Utilization Report",
                     item_type="checkbox",
                     required=False,
-                    display_order=8,
-                    option_group="Option B",
+                    display_order=9,
                 ),
                 ChecklistItem(
                     id="2_1_4_upload_4",
@@ -239,8 +232,7 @@ INDICATOR_2_1 = Indicator(
                     mov_description="Verification of uploaded Certification on the submission and correctness of fund utilization report",
                     item_type="checkbox",
                     required=False,
-                    display_order=9,
-                    option_group="Option B",
+                    display_order=10,
                 ),
                 ChecklistItem(
                     id="2_1_4_financial_utilized",
@@ -248,16 +240,14 @@ INDICATOR_2_1 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=101,  # Order: utilized first
-                    option_group="Option B",
+                    display_order=11,
                 ),
                 ChecklistItem(
                     id="2_1_4_financial_allocated",
                     label="Total amount allocated for PPAs in the BDRRMF Plan for {CY_CURRENT_YEAR}",
                     item_type="calculation_field",
                     required=False,
-                    display_order=102,  # Order: allocated second
-                    option_group="Option B",
+                    display_order=12,
                 ),
             ],
         ),

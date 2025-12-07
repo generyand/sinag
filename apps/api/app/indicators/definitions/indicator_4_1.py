@@ -262,7 +262,6 @@ INDICATOR_4_1 = Indicator(
                     item_type="checkbox",
                     required=True,
                     display_order=1,
-                    option_group="shared",
                 ),
                 # Option A: Physical Accomplishment - YES/NO assessment
                 ChecklistItem(
@@ -271,8 +270,7 @@ INDICATOR_4_1 = Indicator(
                     mov_description="Checkbox for physical accomplishment option",
                     item_type="assessment_field",
                     required=False,
-                    display_order=4,
-                    option_group="option_a",
+                    display_order=2,
                 ),
                 ChecklistItem(
                     id="4_1_6_cert_physical",
@@ -280,8 +278,7 @@ INDICATOR_4_1 = Indicator(
                     mov_description="Verification of certification for physical accomplishment",
                     item_type="checkbox",
                     required=False,
-                    display_order=5,
-                    option_group="option_a",
+                    display_order=3,
                 ),
                 ChecklistItem(
                     id="4_1_6_physical_accomplished",
@@ -289,16 +286,14 @@ INDICATOR_4_1 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=6,
-                    option_group="option_a",
+                    display_order=4,
                 ),
                 ChecklistItem(
                     id="4_1_6_physical_reflected",
                     label="Total number of activities/projects reflected in the Plan",
                     item_type="calculation_field",
                     required=False,
-                    display_order=7,
-                    option_group="option_a",
+                    display_order=5,
                 ),
                 # OR Separator (info_text)
                 ChecklistItem(
@@ -307,7 +302,7 @@ INDICATOR_4_1 = Indicator(
                     mov_description="OR",
                     item_type="info_text",
                     required=False,
-                    display_order=8,
+                    display_order=6,
                 ),
                 # Option B: Fund Utilization - YES/NO assessment
                 ChecklistItem(
@@ -316,8 +311,7 @@ INDICATOR_4_1 = Indicator(
                     mov_description="Checkbox for fund utilization option",
                     item_type="assessment_field",
                     required=False,
-                    display_order=9,
-                    option_group="option_b",
+                    display_order=7,
                 ),
                 ChecklistItem(
                     id="4_1_6_cert_financial",
@@ -325,8 +319,7 @@ INDICATOR_4_1 = Indicator(
                     mov_description="Verification of certification for 50% fund utilization",
                     item_type="checkbox",
                     required=False,
-                    display_order=10,
-                    option_group="option_b",
+                    display_order=8,
                 ),
                 ChecklistItem(
                     id="4_1_6_financial_utilized",
@@ -334,16 +327,14 @@ INDICATOR_4_1 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=11,
-                    option_group="option_b",
+                    display_order=9,
                 ),
                 ChecklistItem(
                     id="4_1_6_financial_allocated",
                     label="Total amount allocated for PPAs in the GAD Plan for {CY_CURRENT_YEAR}",
                     item_type="calculation_field",
                     required=False,
-                    display_order=12,
-                    option_group="option_b",
+                    display_order=10,
                 ),
             ],
         ),
