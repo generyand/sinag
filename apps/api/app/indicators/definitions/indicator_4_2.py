@@ -81,7 +81,7 @@ INDICATOR_4_2 = Indicator(
         # Sub-Indicator 4.2.2: Appointment of Barangay Health Personnel (FOR PROFILING)
         SubIndicator(
             code="4.2.2",
-            name="Appointment of the following Barangay Health Personnel (FOR PROFILING)",
+            name="Appointment of the following Barangay Health Personnel: (FOR PROFILING) covering {JAN_TO_OCT_CURRENT_YEAR}",
             upload_instructions=(
                 "Upload EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the Appointment of BHW and/or BHO or BHAsst"
             ),

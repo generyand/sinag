@@ -75,7 +75,7 @@ INDICATOR_1_6 = Indicator(
                 ),
                 ChecklistItem(
                     id="1_6_1_opt1_b",
-                    label="b) Proof of deposit reflecting the Account No./Name of Barangay SK and the total allocated amount for the 2025 SK funds",
+                    label="b) Proof of deposit reflecting the Account No./Name of Barangay SK and the total allocated amount for the {CURRENT_YEAR} SK funds",
                     mov_description="Proof of deposit with Account No./Name and total SK funds amount",
                     required=False,  # Part of Option 1 group
                     display_order=3,
@@ -108,7 +108,7 @@ INDICATOR_1_6 = Indicator(
                 ),
                 ChecklistItem(
                     id="1_6_1_opt2_deposit",
-                    label="Deposit slips reflecting the Account No./Name of Barangay SK and the total allocated amount for the 2025 SK funds",
+                    label="Deposit slips reflecting the Account No./Name of Barangay SK and the total allocated amount for the {CURRENT_YEAR} SK funds",
                     mov_description="Deposit slips with Account No./Name and total SK funds",
                     required=False,  # Part of Option 2 group
                     display_order=6,
@@ -141,7 +141,7 @@ INDICATOR_1_6 = Indicator(
                 ),
                 ChecklistItem(
                     id="1_6_1_opt3_a",
-                    label="a) Proof of transfer of the 10% 2025 SK funds to the trust fund of the Barangay such as Deposit Slip or Official Receipt",
+                    label="a) Proof of transfer of the 10% {CURRENT_YEAR} SK funds to the trust fund of the Barangay such as Deposit Slip or Official Receipt",
                     mov_description="Proof of transfer of 10% SK funds to barangay trust fund (Deposit Slip or Official Receipt)",
                     required=False,  # Part of Option 3 group (OR logic within)
                     display_order=9,
@@ -175,7 +175,7 @@ INDICATOR_1_6 = Indicator(
         # === 1.6.2 Single Indicator with Conditional Logic (OR between 5+ and 4-below) ===
         SubIndicator(
             code="1.6.2",
-            name="Presence of Approved Annual Barangay Youth Investment Program (ABYIP)",
+            name="Presence of Approved Annual Barangay Youth Investment Program (ABYIP) for {CURRENT_YEAR}",
             upload_instructions=(
                 "Upload based on the number of SK Officials:\n\n"
                 "1. (If 5+ SK Officials) Approved Resolution approving the SK Annual/Supplemental Budget\n"

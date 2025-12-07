@@ -17,23 +17,23 @@ INDICATOR_1_2 = Indicator(
     governance_area_id=1,  # Financial Administration and Sustainability
     is_bbi=False,
     sort_order=2,
-    description="Increase in local resources in CY 2023",
+    description="Increase in local resources in {CY_CURRENT_YEAR}",
     children=[
         # Sub-Indicator 1.2.1
         SubIndicator(
             code="1.2.1",
-            name="Increase in local resources in CY 2023",
+            name="Increase in local resources in {CY_CURRENT_YEAR}",
             upload_instructions=(
                 "Upload the following documents:\n"
-                "1. SRE (Statement of Receipts and Expenditures) for 2022 and 2023, signed by Barangay Treasurer and Punong Barangay\n"
+                "1. SRE (Statement of Receipts and Expenditures) for {PREVIOUS_YEAR} and {CURRENT_YEAR}, signed by Barangay Treasurer and Punong Barangay\n"
                 "2. Certification on Increase in Local Resources signed by the City/Municipal Treasurer/Budget Officer"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
                     id="1_2_1_a",
-                    label="SRE for 2022 and 2023, signed by Barangay Treasurer and Punong Barangay",
-                    mov_description="Statement of Receipts and Expenditures (SRE) for CY 2022 and CY 2023 with signatures",
+                    label="SRE for {PREVIOUS_YEAR} and {CURRENT_YEAR}, signed by Barangay Treasurer and Punong Barangay",
+                    mov_description="Statement of Receipts and Expenditures (SRE) for {CY_PREVIOUS_YEAR} and {CY_CURRENT_YEAR} with signatures",
                     required=True,
                     display_order=1,
                 ),
@@ -46,7 +46,7 @@ INDICATOR_1_2 = Indicator(
                 ),
                 ChecklistItem(
                     id="1_2_1_amount_2022",
-                    label="Total amount obtained from local resources in CY 2022",
+                    label="Total amount obtained from local resources in {CY_PREVIOUS_YEAR}",
                     mov_description="Please supply the required information",
                     required=True,
                     requires_document_count=True,  # Reusing this field to indicate numeric input is required
@@ -54,7 +54,7 @@ INDICATOR_1_2 = Indicator(
                 ),
                 ChecklistItem(
                     id="1_2_1_amount_2023",
-                    label="Total amount obtained from local resources in CY 2023",
+                    label="Total amount obtained from local resources in {CY_CURRENT_YEAR}",
                     mov_description=None,
                     required=True,
                     requires_document_count=True,  # Reusing this field to indicate numeric input is required

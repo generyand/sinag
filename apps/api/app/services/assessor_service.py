@@ -21,6 +21,7 @@ from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
 from app.schemas.assessment import MOVCreate  # Pydantic schema
 from app.services.storage_service import storage_service
+from app.core.year_resolver import get_year_resolver
 
 
 class AssessorService:
@@ -691,6 +692,16 @@ class AssessorService:
                 f"Assessor will only see files uploaded AFTER this timestamp."
             )
 
+        # Initialize year placeholder resolver for resolving dynamic year placeholders
+        try:
+            year_resolver = get_year_resolver(db)
+        except ValueError:
+            # If no active assessment year config, skip resolution (use raw values)
+            year_resolver = None
+            self.logger.warning(
+                "[YEAR RESOLVER] No active assessment year config found, using raw indicator values"
+            )
+
         # Process responses based on assessor's governance area assignment
         for response in assessment.responses:
             # Skip parent indicators that have children (only show leaf indicators)
@@ -791,11 +802,20 @@ class AssessorService:
                 "updated_at": response.updated_at.isoformat() + "Z",
                 "indicator": {
                     "id": response.indicator.id,
-                    "name": response.indicator.name,
+                    # Resolve year placeholders in indicator name
+                    "name": year_resolver.resolve_string(response.indicator.name)
+                    if year_resolver
+                    else response.indicator.name,
                     "code": response.indicator.indicator_code,
                     "indicator_code": response.indicator.indicator_code,
-                    "description": response.indicator.description,
-                    "form_schema": response.indicator.form_schema,
+                    # Resolve year placeholders in description
+                    "description": year_resolver.resolve_string(response.indicator.description)
+                    if year_resolver
+                    else response.indicator.description,
+                    # Resolve year placeholders in form_schema (deep resolution)
+                    "form_schema": year_resolver.resolve_schema(response.indicator.form_schema)
+                    if year_resolver
+                    else response.indicator.form_schema,
                     "validation_rule": response.indicator.validation_rule,
                     "remark_schema": response.indicator.remark_schema,
                     "governance_area": {
@@ -804,23 +824,36 @@ class AssessorService:
                         "code": response.indicator.governance_area.code,
                         "area_type": response.indicator.governance_area.area_type.value,
                     },
-                    # Technical notes - for now using description, but this could be a separate field
-                    "technical_notes": response.indicator.description
+                    # Technical notes - resolve year placeholders
+                    "technical_notes": (
+                        year_resolver.resolve_string(response.indicator.description)
+                        if year_resolver
+                        else response.indicator.description
+                    )
                     or "No technical notes available",
-                    # Checklist items for validation
+                    # Checklist items for validation - resolve year placeholders in labels
                     "checklist_items": [
                         {
                             "id": item.id,
                             "item_id": item.item_id,
-                            "label": item.label,
+                            # Resolve year placeholders in checklist item label
+                            "label": year_resolver.resolve_string(item.label)
+                            if year_resolver
+                            else item.label,
                             "item_type": item.item_type,
                             "group_name": item.group_name,
-                            "mov_description": item.mov_description,
+                            # Resolve year placeholders in mov_description
+                            "mov_description": year_resolver.resolve_string(item.mov_description)
+                            if year_resolver
+                            else item.mov_description,
                             "required": item.required,
                             "requires_document_count": item.requires_document_count,
                             "display_order": item.display_order,
                             "option_group": item.option_group,
-                            "field_notes": item.field_notes,
+                            # Resolve year placeholders in field_notes
+                            "field_notes": year_resolver.resolve_dict(item.field_notes)
+                            if year_resolver
+                            else item.field_notes,
                         }
                         for item in sorted(
                             response.indicator.checklist_items,

@@ -11,7 +11,7 @@ IMPORTANT NOTES FOR PHASE 9 (VALIDATION SERVICE):
    - 3.1.2: Established Rehabilitation Referral Desk
    - 3.1.3: Organized House Clusters with HCL
    - 3.1.4: Organized BADAC Auxiliary Team (BAT)
-   - 3.1.5: Formulated BADPA covering CY 2023
+   - 3.1.5: Formulated BADPA covering the current year
    - 3.1.6: Allocated substantial amount for anti-illegal drugs (OR logic)
    - 3.1.7: Organized at least 1 community-based IEC activity
    - 3.1.8: Submitted CIR to CADAC/MADAC (with document count)
@@ -28,8 +28,8 @@ IMPORTANT NOTES FOR PHASE 9 (VALIDATION SERVICE):
    - Validation rule should be "ANY_ITEM_REQUIRED" for this sub-indicator
 
 4. Year Dependency:
-   - Current implementation uses CY 2023 for BADPA, monthly meetings, IEC activity, etc.
-   - Future assessments may need to update to CY 2024, CY 2025, etc.
+   - Implementation uses dynamic year placeholders (e.g., {CY_CURRENT_YEAR})
+   - Year placeholders are resolved at runtime based on active assessment year configuration
 
 5. Validation Workflow:
    - Validator checks each sub-indicator's requirements
@@ -64,7 +64,7 @@ INDICATOR_3_1 = Indicator(
         # Sub-Indicator 3.1.1
         SubIndicator(
             code="3.1.1",
-            name="Organized BADAC with its composition and appropriate committees (Committees on Operations and on Advocacy) compliant to DILG-DDB JMC No. 2018-01",
+            name="Organized BADAC with its composition and appropriate committees (Committees on Operations and on Advocacy) compliant to DILG-DDB JMC No. 2018-01, covering {JAN_TO_OCT_CURRENT_YEAR}",
             upload_instructions=(
                 "1. EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) creating the BADAC with its composition and appropriate committees"
             ),
@@ -117,7 +117,7 @@ INDICATOR_3_1 = Indicator(
         # Sub-Indicator 3.1.2
         SubIndicator(
             code="3.1.2",
-            name="Established Barangay Rehabilitation Referral Desk with Designated Barangay Duty Officer",
+            name="Established Barangay Rehabilitation Referral Desk with Designated Barangay Duty Officer covering {CY_CURRENT_YEAR}",
             upload_instructions=(
                 "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) establishing the Rehabilitation Referral Desk\n\n"
                 "Please supply the required information:\n"
@@ -201,15 +201,15 @@ INDICATOR_3_1 = Indicator(
         # Sub-Indicator 3.1.5
         SubIndicator(
             code="3.1.5",
-            name="Plan: Formulation of BADAC Plan of Action (BADPA)",
+            name="Plan: Formulation of BADAC Plan of Action (BADPA) covering {CY_CURRENT_YEAR}",
             upload_instructions=(
-                "Upload: Copy of approved BADPA Summary or copy of approved BPOPs Plan with BADPA"
+                "Upload: Copy of approved BADPA Summary covering {CY_CURRENT_YEAR} or copy of approved BPOPs Plan with BADPA"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
                     id="3_1_5_a",
-                    label="Copy of approved BADPA Summary or copy of approved BPOPs Plan with BADPA",
+                    label="Copy of approved BADPA Summary covering {CY_CURRENT_YEAR} or copy of approved BPOPs Plan with BADPA",
                     required=True,
                     requires_document_count=False,
                     display_order=1,
@@ -271,13 +271,13 @@ INDICATOR_3_1 = Indicator(
         # Sub-Indicator 3.1.7
         SubIndicator(
             code="3.1.7",
-            name="Implementation of Drug Abuse Prevention Advocacy Campaigns - Barangay organized at least 1 community-based IEC Activity during CY 2023",
-            upload_instructions=("Upload: Copy of Activity Report prepared by the BADAC"),
+            name="Implementation of Drug Abuse Prevention Advocacy Campaigns - Barangay organized at least 1 community-based IEC Activity during {CY_CURRENT_YEAR}",
+            upload_instructions=("Upload: Copy of Activity Report prepared by the BADAC covering {CY_CURRENT_YEAR}"),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
                     id="3_1_7_a",
-                    label="Copy of Activity Report prepared by the BADAC",
+                    label="Copy of Activity Report prepared by the BADAC covering {CY_CURRENT_YEAR}",
                     required=True,
                     requires_document_count=False,
                     display_order=1,
@@ -359,9 +359,9 @@ INDICATOR_3_1 = Indicator(
         # Sub-Indicator 3.1.10
         SubIndicator(
             code="3.1.10",
-            name="Conduct of Monthly Meetings",
+            name="Conduct of Monthly Meetings covering {CY_CURRENT_YEAR}",
             upload_instructions=(
-                "Upload: Copy of the BADAC monthly minutes of the meeting with attendance sheets (at least 3 minutes)\n\n"
+                "Upload: Copy of the BADAC monthly minutes of the meeting with attendance sheets (at least 3 minutes) covering {CY_CURRENT_YEAR}\n\n"
                 "Please supply the required information:\n"
                 "Number of BADAC monthly minutes submitted"
             ),
@@ -369,7 +369,7 @@ INDICATOR_3_1 = Indicator(
             checklist_items=[
                 ChecklistItem(
                     id="3_1_10_a",
-                    label="Copy of the BADAC monthly minutes of the meeting with attendance sheets (at least 3 minutes)",
+                    label="Copy of the BADAC monthly minutes of the meeting with attendance sheets (at least 3 minutes) covering {CY_CURRENT_YEAR}",
                     required=True,
                     requires_document_count=False,
                     display_order=1,

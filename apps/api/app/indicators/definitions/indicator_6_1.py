@@ -84,7 +84,7 @@ INDICATOR_6_1 = Indicator(
         # Sub-Indicator 6.1.2
         SubIndicator(
             code="6.1.2",
-            name="Plan: Approved Solid Waste Management Program/Plan with corresponding fund allocation",
+            name="Plan: Approved Solid Waste Management Program/Plan with corresponding fund allocation {CY_CURRENT_YEAR}",
             upload_instructions=(
                 "Upload: Approved Solid Waste Management Program/Plan with corresponding fund allocation"
             ),
@@ -120,7 +120,7 @@ INDICATOR_6_1 = Indicator(
         # Sub-Indicator 6.1.4
         SubIndicator(
             code="6.1.4",
-            name="Accomplishment Reports: Physical accomplishment OR fund utilization (only 1 of the below reports is required)",
+            name="Accomplishment Reports: At least 50% accomplishment (Physical) OR 50% fund utilization (Financial) - covering {JUL_TO_SEP_CURRENT_YEAR}",
             upload_instructions=(
                 "Upload:\n"
                 "- Three (3) Monthly Accomplishment Reports\n\n"
@@ -129,7 +129,7 @@ INDICATOR_6_1 = Indicator(
                 "(Total number of activities/projects accomplished / Total number of activities/projects reflected in the BESWMP) × 100\n\n"
                 "OR\n\n"
                 "OPTION B - FINANCIAL:\n"
-                "Amount utilized (as of Dec 31, 2023):\n"
+                "Amount utilized (as of {DEC_31_PREVIOUS_YEAR}):\n"
                 "Amount allocated for PPAs in the BESWM Plan:\n\n"
                 "To compute % utilization:\n"
                 "(Total Amount Utilized / Total Amount Allocated) × 100"
@@ -170,7 +170,7 @@ INDICATOR_6_1 = Indicator(
                     item_type="calculation_field",
                     mov_description="Please supply the required information:",
                     required=False,
-                    display_order=4.1,
+                    display_order=41,  # Order: accomplished first
                     option_group="Option A",
                 ),
                 ChecklistItem(
@@ -179,7 +179,7 @@ INDICATOR_6_1 = Indicator(
                     item_type="calculation_field",
                     mov_description=None,
                     required=False,
-                    display_order=4.2,
+                    display_order=42,  # Order: reflected second
                     option_group="Option A",
                 ),
                 # OR separator
@@ -203,11 +203,11 @@ INDICATOR_6_1 = Indicator(
                 ),
                 ChecklistItem(
                     id="6_1_4_financial_utilized",
-                    label="Total amount utilized (as of Dec 31, 2023)",
+                    label="Total amount utilized (as of {DEC_31_CURRENT_YEAR})",
                     item_type="calculation_field",
                     mov_description="Please supply the required information:",
                     required=False,
-                    display_order=7.1,
+                    display_order=71,  # Order: utilized first, then allocated
                     option_group="Option B",
                 ),
                 ChecklistItem(
@@ -216,7 +216,7 @@ INDICATOR_6_1 = Indicator(
                     item_type="calculation_field",
                     mov_description=None,
                     required=False,
-                    display_order=7.2,
+                    display_order=72,  # Order: allocated below utilized
                     option_group="Option B",
                 ),
             ],

@@ -16,6 +16,7 @@ from loguru import logger
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.security import sanitize_rich_text, sanitize_text_input
+from app.core.year_resolver import get_year_resolver
 from app.db.models.governance_area import GovernanceArea, Indicator, IndicatorHistory
 from app.schemas.calculation_schema import CalculationSchema
 from app.schemas.form_schema import FormSchema
@@ -852,13 +853,29 @@ class IndicatorService:
             .all()
         )
 
-        # Build indicator map
+        # Initialize year placeholder resolver for dynamic year resolution
+        try:
+            year_resolver = get_year_resolver(db)
+        except ValueError:
+            # If no active assessment year config, skip resolution (use raw values)
+            year_resolver = None
+            logger.warning(
+                "[YEAR RESOLVER] No active assessment year config found, using raw indicator values"
+            )
+
+        # Build indicator map with year placeholder resolution
         indicator_map: dict[int, dict[str, Any]] = {}
         for indicator in indicators:
             indicator_map[indicator.id] = {
                 "id": indicator.id,
-                "name": indicator.name,
-                "description": indicator.description,
+                # Resolve year placeholders in name
+                "name": year_resolver.resolve_string(indicator.name)
+                if year_resolver
+                else indicator.name,
+                # Resolve year placeholders in description
+                "description": year_resolver.resolve_string(indicator.description)
+                if year_resolver
+                else indicator.description,
                 "indicator_code": indicator.indicator_code,
                 "sort_order": indicator.sort_order,
                 "selection_mode": indicator.selection_mode,
@@ -866,10 +883,16 @@ class IndicatorService:
                 "is_active": indicator.is_active,
                 "is_auto_calculable": indicator.is_auto_calculable,
                 "is_profiling_only": indicator.is_profiling_only,
-                "form_schema": indicator.form_schema,
+                # Resolve year placeholders in form_schema
+                "form_schema": year_resolver.resolve_schema(indicator.form_schema)
+                if year_resolver
+                else indicator.form_schema,
                 "calculation_schema": indicator.calculation_schema,
                 "remark_schema": indicator.remark_schema,
-                "mov_checklist_items": indicator.mov_checklist_items,
+                # Resolve year placeholders in mov_checklist_items
+                "mov_checklist_items": year_resolver.resolve_list(indicator.mov_checklist_items)
+                if year_resolver
+                else indicator.mov_checklist_items,
                 "version": indicator.version,
                 "created_at": indicator.created_at.isoformat() + "Z"
                 if indicator.created_at

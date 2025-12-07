@@ -80,10 +80,10 @@ INDICATOR_4_1 = Indicator(
         # Sub-Indicator 4.1.1
         SubIndicator(
             code="4.1.1",
-            name="Structure: Organized Barangay VAW Desk and designated Barangay VAW Desk Officer",
+            name="Structure: Established Barangay VAW Desk and designated Barangay VAW Desk Officer covering {JAN_TO_OCT_CURRENT_YEAR}",
             upload_instructions=(
                 "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) "
-                "on the establishment of Barangay VAW Desk and designated VAW Desk Officer covering January to October 2023"
+                "on the establishment of Barangay VAW Desk and designated VAW Desk Officer covering {JAN_TO_OCT_CURRENT_YEAR}"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
@@ -119,8 +119,8 @@ INDICATOR_4_1 = Indicator(
         # Sub-Indicator 4.1.3
         SubIndicator(
             code="4.1.3",
-            name="Plan and Budget: Approved CY 2023 Barangay Gender and Development (GAD) Plan and Budget",
-            upload_instructions=("Upload: Approved Barangay GAD Plan and Budget for CY 2023"),
+            name="Plan and Budget: Approved {CY_CURRENT_YEAR} Barangay Gender and Development (GAD) Plan and Budget",
+            upload_instructions=("Upload: Approved Barangay GAD Plan and Budget for {CY_CURRENT_YEAR}"),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 # Upload Verification
@@ -136,9 +136,9 @@ INDICATOR_4_1 = Indicator(
         # Sub-Indicator 4.1.4
         SubIndicator(
             code="4.1.4",
-            name="Accomplishment Reports: Quarterly accomplishment reports based on the database/records of VAW cases reported in the barangay covering 1st to 3rd quarter of CY 2023 with received stamp by the C/MSWDO and C/MLGOO",
+            name="Accomplishment Reports: Quarterly accomplishment reports based on the database/records of VAW cases reported in the barangay covering {Q1_Q3_CURRENT_YEAR} with received stamp by the C/MSWDO and C/MLGOO",
             upload_instructions=(
-                "Upload: Accomplishment Report covering 1st to 3rd quarter of CY 2023 with received stamp by the C/MSWDO and C/MLGOO\n\n"
+                "Upload: Accomplishment Report covering {Q1_Q3_CURRENT_YEAR} with received stamp by the C/MSWDO and C/MLGOO\n\n"
                 "Quarterly accomplishment reports based on the database/records of VAW cases reported in the barangay "
                 "with the following information at the minimum: total number of VAW cases received, assistance provided to victim-survivors, "
                 "total number of cases documented for violating RA 9262 and other VAW-related laws, total barangay population, number of male "
@@ -240,7 +240,7 @@ INDICATOR_4_1 = Indicator(
         # Sub-Indicator 4.1.6
         SubIndicator(
             code="4.1.6",
-            name="Accomplishment Reports: Physical accomplishment OR fund utilization (only 1 of the below reports is required)",
+            name="Accomplishment Reports: At least 50% accomplishment (Physical) OR 50% fund utilization (Financial) - {CY_CURRENT_YEAR}",
             upload_instructions=(
                 "Upload the following:\n\n"
                 "SHARED (Required):\n"
@@ -330,7 +330,7 @@ INDICATOR_4_1 = Indicator(
                 ),
                 ChecklistItem(
                     id="4_1_6_financial_utilized",
-                    label="Total amount utilized (as of Dec. 31, 2023)",
+                    label="Total amount utilized (as of {DEC_31_CURRENT_YEAR})",
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
@@ -339,7 +339,7 @@ INDICATOR_4_1 = Indicator(
                 ),
                 ChecklistItem(
                     id="4_1_6_financial_allocated",
-                    label="Total amount allocated for PPAs in the GAD Plan",
+                    label="Total amount allocated for PPAs in the GAD Plan for {CY_CURRENT_YEAR}",
                     item_type="calculation_field",
                     required=False,
                     display_order=12,

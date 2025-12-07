@@ -22,17 +22,17 @@ INDICATOR_3_6 = Indicator(
         # Sub-Indicator 3.6.1: Conducted BaRCO on a monthly basis
         SubIndicator(
             code="3.6.1",
-            name="Conducted BaRCO on a monthly basis in CY 2023",
+            name="Conducted BaRCO on a monthly basis in {CY_CURRENT_YEAR}",
             upload_instructions=(
-                "Upload: Three (3) Monthly BaRCo Reports covering July-September 2023"
+                "Upload: Three (3) Monthly BaRCo Reports covering {JUL_TO_SEP_CURRENT_YEAR}"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 # Upload Verification
                 ChecklistItem(
                     id="3_6_1_upload_1",
-                    label="Monthly BaRCo Reports",
-                    mov_description="Verification of uploaded Monthly BaRCo Reports",
+                    label="Monthly BaRCo Reports covering {JUL_TO_SEP_CURRENT_YEAR}",
+                    mov_description="Verification of uploaded Monthly BaRCo Reports covering {JUL_TO_SEP_CURRENT_YEAR}",
                     required=True,
                     display_order=1,
                 ),

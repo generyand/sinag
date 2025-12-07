@@ -28,7 +28,7 @@ INDICATOR_3_2 = Indicator(
         # Sub-Indicator 3.2.1: Structure
         SubIndicator(
             code="3.2.1",
-            name="Structure: Organized BPOC with its composition compliant to the provisions of EO No. 366, s. of 1996",
+            name="Structure: Organized BPOC with its composition compliant to the provisions of EO No. 366, s. of 1996, covering {JAN_TO_OCT_CURRENT_YEAR}",
             upload_instructions=(
                 "Upload the following:\n\n"
                 "1. EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) "
@@ -86,15 +86,15 @@ INDICATOR_3_2 = Indicator(
         # Sub-Indicator 3.2.2: Plan
         SubIndicator(
             code="3.2.2",
-            name="Plan: Formulated Barangay Peace and Order and Public Safety (BPOPS) Plan in accordance to DILG MC 2017-142",
-            upload_instructions=("Upload: Approved BPOPS Plan"),
+            name="Plan: Formulated Barangay Peace and Order and Public Safety (BPOPS) Plan covering {CY_CURRENT_YEAR} in accordance to DILG MC 2017-142",
+            upload_instructions=("Upload: Approved BPOPS Plan covering {CY_CURRENT_YEAR}"),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 # Upload Verification
                 ChecklistItem(
                     id="3_2_2_upload_1",
-                    label="Approved BPOPS Plan",
-                    mov_description="Verification of uploaded Approved Barangay Peace and Order and Public Safety Plan",
+                    label="Approved BPOPS Plan covering {CY_CURRENT_YEAR}",
+                    mov_description="Verification of uploaded Approved Barangay Peace and Order and Public Safety Plan covering {CY_CURRENT_YEAR}",
                     required=True,
                     display_order=1,
                 ),
@@ -168,18 +168,18 @@ INDICATOR_3_2 = Indicator(
                     option_group="Option B",
                 ),
                 ChecklistItem(
-                    id="3_2_3_financial_allocated",
-                    label="Total amount allocated for FPAs in the BPOPS Plan",
-                    mov_description=None,  # Removed - only first field in each option needs label
+                    id="3_2_3_financial_utilized",
+                    label="Total amount utilized (as of {DEC_31_CURRENT_YEAR})",
+                    mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
                     display_order=7,
                     option_group="Option B",
                 ),
                 ChecklistItem(
-                    id="3_2_3_financial_utilized",
-                    label="Total amount utilized",
-                    mov_description="Please supply the required information:",
+                    id="3_2_3_financial_allocated",
+                    label="Total amount allocated for FPAs in the BPOPS Plan for {CY_CURRENT_YEAR}",
+                    mov_description=None,
                     item_type="calculation_field",
                     required=False,
                     display_order=8,

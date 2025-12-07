@@ -56,7 +56,7 @@ INDICATOR_4_3 = Indicator(
         # Sub-Indicator 4.3.1
         SubIndicator(
             code="4.3.1",
-            name="Structure: Organized BDC with its composition compliant to Section 107 of RA 7160",
+            name="Structure: Organized BDC with its composition compliant to Section 107 of RA 7160 covering {JAN_TO_OCT_CURRENT_YEAR}",
             upload_instructions=(
                 "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) "
                 "organizing/reconstituting the BDC with its composition compliant to Section 107 of RA 7160"
@@ -76,7 +76,7 @@ INDICATOR_4_3 = Indicator(
         # Sub-Indicator 4.3.2
         SubIndicator(
             code="4.3.2",
-            name="Meeting: Conducted meetings, public hearings, and/or barangay assemblies for public consultation",
+            name="Meeting: Conducted meetings, public hearings, and/or barangay assemblies for public consultation covering {CY_CURRENT_YEAR}",
             upload_instructions=("Upload: Post activity report or Minutes with attendance sheet"),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
@@ -92,7 +92,7 @@ INDICATOR_4_3 = Indicator(
         # Sub-Indicator 4.3.3
         SubIndicator(
             code="4.3.3",
-            name="Plan: Approved Barangay Development Plan",
+            name="Plan: Approved Barangay Development Plan covering {CY_CURRENT_YEAR}",
             upload_instructions=(
                 "Upload the following (both required):\n\n"
                 "1. Approved Barangay Development Plan\n"
@@ -182,17 +182,17 @@ INDICATOR_4_3 = Indicator(
                     option_group="Option B",
                 ),
                 ChecklistItem(
-                    id="4_3_4_financial_allocated",
-                    label="Total amount allocated for PPAs in the BDP",
+                    id="4_3_4_financial_utilized",
+                    label="Total amount utilized (as of {DEC_31_CURRENT_YEAR})",
+                    mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
                     display_order=8,
                     option_group="Option B",
                 ),
                 ChecklistItem(
-                    id="4_3_4_financial_utilized",
-                    label="Total amount utilized (as of Dec 31, 2023)",
-                    mov_description="Please supply the required information:",
+                    id="4_3_4_financial_allocated",
+                    label="Total amount allocated for PPAs in the BDP for {CY_CURRENT_YEAR}",
                     item_type="calculation_field",
                     required=False,
                     display_order=9,

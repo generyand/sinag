@@ -26,6 +26,7 @@ from . import (
     notifications,
     system,
     users,
+    year_config,
 )
 
 # Create the main API router for V1
@@ -50,3 +51,4 @@ api_router.include_router(gar.router, prefix="/gar", tags=["gar"])
 api_router.include_router(mlgoo.router, prefix="/mlgoo", tags=["mlgoo"])
 api_router.include_router(capdev.router)  # Prefix already included in router definition
 api_router.include_router(municipal_overview.router)  # Prefix already included in router definition
+api_router.include_router(year_config.router, prefix="/year-config", tags=["year-config"])

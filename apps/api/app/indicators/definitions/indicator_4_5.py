@@ -61,7 +61,7 @@ INDICATOR_4_5 = Indicator(
         # Sub-Indicator 4.5.1
         SubIndicator(
             code="4.5.1",
-            name="Structure: Organized BCPC with its composition compliant to the provisions of DILG MC No. 2021-039",
+            name="Structure: Organized BCPC with its composition compliant to the provisions of DILG MC No. 2021-039 covering {JAN_TO_OCT_CURRENT_YEAR}",
             upload_instructions=(
                 "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the establishment of BCPC"
             ),
@@ -97,7 +97,7 @@ INDICATOR_4_5 = Indicator(
         # Sub-Indicator 4.5.3
         SubIndicator(
             code="4.5.3",
-            name="Plan: Presence of an approved BCPC Annual Work and Financial Plan",
+            name="Plan: Presence of an approved BCPC Annual Work and Financial Plan {CY_CURRENT_YEAR}",
             upload_instructions=("Upload: Approved BCPC Annual Work and Financial Plan (AWFP)"),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
@@ -113,7 +113,7 @@ INDICATOR_4_5 = Indicator(
         # Sub-Indicator 4.5.4
         SubIndicator(
             code="4.5.4",
-            name="Database: Establishment and maintenance of updated Database on Children disaggregated by age, sex, ethnicity, with or without disabilities, OSCY, etc.",
+            name="Database: Establishment and maintenance of updated Database on Children disaggregated by age, sex, ethnicity, with or without disabilities, OSCY, etc. (as of {OCT_31_CURRENT_YEAR})",
             upload_instructions=(
                 "Upload: Copy of the generated report or screenshot of the updated database on children"
             ),
@@ -201,7 +201,7 @@ INDICATOR_4_5 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=4.1,
+                    display_order=41,  # Order: accomplished first
                     option_group="Option A",
                 ),
                 ChecklistItem(
@@ -209,7 +209,7 @@ INDICATOR_4_5 = Indicator(
                     label="Total number of activities/projects reflected in the Plan",
                     item_type="calculation_field",
                     required=False,
-                    display_order=4.2,
+                    display_order=42,  # Order: reflected second
                     option_group="Option A",
                 ),
                 # OR separator (info_text)
@@ -233,19 +233,19 @@ INDICATOR_4_5 = Indicator(
                 ),
                 ChecklistItem(
                     id="4_5_6_financial_utilized",
-                    label="Total amount utilized (as of Dec 31, 2023)",
+                    label="Total amount utilized (as of {DEC_31_CURRENT_YEAR})",
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=7.1,
+                    display_order=71,  # Order: utilized first
                     option_group="Option B",
                 ),
                 ChecklistItem(
                     id="4_5_6_financial_allocated",
-                    label="Total amount allocated for PPAs in the BCPC AWFP",
+                    label="Total amount allocated for PPAs in the BCPC AWFP for {CY_CURRENT_YEAR}",
                     item_type="calculation_field",
                     required=False,
-                    display_order=7.2,
+                    display_order=72,  # Order: allocated second
                     option_group="Option B",
                 ),
             ],

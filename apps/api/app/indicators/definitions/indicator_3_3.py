@@ -25,8 +25,8 @@ IMPORTANT NOTES FOR PHASE 9 (VALIDATION SERVICE):
 
 4. Year Dependency:
    - Sub-indicator 3.3.4: Training must be not earlier than CY 2020
-   - Sub-indicator 3.3.3: Monthly meetings covering CY 2023
-   - Future assessments may need to update these baseline years
+   - Sub-indicator 3.3.3: Monthly meetings covering the current year
+   - Uses dynamic year placeholders (e.g., {CY_CURRENT_YEAR})
 
 5. Validation Workflow:
    - Validator verifies LT organization with at least 10 members
@@ -115,17 +115,17 @@ INDICATOR_3_3 = Indicator(
         # Sub-Indicator 3.3.3
         SubIndicator(
             code="3.3.3",
-            name="Meetings: Conducted monthly meetings for the administration of the Katarungang Pambarangay",
+            name="Meetings: Conducted monthly meetings for the administration of the Katarungang Pambarangay covering {CY_CURRENT_YEAR}",
             upload_instructions=(
-                "Upload: Copies of minutes of meetings with attendance sheets (at least 3 minutes covering meetings conducted in CY 2023)"
+                "Upload: Copies of minutes of meetings with attendance sheets (at least 3 minutes covering meetings conducted in {CY_CURRENT_YEAR})"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 # Upload Verification
                 ChecklistItem(
                     id="3_3_3_upload_1",
-                    label="Copies of minutes of meetings with attendance sheets (at least 3 minutes covering meetings conducted)",
-                    mov_description="Verification of uploaded copies of minutes of meetings with attendance sheets for at least 3 monthly meetings",
+                    label="Copies of minutes of meetings with attendance sheets (at least 3 minutes covering meetings conducted in {CY_CURRENT_YEAR})",
+                    mov_description="Verification of uploaded copies of minutes of meetings with attendance sheets for at least 3 monthly meetings covering {CY_CURRENT_YEAR}",
                     required=True,
                     display_order=1,
                 ),

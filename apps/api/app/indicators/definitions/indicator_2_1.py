@@ -28,7 +28,7 @@ INDICATOR_2_1 = Indicator(
         # Sub-Indicator 2.1.1: Structure
         SubIndicator(
             code="2.1.1",
-            name="Structure: Organized BDRRMC with its composition compliant to the provisions of NDRRMC, DILG, DBM, and CSC JMC No. 2014-01",
+            name="Structure: Organized BDRRMC with its composition compliant to the provisions of NDRRMC, DILG, DBM, and CSC JMC No. 2014-01, covering {JAN_TO_OCT_CURRENT_YEAR}",
             upload_instructions=(
                 "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the BDRRMC with its composition compliant to the provisions of JMC No. 2014-01\n\n"
                 "Minimum Composition of the BDRRMC:\n"
@@ -73,10 +73,10 @@ INDICATOR_2_1 = Indicator(
         # Sub-Indicator 2.1.2: Plan
         SubIndicator(
             code="2.1.2",
-            name="Plan: Approved Barangay Disaster Risk Reduction and Management (BDRRM) Plan adopted by the Sangguniang Barangay",
+            name="Plan: Approved Barangay Disaster Risk Reduction and Management (BDRRM) Plan covering {CY_CURRENT_YEAR} adopted by the Sangguniang Barangay",
             upload_instructions=(
                 "Upload the following documents:\n"
-                "1. Approved BDRRM Plan adopted by the Sangguniang Barangay\n"
+                "1. Approved BDRRM Plan covering {CY_CURRENT_YEAR} adopted by the Sangguniang Barangay\n"
                 "2. Resolution adopting the BDRRM Plan signed by the Sangguniang Barangay with received stamp from the C/MDRRMO; and\n"
                 "3. Certification on the list of barangays with approved BDRRM Plan signed by the C/MDRRMO"
             ),
@@ -84,7 +84,7 @@ INDICATOR_2_1 = Indicator(
             checklist_items=[
                 ChecklistItem(
                     id="2_1_2_plan",
-                    label="Approved BDRRM Plan adopted by the Sangguniang Barangay",
+                    label="Approved BDRRM Plan covering {CY_CURRENT_YEAR} adopted by the Sangguniang Barangay",
                     required=True,
                     requires_document_count=False,
                     display_order=1,
@@ -194,7 +194,7 @@ INDICATOR_2_1 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=5.1,
+                    display_order=51,  # Order: accomplished first
                     option_group="Option A",
                 ),
                 ChecklistItem(
@@ -202,7 +202,7 @@ INDICATOR_2_1 = Indicator(
                     label="Total number of activities/projects reflected in the Plan",
                     item_type="calculation_field",
                     required=False,
-                    display_order=5.2,
+                    display_order=52,  # Order: reflected second
                     option_group="Option A",
                 ),
                 # OR Separator (informational)
@@ -244,19 +244,19 @@ INDICATOR_2_1 = Indicator(
                 ),
                 ChecklistItem(
                     id="2_1_4_financial_utilized",
-                    label="Total amount utilized",
+                    label="Total amount utilized (as of {DEC_31_CURRENT_YEAR})",
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=10.1,
+                    display_order=101,  # Order: utilized first
                     option_group="Option B",
                 ),
                 ChecklistItem(
                     id="2_1_4_financial_allocated",
-                    label="Total amount allocated for PPAs in the BDRRMF Plan",
+                    label="Total amount allocated for PPAs in the BDRRMF Plan for {CY_CURRENT_YEAR}",
                     item_type="calculation_field",
                     required=False,
-                    display_order=10.2,
+                    display_order=102,  # Order: allocated second
                     option_group="Option B",
                 ),
             ],
