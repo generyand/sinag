@@ -38,15 +38,43 @@ on:
           - staging
           - production
           - both
+      skip_ci_check:
+        description: 'Skip waiting for CI checks (use with caution)'
+        required: false
+        default: false
+        type: boolean
 
 env:
   REGISTRY: ghcr.io
 
 jobs:
   # ============================================================================
+  # Wait for CI checks to pass before building
+  # ============================================================================
+  ci-gate:
+    name: Wait for CI Checks
+    runs-on: ubuntu-latest
+    # Skip gate on manual dispatch with skip_ci_check, or on tags
+    if: |
+      !(github.event_name == 'workflow_dispatch' && inputs.skip_ci_check) &&
+      !startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Wait for CI workflow
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.sha }}
+          check-name: 'CI Status'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+          allowed-conclusions: success
+
+  # ============================================================================
   # Build API and Nginx images (shared across environments)
   # ============================================================================
   build-shared:
+    needs: [ci-gate]
+    if: always() && (needs.ci-gate.result == 'success' || needs.ci-gate.result == 'skipped')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -112,12 +140,14 @@ jobs:
   # Build Web image for STAGING environment
   # ============================================================================
   build-web-staging:
+    needs: [ci-gate]
     runs-on: ubuntu-latest
     # Build staging on develop branch, manual trigger, or tags
     if: |
-      github.ref == 'refs/heads/develop' ||
+      always() && (needs.ci-gate.result == 'success' || needs.ci-gate.result == 'skipped') &&
+      (github.ref == 'refs/heads/develop' ||
       (github.event_name == 'workflow_dispatch' && (inputs.environment == 'staging' || inputs.environment == 'both')) ||
-      startsWith(github.ref, 'refs/tags/')
+      startsWith(github.ref, 'refs/tags/'))
     environment: staging  # Access staging environment variables
     permissions:
       contents: read
@@ -173,12 +203,14 @@ jobs:
   # Build Web image for PRODUCTION environment
   # ============================================================================
   build-web-production:
+    needs: [ci-gate]
     runs-on: ubuntu-latest
     # Build production on main branch, manual trigger, or tags
     if: |
-      github.ref == 'refs/heads/main' ||
+      always() && (needs.ci-gate.result == 'success' || needs.ci-gate.result == 'skipped') &&
+      (github.ref == 'refs/heads/main' ||
       (github.event_name == 'workflow_dispatch' && (inputs.environment == 'production' || inputs.environment == 'both')) ||
-      startsWith(github.ref, 'refs/tags/')
+      startsWith(github.ref, 'refs/tags/'))
     environment: production  # Access production environment variables
     permissions:
       contents: read

@@ -1,0 +1,340 @@
+# ==============================================================================
+# Continuous Integration - Quality Gates
+# ==============================================================================
+# This workflow runs on all PRs and pushes to main/develop branches.
+# It ensures code quality through:
+#   - Backend: Linting (Ruff), Type checking (MyPy), Unit tests (Pytest)
+#   - Frontend: Linting (ESLint), Type checking (tsc), Unit tests (Vitest)
+#   - Type Generation: Validates generated types are in sync
+#
+# All checks must pass before code can be merged.
+# ==============================================================================
+
+name: Continuous Integration
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================================
+  # Backend Quality Checks
+  # ============================================================================
+  backend-checks:
+    name: Backend - Lint, Type Check, Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: |
+          uv pip install --system -e ".[dev]"
+
+      - name: Lint with Ruff
+        run: ruff check . --output-format=github
+
+      - name: Format check with Ruff
+        run: ruff format --check .
+
+      - name: Type check with MyPy
+        run: mypy app/ --show-error-codes
+        continue-on-error: true # Make strict once baseline is established
+
+      - name: Run tests with coverage
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          SECRET_KEY: test-secret-key-for-ci-pipeline
+          CELERY_BROKER_URL: redis://localhost:6379/0
+          SUPABASE_URL: https://example.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
+          GEMINI_API_KEY: test-gemini-key
+        run: |
+          pytest tests/ \
+            --cov=app \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --cov-fail-under=50 \
+            -v \
+            --tb=short
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage
+          path: apps/api/coverage.xml
+          retention-days: 7
+
+  # ============================================================================
+  # Frontend Quality Checks
+  # ============================================================================
+  frontend-checks:
+    name: Frontend - Lint, Type Check, Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      - name: Install pnpm
+        run: npm install -g pnpm@10.11.0
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm type-check
+
+      - name: Run unit tests with coverage
+        run: cd apps/web && pnpm test:coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage
+          path: apps/web/coverage/
+          retention-days: 7
+
+      - name: Build check
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000
+          NEXT_PUBLIC_API_V1_URL: http://localhost:8000/api/v1
+
+  # ============================================================================
+  # E2E Tests - Critical User Flows
+  # ============================================================================
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    # Only run E2E on PRs to save CI time on pushes
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      - name: Install pnpm
+        run: npm install -g pnpm@10.11.0
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run E2E smoke tests
+        run: pnpm exec playwright test smoke.spec.ts --project=chromium
+
+      - name: Run critical path tests
+        run: |
+          pnpm exec playwright test \
+            authentication.spec.ts \
+            route-protection.spec.ts \
+            --project=chromium
+        continue-on-error: true # Don't block PRs initially
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  # ============================================================================
+  # Type Generation Validation
+  # ============================================================================
+  type-generation:
+    name: Validate Generated Types
+    runs-on: ubuntu-latest
+    # Skip on PRs from forks (no access to secrets)
+    if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      - name: Install pnpm
+        run: npm install -g pnpm@10.11.0
+
+      - name: Install Node dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Python dependencies
+        run: |
+          pip install uv
+          cd apps/api && uv pip install --system -e ".[dev]"
+
+      - name: Start API server
+        run: |
+          cd apps/api
+          nohup uvicorn main:app --host 0.0.0.0 --port 8000 &
+          sleep 10
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          SECRET_KEY: test-secret-key-for-ci
+          CELERY_BROKER_URL: redis://localhost:6379/0
+          SUPABASE_URL: https://example.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
+
+      - name: Verify API is running
+        run: curl -sf http://localhost:8000/openapi.json > /dev/null
+
+      - name: Generate types
+        run: pnpm generate-types
+
+      - name: Check for uncommitted changes
+        run: |
+          if ! git diff --quiet packages/shared/src/generated/; then
+            echo "::error::Generated types are out of sync!"
+            echo "Run 'pnpm generate-types' locally and commit the changes."
+            echo ""
+            echo "Changed files:"
+            git diff --name-only packages/shared/src/generated/
+            echo ""
+            echo "Diff:"
+            git diff packages/shared/src/generated/
+            exit 1
+          fi
+          echo "Generated types are in sync"
+
+  # ============================================================================
+  # CI Status Summary
+  # ============================================================================
+  ci-status:
+    name: CI Status
+    runs-on: ubuntu-latest
+    needs: [backend-checks, frontend-checks, e2e-tests, type-generation]
+    if: always()
+
+    steps:
+      - name: Check CI Status
+        run: |
+          echo "## CI Status Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.backend-checks.result }}" == "success" ]; then
+            echo "- ✅ Backend checks passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ❌ Backend checks failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.frontend-checks.result }}" == "success" ]; then
+            echo "- ✅ Frontend checks passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ❌ Frontend checks failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.e2e-tests.result }}" == "success" ] || [ "${{ needs.e2e-tests.result }}" == "skipped" ]; then
+            echo "- ✅ E2E tests passed (or skipped)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ⚠️ E2E tests failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.type-generation.result }}" == "success" ] || [ "${{ needs.type-generation.result }}" == "skipped" ]; then
+            echo "- ✅ Type generation validated (or skipped)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ❌ Type generation out of sync" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Fail if critical checks failed
+          if [ "${{ needs.backend-checks.result }}" != "success" ] || [ "${{ needs.frontend-checks.result }}" != "success" ]; then
+            echo ""
+            echo "::error::Critical CI checks failed. Please fix the issues before merging."
+            exit 1
+          fi
