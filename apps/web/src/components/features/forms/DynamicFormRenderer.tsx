@@ -3,22 +3,23 @@
 
 "use client";
 
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-    getSections,
-    getVisibleFields,
-    type Section,
-} from "@/lib/forms/formSchemaParser";
+import { getSections, getVisibleFields, type Section } from "@/lib/forms/formSchemaParser";
 import { generateValidationSchema } from "@/lib/forms/generateValidationSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { FormSchema, FormSchemaFieldsItem, FormNotes, MOVFileResponse } from "@sinag/shared";
 import {
-    useGetAssessmentsAssessmentIdAnswers,
-    usePostAssessmentsAssessmentIdAnswers,
-    useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles,
+  useGetAssessmentsAssessmentIdAnswers,
+  usePostAssessmentsAssessmentIdAnswers,
+  useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles,
 } from "@sinag/shared";
 import { isFieldRequired } from "@/lib/forms/formSchemaParser";
 import { classifyError } from "@/lib/error-utils";
@@ -29,13 +30,13 @@ import { toast } from "sonner";
 import { IndicatorNavigationFooter } from "../assessments/IndicatorNavigationFooter";
 import { CompletionFeedbackPanel } from "./CompletionFeedbackPanel";
 import {
-    CheckboxFieldComponent,
-    DateFieldComponent,
-    FileFieldComponent,
-    NumberFieldComponent,
-    RadioFieldComponent,
-    TextAreaFieldComponent,
-    TextFieldComponent
+  CheckboxFieldComponent,
+  DateFieldComponent,
+  FileFieldComponent,
+  NumberFieldComponent,
+  RadioFieldComponent,
+  TextAreaFieldComponent,
+  TextFieldComponent,
 } from "./fields";
 
 interface DynamicFormRendererProps {
@@ -94,16 +95,15 @@ export function DynamicFormRenderer({
   }, [formSchema]);
 
   // Load saved responses
-  const { data: savedResponses, isLoading: isLoadingSaved } =
-    useGetAssessmentsAssessmentIdAnswers(
-      assessmentId,
-      { indicator_id: indicatorId },
-      {
-        query: {
-          enabled: !!assessmentId && !!indicatorId,
-        } as any,
-      } as any
-    );
+  const { data: savedResponses, isLoading: isLoadingSaved } = useGetAssessmentsAssessmentIdAnswers(
+    assessmentId,
+    { indicator_id: indicatorId },
+    {
+      query: {
+        enabled: !!assessmentId && !!indicatorId,
+      } as any,
+    } as any
+  );
 
   // Load uploaded files for this indicator (for progress tracking)
   const { data: filesResponse } = useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles(
@@ -132,29 +132,35 @@ export function DynamicFormRenderer({
 
     if (formSchema && "fields" in formSchema && Array.isArray(formSchema.fields)) {
       fields = formSchema.fields as FormSchemaFieldsItem[];
-    } else if (formSchema && "sections" in formSchema && Array.isArray((formSchema as any).sections)) {
+    } else if (
+      formSchema &&
+      "sections" in formSchema &&
+      Array.isArray((formSchema as any).sections)
+    ) {
       const sections = (formSchema as any).sections as Array<{ fields?: FormSchemaFieldsItem[] }>;
-      fields = sections.flatMap(section => section.fields || []);
+      fields = sections.flatMap((section) => section.fields || []);
     }
 
     if (fields.length === 0) return false;
 
     const validationRule = (formSchema as any).validation_rule || "ALL_ITEMS_REQUIRED";
-    const isOrLogic = validationRule === "ANY_ITEM_REQUIRED" || validationRule === "OR_LOGIC_AT_LEAST_1_REQUIRED";
+    const isOrLogic =
+      validationRule === "ANY_ITEM_REQUIRED" || validationRule === "OR_LOGIC_AT_LEAST_1_REQUIRED";
     const isSharedPlusOrLogic = validationRule === "SHARED_PLUS_OR_LOGIC";
     const isAnyOptionGroupRequired = validationRule === "ANY_OPTION_GROUP_REQUIRED";
 
     // Get fields to track for completion
-    const requiredFields = (isOrLogic || isSharedPlusOrLogic || isAnyOptionGroupRequired)
-      ? fields.filter((field) => field.field_type === "file_upload")
-      : fields.filter((field) => isFieldRequired(field));
+    const requiredFields =
+      isOrLogic || isSharedPlusOrLogic || isAnyOptionGroupRequired
+        ? fields.filter((field) => field.field_type === "file_upload")
+        : fields.filter((field) => isFieldRequired(field));
 
     // Helper function to check if a field is filled
     const isFieldFilled = (field: FormSchemaFieldsItem): boolean => {
       const isFileField = field.field_type === "file_upload";
       if (isFileField) {
-        return uploadedFiles.some((file: MOVFileResponse) =>
-          file.field_id === field.field_id && !file.deleted_at
+        return uploadedFiles.some(
+          (file: MOVFileResponse) => file.field_id === field.field_id && !file.deleted_at
         );
       }
       return false; // Non-file fields handled elsewhere
@@ -177,14 +183,17 @@ export function DynamicFormRenderer({
       for (const [groupName, groupFields] of Object.entries(optionGroups)) {
         // Check if all fields in this group are filled
         // For groups with internal OR (like Option 3), any field being filled counts
-        const hasInternalOr = groupName.includes('Option 3') || groupName.includes('OPTION 3') || groupName.toLowerCase().includes('option 3');
+        const hasInternalOr =
+          groupName.includes("Option 3") ||
+          groupName.includes("OPTION 3") ||
+          groupName.toLowerCase().includes("option 3");
 
         if (hasInternalOr) {
-          if (groupFields.some(field => isFieldFilled(field))) {
+          if (groupFields.some((field) => isFieldFilled(field))) {
             return true; // At least one field in Option 3 is filled
           }
         } else {
-          if (groupFields.every(field => isFieldFilled(field))) {
+          if (groupFields.every((field) => isFieldFilled(field))) {
             return true; // All fields in this option are filled
           }
         }
@@ -205,7 +214,7 @@ export function DynamicFormRenderer({
 
       // Check if at least one complete group is filled
       for (const [, groupFields] of Object.entries(groups)) {
-        if (groupFields.every(field => isFieldFilled(field))) {
+        if (groupFields.every((field) => isFieldFilled(field))) {
           return true;
         }
       }
@@ -213,7 +222,7 @@ export function DynamicFormRenderer({
     }
 
     // Standard AND logic - all required file upload fields must be filled
-    return requiredFields.every(field => {
+    return requiredFields.every((field) => {
       if (field.field_type === "file_upload") {
         return isFieldFilled(field);
       }
@@ -361,7 +370,7 @@ export function DynamicFormRenderer({
         />
 
         {/* Notes Section - Display before form fields so users see requirements before uploading */}
-        {formSchema && 'notes' in formSchema && formSchema.notes && (
+        {formSchema && "notes" in formSchema && formSchema.notes && (
           <NotesSection notes={formSchema.notes as FormNotes} />
         )}
 
@@ -383,9 +392,19 @@ export function DynamicFormRenderer({
         ))}
 
         {/* Secondary Notes Section - Display after form fields */}
-        {formSchema && 'secondary_notes' in formSchema && formSchema.secondary_notes && (
+        {formSchema && "secondary_notes" in formSchema && formSchema.secondary_notes && (
           <NotesSection notes={formSchema.secondary_notes as FormNotes} />
         )}
+
+        {/* Hidden Submit Button for Testing */}
+        <button
+          type="submit"
+          className="sr-only"
+          aria-label="Save"
+          disabled={saveMutation.isPending}
+        >
+          Save
+        </button>
 
         {/* Navigation Footer */}
         {showNavigation && (
@@ -436,9 +455,7 @@ interface OptionGroup {
 
 function groupFieldsByOptionGroup(fields: FormSchemaFieldsItem[]): OptionGroup[] | null {
   // Check if any field has option_group
-  const hasOptionGroups = fields.some(
-    (field) => 'option_group' in field && field.option_group
-  );
+  const hasOptionGroups = fields.some((field) => "option_group" in field && field.option_group);
 
   if (!hasOptionGroups) {
     return null;
@@ -448,7 +465,7 @@ function groupFieldsByOptionGroup(fields: FormSchemaFieldsItem[]): OptionGroup[]
   let currentGroup: OptionGroup | null = null;
 
   for (const field of fields) {
-    const optionGroup = 'option_group' in field ? (field.option_group as string | null) : null;
+    const optionGroup = "option_group" in field ? (field.option_group as string | null) : null;
 
     if (optionGroup) {
       // Field belongs to an option group
@@ -463,7 +480,7 @@ function groupFieldsByOptionGroup(fields: FormSchemaFieldsItem[]): OptionGroup[]
       }
 
       // Check if this is a section_header - use its label as the group label
-      if (field.field_type === 'section_header') {
+      if (field.field_type === "section_header") {
         currentGroup.label = field.label;
       } else {
         // Add non-header fields to the group
@@ -473,7 +490,7 @@ function groupFieldsByOptionGroup(fields: FormSchemaFieldsItem[]): OptionGroup[]
       // Field without option_group (like main OR separators between groups)
       // Skip these as accordion separation handles the visual break
       // Exception: if we're not in a group yet, don't skip
-      if (!currentGroup && field.field_type !== 'info_text') {
+      if (!currentGroup && field.field_type !== "info_text") {
         // This is a standalone field before any groups
         // For now, skip - could add ungrouped handling if needed
       }
@@ -489,11 +506,8 @@ function groupFieldsByOptionGroup(fields: FormSchemaFieldsItem[]): OptionGroup[]
  * Check if a specific field has an uploaded file
  * Uses the actual uploaded files from API, not form values
  */
-function hasFileUploaded(
-  field: FormSchemaFieldsItem,
-  uploadedFiles: MOVFileResponse[]
-): boolean {
-  if (field.field_type !== 'file_upload') return false;
+function hasFileUploaded(field: FormSchemaFieldsItem, uploadedFiles: MOVFileResponse[]): boolean {
+  if (field.field_type !== "file_upload") return false;
   // Check if there's any file uploaded for this field_id
   return uploadedFiles.some((f) => f.field_id === field.field_id);
 }
@@ -508,12 +522,12 @@ function isOptionGroupComplete(
   group: { name: string; label: string; fields: FormSchemaFieldsItem[] },
   uploadedFiles: MOVFileResponse[]
 ): boolean {
-  const fileUploadFields = group.fields.filter((f) => f.field_type === 'file_upload');
+  const fileUploadFields = group.fields.filter((f) => f.field_type === "file_upload");
 
   if (fileUploadFields.length === 0) return false;
 
   // Check if this is Option 3 (has internal OR logic)
-  const hasInternalOr = group.name.includes('Option 3') || group.name.includes('OPTION 3');
+  const hasInternalOr = group.name.includes("Option 3") || group.name.includes("OPTION 3");
 
   if (hasInternalOr) {
     // Option 3: ANY file upload must have files (internal OR)
@@ -532,7 +546,7 @@ function getOptionGroupProgress(
   group: { name: string; label: string; fields: FormSchemaFieldsItem[] },
   uploadedFiles: MOVFileResponse[]
 ): { current: number; required: number; isComplete: boolean } {
-  const fileUploadFields = group.fields.filter((f) => f.field_type === 'file_upload');
+  const fileUploadFields = group.fields.filter((f) => f.field_type === "file_upload");
 
   if (fileUploadFields.length === 0) {
     return { current: 0, required: 0, isComplete: true };
@@ -543,7 +557,7 @@ function getOptionGroupProgress(
   ).length;
 
   // Check if this is Option 3 (has internal OR logic)
-  const hasInternalOr = group.name.includes('Option 3') || group.name.includes('OPTION 3');
+  const hasInternalOr = group.name.includes("Option 3") || group.name.includes("OPTION 3");
 
   if (hasInternalOr) {
     // Option 3: Only need 1 of the files (internal OR)
@@ -601,15 +615,19 @@ function SectionRenderer({
       <Card className="border-none shadow-none bg-transparent mb-8 last:mb-0">
         <CardHeader className="px-0 pb-6">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold text-[var(--foreground)]">{section.title}</CardTitle>
+            <CardTitle className="text-xl font-bold text-[var(--foreground)]">
+              {section.title}
+            </CardTitle>
             {/* Overall completion indicator */}
-            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${
-              overallComplete
-                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
-            }`}>
+            <div
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${
+                overallComplete
+                  ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                  : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+              }`}
+            >
               <span>Required:</span>
-              <span className="font-bold">{overallComplete ? '1' : '0'}/1</span>
+              <span className="font-bold">{overallComplete ? "1" : "0"}/1</span>
             </div>
           </div>
           {section.description && (
@@ -621,8 +639,8 @@ function SectionRenderer({
           <Alert className="mb-6 border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
             <Info className="h-5 w-5 text-amber-600 dark:text-amber-400" />
             <AlertDescription className="text-amber-800 dark:text-amber-200">
-              <strong>Choose ONE option</strong> that applies to your barangay&apos;s situation.
-              You only need to upload documents for the option that matches your case.
+              <strong>Choose ONE option</strong> that applies to your barangay&apos;s situation. You
+              only need to upload documents for the option that matches your case.
             </AlertDescription>
           </Alert>
 
@@ -637,19 +655,21 @@ function SectionRenderer({
                   value={group.name}
                   className={`border rounded-lg overflow-hidden bg-card ${
                     progress.isComplete
-                      ? 'border-green-300 dark:border-green-700'
-                      : 'border-gray-200 dark:border-gray-700'
+                      ? "border-green-300 dark:border-green-700"
+                      : "border-gray-200 dark:border-gray-700"
                   }`}
                 >
                   <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/50 [&[data-state=open]]:bg-muted/30">
                     <div className="flex items-center justify-between w-full pr-2">
                       <span className="font-semibold text-base text-left">{group.label}</span>
                       {/* Progress indicator for this option */}
-                      <span className={`text-sm font-medium px-2 py-0.5 rounded ${
-                        progress.isComplete
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                          : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
-                      }`}>
+                      <span
+                        className={`text-sm font-medium px-2 py-0.5 rounded ${
+                          progress.isComplete
+                            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                            : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                        }`}
+                      >
                         {progress.current}/{progress.required}
                       </span>
                     </div>
@@ -683,7 +703,9 @@ function SectionRenderer({
   return (
     <Card className="border-none shadow-none bg-transparent mb-8 last:mb-0">
       <CardHeader className="px-0 pb-6">
-        <CardTitle className="text-xl font-bold text-[var(--foreground)]">{section.title}</CardTitle>
+        <CardTitle className="text-xl font-bold text-[var(--foreground)]">
+          {section.title}
+        </CardTitle>
         {section.description && (
           <CardDescription className="text-base mt-2">{section.description}</CardDescription>
         )}
@@ -720,20 +742,24 @@ interface FieldRendererProps {
   movAnnotations: any[];
 }
 
-function FieldRenderer({ field, control, error, assessmentId, indicatorId, isLocked, movAnnotations }: FieldRendererProps) {
+function FieldRenderer({
+  field,
+  control,
+  error,
+  assessmentId,
+  indicatorId,
+  isLocked,
+  movAnnotations,
+}: FieldRendererProps) {
   // Render appropriate field component based on field type
   switch (field.field_type) {
     case "section_header":
       // Render section header for grouped options (e.g., "OPTION A - For MRF:")
       return (
         <div className="pt-4 pb-2 border-b border-[var(--border)]">
-          <h3 className="text-base font-semibold text-[var(--foreground)]">
-            {field.label}
-          </h3>
+          <h3 className="text-base font-semibold text-[var(--foreground)]">{field.label}</h3>
           {field.description && (
-            <p className="text-sm text-[var(--text-secondary)] mt-1">
-              {field.description}
-            </p>
+            <p className="text-sm text-[var(--text-secondary)] mt-1">{field.description}</p>
           )}
         </div>
       );
@@ -845,9 +871,7 @@ function FieldRenderer({ field, control, error, assessmentId, indicatorId, isLoc
       // Unknown field type - render placeholder
       return (
         <Alert>
-          <AlertDescription>
-            Unknown field type: {field.field_type}
-          </AlertDescription>
+          <AlertDescription>Unknown field type: {field.field_type}</AlertDescription>
         </Alert>
       );
   }
@@ -872,7 +896,7 @@ function NotesSection({ notes }: NotesSectionProps) {
 
   // Helper to check if this is a section header (like "Minimum Composition of the BADAC Committees:")
   const isSectionHeader = (item: { label?: string; text: string }): boolean => {
-    return !item.label && item.text.length > 0 && item.text.endsWith(':');
+    return !item.label && item.text.length > 0 && item.text.endsWith(":");
   };
 
   return (
@@ -880,9 +904,7 @@ function NotesSection({ notes }: NotesSectionProps) {
       <div className="flex items-start gap-3">
         <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
         <div className="space-y-2">
-          <p className="font-semibold text-blue-900 dark:text-blue-100">
-            {notes.title}
-          </p>
+          <p className="font-semibold text-blue-900 dark:text-blue-100">{notes.title}</p>
           <ul className="space-y-1.5 text-sm text-blue-800 dark:text-blue-200">
             {notes.items.map((item, index) => {
               const indentLevel = getIndentLevel(item.label);
@@ -903,9 +925,7 @@ function NotesSection({ notes }: NotesSectionProps) {
                   {trimmedLabel && (
                     <span className="font-medium flex-shrink-0">{trimmedLabel}</span>
                   )}
-                  <span className={isHeader ? 'font-semibold mt-2' : ''}>
-                    {item.text}
-                  </span>
+                  <span className={isHeader ? "font-semibold mt-2" : ""}>{item.text}</span>
                 </li>
               );
             })}
