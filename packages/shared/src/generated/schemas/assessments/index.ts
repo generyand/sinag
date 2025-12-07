@@ -12,6 +12,22 @@ import type { GovernanceAreaDetailItem } from '../common';
 import type { AppSchemasYearConfigUserNested } from '../users';
 
 /**
+ * ActivateYearResponseAssessmentsCreated
+ */
+export type ActivateYearResponseAssessmentsCreated = number | null;
+
+
+/**
+ * AppSchemasAssessmentYearUserNested
+ */
+export interface AppSchemasAssessmentYearUserNested {
+  id: number;
+  name: string;
+  email: string;
+}
+
+
+/**
  * ApproveAssessmentRequest
  */
 export interface ApproveAssessmentRequest {
@@ -763,6 +779,236 @@ export type AssessmentYearConfigUpdateDescription = string | null;
 
 
 /**
+ * AssessmentYearCreate
+ */
+export interface AssessmentYearCreate {
+  /**
+   * Assessment year (e.g., 2025)
+   * @minimum 2020
+   * @maximum 2100
+   */
+  year: number;
+  /** Start of the assessment period */
+  assessment_period_start: string;
+  /** End of the assessment period */
+  assessment_period_end: string;
+  /** Phase 1 submission deadline */
+  phase1_deadline?: AssessmentYearCreatePhase1Deadline;
+  /** Rework submission deadline */
+  rework_deadline?: AssessmentYearCreateReworkDeadline;
+  /** Phase 2 submission deadline */
+  phase2_deadline?: AssessmentYearCreatePhase2Deadline;
+  /** Calibration/validation deadline */
+  calibration_deadline?: AssessmentYearCreateCalibrationDeadline;
+  /** Optional description for this year */
+  description?: AssessmentYearCreateDescription;
+}
+
+
+/**
+ * AssessmentYearCreateCalibrationDeadline
+ */
+export type AssessmentYearCreateCalibrationDeadline = string | null;
+
+
+/**
+ * AssessmentYearCreateDescription
+ */
+export type AssessmentYearCreateDescription = string | null;
+
+
+/**
+ * AssessmentYearCreatePhase1Deadline
+ */
+export type AssessmentYearCreatePhase1Deadline = string | null;
+
+
+/**
+ * AssessmentYearCreatePhase2Deadline
+ */
+export type AssessmentYearCreatePhase2Deadline = string | null;
+
+
+/**
+ * AssessmentYearCreateReworkDeadline
+ */
+export type AssessmentYearCreateReworkDeadline = string | null;
+
+
+/**
+ * AssessmentYearListResponse
+ */
+export interface AssessmentYearListResponse {
+  years: AssessmentYearResponse[];
+  /** Currently active assessment year */
+  active_year?: AssessmentYearListResponseActiveYear;
+}
+
+
+/**
+ * AssessmentYearListResponseActiveYear
+ */
+export type AssessmentYearListResponseActiveYear = number | null;
+
+
+/**
+ * AssessmentYearResponse
+ */
+export interface AssessmentYearResponse {
+  id: number;
+  year: number;
+  assessment_period_start: string;
+  assessment_period_end: string;
+  phase1_deadline?: AssessmentYearResponsePhase1Deadline;
+  rework_deadline?: AssessmentYearResponseReworkDeadline;
+  phase2_deadline?: AssessmentYearResponsePhase2Deadline;
+  calibration_deadline?: AssessmentYearResponseCalibrationDeadline;
+  is_active: boolean;
+  is_published: boolean;
+  description?: AssessmentYearResponseDescription;
+  created_at: string;
+  updated_at?: AssessmentYearResponseUpdatedAt;
+  activated_at?: AssessmentYearResponseActivatedAt;
+  deactivated_at?: AssessmentYearResponseDeactivatedAt;
+  activated_by?: AssessmentYearResponseActivatedBy;
+  deactivated_by?: AssessmentYearResponseDeactivatedBy;
+}
+
+
+/**
+ * AssessmentYearResponseActivatedAt
+ */
+export type AssessmentYearResponseActivatedAt = string | null;
+
+
+/**
+ * AssessmentYearResponseActivatedBy
+ */
+export type AssessmentYearResponseActivatedBy = AppSchemasAssessmentYearUserNested | null;
+
+
+/**
+ * AssessmentYearResponseCalibrationDeadline
+ */
+export type AssessmentYearResponseCalibrationDeadline = string | null;
+
+
+/**
+ * AssessmentYearResponseDeactivatedAt
+ */
+export type AssessmentYearResponseDeactivatedAt = string | null;
+
+
+/**
+ * AssessmentYearResponseDeactivatedBy
+ */
+export type AssessmentYearResponseDeactivatedBy = AppSchemasAssessmentYearUserNested | null;
+
+
+/**
+ * AssessmentYearResponseDescription
+ */
+export type AssessmentYearResponseDescription = string | null;
+
+
+/**
+ * AssessmentYearResponsePhase1Deadline
+ */
+export type AssessmentYearResponsePhase1Deadline = string | null;
+
+
+/**
+ * AssessmentYearResponsePhase2Deadline
+ */
+export type AssessmentYearResponsePhase2Deadline = string | null;
+
+
+/**
+ * AssessmentYearResponseReworkDeadline
+ */
+export type AssessmentYearResponseReworkDeadline = string | null;
+
+
+/**
+ * AssessmentYearResponseUpdatedAt
+ */
+export type AssessmentYearResponseUpdatedAt = string | null;
+
+
+/**
+ * AssessmentYearSimple
+ */
+export interface AssessmentYearSimple {
+  year: number;
+  is_active: boolean;
+  is_published: boolean;
+}
+
+
+/**
+ * AssessmentYearUpdate
+ */
+export interface AssessmentYearUpdate {
+  /** New start of the assessment period */
+  assessment_period_start?: AssessmentYearUpdateAssessmentPeriodStart;
+  /** New end of the assessment period */
+  assessment_period_end?: AssessmentYearUpdateAssessmentPeriodEnd;
+  /** Phase 1 submission deadline */
+  phase1_deadline?: AssessmentYearUpdatePhase1Deadline;
+  /** Rework submission deadline */
+  rework_deadline?: AssessmentYearUpdateReworkDeadline;
+  /** Phase 2 submission deadline */
+  phase2_deadline?: AssessmentYearUpdatePhase2Deadline;
+  /** Calibration/validation deadline */
+  calibration_deadline?: AssessmentYearUpdateCalibrationDeadline;
+  /** New description */
+  description?: AssessmentYearUpdateDescription;
+}
+
+
+/**
+ * AssessmentYearUpdateAssessmentPeriodEnd
+ */
+export type AssessmentYearUpdateAssessmentPeriodEnd = string | null;
+
+
+/**
+ * AssessmentYearUpdateAssessmentPeriodStart
+ */
+export type AssessmentYearUpdateAssessmentPeriodStart = string | null;
+
+
+/**
+ * AssessmentYearUpdateCalibrationDeadline
+ */
+export type AssessmentYearUpdateCalibrationDeadline = string | null;
+
+
+/**
+ * AssessmentYearUpdateDescription
+ */
+export type AssessmentYearUpdateDescription = string | null;
+
+
+/**
+ * AssessmentYearUpdatePhase1Deadline
+ */
+export type AssessmentYearUpdatePhase1Deadline = string | null;
+
+
+/**
+ * AssessmentYearUpdatePhase2Deadline
+ */
+export type AssessmentYearUpdatePhase2Deadline = string | null;
+
+
+/**
+ * AssessmentYearUpdateReworkDeadline
+ */
+export type AssessmentYearUpdateReworkDeadline = string | null;
+
+
+/**
  * AssessorAnalyticsResponseAssessmentPeriod
  */
 export type AssessorAnalyticsResponseAssessmentPeriod = string | null;
@@ -923,6 +1169,18 @@ export interface GARAssessmentListResponse {
 
 
 /**
+ * GetAssessmentYearsActiveNumber200
+ */
+export type GetAssessmentYearsActiveNumber200 = { [key: string]: unknown };
+
+
+/**
+ * GetAssessmentYearsYearPhase200
+ */
+export type GetAssessmentYearsYearPhase200 = { [key: string]: unknown };
+
+
+/**
  * GetAssessmentsAssessmentIdAnswersParams
  */
 export type GetAssessmentsAssessmentIdAnswersParams = {
@@ -956,6 +1214,17 @@ language?: string;
 
 
 /**
+ * GetAssessmentsDashboardParams
+ */
+export type GetAssessmentsDashboardParams = {
+/**
+ * Assessment year. If not provided, uses the active year.
+ */
+year?: number | null;
+};
+
+
+/**
  * GetAssessmentsList200Item
  */
 export type GetAssessmentsList200Item = { [key: string]: unknown };
@@ -969,6 +1238,10 @@ export type GetAssessmentsListParams = {
  * Filter by assessment status (returns all if not specified)
  */
 assessment_status?: AssessmentStatus | null;
+/**
+ * Filter by assessment year (e.g., 2024, 2025). Defaults to active year.
+ */
+year?: number | null;
 };
 
 
@@ -976,6 +1249,17 @@ assessment_status?: AssessmentStatus | null;
  * GetAssessmentsMyAssessment200
  */
 export type GetAssessmentsMyAssessment200 = { [key: string]: unknown };
+
+
+/**
+ * GetAssessmentsMyAssessmentParams
+ */
+export type GetAssessmentsMyAssessmentParams = {
+/**
+ * Assessment year to retrieve. If not provided, returns the active year's assessment.
+ */
+year?: number | null;
+};
 
 
 /**
@@ -1023,6 +1307,17 @@ governance_area_id?: number | null;
 
 
 /**
+ * GetGarAssessmentsParams
+ */
+export type GetGarAssessmentsParams = {
+/**
+ * Filter by assessment year (e.g., 2024, 2025). Defaults to active year.
+ */
+year?: number | null;
+};
+
+
+/**
  * MunicipalOverviewDashboardAssessmentCycle
  */
 export type MunicipalOverviewDashboardAssessmentCycle = string | null;
@@ -1044,6 +1339,14 @@ export type NotificationResponseAssessmentId = number | null;
  * OverallComplianceResponseAssessmentCycle
  */
 export type OverallComplianceResponseAssessmentCycle = string | null;
+
+
+/**
+ * PostAssessmentYearsYearActivateParams
+ */
+export type PostAssessmentYearsYearActivateParams = {
+create_assessments?: boolean;
+};
 
 
 /**
@@ -1084,6 +1387,12 @@ export type PostMlgooAssessmentsAssessmentIdApproveBody = ApproveAssessmentReque
  * PostMlgooAssessmentsAssessmentIdUnlockBody
  */
 export type PostMlgooAssessmentsAssessmentIdUnlockBody = UnlockAssessmentRequest | null;
+
+
+/**
+ * ReportMetadataAssessmentYear
+ */
+export type ReportMetadataAssessmentYear = number | null;
 
 
 /**

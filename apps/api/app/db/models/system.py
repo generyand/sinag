@@ -2,14 +2,134 @@
 # SQLAlchemy models for system-wide configuration and settings
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from app.db.base import Base
 
+if TYPE_CHECKING:
+    from app.db.models.assessment import Assessment
 
+
+class AssessmentYear(Base):
+    """
+    Unified Assessment Year Configuration table model.
+
+    Combines year configuration settings with phase deadlines into a single model.
+    Each record represents a complete assessment year cycle with:
+    - Year identification and period boundaries
+    - Phase-specific deadlines (Phase 1, Rework, Phase 2, Calibration)
+    - Activation and publication status
+    - Audit trail for administrative changes
+
+    Key Features:
+    - Only ONE record should be active at any time (is_active=True)
+    - When a new year is activated, the previous active year is deactivated
+    - Published years (is_published=True) are visible to Katuparan Center users
+    - Historical year configs are preserved for audit purposes
+
+    Year Placeholders Supported:
+    - {CURRENT_YEAR} → year (e.g., 2025)
+    - {PREVIOUS_YEAR} → year - 1 (e.g., 2024)
+    - {JAN_OCT_CURRENT_YEAR} → "January to October {CURRENT_YEAR}"
+    - {JUL_SEP_CURRENT_YEAR} → "July-September {CURRENT_YEAR}"
+    - {Q1_Q3_CURRENT_YEAR} → "1st to 3rd quarter of CY {CURRENT_YEAR}"
+    - {DEC_31_CURRENT_YEAR} → "December 31, {CURRENT_YEAR}"
+    - {DEC_31_PREVIOUS_YEAR} → "December 31, {PREVIOUS_YEAR}"
+    - {CY_CURRENT_YEAR} → "CY {CURRENT_YEAR}"
+    - {CY_PREVIOUS_YEAR} → "CY {PREVIOUS_YEAR}"
+    """
+
+    __tablename__ = "assessment_years"
+
+    # Primary key
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+
+    # Assessment year (e.g., 2025) - unique identifier
+    year: Mapped[int] = mapped_column(Integer, nullable=False, unique=True, index=True)
+
+    # Assessment period boundaries
+    # Typically January 1 to October 31 of the assessment year
+    assessment_period_start: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    assessment_period_end: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+
+    # Phase deadlines (from AssessmentCycle, stored in UTC)
+    phase1_deadline: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )  # Initial submission deadline
+    rework_deadline: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )  # Rework submission deadline
+    phase2_deadline: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )  # Final submission deadline
+    calibration_deadline: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )  # Calibration/validation deadline
+
+    # Status flags
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, index=True
+    )
+    is_published: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )  # Visible to Katuparan Center users
+
+    # Optional description/notes for this year configuration
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Audit timestamps
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=True, onupdate=func.now()
+    )
+
+    # Activation tracking
+    activated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    activated_by_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    deactivated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    deactivated_by_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+
+    # Relationships
+    activated_by = relationship("User", foreign_keys=[activated_by_id])
+    deactivated_by = relationship("User", foreign_keys=[deactivated_by_id])
+    assessments: Mapped[list["Assessment"]] = relationship(
+        "Assessment", back_populates="year_config"
+    )
+
+    # Indexes for efficient queries
+    __table_args__ = (
+        # Partial unique index: Only one year can be active at a time
+        Index(
+            "uq_assessment_years_single_active",
+            is_active,
+            unique=True,
+            postgresql_where=(is_active == True),  # noqa: E712 - SQLAlchemy requires ==
+        ),
+    )
+
+    def __repr__(self) -> str:
+        return f"<AssessmentYear(year={self.year}, active={self.is_active})>"
+
+
+# Keep legacy model for backward compatibility during migration
 class AssessmentYearConfig(Base):
     """
     Assessment Year Configuration table model.

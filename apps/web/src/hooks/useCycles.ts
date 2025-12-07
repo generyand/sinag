@@ -1,6 +1,10 @@
 /**
  * 🔄 Assessment Cycles Custom Hook
  *
+ * @deprecated This hook is deprecated. Use `useAssessmentYears` from
+ * '@/hooks/useAssessmentYears' instead, which provides full CRUD operations
+ * for the unified AssessmentYear model.
+ *
  * Wraps TanStack Query hooks for assessment cycle management.
  * Provides convenient interface for:
  * - Fetching active cycle

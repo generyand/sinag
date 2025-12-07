@@ -10,6 +10,7 @@ from fastapi import APIRouter
 from . import (
     admin,
     analytics,
+    assessment_years,
     assessments,
     assessor,
     auth,
@@ -52,3 +53,6 @@ api_router.include_router(mlgoo.router, prefix="/mlgoo", tags=["mlgoo"])
 api_router.include_router(capdev.router)  # Prefix already included in router definition
 api_router.include_router(municipal_overview.router)  # Prefix already included in router definition
 api_router.include_router(year_config.router, prefix="/year-config", tags=["year-config"])
+api_router.include_router(
+    assessment_years.router, prefix="/assessment-years", tags=["assessment-years"]
+)

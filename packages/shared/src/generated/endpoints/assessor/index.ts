@@ -27,6 +27,8 @@ import type {
   AssessorAnalyticsResponse,
   AssessorQueueItem,
   BodyUploadMovFileForAssessorApiV1AssessorAssessmentResponsesResponseIdMovsUploadPost,
+  GetAssessorQueueParams,
+  GetAssessorStatsParams,
   HTTPValidationError,
   MOVCreate,
   MOVUploadResponse,
@@ -48,17 +50,19 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 /**
  * Get the assessor's secure submissions queue.
 
-Returns a list of submissions filtered by the assessor's governance area.
+Returns a list of submissions filtered by the assessor's governance area
+and optionally by assessment year.
  * @summary Get Assessor Queue
  */
 export const getAssessorQueue = (
-    
+    params?: GetAssessorQueueParams,
  options?: SecondParameter<typeof mutator>,signal?: AbortSignal
 ) => {
       
       
       return mutator<AssessorQueueItem[]>(
-      {url: `/api/v1/assessor/queue`, method: 'GET', signal
+      {url: `/api/v1/assessor/queue`, method: 'GET',
+        params, signal
     },
       options);
     }
@@ -66,23 +70,23 @@ export const getAssessorQueue = (
 
 
 
-export const getGetAssessorQueueQueryKey = () => {
+export const getGetAssessorQueueQueryKey = (params?: GetAssessorQueueParams,) => {
     return [
-    `/api/v1/assessor/queue`
+    `/api/v1/assessor/queue`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getGetAssessorQueueQueryOptions = <TData = Awaited<ReturnType<typeof getAssessorQueue>>, TError = unknown>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorQueue>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export const getGetAssessorQueueQueryOptions = <TData = Awaited<ReturnType<typeof getAssessorQueue>>, TError = HTTPValidationError>(params?: GetAssessorQueueParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorQueue>>, TError, TData>, request?: SecondParameter<typeof mutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAssessorQueueQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetAssessorQueueQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessorQueue>>> = ({ signal }) => getAssessorQueue(requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessorQueue>>> = ({ signal }) => getAssessorQueue(params, requestOptions, signal);
 
       
 
@@ -92,19 +96,19 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetAssessorQueueQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessorQueue>>>
-export type GetAssessorQueueQueryError = unknown
+export type GetAssessorQueueQueryError = HTTPValidationError
 
 
 /**
  * @summary Get Assessor Queue
  */
 
-export function useGetAssessorQueue<TData = Awaited<ReturnType<typeof getAssessorQueue>>, TError = unknown>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorQueue>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export function useGetAssessorQueue<TData = Awaited<ReturnType<typeof getAssessorQueue>>, TError = HTTPValidationError>(
+ params?: GetAssessorQueueParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorQueue>>, TError, TData>, request?: SecondParameter<typeof mutator>}
   
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetAssessorQueueQueryOptions(options)
+  const queryOptions = getGetAssessorQueueQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -127,13 +131,14 @@ For assessors, returns:
  * @summary Get Assessor Stats
  */
 export const getAssessorStats = (
-    
+    params?: GetAssessorStatsParams,
  options?: SecondParameter<typeof mutator>,signal?: AbortSignal
 ) => {
       
       
       return mutator<unknown>(
-      {url: `/api/v1/assessor/stats`, method: 'GET', signal
+      {url: `/api/v1/assessor/stats`, method: 'GET',
+        params, signal
     },
       options);
     }
@@ -141,23 +146,23 @@ export const getAssessorStats = (
 
 
 
-export const getGetAssessorStatsQueryKey = () => {
+export const getGetAssessorStatsQueryKey = (params?: GetAssessorStatsParams,) => {
     return [
-    `/api/v1/assessor/stats`
+    `/api/v1/assessor/stats`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getGetAssessorStatsQueryOptions = <TData = Awaited<ReturnType<typeof getAssessorStats>>, TError = unknown>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorStats>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export const getGetAssessorStatsQueryOptions = <TData = Awaited<ReturnType<typeof getAssessorStats>>, TError = HTTPValidationError>(params?: GetAssessorStatsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorStats>>, TError, TData>, request?: SecondParameter<typeof mutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAssessorStatsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetAssessorStatsQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessorStats>>> = ({ signal }) => getAssessorStats(requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessorStats>>> = ({ signal }) => getAssessorStats(params, requestOptions, signal);
 
       
 
@@ -167,19 +172,19 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetAssessorStatsQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessorStats>>>
-export type GetAssessorStatsQueryError = unknown
+export type GetAssessorStatsQueryError = HTTPValidationError
 
 
 /**
  * @summary Get Assessor Stats
  */
 
-export function useGetAssessorStats<TData = Awaited<ReturnType<typeof getAssessorStats>>, TError = unknown>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorStats>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export function useGetAssessorStats<TData = Awaited<ReturnType<typeof getAssessorStats>>, TError = HTTPValidationError>(
+ params?: GetAssessorStatsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorStats>>, TError, TData>, request?: SecondParameter<typeof mutator>}
   
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetAssessorStatsQueryOptions(options)
+  const queryOptions = getGetAssessorStatsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

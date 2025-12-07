@@ -173,6 +173,7 @@ class IndicatorService:
         governance_area_id: int | None = None,
         is_active: bool | None = None,
         search: str | None = None,
+        assessment_year: int | None = None,
         skip: int = 0,
         limit: int = 100,
     ) -> list[Indicator]:
@@ -184,12 +185,17 @@ class IndicatorService:
             governance_area_id: Filter by governance area
             is_active: Filter by active status
             search: Search in name (case-insensitive)
+            assessment_year: Filter by assessment year effectivity.
+                            If provided, only returns indicators that are
+                            effective for that year.
             skip: Number of records to skip (pagination)
             limit: Maximum number of records to return
 
         Returns:
             List of Indicator instances
         """
+        from sqlalchemy import or_
+
         query = db.query(Indicator).options(joinedload(Indicator.governance_area))
 
         # Apply filters
@@ -202,6 +208,21 @@ class IndicatorService:
         if search:
             query = query.filter(Indicator.name.ilike(f"%{search}%"))
 
+        # Apply year-based effectivity filter
+        if assessment_year is not None:
+            query = query.filter(
+                # effective_from_year is NULL (applies to all years) OR <= assessment_year
+                or_(
+                    Indicator.effective_from_year.is_(None),
+                    Indicator.effective_from_year <= assessment_year,
+                ),
+                # effective_to_year is NULL (ongoing) OR >= assessment_year
+                or_(
+                    Indicator.effective_to_year.is_(None),
+                    Indicator.effective_to_year >= assessment_year,
+                ),
+            )
+
         # Order by governance_area_id, then name
         query = query.order_by(Indicator.governance_area_id, Indicator.name)
 
@@ -209,6 +230,34 @@ class IndicatorService:
         indicators = query.offset(skip).limit(limit).all()
 
         return indicators
+
+    def get_indicators_for_year(
+        self,
+        db: Session,
+        assessment_year: int,
+        governance_area_id: int | None = None,
+    ) -> list[Indicator]:
+        """
+        Get all active indicators effective for a specific assessment year.
+
+        This filters indicators based on their effective_from_year and
+        effective_to_year fields.
+
+        Args:
+            db: Database session
+            assessment_year: The assessment year to filter for
+            governance_area_id: Optional governance area filter
+
+        Returns:
+            List of active Indicator instances effective for the given year
+        """
+        return self.list_indicators(
+            db=db,
+            governance_area_id=governance_area_id,
+            is_active=True,
+            assessment_year=assessment_year,
+            limit=10000,  # Get all indicators
+        )
 
     def update_indicator(
         self, db: Session, indicator_id: int, data: dict[str, Any], user_id: int
@@ -466,16 +515,27 @@ class IndicatorService:
 
         return False
 
-    def get_indicator_tree(self, db: Session, governance_area_id: int) -> list[dict[str, Any]]:
+    def get_indicator_tree(
+        self,
+        db: Session,
+        governance_area_id: int,
+        assessment_year: int | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get hierarchical tree structure of indicators for a governance area.
 
         Returns indicators organized in tree structure with parent-child relationships.
         Each node includes children nested under it.
 
+        Year placeholders like {CURRENT_YEAR} and {PREVIOUS_YEAR} are resolved based on
+        the provided assessment_year. If no year is provided, uses the active year.
+
         Args:
             db: Database session
             governance_area_id: Governance area ID to filter indicators
+            assessment_year: Optional specific year for placeholder resolution.
+                           If viewing a historical assessment, pass that assessment's year.
+                           If not provided, uses the currently active year.
 
         Returns:
             List of root indicator dictionaries with nested children
@@ -510,13 +570,15 @@ class IndicatorService:
         )
 
         # Initialize year placeholder resolver for dynamic year resolution
+        # If a specific assessment_year is provided, use that for resolution
+        # Otherwise, use the currently active year
         try:
-            year_resolver = get_year_resolver(db)
+            year_resolver = get_year_resolver(db, year=assessment_year)
         except ValueError:
-            # If no active assessment year config, skip resolution (use raw values)
+            # If no active assessment year config and no year specified, skip resolution
             year_resolver = None
             logger.warning(
-                "[YEAR RESOLVER] No active assessment year config found, using raw indicator values"
+                "[YEAR RESOLVER] No active assessment year found, using raw indicator values"
             )
 
         # Build indicator map with year placeholder resolution

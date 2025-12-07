@@ -2,12 +2,16 @@
 # SQLAlchemy models for assessment-related tables
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import JSON, Boolean, DateTime, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, Enum, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from app.db.base import Base
 from app.db.enums import AssessmentStatus, ComplianceStatus, MOVStatus, ValidationStatus
+
+if TYPE_CHECKING:
+    from app.db.models.system import AssessmentYear
 
 
 class Assessment(Base):
@@ -120,6 +124,15 @@ class Assessment(Base):
     # Foreign key to BLGU user
     blgu_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
 
+    # Assessment year - links to AssessmentYear.year
+    # Each BLGU can have one assessment per year
+    assessment_year: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("assessment_years.year"),
+        nullable=False,
+        index=True,
+    )
+
     # Assessor tracking - which assessor completed the review
     reviewed_by: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
@@ -152,6 +165,15 @@ class Assessment(Base):
         "BBIResult", back_populates="assessment", cascade="all, delete-orphan"
     )
     mov_files = relationship("MOVFile", back_populates="assessment", cascade="all, delete-orphan")
+    year_config: Mapped["AssessmentYear"] = relationship(
+        "AssessmentYear", back_populates="assessments"
+    )
+
+    # Table constraints
+    __table_args__ = (
+        # Each BLGU can only have one assessment per year
+        UniqueConstraint("blgu_user_id", "assessment_year", name="uq_assessment_blgu_year"),
+    )
 
     # Validation methods (Epic 5.0)
     @validates("rework_count")

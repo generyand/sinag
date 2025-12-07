@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useEffectiveYear } from "@/store/useAssessmentYearStore";
+import { YearSelector } from "@/components/features/assessment-year/YearSelector";
 import {
   Filter,
   Search,
@@ -39,6 +41,7 @@ import {
 export default function AdminSubmissionsPage() {
   const { isAuthenticated } = useAuthStore();
   const router = useRouter();
+  const effectiveYear = useEffectiveYear();
 
   // Use custom hooks for filter and data management
   const {
@@ -55,6 +58,7 @@ export default function AdminSubmissionsPage() {
     statusFilter: filters.statusFilter,
     searchQuery: filters.searchQuery,
     sortConfig,
+    year: effectiveYear ?? undefined,
   });
 
   // Show loading if not authenticated
@@ -162,8 +166,9 @@ export default function AdminSubmissionsPage() {
                   </h1>
                 </div>
 
-                {/* Quick Stats */}
+                {/* Year Selector + Quick Stats */}
                 <div className="flex items-center gap-4 sm:gap-6">
+                  <YearSelector showLabel showIcon />
                   <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)] min-w-[100px]">
                     <div className="text-3xl font-bold text-[var(--foreground)]">{totalCount}</div>
                     <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">

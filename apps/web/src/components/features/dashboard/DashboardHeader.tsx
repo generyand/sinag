@@ -7,23 +7,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Building2, Calendar, BarChart3 } from "lucide-react";
+import { Building2, Calendar, BarChart3, Loader2 } from "lucide-react";
+import { useYearSelector, useIsActiveYear } from "@/hooks/useAssessmentYear";
+import { cn } from "@/lib/utils";
 
 interface DashboardHeaderProps {
   municipality: string;
   performanceYear: string;
-  assessmentYear: string;
-  onAssessmentYearChange?: (year: string) => void;
-  availableYears?: string[];
 }
 
 export function DashboardHeader({
   municipality,
   performanceYear,
-  assessmentYear,
-  onAssessmentYearChange,
-  availableYears = ["2024", "2023", "2022"],
 }: DashboardHeaderProps) {
+  const { options, value, onChange, isLoading, hasMultipleYears } = useYearSelector();
+  const isActiveYear = useIsActiveYear();
+
   return (
     <div className="relative overflow-hidden bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg p-8">
       {/* Decorative background elements */}
@@ -41,6 +40,12 @@ export function DashboardHeader({
                   SGLGB
                 </span>
               </h1>
+              {/* Historical Year Indicator */}
+              {!isActiveYear && value && (
+                <span className="px-2 py-1 text-xs font-medium rounded-sm bg-amber-100 text-amber-800 border border-amber-200">
+                  Viewing Historical Data
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-6 text-sm">
               <div className="flex items-center gap-2 bg-[var(--card)]/60 backdrop-blur-sm px-3 py-1.5 rounded-sm border border-[var(--border)]">
@@ -73,21 +78,36 @@ export function DashboardHeader({
                   <span className="text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wide">
                     Assessment Year
                   </span>
-                  <Select
-                    value={assessmentYear}
-                    onValueChange={onAssessmentYearChange}
-                  >
-                    <SelectTrigger className="w-20 h-8 text-sm font-semibold border-0 bg-transparent p-0 focus:ring-0">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[var(--card)] border border-[var(--border)] shadow-lg rounded-sm">
-                      {availableYears.map((year) => (
-                        <SelectItem key={year} value={year} className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10">
-                          {year}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {isLoading ? (
+                    <div className="flex items-center gap-2 h-8">
+                      <Loader2 className="h-4 w-4 animate-spin text-[var(--muted-foreground)]" />
+                      <span className="text-sm text-[var(--muted-foreground)]">Loading...</span>
+                    </div>
+                  ) : hasMultipleYears ? (
+                    <Select value={value} onValueChange={onChange}>
+                      <SelectTrigger className="w-28 h-8 text-sm font-semibold border-0 bg-transparent p-0 focus:ring-0">
+                        <SelectValue placeholder="Select year" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[var(--card)] border border-[var(--border)] shadow-lg rounded-sm">
+                        {options.map((option) => (
+                          <SelectItem
+                            key={option.value}
+                            value={option.value}
+                            className={cn(
+                              "text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10",
+                              option.isActive && "font-semibold"
+                            )}
+                          >
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <span className="text-sm font-semibold text-[var(--foreground)] h-8 flex items-center">
+                      {value || "No year available"}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

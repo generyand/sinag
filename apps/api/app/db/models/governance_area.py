@@ -135,6 +135,15 @@ class Indicator(Base):
         DateTime, nullable=True
     )  # When this version was retired
 
+    # Year-based effectivity (for multi-year assessment support)
+    # These fields control which assessment years this indicator applies to
+    effective_from_year: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, index=True,
+    )  # First assessment year this indicator applies (NULL = all years)
+    effective_to_year: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, index=True,
+    )  # Last assessment year this indicator applies (NULL = ongoing)
+
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(default=func.now())
     updated_at: Mapped[datetime] = mapped_column(default=func.now(), onupdate=func.now())

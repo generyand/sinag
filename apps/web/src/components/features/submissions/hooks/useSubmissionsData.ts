@@ -15,6 +15,7 @@ interface UseSubmissionsDataOptions {
   statusFilter: string;
   searchQuery: string;
   sortConfig: SortConfig | null;
+  year?: number;
 }
 
 interface UseSubmissionsDataReturn {
@@ -34,6 +35,7 @@ export function useSubmissionsData({
   statusFilter,
   searchQuery,
   sortConfig,
+  year,
 }: UseSubmissionsDataOptions): UseSubmissionsDataReturn {
   // Convert UI filter to API status
   const apiStatusFilter = useMemo(() => {
@@ -50,6 +52,7 @@ export function useSubmissionsData({
     error,
   } = useGetAssessmentsList({
     assessment_status: apiStatusFilter,
+    year: year,
   });
 
   // Transform API data to UI models

@@ -119,18 +119,57 @@ class AssessmentService:
             for mov in movs
         ]
 
-    def get_assessment_for_blgu(self, db: Session, blgu_user_id: int) -> Assessment | None:
+    def get_assessment_for_blgu(
+        self, db: Session, blgu_user_id: int, assessment_year: int | None = None
+    ) -> Assessment | None:
         """
-        Get the assessment for a specific BLGU user.
+        Get the assessment for a specific BLGU user, optionally filtered by year.
+
+        Args:
+            db: Database session
+            blgu_user_id: ID of the BLGU user
+            assessment_year: Optional year filter. If not provided, gets the
+                            assessment for the active year.
+
+        Returns:
+            Assessment object or None if not found
+        """
+        from app.services.assessment_year_service import assessment_year_service
+
+        query = db.query(Assessment).filter(Assessment.blgu_user_id == blgu_user_id)
+
+        if assessment_year is not None:
+            query = query.filter(Assessment.assessment_year == assessment_year)
+        else:
+            # Default to active year
+            try:
+                active_year = assessment_year_service.get_active_year_number(db)
+                query = query.filter(Assessment.assessment_year == active_year)
+            except ValueError:
+                # No active year configured, return None
+                return None
+
+        return query.first()
+
+    def get_all_assessments_for_blgu(
+        self, db: Session, blgu_user_id: int
+    ) -> list[Assessment]:
+        """
+        Get all assessments for a BLGU user across all years.
 
         Args:
             db: Database session
             blgu_user_id: ID of the BLGU user
 
         Returns:
-            Assessment object or None if not found
+            List of Assessment objects ordered by year descending
         """
-        return db.query(Assessment).filter(Assessment.blgu_user_id == blgu_user_id).first()
+        return (
+            db.query(Assessment)
+            .filter(Assessment.blgu_user_id == blgu_user_id)
+            .order_by(Assessment.assessment_year.desc())
+            .all()
+        )
 
     def get_assessment_with_responses(self, db: Session, assessment_id: int) -> Assessment | None:
         """
@@ -156,7 +195,7 @@ class AssessmentService:
         )
 
     def get_assessment_for_blgu_with_full_data(
-        self, db: Session, blgu_user_id: int
+        self, db: Session, blgu_user_id: int, assessment_year: int | None = None
     ) -> dict[str, Any] | None:
         """
         Get complete assessment data for BLGU user including all governance areas,
@@ -173,6 +212,7 @@ class AssessmentService:
         Args:
             db: Database session
             blgu_user_id: ID of the BLGU user
+            assessment_year: Optional year filter. If not provided, uses active year.
 
         Returns:
             Dictionary with assessment and governance areas data
@@ -187,30 +227,42 @@ class AssessmentService:
 
         # Initialize year placeholder resolver for dynamic year resolution
         from app.core.year_resolver import get_year_resolver
+        from app.services.assessment_year_service import assessment_year_service
+
+        # Determine the assessment year to use
+        if assessment_year is None:
+            try:
+                assessment_year = assessment_year_service.get_active_year_number(db)
+            except ValueError:
+                logger.error("No active assessment year configured")
+                return None
 
         try:
-            year_resolver = get_year_resolver(db)
+            year_resolver = get_year_resolver(db, year=assessment_year)
         except ValueError:
-            # If no active assessment year config, skip resolution
+            # If year resolution fails, continue without it
             year_resolver = None
 
         try:
-            # QUERY 1a: Ensure assessment exists (INSERT if not exists)
+            # QUERY 1a: Ensure assessment exists for this year (INSERT if not exists)
             step_start = time.time()
             q1a = text("""
                 INSERT INTO assessments (
-                    blgu_user_id, status, created_at, updated_at,
+                    blgu_user_id, assessment_year, status, created_at, updated_at,
                     rework_count, is_calibration_rework, calibration_count,
                     is_mlgoo_recalibration, mlgoo_recalibration_count, is_locked_for_deadline
                 )
-                SELECT :user_id, 'DRAFT', NOW(), NOW(),
+                SELECT :user_id, :year, 'DRAFT', NOW(), NOW(),
                        0, false, 0, false, 0, false
-                WHERE NOT EXISTS (SELECT 1 FROM assessments WHERE blgu_user_id = :user_id)
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM assessments
+                    WHERE blgu_user_id = :user_id AND assessment_year = :year
+                )
             """)
-            db.execute(q1a, {"user_id": blgu_user_id})
+            db.execute(q1a, {"user_id": blgu_user_id, "year": assessment_year})
             db.commit()
 
-            # QUERY 1b: Get user + barangay + assessment
+            # QUERY 1b: Get user + barangay + assessment for specific year
             q1b = text("""
                 SELECT
                     u.id as user_id, u.barangay_id, b.name as barangay_name,
@@ -218,13 +270,13 @@ class AssessmentService:
                     a.submitted_at, a.validated_at, a.rework_requested_at,
                     a.is_mlgoo_recalibration, a.mlgoo_recalibration_requested_at,
                     a.mlgoo_recalibration_indicator_ids, a.mlgoo_recalibration_comments,
-                    a.mlgoo_recalibration_count
+                    a.mlgoo_recalibration_count, a.assessment_year
                 FROM users u
                 LEFT JOIN barangays b ON u.barangay_id = b.id
-                LEFT JOIN assessments a ON a.blgu_user_id = u.id
+                LEFT JOIN assessments a ON a.blgu_user_id = u.id AND a.assessment_year = :year
                 WHERE u.id = :user_id
             """)
-            result1 = db.execute(q1b, {"user_id": blgu_user_id})
+            result1 = db.execute(q1b, {"user_id": blgu_user_id, "year": assessment_year})
             row1 = result1.fetchone()
             logger.info(f"[PERF] Query 1 (user+assessment): {time.time() - step_start:.2f}s")
 
@@ -252,6 +304,7 @@ class AssessmentService:
                 "mlgoo_recalibration_indicator_ids": row1[12],
                 "mlgoo_recalibration_comments": row1[13],
                 "mlgoo_recalibration_count": row1[14],
+                "assessment_year": row1[15] if len(row1) > 15 else assessment_year,
             }
 
             if not assessment_info["id"]:
@@ -924,23 +977,56 @@ class AssessmentService:
         """
         Create a new assessment for a BLGU user.
 
+        The assessment will be created for:
+        - The specified assessment_year if provided in assessment_create
+        - Otherwise, the currently active assessment year
+
         Args:
             db: Database session
             assessment_create: Assessment creation data
 
         Returns:
             Created Assessment object
+
+        Raises:
+            HTTPException: If assessment already exists for this user/year combo,
+                          or if no active year exists
         """
-        # Check if assessment already exists
-        existing = self.get_assessment_for_blgu(db, assessment_create.blgu_user_id)
+        from app.services.assessment_year_service import assessment_year_service
+
+        # Determine the assessment year
+        if assessment_create.assessment_year is not None:
+            assessment_year = assessment_create.assessment_year
+            # Verify the year exists
+            year_record = assessment_year_service.get_year_by_number(db, assessment_year)
+            if not year_record:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Assessment year {assessment_year} does not exist",
+                )
+        else:
+            # Use the active year
+            try:
+                assessment_year = assessment_year_service.get_active_year_number(db)
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="No active assessment year configured. Cannot create assessment.",
+                )
+
+        # Check if assessment already exists for this user/year combination
+        existing = self.get_assessment_for_blgu(
+            db, assessment_create.blgu_user_id, assessment_year=assessment_year
+        )
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Assessment already exists for this BLGU user",
+                detail=f"Assessment already exists for this BLGU user for year {assessment_year}",
             )
 
         db_assessment = Assessment(
             blgu_user_id=assessment_create.blgu_user_id,
+            assessment_year=assessment_year,
             status=AssessmentStatus.DRAFT,
         )
 
@@ -1537,14 +1623,16 @@ class AssessmentService:
                     # Get all indicator IDs that have responses
                     indicator_ids = [r.indicator_id for r in assessment.responses]
                     if indicator_ids:
+                        # Pass the assessment's year to ensure correct year placeholders are resolved
                         snapshots = indicator_snapshot_service.create_snapshot_for_assessment(
                             db=db,
                             assessment_id=assessment_id,
                             indicator_ids=indicator_ids,
+                            assessment_year=assessment.assessment_year,
                         )
                         db.commit()
                         self.logger.info(
-                            f"Created {len(snapshots)} indicator snapshots for assessment {assessment_id}"
+                            f"Created {len(snapshots)} indicator snapshots for assessment {assessment_id} (year={assessment.assessment_year})"
                         )
                 except Exception as e:
                     # Log error but don't fail submission - snapshots are for historical record
@@ -2462,7 +2550,7 @@ class AssessmentService:
         }
 
     def get_assessment_dashboard_data(
-        self, db: Session, blgu_user_id: int
+        self, db: Session, blgu_user_id: int, assessment_year: int | None = None
     ) -> AssessmentDashboardResponse | None:
         """
         Get dashboard data for a BLGU user's assessment.
@@ -2470,10 +2558,13 @@ class AssessmentService:
         Args:
             db: Database session
             blgu_user_id: ID of the BLGU user
+            assessment_year: Optional year filter. If not provided, uses active year.
 
         Returns:
             AssessmentDashboardResponse with dashboard data or None if not found
         """
+        from app.services.assessment_year_service import assessment_year_service
+
         # Get user information to access barangay name
         from app.db.models.user import User
 
@@ -2489,13 +2580,23 @@ class AssessmentService:
         # Get barangay name
         barangay_name = getattr(user.barangay, "name", "Unknown") if user.barangay else "Unknown"
 
-        # Get current year for performance and assessment years
+        # Determine the assessment year to use
+        if assessment_year is None:
+            try:
+                assessment_year = assessment_year_service.get_active_year_number(db)
+            except ValueError:
+                # Fall back to calendar year
+                assessment_year = datetime.now().year
+
+        # Get current year for performance year
         current_year = datetime.now().year
 
-        # Get or create assessment
-        assessment = self.get_assessment_for_blgu(db, blgu_user_id)
+        # Get or create assessment for the specific year
+        assessment = self.get_assessment_for_blgu(db, blgu_user_id, assessment_year=assessment_year)
         if not assessment:
-            assessment = self.create_assessment(db, AssessmentCreate(blgu_user_id=blgu_user_id))
+            assessment = self.create_assessment(
+                db, AssessmentCreate(blgu_user_id=blgu_user_id, assessment_year=assessment_year)
+            )
 
         # Get all governance areas with their indicators
         governance_areas = (
@@ -2655,20 +2756,30 @@ class AssessmentService:
         }
 
     def get_all_validated_assessments(
-        self, db: Session, status: AssessmentStatus | None = None
+        self,
+        db: Session,
+        status: AssessmentStatus | None = None,
+        assessment_year: int | None = None,
     ) -> list[dict[str, Any]]:
         """
-        Get all assessments with compliance status and area results (optionally filtered by status).
+        Get all assessments with compliance status and area results (optionally filtered by status and year).
 
         Used for MLGOO reports page to display all barangay compliance statuses.
 
         Args:
             db: Database session
             status: Optional filter by assessment status (shows all if not provided)
+            assessment_year: Optional filter by assessment year (defaults to active year)
 
         Returns:
             List of dictionaries with assessment details including compliance status
         """
+        from app.services.assessment_year_service import assessment_year_service
+
+        # Get active year if not specified
+        if assessment_year is None:
+            assessment_year = assessment_year_service.get_active_year_number(db)
+
         # Query assessments with related user and barangay data
         # Also eagerly load reviewer and calibration_validator for the validators list
         query = (
@@ -2680,6 +2791,10 @@ class AssessmentService:
                 joinedload(Assessment.calibration_validator),
             )
         )
+
+        # Filter by assessment year
+        if assessment_year is not None:
+            query = query.filter(Assessment.assessment_year == assessment_year)
 
         # Filter by status if provided (otherwise return all assessments)
         if status is not None:

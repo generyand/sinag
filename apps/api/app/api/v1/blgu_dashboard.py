@@ -123,10 +123,13 @@ def get_blgu_dashboard(
             children_by_parent.setdefault(parent_id, []).append(ind)
 
         # Initialize year placeholder resolver for dynamic year resolution
+        # Use the assessment's year so historical assessments show correct dates
         from app.core.year_resolver import get_year_resolver
 
         try:
-            year_resolver = get_year_resolver(db)
+            # Pass the assessment's year to resolve placeholders correctly
+            # This ensures viewing 2024 assessment shows "CY 2024" not "CY 2025"
+            year_resolver = get_year_resolver(db, year=assessment.assessment_year)
         except ValueError:
             # If no active assessment year config, skip resolution
             year_resolver = None
@@ -895,11 +898,12 @@ def get_indicator_navigation(
     # Build navigation list with completion status and route paths
     navigation_list = []
 
-    # Initialize year placeholder resolver
+    # Initialize year placeholder resolver with the assessment's year
+    # This ensures historical assessments show correct year in indicator names
     from app.core.year_resolver import get_year_resolver
 
     try:
-        year_resolver = get_year_resolver(db)
+        year_resolver = get_year_resolver(db, year=assessment.assessment_year)
     except ValueError:
         year_resolver = None
 

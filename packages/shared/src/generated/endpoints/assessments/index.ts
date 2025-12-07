@@ -32,9 +32,11 @@ import type {
   GetAssessmentsAssessmentIdAnswersParams,
   GetAssessmentsAssessmentIdCalibrationSummaryParams,
   GetAssessmentsAssessmentIdReworkSummaryParams,
+  GetAssessmentsDashboardParams,
   GetAssessmentsList200Item,
   GetAssessmentsListParams,
   GetAssessmentsMyAssessment200,
+  GetAssessmentsMyAssessmentParams,
   HTTPValidationError,
   MOVCreate,
   Mov,
@@ -72,17 +74,21 @@ Returns dashboard-specific data optimized for overview and progress tracking:
 - Assessment status and metadata
 
 This endpoint automatically creates an assessment if one doesn't exist
-for the BLGU user.
+for the BLGU user (for the active year only).
+
+**Query Parameters:**
+- year: Optional assessment year. If not provided, uses the active year.
  * @summary Get Assessment Dashboard
  */
 export const getAssessmentsDashboard = (
-    
+    params?: GetAssessmentsDashboardParams,
  options?: SecondParameter<typeof mutator>,signal?: AbortSignal
 ) => {
       
       
       return mutator<AssessmentDashboardResponse>(
-      {url: `/api/v1/assessments/dashboard`, method: 'GET', signal
+      {url: `/api/v1/assessments/dashboard`, method: 'GET',
+        params, signal
     },
       options);
     }
@@ -90,23 +96,23 @@ export const getAssessmentsDashboard = (
 
 
 
-export const getGetAssessmentsDashboardQueryKey = () => {
+export const getGetAssessmentsDashboardQueryKey = (params?: GetAssessmentsDashboardParams,) => {
     return [
-    `/api/v1/assessments/dashboard`
+    `/api/v1/assessments/dashboard`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getGetAssessmentsDashboardQueryOptions = <TData = Awaited<ReturnType<typeof getAssessmentsDashboard>>, TError = unknown>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsDashboard>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export const getGetAssessmentsDashboardQueryOptions = <TData = Awaited<ReturnType<typeof getAssessmentsDashboard>>, TError = HTTPValidationError>(params?: GetAssessmentsDashboardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsDashboard>>, TError, TData>, request?: SecondParameter<typeof mutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAssessmentsDashboardQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetAssessmentsDashboardQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessmentsDashboard>>> = ({ signal }) => getAssessmentsDashboard(requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessmentsDashboard>>> = ({ signal }) => getAssessmentsDashboard(params, requestOptions, signal);
 
       
 
@@ -116,19 +122,19 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetAssessmentsDashboardQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessmentsDashboard>>>
-export type GetAssessmentsDashboardQueryError = unknown
+export type GetAssessmentsDashboardQueryError = HTTPValidationError
 
 
 /**
  * @summary Get Assessment Dashboard
  */
 
-export function useGetAssessmentsDashboard<TData = Awaited<ReturnType<typeof getAssessmentsDashboard>>, TError = unknown>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsDashboard>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export function useGetAssessmentsDashboard<TData = Awaited<ReturnType<typeof getAssessmentsDashboard>>, TError = HTTPValidationError>(
+ params?: GetAssessmentsDashboardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsDashboard>>, TError, TData>, request?: SecondParameter<typeof mutator>}
   
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetAssessmentsDashboardQueryOptions(options)
+  const queryOptions = getGetAssessmentsDashboardQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -152,17 +158,21 @@ Returns the full assessment data including:
 - Feedback comments from assessors
 
 This endpoint automatically creates an assessment if one doesn't exist
-for the BLGU user.
+for the BLGU user (for the active year).
+
+**Query Parameters:**
+- year: Optional assessment year. If not provided, uses the active year.
  * @summary Get My Assessment
  */
 export const getAssessmentsMyAssessment = (
-    
+    params?: GetAssessmentsMyAssessmentParams,
  options?: SecondParameter<typeof mutator>,signal?: AbortSignal
 ) => {
       
       
       return mutator<GetAssessmentsMyAssessment200>(
-      {url: `/api/v1/assessments/my-assessment`, method: 'GET', signal
+      {url: `/api/v1/assessments/my-assessment`, method: 'GET',
+        params, signal
     },
       options);
     }
@@ -170,23 +180,23 @@ export const getAssessmentsMyAssessment = (
 
 
 
-export const getGetAssessmentsMyAssessmentQueryKey = () => {
+export const getGetAssessmentsMyAssessmentQueryKey = (params?: GetAssessmentsMyAssessmentParams,) => {
     return [
-    `/api/v1/assessments/my-assessment`
+    `/api/v1/assessments/my-assessment`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getGetAssessmentsMyAssessmentQueryOptions = <TData = Awaited<ReturnType<typeof getAssessmentsMyAssessment>>, TError = unknown>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsMyAssessment>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export const getGetAssessmentsMyAssessmentQueryOptions = <TData = Awaited<ReturnType<typeof getAssessmentsMyAssessment>>, TError = HTTPValidationError>(params?: GetAssessmentsMyAssessmentParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsMyAssessment>>, TError, TData>, request?: SecondParameter<typeof mutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAssessmentsMyAssessmentQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetAssessmentsMyAssessmentQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessmentsMyAssessment>>> = ({ signal }) => getAssessmentsMyAssessment(requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessmentsMyAssessment>>> = ({ signal }) => getAssessmentsMyAssessment(params, requestOptions, signal);
 
       
 
@@ -196,19 +206,19 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetAssessmentsMyAssessmentQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessmentsMyAssessment>>>
-export type GetAssessmentsMyAssessmentQueryError = unknown
+export type GetAssessmentsMyAssessmentQueryError = HTTPValidationError
 
 
 /**
  * @summary Get My Assessment
  */
 
-export function useGetAssessmentsMyAssessment<TData = Awaited<ReturnType<typeof getAssessmentsMyAssessment>>, TError = unknown>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsMyAssessment>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export function useGetAssessmentsMyAssessment<TData = Awaited<ReturnType<typeof getAssessmentsMyAssessment>>, TError = HTTPValidationError>(
+ params?: GetAssessmentsMyAssessmentParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsMyAssessment>>, TError, TData>, request?: SecondParameter<typeof mutator>}
   
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetAssessmentsMyAssessmentQueryOptions(options)
+  const queryOptions = getGetAssessmentsMyAssessmentQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -643,13 +653,14 @@ export const useDeleteAssessmentsMovsMovId = <TError = HTTPValidationError,
       return useMutation(mutationOptions);
     }
     /**
- * Get all assessments with compliance status (optionally filtered by status).
+ * Get all assessments with compliance status (optionally filtered by status and year).
 
 Returns a list of assessments with their compliance status,
 area results, and barangay information. Used for MLGOO reports dashboard.
 
 Args:
     assessment_status: Optional filter by assessment status (shows all if not provided)
+    year: Optional filter by assessment year (defaults to active year)
     db: Database session
     current_user: Current admin/MLGOO user
 

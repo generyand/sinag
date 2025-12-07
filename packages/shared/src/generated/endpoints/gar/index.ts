@@ -21,6 +21,7 @@ import type {
   GetGarAssessmentIdExportExcelParams,
   GetGarAssessmentIdExportPdfParams,
   GetGarAssessmentIdParams,
+  GetGarAssessmentsParams,
   HTTPValidationError
 } from '../../schemas';
 
@@ -38,18 +39,20 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 /**
  * Get list of assessments available for GAR generation.
 
-Returns completed and awaiting final validation assessments.
+Returns completed and awaiting final validation assessments
+filtered by the specified assessment year.
 Only accessible by MLGOO_DILG users.
  * @summary Get Gar Assessments
  */
 export const getGarAssessments = (
-    
+    params?: GetGarAssessmentsParams,
  options?: SecondParameter<typeof mutator>,signal?: AbortSignal
 ) => {
       
       
       return mutator<GARAssessmentListResponse>(
-      {url: `/api/v1/gar/assessments`, method: 'GET', signal
+      {url: `/api/v1/gar/assessments`, method: 'GET',
+        params, signal
     },
       options);
     }
@@ -57,23 +60,23 @@ export const getGarAssessments = (
 
 
 
-export const getGetGarAssessmentsQueryKey = () => {
+export const getGetGarAssessmentsQueryKey = (params?: GetGarAssessmentsParams,) => {
     return [
-    `/api/v1/gar/assessments`
+    `/api/v1/gar/assessments`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getGetGarAssessmentsQueryOptions = <TData = Awaited<ReturnType<typeof getGarAssessments>>, TError = unknown>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGarAssessments>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export const getGetGarAssessmentsQueryOptions = <TData = Awaited<ReturnType<typeof getGarAssessments>>, TError = HTTPValidationError>(params?: GetGarAssessmentsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGarAssessments>>, TError, TData>, request?: SecondParameter<typeof mutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetGarAssessmentsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetGarAssessmentsQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGarAssessments>>> = ({ signal }) => getGarAssessments(requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGarAssessments>>> = ({ signal }) => getGarAssessments(params, requestOptions, signal);
 
       
 
@@ -83,19 +86,19 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetGarAssessmentsQueryResult = NonNullable<Awaited<ReturnType<typeof getGarAssessments>>>
-export type GetGarAssessmentsQueryError = unknown
+export type GetGarAssessmentsQueryError = HTTPValidationError
 
 
 /**
  * @summary Get Gar Assessments
  */
 
-export function useGetGarAssessments<TData = Awaited<ReturnType<typeof getGarAssessments>>, TError = unknown>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGarAssessments>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export function useGetGarAssessments<TData = Awaited<ReturnType<typeof getGarAssessments>>, TError = HTTPValidationError>(
+ params?: GetGarAssessmentsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGarAssessments>>, TError, TData>, request?: SecondParameter<typeof mutator>}
   
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetGarAssessmentsQueryOptions(options)
+  const queryOptions = getGetGarAssessmentsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
