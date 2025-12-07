@@ -264,6 +264,19 @@ jobs:
             sleep 5
           done
           echo "✗ Health check failed after 3 attempts"
+          echo "--- Debugging Info ---"
+          echo "Current directory:"
+          pwd
+          echo "Directory contents:"
+          ls -la
+          echo "Docker compose path:"
+          which docker-compose || echo "docker-compose not found"
+          which docker || echo "docker not found"
+          echo "Docker version:"
+          docker --version || echo "docker version failed"
+          echo "Docker compose version:"
+          docker compose version || echo "docker compose version failed"
+          echo "----------------------"
           docker compose -f docker-compose.prod.yml ps
           docker compose -f docker-compose.prod.yml logs --tail=20
           exit 1
@@ -394,6 +407,19 @@ jobs:
             sleep 5
           done
           echo "✗ Health check failed after 3 attempts"
+          echo "--- Debugging Info ---"
+          echo "Current directory:"
+          pwd
+          echo "Directory contents:"
+          ls -la
+          echo "Docker compose path:"
+          which docker-compose || echo "docker-compose not found"
+          which docker || echo "docker not found"
+          echo "Docker version:"
+          docker --version || echo "docker version failed"
+          echo "Docker compose version:"
+          docker compose version || echo "docker compose version failed"
+          echo "----------------------"
           docker compose -f docker-compose.prod.yml ps
           docker compose -f docker-compose.prod.yml logs --tail=20
           exit 1
