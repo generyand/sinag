@@ -62,8 +62,12 @@ export const getAnalyticsDashboard = (
     }
   
 
+
+
 export const getGetAnalyticsDashboardQueryKey = (params?: GetAnalyticsDashboardParams,) => {
-    return [`/api/v1/analytics/dashboard`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/analytics/dashboard`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -100,12 +104,13 @@ export function useGetAnalyticsDashboard<TData = Awaited<ReturnType<typeof getAn
 
   const queryOptions = getGetAnalyticsDashboardQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -149,8 +154,12 @@ export const getAnalyticsReports = (
     }
   
 
+
+
 export const getGetAnalyticsReportsQueryKey = (params?: GetAnalyticsReportsParams,) => {
-    return [`/api/v1/analytics/reports`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/analytics/reports`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -187,12 +196,13 @@ export function useGetAnalyticsReports<TData = Awaited<ReturnType<typeof getAnal
 
   const queryOptions = getGetAnalyticsReportsQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 

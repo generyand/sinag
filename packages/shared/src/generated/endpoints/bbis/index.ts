@@ -113,7 +113,7 @@ export const usePostBbis = <TError = HTTPValidationError,
 
       const mutationOptions = getPostBbisMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Get paginated list of BBIs with optional filtering.
@@ -139,8 +139,12 @@ export const getBbis = (
     }
   
 
+
+
 export const getGetBbisQueryKey = (params?: GetBbisParams,) => {
-    return [`/api/v1/bbis/`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/bbis/`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -177,12 +181,13 @@ export function useGetBbis<TData = Awaited<ReturnType<typeof getBbis>>, TError =
 
   const queryOptions = getGetBbisQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -208,8 +213,12 @@ export const getBbis$BbiId = (
     }
   
 
-export const getGetBbisBbiIdQueryKey = (bbiId: number,) => {
-    return [`/api/v1/bbis/${bbiId}`] as const;
+
+
+export const getGetBbisBbiIdQueryKey = (bbiId?: number,) => {
+    return [
+    `/api/v1/bbis/${bbiId}`
+    ] as const;
     }
 
     
@@ -246,12 +255,13 @@ export function useGetBbisBbiId<TData = Awaited<ReturnType<typeof getBbis$BbiId>
 
   const queryOptions = getGetBbisBbiIdQueryOptions(bbiId,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -323,7 +333,7 @@ export const usePutBbisBbiId = <TError = HTTPValidationError,
 
       const mutationOptions = getPutBbisBbiIdMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Deactivate a BBI (soft delete).
@@ -390,7 +400,7 @@ export const useDeleteBbisBbiId = <TError = HTTPValidationError,
 
       const mutationOptions = getDeleteBbisBbiIdMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Test BBI calculation logic without saving to database.
@@ -469,7 +479,7 @@ export const usePostBbisTestCalculation = <TError = HTTPValidationError,
 
       const mutationOptions = getPostBbisTestCalculationMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Get all BBI results for a specific assessment.
@@ -493,8 +503,12 @@ export const getBbisResultsAssessment$AssessmentId = (
     }
   
 
-export const getGetBbisResultsAssessmentAssessmentIdQueryKey = (assessmentId: number,) => {
-    return [`/api/v1/bbis/results/assessment/${assessmentId}`] as const;
+
+
+export const getGetBbisResultsAssessmentAssessmentIdQueryKey = (assessmentId?: number,) => {
+    return [
+    `/api/v1/bbis/results/assessment/${assessmentId}`
+    ] as const;
     }
 
     
@@ -531,12 +545,13 @@ export function useGetBbisResultsAssessmentAssessmentId<TData = Awaited<ReturnTy
 
   const queryOptions = getGetBbisResultsAssessmentAssessmentIdQueryOptions(assessmentId,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -566,8 +581,12 @@ export const getBbisComplianceAssessment$AssessmentId = (
     }
   
 
-export const getGetBbisComplianceAssessmentAssessmentIdQueryKey = (assessmentId: number,) => {
-    return [`/api/v1/bbis/compliance/assessment/${assessmentId}`] as const;
+
+
+export const getGetBbisComplianceAssessmentAssessmentIdQueryKey = (assessmentId?: number,) => {
+    return [
+    `/api/v1/bbis/compliance/assessment/${assessmentId}`
+    ] as const;
     }
 
     
@@ -604,12 +623,13 @@ export function useGetBbisComplianceAssessmentAssessmentId<TData = Awaited<Retur
 
   const queryOptions = getGetBbisComplianceAssessmentAssessmentIdQueryOptions(assessmentId,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -683,6 +703,6 @@ export const usePostBbisComplianceCalculateAssessmentId = <TError = HTTPValidati
 
       const mutationOptions = getPostBbisComplianceCalculateAssessmentIdMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     

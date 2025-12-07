@@ -68,8 +68,12 @@ export const getAdminAuditLogs = (
     }
   
 
+
+
 export const getGetAdminAuditLogsQueryKey = (params?: GetAdminAuditLogsParams,) => {
-    return [`/api/v1/admin/audit-logs`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/admin/audit-logs`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -106,12 +110,13 @@ export function useGetAdminAuditLogs<TData = Awaited<ReturnType<typeof getAdminA
 
   const queryOptions = getGetAdminAuditLogsQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -132,8 +137,12 @@ export const getAdminAuditLogs$LogId = (
     }
   
 
-export const getGetAdminAuditLogsLogIdQueryKey = (logId: number,) => {
-    return [`/api/v1/admin/audit-logs/${logId}`] as const;
+
+
+export const getGetAdminAuditLogsLogIdQueryKey = (logId?: number,) => {
+    return [
+    `/api/v1/admin/audit-logs/${logId}`
+    ] as const;
     }
 
     
@@ -170,12 +179,13 @@ export function useGetAdminAuditLogsLogId<TData = Awaited<ReturnType<typeof getA
 
   const queryOptions = getGetAdminAuditLogsLogIdQueryOptions(logId,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -197,9 +207,13 @@ export const getAdminAuditLogsEntity$EntityType$EntityId = (
     }
   
 
-export const getGetAdminAuditLogsEntityEntityTypeEntityIdQueryKey = (entityType: string,
-    entityId: number,) => {
-    return [`/api/v1/admin/audit-logs/entity/${entityType}/${entityId}`] as const;
+
+
+export const getGetAdminAuditLogsEntityEntityTypeEntityIdQueryKey = (entityType?: string,
+    entityId?: number,) => {
+    return [
+    `/api/v1/admin/audit-logs/entity/${entityType}/${entityId}`
+    ] as const;
     }
 
     
@@ -238,12 +252,13 @@ export function useGetAdminAuditLogsEntityEntityTypeEntityId<TData = Awaited<Ret
 
   const queryOptions = getGetAdminAuditLogsEntityEntityTypeEntityIdQueryOptions(entityType,entityId,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -265,8 +280,12 @@ export const getAdminAuditLogsExport = (
     }
   
 
+
+
 export const getGetAdminAuditLogsExportQueryKey = (params?: GetAdminAuditLogsExportParams,) => {
-    return [`/api/v1/admin/audit-logs/export`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/admin/audit-logs/export`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -303,12 +322,13 @@ export function useGetAdminAuditLogsExport<TData = Awaited<ReturnType<typeof get
 
   const queryOptions = getGetAdminAuditLogsExportQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -375,7 +395,7 @@ export const usePostAdminCycles = <TError = HTTPValidationError,
 
       const mutationOptions = getPostAdminCyclesMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Retrieve all assessment cycles, ordered by year (most recent first). Requires MLGOO_DILG role.
@@ -395,8 +415,12 @@ export const getAdminCycles = (
     }
   
 
+
+
 export const getGetAdminCyclesQueryKey = (params?: GetAdminCyclesParams,) => {
-    return [`/api/v1/admin/cycles`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/admin/cycles`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -433,12 +457,13 @@ export function useGetAdminCycles<TData = Awaited<ReturnType<typeof getAdminCycl
 
   const queryOptions = getGetAdminCyclesQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -459,8 +484,12 @@ export const getAdminCyclesActive = (
     }
   
 
+
+
 export const getGetAdminCyclesActiveQueryKey = () => {
-    return [`/api/v1/admin/cycles/active`] as const;
+    return [
+    `/api/v1/admin/cycles/active`
+    ] as const;
     }
 
     
@@ -497,12 +526,13 @@ export function useGetAdminCyclesActive<TData = Awaited<ReturnType<typeof getAdm
 
   const queryOptions = getGetAdminCyclesActiveQueryOptions(options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -569,7 +599,7 @@ export const usePutAdminCyclesCycleId = <TError = HTTPValidationError,
 
       const mutationOptions = getPutAdminCyclesCycleIdMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Get submission status for all barangays across all phases (phase1, rework, phase2, calibration). Requires MLGOO_DILG role.
@@ -589,8 +619,12 @@ export const getAdminDeadlinesStatus = (
     }
   
 
+
+
 export const getGetAdminDeadlinesStatusQueryKey = (params?: GetAdminDeadlinesStatusParams,) => {
-    return [`/api/v1/admin/deadlines/status`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/admin/deadlines/status`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -627,12 +661,13 @@ export function useGetAdminDeadlinesStatus<TData = Awaited<ReturnType<typeof get
 
   const queryOptions = getGetAdminDeadlinesStatusQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -699,7 +734,7 @@ export const usePostAdminDeadlinesOverride = <TError = HTTPValidationError,
 
       const mutationOptions = getPostAdminDeadlinesOverrideMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Get all deadline overrides with optional filtering by cycle, barangay, or indicator. Requires MLGOO_DILG role.
@@ -719,8 +754,12 @@ export const getAdminDeadlinesOverrides = (
     }
   
 
+
+
 export const getGetAdminDeadlinesOverridesQueryKey = (params?: GetAdminDeadlinesOverridesParams,) => {
-    return [`/api/v1/admin/deadlines/overrides`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/admin/deadlines/overrides`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -757,12 +796,13 @@ export function useGetAdminDeadlinesOverrides<TData = Awaited<ReturnType<typeof 
 
   const queryOptions = getGetAdminDeadlinesOverridesQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -784,8 +824,12 @@ export const getAdminDeadlinesOverridesExport = (
     }
   
 
+
+
 export const getGetAdminDeadlinesOverridesExportQueryKey = (params?: GetAdminDeadlinesOverridesExportParams,) => {
-    return [`/api/v1/admin/deadlines/overrides/export`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/admin/deadlines/overrides/export`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -822,12 +866,13 @@ export function useGetAdminDeadlinesOverridesExport<TData = Awaited<ReturnType<t
 
   const queryOptions = getGetAdminDeadlinesOverridesExportQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -848,8 +893,12 @@ export const getAdminSystemStatus = (
     }
   
 
+
+
 export const getGetAdminSystemStatusQueryKey = () => {
-    return [`/api/v1/admin/system/status`] as const;
+    return [
+    `/api/v1/admin/system/status`
+    ] as const;
     }
 
     
@@ -886,12 +935,13 @@ export function useGetAdminSystemStatus<TData = Awaited<ReturnType<typeof getAdm
 
   const queryOptions = getGetAdminSystemStatusQueryOptions(options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 

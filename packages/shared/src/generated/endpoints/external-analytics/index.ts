@@ -60,8 +60,12 @@ export const getExternalAnalyticsOverall = (
     }
   
 
+
+
 export const getGetExternalAnalyticsOverallQueryKey = (params?: GetExternalAnalyticsOverallParams,) => {
-    return [`/api/v1/external/analytics/overall`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/external/analytics/overall`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -98,12 +102,13 @@ export function useGetExternalAnalyticsOverall<TData = Awaited<ReturnType<typeof
 
   const queryOptions = getGetExternalAnalyticsOverallQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -125,8 +130,12 @@ export const getExternalAnalyticsGovernanceAreas = (
     }
   
 
+
+
 export const getGetExternalAnalyticsGovernanceAreasQueryKey = (params?: GetExternalAnalyticsGovernanceAreasParams,) => {
-    return [`/api/v1/external/analytics/governance-areas`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/external/analytics/governance-areas`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -163,12 +172,13 @@ export function useGetExternalAnalyticsGovernanceAreas<TData = Awaited<ReturnTyp
 
   const queryOptions = getGetExternalAnalyticsGovernanceAreasQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -190,8 +200,12 @@ export const getExternalAnalyticsTopFailingIndicators = (
     }
   
 
+
+
 export const getGetExternalAnalyticsTopFailingIndicatorsQueryKey = (params?: GetExternalAnalyticsTopFailingIndicatorsParams,) => {
-    return [`/api/v1/external/analytics/top-failing-indicators`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/external/analytics/top-failing-indicators`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -228,12 +242,13 @@ export function useGetExternalAnalyticsTopFailingIndicators<TData = Awaited<Retu
 
   const queryOptions = getGetExternalAnalyticsTopFailingIndicatorsQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -255,8 +270,12 @@ export const getExternalAnalyticsAiInsightsSummary = (
     }
   
 
+
+
 export const getGetExternalAnalyticsAiInsightsSummaryQueryKey = (params?: GetExternalAnalyticsAiInsightsSummaryParams,) => {
-    return [`/api/v1/external/analytics/ai-insights/summary`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/external/analytics/ai-insights/summary`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -293,12 +312,13 @@ export function useGetExternalAnalyticsAiInsightsSummary<TData = Awaited<ReturnT
 
   const queryOptions = getGetExternalAnalyticsAiInsightsSummaryQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -320,8 +340,12 @@ export const getExternalAnalyticsDashboard = (
     }
   
 
+
+
 export const getGetExternalAnalyticsDashboardQueryKey = (params?: GetExternalAnalyticsDashboardParams,) => {
-    return [`/api/v1/external/analytics/dashboard`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/external/analytics/dashboard`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -358,12 +382,13 @@ export function useGetExternalAnalyticsDashboard<TData = Awaited<ReturnType<type
 
   const queryOptions = getGetExternalAnalyticsDashboardQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -385,8 +410,12 @@ export const getExternalAnalyticsExportCsv = (
     }
   
 
+
+
 export const getGetExternalAnalyticsExportCsvQueryKey = (params?: GetExternalAnalyticsExportCsvParams,) => {
-    return [`/api/v1/external/analytics/export/csv`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/external/analytics/export/csv`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -423,12 +452,13 @@ export function useGetExternalAnalyticsExportCsv<TData = Awaited<ReturnType<type
 
   const queryOptions = getGetExternalAnalyticsExportCsvQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -450,8 +480,12 @@ export const getExternalAnalyticsExportPdf = (
     }
   
 
+
+
 export const getGetExternalAnalyticsExportPdfQueryKey = (params?: GetExternalAnalyticsExportPdfParams,) => {
-    return [`/api/v1/external/analytics/export/pdf`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/external/analytics/export/pdf`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -488,12 +522,13 @@ export function useGetExternalAnalyticsExportPdf<TData = Awaited<ReturnType<type
 
   const queryOptions = getGetExternalAnalyticsExportPdfQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 

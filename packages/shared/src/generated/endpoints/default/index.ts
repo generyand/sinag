@@ -45,8 +45,12 @@ export const getHealth = (
     }
   
 
+
+
 export const getGetHealthQueryKey = () => {
-    return [`/health`] as const;
+    return [
+    `/health`
+    ] as const;
     }
 
     
@@ -83,12 +87,13 @@ export function useGetHealth<TData = Awaited<ReturnType<typeof getHealth>>, TErr
 
   const queryOptions = getGetHealthQueryOptions(options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 

@@ -5,16 +5,13 @@
 
 import type { CalculationSchema } from '../common';
 import type { BodyTestCalculationApiV1IndicatorsTestCalculationPostAssessmentData } from '../assessments';
-import type { BulkCreateError } from '../error';
 import type { GARChecklistItem } from '../gar';
 import type { FormSchema } from '../formschema';
 import type { RemarkSchema } from '../common';
 import type { IndicatorDetailItemAssessorRemarks } from '../assessor';
 import type { MOVFileItem } from '../movs';
-import type { IndicatorDraftResponseLockedByUserId } from '../users';
-import type { GovernanceAreaNested } from '../common';
 import type { IndicatorHistoryResponseArchivedByUser } from '../users';
-import type { ValidationError } from '../error';
+import type { GovernanceAreaNested } from '../common';
 import type { ChecklistItemResponse } from '../system';
 
 /**
@@ -162,36 +159,6 @@ export interface BodyTestCalculationApiV1IndicatorsTestCalculationPost {
 
 
 /**
- * BulkIndicatorCreate
- */
-export interface BulkIndicatorCreate {
-  /** Governance area for all indicators */
-  governance_area_id: number;
-  /** List of indicators to create */
-  indicators: IndicatorCreateWithOrder[];
-}
-
-
-/**
- * BulkIndicatorResponse
- */
-export interface BulkIndicatorResponse {
-  /** Successfully created indicators */
-  created: IndicatorResponse[];
-  /** Map of temp_id to real database ID */
-  temp_id_mapping: BulkIndicatorResponseTempIdMapping;
-  /** List of errors encountered */
-  errors?: BulkCreateError[];
-}
-
-
-/**
- * BulkIndicatorResponseTempIdMapping
- */
-export type BulkIndicatorResponseTempIdMapping = {[key: string]: number};
-
-
-/**
  * DeadlineOverrideResponseIndicatorName
  */
 export type DeadlineOverrideResponseIndicatorName = string | null;
@@ -266,21 +233,6 @@ export interface GARIndicator {
  * GARIndicatorValidationStatus
  */
 export type GARIndicatorValidationStatus = string | null;
-
-
-/**
- * GetIndicatorsDraftsParams
- */
-export type GetIndicatorsDraftsParams = {
-/**
- * Filter by governance area
- */
-governance_area_id?: number | null;
-/**
- * Filter by status
- */
-status?: string | null;
-};
 
 
 /**
@@ -411,86 +363,6 @@ export type IndicatorCreateTechnicalNotesText = string | null;
 
 
 /**
- * IndicatorCreateWithOrder
- */
-export interface IndicatorCreateWithOrder {
-  /**
-   * Indicator name (min 3 characters)
-   * @minLength 3
-   */
-  name: string;
-  /** Indicator description */
-  description?: IndicatorCreateWithOrderDescription;
-  /** ID of governance area */
-  governance_area_id: number;
-  /** Parent indicator ID for hierarchical structure */
-  parent_id?: IndicatorCreateWithOrderParentId;
-  /** Active status */
-  is_active?: boolean;
-  /** Profiling-only flag */
-  is_profiling_only?: boolean;
-  /** Auto-calculable Pass/Fail flag */
-  is_auto_calculable?: boolean;
-  /** Technical notes (plain text) */
-  technical_notes_text?: IndicatorCreateWithOrderTechnicalNotesText;
-  /** Form schema with validated field types */
-  form_schema?: IndicatorCreateWithOrderFormSchema;
-  /** Calculation schema with validated rules */
-  calculation_schema?: IndicatorCreateWithOrderCalculationSchema;
-  /** Remark schema with validated templates */
-  remark_schema?: IndicatorCreateWithOrderRemarkSchema;
-  /** Temporary client-side UUID for this indicator */
-  temp_id: string;
-  /** Temporary ID of parent indicator (for hierarchy) */
-  parent_temp_id?: IndicatorCreateWithOrderParentTempId;
-  /** Display order within parent */
-  order: number;
-}
-
-
-/**
- * IndicatorCreateWithOrderCalculationSchema
- */
-export type IndicatorCreateWithOrderCalculationSchema = CalculationSchema | null;
-
-
-/**
- * IndicatorCreateWithOrderDescription
- */
-export type IndicatorCreateWithOrderDescription = string | null;
-
-
-/**
- * IndicatorCreateWithOrderFormSchema
- */
-export type IndicatorCreateWithOrderFormSchema = FormSchema | null;
-
-
-/**
- * IndicatorCreateWithOrderParentId
- */
-export type IndicatorCreateWithOrderParentId = number | null;
-
-
-/**
- * IndicatorCreateWithOrderParentTempId
- */
-export type IndicatorCreateWithOrderParentTempId = string | null;
-
-
-/**
- * IndicatorCreateWithOrderRemarkSchema
- */
-export type IndicatorCreateWithOrderRemarkSchema = RemarkSchema | null;
-
-
-/**
- * IndicatorCreateWithOrderTechnicalNotesText
- */
-export type IndicatorCreateWithOrderTechnicalNotesText = string | null;
-
-
-/**
  * IndicatorDetailItem
  */
 export interface IndicatorDetailItem {
@@ -515,200 +387,6 @@ export type IndicatorDetailItemIndicatorCode = string | null;
  * IndicatorDetailItemValidationStatus
  */
 export type IndicatorDetailItemValidationStatus = string | null;
-
-
-/**
- * IndicatorDraftCreate
- */
-export interface IndicatorDraftCreate {
-  /** Governance area ID */
-  governance_area_id: number;
-  /** Creation mode (e.g., 'incremental', 'bulk_import') */
-  creation_mode: string;
-  /** Optional draft title */
-  title?: IndicatorDraftCreateTitle;
-  /** Draft indicator data */
-  data?: IndicatorDraftCreateData;
-}
-
-
-/**
- * IndicatorDraftCreateData
- */
-export type IndicatorDraftCreateData = IndicatorDraftCreateDataAnyOfItem[] | null;
-
-
-/**
- * IndicatorDraftCreateDataAnyOfItem
- */
-export type IndicatorDraftCreateDataAnyOfItem = { [key: string]: unknown };
-
-
-/**
- * IndicatorDraftCreateTitle
- */
-export type IndicatorDraftCreateTitle = string | null;
-
-
-/**
- * IndicatorDraftDeltaUpdate
- */
-export interface IndicatorDraftDeltaUpdate {
-  /** List of changed indicator dictionaries */
-  changed_indicators: IndicatorDraftDeltaUpdateChangedIndicatorsItem[];
-  /** List of temp_ids for changed indicators */
-  changed_ids: string[];
-  /** Version number for optimistic locking */
-  version: number;
-  /** Optional metadata (current_step, status, title, etc.) */
-  metadata?: IndicatorDraftDeltaUpdateMetadata;
-}
-
-
-/**
- * IndicatorDraftDeltaUpdateChangedIndicatorsItem
- */
-export type IndicatorDraftDeltaUpdateChangedIndicatorsItem = { [key: string]: unknown };
-
-
-/**
- * IndicatorDraftDeltaUpdateMetadata
- */
-export type IndicatorDraftDeltaUpdateMetadata = IndicatorDraftDeltaUpdateMetadataAnyOf | null;
-
-
-/**
- * IndicatorDraftDeltaUpdateMetadataAnyOf
- */
-export type IndicatorDraftDeltaUpdateMetadataAnyOf = { [key: string]: unknown };
-
-
-/**
- * IndicatorDraftResponse
- */
-export interface IndicatorDraftResponse {
-  id: string;
-  user_id: number;
-  governance_area_id: number;
-  creation_mode: string;
-  current_step: number;
-  status: string;
-  data: IndicatorDraftResponseDataItem[];
-  title?: IndicatorDraftResponseTitle;
-  created_at: string;
-  updated_at: string;
-  last_accessed_at: string;
-  version: number;
-  lock_token?: IndicatorDraftResponseLockToken;
-  locked_by_user_id?: IndicatorDraftResponseLockedByUserId;
-  locked_at?: IndicatorDraftResponseLockedAt;
-  governance_area?: IndicatorDraftResponseGovernanceArea;
-}
-
-
-/**
- * IndicatorDraftResponseDataItem
- */
-export type IndicatorDraftResponseDataItem = { [key: string]: unknown };
-
-
-/**
- * IndicatorDraftResponseGovernanceArea
- */
-export type IndicatorDraftResponseGovernanceArea = GovernanceAreaNested | null;
-
-
-/**
- * IndicatorDraftResponseLockToken
- */
-export type IndicatorDraftResponseLockToken = string | null;
-
-
-/**
- * IndicatorDraftResponseLockedAt
- */
-export type IndicatorDraftResponseLockedAt = string | null;
-
-
-/**
- * IndicatorDraftResponseTitle
- */
-export type IndicatorDraftResponseTitle = string | null;
-
-
-/**
- * IndicatorDraftSummary
- */
-export interface IndicatorDraftSummary {
-  id: string;
-  governance_area_id: number;
-  creation_mode: string;
-  current_step: number;
-  status: string;
-  title?: IndicatorDraftSummaryTitle;
-  updated_at: string;
-  last_accessed_at: string;
-  governance_area?: IndicatorDraftSummaryGovernanceArea;
-}
-
-
-/**
- * IndicatorDraftSummaryGovernanceArea
- */
-export type IndicatorDraftSummaryGovernanceArea = GovernanceAreaNested | null;
-
-
-/**
- * IndicatorDraftSummaryTitle
- */
-export type IndicatorDraftSummaryTitle = string | null;
-
-
-/**
- * IndicatorDraftUpdate
- */
-export interface IndicatorDraftUpdate {
-  /** Current wizard step */
-  current_step?: IndicatorDraftUpdateCurrentStep;
-  /** Draft status */
-  status?: IndicatorDraftUpdateStatus;
-  /** Draft indicator data */
-  data?: IndicatorDraftUpdateData;
-  /** Draft title */
-  title?: IndicatorDraftUpdateTitle;
-  /** Version number for optimistic locking */
-  version: number;
-}
-
-
-/**
- * IndicatorDraftUpdateCurrentStep
- */
-export type IndicatorDraftUpdateCurrentStep = number | null;
-
-
-/**
- * IndicatorDraftUpdateData
- */
-export type IndicatorDraftUpdateData = IndicatorDraftUpdateDataAnyOfItem[] | null;
-
-
-/**
- * IndicatorDraftUpdateDataAnyOfItem
- */
-export type IndicatorDraftUpdateDataAnyOfItem = { [key: string]: unknown };
-
-
-/**
- * IndicatorDraftUpdateStatus
- */
-export type IndicatorDraftUpdateStatus = string | null;
-
-
-/**
- * IndicatorDraftUpdateTitle
- */
-export type IndicatorDraftUpdateTitle = string | null;
 
 
 /**
@@ -1084,34 +762,6 @@ export type IndicatorUpdateTechnicalNotesText = string | null;
 
 
 /**
- * IndicatorValidationRequest
- */
-export interface IndicatorValidationRequest {
-  /** List of indicator dictionaries to validate */
-  indicators: IndicatorValidationRequestIndicatorsItem[];
-}
-
-
-/**
- * IndicatorValidationRequestIndicatorsItem
- */
-export type IndicatorValidationRequestIndicatorsItem = { [key: string]: unknown };
-
-
-/**
- * IndicatorValidationResponse
- */
-export interface IndicatorValidationResponse {
-  /** Whether the indicator tree is valid */
-  is_valid: boolean;
-  /** List of validation errors */
-  errors?: ValidationError[];
-  /** List of validation warnings */
-  warnings?: string[];
-}
-
-
-/**
  * IndicatorValidationUpdate
  */
 export interface IndicatorValidationUpdate {
@@ -1149,12 +799,6 @@ export type PostIndicatorsValidateCalculationSchema200 = { [key: string]: unknow
  * PostIndicatorsValidateFormSchema200
  */
 export type PostIndicatorsValidateFormSchema200 = { [key: string]: unknown };
-
-
-/**
- * ReorderRequestIndicatorsItem
- */
-export type ReorderRequestIndicatorsItem = { [key: string]: unknown };
 
 
 /**

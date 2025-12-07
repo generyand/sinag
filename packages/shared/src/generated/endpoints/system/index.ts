@@ -51,8 +51,12 @@ export const getSystemMetrics = (
     }
   
 
+
+
 export const getGetSystemMetricsQueryKey = () => {
-    return [`/api/v1/system/metrics`] as const;
+    return [
+    `/api/v1/system/metrics`
+    ] as const;
     }
 
     
@@ -89,12 +93,13 @@ export function useGetSystemMetrics<TData = Awaited<ReturnType<typeof getSystemM
 
   const queryOptions = getGetSystemMetricsQueryOptions(options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -120,8 +125,12 @@ export const getSystemHealth = (
     }
   
 
+
+
 export const getGetSystemHealthQueryKey = () => {
-    return [`/api/v1/system/health`] as const;
+    return [
+    `/api/v1/system/health`
+    ] as const;
     }
 
     
@@ -158,12 +167,13 @@ export function useGetSystemHealth<TData = Awaited<ReturnType<typeof getSystemHe
 
   const queryOptions = getGetSystemHealthQueryOptions(options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -184,8 +194,12 @@ export const getSystem = (
     }
   
 
+
+
 export const getGetSystemQueryKey = () => {
-    return [`/api/v1/system/`] as const;
+    return [
+    `/api/v1/system/`
+    ] as const;
     }
 
     
@@ -222,12 +236,13 @@ export function useGetSystem<TData = Awaited<ReturnType<typeof getSystem>>, TErr
 
   const queryOptions = getGetSystemQueryOptions(options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -253,8 +268,12 @@ export const getSystemDbStatus = (
     }
   
 
+
+
 export const getGetSystemDbStatusQueryKey = () => {
-    return [`/api/v1/system/db-status`] as const;
+    return [
+    `/api/v1/system/db-status`
+    ] as const;
     }
 
     
@@ -291,12 +310,13 @@ export function useGetSystemDbStatus<TData = Awaited<ReturnType<typeof getSystem
 
   const queryOptions = getGetSystemDbStatusQueryOptions(options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -317,8 +337,12 @@ export const getSystemHello = (
     }
   
 
+
+
 export const getGetSystemHelloQueryKey = () => {
-    return [`/api/v1/system/hello`] as const;
+    return [
+    `/api/v1/system/hello`
+    ] as const;
     }
 
     
@@ -355,12 +379,13 @@ export function useGetSystemHello<TData = Awaited<ReturnType<typeof getSystemHel
 
   const queryOptions = getGetSystemHelloQueryOptions(options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 

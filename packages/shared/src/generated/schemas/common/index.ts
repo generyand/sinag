@@ -23,7 +23,6 @@ import type { TopFailingIndicatorsList } from '../indicators';
 import type { AggregatedCapDevSummary } from '../capdev';
 import type { MunicipalOverviewDashboardAssessmentCycle } from '../assessments';
 import type { ConditionalRemark } from '../conditionalremark';
-import type { ReorderRequestIndicatorsItem } from '../indicators';
 import type { AssessmentRow } from '../assessments';
 
 /**
@@ -1068,15 +1067,6 @@ export interface RemarkSchema {
    * @maxLength 2000
    */
   default_template: string;
-}
-
-
-/**
- * ReorderRequest
- */
-export interface ReorderRequest {
-  /** List of indicator updates with id, code, parent_id */
-  indicators: ReorderRequestIndicatorsItem[];
 }
 
 

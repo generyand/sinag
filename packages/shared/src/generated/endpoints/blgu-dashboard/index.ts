@@ -63,9 +63,13 @@ export const getBlguDashboard$AssessmentId = (
     }
   
 
-export const getGetBlguDashboardAssessmentIdQueryKey = (assessmentId: number,
+
+
+export const getGetBlguDashboardAssessmentIdQueryKey = (assessmentId?: number,
     params?: GetBlguDashboardAssessmentIdParams,) => {
-    return [`/api/v1/blgu-dashboard/${assessmentId}`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/blgu-dashboard/${assessmentId}`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -104,12 +108,13 @@ export function useGetBlguDashboardAssessmentId<TData = Awaited<ReturnType<typeo
 
   const queryOptions = getGetBlguDashboardAssessmentIdQueryOptions(assessmentId,params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -140,8 +145,12 @@ export const getBlguDashboard$AssessmentIdIndicatorsNavigation = (
     }
   
 
-export const getGetBlguDashboardAssessmentIdIndicatorsNavigationQueryKey = (assessmentId: number,) => {
-    return [`/api/v1/blgu-dashboard/${assessmentId}/indicators/navigation`] as const;
+
+
+export const getGetBlguDashboardAssessmentIdIndicatorsNavigationQueryKey = (assessmentId?: number,) => {
+    return [
+    `/api/v1/blgu-dashboard/${assessmentId}/indicators/navigation`
+    ] as const;
     }
 
     
@@ -178,12 +187,13 @@ export function useGetBlguDashboardAssessmentIdIndicatorsNavigation<TData = Awai
 
   const queryOptions = getGetBlguDashboardAssessmentIdIndicatorsNavigationQueryOptions(assessmentId,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 

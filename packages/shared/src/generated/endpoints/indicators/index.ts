@@ -21,31 +21,20 @@ import type {
 
 import type {
   BodyTestCalculationApiV1IndicatorsTestCalculationPost,
-  BulkIndicatorCreate,
-  BulkIndicatorResponse,
   CalculationSchema,
   FormSchema,
   FormSchemaResponse,
-  GetIndicatorsDraftsParams,
   GetIndicatorsParams,
   GetIndicatorsTreeGovernanceAreaId200Item,
   HTTPValidationError,
   IndicatorCreate,
-  IndicatorDraftCreate,
-  IndicatorDraftDeltaUpdate,
-  IndicatorDraftResponse,
-  IndicatorDraftSummary,
-  IndicatorDraftUpdate,
   IndicatorHistoryResponse,
   IndicatorResponse,
   IndicatorTreeResponse,
   IndicatorUpdate,
-  IndicatorValidationRequest,
-  IndicatorValidationResponse,
   PostIndicatorsTestCalculation200,
   PostIndicatorsValidateCalculationSchema200,
   PostIndicatorsValidateFormSchema200,
-  ReorderRequest,
   SimplifiedIndicatorResponse
 } from '../../schemas';
 
@@ -140,7 +129,7 @@ export const usePostIndicators = <TError = HTTPValidationError,
 
       const mutationOptions = getPostIndicatorsMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * List indicators with optional filtering.
@@ -170,8 +159,12 @@ export const getIndicators = (
     }
   
 
+
+
 export const getGetIndicatorsQueryKey = (params?: GetIndicatorsParams,) => {
-    return [`/api/v1/indicators/`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/indicators/`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -208,12 +201,13 @@ export function useGetIndicators<TData = Awaited<ReturnType<typeof getIndicators
 
   const queryOptions = getGetIndicatorsQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -302,7 +296,7 @@ export const usePostIndicatorsValidateFormSchema = <TError = HTTPValidationError
 
       const mutationOptions = getPostIndicatorsValidateFormSchemaMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Validate a calculation schema without saving it.
@@ -391,7 +385,7 @@ export const usePostIndicatorsValidateCalculationSchema = <TError = HTTPValidati
 
       const mutationOptions = getPostIndicatorsValidateCalculationSchemaMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Test a calculation schema with sample assessment data.
@@ -510,7 +504,7 @@ export const usePostIndicatorsTestCalculation = <TError = HTTPValidationError,
 
       const mutationOptions = getPostIndicatorsTestCalculationMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Get a specific indicator by ID.
@@ -539,8 +533,12 @@ export const getIndicators$IndicatorId = (
     }
   
 
-export const getGetIndicatorsIndicatorIdQueryKey = (indicatorId: number,) => {
-    return [`/api/v1/indicators/${indicatorId}`] as const;
+
+
+export const getGetIndicatorsIndicatorIdQueryKey = (indicatorId?: number,) => {
+    return [
+    `/api/v1/indicators/${indicatorId}`
+    ] as const;
     }
 
     
@@ -577,12 +575,13 @@ export function useGetIndicatorsIndicatorId<TData = Awaited<ReturnType<typeof ge
 
   const queryOptions = getGetIndicatorsIndicatorIdQueryOptions(indicatorId,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -679,7 +678,7 @@ export const usePutIndicatorsIndicatorId = <TError = HTTPValidationError,
 
       const mutationOptions = getPutIndicatorsIndicatorIdMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Deactivate an indicator (soft delete).
@@ -752,7 +751,7 @@ export const useDeleteIndicatorsIndicatorId = <TError = HTTPValidationError,
 
       const mutationOptions = getDeleteIndicatorsIndicatorIdMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Get version history for an indicator.
@@ -781,8 +780,12 @@ export const getIndicators$IndicatorIdHistory = (
     }
   
 
-export const getGetIndicatorsIndicatorIdHistoryQueryKey = (indicatorId: number,) => {
-    return [`/api/v1/indicators/${indicatorId}/history`] as const;
+
+
+export const getGetIndicatorsIndicatorIdHistoryQueryKey = (indicatorId?: number,) => {
+    return [
+    `/api/v1/indicators/${indicatorId}/history`
+    ] as const;
     }
 
     
@@ -819,12 +822,13 @@ export function useGetIndicatorsIndicatorIdHistory<TData = Awaited<ReturnType<ty
 
   const queryOptions = getGetIndicatorsIndicatorIdHistoryQueryOptions(indicatorId,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -857,8 +861,12 @@ export const getIndicators$IndicatorIdFormSchema = (
     }
   
 
-export const getGetIndicatorsIndicatorIdFormSchemaQueryKey = (indicatorId: number,) => {
-    return [`/api/v1/indicators/${indicatorId}/form-schema`] as const;
+
+
+export const getGetIndicatorsIndicatorIdFormSchemaQueryKey = (indicatorId?: number,) => {
+    return [
+    `/api/v1/indicators/${indicatorId}/form-schema`
+    ] as const;
     }
 
     
@@ -895,12 +903,13 @@ export function useGetIndicatorsIndicatorIdFormSchema<TData = Awaited<ReturnType
 
   const queryOptions = getGetIndicatorsIndicatorIdFormSchemaQueryOptions(indicatorId,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -961,8 +970,12 @@ export const getIndicatorsTree$GovernanceAreaId = (
     }
   
 
-export const getGetIndicatorsTreeGovernanceAreaIdQueryKey = (governanceAreaId: number,) => {
-    return [`/api/v1/indicators/tree/${governanceAreaId}`] as const;
+
+
+export const getGetIndicatorsTreeGovernanceAreaIdQueryKey = (governanceAreaId?: number,) => {
+    return [
+    `/api/v1/indicators/tree/${governanceAreaId}`
+    ] as const;
     }
 
     
@@ -999,12 +1012,13 @@ export function useGetIndicatorsTreeGovernanceAreaId<TData = Awaited<ReturnType<
 
   const queryOptions = getGetIndicatorsTreeGovernanceAreaIdQueryOptions(governanceAreaId,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -1097,879 +1111,7 @@ export const usePostIndicatorsRecalculateCodesGovernanceAreaId = <TError = HTTPV
 
       const mutationOptions = getPostIndicatorsRecalculateCodesGovernanceAreaIdMutationOptions(options);
 
-      return useMutation(mutationOptions );
-    }
-    /**
- * Create multiple indicators in bulk with proper dependency ordering.
-
-**Permissions**: MLGOO_DILG only
-
-**Request Body**:
-- governance_area_id: Governance area ID for all indicators
-- indicators: List of indicators with temp_id, parent_temp_id, order, and standard indicator fields
-
-**Returns**: BulkIndicatorResponse with created indicators, temp_id_mapping, and errors
-
-**Features**:
-- Automatic topological sorting to ensure parents are created before children
-- Transaction rollback if any errors occur
-- Temp ID to real ID mapping for frontend
-
-**Raises**:
-- 404: Governance area not found
-- 400: Circular dependencies detected
-- 500: Bulk creation failed
- * @summary Create multiple indicators in bulk
- */
-export const postIndicatorsBulk = (
-    bulkIndicatorCreate: BulkIndicatorCreate,
- options?: SecondParameter<typeof mutator>,signal?: AbortSignal
-) => {
-      
-      
-      return mutator<BulkIndicatorResponse>(
-      {url: `/api/v1/indicators/bulk`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: bulkIndicatorCreate, signal
-    },
-      options);
-    }
-  
-
-
-export const getPostIndicatorsBulkMutationOptions = <TError = HTTPValidationError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsBulk>>, TError,{data: BulkIndicatorCreate}, TContext>, request?: SecondParameter<typeof mutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsBulk>>, TError,{data: BulkIndicatorCreate}, TContext> => {
-
-const mutationKey = ['postIndicatorsBulk'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-      
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postIndicatorsBulk>>, {data: BulkIndicatorCreate}> = (props) => {
-          const {data} = props ?? {};
-
-          return  postIndicatorsBulk(data,requestOptions)
-        }
-
-        
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PostIndicatorsBulkMutationResult = NonNullable<Awaited<ReturnType<typeof postIndicatorsBulk>>>
-    export type PostIndicatorsBulkMutationBody = BulkIndicatorCreate
-    export type PostIndicatorsBulkMutationError = HTTPValidationError
-
-    /**
- * @summary Create multiple indicators in bulk
- */
-export const usePostIndicatorsBulk = <TError = HTTPValidationError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsBulk>>, TError,{data: BulkIndicatorCreate}, TContext>, request?: SecondParameter<typeof mutator>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof postIndicatorsBulk>>,
-        TError,
-        {data: BulkIndicatorCreate},
-        TContext
-      > => {
-
-      const mutationOptions = getPostIndicatorsBulkMutationOptions(options);
-
-      return useMutation(mutationOptions );
-    }
-    /**
- * Reorder indicators by updating codes and parent_ids in batch.
-
-**Permissions**: MLGOO_DILG only
-
-**Request Body**:
-- indicators: List of indicator updates with id, code, parent_id
-
-**Returns**: List of updated indicators
-
-**Raises**:
-- 400: Circular references detected
-- 500: Reorder failed
- * @summary Reorder indicators
- */
-export const postIndicatorsReorder = (
-    reorderRequest: ReorderRequest,
- options?: SecondParameter<typeof mutator>,signal?: AbortSignal
-) => {
-      
-      
-      return mutator<IndicatorResponse[]>(
-      {url: `/api/v1/indicators/reorder`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: reorderRequest, signal
-    },
-      options);
-    }
-  
-
-
-export const getPostIndicatorsReorderMutationOptions = <TError = HTTPValidationError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsReorder>>, TError,{data: ReorderRequest}, TContext>, request?: SecondParameter<typeof mutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsReorder>>, TError,{data: ReorderRequest}, TContext> => {
-
-const mutationKey = ['postIndicatorsReorder'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-      
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postIndicatorsReorder>>, {data: ReorderRequest}> = (props) => {
-          const {data} = props ?? {};
-
-          return  postIndicatorsReorder(data,requestOptions)
-        }
-
-        
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PostIndicatorsReorderMutationResult = NonNullable<Awaited<ReturnType<typeof postIndicatorsReorder>>>
-    export type PostIndicatorsReorderMutationBody = ReorderRequest
-    export type PostIndicatorsReorderMutationError = HTTPValidationError
-
-    /**
- * @summary Reorder indicators
- */
-export const usePostIndicatorsReorder = <TError = HTTPValidationError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsReorder>>, TError,{data: ReorderRequest}, TContext>, request?: SecondParameter<typeof mutator>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof postIndicatorsReorder>>,
-        TError,
-        {data: ReorderRequest},
-        TContext
-      > => {
-
-      const mutationOptions = getPostIndicatorsReorderMutationOptions(options);
-
-      return useMutation(mutationOptions );
-    }
-    /**
- * Create a new indicator draft for the wizard workflow.
-
-**Permissions**: MLGOO_DILG only
-
-**Request Body**:
-- governance_area_id: Governance area ID
-- creation_mode: Creation mode ('incremental' or 'bulk_import')
-- title: Optional draft title
-- data: Optional initial draft data (list of indicator nodes)
-
-**Returns**: Created draft with UUID
-
-**Raises**:
-- 404: Governance area not found
-- 404: User not found
- * @summary Create a new indicator draft
- */
-export const postIndicatorsDrafts = (
-    indicatorDraftCreate: IndicatorDraftCreate,
- options?: SecondParameter<typeof mutator>,signal?: AbortSignal
-) => {
-      
-      
-      return mutator<IndicatorDraftResponse>(
-      {url: `/api/v1/indicators/drafts`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: indicatorDraftCreate, signal
-    },
-      options);
-    }
-  
-
-
-export const getPostIndicatorsDraftsMutationOptions = <TError = HTTPValidationError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsDrafts>>, TError,{data: IndicatorDraftCreate}, TContext>, request?: SecondParameter<typeof mutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsDrafts>>, TError,{data: IndicatorDraftCreate}, TContext> => {
-
-const mutationKey = ['postIndicatorsDrafts'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-      
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postIndicatorsDrafts>>, {data: IndicatorDraftCreate}> = (props) => {
-          const {data} = props ?? {};
-
-          return  postIndicatorsDrafts(data,requestOptions)
-        }
-
-        
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PostIndicatorsDraftsMutationResult = NonNullable<Awaited<ReturnType<typeof postIndicatorsDrafts>>>
-    export type PostIndicatorsDraftsMutationBody = IndicatorDraftCreate
-    export type PostIndicatorsDraftsMutationError = HTTPValidationError
-
-    /**
- * @summary Create a new indicator draft
- */
-export const usePostIndicatorsDrafts = <TError = HTTPValidationError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsDrafts>>, TError,{data: IndicatorDraftCreate}, TContext>, request?: SecondParameter<typeof mutator>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof postIndicatorsDrafts>>,
-        TError,
-        {data: IndicatorDraftCreate},
-        TContext
-      > => {
-
-      const mutationOptions = getPostIndicatorsDraftsMutationOptions(options);
-
-      return useMutation(mutationOptions );
-    }
-    /**
- * List all drafts for the current user with optional filtering.
-
-**Permissions**: MLGOO_DILG only
-
-**Query Parameters**:
-- governance_area_id: Filter by governance area (optional)
-- status: Filter by status (optional)
-
-**Returns**: List of draft summaries ordered by last accessed (most recent first)
- * @summary List user's indicator drafts
- */
-export const getIndicatorsDrafts = (
-    params?: GetIndicatorsDraftsParams,
- options?: SecondParameter<typeof mutator>,signal?: AbortSignal
-) => {
-      
-      
-      return mutator<IndicatorDraftSummary[]>(
-      {url: `/api/v1/indicators/drafts`, method: 'GET',
-        params, signal
-    },
-      options);
-    }
-  
-
-export const getGetIndicatorsDraftsQueryKey = (params?: GetIndicatorsDraftsParams,) => {
-    return [`/api/v1/indicators/drafts`, ...(params ? [params]: [])] as const;
-    }
-
-    
-export const getGetIndicatorsDraftsQueryOptions = <TData = Awaited<ReturnType<typeof getIndicatorsDrafts>>, TError = HTTPValidationError>(params?: GetIndicatorsDraftsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsDrafts>>, TError, TData>, request?: SecondParameter<typeof mutator>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetIndicatorsDraftsQueryKey(params);
-
-  
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIndicatorsDrafts>>> = ({ signal }) => getIndicatorsDrafts(params, requestOptions, signal);
-
-      
-
-      
-
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsDrafts>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetIndicatorsDraftsQueryResult = NonNullable<Awaited<ReturnType<typeof getIndicatorsDrafts>>>
-export type GetIndicatorsDraftsQueryError = HTTPValidationError
-
-
-/**
- * @summary List user's indicator drafts
- */
-
-export function useGetIndicatorsDrafts<TData = Awaited<ReturnType<typeof getIndicatorsDrafts>>, TError = HTTPValidationError>(
- params?: GetIndicatorsDraftsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsDrafts>>, TError, TData>, request?: SecondParameter<typeof mutator>}
-  
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetIndicatorsDraftsQueryOptions(params,options)
-
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryOptions.queryKey ;
-
-  return query;
-}
-
-
-
-/**
- * Load an indicator draft by ID.
-
-**Permissions**: MLGOO_DILG only (must own the draft)
-
-**Path Parameters**:
-- draft_id: Draft UUID
-
-**Returns**: Full draft data
-
-**Raises**:
-- 404: Draft not found
-- 403: Access denied (not draft owner)
- * @summary Get indicator draft by ID
- */
-export const getIndicatorsDrafts$DraftId = (
-    draftId: string,
- options?: SecondParameter<typeof mutator>,signal?: AbortSignal
-) => {
-      
-      
-      return mutator<IndicatorDraftResponse>(
-      {url: `/api/v1/indicators/drafts/${draftId}`, method: 'GET', signal
-    },
-      options);
-    }
-  
-
-export const getGetIndicatorsDraftsDraftIdQueryKey = (draftId: string,) => {
-    return [`/api/v1/indicators/drafts/${draftId}`] as const;
-    }
-
-    
-export const getGetIndicatorsDraftsDraftIdQueryOptions = <TData = Awaited<ReturnType<typeof getIndicatorsDrafts$DraftId>>, TError = HTTPValidationError>(draftId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsDrafts$DraftId>>, TError, TData>, request?: SecondParameter<typeof mutator>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetIndicatorsDraftsDraftIdQueryKey(draftId);
-
-  
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIndicatorsDrafts$DraftId>>> = ({ signal }) => getIndicatorsDrafts$DraftId(draftId, requestOptions, signal);
-
-      
-
-      
-
-   return  { queryKey, queryFn, enabled: !!(draftId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsDrafts$DraftId>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetIndicatorsDraftsDraftIdQueryResult = NonNullable<Awaited<ReturnType<typeof getIndicatorsDrafts$DraftId>>>
-export type GetIndicatorsDraftsDraftIdQueryError = HTTPValidationError
-
-
-/**
- * @summary Get indicator draft by ID
- */
-
-export function useGetIndicatorsDraftsDraftId<TData = Awaited<ReturnType<typeof getIndicatorsDrafts$DraftId>>, TError = HTTPValidationError>(
- draftId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsDrafts$DraftId>>, TError, TData>, request?: SecondParameter<typeof mutator>}
-  
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetIndicatorsDraftsDraftIdQueryOptions(draftId,options)
-
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryOptions.queryKey ;
-
-  return query;
-}
-
-
-
-/**
- * Update an indicator draft with optimistic locking.
-
-**Permissions**: MLGOO_DILG only (must own the draft)
-
-**Path Parameters**:
-- draft_id: Draft UUID
-
-**Request Body**:
-- current_step: Current wizard step (optional)
-- status: Draft status (optional)
-- data: Draft indicator data (optional)
-- title: Draft title (optional)
-- version: Current version number (required for optimistic locking)
-
-**Returns**: Updated draft with incremented version
-
-**Features**:
-- Optimistic locking to prevent concurrent edit conflicts
-- Automatic lock acquisition
-- Lock expiration after 30 minutes
-
-**Raises**:
-- 404: Draft not found
-- 403: Access denied (not draft owner)
-- 409: Version conflict (draft was modified by another process)
-- 423: Draft locked by another user
- * @summary Update indicator draft
- */
-export const putIndicatorsDrafts$DraftId = (
-    draftId: string,
-    indicatorDraftUpdate: IndicatorDraftUpdate,
- options?: SecondParameter<typeof mutator>,) => {
-      
-      
-      return mutator<IndicatorDraftResponse>(
-      {url: `/api/v1/indicators/drafts/${draftId}`, method: 'PUT',
-      headers: {'Content-Type': 'application/json', },
-      data: indicatorDraftUpdate
-    },
-      options);
-    }
-  
-
-
-export const getPutIndicatorsDraftsDraftIdMutationOptions = <TError = HTTPValidationError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putIndicatorsDrafts$DraftId>>, TError,{draftId: string;data: IndicatorDraftUpdate}, TContext>, request?: SecondParameter<typeof mutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof putIndicatorsDrafts$DraftId>>, TError,{draftId: string;data: IndicatorDraftUpdate}, TContext> => {
-
-const mutationKey = ['putIndicatorsDraftsDraftId'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-      
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putIndicatorsDrafts$DraftId>>, {draftId: string;data: IndicatorDraftUpdate}> = (props) => {
-          const {draftId,data} = props ?? {};
-
-          return  putIndicatorsDrafts$DraftId(draftId,data,requestOptions)
-        }
-
-        
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PutIndicatorsDraftsDraftIdMutationResult = NonNullable<Awaited<ReturnType<typeof putIndicatorsDrafts$DraftId>>>
-    export type PutIndicatorsDraftsDraftIdMutationBody = IndicatorDraftUpdate
-    export type PutIndicatorsDraftsDraftIdMutationError = HTTPValidationError
-
-    /**
- * @summary Update indicator draft
- */
-export const usePutIndicatorsDraftsDraftId = <TError = HTTPValidationError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putIndicatorsDrafts$DraftId>>, TError,{draftId: string;data: IndicatorDraftUpdate}, TContext>, request?: SecondParameter<typeof mutator>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof putIndicatorsDrafts$DraftId>>,
-        TError,
-        {draftId: string;data: IndicatorDraftUpdate},
-        TContext
-      > => {
-
-      const mutationOptions = getPutIndicatorsDraftsDraftIdMutationOptions(options);
-
-      return useMutation(mutationOptions );
-    }
-    /**
- * Delete an indicator draft.
-
-**Permissions**: MLGOO_DILG only (must own the draft)
-
-**Path Parameters**:
-- draft_id: Draft UUID
-
-**Returns**: 204 No Content on success
-
-**Raises**:
-- 404: Draft not found
-- 403: Access denied (not draft owner)
- * @summary Delete indicator draft
- */
-export const deleteIndicatorsDrafts$DraftId = (
-    draftId: string,
- options?: SecondParameter<typeof mutator>,) => {
-      
-      
-      return mutator<void>(
-      {url: `/api/v1/indicators/drafts/${draftId}`, method: 'DELETE'
-    },
-      options);
-    }
-  
-
-
-export const getDeleteIndicatorsDraftsDraftIdMutationOptions = <TError = HTTPValidationError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteIndicatorsDrafts$DraftId>>, TError,{draftId: string}, TContext>, request?: SecondParameter<typeof mutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof deleteIndicatorsDrafts$DraftId>>, TError,{draftId: string}, TContext> => {
-
-const mutationKey = ['deleteIndicatorsDraftsDraftId'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-      
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteIndicatorsDrafts$DraftId>>, {draftId: string}> = (props) => {
-          const {draftId} = props ?? {};
-
-          return  deleteIndicatorsDrafts$DraftId(draftId,requestOptions)
-        }
-
-        
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type DeleteIndicatorsDraftsDraftIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteIndicatorsDrafts$DraftId>>>
-    
-    export type DeleteIndicatorsDraftsDraftIdMutationError = HTTPValidationError
-
-    /**
- * @summary Delete indicator draft
- */
-export const useDeleteIndicatorsDraftsDraftId = <TError = HTTPValidationError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteIndicatorsDrafts$DraftId>>, TError,{draftId: string}, TContext>, request?: SecondParameter<typeof mutator>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof deleteIndicatorsDrafts$DraftId>>,
-        TError,
-        {draftId: string},
-        TContext
-      > => {
-
-      const mutationOptions = getDeleteIndicatorsDraftsDraftIdMutationOptions(options);
-
-      return useMutation(mutationOptions );
-    }
-    /**
- * Update indicator draft with delta-based save (only changed indicators).
-
-This endpoint provides ~95% payload reduction compared to full updates,
-improving save performance from 2-3s to <300ms.
-
-**Permissions**: MLGOO_DILG only (must own the draft)
-
-**Path Parameters**:
-- draft_id: Draft UUID
-
-**Request Body**:
-- changed_indicators: List of changed indicator dictionaries
-- changed_ids: List of temp_ids for changed indicators
-- version: Current version number (required for optimistic locking)
-- metadata: Optional metadata (current_step, status, title)
-
-**Returns**: Updated draft with incremented version
-
-**Features**:
-- Delta merge: Only updates changed indicators in existing tree
-- 95% payload reduction (600 KB → 15 KB typical)
-- 10x performance improvement (<300ms vs 2-3s)
-- Optimistic locking to prevent concurrent edit conflicts
-- Automatic lock acquisition
-- Lock expiration after 30 minutes
-
-**Raises**:
-- 404: Draft not found
-- 403: Access denied (not draft owner)
-- 409: Version conflict (draft was modified by another process)
-- 423: Draft locked by another user
-
-**Example**:
-```json
-{
-  "changed_indicators": [
-    {"temp_id": "abc123", "name": "Updated Indicator", ...},
-    {"temp_id": "def456", "name": "Another Update", ...}
-  ],
-  "changed_ids": ["abc123", "def456"],
-  "version": 5,
-  "metadata": {"current_step": 3}
-}
-```
- * @summary Delta update indicator draft (only changed indicators)
- */
-export const postIndicatorsDrafts$DraftIdDelta = (
-    draftId: string,
-    indicatorDraftDeltaUpdate: IndicatorDraftDeltaUpdate,
- options?: SecondParameter<typeof mutator>,signal?: AbortSignal
-) => {
-      
-      
-      return mutator<IndicatorDraftResponse>(
-      {url: `/api/v1/indicators/drafts/${draftId}/delta`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: indicatorDraftDeltaUpdate, signal
-    },
-      options);
-    }
-  
-
-
-export const getPostIndicatorsDraftsDraftIdDeltaMutationOptions = <TError = HTTPValidationError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsDrafts$DraftIdDelta>>, TError,{draftId: string;data: IndicatorDraftDeltaUpdate}, TContext>, request?: SecondParameter<typeof mutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsDrafts$DraftIdDelta>>, TError,{draftId: string;data: IndicatorDraftDeltaUpdate}, TContext> => {
-
-const mutationKey = ['postIndicatorsDraftsDraftIdDelta'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-      
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postIndicatorsDrafts$DraftIdDelta>>, {draftId: string;data: IndicatorDraftDeltaUpdate}> = (props) => {
-          const {draftId,data} = props ?? {};
-
-          return  postIndicatorsDrafts$DraftIdDelta(draftId,data,requestOptions)
-        }
-
-        
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PostIndicatorsDraftsDraftIdDeltaMutationResult = NonNullable<Awaited<ReturnType<typeof postIndicatorsDrafts$DraftIdDelta>>>
-    export type PostIndicatorsDraftsDraftIdDeltaMutationBody = IndicatorDraftDeltaUpdate
-    export type PostIndicatorsDraftsDraftIdDeltaMutationError = HTTPValidationError
-
-    /**
- * @summary Delta update indicator draft (only changed indicators)
- */
-export const usePostIndicatorsDraftsDraftIdDelta = <TError = HTTPValidationError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsDrafts$DraftIdDelta>>, TError,{draftId: string;data: IndicatorDraftDeltaUpdate}, TContext>, request?: SecondParameter<typeof mutator>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof postIndicatorsDrafts$DraftIdDelta>>,
-        TError,
-        {draftId: string;data: IndicatorDraftDeltaUpdate},
-        TContext
-      > => {
-
-      const mutationOptions = getPostIndicatorsDraftsDraftIdDeltaMutationOptions(options);
-
-      return useMutation(mutationOptions );
-    }
-    /**
- * Release lock on an indicator draft.
-
-**Permissions**: MLGOO_DILG only (must own the draft and hold the lock)
-
-**Path Parameters**:
-- draft_id: Draft UUID
-
-**Returns**: Draft with lock released
-
-**Raises**:
-- 404: Draft not found
-- 403: Access denied (not draft owner)
-- 400: Lock not held by you
- * @summary Release lock on indicator draft
- */
-export const postIndicatorsDrafts$DraftIdReleaseLock = (
-    draftId: string,
- options?: SecondParameter<typeof mutator>,signal?: AbortSignal
-) => {
-      
-      
-      return mutator<IndicatorDraftResponse>(
-      {url: `/api/v1/indicators/drafts/${draftId}/release-lock`, method: 'POST', signal
-    },
-      options);
-    }
-  
-
-
-export const getPostIndicatorsDraftsDraftIdReleaseLockMutationOptions = <TError = HTTPValidationError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsDrafts$DraftIdReleaseLock>>, TError,{draftId: string}, TContext>, request?: SecondParameter<typeof mutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsDrafts$DraftIdReleaseLock>>, TError,{draftId: string}, TContext> => {
-
-const mutationKey = ['postIndicatorsDraftsDraftIdReleaseLock'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-      
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postIndicatorsDrafts$DraftIdReleaseLock>>, {draftId: string}> = (props) => {
-          const {draftId} = props ?? {};
-
-          return  postIndicatorsDrafts$DraftIdReleaseLock(draftId,requestOptions)
-        }
-
-        
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PostIndicatorsDraftsDraftIdReleaseLockMutationResult = NonNullable<Awaited<ReturnType<typeof postIndicatorsDrafts$DraftIdReleaseLock>>>
-    
-    export type PostIndicatorsDraftsDraftIdReleaseLockMutationError = HTTPValidationError
-
-    /**
- * @summary Release lock on indicator draft
- */
-export const usePostIndicatorsDraftsDraftIdReleaseLock = <TError = HTTPValidationError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsDrafts$DraftIdReleaseLock>>, TError,{draftId: string}, TContext>, request?: SecondParameter<typeof mutator>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof postIndicatorsDrafts$DraftIdReleaseLock>>,
-        TError,
-        {draftId: string},
-        TContext
-      > => {
-
-      const mutationOptions = getPostIndicatorsDraftsDraftIdReleaseLockMutationOptions(options);
-
-      return useMutation(mutationOptions );
-    }
-    /**
- * Validate indicator tree structure, relationships, and schemas before bulk publish.
-
-**Permissions**: MLGOO_DILG only
-
-**Validations Performed**:
-- Circular reference detection (DFS algorithm)
-- Parent-child relationship integrity
-- Indicator code format validation (pattern: `1`, `1.1`, `1.1.1`, etc.)
-- Sort order validation (sequential starting from 0)
-- Schema completeness (form, MOV, calculation, remark)
-- Weight sum validation (siblings must sum to 100%)
-
-**Request Body**:
-```json
-{
-  "indicators": [
-    {
-      "id": "temp_1",
-      "parent_id": null,
-      "indicator_code": "1",
-      "sort_order": 0,
-      "weight": 60,
-      "form_schema": {...},
-      "calculation_schema": {...},
-      "remark_schema": {...}
-    },
-    {
-      "id": "temp_2",
-      "parent_id": "temp_1",
-      "indicator_code": "1.1",
-      "sort_order": 0,
-      "weight": 100
-    }
-  ]
-}
-```
-
-**Returns**:
-```json
-{
-  "is_valid": true,
-  "errors": [],
-  "warnings": ["Indicator temp_3 has no indicator_code set"]
-}
-```
-
-**Error Response Example**:
-```json
-{
-  "is_valid": false,
-  "errors": [
-    {
-      "type": "circular_reference",
-      "message": "Circular reference detected: 1 → 1.1 → 1",
-      "indicator_id": "temp_1"
-    },
-    {
-      "type": "invalid_code",
-      "message": "Indicator 1. has invalid code format (must match pattern: 1, 1.1, 1.1.1, etc.)",
-      "indicator_id": "temp_2"
-    },
-    {
-      "type": "weight_sum",
-      "message": "Weights for indicators 1.1, 1.2 sum to 90%, must be 100% (parent temp_1)",
-      "indicator_id": null
-    }
-  ],
-  "warnings": []
-}
-```
-
-**Status Codes**:
-- 200: Validation completed (check `is_valid` field)
-- 401: Unauthorized (not authenticated)
-- 403: Forbidden (not MLGOO_DILG role)
- * @summary Validate indicator tree structure before publishing
- */
-export const postIndicatorsValidateTree = (
-    indicatorValidationRequest: IndicatorValidationRequest,
- options?: SecondParameter<typeof mutator>,signal?: AbortSignal
-) => {
-      
-      
-      return mutator<IndicatorValidationResponse>(
-      {url: `/api/v1/indicators/validate-tree`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: indicatorValidationRequest, signal
-    },
-      options);
-    }
-  
-
-
-export const getPostIndicatorsValidateTreeMutationOptions = <TError = HTTPValidationError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsValidateTree>>, TError,{data: IndicatorValidationRequest}, TContext>, request?: SecondParameter<typeof mutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsValidateTree>>, TError,{data: IndicatorValidationRequest}, TContext> => {
-
-const mutationKey = ['postIndicatorsValidateTree'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-      
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postIndicatorsValidateTree>>, {data: IndicatorValidationRequest}> = (props) => {
-          const {data} = props ?? {};
-
-          return  postIndicatorsValidateTree(data,requestOptions)
-        }
-
-        
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PostIndicatorsValidateTreeMutationResult = NonNullable<Awaited<ReturnType<typeof postIndicatorsValidateTree>>>
-    export type PostIndicatorsValidateTreeMutationBody = IndicatorValidationRequest
-    export type PostIndicatorsValidateTreeMutationError = HTTPValidationError
-
-    /**
- * @summary Validate indicator tree structure before publishing
- */
-export const usePostIndicatorsValidateTree = <TError = HTTPValidationError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postIndicatorsValidateTree>>, TError,{data: IndicatorValidationRequest}, TContext>, request?: SecondParameter<typeof mutator>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof postIndicatorsValidateTree>>,
-        TError,
-        {data: IndicatorValidationRequest},
-        TContext
-      > => {
-
-      const mutationOptions = getPostIndicatorsValidateTreeMutationOptions(options);
-
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Get a single indicator by its code (e.g., "1.1", "1.1.1", "2.3").
@@ -2004,8 +1146,12 @@ export const getIndicatorsCode$IndicatorCode = (
     }
   
 
-export const getGetIndicatorsCodeIndicatorCodeQueryKey = (indicatorCode: string,) => {
-    return [`/api/v1/indicators/code/${indicatorCode}`] as const;
+
+
+export const getGetIndicatorsCodeIndicatorCodeQueryKey = (indicatorCode?: string,) => {
+    return [
+    `/api/v1/indicators/code/${indicatorCode}`
+    ] as const;
     }
 
     
@@ -2042,12 +1188,13 @@ export function useGetIndicatorsCodeIndicatorCode<TData = Awaited<ReturnType<typ
 
   const queryOptions = getGetIndicatorsCodeIndicatorCodeQueryOptions(indicatorCode,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -2089,8 +1236,12 @@ export const getIndicatorsCode$IndicatorCodeTree = (
     }
   
 
-export const getGetIndicatorsCodeIndicatorCodeTreeQueryKey = (indicatorCode: string,) => {
-    return [`/api/v1/indicators/code/${indicatorCode}/tree`] as const;
+
+
+export const getGetIndicatorsCodeIndicatorCodeTreeQueryKey = (indicatorCode?: string,) => {
+    return [
+    `/api/v1/indicators/code/${indicatorCode}/tree`
+    ] as const;
     }
 
     
@@ -2127,12 +1278,13 @@ export function useGetIndicatorsCodeIndicatorCodeTree<TData = Awaited<ReturnType
 
   const queryOptions = getGetIndicatorsCodeIndicatorCodeTreeQueryOptions(indicatorCode,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 

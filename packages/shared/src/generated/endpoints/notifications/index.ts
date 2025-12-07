@@ -61,8 +61,12 @@ export const getNotifications = (
     }
   
 
+
+
 export const getGetNotificationsQueryKey = (params?: GetNotificationsParams,) => {
-    return [`/api/v1/notifications/`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/notifications/`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -99,12 +103,13 @@ export function useGetNotifications<TData = Awaited<ReturnType<typeof getNotific
 
   const queryOptions = getGetNotificationsQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -128,8 +133,12 @@ export const getNotificationsCount = (
     }
   
 
+
+
 export const getGetNotificationsCountQueryKey = () => {
-    return [`/api/v1/notifications/count`] as const;
+    return [
+    `/api/v1/notifications/count`
+    ] as const;
     }
 
     
@@ -166,12 +175,13 @@ export function useGetNotificationsCount<TData = Awaited<ReturnType<typeof getNo
 
   const queryOptions = getGetNotificationsCountQueryOptions(options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -241,7 +251,7 @@ export const usePostNotificationsMarkRead = <TError = HTTPValidationError,
 
       const mutationOptions = getPostNotificationsMarkReadMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Mark all notifications as read for the current user.
@@ -306,7 +316,7 @@ export const usePostNotificationsMarkAllRead = <TError = unknown,
 
       const mutationOptions = getPostNotificationsMarkAllReadMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Get a single notification by ID.
@@ -327,8 +337,12 @@ export const getNotifications$NotificationId = (
     }
   
 
-export const getGetNotificationsNotificationIdQueryKey = (notificationId: number,) => {
-    return [`/api/v1/notifications/${notificationId}`] as const;
+
+
+export const getGetNotificationsNotificationIdQueryKey = (notificationId?: number,) => {
+    return [
+    `/api/v1/notifications/${notificationId}`
+    ] as const;
     }
 
     
@@ -365,12 +379,13 @@ export function useGetNotificationsNotificationId<TData = Awaited<ReturnType<typ
 
   const queryOptions = getGetNotificationsNotificationIdQueryOptions(notificationId,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
