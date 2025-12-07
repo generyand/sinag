@@ -102,10 +102,10 @@ jobs:
           GEMINI_API_KEY: test-gemini-key
         run: |
           uv run pytest tests/ \
+            -n auto \
             --cov=app \
             --cov-report=term-missing \
             --cov-report=xml \
-            -v \
             --tb=short
 
       - name: Upload coverage report
