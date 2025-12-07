@@ -30,7 +30,7 @@ class TestCrossUserFileAccess:
         auth_headers_blgu: dict[str, str],
         test_blgu_user: User,
         db_session: Session,
-        test_indicator: Indicator,
+        mock_indicator: Indicator,
     ):
         """
         Test: BLGU User A cannot access BLGU User B's uploaded file.
@@ -48,7 +48,7 @@ class TestCrossUserFileAccess:
         user_b_email = f"blgu_b_{uuid.uuid4().hex[:8]}@example.com"
         user_b = User(
             email=user_b_email,
-            username=f"blgu_b_{uuid.uuid4().hex[:8]}",
+            name=f"BLGU User B {uuid.uuid4().hex[:8]}",
             hashed_password="hashed_password_placeholder",
             role=UserRole.BLGU_USER,
             is_active=True,
@@ -61,9 +61,8 @@ class TestCrossUserFileAccess:
         from app.db.enums import AssessmentStatus
 
         assessment_b = Assessment(
-            blgu_id=user_b.id,
+            blgu_user_id=user_b.id,
             status=AssessmentStatus.DRAFT,
-            year=2025,
         )
         db_session.add(assessment_b)
         db_session.commit()
@@ -85,7 +84,7 @@ class TestCrossUserFileAccess:
 
             # User B uploads file
             upload_response = client.post(
-                f"/api/v1/movs/assessments/{assessment_b.id}/indicators/{test_indicator.id}/upload",
+                f"/api/v1/movs/assessments/{assessment_b.id}/indicators/{mock_indicator.id}/upload",
                 headers=user_b_headers,
                 files={"file": ("document.pdf", pdf_file, "application/pdf")},
             )
@@ -115,8 +114,8 @@ class TestCrossUserFileAccess:
         client: TestClient,
         auth_headers_assessor: dict[str, str],
         auth_headers_blgu: dict[str, str],
-        test_draft_assessment: Assessment,
-        test_indicator: Indicator,
+        mock_assessment: Assessment,
+        mock_indicator: Indicator,
         db_session: Session,
     ):
         """
@@ -131,7 +130,7 @@ class TestCrossUserFileAccess:
         pdf_file = BytesIO(pdf_content)
 
         upload_response = client.post(
-            f"/api/v1/movs/assessments/{test_draft_assessment.id}/indicators/{test_indicator.id}/upload",
+            f"/api/v1/movs/assessments/{mock_assessment.id}/indicators/{mock_indicator.id}/upload",
             headers=auth_headers_blgu,
             files={"file": ("document.pdf", pdf_file, "application/pdf")},
         )
@@ -152,10 +151,10 @@ class TestCrossUserFileAccess:
         client: TestClient,
         auth_headers_validator: dict[str, str],
         auth_headers_blgu: dict[str, str],
-        test_draft_assessment: Assessment,
-        test_indicator: Indicator,
+        mock_assessment: Assessment,
+        mock_indicator: Indicator,
         test_validator_user: User,
-        governance_area,
+        mock_governance_area,
         db_session: Session,
     ):
         """
@@ -166,7 +165,7 @@ class TestCrossUserFileAccess:
         - Authorization respects validator_area_id
         """
         # Ensure validator is assigned to the governance area
-        test_validator_user.validator_area_id = governance_area.id
+        test_validator_user.validator_area_id = mock_governance_area.id
         db_session.commit()
 
         # BLGU uploads a file
@@ -174,7 +173,7 @@ class TestCrossUserFileAccess:
         pdf_file = BytesIO(pdf_content)
 
         upload_response = client.post(
-            f"/api/v1/movs/assessments/{test_draft_assessment.id}/indicators/{test_indicator.id}/upload",
+            f"/api/v1/movs/assessments/{mock_assessment.id}/indicators/{mock_indicator.id}/upload",
             headers=auth_headers_blgu,
             files={"file": ("document.pdf", pdf_file, "application/pdf")},
         )
@@ -194,8 +193,8 @@ class TestCrossUserFileAccess:
         client: TestClient,
         auth_headers_mlgoo: dict[str, str],
         auth_headers_blgu: dict[str, str],
-        test_draft_assessment: Assessment,
-        test_indicator: Indicator,
+        mock_assessment: Assessment,
+        mock_indicator: Indicator,
     ):
         """
         Test: MLGOO admin can access all files.
@@ -209,7 +208,7 @@ class TestCrossUserFileAccess:
         pdf_file = BytesIO(pdf_content)
 
         upload_response = client.post(
-            f"/api/v1/movs/assessments/{test_draft_assessment.id}/indicators/{test_indicator.id}/upload",
+            f"/api/v1/movs/assessments/{mock_assessment.id}/indicators/{mock_indicator.id}/upload",
             headers=auth_headers_blgu,
             files={"file": ("document.pdf", pdf_file, "application/pdf")},
         )
@@ -234,8 +233,8 @@ class TestDirectURLAccess:
         self,
         client: TestClient,
         auth_headers_blgu: dict[str, str],
-        test_draft_assessment: Assessment,
-        test_indicator: Indicator,
+        mock_assessment: Assessment,
+        mock_indicator: Indicator,
     ):
         """
         Test: Direct storage URL access is protected.
@@ -250,7 +249,7 @@ class TestDirectURLAccess:
         pdf_file = BytesIO(pdf_content)
 
         upload_response = client.post(
-            f"/api/v1/movs/assessments/{test_draft_assessment.id}/indicators/{test_indicator.id}/upload",
+            f"/api/v1/movs/assessments/{mock_assessment.id}/indicators/{mock_indicator.id}/upload",
             headers=auth_headers_blgu,
             files={"file": ("document.pdf", pdf_file, "application/pdf")},
         )
@@ -290,7 +289,7 @@ class TestAssessmentLevelFileAccess:
         client: TestClient,
         auth_headers_blgu: dict[str, str],
         test_blgu_user: User,
-        test_indicator: Indicator,
+        mock_indicator: Indicator,
         db_session: Session,
     ):
         """
@@ -304,12 +303,8 @@ class TestAssessmentLevelFileAccess:
         from app.db.enums import AssessmentStatus
 
         # Create two assessments for same user
-        assessment_1 = Assessment(
-            blgu_id=test_blgu_user.id, status=AssessmentStatus.DRAFT, year=2025
-        )
-        assessment_2 = Assessment(
-            blgu_id=test_blgu_user.id, status=AssessmentStatus.DRAFT, year=2024
-        )
+        assessment_1 = Assessment(blgu_user_id=test_blgu_user.id, status=AssessmentStatus.DRAFT)
+        assessment_2 = Assessment(blgu_user_id=test_blgu_user.id, status=AssessmentStatus.DRAFT)
         db_session.add(assessment_1)
         db_session.add(assessment_2)
         db_session.commit()
@@ -321,7 +316,7 @@ class TestAssessmentLevelFileAccess:
         pdf_file = BytesIO(pdf_content)
 
         upload_response = client.post(
-            f"/api/v1/movs/assessments/{assessment_1.id}/indicators/{test_indicator.id}/upload",
+            f"/api/v1/movs/assessments/{assessment_1.id}/indicators/{mock_indicator.id}/upload",
             headers=auth_headers_blgu,
             files={"file": ("document.pdf", pdf_file, "application/pdf")},
         )
@@ -345,7 +340,7 @@ class TestFileListingAuthorization:
         self,
         client: TestClient,
         auth_headers_blgu: dict[str, str],
-        test_draft_assessment: Assessment,
+        mock_assessment: Assessment,
     ):
         """
         Test: Listing files only returns files user has access to.
@@ -357,7 +352,7 @@ class TestFileListingAuthorization:
         """
         # List files for assessment
         response = client.get(
-            f"/api/v1/movs/assessments/{test_draft_assessment.id}",
+            f"/api/v1/movs/assessments/{mock_assessment.id}",
             headers=auth_headers_blgu,
         )
 
@@ -373,7 +368,7 @@ class TestFileListingAuthorization:
         self,
         client: TestClient,
         auth_headers_assessor: dict[str, str],
-        test_draft_assessment: Assessment,
+        mock_assessment: Assessment,
     ):
         """
         Test: Unauthorized user gets empty or forbidden response for file list.
@@ -383,7 +378,7 @@ class TestFileListingAuthorization:
         - Returns empty list or 403 for unauthorized access
         """
         response = client.get(
-            f"/api/v1/movs/assessments/{test_draft_assessment.id}",
+            f"/api/v1/movs/assessments/{mock_assessment.id}",
             headers=auth_headers_assessor,
         )
 
@@ -405,8 +400,8 @@ class TestFileMetadataProtection:
         self,
         client: TestClient,
         auth_headers_blgu: dict[str, str],
-        test_draft_assessment: Assessment,
-        test_indicator: Indicator,
+        mock_assessment: Assessment,
+        mock_indicator: Indicator,
     ):
         """
         Test: File metadata response doesn't expose internal storage paths.
@@ -420,7 +415,7 @@ class TestFileMetadataProtection:
         pdf_file = BytesIO(pdf_content)
 
         response = client.post(
-            f"/api/v1/movs/assessments/{test_draft_assessment.id}/indicators/{test_indicator.id}/upload",
+            f"/api/v1/movs/assessments/{mock_assessment.id}/indicators/{mock_indicator.id}/upload",
             headers=auth_headers_blgu,
             files={"file": ("document.pdf", pdf_file, "application/pdf")},
         )

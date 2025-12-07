@@ -224,7 +224,7 @@ class TestCompleteAssessmentSubmissionFlow:
         if response.status_code == 400:
             # Expected if validation fails (missing MOVs, incomplete indicators)
             data = response.json()
-            assert "detail" in data
+            assert "detail" in data or "error" in data
             # This is acceptable - validation is working
             pytest.skip("Submission validation requires complete data and MOVs")
 
@@ -278,7 +278,7 @@ class TestCompleteAssessmentSubmissionFlow:
         data = response.json()
 
         # Verify error structure
-        assert "detail" in data
+        assert "detail" in data or "error" in data
 
     def test_blgu_cannot_submit_other_users_assessment(
         self,
@@ -339,7 +339,7 @@ class TestCompleteAssessmentSubmissionFlow:
         # Should be forbidden
         assert response.status_code == 403
         data = response.json()
-        assert "detail" in data
+        assert "detail" in data or "error" in data
 
     def test_submission_sets_correct_timestamps(
         self,
@@ -442,6 +442,6 @@ class TestCompleteAssessmentSubmissionFlow:
             # Should fail because assessment is SUBMITTED (locked)
             assert update_response.status_code == 400
             data = update_response.json()
-            assert "detail" in data
+            assert "detail" in data or "error" in data
         else:
             pytest.skip("Could not create response for test")

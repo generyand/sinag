@@ -9,9 +9,9 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
-from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
+from app.core.security import pwd_context
 from app.db.enums import (
     AreaType,
     AssessmentStatus,
@@ -22,10 +22,6 @@ from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.barangay import Barangay
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
-
-# Password hashing context
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 # ============================================================================
 # User Fixtures with Authentication

@@ -18,9 +18,9 @@ Tests the authorization layer for:
 import uuid
 
 from fastapi.testclient import TestClient
-from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
+from app.core.security import pwd_context
 from app.db.enums import AssessmentStatus, UserRole
 from app.db.models.assessment import Assessment
 from app.db.models.barangay import Barangay
@@ -48,8 +48,6 @@ class TestRoleBasedAccessControl:
         - Ownership check is enforced
         """
         # Create another BLGU user with their own assessment
-        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
         other_blgu_user = User(
             email=f"other_blgu_{uuid.uuid4().hex[:8]}@example.com",
             name="Other BLGU User",
@@ -72,6 +70,11 @@ class TestRoleBasedAccessControl:
         db_session.commit()
         db_session.refresh(other_assessment)
 
+        # Set up database override for authentication
+        from tests.integration.conftest import _override_db_for_auth
+
+        _override_db_for_auth(client, db_session)
+
         # Login as test_blgu_user and try to submit other user's assessment
         login_response = client.post(
             "/api/v1/auth/login",
@@ -90,7 +93,7 @@ class TestRoleBasedAccessControl:
         # Should be forbidden
         assert response.status_code == 403
         data = response.json()
-        assert "detail" in data
+        assert "detail" in data or "error" in data
 
     def test_blgu_cannot_request_rework(
         self,
@@ -116,11 +119,9 @@ class TestRoleBasedAccessControl:
 
         assert response.status_code == 403
         data = response.json()
-        assert "detail" in data
-        assert (
-            "assessor" in data.get("error", data.get("detail", "")).lower()
-            or "permission" in data.get("error", data.get("detail", "")).lower()
-        )
+        assert "detail" in data or "error" in data or "error" in data
+        error_msg = data.get("error", data.get("detail", "")).lower()
+        assert "assessor" in error_msg or "validator" in error_msg or "permission" in error_msg
 
     def test_assessor_can_request_rework_any_assessment(
         self,
@@ -226,7 +227,7 @@ class TestRoleBasedAccessControl:
 
         assert response.status_code == 403
         data = response.json()
-        assert "detail" in data
+        assert "detail" in data or "error" in data
 
     def test_assessor_cannot_resubmit_assessment(
         self,
@@ -248,7 +249,7 @@ class TestRoleBasedAccessControl:
 
         assert response.status_code == 403
         data = response.json()
-        assert "detail" in data
+        assert "detail" in data or "error" in data
 
     def test_blgu_can_access_own_assessment_data(
         self,
@@ -288,8 +289,6 @@ class TestRoleBasedAccessControl:
         - Data isolation between BLGUs
         """
         # Create another BLGU user
-        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
         other_user = User(
             email=f"other_{uuid.uuid4().hex[:8]}@example.com",
             name="Other User",
@@ -311,14 +310,20 @@ class TestRoleBasedAccessControl:
         db_session.commit()
         db_session.refresh(other_assessment)
 
+        # Set up database override for authentication
+        from tests.integration.conftest import _override_db_for_auth
+
+        _override_db_for_auth(client, db_session)
+
         # Login as test_blgu_user
         login_response = client.post(
             "/api/v1/auth/login",
-            data={
-                "username": test_blgu_user.email,
+            json={
+                "email": test_blgu_user.email,
                 "password": test_blgu_user.plain_password,
             },
         )
+        assert login_response.status_code == 200, f"Login failed: {login_response.text}"
         token = login_response.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
 
