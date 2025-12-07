@@ -68,6 +68,9 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=10080
+      # User credentials (required in production)
+      - FIRST_SUPERUSER_PASSWORD=${FIRST_SUPERUSER_PASSWORD}
+      - EXTERNAL_USER_DEFAULT_PASSWORD=${EXTERNAL_USER_DEFAULT_PASSWORD}
       # Database (Supabase)
       - DATABASE_URL=${DATABASE_URL}
       - SUPABASE_URL=${SUPABASE_URL}
@@ -129,6 +132,9 @@ services:
       - DEBUG=false
       - FAIL_FAST=true
       - SECRET_KEY=${SECRET_KEY}
+      # User credentials (required in production)
+      - FIRST_SUPERUSER_PASSWORD=${FIRST_SUPERUSER_PASSWORD}
+      - EXTERNAL_USER_DEFAULT_PASSWORD=${EXTERNAL_USER_DEFAULT_PASSWORD}
       # Database (Supabase)
       - DATABASE_URL=${DATABASE_URL}
       - SUPABASE_URL=${SUPABASE_URL}

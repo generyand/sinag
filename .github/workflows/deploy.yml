@@ -6,8 +6,15 @@
 #   - main branch → production environment (requires approval)
 #
 # TRIGGERS:
-#   - Manual trigger (workflow_dispatch)
+#   - Manual trigger (workflow_dispatch) - bypasses quality gates
 #   - After successful build on main or develop branch
+#
+# QUALITY GATES (for automatic deployments):
+#   - ✅ Build workflow must succeed
+#   - ✅ CI workflow must succeed (linting, tests, type checking)
+#   - ✅ Security workflow must succeed (no critical vulnerabilities)
+#
+# Manual deployments bypass these checks (use with caution).
 # ==============================================================================
 
 name: Deploy to EC2
@@ -17,15 +24,15 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Environment to deploy to'
+        description: "Environment to deploy to"
         required: true
-        default: 'staging'
+        default: "staging"
         type: choice
         options:
           - staging
           - production
       run_migrations:
-        description: 'Run database migrations'
+        description: "Run database migrations"
         required: false
         default: false
         type: boolean
@@ -41,10 +48,91 @@ on:
 
 jobs:
   # ==========================================================================
+  # Validate all required workflows passed before deployment
+  # ==========================================================================
+  validate-checks:
+    name: Validate Quality Gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Only validate for automatic deployments (workflow_run), manual deployments skip validation
+    if: github.event_name == 'workflow_run'
+    steps:
+      # CRITICAL: When triggered by workflow_run, checkout defaults to the default branch (main).
+      # We must explicitly checkout the branch that triggered the build workflow.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+
+      - name: Validate build workflow status
+        run: |
+          if [ "${{ github.event.workflow_run.conclusion }}" != "success" ]; then
+            echo "::error::Build workflow did not succeed. Conclusion: ${{ github.event.workflow_run.conclusion }}"
+            echo "Deployment blocked because the build workflow failed or was cancelled."
+            exit 1
+          fi
+          echo "✅ Build workflow succeeded"
+
+      - name: Validate CI workflow status
+        run: |
+          echo "Checking CI workflow status for commit ${{ github.event.workflow_run.head_sha }}..."
+
+          # Get the CI workflow run for this commit
+          CI_RUN=$(gh api repos/${{ github.repository }}/actions/workflows/ci.yml/runs \
+            --jq ".workflow_runs[] | select(.head_sha == \"${{ github.event.workflow_run.head_sha }}\") | select(.event == \"push\" or .event == \"pull_request\") | .conclusion" \
+            --paginate | head -n 1)
+
+          if [ -z "$CI_RUN" ]; then
+            echo "::warning::CI workflow run not found for this commit. This might be expected for manual builds."
+            echo "Skipping CI validation (manual deployment or CI not yet triggered)"
+          elif [ "$CI_RUN" != "success" ]; then
+            echo "::error::CI workflow did not succeed. Conclusion: $CI_RUN"
+            echo "Deployment blocked because CI checks failed."
+            echo "Please ensure all CI checks pass before deploying."
+            exit 1
+          else
+            echo "✅ CI workflow succeeded"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate security workflow status
+        run: |
+          echo "Checking Security workflow status for commit ${{ github.event.workflow_run.head_sha }}..."
+
+          # Get the Security workflow run for this commit
+          SECURITY_RUN=$(gh api repos/${{ github.repository }}/actions/workflows/security.yml/runs \
+            --jq ".workflow_runs[] | select(.head_sha == \"${{ github.event.workflow_run.head_sha }}\") | select(.event == \"push\" or .event == \"pull_request\") | .conclusion" \
+            --paginate | head -n 1)
+
+          if [ -z "$SECURITY_RUN" ]; then
+            echo "::warning::Security workflow run not found for this commit."
+            echo "Skipping security validation (security scan may not have run yet)"
+          elif [ "$SECURITY_RUN" != "success" ] && [ "$SECURITY_RUN" != "neutral" ]; then
+            echo "::error::Security workflow did not succeed. Conclusion: $SECURITY_RUN"
+            echo "Deployment blocked because security scans failed."
+            echo "Please review security findings before deploying."
+            exit 1
+          else
+            echo "✅ Security workflow completed (status: ${SECURITY_RUN:-not found})"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: false
+
+  # ==========================================================================
   # Determine which environment to deploy to
   # ==========================================================================
   setup:
     runs-on: ubuntu-latest
+    needs: [validate-checks]
+    # Run if: manual trigger OR (automatic trigger AND validation passed)
+    # For workflow_dispatch, validate-checks is skipped, so we check for skipped result
+    if: |
+      always() && (
+        github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'workflow_run' && (needs.validate-checks.result == 'success' || needs.validate-checks.result == 'skipped'))
+      )
     outputs:
       environment: ${{ steps.set-env.outputs.environment }}
       image_tag: ${{ steps.set-env.outputs.image_tag }}
@@ -52,10 +140,14 @@ jobs:
       - name: Determine environment
         id: set-env
         run: |
+          echo "Event name: ${{ github.event_name }}"
+          echo "Input environment: ${{ inputs.environment }}"
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             # Manual trigger - use selected environment
-            echo "environment=${{ inputs.environment }}" >> $GITHUB_OUTPUT
-            if [ "${{ inputs.environment }}" == "production" ]; then
+            ENV="${{ inputs.environment }}"
+            echo "environment=${ENV}" >> $GITHUB_OUTPUT
+            echo "Selected environment: ${ENV}"
+            if [ "${ENV}" == "production" ]; then
               echo "image_tag=latest" >> $GITHUB_OUTPUT
             else
               echo "image_tag=develop" >> $GITHUB_OUTPUT
@@ -69,17 +161,40 @@ jobs:
             echo "environment=staging" >> $GITHUB_OUTPUT
             echo "image_tag=develop" >> $GITHUB_OUTPUT
           fi
+          echo "Final outputs:"
+          cat $GITHUB_OUTPUT
 
   # ==========================================================================
   # Deploy to staging (auto-deploy, no approval needed)
   # ==========================================================================
   deploy-staging:
     needs: setup
-    if: needs.setup.outputs.environment == 'staging' && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
+    if: |
+      always() &&
+      needs.setup.result == 'success' &&
+      needs.setup.outputs.environment == 'staging'
     runs-on: ubuntu-latest
-    environment: staging  # Uses staging secrets
+    timeout-minutes: 15
+    environment: staging # Uses staging secrets
 
     steps:
+      # CRITICAL: When triggered by workflow_run, checkout defaults to the default branch (main).
+      # We must explicitly checkout the branch that triggered the build workflow.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch || github.ref }}
+
+      - name: Debug - Show checkout info
+        run: |
+          echo "Event: ${{ github.event_name }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "SHA: ${{ github.sha }}"
+          echo "workflow_run head_branch: ${{ github.event.workflow_run.head_branch || 'N/A' }}"
+          echo "workflow_run head_sha: ${{ github.event.workflow_run.head_sha || 'N/A' }}"
+          echo "Current commit:"
+          git log -1 --oneline
+
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
@@ -87,28 +202,40 @@ jobs:
           chmod 600 ~/.ssh/ec2_key
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
+      - name: Copy docker-compose files to EC2
+        run: |
+          ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "mkdir -p ~/sinag"
+          scp -i ~/.ssh/ec2_key docker-compose.prod.yml ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/sinag/
+          echo "✓ Docker compose files copied to EC2"
+
       - name: Create .env file on EC2
+        env:
+          ENV_CONTENT: |
+            GITHUB_REPOSITORY=${{ github.repository }}
+            IMAGE_TAG=${{ needs.setup.outputs.image_tag }}
+            ENVIRONMENT=${{ vars.ENVIRONMENT || 'staging' }}
+            SECRET_KEY=${{ secrets.SECRET_KEY }}
+            FIRST_SUPERUSER_PASSWORD=${{ secrets.FIRST_SUPERUSER_PASSWORD }}
+            EXTERNAL_USER_DEFAULT_PASSWORD=${{ secrets.EXTERNAL_USER_DEFAULT_PASSWORD }}
+            BACKEND_CORS_ORIGINS=${{ vars.BACKEND_CORS_ORIGINS }}
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+            SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+            SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+        run: |
+          echo "$ENV_CONTENT" | ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "cat > ~/sinag/.env"
+          echo "✓ Environment file created (staging)"
+
+      - name: Verify .env file on EC2
         run: |
           ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENVSSH'
-          cd ~/sinag
-
-          cat > .env << 'EOF'
-          # Auto-generated by GitHub Actions - DO NOT EDIT MANUALLY
-          # Environment: STAGING
-          # Last deployed: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
-
-          GITHUB_REPOSITORY=${{ github.repository }}
-          IMAGE_TAG=${{ needs.setup.outputs.image_tag }}
-
-          SECRET_KEY=${{ secrets.SECRET_KEY }}
-          DATABASE_URL=${{ secrets.DATABASE_URL }}
-          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
-          SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-          EOF
-
-          echo "✓ Environment file created (staging)"
+          echo "--- .env file verification ---"
+          echo "File exists: $(test -f ~/sinag/.env && echo 'YES' || echo 'NO')"
+          echo "Line count: $(wc -l < ~/sinag/.env)"
+          echo "Variables present (names only):"
+          grep -o '^[A-Z_]*=' ~/sinag/.env | sort | uniq
+          echo "--- end verification ---"
           ENVSSH
 
       - name: Login to GHCR on EC2
@@ -121,10 +248,11 @@ jobs:
       - name: Pull and deploy
         run: |
           ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENVSSH'
+          set -e
           cd ~/sinag
-          docker compose -f docker-compose.prod.yml pull
-          docker compose -f docker-compose.prod.yml down --remove-orphans || true
-          docker compose -f docker-compose.prod.yml up -d
+          docker compose --env-file .env -f docker-compose.prod.yml pull
+          docker compose --env-file .env -f docker-compose.prod.yml down --remove-orphans || true
+          docker compose --env-file .env -f docker-compose.prod.yml up -d
           echo "✓ Staging deployed"
           ENVSSH
 
@@ -132,23 +260,16 @@ jobs:
         if: ${{ inputs.run_migrations == true }}
         run: |
           ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENVSSH'
+          set -e
           cd ~/sinag
           sleep 15
-          docker compose -f docker-compose.prod.yml exec -T api alembic upgrade head
+          docker compose --env-file .env -f docker-compose.prod.yml exec -T api alembic upgrade head
           echo "✓ Migrations completed"
           ENVSSH
 
       - name: Health check
         run: |
-          ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENVSSH'
-          sleep 10
-          if curl -sf http://localhost/health > /dev/null; then
-            echo "✓ Staging is healthy!"
-          else
-            echo "⚠ Health check failed"
-            docker compose -f docker-compose.prod.yml ps
-          fi
-          ENVSSH
+          ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} 'sleep 10 && curl -sf http://localhost/health && echo "✓ Staging is healthy!"'
 
       - name: Cleanup
         if: always()
@@ -167,11 +288,32 @@ jobs:
   # ==========================================================================
   deploy-production:
     needs: setup
-    if: needs.setup.outputs.environment == 'production' && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
+    if: |
+      always() &&
+      needs.setup.result == 'success' &&
+      needs.setup.outputs.environment == 'production'
     runs-on: ubuntu-latest
-    environment: production  # Uses production secrets + requires approval
+    timeout-minutes: 15
+    environment: production # Uses production secrets + requires approval
 
     steps:
+      # CRITICAL: When triggered by workflow_run, checkout defaults to the default branch (main).
+      # We must explicitly checkout the branch that triggered the build workflow.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch || github.ref }}
+
+      - name: Debug - Show checkout info
+        run: |
+          echo "Event: ${{ github.event_name }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "SHA: ${{ github.sha }}"
+          echo "workflow_run head_branch: ${{ github.event.workflow_run.head_branch || 'N/A' }}"
+          echo "workflow_run head_sha: ${{ github.event.workflow_run.head_sha || 'N/A' }}"
+          echo "Current commit:"
+          git log -1 --oneline
+
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
@@ -179,28 +321,40 @@ jobs:
           chmod 600 ~/.ssh/ec2_key
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
+      - name: Copy docker-compose files to EC2
+        run: |
+          ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "mkdir -p ~/sinag"
+          scp -i ~/.ssh/ec2_key docker-compose.prod.yml ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/sinag/
+          echo "✓ Docker compose files copied to EC2"
+
       - name: Create .env file on EC2
+        env:
+          ENV_CONTENT: |
+            GITHUB_REPOSITORY=${{ github.repository }}
+            IMAGE_TAG=${{ needs.setup.outputs.image_tag }}
+            ENVIRONMENT=${{ vars.ENVIRONMENT || 'production' }}
+            SECRET_KEY=${{ secrets.SECRET_KEY }}
+            FIRST_SUPERUSER_PASSWORD=${{ secrets.FIRST_SUPERUSER_PASSWORD }}
+            EXTERNAL_USER_DEFAULT_PASSWORD=${{ secrets.EXTERNAL_USER_DEFAULT_PASSWORD }}
+            BACKEND_CORS_ORIGINS=${{ vars.BACKEND_CORS_ORIGINS }}
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+            SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+            SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+        run: |
+          echo "$ENV_CONTENT" | ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "cat > ~/sinag/.env"
+          echo "✓ Environment file created (production)"
+
+      - name: Verify .env file on EC2
         run: |
           ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENVSSH'
-          cd ~/sinag
-
-          cat > .env << 'EOF'
-          # Auto-generated by GitHub Actions - DO NOT EDIT MANUALLY
-          # Environment: PRODUCTION
-          # Last deployed: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
-
-          GITHUB_REPOSITORY=${{ github.repository }}
-          IMAGE_TAG=${{ needs.setup.outputs.image_tag }}
-
-          SECRET_KEY=${{ secrets.SECRET_KEY }}
-          DATABASE_URL=${{ secrets.DATABASE_URL }}
-          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
-          SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-          EOF
-
-          echo "✓ Environment file created (production)"
+          echo "--- .env file verification ---"
+          echo "File exists: $(test -f ~/sinag/.env && echo 'YES' || echo 'NO')"
+          echo "Line count: $(wc -l < ~/sinag/.env)"
+          echo "Variables present (names only):"
+          grep -o '^[A-Z_]*=' ~/sinag/.env | sort | uniq
+          echo "--- end verification ---"
           ENVSSH
 
       - name: Login to GHCR on EC2
@@ -213,10 +367,11 @@ jobs:
       - name: Pull and deploy
         run: |
           ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENVSSH'
+          set -e
           cd ~/sinag
-          docker compose -f docker-compose.prod.yml pull
-          docker compose -f docker-compose.prod.yml down --remove-orphans || true
-          docker compose -f docker-compose.prod.yml up -d
+          docker compose --env-file .env -f docker-compose.prod.yml pull
+          docker compose --env-file .env -f docker-compose.prod.yml down --remove-orphans || true
+          docker compose --env-file .env -f docker-compose.prod.yml up -d
           echo "✓ Production deployed"
           ENVSSH
 
@@ -224,23 +379,16 @@ jobs:
         if: ${{ inputs.run_migrations == true }}
         run: |
           ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENVSSH'
+          set -e
           cd ~/sinag
           sleep 15
-          docker compose -f docker-compose.prod.yml exec -T api alembic upgrade head
+          docker compose --env-file .env -f docker-compose.prod.yml exec -T api alembic upgrade head
           echo "✓ Migrations completed"
           ENVSSH
 
       - name: Health check
         run: |
-          ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENVSSH'
-          sleep 10
-          if curl -sf http://localhost/health > /dev/null; then
-            echo "✓ Production is healthy!"
-          else
-            echo "⚠ Health check failed"
-            docker compose -f docker-compose.prod.yml ps
-          fi
-          ENVSSH
+          ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} 'sleep 10 && curl -sf http://localhost/health && echo "✓ Production is healthy!"'
 
       - name: Cleanup
         if: always()
