@@ -334,10 +334,10 @@ services:
       - "3000:3000"
 
     volumes:
-      - ./apps/web:/app/apps/web
-      - ./packages/shared:/app/packages/shared
-      - /app/node_modules
-      - /app/apps/web/node_modules
+      - ./apps/web:/app/apps/web:delegated
+      - ./packages/shared:/app/packages/shared:delegated
+      - web-node-modules:/app/node_modules
+      - web-app-node-modules:/app/apps/web/node_modules
       - web-next-cache:/app/apps/web/.next
       - web-turbo-cache:/app/apps/web/.turbo
 
@@ -452,6 +452,10 @@ volumes:
   redis-celery-data:
     driver: local
   redis-cache-data:
+    driver: local
+  web-node-modules:
+    driver: local
+  web-app-node-modules:
     driver: local
   web-next-cache:
     driver: local
