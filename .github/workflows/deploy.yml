@@ -6,8 +6,15 @@
 #   - main branch → production environment (requires approval)
 #
 # TRIGGERS:
-#   - Manual trigger (workflow_dispatch)
+#   - Manual trigger (workflow_dispatch) - bypasses quality gates
 #   - After successful build on main or develop branch
+#
+# QUALITY GATES (for automatic deployments):
+#   - ✅ Build workflow must succeed
+#   - ✅ CI workflow must succeed (linting, tests, type checking)
+#   - ✅ Security workflow must succeed (no critical vulnerabilities)
+#
+# Manual deployments bypass these checks (use with caution).
 # ==============================================================================
 
 name: Deploy to EC2
@@ -17,15 +24,15 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Environment to deploy to'
+        description: "Environment to deploy to"
         required: true
-        default: 'staging'
+        default: "staging"
         type: choice
         options:
           - staging
           - production
       run_migrations:
-        description: 'Run database migrations'
+        description: "Run database migrations"
         required: false
         default: false
         type: boolean
@@ -41,10 +48,83 @@ on:
 
 jobs:
   # ==========================================================================
+  # Validate all required workflows passed before deployment
+  # ==========================================================================
+  validate-checks:
+    name: Validate Quality Gates
+    runs-on: ubuntu-latest
+    # Only validate for automatic deployments (workflow_run), manual deployments skip validation
+    if: github.event_name == 'workflow_run'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate build workflow status
+        run: |
+          if [ "${{ github.event.workflow_run.conclusion }}" != "success" ]; then
+            echo "::error::Build workflow did not succeed. Conclusion: ${{ github.event.workflow_run.conclusion }}"
+            echo "Deployment blocked because the build workflow failed or was cancelled."
+            exit 1
+          fi
+          echo "✅ Build workflow succeeded"
+
+      - name: Validate CI workflow status
+        run: |
+          echo "Checking CI workflow status for commit ${{ github.event.workflow_run.head_sha }}..."
+
+          # Get the CI workflow run for this commit
+          CI_RUN=$(gh api repos/${{ github.repository }}/actions/workflows/ci.yml/runs \
+            --jq ".workflow_runs[] | select(.head_sha == \"${{ github.event.workflow_run.head_sha }}\") | select(.event == \"push\" or .event == \"pull_request\") | .conclusion" \
+            --paginate | head -n 1)
+
+          if [ -z "$CI_RUN" ]; then
+            echo "::warning::CI workflow run not found for this commit. This might be expected for manual builds."
+            echo "Skipping CI validation (manual deployment or CI not yet triggered)"
+          elif [ "$CI_RUN" != "success" ]; then
+            echo "::error::CI workflow did not succeed. Conclusion: $CI_RUN"
+            echo "Deployment blocked because CI checks failed."
+            echo "Please ensure all CI checks pass before deploying."
+            exit 1
+          else
+            echo "✅ CI workflow succeeded"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate security workflow status
+        run: |
+          echo "Checking Security workflow status for commit ${{ github.event.workflow_run.head_sha }}..."
+
+          # Get the Security workflow run for this commit
+          SECURITY_RUN=$(gh api repos/${{ github.repository }}/actions/workflows/security.yml/runs \
+            --jq ".workflow_runs[] | select(.head_sha == \"${{ github.event.workflow_run.head_sha }}\") | select(.event == \"push\" or .event == \"pull_request\") | .conclusion" \
+            --paginate | head -n 1)
+
+          if [ -z "$SECURITY_RUN" ]; then
+            echo "::warning::Security workflow run not found for this commit."
+            echo "Skipping security validation (security scan may not have run yet)"
+          elif [ "$SECURITY_RUN" != "success" ] && [ "$SECURITY_RUN" != "neutral" ]; then
+            echo "::error::Security workflow did not succeed. Conclusion: $SECURITY_RUN"
+            echo "Deployment blocked because security scans failed."
+            echo "Please review security findings before deploying."
+            exit 1
+          else
+            echo "✅ Security workflow completed (status: ${SECURITY_RUN:-not found})"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: false
+
+  # ==========================================================================
   # Determine which environment to deploy to
   # ==========================================================================
   setup:
     runs-on: ubuntu-latest
+    needs: [validate-checks]
+    # Run if: manual trigger OR (automatic trigger AND validation passed)
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      (github.event_name == 'workflow_run' && (needs.validate-checks.result == 'success' || needs.validate-checks.result == 'skipped'))
     outputs:
       environment: ${{ steps.set-env.outputs.environment }}
       image_tag: ${{ steps.set-env.outputs.image_tag }}
@@ -75,9 +155,14 @@ jobs:
   # ==========================================================================
   deploy-staging:
     needs: setup
-    if: needs.setup.outputs.environment == 'staging' && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
+    if: |
+      needs.setup.outputs.environment == 'staging' && 
+      (
+        github.event_name == 'workflow_dispatch' || 
+        (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+      )
     runs-on: ubuntu-latest
-    environment: staging  # Uses staging secrets
+    environment: staging # Uses staging secrets
 
     steps:
       - name: Setup SSH key
@@ -180,9 +265,14 @@ jobs:
   # ==========================================================================
   deploy-production:
     needs: setup
-    if: needs.setup.outputs.environment == 'production' && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
+    if: |
+      needs.setup.outputs.environment == 'production' && 
+      (
+        github.event_name == 'workflow_dispatch' || 
+        (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+      )
     runs-on: ubuntu-latest
-    environment: production  # Uses production secrets + requires approval
+    environment: production # Uses production secrets + requires approval
 
     steps:
       - name: Setup SSH key

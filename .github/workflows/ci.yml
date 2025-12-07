@@ -70,17 +70,16 @@ jobs:
         run: pip install uv
 
       - name: Install dependencies
-        run: |
-          uv pip install --system -e ".[dev]"
+        run: uv sync --group dev
 
       - name: Lint with Ruff
-        run: ruff check . --output-format=github
+        run: uv run ruff check . --output-format=github
 
       - name: Format check with Ruff
-        run: ruff format --check .
+        run: uv run ruff format --check .
 
       - name: Type check with MyPy
-        run: mypy app/ --show-error-codes
+        run: uv run mypy app/ --show-error-codes
         continue-on-error: true # Make strict once baseline is established
 
       - name: Run tests with coverage
@@ -92,7 +91,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
           GEMINI_API_KEY: test-gemini-key
         run: |
-          pytest tests/ \
+          uv run pytest tests/ \
             --cov=app \
             --cov-report=term-missing \
             --cov-report=xml \
@@ -144,10 +143,10 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Lint
-        run: pnpm lint
+        run: pnpm turbo lint --filter=web --filter=@sinag/shared
 
       - name: Type check
-        run: pnpm type-check
+        run: pnpm turbo type-check --filter=web --filter=@sinag/shared
 
       - name: Run unit tests with coverage
         run: cd apps/web && pnpm test:coverage
@@ -235,6 +234,16 @@ jobs:
         ports:
           - 5432:5432
 
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -258,22 +267,42 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install uv
-          cd apps/api && uv pip install --system -e ".[dev]"
+          cd apps/api && uv sync --group dev
 
       - name: Start API server
         run: |
           cd apps/api
-          nohup uvicorn main:app --host 0.0.0.0 --port 8000 &
-          sleep 10
+          nohup uv run uvicorn main:app --host 0.0.0.0 --port 8000 > /tmp/api.log 2>&1 &
+          echo $! > /tmp/api.pid
+          echo "API server starting (PID: $(cat /tmp/api.pid))"
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
           SECRET_KEY: test-secret-key-for-ci
           CELERY_BROKER_URL: redis://localhost:6379/0
           SUPABASE_URL: https://example.supabase.co
           SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
+          GEMINI_API_KEY: test-gemini-key
+          FAIL_FAST: "false"
+          REQUIRE_CELERY: "false"
+          REQUIRE_GEMINI: "false"
 
-      - name: Verify API is running
-        run: curl -sf http://localhost:8000/openapi.json > /dev/null
+      - name: Wait for API to be ready
+        run: |
+          echo "Waiting for API server to start..."
+          for i in {1..30}; do
+            if curl -sf http://localhost:8000/openapi.json > /dev/null 2>&1; then
+              echo "✅ API is ready!"
+              exit 0
+            fi
+            echo "Attempt $i/30: API not ready yet, waiting..."
+            sleep 2
+          done
+          echo "❌ API failed to start after 60 seconds"
+          echo "API process status:"
+          ps aux | grep uvicorn || echo "No uvicorn process found"
+          echo "API logs:"
+          cat /tmp/api.log || echo "No log file found"
+          exit 1
 
       - name: Generate types
         run: pnpm generate-types
