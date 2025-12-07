@@ -1,30 +1,28 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { ChevronRight, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { ChevronRight, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { FormSchemaBuilder } from '@/components/features/indicators/FormSchemaBuilder';
-import { SaveFormSchemaButton } from '@/components/features/indicators/SaveFormSchemaButton';
-import { useFormBuilderStore } from '@/store/useFormBuilderStore';
+} from "@/components/ui/select";
+import { FormSchemaBuilder } from "@/components/features/indicators/FormSchemaBuilder";
+import { SaveFormSchemaButton } from "@/components/features/indicators/SaveFormSchemaButton";
+import { useFormBuilderStore } from "@/store/useFormBuilderStore";
 import {
   useGetIndicatorsIndicatorId,
   usePutIndicatorsIndicatorId,
   useGetLookupsGovernanceAreas,
-} from '@sinag/shared';
-import { useToast } from '@/hooks/use-toast';
-
+} from "@sinag/shared";
 interface IndicatorFormData {
   name: string;
   description?: string;
@@ -49,7 +47,6 @@ export default function EditIndicatorPage() {
   const router = useRouter();
   const params = useParams();
   const indicatorId = parseInt(params.id as string);
-  const { toast } = useToast();
   const { loadFields, fields, markAsSaved, isDirty } = useFormBuilderStore();
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -77,7 +74,7 @@ export default function EditIndicatorPage() {
       // Pre-populate basic fields
       reset({
         name: indicator.name,
-        description: indicator.description || '',
+        description: indicator.description || "",
         governance_area_id: indicator.governance_area_id,
         parent_id: indicator.parent_id || undefined,
       });
@@ -96,12 +93,12 @@ export default function EditIndicatorPage() {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isDirty) {
         e.preventDefault();
-        e.returnValue = '';
+        e.returnValue = "";
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [isDirty]);
 
   if (isLoading) {
@@ -120,10 +117,7 @@ export default function EditIndicatorPage() {
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
           <p className="text-lg text-gray-900">Indicator not found</p>
-          <Button
-            className="mt-4"
-            onClick={() => router.push('/mlgoo/indicators')}
-          >
+          <Button className="mt-4" onClick={() => router.push("/mlgoo/indicators")}>
             Back to Indicators
           </Button>
         </div>
@@ -136,17 +130,11 @@ export default function EditIndicatorPage() {
       {/* Header with Breadcrumb */}
       <div className="border-b border-gray-200 bg-white px-6 py-4">
         <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-          <button
-            onClick={() => router.push('/mlgoo/dashboard')}
-            className="hover:text-gray-700"
-          >
+          <button onClick={() => router.push("/mlgoo/dashboard")} className="hover:text-gray-700">
             Admin
           </button>
           <ChevronRight className="h-4 w-4" />
-          <button
-            onClick={() => router.push('/mlgoo/indicators')}
-            className="hover:text-gray-700"
-          >
+          <button onClick={() => router.push("/mlgoo/indicators")} className="hover:text-gray-700">
             Indicators
           </button>
           <ChevronRight className="h-4 w-4" />
@@ -163,14 +151,8 @@ export default function EditIndicatorPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Edit Indicator</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              Modify indicator details and form schema
-            </p>
-            {isDirty && (
-              <p className="mt-1 text-sm text-yellow-600">
-                You have unsaved changes
-              </p>
-            )}
+            <p className="mt-1 text-sm text-gray-500">Modify indicator details and form schema</p>
+            {isDirty && <p className="mt-1 text-sm text-yellow-600">You have unsaved changes</p>}
           </div>
 
           <div className="flex gap-3">
@@ -216,12 +198,10 @@ export default function EditIndicatorPage() {
             </Label>
             <Input
               id="name"
-              {...register('name', { required: 'Name is required', minLength: 3 })}
+              {...register("name", { required: "Name is required", minLength: 3 })}
               placeholder="Enter indicator name"
             />
-            {errors.name && (
-              <p className="text-sm text-red-600">{errors.name.message}</p>
-            )}
+            {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
           </div>
 
           {/* Governance Area */}
@@ -231,7 +211,7 @@ export default function EditIndicatorPage() {
             </Label>
             <Select
               defaultValue={indicator.governance_area_id?.toString()}
-              onValueChange={(value) => setValue('governance_area_id', parseInt(value))}
+              onValueChange={(value) => setValue("governance_area_id", parseInt(value))}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select governance area" />
@@ -254,7 +234,7 @@ export default function EditIndicatorPage() {
             <Label htmlFor="description">Description (optional)</Label>
             <Textarea
               id="description"
-              {...register('description')}
+              {...register("description")}
               placeholder="Enter indicator description"
               rows={3}
             />

@@ -26,7 +26,6 @@ export default function ReportDetailsPage() {
     data: assessmentData,
     isLoading,
     error: fetchError,
-    refetch: refetchAssessment,
   } = useGetMlgooAssessmentsAssessmentId(assessmentId, {
     query: {
       queryKey: getGetMlgooAssessmentsAssessmentIdQueryKey(assessmentId),

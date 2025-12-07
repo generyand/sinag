@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/useAuthStore';
-import { useGetUsersMe } from '@sinag/shared';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useGetUsersMe } from "@sinag/shared";
 import {
   DashboardHeader,
   KPICards,
@@ -13,13 +13,13 @@ import {
   FailedIndicators,
   AdminDashboardSkeleton,
   BBIAnalyticsCard,
-} from '@/components/features/dashboard';
-import { useAdminDashboard } from '@/hooks/useAdminDashboard';
+} from "@/components/features/dashboard";
+import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 
 export default function AdminDashboardPage() {
   const router = useRouter();
   const { user, setUser, isAuthenticated } = useAuthStore();
-  const [selectedCycleId, setSelectedCycleId] = useState<number | undefined>(undefined);
+  const [selectedCycleId] = useState<number | undefined>(undefined);
 
   // Auto-generated hook to fetch current user data
   const userQuery = useGetUsersMe();
@@ -31,14 +31,14 @@ export default function AdminDashboardPage() {
   // Redirect unauthenticated users to login
   useEffect(() => {
     if (!isAuthenticated) {
-      router.replace('/login');
+      router.replace("/login");
     }
   }, [isAuthenticated, router]);
 
   // Handle user data fetch success
   useEffect(() => {
     if (userQuery.data && !user) {
-      console.log('User data fetched in dashboard:', userQuery.data);
+      console.log("User data fetched in dashboard:", userQuery.data);
       setUser(userQuery.data);
     }
   }, [userQuery.data, user, setUser]);
@@ -50,7 +50,7 @@ export default function AdminDashboardPage() {
         <div className="text-center">
           <div
             className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-4"
-            style={{ borderColor: 'var(--analytics-danger)' }}
+            style={{ borderColor: "var(--analytics-danger)" }}
           ></div>
           <p className="text-[var(--muted-foreground)]">Redirecting to login...</p>
         </div>
@@ -72,12 +72,19 @@ export default function AdminDashboardPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
-          <div
-            className="mb-4"
-            style={{ color: 'var(--analytics-danger)' }}
-          >
-            <svg className="h-12 w-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          <div className="mb-4" style={{ color: "var(--analytics-danger)" }}>
+            <svg
+              className="h-12 w-12 mx-auto"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+              />
             </svg>
           </div>
           <h2 className="text-xl font-semibold text-[var(--foreground)] mb-2">
@@ -90,8 +97,8 @@ export default function AdminDashboardPage() {
             onClick={() => dashboardQuery.refetch()}
             className="px-4 py-2 rounded-md transition-colors"
             style={{
-              backgroundColor: 'var(--kpi-blue-from)',
-              color: 'var(--kpi-blue-text)'
+              backgroundColor: "var(--kpi-blue-from)",
+              color: "var(--kpi-blue-text)",
             }}
           >
             Retry
@@ -123,7 +130,7 @@ export default function AdminDashboardPage() {
             performanceYear={dashboardData.performanceYear}
             assessmentYear={dashboardData.assessmentYear}
             onAssessmentYearChange={(year) => {
-              console.log('Year changed:', year);
+              console.log("Year changed:", year);
             }}
           />
         </header>
@@ -147,67 +154,104 @@ export default function AdminDashboardPage() {
             {/* Sidebar - 4 columns */}
             <aside className="xl:col-span-4 flex flex-col gap-6" aria-label="Dashboard sidebar">
               {/* System Status Card */}
-              <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-sm p-5" role="region" aria-labelledby="system-status-title">
-                <h3 id="system-status-title" className="text-base font-semibold text-[var(--foreground)] mb-4">
+              <div
+                className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-sm p-5"
+                role="region"
+                aria-labelledby="system-status-title"
+              >
+                <h3
+                  id="system-status-title"
+                  className="text-base font-semibold text-[var(--foreground)] mb-4"
+                >
                   System Status
                 </h3>
-                <ul className="space-y-3" role="list" aria-label="System status indicators">
+                <ul className="space-y-3" aria-label="System status indicators">
                   <li className="flex items-center justify-between p-3 rounded-sm bg-[var(--muted)]/20 border border-[var(--border)]">
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full animate-pulse bg-[var(--cityscape-yellow)]" aria-hidden="true" />
-                      <span className="text-sm font-medium text-[var(--foreground)]">Live Data</span>
+                      <div
+                        className="w-2 h-2 rounded-full animate-pulse bg-[var(--cityscape-yellow)]"
+                        aria-hidden="true"
+                      />
+                      <span className="text-sm font-medium text-[var(--foreground)]">
+                        Live Data
+                      </span>
                     </div>
-                    <span className="text-xs font-semibold text-[var(--cityscape-yellow)]" aria-label="Status: Active">
+                    <span
+                      className="text-xs font-semibold text-[var(--cityscape-yellow)]"
+                      aria-label="Status: Active"
+                    >
                       ACTIVE
                     </span>
                   </li>
                   <li className="flex items-center justify-between p-3 rounded-sm bg-[var(--muted)]/20 border border-[var(--border)]">
-                    <span className="text-sm font-medium text-[var(--foreground)]">Last Updated</span>
+                    <span className="text-sm font-medium text-[var(--foreground)]">
+                      Last Updated
+                    </span>
                     <span className="text-xs text-[var(--muted-foreground)]">
                       {new Date().toLocaleTimeString()}
                     </span>
                   </li>
                   <li className="flex items-center justify-between p-3 rounded-sm bg-[var(--muted)]/20 border border-[var(--border)]">
-                    <span className="text-sm font-medium text-[var(--foreground)]">Auto-refresh</span>
+                    <span className="text-sm font-medium text-[var(--foreground)]">
+                      Auto-refresh
+                    </span>
                     <span className="text-xs font-semibold text-[var(--text-secondary)]">30s</span>
                   </li>
                 </ul>
               </div>
 
               {/* Quick Actions Card */}
-              <nav className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-sm p-5 flex-1" aria-labelledby="quick-actions-title">
-                <h3 id="quick-actions-title" className="text-base font-semibold text-[var(--foreground)] mb-4">
+              <nav
+                className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-sm p-5 flex-1"
+                aria-labelledby="quick-actions-title"
+              >
+                <h3
+                  id="quick-actions-title"
+                  className="text-base font-semibold text-[var(--foreground)] mb-4"
+                >
                   Quick Actions
                 </h3>
-                <ul className="space-y-3" role="list">
+                <ul className="space-y-3">
                   <li>
                     <button
-                      onClick={() => router.push('/mlgoo/submissions')}
+                      onClick={() => router.push("/mlgoo/submissions")}
                       className="w-full text-left p-3 rounded-sm border border-[var(--border)] bg-[var(--muted)]/20 hover:bg-[var(--cityscape-yellow)]/10 hover:border-[var(--cityscape-yellow)] transition-all duration-200"
                       aria-label="Review Submissions - Check pending assessments"
                     >
-                      <div className="font-medium text-[var(--foreground)] text-sm">Review Submissions</div>
-                      <div className="text-xs text-[var(--text-secondary)]">Check pending assessments</div>
+                      <div className="font-medium text-[var(--foreground)] text-sm">
+                        Review Submissions
+                      </div>
+                      <div className="text-xs text-[var(--text-secondary)]">
+                        Check pending assessments
+                      </div>
                     </button>
                   </li>
                   <li>
                     <button
-                      onClick={() => router.push('/mlgoo/reports')}
+                      onClick={() => router.push("/mlgoo/reports")}
                       className="w-full text-left p-3 rounded-sm border border-[var(--border)] bg-[var(--muted)]/20 hover:bg-[var(--cityscape-yellow)]/10 hover:border-[var(--cityscape-yellow)] transition-all duration-200"
                       aria-label="Generate Reports - View analytics and insights"
                     >
-                      <div className="font-medium text-[var(--foreground)] text-sm">Generate Reports</div>
-                      <div className="text-xs text-[var(--text-secondary)]">View analytics & insights</div>
+                      <div className="font-medium text-[var(--foreground)] text-sm">
+                        Generate Reports
+                      </div>
+                      <div className="text-xs text-[var(--text-secondary)]">
+                        View analytics & insights
+                      </div>
                     </button>
                   </li>
                   <li>
                     <button
-                      onClick={() => router.push('/user-management')}
+                      onClick={() => router.push("/user-management")}
                       className="w-full text-left p-3 rounded-sm border border-[var(--border)] bg-[var(--muted)]/20 hover:bg-[var(--cityscape-yellow)]/10 hover:border-[var(--cityscape-yellow)] transition-all duration-200"
                       aria-label="Manage Users - User accounts and permissions"
                     >
-                      <div className="font-medium text-[var(--foreground)] text-sm">Manage Users</div>
-                      <div className="text-xs text-[var(--text-secondary)]">User accounts & permissions</div>
+                      <div className="font-medium text-[var(--foreground)] text-sm">
+                        Manage Users
+                      </div>
+                      <div className="text-xs text-[var(--text-secondary)]">
+                        User accounts & permissions
+                      </div>
                     </button>
                   </li>
                 </ul>
@@ -226,9 +270,7 @@ export default function AdminDashboardPage() {
 
         {/* BBI Analytics Section */}
         <section className="mb-6" aria-label="BBI Analytics">
-          <BBIAnalyticsCard
-            data={dashboardData.bbiAnalytics}
-          />
+          <BBIAnalyticsCard data={dashboardData.bbiAnalytics} />
         </section>
 
         {/* Failed Indicators - Full Width */}

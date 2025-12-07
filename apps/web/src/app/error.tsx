@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Global Error Page
@@ -7,10 +7,17 @@
  * It catches errors that occur outside of the main app layout.
  */
 
-import { useEffect } from 'react';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { useEffect } from "react";
+import { AlertTriangle, RefreshCw, Home } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -20,11 +27,11 @@ interface ErrorProps {
 export default function GlobalError({ error, reset }: ErrorProps) {
   useEffect(() => {
     // Log error to console in development, or to error tracking service in production
-    console.error('Global error:', error);
+    console.error("Global error:", error);
   }, [error]);
 
   return (
-    <html>
+    <html lang="en">
       <body>
         <div className="flex min-h-screen items-center justify-center p-4 bg-background">
           <Card className="w-full max-w-lg">
@@ -39,20 +46,16 @@ export default function GlobalError({ error, reset }: ErrorProps) {
             </CardHeader>
 
             <CardContent>
-              {process.env.NODE_ENV === 'development' && (
+              {process.env.NODE_ENV === "development" && (
                 <div className="rounded-lg bg-muted p-4 text-sm">
-                  <p className="font-mono text-destructive break-words">
-                    {error.message}
-                  </p>
+                  <p className="font-mono text-destructive break-words">{error.message}</p>
                   {error.digest && (
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      Error ID: {error.digest}
-                    </p>
+                    <p className="mt-2 text-xs text-muted-foreground">Error ID: {error.digest}</p>
                   )}
                 </div>
               )}
 
-              {process.env.NODE_ENV === 'production' && error.digest && (
+              {process.env.NODE_ENV === "production" && error.digest && (
                 <p className="text-center text-sm text-muted-foreground">
                   Error Reference: {error.digest}
                 </p>
@@ -66,7 +69,7 @@ export default function GlobalError({ error, reset }: ErrorProps) {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => (window.location.href = '/')}
+                onClick={() => (window.location.href = "/")}
                 className="w-full sm:w-auto"
               >
                 <Home className="mr-2 h-4 w-4" />

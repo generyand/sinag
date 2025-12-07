@@ -7,13 +7,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Eye,
@@ -75,16 +69,14 @@ export default function ChangePasswordPage() {
     },
   ];
 
-  const allRequirementsMet = passwordRequirements.every((req) => req.met);
-
   // Add change-password-page class to html and body for CSS targeting
   useEffect(() => {
-    document.documentElement.classList.add('change-password-page');
-    document.body.classList.add('change-password-page');
-    
+    document.documentElement.classList.add("change-password-page");
+    document.body.classList.add("change-password-page");
+
     return () => {
-      document.documentElement.classList.remove('change-password-page');
-      document.body.classList.remove('change-password-page');
+      document.documentElement.classList.remove("change-password-page");
+      document.body.classList.remove("change-password-page");
     };
   }, []);
 
@@ -130,7 +122,7 @@ export default function ChangePasswordPage() {
             error.detail.forEach((err: ValidationError) => {
               if (err.loc && err.loc.length > 0) {
                 const field = String(err.loc[err.loc.length - 1]);
-                validationErrors[field] = err.msg || 'Validation error';
+                validationErrors[field] = err.msg || "Validation error";
               }
             });
             setErrors(validationErrors);
@@ -154,20 +146,15 @@ export default function ChangePasswordPage() {
     if (!formData.new_password) {
       newErrors.new_password = "New password is required";
     } else if (formData.new_password.length < 12) {
-      newErrors.new_password =
-        "New password must be at least 12 characters long";
+      newErrors.new_password = "New password must be at least 12 characters long";
     } else if (!/[A-Z]/.test(formData.new_password)) {
-      newErrors.new_password =
-        "Password must contain at least one uppercase letter";
+      newErrors.new_password = "Password must contain at least one uppercase letter";
     } else if (!/[a-z]/.test(formData.new_password)) {
-      newErrors.new_password =
-        "Password must contain at least one lowercase letter";
+      newErrors.new_password = "Password must contain at least one lowercase letter";
     } else if (!/\d/.test(formData.new_password)) {
-      newErrors.new_password =
-        "Password must contain at least one digit";
+      newErrors.new_password = "Password must contain at least one digit";
     } else if (!/[!@#$%^&*(),.?":{}|<>\-_=+\[\]\\;'`~]/.test(formData.new_password)) {
-      newErrors.new_password =
-        "Password must contain at least one special character";
+      newErrors.new_password = "Password must contain at least one special character";
     }
 
     if (!formData.confirm_password) {
@@ -177,8 +164,7 @@ export default function ChangePasswordPage() {
     }
 
     if (formData.current_password === formData.new_password) {
-      newErrors.new_password =
-        "New password must be different from current password";
+      newErrors.new_password = "New password must be different from current password";
     }
 
     setErrors(newErrors);
@@ -283,7 +269,10 @@ export default function ChangePasswordPage() {
                     </Alert>
                   )}
 
-                  <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8 flex-1 flex flex-col">
+                  <form
+                    onSubmit={handleSubmit}
+                    className="space-y-6 sm:space-y-8 flex-1 flex flex-col"
+                  >
                     {/* Show/Hide Passwords Toggle */}
                     <div className="flex items-center justify-end">
                       <button
@@ -307,7 +296,10 @@ export default function ChangePasswordPage() {
 
                     {/* Current Password */}
                     <div className="space-y-3">
-                      <Label htmlFor="current_password" className="text-base font-medium text-[var(--foreground)]">
+                      <Label
+                        htmlFor="current_password"
+                        className="text-base font-medium text-[var(--foreground)]"
+                      >
                         Current Password
                       </Label>
                       <Input
@@ -334,7 +326,10 @@ export default function ChangePasswordPage() {
 
                     {/* New Password */}
                     <div className="space-y-3">
-                      <Label htmlFor="new_password" className="text-base font-medium text-[var(--foreground)]">
+                      <Label
+                        htmlFor="new_password"
+                        className="text-base font-medium text-[var(--foreground)]"
+                      >
                         New Password
                       </Label>
                       <Input
@@ -385,7 +380,10 @@ export default function ChangePasswordPage() {
 
                     {/* Confirm New Password */}
                     <div className="space-y-3">
-                      <Label htmlFor="confirm_password" className="text-base font-medium text-[var(--foreground)]">
+                      <Label
+                        htmlFor="confirm_password"
+                        className="text-base font-medium text-[var(--foreground)]"
+                      >
                         Confirm New Password
                       </Label>
                       <Input
@@ -433,11 +431,11 @@ export default function ChangePasswordPage() {
 
                     {/* Submit Button */}
                     <div className="pt-4 sm:pt-6 mt-auto">
-                                               <Button
-                           type="submit"
-                           className="w-full h-12 sm:h-14 bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] hover:from-[var(--cityscape-yellow-dark)] hover:to-[var(--cityscape-yellow-darker)] text-[var(--cityscape-accent-foreground)] font-semibold text-sm sm:text-base rounded-sm shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center space-x-2 sm:space-x-3"
-                           disabled={changePasswordMutation.isPending}
-                         >
+                      <Button
+                        type="submit"
+                        className="w-full h-12 sm:h-14 bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] hover:from-[var(--cityscape-yellow-dark)] hover:to-[var(--cityscape-yellow-darker)] text-[var(--cityscape-accent-foreground)] font-semibold text-sm sm:text-base rounded-sm shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center space-x-2 sm:space-x-3"
+                        disabled={changePasswordMutation.isPending}
+                      >
                         {changePasswordMutation.isPending ? (
                           <>
                             <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-2 border-white border-t-transparent"></div>

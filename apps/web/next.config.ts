@@ -1,5 +1,4 @@
 import type { NextConfig } from "next";
-import { resolve, dirname } from "path";
 
 // Validate required environment variables in production builds
 const isProduction = process.env.NODE_ENV === "production";
@@ -9,9 +8,7 @@ if (isProduction && (!apiUrl || apiUrl.includes("localhost"))) {
   console.warn(
     "\x1b[33m⚠️  WARNING: NEXT_PUBLIC_API_URL is not set or contains 'localhost' in production build.\x1b[0m"
   );
-  console.warn(
-    "\x1b[33m   Set NEXT_PUBLIC_API_URL to your production API URL.\x1b[0m"
-  );
+  console.warn("\x1b[33m   Set NEXT_PUBLIC_API_URL to your production API URL.\x1b[0m");
 }
 
 const nextConfig: NextConfig = {
