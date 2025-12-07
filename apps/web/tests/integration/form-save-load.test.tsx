@@ -3,7 +3,8 @@
 // Epic 3 - Task 3.18.10
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
+import { renderWithProviders } from "@/tests/test-utils";
 import userEvent from "@testing-library/user-event";
 import { DynamicFormRenderer } from "@/components/features/forms/DynamicFormRenderer";
 import type { FormSchema } from "@sinag/shared";
@@ -29,8 +30,9 @@ const mockUseGetIndicatorsIndicatorIdFormSchema =
   useGetIndicatorsIndicatorIdFormSchema as ReturnType<typeof vi.fn>;
 const mockUsePostAssessmentsAssessmentIdAnswers =
   usePostAssessmentsAssessmentIdAnswers as ReturnType<typeof vi.fn>;
-const mockUseGetAssessmentsAssessmentIdAnswers =
-  useGetAssessmentsAssessmentIdAnswers as ReturnType<typeof vi.fn>;
+const mockUseGetAssessmentsAssessmentIdAnswers = useGetAssessmentsAssessmentIdAnswers as ReturnType<
+  typeof vi.fn
+>;
 
 describe("Integration: Form Save and Load Flow", () => {
   const testSchema: FormSchema = {
@@ -105,7 +107,7 @@ describe("Integration: Form Save and Load Flow", () => {
       error: null,
     });
 
-    render(
+    renderWithProviders(
       <DynamicFormRenderer
         formSchema={testSchema}
         assessmentId={1}
@@ -170,12 +172,8 @@ describe("Integration: Form Save and Load Flow", () => {
       error: null,
     });
 
-    render(
-      <DynamicFormRenderer
-        formSchema={testSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+    renderWithProviders(
+      <DynamicFormRenderer formSchema={testSchema} assessmentId={1} indicatorId={1} />
     );
 
     // Verify all fields are pre-populated with saved data
@@ -207,12 +205,8 @@ describe("Integration: Form Save and Load Flow", () => {
     });
 
     // Initial render with no saved data
-    const { unmount } = render(
-      <DynamicFormRenderer
-        formSchema={testSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+    const { unmount } = renderWithProviders(
+      <DynamicFormRenderer formSchema={testSchema} assessmentId={1} indicatorId={1} />
     );
 
     // Fill and save
@@ -228,10 +222,13 @@ describe("Integration: Form Save and Load Flow", () => {
     const saveButton = screen.getByRole("button", { name: /save/i });
     await user.click(saveButton);
 
-    await waitFor(() => {
-      expect(mockMutateAsync).toHaveBeenCalled();
-      expect(savedResponses).not.toBeNull();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(mockMutateAsync).toHaveBeenCalled();
+        expect(savedResponses).not.toBeNull();
+      },
+      { timeout: 3000 }
+    );
 
     // Unmount and re-render with saved data
     unmount();
@@ -249,12 +246,8 @@ describe("Integration: Form Save and Load Flow", () => {
       error: null,
     });
 
-    render(
-      <DynamicFormRenderer
-        formSchema={testSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+    renderWithProviders(
+      <DynamicFormRenderer formSchema={testSchema} assessmentId={1} indicatorId={1} />
     );
 
     // Verify data was restored
@@ -274,12 +267,8 @@ describe("Integration: Form Save and Load Flow", () => {
       error: null,
     });
 
-    render(
-      <DynamicFormRenderer
-        formSchema={testSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+    renderWithProviders(
+      <DynamicFormRenderer formSchema={testSchema} assessmentId={1} indicatorId={1} />
     );
 
     // Verify all fields are empty
@@ -320,12 +309,8 @@ describe("Integration: Form Save and Load Flow", () => {
       error: null,
     });
 
-    render(
-      <DynamicFormRenderer
-        formSchema={testSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+    renderWithProviders(
+      <DynamicFormRenderer formSchema={testSchema} assessmentId={1} indicatorId={1} />
     );
 
     // Verify pre-populated with old data
@@ -367,12 +352,8 @@ describe("Integration: Form Save and Load Flow", () => {
       error: null,
     });
 
-    render(
-      <DynamicFormRenderer
-        formSchema={testSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+    renderWithProviders(
+      <DynamicFormRenderer formSchema={testSchema} assessmentId={1} indicatorId={1} />
     );
 
     // Fill only required fields, leave optional empty
@@ -417,16 +398,12 @@ describe("Integration: Form Save and Load Flow", () => {
       error: null,
     });
 
-    render(
-      <DynamicFormRenderer
-        formSchema={testSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+    renderWithProviders(
+      <DynamicFormRenderer formSchema={testSchema} assessmentId={1} indicatorId={1} />
     );
 
     // Should show skeleton loaders
-    const skeletons = document.querySelectorAll('.h-8, .h-32');
+    const skeletons = document.querySelectorAll(".h-8, .h-32");
     expect(skeletons.length).toBeGreaterThan(0);
   });
 });

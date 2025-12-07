@@ -3,7 +3,8 @@
 // Epic 3 - Task 3.18.9
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
+import { renderWithProviders } from "@/tests/test-utils";
 import userEvent from "@testing-library/user-event";
 import { DynamicFormRenderer } from "@/components/features/forms/DynamicFormRenderer";
 import type { FormSchema } from "@sinag/shared";
@@ -29,8 +30,9 @@ const mockUseGetIndicatorsIndicatorIdFormSchema =
   useGetIndicatorsIndicatorIdFormSchema as ReturnType<typeof vi.fn>;
 const mockUsePostAssessmentsAssessmentIdAnswers =
   usePostAssessmentsAssessmentIdAnswers as ReturnType<typeof vi.fn>;
-const mockUseGetAssessmentsAssessmentIdAnswers =
-  useGetAssessmentsAssessmentIdAnswers as ReturnType<typeof vi.fn>;
+const mockUseGetAssessmentsAssessmentIdAnswers = useGetAssessmentsAssessmentIdAnswers as ReturnType<
+  typeof vi.fn
+>;
 
 describe("Integration: Form Submission with Validation Errors", () => {
   const testSchema: FormSchema = {
@@ -104,12 +106,8 @@ describe("Integration: Form Submission with Validation Errors", () => {
       error: null,
     });
 
-    render(
-      <DynamicFormRenderer
-        formSchema={testSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+    renderWithProviders(
+      <DynamicFormRenderer formSchema={testSchema} assessmentId={1} indicatorId={1} />
     );
 
     // Try to submit without filling any fields
@@ -132,12 +130,8 @@ describe("Integration: Form Submission with Validation Errors", () => {
   it("should display inline errors for each missing required field", async () => {
     const user = userEvent.setup();
 
-    render(
-      <DynamicFormRenderer
-        formSchema={testSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+    renderWithProviders(
+      <DynamicFormRenderer formSchema={testSchema} assessmentId={1} indicatorId={1} />
     );
 
     // Try to submit without filling fields
@@ -158,12 +152,8 @@ describe("Integration: Form Submission with Validation Errors", () => {
   it("should validate number field constraints", async () => {
     const user = userEvent.setup();
 
-    render(
-      <DynamicFormRenderer
-        formSchema={testSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+    renderWithProviders(
+      <DynamicFormRenderer formSchema={testSchema} assessmentId={1} indicatorId={1} />
     );
 
     // Fill age with value below minimum (18)
@@ -187,12 +177,8 @@ describe("Integration: Form Submission with Validation Errors", () => {
   it("should clear errors when fields are filled correctly", async () => {
     const user = userEvent.setup();
 
-    render(
-      <DynamicFormRenderer
-        formSchema={testSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+    renderWithProviders(
+      <DynamicFormRenderer formSchema={testSchema} assessmentId={1} indicatorId={1} />
     );
 
     // Try to submit empty form to trigger errors
@@ -245,7 +231,7 @@ describe("Integration: Form Submission with Validation Errors", () => {
       error: null,
     });
 
-    render(
+    renderWithProviders(
       <DynamicFormRenderer
         formSchema={testSchema}
         assessmentId={1}
@@ -284,12 +270,8 @@ describe("Integration: Form Submission with Validation Errors", () => {
   it("should show validation summary when multiple fields have errors", async () => {
     const user = userEvent.setup();
 
-    render(
-      <DynamicFormRenderer
-        formSchema={testSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+    renderWithProviders(
+      <DynamicFormRenderer formSchema={testSchema} assessmentId={1} indicatorId={1} />
     );
 
     // Submit empty form
@@ -317,12 +299,8 @@ describe("Integration: Form Submission with Validation Errors", () => {
       error: null,
     });
 
-    render(
-      <DynamicFormRenderer
-        formSchema={testSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+    renderWithProviders(
+      <DynamicFormRenderer formSchema={testSchema} assessmentId={1} indicatorId={1} />
     );
 
     // Fill fields with age above maximum (100)

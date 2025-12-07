@@ -461,3 +461,25 @@ def blgu_user(db_session, mock_barangay):
     db_session.commit()
     db_session.refresh(user)
     return user
+
+
+@pytest.fixture
+def mock_indicator(db_session, mock_governance_area):
+    """Create a mock indicator for testing"""
+    import uuid
+
+    from app.db.models.governance_area import Indicator
+
+    unique_id = uuid.uuid4().hex[:8]
+
+    indicator = Indicator(
+        name=f"Test Indicator {unique_id}",
+        indicator_code=f"TI{unique_id[:3].upper()}",
+        governance_area_id=mock_governance_area.id,
+        sort_order=1,
+        description="Test indicator for MOV file tests",
+    )
+    db_session.add(indicator)
+    db_session.commit()
+    db_session.refresh(indicator)
+    return indicator

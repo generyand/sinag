@@ -24,10 +24,13 @@ import os
 import sys
 from pathlib import Path
 
+import pytest
+
 # Add the app directory to the Python path
 sys.path.insert(0, str(Path(__file__).parent))
 
 
+@pytest.mark.asyncio
 async def test_startup(scenario: str = "success"):
     """Test startup checks with different scenarios."""
 
