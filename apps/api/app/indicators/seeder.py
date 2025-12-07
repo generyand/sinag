@@ -126,7 +126,7 @@ def _parse_upload_sections_from_instructions(
                 else:
                     current_option_id = f"option_{len(upload_sections) + 1}"
 
-                # Add section header
+                # Add section header with option_group for frontend grouping
                 upload_sections.append(
                     {
                         "field_id": f"section_header_{len(upload_sections) + 1}",
@@ -134,6 +134,7 @@ def _parse_upload_sections_from_instructions(
                         "label": line_stripped,
                         "description": "",
                         "required": False,
+                        "option_group": current_option_id,
                     }
                 )
             # Detect "OR" separators
