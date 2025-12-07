@@ -249,7 +249,7 @@ class ChecklistItem(Base):
     )
 
     # Item identifier (e.g., "1_1_1_a", "1_1_1_b")
-    item_id: Mapped[str] = mapped_column(String(20), nullable=False)
+    item_id: Mapped[str] = mapped_column(String(50), nullable=False)
 
     # Display text (e.g., "a. Barangay Financial Report")
     label: Mapped[str] = mapped_column(String, nullable=False)

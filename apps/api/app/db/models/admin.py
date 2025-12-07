@@ -36,7 +36,7 @@ class AuditLog(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
 
     # Who made the change
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
 
     # What entity was changed
     entity_type = Column(
