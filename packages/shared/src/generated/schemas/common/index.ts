@@ -607,6 +607,8 @@ export interface FileUploadField {
   conditional_mov_requirement?: FileUploadFieldConditionalMovRequirement;
   /** Optional group identifier for OR-logic validation (e.g., 'option_a', 'option_b') */
   option_group?: FileUploadFieldOptionGroup;
+  /** Group identifier for SHARED_PLUS_OR_LOGIC completion tracking (e.g., 'shared', 'option_a', 'option_b'). Used separately from option_group to avoid accordion rendering. */
+  completion_group?: FileUploadFieldCompletionGroup;
 }
 
 
@@ -614,6 +616,12 @@ export interface FileUploadField {
  * FileUploadFieldAllowedFileTypes
  */
 export type FileUploadFieldAllowedFileTypes = string[] | null;
+
+
+/**
+ * FileUploadFieldCompletionGroup
+ */
+export type FileUploadFieldCompletionGroup = string | null;
 
 
 /**
