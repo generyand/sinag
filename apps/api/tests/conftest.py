@@ -6,6 +6,11 @@ Key isolation strategy:
 1. Each test runs within a SAVEPOINT transaction
 2. After test completes, we ROLLBACK to the savepoint
 3. This ensures complete isolation between tests without needing to delete data
+
+Performance optimizations:
+1. Fast password hashing (SHA256 instead of bcrypt for speed)
+2. Transaction-based isolation instead of table deletion
+3. Session-scoped database engine for reduced overhead
 """
 
 import os
@@ -20,6 +25,46 @@ os.environ["SKIP_STARTUP_SEEDING"] = "true"
 
 # Add the parent directory to Python path so we can import main and app modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# ============================================================================
+# PERFORMANCE OPTIMIZATION: Fast Password Hashing for Tests
+# ============================================================================
+# bcrypt is intentionally slow (~100ms per hash). In tests, we use a fast
+# SHA256-based hash that's ~1000x faster, significantly speeding up test runs.
+# This is safe because we're not testing password security in unit tests.
+
+import hashlib
+
+
+class FastTestPasswordContext:
+    """
+    Ultra-fast password hashing for tests only.
+    Mimics passlib.CryptContext interface but uses SHA256 for speed.
+    """
+
+    def __init__(self, schemes=None, deprecated=None):
+        self.schemes = schemes or ["sha256"]
+        self.deprecated = deprecated
+
+    def hash(self, password: str) -> str:
+        """Fast hash using SHA256 with a test-specific prefix"""
+        return "test$" + hashlib.sha256(password.encode()).hexdigest()
+
+    def verify(self, plain_password: str, hashed_password: str) -> bool:
+        """Verify password against hash"""
+        # Handle both fast test hashes and actual bcrypt hashes
+        if hashed_password.startswith("test$"):
+            expected = "test$" + hashlib.sha256(plain_password.encode()).hexdigest()
+            return expected == hashed_password
+        # Fallback for any bcrypt hashes that might exist
+        from passlib.context import CryptContext
+
+        real_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        return real_context.verify(plain_password, hashed_password)
+
+
+# Create fast password context for tests
+_fast_pwd_context = FastTestPasswordContext()
 
 # IMPORTANT: Patch JSONB BEFORE importing any models
 # SQLite doesn't support JSONB, so we need to replace it with a compatible JSON type
@@ -40,6 +85,11 @@ class JSONBCompatible(JSON):
 
 # Replace JSONB with our compatible version
 postgresql.JSONB = JSONBCompatible
+
+# Patch password context BEFORE importing app modules
+import app.core.security
+
+app.core.security.pwd_context = _fast_pwd_context
 
 import pytest
 from fastapi.testclient import TestClient
@@ -222,12 +272,9 @@ def mock_blgu_user(db_session, mock_barangay):
     """Create a mock BLGU user for testing"""
     import uuid
 
-    from passlib.context import CryptContext
-
+    from app.core.security import pwd_context
     from app.db.enums import UserRole
     from app.db.models.user import User
-
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
     # Use unique email to avoid conflicts
     unique_email = f"blgu{uuid.uuid4().hex[:8]}@example.com"
@@ -290,13 +337,10 @@ def mock_assessment_without_barangay(db_session):
     import uuid
     from datetime import datetime
 
-    from passlib.context import CryptContext
-
+    from app.core.security import pwd_context
     from app.db.enums import AssessmentStatus, UserRole
     from app.db.models.assessment import Assessment
     from app.db.models.user import User
-
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
     # Use unique email to avoid conflicts
     unique_email = f"nobarangay{uuid.uuid4().hex[:8]}@example.com"
@@ -339,12 +383,9 @@ def mlgoo_user(db_session):
     """Create a MLGOO_DILG admin user for testing"""
     import uuid
 
-    from passlib.context import CryptContext
-
+    from app.core.security import pwd_context
     from app.db.enums import UserRole
     from app.db.models.user import User
-
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
     unique_email = f"mlgoo{uuid.uuid4().hex[:8]}@dilg.gov.ph"
 
@@ -385,12 +426,9 @@ def validator_user(db_session, mock_governance_area):
     """Create a VALIDATOR user for testing"""
     import uuid
 
-    from passlib.context import CryptContext
-
+    from app.core.security import pwd_context
     from app.db.enums import UserRole
     from app.db.models.user import User
-
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
     unique_email = f"validator{uuid.uuid4().hex[:8]}@dilg.gov.ph"
 
@@ -413,12 +451,9 @@ def assessor_user(db_session):
     """Create an ASSESSOR user for testing"""
     import uuid
 
-    from passlib.context import CryptContext
-
+    from app.core.security import pwd_context
     from app.db.enums import UserRole
     from app.db.models.user import User
-
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
     unique_email = f"assessor{uuid.uuid4().hex[:8]}@dilg.gov.ph"
 
@@ -440,12 +475,9 @@ def blgu_user(db_session, mock_barangay):
     """Alias for mock_blgu_user for consistency in naming"""
     import uuid
 
-    from passlib.context import CryptContext
-
+    from app.core.security import pwd_context
     from app.db.enums import UserRole
     from app.db.models.user import User
-
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
     unique_email = f"blgu{uuid.uuid4().hex[:8]}@example.com"
 

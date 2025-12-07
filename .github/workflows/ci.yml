@@ -24,39 +24,15 @@ concurrency:
 
 jobs:
   # ============================================================================
-  # Backend Quality Checks
+  # Backend Linting and Type Checks (Fast - runs first)
   # ============================================================================
-  backend-checks:
-    name: Backend - Lint, Type Check, Test
+  backend-lint:
+    name: Backend - Lint & Type Check
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: apps/api
-
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: test_db
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
 
     steps:
       - name: Checkout repository
@@ -91,29 +67,134 @@ jobs:
         run: uv run mypy app/ --show-error-codes
         continue-on-error: true
 
-      - name: Run tests with coverage
-        continue-on-error: true # Don't block CI while fixing tests
+  # ============================================================================
+  # Backend Tests (Parallelized by test group)
+  # ============================================================================
+  backend-tests:
+    name: Backend Tests - ${{ matrix.test-group }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: backend-lint  # Only run tests if linting passes
+    strategy:
+      fail-fast: false  # Continue other groups even if one fails
+      matrix:
+        test-group:
+          - api
+          - services
+          - schemas-core
+          - algorithms-security
+    defaults:
+      run:
+        working-directory: apps/api
+
+    services:
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Cache uv dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('apps/api/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Run tests - API
+        if: matrix.test-group == 'api'
+        continue-on-error: true
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
           SECRET_KEY: test-secret-key-for-ci-pipeline-1234567890abcdef
           CELERY_BROKER_URL: redis://localhost:6379/0
           SUPABASE_URL: https://example.supabase.co
           SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
           GEMINI_API_KEY: test-gemini-key
         run: |
-          uv run pytest tests/ \
+          uv run pytest tests/api/ \
             -n auto \
+            --dist=loadfile \
+            --cov=app/api \
+            --cov-report=xml:coverage-api.xml \
+            --tb=short
+
+      - name: Run tests - Services
+        if: matrix.test-group == 'services'
+        continue-on-error: true
+        env:
+          SECRET_KEY: test-secret-key-for-ci-pipeline-1234567890abcdef
+          CELERY_BROKER_URL: redis://localhost:6379/0
+          SUPABASE_URL: https://example.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
+          GEMINI_API_KEY: test-gemini-key
+        run: |
+          uv run pytest tests/services/ tests/workers/ tests/workflows/ \
+            -n auto \
+            --dist=loadfile \
+            --cov=app/services \
+            --cov-report=xml:coverage-services.xml \
+            --tb=short
+
+      - name: Run tests - Schemas & Core
+        if: matrix.test-group == 'schemas-core'
+        continue-on-error: true
+        env:
+          SECRET_KEY: test-secret-key-for-ci-pipeline-1234567890abcdef
+          CELERY_BROKER_URL: redis://localhost:6379/0
+          SUPABASE_URL: https://example.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
+          GEMINI_API_KEY: test-gemini-key
+        run: |
+          uv run pytest tests/schemas/ tests/core/ \
+            -n auto \
+            --dist=loadfile \
+            --cov=app/schemas \
+            --cov-report=xml:coverage-schemas.xml \
+            --tb=short
+
+      - name: Run tests - Algorithms & Security
+        if: matrix.test-group == 'algorithms-security'
+        continue-on-error: true
+        env:
+          SECRET_KEY: test-secret-key-for-ci-pipeline-1234567890abcdef
+          CELERY_BROKER_URL: redis://localhost:6379/0
+          SUPABASE_URL: https://example.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
+          GEMINI_API_KEY: test-gemini-key
+        run: |
+          uv run pytest tests/algorithms/ tests/security/ \
+            -n auto \
+            --dist=loadfile \
             --cov=app \
-            --cov-report=term-missing \
-            --cov-report=xml \
+            --cov-report=xml:coverage-algorithms.xml \
             --tb=short
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: backend-coverage
-          path: apps/api/coverage.xml
+          name: backend-coverage-${{ matrix.test-group }}
+          path: apps/api/coverage-*.xml
           retention-days: 7
 
   # ============================================================================
@@ -299,7 +380,7 @@ jobs:
   ci-status:
     name: CI Status
     runs-on: ubuntu-latest
-    needs: [backend-checks, frontend-checks, type-generation]
+    needs: [backend-lint, backend-tests, frontend-checks, type-generation]
     if: always()
 
     steps:
@@ -308,10 +389,16 @@ jobs:
           echo "## CI Status Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          if [ "${{ needs.backend-checks.result }}" == "success" ]; then
-            echo "- ✅ Backend checks passed" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.backend-lint.result }}" == "success" ]; then
+            echo "- ✅ Backend lint & type checks passed" >> $GITHUB_STEP_SUMMARY
           else
-            echo "- ❌ Backend checks failed" >> $GITHUB_STEP_SUMMARY
+            echo "- ❌ Backend lint & type checks failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.backend-tests.result }}" == "success" ]; then
+            echo "- ✅ Backend tests passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ⚠️ Backend tests failed (non-blocking)" >> $GITHUB_STEP_SUMMARY
           fi
 
           if [ "${{ needs.frontend-checks.result }}" == "success" ]; then
@@ -326,8 +413,8 @@ jobs:
             echo "- ❌ Type generation out of sync" >> $GITHUB_STEP_SUMMARY
           fi
 
-          # Fail if critical checks failed
-          if [ "${{ needs.backend-checks.result }}" != "success" ] || [ "${{ needs.frontend-checks.result }}" != "success" ]; then
+          # Fail if critical checks failed (lint is required, tests are non-blocking for now)
+          if [ "${{ needs.backend-lint.result }}" != "success" ] || [ "${{ needs.frontend-checks.result }}" != "success" ]; then
             echo ""
             echo "::error::Critical CI checks failed. Please fix the issues before merging."
             exit 1
