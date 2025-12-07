@@ -1226,6 +1226,58 @@ def request_rework(
     assessment.rework_requested_by = current_user.id
     assessment.rework_requested_at = datetime.utcnow()
     assessment.rework_comments = comments
+
+    # CRITICAL: Reset is_completed for indicators WITH feedback (comments or MOV annotations)
+    # This ensures the dashboard shows correct completion count during rework
+    from app.db.models.assessment import MOVAnnotation
+
+    # Get all MOV annotations grouped by indicator
+    mov_file_ids = [mf.id for mf in assessment.mov_files]
+    annotations_by_indicator: dict[int, list] = {}
+
+    if mov_file_ids:
+        all_annotations = (
+            db.query(MOVAnnotation).filter(MOVAnnotation.mov_file_id.in_(mov_file_ids)).all()
+        )
+        for annotation in all_annotations:
+            mov_file = next(
+                (mf for mf in assessment.mov_files if mf.id == annotation.mov_file_id),
+                None,
+            )
+            if mov_file:
+                indicator_id = mov_file.indicator_id
+                if indicator_id not in annotations_by_indicator:
+                    annotations_by_indicator[indicator_id] = []
+                annotations_by_indicator[indicator_id].append(annotation)
+
+    # Reset is_completed for responses with feedback
+    for response in assessment.responses:
+        # Check for public feedback comments (non-internal, validation type)
+        has_public_comments = any(
+            fc.comment_type == "validation" and not fc.is_internal_note and fc.comment
+            for fc in response.feedback_comments
+        )
+
+        # Check for MOV annotations on this indicator
+        has_mov_annotations = (
+            response.indicator_id in annotations_by_indicator
+            and len(annotations_by_indicator[response.indicator_id]) > 0
+        )
+
+        # Reset completion for indicators with feedback
+        if has_public_comments or has_mov_annotations:
+            response.requires_rework = True
+            response.is_completed = False
+
+            # Clear validation status and assessor checklist data
+            response.validation_status = None
+            if response.response_data:
+                response.response_data = {
+                    k: v
+                    for k, v in response.response_data.items()
+                    if not k.startswith("assessor_val_")
+                }
+
     db.commit()
     db.refresh(assessment)
 
