@@ -3,7 +3,6 @@
 
 from datetime import datetime
 from typing import Optional
-from uuid import UUID, uuid4
 
 from sqlalchemy import (
     JSON,
@@ -18,7 +17,6 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -226,65 +224,6 @@ class IndicatorHistory(Base):
     # Relationships
     indicator = relationship("Indicator", back_populates="history")
     archived_by_user = relationship("User", foreign_keys=[archived_by])
-
-
-class IndicatorDraft(Base):
-    """
-    IndicatorDraft table model for database storage.
-
-    Stores draft versions of indicator hierarchies during the creation wizard process.
-    Supports auto-save functionality with optimistic locking to prevent concurrent edit conflicts.
-    """
-
-    __tablename__ = "indicator_drafts"
-
-    # Primary key
-    id: Mapped[UUID] = mapped_column(
-        PostgresUUID(as_uuid=True), primary_key=True, default=lambda: uuid4()
-    )
-
-    # User who created the draft
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
-
-    # Governance area for this indicator set
-    governance_area_id: Mapped[int] = mapped_column(
-        ForeignKey("governance_areas.id"), nullable=False, index=True
-    )
-
-    # Wizard state
-    creation_mode: Mapped[str] = mapped_column(String(50), nullable=False)
-    current_step: Mapped[int] = mapped_column(nullable=False, default=1)
-    status: Mapped[str] = mapped_column(String(50), nullable=False, default="in_progress")
-
-    # Draft data stored as JSONB (array of indicator nodes)
-    data: Mapped[dict] = mapped_column(JSON, nullable=False, server_default="[]")
-
-    # Optional title for the draft
-    title: Mapped[str | None] = mapped_column(String(200), nullable=True)
-
-    # Timestamps
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now()
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now()
-    )
-    last_accessed_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now()
-    )
-
-    # Optimistic locking
-    version: Mapped[int] = mapped_column(nullable=False, default=1)
-
-    # Draft locking to prevent concurrent edits
-    lock_token: Mapped[UUID | None] = mapped_column(PostgresUUID(as_uuid=True), nullable=True)
-    locked_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
-    locked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-
-    # Relationships
-    user = relationship("User", foreign_keys=[user_id])
-    governance_area = relationship("GovernanceArea")
-    locked_by_user = relationship("User", foreign_keys=[locked_by_user_id])
 
 
 class ChecklistItem(Base):
