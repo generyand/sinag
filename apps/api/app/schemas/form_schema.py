@@ -170,6 +170,10 @@ class FileUploadField(FormFieldBase):
         None,
         description="Optional group identifier for OR-logic validation (e.g., 'option_a', 'option_b')",
     )
+    completion_group: str | None = Field(
+        None,
+        description="Group identifier for SHARED_PLUS_OR_LOGIC completion tracking (e.g., 'shared', 'option_a', 'option_b'). Used separately from option_group to avoid accordion rendering.",
+    )
 
 
 class SectionHeaderField(FormFieldBase):

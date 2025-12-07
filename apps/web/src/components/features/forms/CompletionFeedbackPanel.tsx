@@ -124,18 +124,18 @@ export function CompletionFeedbackPanel({
     // For SHARED+OR logic (e.g., indicator 4.1.6, 4.8.4)
     // Pattern: SHARED (required) + (OPTION A OR OPTION B) = 2 total requirements
     if (isSharedPlusOrLogic) {
-      // Group fields by option_group
+      // Group fields by completion_group (not option_group to avoid accordion rendering)
       const sharedFields: FormSchemaFieldsItem[] = [];
       const optionAFields: FormSchemaFieldsItem[] = [];
       const optionBFields: FormSchemaFieldsItem[] = [];
 
       requiredFields.forEach((field) => {
-        const optionGroup = (field as any).option_group;
-        if (optionGroup === 'shared') {
+        const completionGroup = (field as any).completion_group;
+        if (completionGroup === 'shared') {
           sharedFields.push(field);
-        } else if (optionGroup === 'option_a') {
+        } else if (completionGroup === 'option_a') {
           optionAFields.push(field);
-        } else if (optionGroup === 'option_b') {
+        } else if (completionGroup === 'option_b') {
           optionBFields.push(field);
         }
       });

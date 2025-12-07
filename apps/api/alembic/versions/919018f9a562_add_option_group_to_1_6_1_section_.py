@@ -66,7 +66,7 @@ def upgrade() -> None:
             sa.text("UPDATE indicators SET form_schema = CAST(:schema AS jsonb) WHERE id = :id"),
             {"schema": json.dumps(form_schema), "id": indicator_id}
         )
-        print(f"Updated indicator 1.6.1 form_schema")
+        print("Updated indicator 1.6.1 form_schema")
     else:
         print("No updates needed for indicator 1.6.1")
 

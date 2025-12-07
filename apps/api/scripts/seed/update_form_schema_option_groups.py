@@ -16,6 +16,7 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from sqlalchemy.orm import Session
+
 from app.db.base import SessionLocal
 from app.db.models.governance_area import Indicator
 
@@ -76,7 +77,7 @@ def main():
         updated_count = remove_option_groups_from_form_schema(db)
         db.commit()
 
-        print(f"\n✅ Update complete!")
+        print("\n✅ Update complete!")
         print(f"   Updated: {updated_count} indicators")
 
         # Verify the update

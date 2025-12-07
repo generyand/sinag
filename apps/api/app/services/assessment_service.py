@@ -177,8 +177,8 @@ class AssessmentService:
         Returns:
             Dictionary with assessment and governance areas data
         """
-        import time
         import logging
+        import time
         logger = logging.getLogger(__name__)
 
         total_start = time.time()
@@ -765,7 +765,6 @@ class AssessmentService:
 
     def _create_sample_indicators(self, db: Session) -> None:
         """Create sample indicators for development/testing purposes."""
-        from app.db.models import Indicator
 
         # Sample indicators for each governance area
         sample_indicators = [

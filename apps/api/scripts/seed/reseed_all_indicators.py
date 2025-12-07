@@ -13,8 +13,8 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from app.db.base import SessionLocal
-from app.indicators.seeder import reseed_indicators
 from app.indicators.definitions import ALL_INDICATORS
+from app.indicators.seeder import reseed_indicators
 
 
 def main():

@@ -590,19 +590,20 @@ class CompletenessValidationService:
         Returns:
             Dict with validation results showing X/2 completion
         """
-        # Group fields by option_group
+        # Group fields by completion_group (not option_group to avoid accordion rendering)
         shared_fields = []
         option_a_fields = []
         option_b_fields = []
 
         for field in fields:
             if isinstance(field, FileUploadField):
-                option_group = field.option_group
-                if option_group == "shared":
+                # Use completion_group for SHARED_PLUS_OR_LOGIC
+                completion_group = field.completion_group
+                if completion_group == "shared":
                     shared_fields.append(field)
-                elif option_group == "option_a":
+                elif completion_group == "option_a":
                     option_a_fields.append(field)
-                elif option_group == "option_b":
+                elif completion_group == "option_b":
                     option_b_fields.append(field)
 
         logger.info(

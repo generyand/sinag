@@ -13,10 +13,12 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from sqlalchemy.orm import Session
+
 from app.db.base import SessionLocal
-from app.db.models.governance_area import Indicator, ChecklistItem
+from app.db.models.governance_area import ChecklistItem, Indicator
+from app.indicators.base import Indicator as IndicatorDef
+from app.indicators.base import SubIndicator
 from app.indicators.definitions import ALL_INDICATORS
-from app.indicators.base import Indicator as IndicatorDef, SubIndicator
 
 
 def find_indicator_def(
@@ -118,7 +120,7 @@ def main():
         # Commit all changes
         db.commit()
 
-        print(f"\n✅ Update complete!")
+        print("\n✅ Update complete!")
         print(f"   Updated: {updated_count} indicators")
         if not_found:
             print(f"   Not found in definitions (skipped): {len(not_found)}")

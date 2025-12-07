@@ -46,7 +46,7 @@ def upgrade() -> None:
     if "field_notes" in fields[0]:
         field_notes = fields[0].pop("field_notes")
         fields[1]["field_notes"] = field_notes
-        print(f"Moved field_notes from field 0 to field 1")
+        print("Moved field_notes from field 0 to field 1")
 
         # Update the database
         conn.execute(
