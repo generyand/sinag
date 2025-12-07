@@ -59,7 +59,9 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
       SECRET_KEY: test-secret-key-for-e2e-tests-1234567890abcdef
       CELERY_BROKER_URL: redis://localhost:6379/0
+      REDIS_CACHE_URL: redis://localhost:6379/0
       SUPABASE_URL: https://example.supabase.co
+      SUPABASE_ANON_KEY: test-anon-key
       SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
       GEMINI_API_KEY: test-gemini-key
 
@@ -158,7 +160,9 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
       SECRET_KEY: test-secret-key-for-e2e-tests-1234567890abcdef
       CELERY_BROKER_URL: redis://localhost:6379/0
+      REDIS_CACHE_URL: redis://localhost:6379/0
       SUPABASE_URL: https://example.supabase.co
+      SUPABASE_ANON_KEY: test-anon-key
       SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
       GEMINI_API_KEY: test-gemini-key
 
@@ -261,7 +265,9 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
       SECRET_KEY: test-secret-key-for-e2e-tests-1234567890abcdef
       CELERY_BROKER_URL: redis://localhost:6379/0
+      REDIS_CACHE_URL: redis://localhost:6379/0
       SUPABASE_URL: https://example.supabase.co
+      SUPABASE_ANON_KEY: test-anon-key
       SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
       GEMINI_API_KEY: test-gemini-key
 
