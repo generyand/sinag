@@ -12,7 +12,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
+import { renderWithProviders } from "@/tests/test-utils";
 import userEvent from "@testing-library/user-event";
 import { RequestReworkForm } from "../RequestReworkForm";
 
@@ -51,7 +52,7 @@ describe("RequestReworkForm", () => {
         isPending: false,
       });
 
-      render(
+      renderWithProviders(
         <RequestReworkForm
           assessmentId={mockAssessmentId}
           reworkCount={1}
@@ -76,7 +77,7 @@ describe("RequestReworkForm", () => {
         isPending: false,
       });
 
-      render(
+      renderWithProviders(
         <RequestReworkForm
           assessmentId={mockAssessmentId}
           reworkCount={2}
@@ -93,7 +94,7 @@ describe("RequestReworkForm", () => {
         isPending: false,
       });
 
-      render(
+      renderWithProviders(
         <RequestReworkForm
           assessmentId={mockAssessmentId}
           reworkCount={0}
@@ -115,7 +116,7 @@ describe("RequestReworkForm", () => {
     });
 
     it("should render textarea with label and placeholder", () => {
-      render(
+      renderWithProviders(
         <RequestReworkForm
           assessmentId={mockAssessmentId}
           reworkCount={0}
@@ -130,7 +131,7 @@ describe("RequestReworkForm", () => {
     });
 
     it("should display required indicator (*)", () => {
-      render(
+      renderWithProviders(
         <RequestReworkForm
           assessmentId={mockAssessmentId}
           reworkCount={0}
@@ -143,7 +144,7 @@ describe("RequestReworkForm", () => {
     });
 
     it("should render Request Rework button", () => {
-      render(
+      renderWithProviders(
         <RequestReworkForm
           assessmentId={mockAssessmentId}
           reworkCount={0}
@@ -164,7 +165,7 @@ describe("RequestReworkForm", () => {
     });
 
     it("should display initial character count as 0", () => {
-      render(
+      renderWithProviders(
         <RequestReworkForm
           assessmentId={mockAssessmentId}
           reworkCount={0}
@@ -178,7 +179,7 @@ describe("RequestReworkForm", () => {
     it("should update character count as user types", async () => {
       const user = userEvent.setup();
 
-      render(
+      renderWithProviders(
         <RequestReworkForm
           assessmentId={mockAssessmentId}
           reworkCount={0}
@@ -195,7 +196,7 @@ describe("RequestReworkForm", () => {
     it("should show remaining characters needed when below minimum", async () => {
       const user = userEvent.setup();
 
-      render(
+      renderWithProviders(
         <RequestReworkForm
           assessmentId={mockAssessmentId}
           reworkCount={0}
@@ -212,7 +213,7 @@ describe("RequestReworkForm", () => {
     it("should not show 'need more' message when at minimum length", async () => {
       const user = userEvent.setup();
 
-      render(
+      renderWithProviders(
         <RequestReworkForm
           assessmentId={mockAssessmentId}
           reworkCount={0}
@@ -230,7 +231,7 @@ describe("RequestReworkForm", () => {
     it("should use singular 'character' for count of 1", async () => {
       const user = userEvent.setup();
 
-      render(
+      renderWithProviders(
         <RequestReworkForm
           assessmentId={mockAssessmentId}
           reworkCount={0}
@@ -254,7 +255,7 @@ describe("RequestReworkForm", () => {
     });
 
     it("should disable button when comments are empty", () => {
-      render(
+      renderWithProviders(
         <RequestReworkForm
           assessmentId={mockAssessmentId}
           reworkCount={0}
@@ -269,7 +270,7 @@ describe("RequestReworkForm", () => {
     it("should disable button when comments are below minimum length", async () => {
       const user = userEvent.setup();
 
-      render(
+      renderWithProviders(
         <RequestReworkForm
           assessmentId={mockAssessmentId}
           reworkCount={0}
@@ -287,7 +288,7 @@ describe("RequestReworkForm", () => {
     it("should enable button when comments meet minimum length", async () => {
       const user = userEvent.setup();
 
-      render(
+      renderWithProviders(
         <RequestReworkForm
           assessmentId={mockAssessmentId}
           reworkCount={0}
@@ -308,7 +309,7 @@ describe("RequestReworkForm", () => {
         isPending: true,
       });
 
-      render(
+      renderWithProviders(
         <RequestReworkForm
           assessmentId={mockAssessmentId}
           reworkCount={0}
@@ -332,7 +333,7 @@ describe("RequestReworkForm", () => {
     it("should open confirmation dialog when button clicked with valid comments", async () => {
       const user = userEvent.setup();
 
-      render(
+      renderWithProviders(
         <RequestReworkForm
           assessmentId={mockAssessmentId}
           reworkCount={0}
@@ -356,7 +357,7 @@ describe("RequestReworkForm", () => {
       const user = userEvent.setup();
       const testComment = "Please update budget figures";
 
-      render(
+      renderWithProviders(
         <RequestReworkForm
           assessmentId={mockAssessmentId}
           reworkCount={0}
@@ -379,7 +380,7 @@ describe("RequestReworkForm", () => {
     it("should show warning about rework consequences", async () => {
       const user = userEvent.setup();
 
-      render(
+      renderWithProviders(
         <RequestReworkForm
           assessmentId={mockAssessmentId}
           reworkCount={0}
@@ -403,7 +404,7 @@ describe("RequestReworkForm", () => {
     it("should close dialog when Cancel clicked", async () => {
       const user = userEvent.setup();
 
-      render(
+      renderWithProviders(
         <RequestReworkForm
           assessmentId={mockAssessmentId}
           reworkCount={0}
@@ -438,7 +439,7 @@ describe("RequestReworkForm", () => {
 
       const testComment = "Please revise indicators";
 
-      render(
+      renderWithProviders(
         <RequestReworkForm
           assessmentId={mockAssessmentId}
           reworkCount={0}
@@ -472,7 +473,7 @@ describe("RequestReworkForm", () => {
         isPending: false,
       });
 
-      render(
+      renderWithProviders(
         <RequestReworkForm
           assessmentId={mockAssessmentId}
           reworkCount={0}
@@ -512,7 +513,7 @@ describe("RequestReworkForm", () => {
         isPending: false,
       });
 
-      render(
+      renderWithProviders(
         <RequestReworkForm
           assessmentId={mockAssessmentId}
           reworkCount={0}
@@ -547,7 +548,7 @@ describe("RequestReworkForm", () => {
         isPending: false,
       });
 
-      render(
+      renderWithProviders(
         <RequestReworkForm
           assessmentId={mockAssessmentId}
           reworkCount={0}

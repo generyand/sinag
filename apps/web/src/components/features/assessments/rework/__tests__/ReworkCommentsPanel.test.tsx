@@ -329,8 +329,12 @@ describe("ReworkCommentsPanel", () => {
       render(<ReworkCommentsPanel assessmentId={mockAssessmentId} />);
 
       const commentsElement = screen.getByText(/Line 1/);
+      // Verify whitespace-pre-wrap class is applied to preserve line breaks
       expect(commentsElement).toHaveClass("whitespace-pre-wrap");
-      expect(commentsElement).toHaveTextContent(multiLineComments);
+      // Verify all lines are present (textContent collapses whitespace, but the content is there)
+      expect(commentsElement).toHaveTextContent("Line 1");
+      expect(commentsElement).toHaveTextContent("Line 2");
+      expect(commentsElement).toHaveTextContent("Line 3");
     });
   });
 

@@ -18,8 +18,31 @@ import {
   type DraftResponse,
 } from '../useIndicatorBuilder';
 
-// Mock fetch globally
-global.fetch = vi.fn();
+// Mock the Orval-generated hooks
+vi.mock('@sinag/shared', async () => {
+  const actual = await vi.importActual('@sinag/shared');
+  return {
+    ...actual,
+    usePostIndicatorsBulk: vi.fn(),
+    usePostIndicatorsDrafts: vi.fn(),
+    useGetIndicatorsDrafts: vi.fn(),
+    useGetIndicatorsDraftsDraftId: vi.fn(),
+    usePutIndicatorsDraftsDraftId: vi.fn(),
+    useDeleteIndicatorsDraftsDraftId: vi.fn(),
+    usePostIndicatorsDraftsDraftIdReleaseLock: vi.fn(),
+  };
+});
+
+// Mock auth store
+vi.mock('@/store/useAuthStore', () => ({
+  useAuthStore: {
+    getState: vi.fn(() => ({
+      user: { id: 1, email: 'test@example.com', name: 'Test User', role: 'MLGOO_DILG' },
+      token: 'mock-token',
+      isAuthenticated: true,
+    })),
+  },
+}));
 
 // Helper to create a new QueryClient for each test
 function createTestQueryClient() {

@@ -14,7 +14,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
+import { renderWithProviders } from "@/tests/test-utils";
 import userEvent from "@testing-library/user-event";
 import { SubmitAssessmentButton } from "../SubmitAssessmentButton";
 
@@ -41,20 +42,6 @@ describe("SubmitAssessmentButton", () => {
   const mockToast = vi.fn();
   const mockOnSuccess = vi.fn();
 
-  const validValidationResult = {
-    is_valid: true,
-    incomplete_indicators: [],
-    missing_movs: [],
-    error_message: null,
-  };
-
-  const invalidValidationResult = {
-    is_valid: false,
-    incomplete_indicators: ["Indicator 1"],
-    missing_movs: ["Indicator 2"],
-    error_message: "Assessment not ready",
-  };
-
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseToast.mockReturnValue({ toast: mockToast });
@@ -67,10 +54,10 @@ describe("SubmitAssessmentButton", () => {
       isPending: false,
     });
 
-    render(
+    renderWithProviders(
       <SubmitAssessmentButton
         assessmentId={mockAssessmentId}
-        validationResult={validValidationResult}
+        isComplete={true}
         onSuccess={mockOnSuccess}
       />
     );
@@ -85,10 +72,10 @@ describe("SubmitAssessmentButton", () => {
       isPending: false,
     });
 
-    render(
+    renderWithProviders(
       <SubmitAssessmentButton
         assessmentId={mockAssessmentId}
-        validationResult={invalidValidationResult}
+        isComplete={false}
         onSuccess={mockOnSuccess}
       />
     );
@@ -105,10 +92,10 @@ describe("SubmitAssessmentButton", () => {
       isPending: false,
     });
 
-    render(
+    renderWithProviders(
       <SubmitAssessmentButton
         assessmentId={mockAssessmentId}
-        validationResult={invalidValidationResult}
+        isComplete={false}
         onSuccess={mockOnSuccess}
       />
     );
@@ -116,11 +103,9 @@ describe("SubmitAssessmentButton", () => {
     const button = screen.getByRole("button", { name: /submit assessment/i });
     await user.hover(button);
 
-    await waitFor(() => {
-      expect(
-        screen.getByText(/complete all indicators and upload required movs/i)
-      ).toBeInTheDocument();
-    });
+    // Find tooltip by role instead of text
+    const tooltip = await screen.findByRole('tooltip');
+    expect(tooltip).toHaveTextContent(/complete all indicators and upload required movs/i);
   });
 
   it("should open confirmation dialog when button is clicked", async () => {
@@ -131,10 +116,10 @@ describe("SubmitAssessmentButton", () => {
       isPending: false,
     });
 
-    render(
+    renderWithProviders(
       <SubmitAssessmentButton
         assessmentId={mockAssessmentId}
-        validationResult={validValidationResult}
+        isComplete={true}
         onSuccess={mockOnSuccess}
       />
     );
@@ -143,7 +128,7 @@ describe("SubmitAssessmentButton", () => {
     await user.click(button);
 
     await waitFor(() => {
-      expect(screen.getByText(/submit assessment for review/i)).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /submit assessment for review/i })).toBeInTheDocument();
       expect(screen.getByText(/are you sure you want to submit/i)).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /confirm submit/i })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
@@ -158,10 +143,10 @@ describe("SubmitAssessmentButton", () => {
       isPending: false,
     });
 
-    render(
+    renderWithProviders(
       <SubmitAssessmentButton
         assessmentId={mockAssessmentId}
-        validationResult={validValidationResult}
+        isComplete={true}
         onSuccess={mockOnSuccess}
       />
     );
@@ -187,10 +172,10 @@ describe("SubmitAssessmentButton", () => {
       isPending: false,
     });
 
-    render(
+    renderWithProviders(
       <SubmitAssessmentButton
         assessmentId={mockAssessmentId}
-        validationResult={validValidationResult}
+        isComplete={true}
         onSuccess={mockOnSuccess}
       />
     );
@@ -205,7 +190,7 @@ describe("SubmitAssessmentButton", () => {
 
     // Dialog should be closed
     await waitFor(() => {
-      expect(screen.queryByText(/submit assessment for review/i)).not.toBeInTheDocument();
+      expect(screen.queryByRole("heading", { name: /submit assessment for review/i })).not.toBeInTheDocument();
     });
 
     expect(mockMutate).not.toHaveBeenCalled();
@@ -218,10 +203,10 @@ describe("SubmitAssessmentButton", () => {
       isPending: true,
     });
 
-    render(
+    renderWithProviders(
       <SubmitAssessmentButton
         assessmentId={mockAssessmentId}
-        validationResult={validValidationResult}
+        isComplete={true}
         onSuccess={mockOnSuccess}
       />
     );
@@ -246,10 +231,10 @@ describe("SubmitAssessmentButton", () => {
       isPending: false,
     });
 
-    render(
+    renderWithProviders(
       <SubmitAssessmentButton
         assessmentId={mockAssessmentId}
-        validationResult={validValidationResult}
+        isComplete={true}
         onSuccess={mockOnSuccess}
       />
     );
@@ -287,10 +272,10 @@ describe("SubmitAssessmentButton", () => {
       isPending: false,
     });
 
-    render(
+    renderWithProviders(
       <SubmitAssessmentButton
         assessmentId={mockAssessmentId}
-        validationResult={validValidationResult}
+        isComplete={true}
         onSuccess={mockOnSuccess}
       />
     );

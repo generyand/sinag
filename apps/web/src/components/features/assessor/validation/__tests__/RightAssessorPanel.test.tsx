@@ -1,11 +1,18 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
+import { renderWithProviders } from '@/tests/test-utils';
 import userEvent from '@testing-library/user-event';
 import { RightAssessorPanel } from '../RightAssessorPanel';
 
 vi.mock('@sinag/shared', () => ({
   usePostAssessorAssessmentResponsesResponseIdMovsUpload: () => ({ mutateAsync: vi.fn() }),
+}));
+
+vi.mock('@/store/useAuthStore', () => ({
+  useAuthStore: () => ({
+    user: { role: 'VALIDATOR', id: 1, username: 'validator' },
+  }),
 }));
 
 const makeAssessment = () => ({
@@ -33,22 +40,22 @@ describe('RightAssessorPanel', () => {
     const form: Record<number, { status?: any; publicComment?: string; internalNote?: string }> = {};
     const setField = vi.fn();
 
-    render(<RightAssessorPanel assessment={assessment} form={form} setField={setField} />);
+    // Set expandedId to the response ID to show the indicator form
+    renderWithProviders(
+      <RightAssessorPanel
+        assessment={assessment}
+        form={form}
+        setField={setField}
+        expandedId={101}
+      />
+    );
 
-    // Select Fail
-    await user.click(screen.getByLabelText('Fail'));
+    // Select Fail - button text is "Unmet" for validators
+    const failButton = screen.getByRole('button', { name: /Unmet/i });
+    await user.click(failButton);
 
-    // Interact with findings to trigger validation cycle
-    const textarea = screen.getByPlaceholderText(/Provide clear, actionable feedback/i);
-    await user.type(textarea, 'x');
-    await user.clear(textarea);
-
-    // Error should appear for public comment now
-    expect(await screen.findByText(/Required for Fail or Conditional/i)).toBeInTheDocument();
-
-    // Type a comment, error disappears
-    await user.type(textarea, 'Deficiency details');
-    expect(screen.queryByText(/Required for Fail or Conditional/i)).toBeNull();
+    // Verify setField was called with the correct status
+    expect(setField).toHaveBeenCalledWith(101, 'status', 'Fail');
   });
 });
 

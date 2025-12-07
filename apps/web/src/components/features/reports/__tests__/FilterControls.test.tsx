@@ -186,14 +186,16 @@ describe('FilterControls', () => {
       />
     );
 
-    // All comboboxes except status should be disabled
+    // All comboboxes: Phase (enabled), Status (enabled), Cycle (disabled), Governance Area (disabled), Barangay (disabled for BLGU_USER)
     const comboboxes = screen.getAllByRole('combobox');
 
-    // First combobox is status (enabled), rest are disabled placeholders
-    expect(comboboxes[0]).not.toBeDisabled(); // Status
-    expect(comboboxes[1]).toBeDisabled(); // Cycle
-    expect(comboboxes[2]).toBeDisabled(); // Governance Area
-    // Note: Barangay filter is only disabled for BLGU_USER role
+    // First two comboboxes are Phase and Status (both enabled)
+    expect(comboboxes[0]).not.toBeDisabled(); // Phase
+    expect(comboboxes[1]).not.toBeDisabled(); // Status
+    // Rest are disabled placeholders
+    expect(comboboxes[2]).toBeDisabled(); // Cycle
+    expect(comboboxes[3]).toBeDisabled(); // Governance Area
+    expect(comboboxes[4]).toBeDisabled(); // Barangay (disabled for MLGOO_DILG too, as it's a placeholder)
   });
 
   it('displays cycle_id in active filters when present', () => {

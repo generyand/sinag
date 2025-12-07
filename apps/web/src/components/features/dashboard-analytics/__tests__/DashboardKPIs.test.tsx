@@ -184,7 +184,8 @@ describe('AreaBreakdownCard', () => {
   it('displays empty state when no data provided', () => {
     render(<AreaBreakdownCard data={[]} />);
 
-    expect(screen.getByText('No governance area data available')).toBeInTheDocument();
+    // Component uses AnalyticsEmptyState which shows "No assessments yet"
+    expect(screen.getByText(/no assessments yet/i)).toBeInTheDocument();
   });
 });
 
@@ -244,7 +245,8 @@ describe('TopFailedIndicatorsCard', () => {
   it('displays empty state when no failures', () => {
     render(<TopFailedIndicatorsCard data={[]} />);
 
-    expect(screen.getByText('No failed indicators to display')).toBeInTheDocument();
+    // Component uses AnalyticsEmptyState with variant="no-assessments" which shows "No assessments yet" in compact mode
+    expect(screen.getByText(/no assessments yet/i)).toBeInTheDocument();
   });
 });
 
@@ -327,6 +329,7 @@ describe('BarangayRankingsCard', () => {
   it('displays empty state when no data provided', () => {
     render(<BarangayRankingsCard data={[]} />);
 
-    expect(screen.getByText('No ranking data available')).toBeInTheDocument();
+    // Component uses AnalyticsEmptyState which shows "No barangays found"
+    expect(screen.getByText(/no barangays found/i)).toBeInTheDocument();
   });
 });

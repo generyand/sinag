@@ -52,6 +52,7 @@ export function NotificationPanel({
             size="sm"
             className="h-8 px-2 text-xs"
             onClick={onRefresh}
+            disabled={isLoading || isRefreshing}
           >
             <RefreshCw
               className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`}

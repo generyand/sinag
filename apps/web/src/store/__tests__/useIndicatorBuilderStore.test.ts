@@ -139,8 +139,8 @@ describe('useIndicatorBuilderStore', () => {
       const node = state.tree.nodes.get(nodeId);
       expect(node?.name).toBe('Root Node');
       expect(node?.parent_temp_id).toBeNull();
-      expect(node?.order).toBe(1);
-      expect(node?.code).toBe('1');
+      expect(node?.order).toBe(1); // 1-based ordering
+      expect(node?.code).toBe('1.1'); // governanceAreaId.position
     });
 
     it('should add multiple root nodes with correct codes', () => {
@@ -149,8 +149,8 @@ describe('useIndicatorBuilderStore', () => {
       const node2 = store.addNode({ name: 'Root 2' });
 
       const state = useIndicatorBuilderStore.getState();
-      expect(state.tree.nodes.get(node1)?.code).toBe('1');
-      expect(state.tree.nodes.get(node2)?.code).toBe('2');
+      expect(state.tree.nodes.get(node1)?.code).toBe('1.1'); // First root: governanceAreaId.1
+      expect(state.tree.nodes.get(node2)?.code).toBe('1.2'); // Second root: governanceAreaId.2
     });
 
     it('should add a child node', () => {
@@ -164,7 +164,7 @@ describe('useIndicatorBuilderStore', () => {
 
       const child = state.tree.nodes.get(childId);
       expect(child?.parent_temp_id).toBe(rootId);
-      expect(child?.code).toBe('1.1');
+      expect(child?.code).toBe('1.1.1'); // root is 1.1, child is 1.1.1
     });
 
     it('should add nested children with correct codes', () => {
@@ -175,10 +175,10 @@ describe('useIndicatorBuilderStore', () => {
       const grandchild = store.addNode({ name: 'Grandchild' }, child1);
 
       const state = useIndicatorBuilderStore.getState();
-      expect(state.tree.nodes.get(root)?.code).toBe('1');
-      expect(state.tree.nodes.get(child1)?.code).toBe('1.1');
-      expect(state.tree.nodes.get(child2)?.code).toBe('1.2');
-      expect(state.tree.nodes.get(grandchild)?.code).toBe('1.1.1');
+      expect(state.tree.nodes.get(root)?.code).toBe('1.1'); // governanceAreaId.1
+      expect(state.tree.nodes.get(child1)?.code).toBe('1.1.1');
+      expect(state.tree.nodes.get(child2)?.code).toBe('1.1.2');
+      expect(state.tree.nodes.get(grandchild)?.code).toBe('1.1.1.1');
     });
 
     it('should use default values for optional fields', () => {
@@ -237,7 +237,7 @@ describe('useIndicatorBuilderStore', () => {
 
       const state = useIndicatorBuilderStore.getState();
       expect(state.tree.nodes.get(rootId)?.name).toBe('Updated Root');
-      expect(state.tree.nodes.get(rootId)?.code).toBe('1');
+      expect(state.tree.nodes.get(rootId)?.code).toBe('1.1'); // With governanceAreaId=1
     });
 
     it('should handle updating non-existent node gracefully', () => {
@@ -416,7 +416,7 @@ describe('useIndicatorBuilderStore', () => {
 
       const state = useIndicatorBuilderStore.getState();
       expect(state.tree.nodes.get(child)?.parent_temp_id).toBe(root2);
-      expect(state.tree.nodes.get(child)?.code).toBe('2.1');
+      expect(state.tree.nodes.get(child)?.code).toBe('1.2.1'); // root2 is 1.2, child is 1.2.1
       expect(state.isDirty).toBe(true);
     });
 
@@ -433,7 +433,7 @@ describe('useIndicatorBuilderStore', () => {
       const state = useIndicatorBuilderStore.getState();
       expect(state.tree.rootIds).toEqual([root1]);
       expect(state.tree.nodes.get(root2)?.parent_temp_id).toBe(root1);
-      expect(state.tree.nodes.get(root2)?.code).toBe('1.1');
+      expect(state.tree.nodes.get(root2)?.code).toBe('1.1.1'); // root1 is 1.1, root2 becomes child 1.1.1
     });
 
     it('should move child to become root', () => {
@@ -447,7 +447,7 @@ describe('useIndicatorBuilderStore', () => {
       const state = useIndicatorBuilderStore.getState();
       expect(state.tree.rootIds).toContain(child);
       expect(state.tree.nodes.get(child)?.parent_temp_id).toBeNull();
-      expect(state.tree.nodes.get(child)?.code).toBe('2');
+      expect(state.tree.nodes.get(child)?.code).toBe('1.2'); // becomes second root: 1.2
     });
 
     it('should prevent moving node to its own descendant', () => {
@@ -511,12 +511,12 @@ describe('useIndicatorBuilderStore', () => {
 
       const state = useIndicatorBuilderStore.getState();
       expect(state.tree.rootIds).toEqual([root3, root1, root2]);
-      expect(state.tree.nodes.get(root3)?.order).toBe(1);
+      expect(state.tree.nodes.get(root3)?.order).toBe(1); // 1-based ordering
       expect(state.tree.nodes.get(root1)?.order).toBe(2);
       expect(state.tree.nodes.get(root2)?.order).toBe(3);
-      expect(state.tree.nodes.get(root3)?.code).toBe('1');
-      expect(state.tree.nodes.get(root1)?.code).toBe('2');
-      expect(state.tree.nodes.get(root2)?.code).toBe('3');
+      expect(state.tree.nodes.get(root3)?.code).toBe('1.1'); // First root with governanceAreaId=1
+      expect(state.tree.nodes.get(root1)?.code).toBe('1.2'); // Second root
+      expect(state.tree.nodes.get(root2)?.code).toBe('1.3'); // Third root
     });
 
     it('should reorder child nodes', () => {
@@ -530,12 +530,12 @@ describe('useIndicatorBuilderStore', () => {
       store.reorderNodes(root, [child3, child2, child1]);
 
       const state = useIndicatorBuilderStore.getState();
-      expect(state.tree.nodes.get(child3)?.order).toBe(1);
+      expect(state.tree.nodes.get(child3)?.order).toBe(1); // 1-based ordering
       expect(state.tree.nodes.get(child2)?.order).toBe(2);
       expect(state.tree.nodes.get(child1)?.order).toBe(3);
-      expect(state.tree.nodes.get(child3)?.code).toBe('1.1');
-      expect(state.tree.nodes.get(child2)?.code).toBe('1.2');
-      expect(state.tree.nodes.get(child1)?.code).toBe('1.3');
+      expect(state.tree.nodes.get(child3)?.code).toBe('1.1.1'); // root is 1.1, first child is 1.1.1
+      expect(state.tree.nodes.get(child2)?.code).toBe('1.1.2');
+      expect(state.tree.nodes.get(child1)?.code).toBe('1.1.3');
     });
   });
 
@@ -795,9 +795,9 @@ describe('useIndicatorBuilderStore', () => {
       store.recalculateCodes();
 
       const state = useIndicatorBuilderStore.getState();
-      expect(state.tree.nodes.get(root)?.code).toBe('1');
-      expect(state.tree.nodes.get(child1)?.code).toBe('1.1');
-      expect(state.tree.nodes.get(child2)?.code).toBe('1.2');
+      expect(state.tree.nodes.get(root)?.code).toBe('1.1'); // With governanceAreaId=1
+      expect(state.tree.nodes.get(child1)?.code).toBe('1.1.1');
+      expect(state.tree.nodes.get(child2)?.code).toBe('1.1.2');
     });
 
     it('should recalculate codes after adding nodes', () => {
@@ -807,8 +807,8 @@ describe('useIndicatorBuilderStore', () => {
       const child = store.addNode({ name: 'Child' }, root);
 
       const state = useIndicatorBuilderStore.getState();
-      expect(state.tree.nodes.get(root)?.code).toBe('1');
-      expect(state.tree.nodes.get(child)?.code).toBe('1.1');
+      expect(state.tree.nodes.get(root)?.code).toBe('1.1'); // With governanceAreaId=1
+      expect(state.tree.nodes.get(child)?.code).toBe('1.1.1');
     });
   });
 });

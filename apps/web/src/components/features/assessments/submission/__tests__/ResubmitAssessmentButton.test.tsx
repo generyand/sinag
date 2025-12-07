@@ -13,13 +13,15 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
+import { renderWithProviders } from "@/tests/test-utils";
 import userEvent from "@testing-library/user-event";
 import { ResubmitAssessmentButton } from "../ResubmitAssessmentButton";
 
-// Mock the generated hook
+// Mock the generated hooks
 vi.mock("@sinag/shared", () => ({
   usePostAssessmentsAssessmentIdResubmit: vi.fn(),
+  usePostAssessmentsAssessmentIdSubmitForCalibration: vi.fn(),
 }));
 
 // Mock toast hook
@@ -29,30 +31,23 @@ vi.mock("@/hooks/use-toast", () => ({
   }),
 }));
 
-import { usePostAssessmentsAssessmentIdResubmit } from "@sinag/shared";
+import { usePostAssessmentsAssessmentIdResubmit, usePostAssessmentsAssessmentIdSubmitForCalibration } from "@sinag/shared";
 
 const mockUseResubmit = usePostAssessmentsAssessmentIdResubmit as ReturnType<typeof vi.fn>;
+const mockUseSubmitForCalibration = usePostAssessmentsAssessmentIdSubmitForCalibration as ReturnType<typeof vi.fn>;
 
 describe("ResubmitAssessmentButton", () => {
   const mockAssessmentId = 123;
   const mockOnSuccess = vi.fn();
 
-  const validValidationResult = {
-    is_valid: true,
-    incomplete_indicators: [],
-    missing_movs: [],
-    error_message: null,
-  };
-
-  const invalidValidationResult = {
-    is_valid: false,
-    incomplete_indicators: ["Indicator 1"],
-    missing_movs: ["Indicator 2"],
-    error_message: "Validation failed",
-  };
-
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // Mock default implementation for calibration hook
+    mockUseSubmitForCalibration.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    });
   });
 
   describe("Button Rendering", () => {
@@ -62,10 +57,10 @@ describe("ResubmitAssessmentButton", () => {
         isPending: false,
       });
 
-      render(
+      renderWithProviders(
         <ResubmitAssessmentButton
           assessmentId={mockAssessmentId}
-          validationResult={validValidationResult}
+          isComplete={true}
           onSuccess={mockOnSuccess}
         />
       );
@@ -80,10 +75,10 @@ describe("ResubmitAssessmentButton", () => {
         isPending: true,
       });
 
-      render(
+      renderWithProviders(
         <ResubmitAssessmentButton
           assessmentId={mockAssessmentId}
-          validationResult={validValidationResult}
+          isComplete={true}
           onSuccess={mockOnSuccess}
         />
       );
@@ -99,10 +94,10 @@ describe("ResubmitAssessmentButton", () => {
         isPending: false,
       });
 
-      render(
+      renderWithProviders(
         <ResubmitAssessmentButton
           assessmentId={mockAssessmentId}
-          validationResult={invalidValidationResult}
+          isComplete={false}
           onSuccess={mockOnSuccess}
         />
       );
@@ -117,10 +112,10 @@ describe("ResubmitAssessmentButton", () => {
         isPending: false,
       });
 
-      render(
+      renderWithProviders(
         <ResubmitAssessmentButton
           assessmentId={mockAssessmentId}
-          validationResult={validValidationResult}
+          isComplete={true}
           onSuccess={mockOnSuccess}
         />
       );
@@ -137,10 +132,10 @@ describe("ResubmitAssessmentButton", () => {
         isPending: false,
       });
 
-      render(
+      renderWithProviders(
         <ResubmitAssessmentButton
           assessmentId={mockAssessmentId}
-          validationResult={invalidValidationResult}
+          isComplete={false}
           onSuccess={mockOnSuccess}
         />
       );
@@ -148,11 +143,9 @@ describe("ResubmitAssessmentButton", () => {
       const button = screen.getByRole("button", { name: /Resubmit Assessment/ });
       await user.hover(button);
 
-      await waitFor(() => {
-        expect(
-          screen.getByText(/Complete all rework requirements before resubmitting/)
-        ).toBeInTheDocument();
-      });
+      // Tooltip should appear - check for role="tooltip"
+      const tooltip = await screen.findByRole('tooltip', { timeout: 2000 });
+      expect(tooltip).toHaveTextContent(/Complete all rework requirements before resubmitting/);
     });
 
     it("should not show tooltip when button is enabled", () => {
@@ -161,10 +154,10 @@ describe("ResubmitAssessmentButton", () => {
         isPending: false,
       });
 
-      render(
+      renderWithProviders(
         <ResubmitAssessmentButton
           assessmentId={mockAssessmentId}
-          validationResult={validValidationResult}
+          isComplete={true}
           onSuccess={mockOnSuccess}
         />
       );
@@ -186,10 +179,10 @@ describe("ResubmitAssessmentButton", () => {
     it("should open confirmation dialog when button clicked with valid validation", async () => {
       const user = userEvent.setup();
 
-      render(
+      renderWithProviders(
         <ResubmitAssessmentButton
           assessmentId={mockAssessmentId}
-          validationResult={validValidationResult}
+          isComplete={true}
           onSuccess={mockOnSuccess}
         />
       );
@@ -206,10 +199,10 @@ describe("ResubmitAssessmentButton", () => {
     it("should display final submission warning in dialog", async () => {
       const user = userEvent.setup();
 
-      render(
+      renderWithProviders(
         <ResubmitAssessmentButton
           assessmentId={mockAssessmentId}
-          validationResult={validValidationResult}
+          isComplete={true}
           onSuccess={mockOnSuccess}
         />
       );
@@ -227,10 +220,10 @@ describe("ResubmitAssessmentButton", () => {
     it("should display list of consequences", async () => {
       const user = userEvent.setup();
 
-      render(
+      renderWithProviders(
         <ResubmitAssessmentButton
           assessmentId={mockAssessmentId}
-          validationResult={validValidationResult}
+          isComplete={true}
           onSuccess={mockOnSuccess}
         />
       );
@@ -248,10 +241,10 @@ describe("ResubmitAssessmentButton", () => {
     it("should display accuracy reminder", async () => {
       const user = userEvent.setup();
 
-      render(
+      renderWithProviders(
         <ResubmitAssessmentButton
           assessmentId={mockAssessmentId}
-          validationResult={validValidationResult}
+          isComplete={true}
           onSuccess={mockOnSuccess}
         />
       );
@@ -267,10 +260,10 @@ describe("ResubmitAssessmentButton", () => {
     it("should close dialog when Cancel clicked", async () => {
       const user = userEvent.setup();
 
-      render(
+      renderWithProviders(
         <ResubmitAssessmentButton
           assessmentId={mockAssessmentId}
-          validationResult={validValidationResult}
+          isComplete={true}
           onSuccess={mockOnSuccess}
         />
       );
@@ -297,10 +290,10 @@ describe("ResubmitAssessmentButton", () => {
         isPending: false,
       });
 
-      render(
+      renderWithProviders(
         <ResubmitAssessmentButton
           assessmentId={mockAssessmentId}
-          validationResult={validValidationResult}
+          isComplete={true}
           onSuccess={mockOnSuccess}
         />
       );
@@ -325,10 +318,10 @@ describe("ResubmitAssessmentButton", () => {
         isPending: false,
       });
 
-      render(
+      renderWithProviders(
         <ResubmitAssessmentButton
           assessmentId={mockAssessmentId}
-          validationResult={validValidationResult}
+          isComplete={true}
           onSuccess={mockOnSuccess}
         />
       );
@@ -361,10 +354,10 @@ describe("ResubmitAssessmentButton", () => {
         isPending: false,
       });
 
-      render(
+      renderWithProviders(
         <ResubmitAssessmentButton
           assessmentId={mockAssessmentId}
-          validationResult={validValidationResult}
+          isComplete={true}
           onSuccess={mockOnSuccess}
         />
       );
@@ -394,10 +387,10 @@ describe("ResubmitAssessmentButton", () => {
         isPending: false,
       });
 
-      render(
+      renderWithProviders(
         <ResubmitAssessmentButton
           assessmentId={mockAssessmentId}
-          validationResult={validValidationResult}
+          isComplete={true}
           onSuccess={mockOnSuccess}
         />
       );
@@ -428,10 +421,10 @@ describe("ResubmitAssessmentButton", () => {
         isPending: false,
       });
 
-      render(
+      renderWithProviders(
         <ResubmitAssessmentButton
           assessmentId={mockAssessmentId}
-          validationResult={validValidationResult}
+          isComplete={true}
           onSuccess={mockOnSuccess}
         />
       );
@@ -459,10 +452,10 @@ describe("ResubmitAssessmentButton", () => {
         isPending: false,
       });
 
-      render(
+      renderWithProviders(
         <ResubmitAssessmentButton
           assessmentId={mockAssessmentId}
-          validationResult={validValidationResult}
+          isComplete={true}
           onSuccess={mockOnSuccess}
         />
       );
@@ -484,10 +477,10 @@ describe("ResubmitAssessmentButton", () => {
         isPending: true,
       });
 
-      render(
+      renderWithProviders(
         <ResubmitAssessmentButton
           assessmentId={mockAssessmentId}
-          validationResult={validValidationResult}
+          isComplete={true}
           onSuccess={mockOnSuccess}
         />
       );

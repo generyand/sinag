@@ -40,6 +40,7 @@ describe('indicator-tree-utils', () => {
     parent_temp_id,
     order,
     name,
+    description: `Description for ${name}`, // Add description to avoid validation warnings
     code,
     is_active: true,
     is_auto_calculable: false,
@@ -224,9 +225,9 @@ describe('indicator-tree-utils', () => {
       const treeState = {
         nodes: new Map<string, IndicatorNode>([
           ['root', createNode('root', 'Root', null)],
-          ['orphan', createNode('orphan', 'Orphan', 'nonexistent')],
+          ['orphan', createNode('orphan', 'Orphan', 'nonexistent')], // Has parent_temp_id but parent doesn't exist
         ]),
-        rootIds: ['root', 'orphan'],
+        rootIds: ['root'], // orphan is NOT in rootIds, so it should have a parent
         governanceAreaId: 1,
         creationMode: 'incremental',
         currentStep: 2,
@@ -235,7 +236,7 @@ describe('indicator-tree-utils', () => {
       const result = validateTree(treeState);
 
       expect(result.length).toBeGreaterThan(0);
-      expect(result.some((e) => e.message.includes('parent'))).toBe(true);
+      expect(result.some((e) => e.message.includes('Parent'))).toBe(true);
     });
 
     it('should validate a complex valid tree', () => {
@@ -334,7 +335,7 @@ describe('indicator-tree-utils', () => {
       const node = findNode(nodes, 'b');
 
       expect(node).toBeDefined();
-      expect(node?.data.name).toBe('Node B');
+      expect(node?.name).toBe('Node B');
     });
 
     it('should return undefined for non-existent node', () => {
@@ -353,30 +354,33 @@ describe('indicator-tree-utils', () => {
         ['child', createNode('child', 'Child', 'parent')],
       ]);
 
-      const parent = findParent(nodes, 'child');
+      const childNode = nodes.get('child')!;
+      const parent = findParent(nodes, childNode);
 
       expect(parent).toBeDefined();
       expect(parent?.temp_id).toBe('parent');
     });
 
-    it('should return undefined for root nodes', () => {
+    it('should return null for root nodes', () => {
       const nodes = new Map<string, IndicatorNode>([
         ['root', createNode('root', 'Root', null)],
       ]);
 
-      const parent = findParent(nodes, 'root');
+      const rootNode = nodes.get('root')!;
+      const parent = findParent(nodes, rootNode);
 
-      expect(parent).toBeUndefined();
+      expect(parent).toBeNull();
     });
 
-    it('should return undefined if parent does not exist', () => {
+    it('should return null if parent does not exist', () => {
       const nodes = new Map<string, IndicatorNode>([
         ['orphan', createNode('orphan', 'Orphan', 'missing')],
       ]);
 
-      const parent = findParent(nodes, 'orphan');
+      const orphanNode = nodes.get('orphan')!;
+      const parent = findParent(nodes, orphanNode);
 
-      expect(parent).toBeUndefined();
+      expect(parent).toBeNull();
     });
   });
 
@@ -446,7 +450,8 @@ describe('indicator-tree-utils', () => {
         ['child', createNode('child', 'Child', 'parent')],
       ]);
 
-      const ancestors = findAncestors(nodes, 'child');
+      const childNode = nodes.get('child')!;
+      const ancestors = findAncestors(nodes, childNode);
 
       expect(ancestors).toHaveLength(2);
       expect(ancestors.map((a) => a.temp_id)).toEqual(['parent', 'root']);
@@ -457,7 +462,8 @@ describe('indicator-tree-utils', () => {
         ['root', createNode('root', 'Root', null)],
       ]);
 
-      const ancestors = findAncestors(nodes, 'root');
+      const rootNode = nodes.get('root')!;
+      const ancestors = findAncestors(nodes, rootNode);
 
       expect(ancestors).toHaveLength(0);
     });
@@ -469,7 +475,8 @@ describe('indicator-tree-utils', () => {
         ['root', createNode('root', 'Root', null)],
       ]);
 
-      const depth = getNodeDepth(nodes, 'root');
+      const rootNode = nodes.get('root')!;
+      const depth = getNodeDepth(nodes, rootNode);
 
       expect(depth).toBe(0);
     });
@@ -481,15 +488,16 @@ describe('indicator-tree-utils', () => {
         ['grandchild', createNode('grandchild', 'Grandchild', 'child')],
       ]);
 
-      expect(getNodeDepth(nodes, 'root')).toBe(0);
-      expect(getNodeDepth(nodes, 'child')).toBe(1);
-      expect(getNodeDepth(nodes, 'grandchild')).toBe(2);
+      expect(getNodeDepth(nodes, nodes.get('root')!)).toBe(0);
+      expect(getNodeDepth(nodes, nodes.get('child')!)).toBe(1);
+      expect(getNodeDepth(nodes, nodes.get('grandchild')!)).toBe(2);
     });
 
-    it('should return 0 for non-existent nodes', () => {
+    it('should return 0 for node without parent', () => {
       const nodes = new Map<string, IndicatorNode>();
+      const orphanNode = createNode('orphan', 'Orphan', 'missing');
 
-      const depth = getNodeDepth(nodes, 'nonexistent');
+      const depth = getNodeDepth(nodes, orphanNode);
 
       expect(depth).toBe(0);
     });
@@ -605,7 +613,8 @@ describe('indicator-tree-utils', () => {
         ['root', createNode('root', 'Root', null)],
       ]);
 
-      const path = getNodePath(nodes, 'root');
+      const rootNode = nodes.get('root')!;
+      const path = getNodePath(nodes, rootNode);
 
       expect(path).toEqual(['root']);
     });
@@ -617,17 +626,19 @@ describe('indicator-tree-utils', () => {
         ['grandchild', createNode('grandchild', 'Grandchild', 'child')],
       ]);
 
-      const path = getNodePath(nodes, 'grandchild');
+      const grandchildNode = nodes.get('grandchild')!;
+      const path = getNodePath(nodes, grandchildNode);
 
       expect(path).toEqual(['root', 'child', 'grandchild']);
     });
 
-    it('should return empty array for non-existent node', () => {
+    it('should return path with single item for orphan node', () => {
+      const orphanNode = createNode('orphan', 'Orphan', 'missing');
       const nodes = new Map<string, IndicatorNode>();
 
-      const path = getNodePath(nodes, 'nonexistent');
+      const path = getNodePath(nodes, orphanNode);
 
-      expect(path).toEqual([]);
+      expect(path).toEqual(['orphan']); // Can't find parent, returns just this node
     });
   });
 
@@ -637,7 +648,8 @@ describe('indicator-tree-utils', () => {
         ['root', createNode('root', 'Root', null, '1')],
       ]);
 
-      const breadcrumbs = getBreadcrumbs(nodes, 'root');
+      const rootNode = nodes.get('root')!;
+      const breadcrumbs = getBreadcrumbs(nodes, rootNode);
 
       expect(breadcrumbs).toEqual([{ id: 'root', name: 'Root', code: '1' }]);
     });
@@ -649,7 +661,8 @@ describe('indicator-tree-utils', () => {
         ['grandchild', createNode('grandchild', 'Grandchild', 'child', '1.1.1')],
       ]);
 
-      const breadcrumbs = getBreadcrumbs(nodes, 'grandchild');
+      const grandchildNode = nodes.get('grandchild')!;
+      const breadcrumbs = getBreadcrumbs(nodes, grandchildNode);
 
       expect(breadcrumbs).toEqual([
         { id: 'root', name: 'Root', code: '1' },
@@ -664,7 +677,8 @@ describe('indicator-tree-utils', () => {
         ['child', createNode('child', 'Child', 'root')],
       ]);
 
-      const breadcrumbs = getBreadcrumbs(nodes, 'child');
+      const childNode = nodes.get('child')!;
+      const breadcrumbs = getBreadcrumbs(nodes, childNode);
 
       expect(breadcrumbs).toEqual([
         { id: 'root', name: 'Root', code: undefined },
@@ -672,12 +686,15 @@ describe('indicator-tree-utils', () => {
       ]);
     });
 
-    it('should return empty array for non-existent node', () => {
+    it('should return single breadcrumb for orphan node', () => {
+      const orphanNode = createNode('orphan', 'Orphan', 'missing');
       const nodes = new Map<string, IndicatorNode>();
 
-      const breadcrumbs = getBreadcrumbs(nodes, 'nonexistent');
+      const breadcrumbs = getBreadcrumbs(nodes, orphanNode);
 
-      expect(breadcrumbs).toEqual([]);
+      expect(breadcrumbs).toEqual([
+        { id: 'orphan', name: 'Orphan', code: undefined }
+      ]);
     });
   });
 

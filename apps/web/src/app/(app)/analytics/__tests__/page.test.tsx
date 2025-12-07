@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { renderWithProviders, screen, waitFor } from '@/tests/test-utils';
 import userEvent from '@testing-library/user-event';
 import AnalyticsPage from '../page';
 import type { DashboardKPIResponse } from '@sinag/shared';
@@ -133,7 +133,7 @@ describe('AnalyticsPage', () => {
       refetch: vi.fn(),
     });
 
-    render(<AnalyticsPage />);
+    renderWithProviders(<AnalyticsPage />);
 
     // Check page title
     expect(screen.getByText('Analytics Dashboard')).toBeInTheDocument();
@@ -175,7 +175,7 @@ describe('AnalyticsPage', () => {
       refetch: vi.fn(),
     });
 
-    render(<AnalyticsPage />);
+    renderWithProviders(<AnalyticsPage />);
 
     // The page should show loading skeleton (rendered by DashboardSkeleton component)
     // We can check that the actual content is not yet rendered
@@ -193,7 +193,7 @@ describe('AnalyticsPage', () => {
       refetch: mockRefetch,
     });
 
-    render(<AnalyticsPage />);
+    renderWithProviders(<AnalyticsPage />);
 
     // Check error alert
     expect(screen.getByText('Error Loading Dashboard')).toBeInTheDocument();
@@ -218,7 +218,7 @@ describe('AnalyticsPage', () => {
       refetch: mockRefetch,
     });
 
-    render(<AnalyticsPage />);
+    renderWithProviders(<AnalyticsPage />);
 
     // Click retry button
     const retryButton = screen.getByRole('button', { name: /retry/i });
@@ -237,7 +237,7 @@ describe('AnalyticsPage', () => {
       refetch: vi.fn(),
     });
 
-    render(<AnalyticsPage />);
+    renderWithProviders(<AnalyticsPage />);
 
     // Check that the cycle selector is present
     // The Select component renders a trigger button
@@ -259,7 +259,7 @@ describe('AnalyticsPage', () => {
 
     vi.mocked(useDashboardAnalytics).mockImplementation(mockHook);
 
-    render(<AnalyticsPage />);
+    renderWithProviders(<AnalyticsPage />);
 
     // Initially called with null (all cycles)
     expect(mockHook).toHaveBeenCalledWith(null);
@@ -297,7 +297,7 @@ describe('AnalyticsPage', () => {
       refetch: vi.fn(),
     });
 
-    render(<AnalyticsPage />);
+    renderWithProviders(<AnalyticsPage />);
 
     // Wait for RBAC check to complete
     await waitFor(() => {
@@ -321,7 +321,7 @@ describe('AnalyticsPage', () => {
       refetch: vi.fn(),
     });
 
-    render(<AnalyticsPage />);
+    renderWithProviders(<AnalyticsPage />);
 
     // Check for "Last updated" text
     expect(screen.getByText(/Last updated:/i)).toBeInTheDocument();
@@ -354,7 +354,7 @@ describe('AnalyticsPage', () => {
       refetch: vi.fn(),
     });
 
-    render(<AnalyticsPage />);
+    renderWithProviders(<AnalyticsPage />);
 
     // Page should render without crashing
     expect(screen.getByText('Analytics Dashboard')).toBeInTheDocument();

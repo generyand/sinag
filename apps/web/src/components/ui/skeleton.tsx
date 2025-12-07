@@ -36,6 +36,9 @@ type SkeletonProps = React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof 
 export function Skeleton({ className, shape, size, width, ...props }: SkeletonProps) {
   return (
     <div
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
       className={cn(skeletonVariants({ shape, size, width }), className)}
       {...props}
     />
