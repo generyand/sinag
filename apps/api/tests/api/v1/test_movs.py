@@ -370,6 +370,7 @@ class TestListMOVFiles:
         import uuid
 
         from app.db.models.barangay import Barangay
+
         barangay = Barangay(name=f"Other Barangay {uuid.uuid4().hex[:8]}")
         db_session.add(barangay)
         db_session.commit()
@@ -411,6 +412,7 @@ class TestListMOVFiles:
         import uuid
 
         from app.db.models.governance_area import Indicator
+
         unique_id = uuid.uuid4().hex[:8]
         indicator = Indicator(
             name=f"Test Indicator {unique_id}",
@@ -529,7 +531,9 @@ class TestListMOVFiles:
         authenticate_user(client, assessor_user)
 
         # List files as assessor
-        response = client.get(f"/api/v1/movs/assessments/{assessment.id}/indicators/{indicator.id}/files")
+        response = client.get(
+            f"/api/v1/movs/assessments/{assessment.id}/indicators/{indicator.id}/files"
+        )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -541,7 +545,9 @@ class TestListMOVFiles:
         assert "blgu1_file.pdf" in file_names
         assert "blgu2_file.pdf" in file_names
 
-    def test_list_files_excludes_soft_deleted(self, client, db_session, assessment, blgu_user, indicator):
+    def test_list_files_excludes_soft_deleted(
+        self, client, db_session, assessment, blgu_user, indicator
+    ):
         """Test that soft-deleted files are excluded from the list."""
         # Create active file
         active_file = MOVFile(
@@ -576,7 +582,9 @@ class TestListMOVFiles:
         authenticate_user(client, blgu_user)
 
         # List files
-        response = client.get(f"/api/v1/movs/assessments/{assessment.id}/indicators/{indicator.id}/files")
+        response = client.get(
+            f"/api/v1/movs/assessments/{assessment.id}/indicators/{indicator.id}/files"
+        )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -586,7 +594,9 @@ class TestListMOVFiles:
         # Verify only active file is returned
         assert data["files"][0]["file_name"] == "active_file.pdf"
 
-    def test_list_files_ordered_by_upload_time(self, client, db_session, assessment, blgu_user, indicator):
+    def test_list_files_ordered_by_upload_time(
+        self, client, db_session, assessment, blgu_user, indicator
+    ):
         """Test that files are ordered by upload time (most recent first)."""
         from datetime import timedelta
 
@@ -633,7 +643,9 @@ class TestListMOVFiles:
         authenticate_user(client, blgu_user)
 
         # List files
-        response = client.get(f"/api/v1/movs/assessments/{assessment.id}/indicators/{indicator.id}/files")
+        response = client.get(
+            f"/api/v1/movs/assessments/{assessment.id}/indicators/{indicator.id}/files"
+        )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -659,12 +671,15 @@ class TestListMOVFiles:
         assert "files" in data
         assert len(data["files"]) == 0
 
-    def test_list_files_filters_by_indicator(self, client, db_session, assessment, blgu_user, indicator, mock_governance_area):
+    def test_list_files_filters_by_indicator(
+        self, client, db_session, assessment, blgu_user, indicator, mock_governance_area
+    ):
         """Test that files are filtered by indicator_id."""
         # Create a second indicator
         import uuid
 
         from app.db.models.governance_area import Indicator
+
         unique_id = uuid.uuid4().hex[:8]
         indicator2 = Indicator(
             name=f"Test Indicator 2 {unique_id}",
@@ -708,7 +723,9 @@ class TestListMOVFiles:
         authenticate_user(client, blgu_user)
 
         # List files for indicator 1
-        response = client.get(f"/api/v1/movs/assessments/{assessment.id}/indicators/{indicator.id}/files")
+        response = client.get(
+            f"/api/v1/movs/assessments/{assessment.id}/indicators/{indicator.id}/files"
+        )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -741,6 +758,7 @@ class TestDeleteMOVFile:
         import uuid
 
         from app.db.models.barangay import Barangay
+
         barangay = Barangay(name=f"Other Barangay {uuid.uuid4().hex[:8]}")
         db_session.add(barangay)
         db_session.commit()
@@ -792,6 +810,7 @@ class TestDeleteMOVFile:
         import uuid
 
         from app.db.models.governance_area import Indicator
+
         unique_id = uuid.uuid4().hex[:8]
         indicator = Indicator(
             name=f"Delete Test Indicator {unique_id}",
@@ -921,7 +940,9 @@ class TestDeleteMOVFile:
         data = response.json()
         assert "not found" in data["error"]
 
-    def test_delete_already_deleted_file(self, client, db_session, draft_assessment, blgu_user, indicator):
+    def test_delete_already_deleted_file(
+        self, client, db_session, draft_assessment, blgu_user, indicator
+    ):
         """Test that already deleted files cannot be deleted again."""
         # Create already deleted file
         mov_file = MOVFile(

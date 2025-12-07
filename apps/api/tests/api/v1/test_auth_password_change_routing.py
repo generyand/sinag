@@ -125,7 +125,11 @@ def create_test_user(
     ],
 )
 def test_password_change_success_all_roles(
-    client: TestClient, db_session: Session, user_role: UserRole, mock_barangay, mock_governance_area
+    client: TestClient,
+    db_session: Session,
+    user_role: UserRole,
+    mock_barangay,
+    mock_governance_area,
 ):
     """
     CRITICAL: Test that password change succeeds for all user roles
@@ -138,7 +142,10 @@ def test_password_change_success_all_roles(
     """
     # Create user with specific role
     user = create_test_user(
-        db_session, user_role, mock_barangay=mock_barangay, mock_governance_area=mock_governance_area
+        db_session,
+        user_role,
+        mock_barangay=mock_barangay,
+        mock_governance_area=mock_governance_area,
     )
     original_email = user.email
 
@@ -238,7 +245,11 @@ def test_token_remains_valid_after_password_change(client: TestClient, db_sessio
     ],
 )
 def test_password_change_fails_with_wrong_current_password(
-    client: TestClient, db_session: Session, user_role: UserRole, mock_barangay, mock_governance_area
+    client: TestClient,
+    db_session: Session,
+    user_role: UserRole,
+    mock_barangay,
+    mock_governance_area,
 ):
     """
     Test that password change fails with incorrect current password
@@ -246,7 +257,10 @@ def test_password_change_fails_with_wrong_current_password(
     Security requirement: Must verify current password before allowing change
     """
     user = create_test_user(
-        db_session, user_role, mock_barangay=mock_barangay, mock_governance_area=mock_governance_area
+        db_session,
+        user_role,
+        mock_barangay=mock_barangay,
+        mock_governance_area=mock_governance_area,
     )
     _override_user_and_db(client, user, db_session)
 
@@ -401,7 +415,10 @@ def test_role_based_access_after_password_change(
     throughout the password change flow.
     """
     user = create_test_user(
-        db_session, user_role, mock_barangay=mock_barangay, mock_governance_area=mock_governance_area
+        db_session,
+        user_role,
+        mock_barangay=mock_barangay,
+        mock_governance_area=mock_governance_area,
     )
 
     # Change password
@@ -501,7 +518,9 @@ def test_password_change_validation_errors(client: TestClient, db_session: Sessi
     assert response.status_code == 422  # Validation error
 
     # Missing new_password
-    response = client.post("/api/v1/auth/change-password", json={"current_password": "OldPass123!@#"})
+    response = client.post(
+        "/api/v1/auth/change-password", json={"current_password": "OldPass123!@#"}
+    )
     assert response.status_code == 422  # Validation error
 
     # Empty body
@@ -520,7 +539,9 @@ def test_rapid_password_changes(client: TestClient, db_session: Session, mock_go
 
     Edge case: Ensures no race conditions or locking issues
     """
-    user = create_test_user(db_session, UserRole.VALIDATOR, mock_governance_area=mock_governance_area)
+    user = create_test_user(
+        db_session, UserRole.VALIDATOR, mock_governance_area=mock_governance_area
+    )
     _override_user_and_db(client, user, db_session)
 
     # First password change
