@@ -201,6 +201,35 @@ export function DynamicFormRenderer({
       return false;
     }
 
+    // For SHARED+OR logic (e.g., 4.1.6) - uses completion_group (not option_group)
+    if (isSharedPlusOrLogic) {
+      const sharedFields: FormSchemaFieldsItem[] = [];
+      const optionAFields: FormSchemaFieldsItem[] = [];
+      const optionBFields: FormSchemaFieldsItem[] = [];
+
+      requiredFields.forEach((field) => {
+        const completionGroup = (field as any).completion_group;
+        if (completionGroup === "shared") {
+          sharedFields.push(field);
+        } else if (completionGroup === "option_a") {
+          optionAFields.push(field);
+        } else if (completionGroup === "option_b") {
+          optionBFields.push(field);
+        }
+      });
+
+      // SHARED: all must be filled
+      const sharedComplete =
+        sharedFields.length > 0 ? sharedFields.every((field) => isFieldFilled(field)) : true;
+
+      // OPTION: at least one of option_a or option_b must have an upload
+      const optionAHasUpload = optionAFields.some((field) => isFieldFilled(field));
+      const optionBHasUpload = optionBFields.some((field) => isFieldFilled(field));
+      const optionComplete = optionAHasUpload || optionBHasUpload;
+
+      return sharedComplete && optionComplete;
+    }
+
     // For OR logic
     if (isOrLogic) {
       const groups: Record<string, FormSchemaFieldsItem[]> = {};
