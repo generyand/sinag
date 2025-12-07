@@ -127,9 +127,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: [validate-checks]
     # Run if: manual trigger OR (automatic trigger AND validation passed)
+    # For workflow_dispatch, validate-checks is skipped, so we check for skipped result
     if: |
-      github.event_name == 'workflow_dispatch' || 
-      (github.event_name == 'workflow_run' && (needs.validate-checks.result == 'success' || needs.validate-checks.result == 'skipped'))
+      always() && (
+        github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'workflow_run' && (needs.validate-checks.result == 'success' || needs.validate-checks.result == 'skipped'))
+      )
     outputs:
       environment: ${{ steps.set-env.outputs.environment }}
       image_tag: ${{ steps.set-env.outputs.image_tag }}
