@@ -232,9 +232,9 @@ jobs:
           ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENVSSH'
           set -e
           cd ~/sinag || { echo "ERROR: ~/sinag directory does not exist"; ls -la ~/; exit 1; }
-          docker compose -f ~/sinag/docker-compose.prod.yml pull
-          docker compose -f ~/sinag/docker-compose.prod.yml down --remove-orphans || true
-          docker compose -f ~/sinag/docker-compose.prod.yml up -d
+          docker compose -f docker-compose.prod.yml pull
+          docker compose -f docker-compose.prod.yml down --remove-orphans || true
+          docker compose -f docker-compose.prod.yml up -d
           echo "✓ Staging deployed"
           ENVSSH
 
@@ -245,7 +245,7 @@ jobs:
           set -e
           cd ~/sinag || { echo "ERROR: ~/sinag directory does not exist"; exit 1; }
           sleep 15
-          docker compose -f ~/sinag/docker-compose.prod.yml exec -T api alembic upgrade head
+          docker compose -f docker-compose.prod.yml exec -T api alembic upgrade head
           echo "✓ Migrations completed"
           ENVSSH
 
@@ -264,8 +264,8 @@ jobs:
             sleep 5
           done
           echo "✗ Health check failed after 3 attempts"
-          docker compose -f ~/sinag/docker-compose.prod.yml ps
-          docker compose -f ~/sinag/docker-compose.prod.yml logs --tail=20
+          docker compose -f docker-compose.prod.yml ps
+          docker compose -f docker-compose.prod.yml logs --tail=20
           exit 1
           ENVSSH
 
@@ -362,9 +362,9 @@ jobs:
           ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENVSSH'
           set -e
           cd ~/sinag || { echo "ERROR: ~/sinag directory does not exist"; ls -la ~/; exit 1; }
-          docker compose -f ~/sinag/docker-compose.prod.yml pull
-          docker compose -f ~/sinag/docker-compose.prod.yml down --remove-orphans || true
-          docker compose -f ~/sinag/docker-compose.prod.yml up -d
+          docker compose -f docker-compose.prod.yml pull
+          docker compose -f docker-compose.prod.yml down --remove-orphans || true
+          docker compose -f docker-compose.prod.yml up -d
           echo "✓ Production deployed"
           ENVSSH
 
@@ -375,7 +375,7 @@ jobs:
           set -e
           cd ~/sinag || { echo "ERROR: ~/sinag directory does not exist"; exit 1; }
           sleep 15
-          docker compose -f ~/sinag/docker-compose.prod.yml exec -T api alembic upgrade head
+          docker compose -f docker-compose.prod.yml exec -T api alembic upgrade head
           echo "✓ Migrations completed"
           ENVSSH
 
@@ -394,8 +394,8 @@ jobs:
             sleep 5
           done
           echo "✗ Health check failed after 3 attempts"
-          docker compose -f ~/sinag/docker-compose.prod.yml ps
-          docker compose -f ~/sinag/docker-compose.prod.yml logs --tail=20
+          docker compose -f docker-compose.prod.yml ps
+          docker compose -f docker-compose.prod.yml logs --tail=20
           exit 1
           ENVSSH
 
