@@ -31,6 +31,20 @@ class SinagException(Exception):
         self.details = details or {}
         super().__init__(self.message)
 
+    def __str__(self) -> str:
+        """Return a human-readable string representation for logging."""
+        return f"{self.error_code}: {self.message}"
+
+    def __repr__(self) -> str:
+        """Return a detailed string representation for debugging."""
+        return (
+            f"{self.__class__.__name__}("
+            f"message={self.message!r}, "
+            f"error_code={self.error_code!r}, "
+            f"status_code={self.status_code}, "
+            f"details={self.details!r})"
+        )
+
 
 # ==================== Authentication & Authorization ====================
 

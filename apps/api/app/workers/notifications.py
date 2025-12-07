@@ -133,11 +133,7 @@ def send_new_submission_notification(self: Any, assessment_id: int) -> dict[str,
             exc_info=True,
         )
         db.rollback()
-        # For unexpected errors, attempt retry
-        try:
-            self.retry(countdown=RETRY_BACKOFF * (2 ** self.request.retries))
-        except MaxRetriesExceededError:
-            return {"success": False, "error": str(e), "max_retries_exceeded": True}
+        return {"success": False, "error": str(e)}
 
     finally:
         db.close()
@@ -233,10 +229,7 @@ def send_rework_notification(self: Any, assessment_id: int) -> dict[str, Any]:
             exc_info=True,
         )
         db.rollback()
-        try:
-            self.retry(countdown=RETRY_BACKOFF * (2 ** self.request.retries))
-        except MaxRetriesExceededError:
-            return {"success": False, "error": str(e), "max_retries_exceeded": True}
+        return {"success": False, "error": str(e)}
 
     finally:
         db.close()
@@ -329,10 +322,7 @@ def send_rework_resubmission_notification(self: Any, assessment_id: int) -> dict
             exc_info=True,
         )
         db.rollback()
-        try:
-            self.retry(countdown=RETRY_BACKOFF * (2 ** self.request.retries))
-        except MaxRetriesExceededError:
-            return {"success": False, "error": str(e), "max_retries_exceeded": True}
+        return {"success": False, "error": str(e)}
 
     finally:
         db.close()
@@ -436,10 +426,7 @@ def send_ready_for_validation_notification(
             exc_info=True,
         )
         db.rollback()
-        try:
-            self.retry(countdown=RETRY_BACKOFF * (2 ** self.request.retries))
-        except MaxRetriesExceededError:
-            return {"success": False, "error": str(e), "max_retries_exceeded": True}
+        return {"success": False, "error": str(e)}
 
     finally:
         db.close()
@@ -549,10 +536,7 @@ def send_calibration_notification(self: Any, assessment_id: int) -> dict[str, An
             exc_info=True,
         )
         db.rollback()
-        try:
-            self.retry(countdown=RETRY_BACKOFF * (2 ** self.request.retries))
-        except MaxRetriesExceededError:
-            return {"success": False, "error": str(e), "max_retries_exceeded": True}
+        return {"success": False, "error": str(e)}
 
     finally:
         db.close()
@@ -661,10 +645,7 @@ def send_calibration_resubmission_notification(
             exc_info=True,
         )
         db.rollback()
-        try:
-            self.retry(countdown=RETRY_BACKOFF * (2 ** self.request.retries))
-        except MaxRetriesExceededError:
-            return {"success": False, "error": str(e), "max_retries_exceeded": True}
+        return {"success": False, "error": str(e)}
 
     finally:
         db.close()
@@ -773,10 +754,7 @@ def send_validation_complete_notification(self: Any, assessment_id: int) -> dict
             exc_info=True,
         )
         db.rollback()
-        try:
-            self.retry(countdown=RETRY_BACKOFF * (2 ** self.request.retries))
-        except MaxRetriesExceededError:
-            return {"success": False, "error": str(e), "max_retries_exceeded": True}
+        return {"success": False, "error": str(e)}
 
     finally:
         db.close()
@@ -1004,10 +982,7 @@ def send_ready_for_mlgoo_approval_notification(self: Any, assessment_id: int) ->
             exc_info=True,
         )
         db.rollback()
-        try:
-            self.retry(countdown=RETRY_BACKOFF * (2 ** self.request.retries))
-        except MaxRetriesExceededError:
-            return {"success": False, "error": str(e), "max_retries_exceeded": True}
+        return {"success": False, "error": str(e)}
 
     finally:
         db.close()
@@ -1106,10 +1081,7 @@ def send_mlgoo_recalibration_notification(self: Any, assessment_id: int) -> dict
             exc_info=True,
         )
         db.rollback()
-        try:
-            self.retry(countdown=RETRY_BACKOFF * (2 ** self.request.retries))
-        except MaxRetriesExceededError:
-            return {"success": False, "error": str(e), "max_retries_exceeded": True}
+        return {"success": False, "error": str(e)}
 
     finally:
         db.close()
@@ -1207,10 +1179,7 @@ def send_assessment_approved_notification(self: Any, assessment_id: int) -> dict
             exc_info=True,
         )
         db.rollback()
-        try:
-            self.retry(countdown=RETRY_BACKOFF * (2 ** self.request.retries))
-        except MaxRetriesExceededError:
-            return {"success": False, "error": str(e), "max_retries_exceeded": True}
+        return {"success": False, "error": str(e)}
 
     finally:
         db.close()
@@ -1313,10 +1282,7 @@ def send_grace_period_warning_notification(
             exc_info=True,
         )
         db.rollback()
-        try:
-            self.retry(countdown=RETRY_BACKOFF * (2 ** self.request.retries))
-        except MaxRetriesExceededError:
-            return {"success": False, "error": str(e), "max_retries_exceeded": True}
+        return {"success": False, "error": str(e)}
 
     finally:
         db.close()
@@ -1426,10 +1392,7 @@ def send_deadline_expired_notification(self: Any, assessment_id: int) -> dict[st
             exc_info=True,
         )
         db.rollback()
-        try:
-            self.retry(countdown=RETRY_BACKOFF * (2 ** self.request.retries))
-        except MaxRetriesExceededError:
-            return {"success": False, "error": str(e), "max_retries_exceeded": True}
+        return {"success": False, "error": str(e)}
 
     finally:
         db.close()

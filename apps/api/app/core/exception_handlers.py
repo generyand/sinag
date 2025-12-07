@@ -12,7 +12,7 @@ from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.core.exceptions import SinagException
+from app.core.exceptions import AccountLockedError, RateLimitError, SinagException
 
 logger = logging.getLogger(__name__)
 
@@ -84,8 +84,16 @@ async def sinag_exception_handler(request: Request, exc: SinagException) -> JSON
             exc.message,
         )
 
+    # Build response headers
+    headers: dict[str, str] = {}
+
+    # Add Retry-After header for rate limiting and account lockout errors
+    if isinstance(exc, (RateLimitError, AccountLockedError)):
+        headers["Retry-After"] = str(exc.retry_after)
+
     return JSONResponse(
         status_code=exc.status_code,
+        headers=headers if headers else None,
         content=create_error_response(
             status_code=exc.status_code,
             error=exc.message,

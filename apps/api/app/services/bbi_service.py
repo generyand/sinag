@@ -382,7 +382,9 @@ class BBIService:
         """
         Evaluate if a sub-indicator passes based on its checklist items.
 
-        A sub-indicator PASSES if all required checklist items are satisfied.
+        A sub-indicator PASSES if:
+        1. When checklist items exist: All required checklist items are satisfied
+        2. When no checklist items: Falls back to validation_status == PASS
 
         Args:
             db: Database session
@@ -422,6 +424,18 @@ class BBIService:
             .order_by(ChecklistItem.display_order)
             .all()
         )
+
+        # If no checklist items exist, fall back to validation_status
+        # This follows the same pattern used for parent indicators (line ~336)
+        if not checklist_items:
+            passed = response and response.validation_status == ValidationStatus.PASS
+            return {
+                "code": sub_indicator.indicator_code,
+                "name": sub_indicator.name,
+                "passed": passed,
+                "validation_rule": "VALIDATION_STATUS",
+                "checklist_summary": {},
+            }
 
         checklist_summary = {}
         all_required_satisfied = True
