@@ -361,6 +361,11 @@ def test_get_dashboard_with_no_data(client, db_session: Session, mlgoo_dilg_user
     """Test GET /api/v1/analytics/dashboard handles empty database gracefully"""
     _override_user_and_db(client, mlgoo_dilg_user, db_session)
 
+    # Clear the dashboard cache to ensure fresh data is fetched
+    from app.core.cache import cache
+
+    cache.delete_pattern("dashboard_kpis:*")
+
     # Clean database (no test_data fixture)
     response = client.get("/api/v1/analytics/dashboard")
 
