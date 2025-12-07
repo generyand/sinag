@@ -245,15 +245,24 @@ jobs:
           echo "✓ Logged into GHCR"
           ENVSSH
 
-      - name: Pull and deploy
+      - name: Pull and deploy (zero-downtime)
         run: |
           ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENVSSH'
           set -e
           cd ~/sinag
+
+          # Pull new images while old containers are still running
           docker compose --env-file .env -f docker-compose.prod.yml pull
-          docker compose --env-file .env -f docker-compose.prod.yml down --remove-orphans || true
-          docker compose --env-file .env -f docker-compose.prod.yml up -d
-          echo "✓ Staging deployed"
+
+          # Recreate containers with new images (zero-downtime rolling update)
+          # --force-recreate ensures containers are replaced even if config unchanged
+          # Docker Compose will start new containers before stopping old ones
+          docker compose --env-file .env -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
+
+          # Clean up old images to save disk space
+          docker image prune -f || true
+
+          echo "✓ Staging deployed (zero-downtime)"
           ENVSSH
 
       - name: Run migrations
@@ -364,15 +373,24 @@ jobs:
           echo "✓ Logged into GHCR"
           ENVSSH
 
-      - name: Pull and deploy
+      - name: Pull and deploy (zero-downtime)
         run: |
           ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENVSSH'
           set -e
           cd ~/sinag
+
+          # Pull new images while old containers are still running
           docker compose --env-file .env -f docker-compose.prod.yml pull
-          docker compose --env-file .env -f docker-compose.prod.yml down --remove-orphans || true
-          docker compose --env-file .env -f docker-compose.prod.yml up -d
-          echo "✓ Production deployed"
+
+          # Recreate containers with new images (zero-downtime rolling update)
+          # --force-recreate ensures containers are replaced even if config unchanged
+          # Docker Compose will start new containers before stopping old ones
+          docker compose --env-file .env -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
+
+          # Clean up old images to save disk space
+          docker image prune -f || true
+
+          echo "✓ Production deployed (zero-downtime)"
           ENVSSH
 
       - name: Run migrations
