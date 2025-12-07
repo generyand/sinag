@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from app.core.security import get_password_hash
 from app.db.base import SessionLocal
-from app.db.enums import UserRole
+from app.db.enums import AreaType, UserRole
 from app.db.models.barangay import Barangay
 from app.db.models.governance_area import GovernanceArea
 from app.db.models.user import User
@@ -84,11 +84,12 @@ def ensure_test_governance_area(db) -> int:
     """Ensure a governance area exists and return its ID."""
     area = db.query(GovernanceArea).first()
     if not area:
-        # Create a test governance area
+        # Create a test governance area with required fields
         area = GovernanceArea(
             id=1,
             name="E2E Test Governance Area",
-            description="Test area for E2E tests",
+            code="TE",  # 2-letter code
+            area_type=AreaType.CORE,
         )
         db.add(area)
         db.commit()
