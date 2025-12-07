@@ -140,10 +140,14 @@ jobs:
       - name: Determine environment
         id: set-env
         run: |
+          echo "Event name: ${{ github.event_name }}"
+          echo "Input environment: ${{ inputs.environment }}"
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             # Manual trigger - use selected environment
-            echo "environment=${{ inputs.environment }}" >> $GITHUB_OUTPUT
-            if [ "${{ inputs.environment }}" == "production" ]; then
+            ENV="${{ inputs.environment }}"
+            echo "environment=${ENV}" >> $GITHUB_OUTPUT
+            echo "Selected environment: ${ENV}"
+            if [ "${ENV}" == "production" ]; then
               echo "image_tag=latest" >> $GITHUB_OUTPUT
             else
               echo "image_tag=develop" >> $GITHUB_OUTPUT
@@ -157,6 +161,8 @@ jobs:
             echo "environment=staging" >> $GITHUB_OUTPUT
             echo "image_tag=develop" >> $GITHUB_OUTPUT
           fi
+          echo "Final outputs:"
+          cat $GITHUB_OUTPUT
 
   # ==========================================================================
   # Deploy to staging (auto-deploy, no approval needed)
