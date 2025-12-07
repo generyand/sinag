@@ -115,7 +115,9 @@ class AnalyticsService:
             try:
                 # Convert Pydantic model to dict for caching
                 cache.set(cache_key, response.model_dump(), ttl=CACHE_TTL_DASHBOARD)
-                logger.info(f"💾 Dashboard KPIs cached for {cache_key} (TTL: {CACHE_TTL_DASHBOARD}s)")
+                logger.info(
+                    f"💾 Dashboard KPIs cached for {cache_key} (TTL: {CACHE_TTL_DASHBOARD}s)"
+                )
             except Exception as e:
                 logger.warning(f"⚠️  Failed to cache dashboard KPIs: {e}")
 

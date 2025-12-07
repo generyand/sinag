@@ -117,7 +117,10 @@ class TestRoleBasedAccessControl:
         assert response.status_code == 403
         data = response.json()
         assert "detail" in data
-        assert "assessor" in data.get("error", data.get("detail", "")).lower() or "permission" in data.get("error", data.get("detail", "")).lower()
+        assert (
+            "assessor" in data.get("error", data.get("detail", "")).lower()
+            or "permission" in data.get("error", data.get("detail", "")).lower()
+        )
 
     def test_assessor_can_request_rework_any_assessment(
         self,

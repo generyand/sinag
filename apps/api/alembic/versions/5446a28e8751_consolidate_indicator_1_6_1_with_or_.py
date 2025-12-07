@@ -16,7 +16,8 @@ Changes:
 The new structure uses Option 1, Option 2, Option 3 with section headers and
 OR separators. Only ONE option needs to be completed (ANY_OPTION_GROUP_REQUIRED).
 """
-from typing import Sequence, Union, Dict, Any
+
+from typing import Sequence, Union, Any
 import json
 
 from alembic import op
@@ -25,8 +26,8 @@ from sqlalchemy.orm import Session
 
 
 # revision identifiers, used by Alembic.
-revision: str = '5446a28e8751'
-down_revision: Union[str, Sequence[str], None] = 'c4d5e6f7a8b9'
+revision: str = "5446a28e8751"
+down_revision: Union[str, Sequence[str], None] = "c4d5e6f7a8b9"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -61,9 +62,9 @@ def upgrade() -> None:
         print("=" * 60)
 
         # 1. Get the parent indicator 1.6.1
-        parent_indicator = session.query(Indicator).filter(
-            Indicator.indicator_code == "1.6.1"
-        ).first()
+        parent_indicator = (
+            session.query(Indicator).filter(Indicator.indicator_code == "1.6.1").first()
+        )
 
         if not parent_indicator:
             print("Parent indicator 1.6.1 not found, skipping migration...")
@@ -72,9 +73,9 @@ def upgrade() -> None:
         print(f"Found parent indicator: {parent_indicator.id} - {parent_indicator.indicator_code}")
 
         # 2. Get child indicators (1.6.1.1, 1.6.1.2, 1.6.1.3)
-        child_indicators = session.query(Indicator).filter(
-            Indicator.parent_id == parent_indicator.id
-        ).all()
+        child_indicators = (
+            session.query(Indicator).filter(Indicator.parent_id == parent_indicator.id).all()
+        )
 
         child_codes = [c.indicator_code for c in child_indicators]
         print(f"Found {len(child_indicators)} child indicators: {child_codes}")
@@ -85,9 +86,11 @@ def upgrade() -> None:
 
         # 4. Delete checklist items from children
         for child in child_indicators:
-            deleted_count = session.query(ChecklistItemModel).filter(
-                ChecklistItemModel.indicator_id == child.id
-            ).delete()
+            deleted_count = (
+                session.query(ChecklistItemModel)
+                .filter(ChecklistItemModel.indicator_id == child.id)
+                .delete()
+            )
             print(f"  Deleted {deleted_count} checklist items from {child.indicator_code}")
 
         # 5. Delete child indicators
@@ -96,9 +99,11 @@ def upgrade() -> None:
             print(f"  Deleted child indicator: {child.indicator_code}")
 
         # 6. Delete existing checklist items from parent
-        deleted_count = session.query(ChecklistItemModel).filter(
-            ChecklistItemModel.indicator_id == parent_indicator.id
-        ).delete()
+        deleted_count = (
+            session.query(ChecklistItemModel)
+            .filter(ChecklistItemModel.indicator_id == parent_indicator.id)
+            .delete()
+        )
         print(f"Deleted {deleted_count} existing checklist items from parent 1.6.1")
 
         # 7. Create new checklist items from the updated definition
@@ -130,7 +135,7 @@ def upgrade() -> None:
             sub_161.checklist_items,
             sub_161.upload_instructions,
             sub_161.validation_rule,
-            sub_161.notes
+            sub_161.notes,
         )
         parent_indicator.form_schema = form_schema
         print(f"Updated form_schema with {len(form_schema.get('fields', []))} fields")
@@ -153,18 +158,24 @@ def _migrate_responses(session: Session, old_indicator: Any, new_indicator: Any)
     from app.db.models.assessment import AssessmentResponse, MOVFile
 
     # Get responses for the old indicator
-    responses = session.query(AssessmentResponse).filter(
-        AssessmentResponse.indicator_id == old_indicator.id
-    ).all()
+    responses = (
+        session.query(AssessmentResponse)
+        .filter(AssessmentResponse.indicator_id == old_indicator.id)
+        .all()
+    )
 
     print(f"  Migrating {len(responses)} responses from {old_indicator.indicator_code}...")
 
     for response in responses:
         # Check if there's already a response for the parent indicator in this assessment
-        existing_parent_response = session.query(AssessmentResponse).filter(
-            AssessmentResponse.assessment_id == response.assessment_id,
-            AssessmentResponse.indicator_id == new_indicator.id
-        ).first()
+        existing_parent_response = (
+            session.query(AssessmentResponse)
+            .filter(
+                AssessmentResponse.assessment_id == response.assessment_id,
+                AssessmentResponse.indicator_id == new_indicator.id,
+            )
+            .first()
+        )
 
         if existing_parent_response:
             # Merge response data into existing parent response
@@ -178,7 +189,9 @@ def _migrate_responses(session: Session, old_indicator: Any, new_indicator: Any)
             response.indicator_id = new_indicator.id
             # Update field IDs in response_data
             if response.response_data:
-                response.response_data = _remap_field_ids(response.response_data, old_indicator.indicator_code)
+                response.response_data = _remap_field_ids(
+                    response.response_data, old_indicator.indicator_code
+                )
             # Update MOV files to point to new indicator
             _migrate_mov_files(session, old_indicator, new_indicator, response.assessment_id)
 
@@ -196,7 +209,7 @@ def _merge_response_data(parent_response: Any, child_response: Any, child_code: 
     parent_response.response_data.update(remapped_data)
 
 
-def _remap_field_ids(response_data: Dict[str, Any], child_code: str) -> Dict[str, Any]:
+def _remap_field_ids(response_data: dict[str, Any], child_code: str) -> dict[str, Any]:
     """Remap old field IDs to new field IDs based on the indicator code."""
     if not response_data:
         return {}
@@ -209,15 +222,18 @@ def _remap_field_ids(response_data: Dict[str, Any], child_code: str) -> Dict[str
     return remapped
 
 
-def _migrate_mov_files(session: Session, old_indicator: Any, new_indicator: Any, assessment_id: int) -> None:
+def _migrate_mov_files(
+    session: Session, old_indicator: Any, new_indicator: Any, assessment_id: int
+) -> None:
     """Migrate MOV files from old indicator to new indicator and update field IDs."""
     from app.db.models.assessment import MOVFile
 
     # Get MOV files for the old indicator in this assessment
-    movs = session.query(MOVFile).filter(
-        MOVFile.indicator_id == old_indicator.id,
-        MOVFile.assessment_id == assessment_id
-    ).all()
+    movs = (
+        session.query(MOVFile)
+        .filter(MOVFile.indicator_id == old_indicator.id, MOVFile.assessment_id == assessment_id)
+        .all()
+    )
 
     for mov in movs:
         # Update indicator reference to point to new parent indicator

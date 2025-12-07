@@ -85,7 +85,7 @@ class GovernanceAreaService:
         if cache.is_available:
             cached_data = cache.get(cache_key)
             if cached_data is not None:
-                logger.debug(f"🎯 Governance areas cache HIT")
+                logger.debug("🎯 Governance areas cache HIT")
                 # Reconstruct GovernanceArea objects from cached dicts
                 # Note: This returns dicts that work with Pydantic serialization
                 return cached_data

@@ -301,7 +301,10 @@ def test_get_overall_compliance_insufficient_data_returns_400(
     response = client.get("/api/v1/external/analytics/overall")
 
     assert response.status_code == 400
-    assert "insufficient data" in response.json().get("error", response.json().get("detail", "")).lower()
+    assert (
+        "insufficient data"
+        in response.json().get("error", response.json().get("detail", "")).lower()
+    )
 
 
 # ====================================================================

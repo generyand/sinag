@@ -407,6 +407,7 @@ class StartupService:
             # External user configuration (Katuparan Center for research purposes)
             # Password is loaded from environment variable EXTERNAL_USER_DEFAULT_PASSWORD
             from app.core.config import settings
+
             external_password = settings.EXTERNAL_USER_DEFAULT_PASSWORD
 
             external_users = [
@@ -447,7 +448,9 @@ class StartupService:
                 logger.info(
                     f"  - Created {created_count} external stakeholder user(s) successfully."
                 )
-                logger.info("  ⚠️  Users created with EXTERNAL_USER_DEFAULT_PASSWORD (must be changed on first login)")
+                logger.info(
+                    "  ⚠️  Users created with EXTERNAL_USER_DEFAULT_PASSWORD (must be changed on first login)"
+                )
             else:
                 logger.info("  - All external users already exist. Skipping.")
 

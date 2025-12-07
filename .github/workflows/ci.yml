@@ -85,7 +85,7 @@ jobs:
       - name: Run tests with coverage
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
-          SECRET_KEY: test-secret-key-for-ci-pipeline
+          SECRET_KEY: test-secret-key-for-ci-pipeline-1234567890abcdef
           CELERY_BROKER_URL: redis://localhost:6379/0
           SUPABASE_URL: https://example.supabase.co
           SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
@@ -277,7 +277,7 @@ jobs:
           echo "API server starting (PID: $(cat /tmp/api.pid))"
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
-          SECRET_KEY: test-secret-key-for-ci
+          SECRET_KEY: test-secret-key-for-ci-pipeline-1234567890abcdef
           CELERY_BROKER_URL: redis://localhost:6379/0
           SUPABASE_URL: https://example.supabase.co
           SUPABASE_SERVICE_ROLE_KEY: test-service-role-key

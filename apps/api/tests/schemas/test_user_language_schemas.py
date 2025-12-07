@@ -83,7 +83,9 @@ class TestUserCreateSchemaLanguage:
 
     def test_user_create_default_language_is_ceb(self):
         """Test that default language is 'ceb' when not specified."""
-        user_create = UserCreate(email="test@example.com", name="Test User", password="TestPassword123!")
+        user_create = UserCreate(
+            email="test@example.com", name="Test User", password="TestPassword123!"
+        )
         assert user_create.preferred_language == "ceb"
 
     def test_user_create_with_explicit_language(self):

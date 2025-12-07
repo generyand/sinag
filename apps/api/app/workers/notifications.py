@@ -311,7 +311,10 @@ def send_rework_resubmission_notification(self: Any, assessment_id: int) -> dict
         raise
 
     except MaxRetriesExceededError:
-        logger.error("Max retries exceeded for rework resubmission notification - assessment %s", assessment_id)
+        logger.error(
+            "Max retries exceeded for rework resubmission notification - assessment %s",
+            assessment_id,
+        )
         return {"success": False, "error": "Max retries exceeded", "assessment_id": assessment_id}
 
     except Exception as e:
@@ -415,7 +418,10 @@ def send_ready_for_validation_notification(
         raise
 
     except MaxRetriesExceededError:
-        logger.error("Max retries exceeded for ready for validation notification - assessment %s", assessment_id)
+        logger.error(
+            "Max retries exceeded for ready for validation notification - assessment %s",
+            assessment_id,
+        )
         return {"success": False, "error": "Max retries exceeded", "assessment_id": assessment_id}
 
     except Exception as e:
@@ -525,7 +531,9 @@ def send_calibration_notification(self: Any, assessment_id: int) -> dict[str, An
         raise
 
     except MaxRetriesExceededError:
-        logger.error("Max retries exceeded for calibration notification - assessment %s", assessment_id)
+        logger.error(
+            "Max retries exceeded for calibration notification - assessment %s", assessment_id
+        )
         return {"success": False, "error": "Max retries exceeded", "assessment_id": assessment_id}
 
     except Exception as e:
@@ -634,7 +642,10 @@ def send_calibration_resubmission_notification(
         raise
 
     except MaxRetriesExceededError:
-        logger.error("Max retries exceeded for calibration resubmission notification - assessment %s", assessment_id)
+        logger.error(
+            "Max retries exceeded for calibration resubmission notification - assessment %s",
+            assessment_id,
+        )
         return {"success": False, "error": "Max retries exceeded", "assessment_id": assessment_id}
 
     except Exception as e:
@@ -743,7 +754,10 @@ def send_validation_complete_notification(self: Any, assessment_id: int) -> dict
         raise
 
     except MaxRetriesExceededError:
-        logger.error("Max retries exceeded for validation complete notification - assessment %s", assessment_id)
+        logger.error(
+            "Max retries exceeded for validation complete notification - assessment %s",
+            assessment_id,
+        )
         return {"success": False, "error": "Max retries exceeded", "assessment_id": assessment_id}
 
     except Exception as e:
@@ -971,7 +985,10 @@ def send_ready_for_mlgoo_approval_notification(self: Any, assessment_id: int) ->
         raise
 
     except MaxRetriesExceededError:
-        logger.error("Max retries exceeded for ready for MLGOO approval notification - assessment %s", assessment_id)
+        logger.error(
+            "Max retries exceeded for ready for MLGOO approval notification - assessment %s",
+            assessment_id,
+        )
         return {"success": False, "error": "Max retries exceeded", "assessment_id": assessment_id}
 
     except Exception as e:
@@ -1070,7 +1087,10 @@ def send_mlgoo_recalibration_notification(self: Any, assessment_id: int) -> dict
         raise
 
     except MaxRetriesExceededError:
-        logger.error("Max retries exceeded for MLGOO recalibration notification - assessment %s", assessment_id)
+        logger.error(
+            "Max retries exceeded for MLGOO recalibration notification - assessment %s",
+            assessment_id,
+        )
         return {"success": False, "error": "Max retries exceeded", "assessment_id": assessment_id}
 
     except Exception as e:
@@ -1168,7 +1188,10 @@ def send_assessment_approved_notification(self: Any, assessment_id: int) -> dict
         raise
 
     except MaxRetriesExceededError:
-        logger.error("Max retries exceeded for assessment approved notification - assessment %s", assessment_id)
+        logger.error(
+            "Max retries exceeded for assessment approved notification - assessment %s",
+            assessment_id,
+        )
         return {"success": False, "error": "Max retries exceeded", "assessment_id": assessment_id}
 
     except Exception as e:
@@ -1271,7 +1294,10 @@ def send_grace_period_warning_notification(
         raise
 
     except MaxRetriesExceededError:
-        logger.error("Max retries exceeded for grace period warning notification - assessment %s", assessment_id)
+        logger.error(
+            "Max retries exceeded for grace period warning notification - assessment %s",
+            assessment_id,
+        )
         return {"success": False, "error": "Max retries exceeded", "assessment_id": assessment_id}
 
     except Exception as e:
@@ -1381,7 +1407,9 @@ def send_deadline_expired_notification(self: Any, assessment_id: int) -> dict[st
         raise
 
     except MaxRetriesExceededError:
-        logger.error("Max retries exceeded for deadline expired notification - assessment %s", assessment_id)
+        logger.error(
+            "Max retries exceeded for deadline expired notification - assessment %s", assessment_id
+        )
         return {"success": False, "error": "Max retries exceeded", "assessment_id": assessment_id}
 
     except Exception as e:

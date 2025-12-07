@@ -20,14 +20,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.exception_handlers import (
     create_error_response,
     generate_error_id,
-    generic_exception_handler,
-    http_exception_handler,
-    integrity_error_handler,
-    operational_error_handler,
     register_exception_handlers,
-    sinag_exception_handler,
-    sqlalchemy_error_handler,
-    validation_exception_handler,
 )
 from app.core.exceptions import (
     AccountLockedError,

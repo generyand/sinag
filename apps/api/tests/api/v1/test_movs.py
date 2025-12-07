@@ -262,7 +262,10 @@ class TestUploadMOVFile:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         data = response.json()
-        assert "suspicious or executable" in data.get("error", data.get("detail", ""))["message"].lower()
+        assert (
+            "suspicious or executable"
+            in data.get("error", data.get("detail", ""))["message"].lower()
+        )
         assert data.get("error", data.get("detail", ""))["error_code"] == "SUSPICIOUS_CONTENT"
 
     def test_upload_rejects_extension_mismatch(self, client, assessment, auth_headers):
@@ -279,7 +282,10 @@ class TestUploadMOVFile:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         data = response.json()
-        assert "extension does not match" in data.get("error", data.get("detail", ""))["message"].lower()
+        assert (
+            "extension does not match"
+            in data.get("error", data.get("detail", ""))["message"].lower()
+        )
         assert data.get("error", data.get("detail", ""))["error_code"] == "EXTENSION_MISMATCH"
 
     def test_upload_handles_storage_service_error(self, client, assessment, auth_headers):

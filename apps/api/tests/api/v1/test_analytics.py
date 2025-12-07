@@ -241,7 +241,10 @@ def test_get_dashboard_forbidden_with_blgu_user(client, db_session: Session, blg
     assert response.status_code == 403
     data = response.json()
     assert "detail" in data
-    assert "permission" in data.get("error", data.get("detail", "")).lower() or "mlgoo" in data.get("error", data.get("detail", "")).lower()
+    assert (
+        "permission" in data.get("error", data.get("detail", "")).lower()
+        or "mlgoo" in data.get("error", data.get("detail", "")).lower()
+    )
 
     client.app.dependency_overrides.clear()
 
@@ -257,7 +260,10 @@ def test_get_dashboard_forbidden_with_assessor_user(
     assert response.status_code == 403
     data = response.json()
     assert "detail" in data
-    assert "permission" in data.get("error", data.get("detail", "")).lower() or "mlgoo" in data.get("error", data.get("detail", "")).lower()
+    assert (
+        "permission" in data.get("error", data.get("detail", "")).lower()
+        or "mlgoo" in data.get("error", data.get("detail", "")).lower()
+    )
 
     client.app.dependency_overrides.clear()
 

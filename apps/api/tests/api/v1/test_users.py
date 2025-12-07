@@ -571,7 +571,9 @@ def test_deactivate_user_cannot_deactivate_self(
     response = client.delete(f"/api/v1/users/{admin_user.id}")
 
     assert response.status_code == 400
-    assert "Cannot deactivate your own account" in response.json().get("error", response.json().get("detail", ""))
+    assert "Cannot deactivate your own account" in response.json().get(
+        "error", response.json().get("detail", "")
+    )
 
 
 def test_deactivate_user_not_found(client: TestClient, db_session: Session, admin_user: User):
@@ -599,7 +601,9 @@ def test_deactivate_user_forbidden_for_non_admin(
 # ====================================================================
 
 
-def test_activate_user_as_admin(client: TestClient, db_session: Session, admin_user: User, mock_barangay):
+def test_activate_user_as_admin(
+    client: TestClient, db_session: Session, admin_user: User, mock_barangay
+):
     """Test admin can activate inactive user"""
     # Create inactive user
     unique_email = f"inactive_{uuid.uuid4().hex[:8]}@example.com"
@@ -1058,7 +1062,9 @@ def test_only_mlgoo_dilg_can_access_user_management(
     assert response.status_code == 403
 
 
-def test_validator_cannot_access_user_management(client: TestClient, db_session: Session, mock_governance_area):
+def test_validator_cannot_access_user_management(
+    client: TestClient, db_session: Session, mock_governance_area
+):
     """Test that VALIDATOR role cannot access user management endpoints"""
     # Create validator user
     unique_email = f"validator_{uuid.uuid4().hex[:8]}@example.com"

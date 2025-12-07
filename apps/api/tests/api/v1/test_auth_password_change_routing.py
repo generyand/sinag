@@ -246,7 +246,9 @@ def test_password_change_fails_with_wrong_current_password(
     )
 
     assert response.status_code == 400
-    assert "Incorrect current password" in response.json().get("error", response.json().get("detail", ""))
+    assert "Incorrect current password" in response.json().get(
+        "error", response.json().get("detail", "")
+    )
 
     # Verify password was NOT changed
     db_session.refresh(user)

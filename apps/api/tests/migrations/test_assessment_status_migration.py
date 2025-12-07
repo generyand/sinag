@@ -11,7 +11,7 @@ NOTE: These tests require PostgreSQL and are skipped when running with SQLite.
 """
 
 import pytest
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
 

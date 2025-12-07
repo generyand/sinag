@@ -171,7 +171,8 @@ class VersionConflictError(ConflictError):
         message: str | None = None,
     ):
         super().__init__(
-            message=message or f"{resource} was modified by another user. Please refresh and try again.",
+            message=message
+            or f"{resource} was modified by another user. Please refresh and try again.",
             error_code="VERSION_CONFLICT",
             details={"resource": resource},
         )

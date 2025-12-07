@@ -34,7 +34,7 @@ def create_test_data_for_finalize(db_session: Session) -> dict:
     governance_area = GovernanceArea(
         name=f"Test Governance Area Finalize 3.1.2 {timestamp}",
         code=str(timestamp)[:2].upper(),
-        area_type=AreaType.CORE
+        area_type=AreaType.CORE,
     )
     db_session.add(governance_area)
     db_session.commit()

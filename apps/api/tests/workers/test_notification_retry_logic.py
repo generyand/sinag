@@ -9,9 +9,10 @@ Tests cover:
 - Error return values
 """
 
-import pytest
-from unittest.mock import MagicMock, patch, PropertyMock
+import inspect
+from unittest.mock import MagicMock, patch
 
+import pytest
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 
 from app.workers.notifications import (
@@ -19,18 +20,18 @@ from app.workers.notifications import (
     RETRY_BACKOFF,
     RETRY_BACKOFF_MAX,
     PermanentTaskError,
-    send_new_submission_notification,
-    send_rework_notification,
-    send_rework_resubmission_notification,
-    send_ready_for_validation_notification,
+    send_assessment_approved_notification,
     send_calibration_notification,
     send_calibration_resubmission_notification,
-    send_validation_complete_notification,
-    send_ready_for_mlgoo_approval_notification,
-    send_mlgoo_recalibration_notification,
-    send_assessment_approved_notification,
-    send_grace_period_warning_notification,
     send_deadline_expired_notification,
+    send_grace_period_warning_notification,
+    send_mlgoo_recalibration_notification,
+    send_new_submission_notification,
+    send_ready_for_mlgoo_approval_notification,
+    send_ready_for_validation_notification,
+    send_rework_notification,
+    send_rework_resubmission_notification,
+    send_validation_complete_notification,
 )
 
 
@@ -69,7 +70,7 @@ class TestTaskDecoratorConfiguration:
     def test_send_new_submission_has_autoretry(self):
         """Test send_new_submission_notification has autoretry configured"""
         task = send_new_submission_notification
-        assert hasattr(task, 'autoretry_for')
+        assert hasattr(task, "autoretry_for")
         assert OperationalError in task.autoretry_for
         assert SQLAlchemyError in task.autoretry_for
         assert ConnectionError in task.autoretry_for
@@ -78,19 +79,19 @@ class TestTaskDecoratorConfiguration:
     def test_send_new_submission_has_retry_backoff(self):
         """Test send_new_submission_notification has retry_backoff configured"""
         task = send_new_submission_notification
-        assert hasattr(task, 'retry_backoff')
+        assert hasattr(task, "retry_backoff")
         assert task.retry_backoff == RETRY_BACKOFF
 
     def test_send_new_submission_has_max_retries(self):
         """Test send_new_submission_notification has max_retries configured"""
         task = send_new_submission_notification
-        assert hasattr(task, 'max_retries')
+        assert hasattr(task, "max_retries")
         assert task.max_retries == MAX_RETRIES
 
     def test_send_new_submission_has_retry_jitter(self):
         """Test send_new_submission_notification has retry_jitter enabled"""
         task = send_new_submission_notification
-        assert hasattr(task, 'retry_jitter')
+        assert hasattr(task, "retry_jitter")
         assert task.retry_jitter is True
 
 
@@ -118,7 +119,7 @@ class TestAllTasksHaveRetryConfiguration:
     def test_all_tasks_have_autoretry_for(self, all_notification_tasks):
         """All tasks should have autoretry_for configured"""
         for task in all_notification_tasks:
-            assert hasattr(task, 'autoretry_for'), f"{task.name} missing autoretry_for"
+            assert hasattr(task, "autoretry_for"), f"{task.name} missing autoretry_for"
             # Should retry on database and connection errors
             assert OperationalError in task.autoretry_for, f"{task.name} missing OperationalError"
             assert SQLAlchemyError in task.autoretry_for, f"{task.name} missing SQLAlchemyError"
@@ -126,25 +127,25 @@ class TestAllTasksHaveRetryConfiguration:
     def test_all_tasks_have_retry_backoff(self, all_notification_tasks):
         """All tasks should have retry_backoff configured"""
         for task in all_notification_tasks:
-            assert hasattr(task, 'retry_backoff'), f"{task.name} missing retry_backoff"
+            assert hasattr(task, "retry_backoff"), f"{task.name} missing retry_backoff"
             assert task.retry_backoff == RETRY_BACKOFF, f"{task.name} has wrong retry_backoff"
 
     def test_all_tasks_have_max_retries(self, all_notification_tasks):
         """All tasks should have max_retries configured"""
         for task in all_notification_tasks:
-            assert hasattr(task, 'max_retries'), f"{task.name} missing max_retries"
+            assert hasattr(task, "max_retries"), f"{task.name} missing max_retries"
             assert task.max_retries == MAX_RETRIES, f"{task.name} has wrong max_retries"
 
     def test_all_tasks_have_retry_jitter(self, all_notification_tasks):
         """All tasks should have retry_jitter enabled"""
         for task in all_notification_tasks:
-            assert hasattr(task, 'retry_jitter'), f"{task.name} missing retry_jitter"
+            assert hasattr(task, "retry_jitter"), f"{task.name} missing retry_jitter"
             assert task.retry_jitter is True, f"{task.name} should have retry_jitter=True"
 
     def test_all_tasks_are_bound(self, all_notification_tasks):
         """All tasks should be bound (have self parameter)"""
         for task in all_notification_tasks:
-            assert hasattr(task, 'bind'), f"{task.name} missing bind attribute"
+            assert hasattr(task, "bind"), f"{task.name} missing bind attribute"
 
 
 class TestNotFoundErrorHandling:
@@ -153,7 +154,7 @@ class TestNotFoundErrorHandling:
     @pytest.fixture
     def mock_db_session(self):
         """Mock database session"""
-        with patch('app.workers.notifications.SessionLocal') as mock:
+        with patch("app.workers.notifications.SessionLocal") as mock:
             session = MagicMock()
             mock.return_value = session
             yield session
@@ -184,7 +185,7 @@ class TestTransientErrorHandling:
     @pytest.fixture
     def mock_db_session(self):
         """Mock database session that raises transient errors"""
-        with patch('app.workers.notifications.SessionLocal') as mock:
+        with patch("app.workers.notifications.SessionLocal") as mock:
             session = MagicMock()
             mock.return_value = session
             yield session
@@ -217,7 +218,7 @@ class TestUnexpectedErrorHandling:
     @pytest.fixture
     def mock_db_session(self):
         """Mock database session"""
-        with patch('app.workers.notifications.SessionLocal') as mock:
+        with patch("app.workers.notifications.SessionLocal") as mock:
             session = MagicMock()
             mock.return_value = session
             yield session
@@ -235,7 +236,7 @@ class TestUnexpectedErrorHandling:
         mock_db_session.query.return_value.filter.return_value.first.return_value = mock_assessment
 
         # Simulate unexpected error during notification creation
-        with patch('app.workers.notifications.notification_service') as mock_service:
+        with patch("app.workers.notifications.notification_service") as mock_service:
             mock_service.notify_all_active_assessors.side_effect = ValueError("Unexpected")
 
             result = send_new_submission_notification(assessment_id=1)
@@ -266,9 +267,10 @@ class TestReturnValueStructure:
     @pytest.fixture
     def mock_successful_notification(self):
         """Setup for successful notification"""
-        with patch('app.workers.notifications.SessionLocal') as mock_session, \
-             patch('app.workers.notifications.notification_service') as mock_service:
-
+        with (
+            patch("app.workers.notifications.SessionLocal") as mock_session,
+            patch("app.workers.notifications.notification_service") as mock_service,
+        ):
             session = MagicMock()
             mock_session.return_value = session
 
@@ -301,7 +303,7 @@ class TestReturnValueStructure:
 
     def test_failure_response_structure(self):
         """Test failure response has required fields"""
-        with patch('app.workers.notifications.SessionLocal') as mock:
+        with patch("app.workers.notifications.SessionLocal") as mock:
             session = MagicMock()
             mock.return_value = session
             session.query.return_value.filter.return_value.first.return_value = None
@@ -318,15 +320,15 @@ class TestNoManualRetryLogic:
 
     def test_no_self_retry_in_source(self):
         """Verify no self.retry() calls in notifications module"""
-        import inspect
         from app.workers import notifications
 
         source = inspect.getsource(notifications)
 
         # Should not have manual self.retry() calls
         # These conflict with autoretry_for and cause double retries
-        assert "self.retry(countdown=" not in source, \
+        assert "self.retry(countdown=" not in source, (
             "Found manual self.retry() call - these conflict with autoretry_for decorator"
+        )
 
 
 class TestTaskNames:
@@ -350,5 +352,6 @@ class TestTaskNames:
         ]
 
         for task in tasks:
-            assert task.name.startswith("notifications."), \
+            assert task.name.startswith("notifications."), (
                 f"Task {task.name} should start with 'notifications.'"
+            )

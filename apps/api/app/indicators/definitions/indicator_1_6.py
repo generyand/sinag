@@ -63,7 +63,7 @@ INDICATOR_1_6 = Indicator(
                     item_type="section_header",
                     required=False,
                     display_order=1,
-                    option_group="Option 1"
+                    option_group="Option 1",
                 ),
                 ChecklistItem(
                     id="1_6_1_opt1_a",
@@ -71,7 +71,7 @@ INDICATOR_1_6 = Indicator(
                     mov_description="Copy of the written Barangay-SK Agreement",
                     required=False,  # Part of Option 1 group
                     display_order=2,
-                    option_group="Option 1"
+                    option_group="Option 1",
                 ),
                 ChecklistItem(
                     id="1_6_1_opt1_b",
@@ -83,20 +83,20 @@ INDICATOR_1_6 = Indicator(
                     field_notes=FieldNotes(
                         title="CONSIDERATION:",
                         items=[
-                            NoteItem(text="In the absence of deposit slips, bank statements will be considered, provided that it shows the transaction date, and that the total 10% of the SK Fund has been transferred."),
-                        ]
-                    )
+                            NoteItem(
+                                text="In the absence of deposit slips, bank statements will be considered, provided that it shows the transaction date, and that the total 10% of the SK Fund has been transferred."
+                            ),
+                        ],
+                    ),
                 ),
-
                 # === OR Separator between Option 1 and Option 2 ===
                 ChecklistItem(
                     id="1_6_1_or_1",
                     label="OR",
                     item_type="info_text",
                     required=False,
-                    display_order=4
+                    display_order=4,
                 ),
-
                 # === OPTION 2: No Agreement but has current account ===
                 ChecklistItem(
                     id="1_6_1_opt2_header",
@@ -104,7 +104,7 @@ INDICATOR_1_6 = Indicator(
                     item_type="section_header",
                     required=False,
                     display_order=5,
-                    option_group="Option 2"
+                    option_group="Option 2",
                 ),
                 ChecklistItem(
                     id="1_6_1_opt2_deposit",
@@ -116,20 +116,20 @@ INDICATOR_1_6 = Indicator(
                     field_notes=FieldNotes(
                         title="CONSIDERATION:",
                         items=[
-                            NoteItem(text="In the absence of deposit slips, bank statements will be considered, provided that it shows the transaction date, and that the total 10% of the SK Fund has been transferred."),
-                        ]
-                    )
+                            NoteItem(
+                                text="In the absence of deposit slips, bank statements will be considered, provided that it shows the transaction date, and that the total 10% of the SK Fund has been transferred."
+                            ),
+                        ],
+                    ),
                 ),
-
                 # === OR Separator between Option 2 and Option 3 ===
                 ChecklistItem(
                     id="1_6_1_or_2",
                     label="OR",
                     item_type="info_text",
                     required=False,
-                    display_order=7
+                    display_order=7,
                 ),
-
                 # === OPTION 3: No SK Officials / No Quorum / No SK Bank Account ===
                 ChecklistItem(
                     id="1_6_1_opt3_header",
@@ -137,7 +137,7 @@ INDICATOR_1_6 = Indicator(
                     item_type="section_header",
                     required=False,
                     display_order=8,
-                    option_group="Option 3"
+                    option_group="Option 3",
                 ),
                 ChecklistItem(
                     id="1_6_1_opt3_a",
@@ -145,7 +145,7 @@ INDICATOR_1_6 = Indicator(
                     mov_description="Proof of transfer of 10% SK funds to barangay trust fund (Deposit Slip or Official Receipt)",
                     required=False,  # Part of Option 3 group (OR logic within)
                     display_order=9,
-                    option_group="Option 3"
+                    option_group="Option 3",
                 ),
                 ChecklistItem(
                     id="1_6_1_opt3_or",
@@ -153,7 +153,7 @@ INDICATOR_1_6 = Indicator(
                     item_type="info_text",
                     required=False,
                     display_order=10,
-                    option_group="Option 3"  # Part of Option 3's internal OR
+                    option_group="Option 3",  # Part of Option 3's internal OR
                 ),
                 ChecklistItem(
                     id="1_6_1_opt3_b",
@@ -161,16 +161,20 @@ INDICATOR_1_6 = Indicator(
                     mov_description="Legal forms/documents from city/municipal treasurer if SK fund kept as trust fund in C/M custody",
                     required=False,  # Part of Option 3 group (OR logic within)
                     display_order=11,
-                    option_group="Option 3"
+                    option_group="Option 3",
                 ),
             ],
             notes=FormNotes(
                 title="Important Notes:",
                 items=[
-                    NoteItem(text="Choose and upload documents for ONLY ONE option that applies to your barangay's situation."),
-                    NoteItem(text="SK Resolution authorizing the barangay to utilize the SK Funds if the SK has no bank account yet shall NOT be considered as MOV under this indicator."),
-                ]
-            )
+                    NoteItem(
+                        text="Choose and upload documents for ONLY ONE option that applies to your barangay's situation."
+                    ),
+                    NoteItem(
+                        text="SK Resolution authorizing the barangay to utilize the SK Funds if the SK has no bank account yet shall NOT be considered as MOV under this indicator."
+                    ),
+                ],
+            ),
         ),
         # === 1.6.2 Single Indicator with Conditional Logic (OR between 5+ and 4-below) ===
         SubIndicator(
