@@ -170,11 +170,9 @@ jobs:
   deploy-staging:
     needs: setup
     if: |
-      needs.setup.outputs.environment == 'staging' &&
-      (
-        github.event_name == 'workflow_dispatch' ||
-        (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
-      )
+      always() &&
+      needs.setup.result == 'success' &&
+      needs.setup.outputs.environment == 'staging'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: staging # Uses staging secrets
@@ -318,11 +316,9 @@ jobs:
   deploy-production:
     needs: setup
     if: |
-      needs.setup.outputs.environment == 'production' &&
-      (
-        github.event_name == 'workflow_dispatch' ||
-        (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
-      )
+      always() &&
+      needs.setup.result == 'success' &&
+      needs.setup.outputs.environment == 'production'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: production # Uses production secrets + requires approval
