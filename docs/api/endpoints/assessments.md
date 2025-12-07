@@ -14,6 +14,22 @@ The Assessments API provides endpoints for BLGU users to manage their self-asses
 
 ---
 
+## Multi-Year Assessment Support
+
+As of December 2024, assessment endpoints support multi-year filtering. The following endpoints accept an optional `year` query parameter:
+
+| Endpoint | Default Behavior |
+|----------|------------------|
+| `GET /dashboard` | Uses active year |
+| `GET /my-assessment` | Uses active year |
+| `GET /all-validated` | Uses active year |
+
+If no `year` parameter is provided, endpoints default to the currently **active** assessment year. If no year is active, a `400 Bad Request` error is returned with the message "No active assessment year found."
+
+See also: [Assessment Years API](/docs/api/endpoints/assessment-years.md)
+
+---
+
 ## Endpoints
 
 ### GET /api/v1/assessments/dashboard
@@ -24,7 +40,13 @@ Get dashboard data for the logged-in BLGU user's assessment.
 
 **Workflow Stage**: Stage 1 (BLGU Submission) - Dashboard Overview
 
-**Description**: Returns dashboard-specific data optimized for overview and progress tracking, including progress statistics, governance area summaries, performance metrics, and recent feedback. Automatically creates an assessment if one doesn't exist for the BLGU user.
+**Description**: Returns dashboard-specific data optimized for overview and progress tracking, including progress statistics, governance area summaries, performance metrics, and recent feedback. Automatically creates an assessment if one doesn't exist for the BLGU user (for the active year only).
+
+**Query Parameters**:
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `year` | integer | No | Assessment year (e.g., 2025). Defaults to active year. Must be between 2020-2100. |
 
 **Request Body**: None
 
@@ -78,7 +100,13 @@ Get the complete assessment data for the logged-in BLGU user.
 
 **Workflow Stage**: Stage 1 (BLGU Submission) - Form Data
 
-**Description**: Returns the full assessment data including assessment status, all governance areas with their indicators, form schemas for each indicator, existing response data, MOVs (Means of Verification), and feedback comments from assessors. Automatically creates an assessment if one doesn't exist.
+**Description**: Returns the full assessment data including assessment status, all governance areas with their indicators, form schemas for each indicator, existing response data, MOVs (Means of Verification), and feedback comments from assessors. Automatically creates an assessment if one doesn't exist (for the active year only).
+
+**Query Parameters**:
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `year` | integer | No | Assessment year (e.g., 2025). Defaults to active year. Must be between 2020-2100. |
 
 **Request Body**: None
 
