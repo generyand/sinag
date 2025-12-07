@@ -14,8 +14,8 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision: str = 'd23c948a2fbf'
-down_revision: Union[str, Sequence[str], None] = '1b2b64c8ae25'
+revision: str = "d23c948a2fbf"
+down_revision: Union[str, Sequence[str], None] = "1b2b64c8ae25"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -45,12 +45,19 @@ def upgrade() -> None:
 
     if reflected_idx is not None and accomplished_idx is not None:
         # Swap them
-        fields[reflected_idx], fields[accomplished_idx] = fields[accomplished_idx], fields[reflected_idx]
-        print(f"Swapped fields: accomplished now at {reflected_idx}, reflected now at {accomplished_idx}")
+        fields[reflected_idx], fields[accomplished_idx] = (
+            fields[accomplished_idx],
+            fields[reflected_idx],
+        )
+        print(
+            f"Swapped fields: accomplished now at {reflected_idx}, reflected now at {accomplished_idx}"
+        )
 
         conn.execute(
-            sa.text("UPDATE indicators SET form_schema = CAST(:schema AS jsonb) WHERE indicator_code = '4.3.4'"),
-            {"schema": json.dumps(form_schema)}
+            sa.text(
+                "UPDATE indicators SET form_schema = CAST(:schema AS jsonb) WHERE indicator_code = '4.3.4'"
+            ),
+            {"schema": json.dumps(form_schema)},
         )
 
 

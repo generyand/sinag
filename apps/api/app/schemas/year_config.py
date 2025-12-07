@@ -31,9 +31,7 @@ class AssessmentYearConfigBase(BaseModel):
 class AssessmentYearConfigCreate(AssessmentYearConfigBase):
     """Schema for creating a new assessment year configuration."""
 
-    activate: bool = Field(
-        False, description="Whether to activate this configuration immediately"
-    )
+    activate: bool = Field(False, description="Whether to activate this configuration immediately")
 
 
 class AssessmentYearConfigUpdate(BaseModel):

@@ -31,11 +31,7 @@ class YearConfigService:
         Returns:
             Active AssessmentYearConfig or None if none is active
         """
-        return (
-            db.query(AssessmentYearConfig)
-            .filter(AssessmentYearConfig.is_active == True)
-            .first()
-        )
+        return db.query(AssessmentYearConfig).filter(AssessmentYearConfig.is_active == True).first()
 
     def get_current_year(self, db: Session) -> int:
         """
@@ -160,11 +156,7 @@ class YearConfigService:
             ValueError: If configuration not found
         """
         # Get the config to activate
-        config = (
-            db.query(AssessmentYearConfig)
-            .filter(AssessmentYearConfig.id == config_id)
-            .first()
-        )
+        config = db.query(AssessmentYearConfig).filter(AssessmentYearConfig.id == config_id).first()
 
         if not config:
             raise ValueError(f"Assessment year configuration with ID {config_id} not found.")
@@ -209,11 +201,7 @@ class YearConfigService:
         Raises:
             ValueError: If configuration not found
         """
-        config = (
-            db.query(AssessmentYearConfig)
-            .filter(AssessmentYearConfig.id == config_id)
-            .first()
-        )
+        config = db.query(AssessmentYearConfig).filter(AssessmentYearConfig.id == config_id).first()
 
         if not config:
             raise ValueError(f"Assessment year configuration with ID {config_id} not found.")
@@ -289,11 +277,7 @@ class IndicatorSnapshotService:
         resolver = YearPlaceholderResolver(assessment_year)
 
         # Get indicators with their checklist items
-        indicators = (
-            db.query(Indicator)
-            .filter(Indicator.id.in_(indicator_ids))
-            .all()
-        )
+        indicators = db.query(Indicator).filter(Indicator.id.in_(indicator_ids)).all()
 
         snapshots = []
         for indicator in indicators:

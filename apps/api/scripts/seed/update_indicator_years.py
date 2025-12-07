@@ -29,7 +29,7 @@ def find_indicator_def(
         if ind_def.code == indicator_code:
             return ind_def
         # Check children recursively
-        if hasattr(ind_def, 'children') and ind_def.children:
+        if hasattr(ind_def, "children") and ind_def.children:
             result = find_indicator_def(indicator_code, ind_def.children)
             if result:
                 return result
@@ -51,19 +51,23 @@ def update_indicator_from_def(
         changed = True
 
     # Update description if different (for root indicators)
-    if hasattr(indicator_def, 'description') and indicator_def.description:
+    if hasattr(indicator_def, "description") and indicator_def.description:
         if db_indicator.description != indicator_def.description:
             db_indicator.description = indicator_def.description
             changed = True
 
     # Update checklist items
-    if hasattr(indicator_def, 'checklist_items') and indicator_def.checklist_items:
+    if hasattr(indicator_def, "checklist_items") and indicator_def.checklist_items:
         for item_def in indicator_def.checklist_items:
             # Find the matching checklist item by item_id
-            db_item = db.query(ChecklistItem).filter(
-                ChecklistItem.indicator_id == db_indicator.id,
-                ChecklistItem.item_id == item_def.id
-            ).first()
+            db_item = (
+                db.query(ChecklistItem)
+                .filter(
+                    ChecklistItem.indicator_id == db_indicator.id,
+                    ChecklistItem.item_id == item_def.id,
+                )
+                .first()
+            )
 
             if db_item:
                 # Update label if different
@@ -78,16 +82,23 @@ def update_indicator_from_def(
                     changed = True
 
                 # Update option_group if different
-                item_def_option_group = getattr(item_def, 'option_group', None)
+                item_def_option_group = getattr(item_def, "option_group", None)
                 if db_item.option_group != item_def_option_group:
-                    print(f"      Updating option_group for {item_def.id}: {db_item.option_group} -> {item_def_option_group}")
+                    print(
+                        f"      Updating option_group for {item_def.id}: {db_item.option_group} -> {item_def_option_group}"
+                    )
                     db_item.option_group = item_def_option_group
                     changed = True
 
                 # Update display_order if different
-                item_def_display_order = getattr(item_def, 'display_order', None)
-                if item_def_display_order is not None and db_item.display_order != item_def_display_order:
-                    print(f"      Updating display_order for {item_def.id}: {db_item.display_order} -> {item_def_display_order}")
+                item_def_display_order = getattr(item_def, "display_order", None)
+                if (
+                    item_def_display_order is not None
+                    and db_item.display_order != item_def_display_order
+                ):
+                    print(
+                        f"      Updating display_order for {item_def.id}: {db_item.display_order} -> {item_def_display_order}"
+                    )
                     db_item.display_order = item_def_display_order
                     changed = True
 
@@ -131,9 +142,7 @@ def main():
 
         # Verify some updates
         print("\n📋 Sample verification (first 3 indicators with year placeholders):")
-        sample = db.query(Indicator).filter(
-            Indicator.name.contains("{")
-        ).limit(3).all()
+        sample = db.query(Indicator).filter(Indicator.name.contains("{")).limit(3).all()
 
         if sample:
             for ind in sample:
@@ -145,6 +154,7 @@ def main():
     except Exception as e:
         print(f"❌ Error: {str(e)}")
         import traceback
+
         traceback.print_exc()
         db.rollback()
     finally:

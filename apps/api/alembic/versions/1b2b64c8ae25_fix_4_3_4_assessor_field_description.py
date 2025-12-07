@@ -16,8 +16,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '1b2b64c8ae25'
-down_revision: Union[str, Sequence[str], None] = 'efd0b9e22c96'
+revision: str = "1b2b64c8ae25"
+down_revision: Union[str, Sequence[str], None] = "efd0b9e22c96"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -46,8 +46,10 @@ def upgrade() -> None:
             break
 
     conn.execute(
-        sa.text("UPDATE indicators SET form_schema = CAST(:schema AS jsonb) WHERE indicator_code = '4.3.4'"),
-        {"schema": json.dumps(form_schema)}
+        sa.text(
+            "UPDATE indicators SET form_schema = CAST(:schema AS jsonb) WHERE indicator_code = '4.3.4'"
+        ),
+        {"schema": json.dumps(form_schema)},
     )
     print("Updated 4.3.4 assessor_validation")
 
@@ -73,6 +75,8 @@ def downgrade() -> None:
             break
 
     conn.execute(
-        sa.text("UPDATE indicators SET form_schema = CAST(:schema AS jsonb) WHERE indicator_code = '4.3.4'"),
-        {"schema": json.dumps(form_schema)}
+        sa.text(
+            "UPDATE indicators SET form_schema = CAST(:schema AS jsonb) WHERE indicator_code = '4.3.4'"
+        ),
+        {"schema": json.dumps(form_schema)},
     )

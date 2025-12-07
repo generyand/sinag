@@ -21,8 +21,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '4957c4a13061'
-down_revision: Union[str, Sequence[str], None] = '00bf5f33e043'
+revision: str = "4957c4a13061"
+down_revision: Union[str, Sequence[str], None] = "00bf5f33e043"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -49,7 +49,7 @@ def update_indicator_name(conn, code: str, new_name: str):
     """Update an indicator's name."""
     conn.execute(
         sa.text("UPDATE indicators SET name = :name WHERE indicator_code = :code"),
-        {"name": new_name, "code": code}
+        {"name": new_name, "code": code},
     )
     print(f"Updated {code} name")
 
@@ -57,8 +57,7 @@ def update_indicator_name(conn, code: str, new_name: str):
 def add_notes_to_form_schema(conn, code: str, notes: dict):
     """Add notes to an indicator's form_schema."""
     result = conn.execute(
-        sa.text("SELECT form_schema FROM indicators WHERE indicator_code = :code"),
-        {"code": code}
+        sa.text("SELECT form_schema FROM indicators WHERE indicator_code = :code"), {"code": code}
     ).fetchone()
 
     if not result or not result[0]:
@@ -69,8 +68,10 @@ def add_notes_to_form_schema(conn, code: str, notes: dict):
     form_schema["notes"] = notes
 
     conn.execute(
-        sa.text("UPDATE indicators SET form_schema = CAST(:schema AS jsonb) WHERE indicator_code = :code"),
-        {"schema": json.dumps(form_schema), "code": code}
+        sa.text(
+            "UPDATE indicators SET form_schema = CAST(:schema AS jsonb) WHERE indicator_code = :code"
+        ),
+        {"schema": json.dumps(form_schema), "code": code},
     )
     print(f"Added notes to {code}")
 
@@ -78,8 +79,7 @@ def add_notes_to_form_schema(conn, code: str, notes: dict):
 def add_field_notes_to_first_upload(conn, code: str, field_notes: dict):
     """Add field_notes to the first file_upload field."""
     result = conn.execute(
-        sa.text("SELECT form_schema FROM indicators WHERE indicator_code = :code"),
-        {"code": code}
+        sa.text("SELECT form_schema FROM indicators WHERE indicator_code = :code"), {"code": code}
     ).fetchone()
 
     if not result or not result[0]:
@@ -95,8 +95,10 @@ def add_field_notes_to_first_upload(conn, code: str, field_notes: dict):
             break
 
     conn.execute(
-        sa.text("UPDATE indicators SET form_schema = CAST(:schema AS jsonb) WHERE indicator_code = :code"),
-        {"schema": json.dumps(form_schema), "code": code}
+        sa.text(
+            "UPDATE indicators SET form_schema = CAST(:schema AS jsonb) WHERE indicator_code = :code"
+        ),
+        {"schema": json.dumps(form_schema), "code": code},
     )
     print(f"Added field_notes to {code}")
 
@@ -109,14 +111,14 @@ def upgrade() -> None:
     update_indicator_name(
         conn,
         "2.1.4",
-        "Accomplishment Reports: At least 50% Physical Accomplishment OR Fund Utilization"
+        "Accomplishment Reports: At least 50% Physical Accomplishment OR Fund Utilization",
     )
 
     # 3.2.3 - Change name
     update_indicator_name(
         conn,
         "3.2.3",
-        "Accomplishment Reports: At least 50% Physical Accomplishment OR Fund Utilization"
+        "Accomplishment Reports: At least 50% Physical Accomplishment OR Fund Utilization",
     )
 
     # 3.3.2 - Add Photo Requirements to first upload field
@@ -129,14 +131,14 @@ def upgrade() -> None:
     update_indicator_name(
         conn,
         "4.1.6",
-        "Accomplishment Reports: At least 50% Physical Accomplishment OR Fund Utilization - CY {CY_CURRENT_YEAR}"
+        "Accomplishment Reports: At least 50% Physical Accomplishment OR Fund Utilization - CY {CY_CURRENT_YEAR}",
     )
 
     # 6.1.4 - Change name with dynamic year placeholder
     update_indicator_name(
         conn,
         "6.1.4",
-        "Accomplishment Reports: At least 50% Physical Accomplishment OR Fund Utilization - covering July to September {CY_CURRENT_YEAR}"
+        "Accomplishment Reports: At least 50% Physical Accomplishment OR Fund Utilization - covering July to September {CY_CURRENT_YEAR}",
     )
 
 

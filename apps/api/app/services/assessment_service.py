@@ -179,6 +179,7 @@ class AssessmentService:
         """
         import logging
         import time
+
         logger = logging.getLogger(__name__)
 
         total_start = time.time()
@@ -245,7 +246,9 @@ class AssessmentService:
                 "validated_at": row1[8].isoformat() + "Z" if row1[8] else None,
                 "rework_requested_at": row1[9].isoformat() + "Z" if row1[9] else None,
                 "is_mlgoo_recalibration": row1[10],
-                "mlgoo_recalibration_requested_at": row1[11].isoformat() + "Z" if row1[11] else None,
+                "mlgoo_recalibration_requested_at": row1[11].isoformat() + "Z"
+                if row1[11]
+                else None,
                 "mlgoo_recalibration_indicator_ids": row1[12],
                 "mlgoo_recalibration_comments": row1[13],
                 "mlgoo_recalibration_count": row1[14],
@@ -295,24 +298,26 @@ class AssessmentService:
                         ind_description = year_resolver.resolve_string(ind_description)
                         ind_form_schema = year_resolver.resolve_schema(ind_form_schema)
 
-                    indicators_raw.append({
-                        "id": row[3],
-                        "name": ind_name,
-                        "description": ind_description,
-                        "indicator_code": row[6],
-                        "form_schema": ind_form_schema,
-                        "governance_area_id": row[8],
-                        "parent_id": row[9],
-                        "sort_order": row[10],
-                        # Will be filled in from query 3
-                        "response_id": None,
-                        "response_data": None,
-                        "is_completed": None,
-                        "requires_rework": None,
-                        "generated_remark": None,
-                        "movs": [],
-                        "comments": [],
-                    })
+                    indicators_raw.append(
+                        {
+                            "id": row[3],
+                            "name": ind_name,
+                            "description": ind_description,
+                            "indicator_code": row[6],
+                            "form_schema": ind_form_schema,
+                            "governance_area_id": row[8],
+                            "parent_id": row[9],
+                            "sort_order": row[10],
+                            # Will be filled in from query 3
+                            "response_id": None,
+                            "response_data": None,
+                            "is_completed": None,
+                            "requires_rework": None,
+                            "generated_remark": None,
+                            "movs": [],
+                            "comments": [],
+                        }
+                    )
 
             # QUERY 3: Get user-specific data - responses, MOVs, comments
             step_start = time.time()
@@ -399,6 +404,7 @@ class AssessmentService:
         except Exception as e:
             logger.error(f"Error in get_assessment_for_blgu_with_full_data: {e}")
             import traceback
+
             logger.error(traceback.format_exc())
             raise
 
@@ -418,8 +424,12 @@ class AssessmentService:
             "validated_at": assessment_info.get("validated_at"),
             "rework_requested_at": assessment_info.get("rework_requested_at"),
             "is_mlgoo_recalibration": assessment_info.get("is_mlgoo_recalibration"),
-            "mlgoo_recalibration_requested_at": assessment_info.get("mlgoo_recalibration_requested_at"),
-            "mlgoo_recalibration_indicator_ids": assessment_info.get("mlgoo_recalibration_indicator_ids"),
+            "mlgoo_recalibration_requested_at": assessment_info.get(
+                "mlgoo_recalibration_requested_at"
+            ),
+            "mlgoo_recalibration_indicator_ids": assessment_info.get(
+                "mlgoo_recalibration_indicator_ids"
+            ),
             "mlgoo_recalibration_comments": assessment_info.get("mlgoo_recalibration_comments"),
             "mlgoo_recalibration_count": assessment_info.get("mlgoo_recalibration_count"),
         }
@@ -484,7 +494,9 @@ class AssessmentService:
                 for ind in indicators_by_area.get(area["id"], [])
                 if ind.get("parent_id") is None
             ]
-            top_level_inds.sort(key=lambda x: (x.get("sort_order") or 0, x.get("indicator_code") or ""))
+            top_level_inds.sort(
+                key=lambda x: (x.get("sort_order") or 0, x.get("indicator_code") or "")
+            )
 
             for ind in top_level_inds:
                 area_data["indicators"].append(serialize_indicator_node(ind))
@@ -492,7 +504,9 @@ class AssessmentService:
             governance_areas_data.append(area_data)
 
         logger.info(f"[PERF] Process results: {time.time() - step_start:.2f}s")
-        logger.info(f"[PERF] TOTAL get_assessment_for_blgu_with_full_data: {time.time() - total_start:.2f}s")
+        logger.info(
+            f"[PERF] TOTAL get_assessment_for_blgu_with_full_data: {time.time() - total_start:.2f}s"
+        )
 
         return {
             "assessment": assessment_dict,

@@ -8,6 +8,7 @@ This migration adds option_group to section headers in indicator 1.6.1's form_sc
 This allows the frontend to display the full descriptive labels for each option
 instead of just "Option 1", "Option 2", "Option 3".
 """
+
 from typing import Sequence, Union
 import json
 
@@ -16,8 +17,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '919018f9a562'
-down_revision: Union[str, Sequence[str], None] = '1bcfb685ada1'
+revision: str = "919018f9a562"
+down_revision: Union[str, Sequence[str], None] = "1bcfb685ada1"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -57,14 +58,16 @@ def upgrade() -> None:
                     if field.get("option_group") != option_group:
                         field["option_group"] = option_group
                         updated = True
-                        print(f"  Updated section_header '{field.get('field_id')}' with option_group='{option_group}'")
+                        print(
+                            f"  Updated section_header '{field.get('field_id')}' with option_group='{option_group}'"
+                        )
                     break
 
     if updated:
         # Update the form_schema in the database
         conn.execute(
             sa.text("UPDATE indicators SET form_schema = CAST(:schema AS jsonb) WHERE id = :id"),
-            {"schema": json.dumps(form_schema), "id": indicator_id}
+            {"schema": json.dumps(form_schema), "id": indicator_id},
         )
         print("Updated indicator 1.6.1 form_schema")
     else:
@@ -98,5 +101,5 @@ def downgrade() -> None:
     if updated:
         conn.execute(
             sa.text("UPDATE indicators SET form_schema = CAST(:schema AS jsonb) WHERE id = :id"),
-            {"schema": json.dumps(form_schema), "id": indicator_id}
+            {"schema": json.dumps(form_schema), "id": indicator_id},
         )

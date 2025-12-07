@@ -16,8 +16,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '6e10dbef170b'
-down_revision: Union[str, Sequence[str], None] = 'fa2699af80e4'
+revision: str = "6e10dbef170b"
+down_revision: Union[str, Sequence[str], None] = "fa2699af80e4"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -40,15 +40,15 @@ def upgrade() -> None:
     # Add the notes section with dynamic year placeholder
     form_schema["notes"] = {
         "title": "Consideration:",
-        "items": [
-            {"text": "Approval until March 31, {CY_CURRENT_YEAR}"}
-        ]
+        "items": [{"text": "Approval until March 31, {CY_CURRENT_YEAR}"}],
     }
 
     # Update the database
     conn.execute(
-        sa.text("UPDATE indicators SET form_schema = CAST(:schema AS jsonb) WHERE indicator_code = '1.3.1'"),
-        {"schema": json.dumps(form_schema)}
+        sa.text(
+            "UPDATE indicators SET form_schema = CAST(:schema AS jsonb) WHERE indicator_code = '1.3.1'"
+        ),
+        {"schema": json.dumps(form_schema)},
     )
     print("Added consideration note to indicator 1.3.1")
 
@@ -71,6 +71,8 @@ def downgrade() -> None:
         del form_schema["notes"]
 
         conn.execute(
-            sa.text("UPDATE indicators SET form_schema = CAST(:schema AS jsonb) WHERE indicator_code = '1.3.1'"),
-            {"schema": json.dumps(form_schema)}
+            sa.text(
+                "UPDATE indicators SET form_schema = CAST(:schema AS jsonb) WHERE indicator_code = '1.3.1'"
+            ),
+            {"schema": json.dumps(form_schema)},
         )

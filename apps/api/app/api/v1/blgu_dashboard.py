@@ -205,9 +205,7 @@ def get_blgu_dashboard(
 
         # Resolve year placeholders in indicator name
         resolved_name = (
-            year_resolver.resolve_string(indicator.name)
-            if year_resolver
-            else indicator.name
+            year_resolver.resolve_string(indicator.name) if year_resolver else indicator.name
         )
 
         governance_area_groups[area_id]["indicators"].append(

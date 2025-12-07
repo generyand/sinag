@@ -120,7 +120,9 @@ INDICATOR_4_1 = Indicator(
         SubIndicator(
             code="4.1.3",
             name="Plan and Budget: Approved {CY_CURRENT_YEAR} Barangay Gender and Development (GAD) Plan and Budget",
-            upload_instructions=("Upload: Approved Barangay GAD Plan and Budget for {CY_CURRENT_YEAR}"),
+            upload_instructions=(
+                "Upload: Approved Barangay GAD Plan and Budget for {CY_CURRENT_YEAR}"
+            ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 # Upload Verification

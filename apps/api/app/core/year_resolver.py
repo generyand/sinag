@@ -99,9 +99,7 @@ class YearPlaceholderResolver:
             ValueError: If no active assessment year configuration exists
         """
         config = (
-            db.query(AssessmentYearConfig)
-            .filter(AssessmentYearConfig.is_active == True)
-            .first()
+            db.query(AssessmentYearConfig).filter(AssessmentYearConfig.is_active == True).first()
         )
 
         if not config:
@@ -127,9 +125,7 @@ class YearPlaceholderResolver:
             ValueError: If no active assessment year configuration exists
         """
         config = (
-            db.query(AssessmentYearConfig)
-            .filter(AssessmentYearConfig.is_active == True)
-            .first()
+            db.query(AssessmentYearConfig).filter(AssessmentYearConfig.is_active == True).first()
         )
 
         if not config:
@@ -233,15 +229,11 @@ class YearPlaceholderResolver:
                     resolved_item["mov_description"]
                 )
             if "group_name" in resolved_item:
-                resolved_item["group_name"] = self.resolve_string(
-                    resolved_item["group_name"]
-                )
+                resolved_item["group_name"] = self.resolve_string(resolved_item["group_name"])
 
             # Resolve nested field_notes
             if "field_notes" in resolved_item and resolved_item["field_notes"]:
-                resolved_item["field_notes"] = self.resolve_dict(
-                    resolved_item["field_notes"]
-                )
+                resolved_item["field_notes"] = self.resolve_dict(resolved_item["field_notes"])
 
             resolved_items.append(resolved_item)
 

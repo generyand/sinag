@@ -59,8 +59,10 @@ def fix_indicator_1_6_1_option_groups(db: Session) -> bool:
         old_option_group = field.get("option_group")
         if old_option_group in option_group_mapping:
             new_option_group = option_group_mapping[old_option_group]
-            print(f"  Updating field '{field.get('field_id', 'unknown')}': "
-                  f"'{old_option_group}' -> '{new_option_group}'")
+            print(
+                f"  Updating field '{field.get('field_id', 'unknown')}': "
+                f"'{old_option_group}' -> '{new_option_group}'"
+            )
             field["option_group"] = new_option_group
             updated_count += 1
 
@@ -69,7 +71,7 @@ def fix_indicator_1_6_1_option_groups(db: Session) -> bool:
         return True
 
     # Force SQLAlchemy to detect the change
-    flag_modified(indicator, 'form_schema')
+    flag_modified(indicator, "form_schema")
 
     # Commit the changes
     db.commit()
