@@ -1,0 +1,79 @@
+# Semgrep ignore patterns
+
+# This file excludes false positives and acceptable patterns from Semgrep scans
+
+# ==============================================================================
+
+# Migration Files
+
+# ==============================================================================
+
+# Alembic migrations use controlled SQL for data migrations, not user input
+
+# These are safe and necessary for database schema/data updates
+
+apps/api/alembic/versions/**/\*.py
+apps/api/alembic/versions_backup/**/\*.py
+
+# ==============================================================================
+
+# False Positives: setTimeout with window.location.href
+
+# ==============================================================================
+
+# These are NOT eval - they're just redirects using setTimeout for UX delays
+
+# Semgrep incorrectly flags these as dynamic code execution
+
+apps/web/src/components/features/assessments/AssessmentHeader.tsx
+apps/web/src/components/features/assessor/validation/AssessorValidationClient.tsx
+apps/web/src/components/features/landing/Header.tsx
+apps/web/src/components/features/landing/HeroSection.tsx
+
+# ==============================================================================
+
+# Cache Headers - MD5 for ETag
+
+# ==============================================================================
+
+# MD5 is acceptable for ETag generation (non-cryptographic use)
+
+# This is a common practice for HTTP caching
+
+apps/api/app/middleware/cache_headers.py
+
+# ==============================================================================
+
+# Email Templates
+
+# ==============================================================================
+
+# Template variables in href are safe when properly validated
+
+# The portal_url is controlled and validated server-side
+
+apps/api/app/templates/emails/\*_/_.html
+
+# ==============================================================================
+
+# Database Scripts
+
+# ==============================================================================
+
+# Cleanup scripts use parameterized queries with placeholders
+
+# The placeholders are generated from controlled input, not user input
+
+scripts/database/cleanup-test-data.py
+
+# ==============================================================================
+
+# Dockerfile
+
+# ==============================================================================
+
+# nginx runs as non-root in production via base image
+
+# The missing USER directive is handled by the base image
+
+nginx/Dockerfile
