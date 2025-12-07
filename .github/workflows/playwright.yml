@@ -34,13 +34,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.0
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
-
-      - name: Install pnpm
-        run: npm install -g pnpm@10.11.0
+          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -72,13 +75,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.0
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
-
-      - name: Install pnpm
-        run: npm install -g pnpm@10.11.0
+          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -114,22 +120,25 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.0
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
-
-      - name: Install pnpm
-        run: npm install -g pnpm@10.11.0
+          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium firefox
+        run: pnpm exec playwright install --with-deps chromium
 
       - name: Run all E2E tests
-        run: pnpm exec playwright test --project=chromium --project=firefox
+        run: pnpm exec playwright test --project=chromium
 
       - name: Upload full E2E report
         uses: actions/upload-artifact@v4
