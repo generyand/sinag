@@ -13,8 +13,8 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  // Use 2 workers in CI for faster execution (was 1)
-  workers: process.env.CI ? 2 : undefined,
+  // Use 4 workers in CI for faster parallel execution
+  workers: process.env.CI ? 4 : undefined,
   reporter: process.env.CI ? [['html'], ['github']] : 'html',
 
   // Global timeout per test (reduced from default 30s)
@@ -69,6 +69,11 @@ export default defineConfig({
       url: 'http://localhost:3000',
       reuseExistingServer: !process.env.CI,
       timeout: 120000,
+      env: {
+        // API URL for frontend to communicate with backend
+        NEXT_PUBLIC_API_URL: 'http://localhost:8000',
+        NEXT_PUBLIC_API_V1_URL: 'http://localhost:8000/api/v1',
+      },
     },
   ],
 });

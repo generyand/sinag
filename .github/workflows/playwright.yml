@@ -56,6 +56,7 @@ jobs:
           - 6379:6379
 
     env:
+      # Backend environment variables
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
       SECRET_KEY: test-secret-key-for-e2e-tests-1234567890abcdef
       CELERY_BROKER_URL: redis://localhost:6379/0
@@ -64,6 +65,9 @@ jobs:
       SUPABASE_ANON_KEY: test-anon-key
       SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
       GEMINI_API_KEY: test-gemini-key
+      # Frontend environment variables (needed for Next.js to connect to API)
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_API_V1_URL: http://localhost:8000/api/v1
 
     steps:
       - name: Checkout repository
@@ -157,6 +161,7 @@ jobs:
           - 6379:6379
 
     env:
+      # Backend environment variables
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
       SECRET_KEY: test-secret-key-for-e2e-tests-1234567890abcdef
       CELERY_BROKER_URL: redis://localhost:6379/0
@@ -165,6 +170,9 @@ jobs:
       SUPABASE_ANON_KEY: test-anon-key
       SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
       GEMINI_API_KEY: test-gemini-key
+      # Frontend environment variables (needed for Next.js to connect to API)
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_API_V1_URL: http://localhost:8000/api/v1
 
     steps:
       - name: Checkout repository
@@ -262,6 +270,7 @@ jobs:
           - 6379:6379
 
     env:
+      # Backend environment variables
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
       SECRET_KEY: test-secret-key-for-e2e-tests-1234567890abcdef
       CELERY_BROKER_URL: redis://localhost:6379/0
@@ -270,6 +279,9 @@ jobs:
       SUPABASE_ANON_KEY: test-anon-key
       SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
       GEMINI_API_KEY: test-gemini-key
+      # Frontend environment variables (needed for Next.js to connect to API)
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_API_V1_URL: http://localhost:8000/api/v1
 
     steps:
       - name: Checkout repository
