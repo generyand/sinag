@@ -109,13 +109,23 @@ git clone https://github.com/YOUR_USERNAME/sinag.git ~/sinag
 
 ---
 
-## Step 3: Configure GitHub Secrets
+## Step 3: Configure GitHub Secrets & Variables
 
-Go to your GitHub repo → **Settings → Secrets and variables → Actions**
+Go to your GitHub repo → **Settings → Environments**
 
-### Secrets (Required)
+> **Note**: SINAG uses GitHub Environments for environment-specific configuration. You need to
+> create two environments: `staging` and `production`. Each environment has its own secrets and
+> variables.
 
-Click **"New repository secret"** for each:
+### Create Environments
+
+1. Go to **Settings → Environments**
+2. Click **"New environment"** → Name it `staging` → **Configure environment**
+3. Repeat for `production`
+
+### Environment Secrets (Required)
+
+For **each environment** (staging and production), add these secrets:
 
 | Secret Name                      | Value                        | How to Get                                                           |
 | -------------------------------- | ---------------------------- | -------------------------------------------------------------------- |
@@ -131,14 +141,22 @@ Click **"New repository secret"** for each:
 | `SUPABASE_SERVICE_ROLE_KEY`      | `eyJ...`                     | Supabase Dashboard                                                   |
 | `GEMINI_API_KEY`                 | Your Gemini API key          | [Google AI Studio](https://makersuite.google.com/app/apikey)         |
 
-### Variables (Required)
+### Environment Variables (Required)
 
-Click **"Variables"** tab → **"New repository variable"**:
+For **each environment** (staging and production), add these variables under the **"Environment
+variables"** section:
 
-| Variable Name            | Value                       |
-| ------------------------ | --------------------------- |
-| `NEXT_PUBLIC_API_URL`    | `http://YOUR_EC2_IP`        |
-| `NEXT_PUBLIC_API_V1_URL` | `http://YOUR_EC2_IP/api/v1` |
+| Variable Name                   | Value                       | Notes                                     |
+| ------------------------------- | --------------------------- | ----------------------------------------- |
+| `NEXT_PUBLIC_API_URL`           | `http://YOUR_EC2_IP`        | Your EC2 public IP                        |
+| `NEXT_PUBLIC_API_V1_URL`        | `http://YOUR_EC2_IP/api/v1` | API v1 endpoint                           |
+| `NEXT_PUBLIC_SUPABASE_URL`      | `https://xxx.supabase.co`   | Same as SUPABASE_URL (from Supabase)      |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJ...`                    | Same as SUPABASE_ANON_KEY (from Supabase) |
+
+> **Important**: `NEXT_PUBLIC_*` variables are baked into the frontend at **build time**, not
+> runtime. These must be set as **Variables** (not Secrets) so they can be embedded in the
+> JavaScript bundle. The anon key is safe to expose - it's designed to be public (RLS policies
+> protect your data).
 
 ---
 
@@ -267,6 +285,24 @@ docker login ghcr.io -u YOUR_GITHUB_USERNAME
 # Manually pull
 docker pull ghcr.io/YOUR_USERNAME/sinag/sinag-api:latest
 ```
+
+### Frontend Error: "supabaseUrl is required"
+
+This error means `NEXT_PUBLIC_SUPABASE_URL` was not set during the Docker build.
+
+**Cause**: `NEXT_PUBLIC_*` variables are baked into the JavaScript at build time, not runtime.
+
+**Solution**:
+
+1. Go to **Settings → Environments → staging** (or production)
+2. Under **"Environment variables"**, add:
+   - `NEXT_PUBLIC_SUPABASE_URL` = `https://your-project.supabase.co`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = your anon key
+3. **Rebuild the image** - push to the branch or manually trigger the Build workflow
+4. Redeploy to EC2
+
+> **Note**: Adding these to the EC2 `.env` file won't work because the frontend doesn't read
+> environment variables at runtime. They must be set during the GitHub Actions build.
 
 ---
 
