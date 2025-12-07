@@ -17,8 +17,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'efd0b9e22c96'
-down_revision: Union[str, Sequence[str], None] = '56d75954a62b'
+revision: str = "efd0b9e22c96"
+down_revision: Union[str, Sequence[str], None] = "56d75954a62b"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -30,7 +30,9 @@ def upgrade() -> None:
     # 4.5.4 - Update name
     conn.execute(
         sa.text("UPDATE indicators SET name = :name WHERE indicator_code = '4.5.4'"),
-        {"name": "Database: Establishment and maintenance of updated Database on Children disaggregated by age, sex, ethnicity, with or without disabilities, OSCY, etc. covering January to October 31, {CY_CURRENT_YEAR}"}
+        {
+            "name": "Database: Establishment and maintenance of updated Database on Children disaggregated by age, sex, ethnicity, with or without disabilities, OSCY, etc. covering January to October 31, {CY_CURRENT_YEAR}"
+        },
     )
     print("Updated 4.5.4 name")
 
@@ -66,16 +68,22 @@ def upgrade() -> None:
             # After pop, in_plan_idx is now one less if it was after accomplished_idx
             new_in_plan_idx = in_plan_idx - 1
             fields.insert(new_in_plan_idx + 1, accomplished_field)
-            print(f"Moved 'accomplished' field from index {accomplished_idx} to after index {new_in_plan_idx}")
+            print(
+                f"Moved 'accomplished' field from index {accomplished_idx} to after index {new_in_plan_idx}"
+            )
 
             # Update form_schema
             conn.execute(
-                sa.text("UPDATE indicators SET form_schema = CAST(:schema AS jsonb) WHERE indicator_code = '4.3.4'"),
-                {"schema": json.dumps(form_schema)}
+                sa.text(
+                    "UPDATE indicators SET form_schema = CAST(:schema AS jsonb) WHERE indicator_code = '4.3.4'"
+                ),
+                {"schema": json.dumps(form_schema)},
             )
             print("Updated 4.3.4 assessor_validation field order")
     else:
-        print(f"Could not find fields to reorder: accomplished={accomplished_idx}, in_plan={in_plan_idx}")
+        print(
+            f"Could not find fields to reorder: accomplished={accomplished_idx}, in_plan={in_plan_idx}"
+        )
 
 
 def downgrade() -> None:

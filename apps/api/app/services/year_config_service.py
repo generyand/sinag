@@ -2,13 +2,12 @@
 # Service layer for managing assessment year configurations
 
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy.orm import Session
 
 from app.core.year_resolver import YearPlaceholderResolver
+from app.db.models.governance_area import ChecklistItem, Indicator
 from app.db.models.system import AssessmentIndicatorSnapshot, AssessmentYearConfig
-from app.db.models.governance_area import Indicator, ChecklistItem
 
 
 class YearConfigService:
@@ -22,7 +21,7 @@ class YearConfigService:
     - Managing the annual rollover process
     """
 
-    def get_active_config(self, db: Session) -> Optional[AssessmentYearConfig]:
+    def get_active_config(self, db: Session) -> AssessmentYearConfig | None:
         """
         Get the currently active assessment year configuration.
 
@@ -32,11 +31,7 @@ class YearConfigService:
         Returns:
             Active AssessmentYearConfig or None if none is active
         """
-        return (
-            db.query(AssessmentYearConfig)
-            .filter(AssessmentYearConfig.is_active == True)
-            .first()
-        )
+        return db.query(AssessmentYearConfig).filter(AssessmentYearConfig.is_active == True).first()
 
     def get_current_year(self, db: Session) -> int:
         """
@@ -81,9 +76,9 @@ class YearConfigService:
         year: int,
         period_start: datetime,
         period_end: datetime,
-        description: Optional[str] = None,
+        description: str | None = None,
         activate: bool = False,
-        activated_by_id: Optional[int] = None,
+        activated_by_id: int | None = None,
     ) -> AssessmentYearConfig:
         """
         Create a new assessment year configuration.
@@ -140,7 +135,7 @@ class YearConfigService:
         self,
         db: Session,
         config_id: int,
-        activated_by_id: Optional[int] = None,
+        activated_by_id: int | None = None,
     ) -> AssessmentYearConfig:
         """
         Activate a specific assessment year configuration.
@@ -161,11 +156,7 @@ class YearConfigService:
             ValueError: If configuration not found
         """
         # Get the config to activate
-        config = (
-            db.query(AssessmentYearConfig)
-            .filter(AssessmentYearConfig.id == config_id)
-            .first()
-        )
+        config = db.query(AssessmentYearConfig).filter(AssessmentYearConfig.id == config_id).first()
 
         if not config:
             raise ValueError(f"Assessment year configuration with ID {config_id} not found.")
@@ -190,9 +181,9 @@ class YearConfigService:
         self,
         db: Session,
         config_id: int,
-        period_start: Optional[datetime] = None,
-        period_end: Optional[datetime] = None,
-        description: Optional[str] = None,
+        period_start: datetime | None = None,
+        period_end: datetime | None = None,
+        description: str | None = None,
     ) -> AssessmentYearConfig:
         """
         Update an existing assessment year configuration.
@@ -210,11 +201,7 @@ class YearConfigService:
         Raises:
             ValueError: If configuration not found
         """
-        config = (
-            db.query(AssessmentYearConfig)
-            .filter(AssessmentYearConfig.id == config_id)
-            .first()
-        )
+        config = db.query(AssessmentYearConfig).filter(AssessmentYearConfig.id == config_id).first()
 
         if not config:
             raise ValueError(f"Assessment year configuration with ID {config_id} not found.")
@@ -265,7 +252,7 @@ class IndicatorSnapshotService:
         db: Session,
         assessment_id: int,
         indicator_ids: list[int],
-        assessment_year: Optional[int] = None,
+        assessment_year: int | None = None,
     ) -> list[AssessmentIndicatorSnapshot]:
         """
         Create snapshots for all indicators in an assessment.
@@ -290,11 +277,7 @@ class IndicatorSnapshotService:
         resolver = YearPlaceholderResolver(assessment_year)
 
         # Get indicators with their checklist items
-        indicators = (
-            db.query(Indicator)
-            .filter(Indicator.id.in_(indicator_ids))
-            .all()
-        )
+        indicators = db.query(Indicator).filter(Indicator.id.in_(indicator_ids)).all()
 
         snapshots = []
         for indicator in indicators:
@@ -379,7 +362,7 @@ class IndicatorSnapshotService:
 
     def get_snapshot_for_indicator(
         self, db: Session, assessment_id: int, indicator_id: int
-    ) -> Optional[AssessmentIndicatorSnapshot]:
+    ) -> AssessmentIndicatorSnapshot | None:
         """
         Get a specific indicator snapshot for an assessment.
 

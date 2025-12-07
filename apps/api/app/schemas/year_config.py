@@ -2,10 +2,9 @@
 # Pydantic models for assessment year configuration API requests/responses
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
-
 
 # =============================================================================
 # Assessment Year Configuration Schemas
@@ -18,13 +17,9 @@ class AssessmentYearConfigBase(BaseModel):
     current_assessment_year: int = Field(
         ..., ge=2020, le=2100, description="Assessment year (e.g., 2025)"
     )
-    assessment_period_start: datetime = Field(
-        ..., description="Start of the assessment period"
-    )
-    assessment_period_end: datetime = Field(
-        ..., description="End of the assessment period"
-    )
-    description: Optional[str] = Field(
+    assessment_period_start: datetime = Field(..., description="Start of the assessment period")
+    assessment_period_end: datetime = Field(..., description="End of the assessment period")
+    description: str | None = Field(
         None, max_length=500, description="Optional description for this configuration"
     )
 
@@ -32,23 +27,19 @@ class AssessmentYearConfigBase(BaseModel):
 class AssessmentYearConfigCreate(AssessmentYearConfigBase):
     """Schema for creating a new assessment year configuration."""
 
-    activate: bool = Field(
-        False, description="Whether to activate this configuration immediately"
-    )
+    activate: bool = Field(False, description="Whether to activate this configuration immediately")
 
 
 class AssessmentYearConfigUpdate(BaseModel):
     """Schema for updating an assessment year configuration."""
 
-    assessment_period_start: Optional[datetime] = Field(
+    assessment_period_start: datetime | None = Field(
         None, description="New start of the assessment period"
     )
-    assessment_period_end: Optional[datetime] = Field(
+    assessment_period_end: datetime | None = Field(
         None, description="New end of the assessment period"
     )
-    description: Optional[str] = Field(
-        None, max_length=500, description="New description"
-    )
+    description: str | None = Field(None, max_length=500, description="New description")
 
 
 class UserNested(BaseModel):
@@ -71,24 +62,22 @@ class AssessmentYearConfigResponse(BaseModel):
     assessment_period_start: datetime
     assessment_period_end: datetime
     is_active: bool
-    description: Optional[str] = None
+    description: str | None = None
     created_at: datetime
     updated_at: datetime
-    activated_at: Optional[datetime] = None
-    deactivated_at: Optional[datetime] = None
+    activated_at: datetime | None = None
+    deactivated_at: datetime | None = None
 
     # Nested user relationships
-    activated_by: Optional[UserNested] = None
-    deactivated_by: Optional[UserNested] = None
+    activated_by: UserNested | None = None
+    deactivated_by: UserNested | None = None
 
 
 class AssessmentYearConfigListResponse(BaseModel):
     """Response schema for listing assessment year configurations."""
 
     configs: list[AssessmentYearConfigResponse]
-    active_year: Optional[int] = Field(
-        None, description="Currently active assessment year"
-    )
+    active_year: int | None = Field(None, description="Currently active assessment year")
 
 
 # =============================================================================
@@ -108,9 +97,9 @@ class AssessmentIndicatorSnapshotResponse(BaseModel):
     assessment_year: int
 
     # Indicator identity
-    indicator_code: Optional[str] = None
+    indicator_code: str | None = None
     name: str
-    description: Optional[str] = None
+    description: str | None = None
 
     # Indicator flags
     is_active: bool
@@ -120,17 +109,17 @@ class AssessmentIndicatorSnapshotResponse(BaseModel):
     validation_rule: str
 
     # Resolved schemas (with year placeholders replaced)
-    form_schema_resolved: Optional[dict[str, Any]] = None
-    calculation_schema_resolved: Optional[dict[str, Any]] = None
-    remark_schema_resolved: Optional[dict[str, Any]] = None
-    technical_notes_resolved: Optional[str] = None
+    form_schema_resolved: dict[str, Any] | None = None
+    calculation_schema_resolved: dict[str, Any] | None = None
+    remark_schema_resolved: dict[str, Any] | None = None
+    technical_notes_resolved: str | None = None
 
     # Resolved checklist items
-    checklist_items_resolved: Optional[list[dict[str, Any]]] = None
+    checklist_items_resolved: list[dict[str, Any]] | None = None
 
     # Hierarchy info
     governance_area_id: int
-    parent_id: Optional[int] = None
+    parent_id: int | None = None
 
     created_at: datetime
 
@@ -173,7 +162,7 @@ class ResolveTextRequest(BaseModel):
     """Request schema for resolving year placeholders in text."""
 
     text: str = Field(..., description="Text containing year placeholders to resolve")
-    assessment_year: Optional[int] = Field(
+    assessment_year: int | None = Field(
         None, description="Specific year for resolution (uses active config if not provided)"
     )
 
@@ -195,7 +184,7 @@ class ResolveSchemaRequest(BaseModel):
     schema_data: dict[str, Any] = Field(
         ..., description="Schema dictionary containing year placeholders"
     )
-    assessment_year: Optional[int] = Field(
+    assessment_year: int | None = Field(
         None, description="Specific year for resolution (uses active config if not provided)"
     )
 

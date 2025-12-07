@@ -13,8 +13,8 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from app.db.base import SessionLocal
-from app.indicators.seeder import reseed_indicators
 from app.indicators.definitions import ALL_INDICATORS
+from app.indicators.seeder import reseed_indicators
 
 
 def main():
@@ -33,10 +33,14 @@ def main():
         from app.db.models.governance_area import Indicator
 
         for area_id in range(1, 7):
-            indicators = db.query(Indicator).filter(
-                Indicator.governance_area_id == area_id,
-                Indicator.parent_id == None  # Only root indicators
-            ).all()
+            indicators = (
+                db.query(Indicator)
+                .filter(
+                    Indicator.governance_area_id == area_id,
+                    Indicator.parent_id.is_(None),  # Only root indicators
+                )
+                .all()
+            )
             print(f"\nGovernance Area {area_id}: {len(indicators)} root indicators")
             for ind in indicators:
                 print(f"  - {ind.indicator_code}: {ind.name[:60]}...")
@@ -44,6 +48,7 @@ def main():
     except Exception as e:
         print(f"❌ Error: {str(e)}")
         import traceback
+
         traceback.print_exc()
         db.rollback()
     finally:

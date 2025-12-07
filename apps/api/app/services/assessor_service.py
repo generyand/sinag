@@ -8,6 +8,7 @@ from typing import Any
 from fastapi import UploadFile
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from app.core.year_resolver import get_year_resolver
 from app.db.enums import AssessmentStatus, ComplianceStatus, ValidationStatus
 from app.db.models.assessment import (
     MOV as MOVModel,  # SQLAlchemy model - alias to avoid conflict
@@ -21,7 +22,6 @@ from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
 from app.schemas.assessment import MOVCreate  # Pydantic schema
 from app.services.storage_service import storage_service
-from app.core.year_resolver import get_year_resolver
 
 
 class AssessorService:

@@ -3,7 +3,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Boolean, Text
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -40,23 +40,15 @@ class AssessmentYearConfig(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
 
     # Assessment year (e.g., 2025)
-    current_assessment_year: Mapped[int] = mapped_column(
-        Integer, nullable=False, index=True
-    )
+    current_assessment_year: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
 
     # Assessment period boundaries
     # Typically January 1 to October 31 of the assessment year
-    assessment_period_start: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False
-    )
-    assessment_period_end: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False
-    )
+    assessment_period_start: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    assessment_period_end: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
     # Active status - only ONE config should be active at a time
-    is_active: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False, index=True
-    )
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, index=True)
 
     # Optional description/notes for this year configuration
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -84,7 +76,9 @@ class AssessmentYearConfig(Base):
     deactivated_by = relationship("User", foreign_keys=[deactivated_by_id])
 
     def __repr__(self) -> str:
-        return f"<AssessmentYearConfig(year={self.current_assessment_year}, active={self.is_active})>"
+        return (
+            f"<AssessmentYearConfig(year={self.current_assessment_year}, active={self.is_active})>"
+        )
 
 
 class AssessmentIndicatorSnapshot(Base):
@@ -115,14 +109,10 @@ class AssessmentIndicatorSnapshot(Base):
 
     # Foreign keys
     assessment_id: Mapped[int] = mapped_column(
-        ForeignKey("assessments.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
+        ForeignKey("assessments.id", ondelete="CASCADE"), nullable=False, index=True
     )
     indicator_id: Mapped[int] = mapped_column(
-        ForeignKey("indicators.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
+        ForeignKey("indicators.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
     # Version tracking

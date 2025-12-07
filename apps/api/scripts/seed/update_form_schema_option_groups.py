@@ -16,6 +16,7 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from sqlalchemy.orm import Session
+
 from app.db.base import SessionLocal
 from app.db.models.governance_area import Indicator
 
@@ -39,13 +40,11 @@ def remove_option_groups_from_form_schema(db: Session) -> int:
 
         # Check if form_schema has fields with option_group
         form_schema = indicator.form_schema
-        if not form_schema or 'fields' not in form_schema:
+        if not form_schema or "fields" not in form_schema:
             continue
 
-        fields = form_schema.get('fields', [])
-        has_option_group = any(
-            f.get('option_group') for f in fields if isinstance(f, dict)
-        )
+        fields = form_schema.get("fields", [])
+        has_option_group = any(f.get("option_group") for f in fields if isinstance(f, dict))
 
         if not has_option_group:
             continue
@@ -53,16 +52,19 @@ def remove_option_groups_from_form_schema(db: Session) -> int:
         # Remove option_group from all fields
         modified = False
         for field in fields:
-            if isinstance(field, dict) and 'option_group' in field:
-                if field['option_group'] is not None:
-                    print(f"  Removing option_group from {indicator.indicator_code}: {field.get('field_id')} = {field['option_group']}")
-                    field['option_group'] = None
+            if isinstance(field, dict) and "option_group" in field:
+                if field["option_group"] is not None:
+                    print(
+                        f"  Removing option_group from {indicator.indicator_code}: {field.get('field_id')} = {field['option_group']}"
+                    )
+                    field["option_group"] = None
                     modified = True
 
         if modified:
             # Force SQLAlchemy to detect the change by using flag_modified
             from sqlalchemy.orm.attributes import flag_modified
-            flag_modified(indicator, 'form_schema')
+
+            flag_modified(indicator, "form_schema")
             updated_count += 1
 
     return updated_count
@@ -76,7 +78,7 @@ def main():
         updated_count = remove_option_groups_from_form_schema(db)
         db.commit()
 
-        print(f"\n✅ Update complete!")
+        print("\n✅ Update complete!")
         print(f"   Updated: {updated_count} indicators")
 
         # Verify the update
@@ -85,13 +87,16 @@ def main():
         remaining_count = 0
         for indicator in indicators:
             form_schema = indicator.form_schema
-            if form_schema and 'fields' in form_schema:
+            if form_schema and "fields" in form_schema:
                 fields_with_og = [
-                    f.get('field_id') for f in form_schema['fields']
-                    if isinstance(f, dict) and f.get('option_group')
+                    f.get("field_id")
+                    for f in form_schema["fields"]
+                    if isinstance(f, dict) and f.get("option_group")
                 ]
                 if fields_with_og:
-                    print(f"   - {indicator.indicator_code}: {len(fields_with_og)} fields with option_group")
+                    print(
+                        f"   - {indicator.indicator_code}: {len(fields_with_og)} fields with option_group"
+                    )
                     remaining_count += len(fields_with_og)
 
         if remaining_count == 0:

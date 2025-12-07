@@ -500,8 +500,8 @@ def get_indicator_form_schema(
 
     # Extract form_schema and metadata
     # Note: Do NOT include calculation_schema or remark_schema (assessor-only fields)
-    from app.schemas.indicator import FormSchemaMetadata
     from app.core.year_resolver import get_year_resolver
+    from app.schemas.indicator import FormSchemaMetadata
 
     # Apply year placeholder resolution
     try:

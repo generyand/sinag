@@ -270,7 +270,9 @@ INDICATOR_3_1 = Indicator(
         SubIndicator(
             code="3.1.7",
             name="Implementation of Drug Abuse Prevention Advocacy Campaigns - Barangay organized at least 1 community-based IEC Activity during {CY_CURRENT_YEAR}",
-            upload_instructions=("Upload: Copy of Activity Report prepared by the BADAC covering {CY_CURRENT_YEAR}"),
+            upload_instructions=(
+                "Upload: Copy of Activity Report prepared by the BADAC covering {CY_CURRENT_YEAR}"
+            ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(

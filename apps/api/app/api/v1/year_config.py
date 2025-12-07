@@ -2,12 +2,11 @@
 # API endpoints for managing assessment year configurations and year placeholder resolution
 
 from datetime import datetime
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, require_mlgoo_dilg, get_current_active_user
+from app.api.deps import get_current_active_user, get_db, require_mlgoo_dilg
 from app.core.year_resolver import YearPlaceholderResolver
 from app.db.models.user import User
 from app.schemas.year_config import (
@@ -272,7 +271,7 @@ async def update_year_config(
     description="Preview all available year placeholders and their resolved values.",
 )
 async def get_placeholder_preview(
-    assessment_year: Optional[int] = Query(
+    assessment_year: int | None = Query(
         None, description="Specific year for preview (uses active config if not provided)"
     ),
     db: Session = Depends(get_db),

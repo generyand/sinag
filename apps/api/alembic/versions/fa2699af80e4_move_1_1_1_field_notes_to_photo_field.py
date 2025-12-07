@@ -16,8 +16,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'fa2699af80e4'
-down_revision: Union[str, Sequence[str], None] = '919018f9a562'
+revision: str = "fa2699af80e4"
+down_revision: Union[str, Sequence[str], None] = "919018f9a562"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -46,12 +46,14 @@ def upgrade() -> None:
     if "field_notes" in fields[0]:
         field_notes = fields[0].pop("field_notes")
         fields[1]["field_notes"] = field_notes
-        print(f"Moved field_notes from field 0 to field 1")
+        print("Moved field_notes from field 0 to field 1")
 
         # Update the database
         conn.execute(
-            sa.text("UPDATE indicators SET form_schema = CAST(:schema AS jsonb) WHERE indicator_code = '1.1.1'"),
-            {"schema": json.dumps(form_schema)}
+            sa.text(
+                "UPDATE indicators SET form_schema = CAST(:schema AS jsonb) WHERE indicator_code = '1.1.1'"
+            ),
+            {"schema": json.dumps(form_schema)},
         )
         print("Updated indicator 1.1.1 form_schema")
     else:
@@ -84,6 +86,8 @@ def downgrade() -> None:
         fields[0]["field_notes"] = field_notes
 
         conn.execute(
-            sa.text("UPDATE indicators SET form_schema = CAST(:schema AS jsonb) WHERE indicator_code = '1.1.1'"),
-            {"schema": json.dumps(form_schema)}
+            sa.text(
+                "UPDATE indicators SET form_schema = CAST(:schema AS jsonb) WHERE indicator_code = '1.1.1'"
+            ),
+            {"schema": json.dumps(form_schema)},
         )
