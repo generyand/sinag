@@ -66,13 +66,8 @@ def ensure_test_barangay(db) -> int:
         # Try to find any existing barangay
         barangay = db.query(Barangay).first()
         if not barangay:
-            # Create a test barangay
-            barangay = Barangay(
-                name="E2E Test Barangay",
-                municipality="Test Municipality",
-                province="Test Province",
-                region="Test Region",
-            )
+            # Create a test barangay (model only has id and name fields)
+            barangay = Barangay(name="E2E Test Barangay")
             db.add(barangay)
             db.commit()
             db.refresh(barangay)
