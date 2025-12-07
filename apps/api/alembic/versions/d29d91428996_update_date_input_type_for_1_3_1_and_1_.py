@@ -12,7 +12,7 @@ date_input type instead of document_count, enabling calendar date picker.
 from typing import Sequence, Union
 
 from alembic import op
-from sqlalchemy.orm import Session
+import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
@@ -23,80 +23,72 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    """Update Date of Approval fields to use date_input type."""
-    from app.db.models.governance_area import ChecklistItem as ChecklistItemModel
+    """Update Date of Approval fields to use date_input type using raw SQL."""
+    conn = op.get_bind()
 
-    bind = op.get_bind()
-    session = Session(bind=bind)
+    print("Updating Date of Approval fields to date_input type...")
 
-    try:
-        print("Updating Date of Approval fields to date_input type...")
+    # Update 1.3.1 date field
+    conn.execute(
+        sa.text("""
+            UPDATE checklist_items
+            SET item_type = :item_type, requires_document_count = :requires_doc_count
+            WHERE item_id = :item_id
+        """),
+        {
+            "item_id": "1_3_1_date_approval",
+            "item_type": "date_input",
+            "requires_doc_count": False,
+        },
+    )
+    print("  - Updated 1_3_1_date_approval to date_input type")
 
-        # Update 1.3.1 date field
-        checklist_1_3_1 = (
-            session.query(ChecklistItemModel)
-            .filter(ChecklistItemModel.item_id == "1_3_1_date_approval")
-            .first()
-        )
-        if checklist_1_3_1:
-            checklist_1_3_1.item_type = "date_input"
-            checklist_1_3_1.requires_document_count = False
-            print("  - Updated 1_3_1_date_approval to date_input type")
+    # Update 1.4.1 date field
+    conn.execute(
+        sa.text("""
+            UPDATE checklist_items
+            SET item_type = :item_type, requires_document_count = :requires_doc_count
+            WHERE item_id = :item_id
+        """),
+        {
+            "item_id": "1_4_1_date_of_approval",
+            "item_type": "date_input",
+            "requires_doc_count": False,
+        },
+    )
+    print("  - Updated 1_4_1_date_of_approval to date_input type")
 
-        # Update 1.4.1 date field
-        checklist_1_4_1 = (
-            session.query(ChecklistItemModel)
-            .filter(ChecklistItemModel.item_id == "1_4_1_date_of_approval")
-            .first()
-        )
-        if checklist_1_4_1:
-            checklist_1_4_1.item_type = "date_input"
-            checklist_1_4_1.requires_document_count = False
-            print("  - Updated 1_4_1_date_of_approval to date_input type")
-
-        session.commit()
-        print("Migration complete!")
-
-    except Exception as e:
-        session.rollback()
-        print(f"Error during migration: {e}")
-        raise
-    finally:
-        session.close()
+    print("Migration complete!")
 
 
 def downgrade() -> None:
-    """Revert to document_count type."""
-    from app.db.models.governance_area import ChecklistItem as ChecklistItemModel
+    """Revert to document_count type using raw SQL."""
+    conn = op.get_bind()
 
-    bind = op.get_bind()
-    session = Session(bind=bind)
+    # Revert 1.3.1
+    conn.execute(
+        sa.text("""
+            UPDATE checklist_items
+            SET item_type = :item_type, requires_document_count = :requires_doc_count
+            WHERE item_id = :item_id
+        """),
+        {
+            "item_id": "1_3_1_date_approval",
+            "item_type": "checkbox",
+            "requires_doc_count": True,
+        },
+    )
 
-    try:
-        # Revert 1.3.1
-        checklist_1_3_1 = (
-            session.query(ChecklistItemModel)
-            .filter(ChecklistItemModel.item_id == "1_3_1_date_approval")
-            .first()
-        )
-        if checklist_1_3_1:
-            checklist_1_3_1.item_type = "checkbox"
-            checklist_1_3_1.requires_document_count = True
-
-        # Revert 1.4.1
-        checklist_1_4_1 = (
-            session.query(ChecklistItemModel)
-            .filter(ChecklistItemModel.item_id == "1_4_1_date_of_approval")
-            .first()
-        )
-        if checklist_1_4_1:
-            checklist_1_4_1.item_type = "checkbox"
-            checklist_1_4_1.requires_document_count = True
-
-        session.commit()
-
-    except Exception:
-        session.rollback()
-        raise
-    finally:
-        session.close()
+    # Revert 1.4.1
+    conn.execute(
+        sa.text("""
+            UPDATE checklist_items
+            SET item_type = :item_type, requires_document_count = :requires_doc_count
+            WHERE item_id = :item_id
+        """),
+        {
+            "item_id": "1_4_1_date_of_approval",
+            "item_type": "checkbox",
+            "requires_doc_count": True,
+        },
+    )
