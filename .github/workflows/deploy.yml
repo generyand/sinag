@@ -53,6 +53,7 @@ jobs:
   validate-checks:
     name: Validate Quality Gates
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     # Only validate for automatic deployments (workflow_run), manual deployments skip validation
     if: github.event_name == 'workflow_run'
     steps:
@@ -156,12 +157,13 @@ jobs:
   deploy-staging:
     needs: setup
     if: |
-      needs.setup.outputs.environment == 'staging' && 
+      needs.setup.outputs.environment == 'staging' &&
       (
-        github.event_name == 'workflow_dispatch' || 
+        github.event_name == 'workflow_dispatch' ||
         (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
       )
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: staging # Uses staging secrets
 
     steps:
@@ -219,6 +221,7 @@ jobs:
       - name: Pull and deploy
         run: |
           ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENVSSH'
+          set -e
           cd ~/sinag
           docker compose -f docker-compose.prod.yml pull
           docker compose -f docker-compose.prod.yml down --remove-orphans || true
@@ -230,6 +233,7 @@ jobs:
         if: ${{ inputs.run_migrations == true }}
         run: |
           ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENVSSH'
+          set -e
           cd ~/sinag
           sleep 15
           docker compose -f docker-compose.prod.yml exec -T api alembic upgrade head
@@ -239,13 +243,20 @@ jobs:
       - name: Health check
         run: |
           ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENVSSH'
+          set -e
           sleep 10
-          if curl -sf http://localhost/health > /dev/null; then
-            echo "✓ Staging is healthy!"
-          else
-            echo "⚠ Health check failed"
-            docker compose -f docker-compose.prod.yml ps
-          fi
+          for i in 1 2 3; do
+            if curl -sf http://localhost/health > /dev/null; then
+              echo "✓ Staging is healthy!"
+              exit 0
+            fi
+            echo "Health check attempt $i failed, retrying..."
+            sleep 5
+          done
+          echo "✗ Health check failed after 3 attempts"
+          docker compose -f docker-compose.prod.yml ps
+          docker compose -f docker-compose.prod.yml logs --tail=20
+          exit 1
           ENVSSH
 
       - name: Cleanup
@@ -266,12 +277,13 @@ jobs:
   deploy-production:
     needs: setup
     if: |
-      needs.setup.outputs.environment == 'production' && 
+      needs.setup.outputs.environment == 'production' &&
       (
-        github.event_name == 'workflow_dispatch' || 
+        github.event_name == 'workflow_dispatch' ||
         (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
       )
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: production # Uses production secrets + requires approval
 
     steps:
@@ -329,6 +341,7 @@ jobs:
       - name: Pull and deploy
         run: |
           ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENVSSH'
+          set -e
           cd ~/sinag
           docker compose -f docker-compose.prod.yml pull
           docker compose -f docker-compose.prod.yml down --remove-orphans || true
@@ -340,6 +353,7 @@ jobs:
         if: ${{ inputs.run_migrations == true }}
         run: |
           ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENVSSH'
+          set -e
           cd ~/sinag
           sleep 15
           docker compose -f docker-compose.prod.yml exec -T api alembic upgrade head
@@ -349,13 +363,20 @@ jobs:
       - name: Health check
         run: |
           ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENVSSH'
+          set -e
           sleep 10
-          if curl -sf http://localhost/health > /dev/null; then
-            echo "✓ Production is healthy!"
-          else
-            echo "⚠ Health check failed"
-            docker compose -f docker-compose.prod.yml ps
-          fi
+          for i in 1 2 3; do
+            if curl -sf http://localhost/health > /dev/null; then
+              echo "✓ Production is healthy!"
+              exit 0
+            fi
+            echo "Health check attempt $i failed, retrying..."
+            sleep 5
+          done
+          echo "✗ Health check failed after 3 attempts"
+          docker compose -f docker-compose.prod.yml ps
+          docker compose -f docker-compose.prod.yml logs --tail=20
+          exit 1
           ENVSSH
 
       - name: Cleanup

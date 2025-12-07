@@ -35,18 +35,22 @@ jobs:
   npm-audit:
     name: NPM Audit
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.0
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "lts/*"
-
-      - name: Install pnpm
-        run: npm install -g pnpm@10.11.0
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -79,6 +83,7 @@ jobs:
   python-audit:
     name: Python Dependency Audit
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout repository
@@ -125,6 +130,7 @@ jobs:
   trivy-scan:
     name: Trivy Container Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     # Only run on main/develop pushes and scheduled runs
     if: github.event_name != 'pull_request'
 
@@ -141,7 +147,7 @@ jobs:
             apps/api
 
       - name: Run Trivy vulnerability scanner (API)
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           image-ref: "sinag-api:scan"
           format: "sarif"
@@ -166,6 +172,7 @@ jobs:
   gitleaks:
     name: Secret Detection
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout repository
@@ -185,13 +192,14 @@ jobs:
   semgrep:
     name: Semgrep SAST
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Run Semgrep
-        uses: returntocorp/semgrep-action@v1
+        uses: semgrep/semgrep-action@v1
         with:
           config: >-
             p/security-audit
