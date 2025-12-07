@@ -301,7 +301,7 @@ def test_get_overall_compliance_insufficient_data_returns_400(
     response = client.get("/api/v1/external/analytics/overall")
 
     assert response.status_code == 400
-    assert "insufficient data" in response.json()["detail"].lower()
+    assert "insufficient data" in response.json().get("error", response.json().get("detail", "")).lower()
 
 
 # ====================================================================
@@ -688,7 +688,7 @@ def test_csv_export_endpoint_insufficient_data(
 
     assert response.status_code == 400
     data = response.json()
-    assert "insufficient" in data["detail"].lower()
+    assert "insufficient" in data.get("error", data.get("detail", "")).lower()
 
 
 def test_pdf_export_endpoint_success(
@@ -790,7 +790,7 @@ def test_pdf_export_endpoint_insufficient_data(
 
     assert response.status_code == 400
     data = response.json()
-    assert "insufficient" in data["detail"].lower()
+    assert "insufficient" in data.get("error", data.get("detail", "")).lower()
 
 
 def test_export_endpoints_katuparan_user_gets_aggregated_data(

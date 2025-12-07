@@ -295,7 +295,7 @@ class TestReworkCycleWithResubmission:
         assert response2.status_code == 400
         data = response2.json()
         assert "detail" in data
-        assert "rework limit" in data["detail"].lower() or "limit reached" in data["detail"].lower()
+        assert "rework limit" in data.get("error", data.get("detail", "")).lower() or "limit reached" in data.get("error", data.get("detail", "")).lower()
 
         # Verify rework_count remains at 1
         db_session.refresh(test_submitted_assessment)
@@ -382,7 +382,7 @@ class TestReworkCycleWithResubmission:
         assert second_rework_response.status_code == 400
         error_data = second_rework_response.json()
         assert "detail" in error_data
-        assert "limit" in error_data["detail"].lower()
+        assert "limit" in error_data.get("error", data.get("detail", "")).lower()
 
     def test_rework_request_on_draft_fails(
         self,
@@ -409,7 +409,7 @@ class TestReworkCycleWithResubmission:
         assert response.status_code == 400
         data = response.json()
         assert "detail" in data
-        assert "SUBMITTED" in data["detail"] or "status" in data["detail"].lower()
+        assert "SUBMITTED" in data.get("error", data.get("detail", "")) or "status" in data.get("error", data.get("detail", "")).lower()
 
     def test_assessor_cannot_resubmit_assessment(
         self,

@@ -212,8 +212,8 @@ class TestUploadMOVFile:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         data = response.json()
         assert "detail" in data
-        assert "not allowed" in data["detail"]["message"].lower()
-        assert data["detail"]["error_code"] == "INVALID_FILE_TYPE"
+        assert "not allowed" in data.get("error", data.get("detail", ""))["message"].lower()
+        assert data.get("error", data.get("detail", ""))["error_code"] == "INVALID_FILE_TYPE"
 
     def test_upload_rejects_text_file(self, client, assessment, auth_headers):
         """Test that upload rejects .txt files."""
@@ -228,7 +228,7 @@ class TestUploadMOVFile:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         data = response.json()
-        assert data["detail"]["error_code"] == "INVALID_FILE_TYPE"
+        assert data.get("error", data.get("detail", ""))["error_code"] == "INVALID_FILE_TYPE"
 
     def test_upload_rejects_oversized_file(self, client, assessment, auth_headers):
         """Test that upload rejects files larger than 50MB."""
@@ -245,8 +245,8 @@ class TestUploadMOVFile:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         data = response.json()
-        assert "exceeds 50MB limit" in data["detail"]["message"]
-        assert data["detail"]["error_code"] == "FILE_TOO_LARGE"
+        assert "exceeds 50MB limit" in data.get("error", data.get("detail", ""))["message"]
+        assert data.get("error", data.get("detail", ""))["error_code"] == "FILE_TOO_LARGE"
 
     def test_upload_rejects_executable_content(self, client, assessment, auth_headers):
         """Test that upload rejects files with executable content."""
@@ -262,8 +262,8 @@ class TestUploadMOVFile:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         data = response.json()
-        assert "suspicious or executable" in data["detail"]["message"].lower()
-        assert data["detail"]["error_code"] == "SUSPICIOUS_CONTENT"
+        assert "suspicious or executable" in data.get("error", data.get("detail", ""))["message"].lower()
+        assert data.get("error", data.get("detail", ""))["error_code"] == "SUSPICIOUS_CONTENT"
 
     def test_upload_rejects_extension_mismatch(self, client, assessment, auth_headers):
         """Test that upload rejects files where extension doesn't match content type."""
@@ -279,8 +279,8 @@ class TestUploadMOVFile:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         data = response.json()
-        assert "extension does not match" in data["detail"]["message"].lower()
-        assert data["detail"]["error_code"] == "EXTENSION_MISMATCH"
+        assert "extension does not match" in data.get("error", data.get("detail", ""))["message"].lower()
+        assert data.get("error", data.get("detail", ""))["error_code"] == "EXTENSION_MISMATCH"
 
     def test_upload_handles_storage_service_error(self, client, assessment, auth_headers):
         """Test that upload handles storage service errors gracefully."""
@@ -299,7 +299,7 @@ class TestUploadMOVFile:
 
             assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
             data = response.json()
-            assert "Failed to upload file" in data["detail"]
+            assert "Failed to upload file" in data.get("error", data.get("detail", ""))
 
     def test_upload_requires_authentication(self, client, assessment):
         """Test that upload requires authentication."""
@@ -793,7 +793,7 @@ class TestDeleteMOVFile:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
         data = response.json()
-        assert "You can only delete files you uploaded" in data["detail"]
+        assert "You can only delete files you uploaded" in data.get("error", data.get("detail", ""))
 
         # Verify file was NOT deleted
         db_session.refresh(mov_file)
@@ -827,7 +827,7 @@ class TestDeleteMOVFile:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
         data = response.json()
-        assert "Cannot delete files from" in data["detail"]
+        assert "Cannot delete files from" in data.get("error", data.get("detail", ""))
 
         # Verify file was NOT deleted
         db_session.refresh(mov_file)
@@ -842,7 +842,7 @@ class TestDeleteMOVFile:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN  # Permission check fails first
         data = response.json()
-        assert "not found" in data["detail"]
+        assert "not found" in data.get("error", data.get("detail", ""))
 
     def test_delete_already_deleted_file(self, client, db_session, draft_assessment, blgu_user):
         """Test that already deleted files cannot be deleted again."""
@@ -871,4 +871,4 @@ class TestDeleteMOVFile:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
         data = response.json()
-        assert "already been deleted" in data["detail"]
+        assert "already been deleted" in data.get("error", data.get("detail", ""))

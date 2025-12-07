@@ -53,7 +53,7 @@ class TestRoleBasedAccessControl:
         other_blgu_user = User(
             email=f"other_blgu_{uuid.uuid4().hex[:8]}@example.com",
             name="Other BLGU User",
-            hashed_password=pwd_context.hash("testpassword123"),
+            hashed_password=pwd_context.hash("TestPassword123!"),
             role=UserRole.BLGU_USER,
             barangay_id=mock_barangay.id,
             is_active=True,
@@ -75,8 +75,8 @@ class TestRoleBasedAccessControl:
         # Login as test_blgu_user and try to submit other user's assessment
         login_response = client.post(
             "/api/v1/auth/login",
-            data={
-                "username": test_blgu_user.email,
+            json={
+                "email": test_blgu_user.email,
                 "password": test_blgu_user.plain_password,
             },
         )
@@ -117,7 +117,7 @@ class TestRoleBasedAccessControl:
         assert response.status_code == 403
         data = response.json()
         assert "detail" in data
-        assert "assessor" in data["detail"].lower() or "permission" in data["detail"].lower()
+        assert "assessor" in data.get("error", data.get("detail", "")).lower() or "permission" in data.get("error", data.get("detail", "")).lower()
 
     def test_assessor_can_request_rework_any_assessment(
         self,
@@ -290,7 +290,7 @@ class TestRoleBasedAccessControl:
         other_user = User(
             email=f"other_{uuid.uuid4().hex[:8]}@example.com",
             name="Other User",
-            hashed_password=pwd_context.hash("testpassword123"),
+            hashed_password=pwd_context.hash("TestPassword123!"),
             role=UserRole.BLGU_USER,
             barangay_id=mock_barangay.id,
             is_active=True,

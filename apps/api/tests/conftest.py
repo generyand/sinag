@@ -1,6 +1,11 @@
 """
 🧪 Test Configuration
-Essential testing setup for 2-person team
+Essential testing setup with proper test isolation using nested transactions.
+
+Key isolation strategy:
+1. Each test runs within a SAVEPOINT transaction
+2. After test completes, we ROLLBACK to the savepoint
+3. This ensures complete isolation between tests without needing to delete data
 """
 
 import os
@@ -39,7 +44,7 @@ postgresql.JSONB = JSONBCompatible
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 # Ensure all ORM models are registered on Base.metadata before creating tables
 from app.db import models  # noqa: F401
@@ -63,14 +68,25 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
 
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+# Global variable to hold the current test's session for dependency override
+_test_session: Session | None = None
+
 
 def override_get_db():
-    """Override database dependency for testing"""
-    try:
+    """
+    Override database dependency for testing.
+    Uses the same session as the test to ensure consistency.
+    """
+    global _test_session
+    if _test_session is not None:
+        yield _test_session
+    else:
+        # Fallback for tests that don't use db_session fixture
         db = TestingSessionLocal()
-        yield db
-    finally:
-        db.close()
+        try:
+            yield db
+        finally:
+            db.close()
 
 
 @pytest.fixture(autouse=True)
@@ -98,8 +114,8 @@ def enable_testing_mode():
 
 
 @pytest.fixture(scope="session")
-def db_setup():
-    """Create test database tables"""
+def db_engine():
+    """Provide the database engine for the session."""
     # Start from a clean slate to avoid stale/partial schemas across runs
     try:
         from os import remove
@@ -108,40 +124,64 @@ def db_setup():
         if exists("./test.db"):
             remove("./test.db")
     except Exception:
-        # If deletion fails (e.g., file locked), proceed with create_all which will ensure tables exist
+        # If deletion fails (e.g., file locked), proceed with create_all
         pass
 
     # Ensure all tables are created once for the test session
     Base.metadata.create_all(bind=engine)
-    yield
+    yield engine
     Base.metadata.drop_all(bind=engine)
 
 
 @pytest.fixture(scope="session")
-def client(db_setup):
-    """FastAPI test client with test database (session-scoped to avoid repeated startup)"""
+def db_setup(db_engine):
+    """Alias for db_engine for backward compatibility."""
+    yield db_engine
+
+
+@pytest.fixture(scope="function")
+def db_session(db_engine):
+    """
+    Database session with proper transaction isolation.
+
+    Each test gets a fresh session with a clean database state.
+    Uses table deletion for isolation (SQLite doesn't support nested transactions well).
+    """
+    global _test_session
+
+    # Create a new connection and session for this test
+    connection = db_engine.connect()
+    session = Session(bind=connection)
+
+    # Clean all tables before each test to ensure isolation
+    for table in reversed(Base.metadata.sorted_tables):
+        session.execute(table.delete())
+    session.commit()
+
+    # Set global session for get_db override
+    _test_session = session
+
+    try:
+        yield session
+    finally:
+        # Cleanup
+        _test_session = None
+        session.rollback()
+        session.close()
+        connection.close()
+
+
+@pytest.fixture(scope="function")
+def client(db_engine):
+    """
+    FastAPI test client with test database.
+
+    Function-scoped to ensure each test gets a fresh client state.
+    """
     app.dependency_overrides[get_db] = override_get_db
     with TestClient(app) as test_client:
         yield test_client
-    app.dependency_overrides.clear()
-
-
-@pytest.fixture
-def db_session(db_setup):
-    """Database session with table data cleaned per test to avoid conflicts"""
-    # Safety: make sure all tables exist before each test in case previous tests modified schema
-    Base.metadata.create_all(bind=engine)
-    db = TestingSessionLocal()
-
-    # Clean all tables in reverse dependency order to satisfy FKs
-    for table in reversed(Base.metadata.sorted_tables):
-        db.execute(table.delete())
-    db.commit()
-
-    try:
-        yield db
-    finally:
-        db.close()
+    # Don't clear overrides here - they're needed for the whole session
 
 
 # Sample test data

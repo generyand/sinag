@@ -174,7 +174,7 @@ class TestBulkCreationEndpoint:
         response = client.post("/api/v1/indicators/bulk", headers=auth_headers, json=payload)
 
         assert response.status_code == 404
-        assert "Governance area" in response.json()["detail"]
+        assert "Governance area" in response.json().get("error", response.json().get("detail", ""))
 
 
 class TestReorderEndpoint:
@@ -352,7 +352,7 @@ class TestDraftCRUDEndpoints:
         )
 
         assert response.status_code == 409
-        assert "conflict" in response.json()["detail"].lower()
+        assert "conflict" in response.json().get("error", response.json().get("detail", "")).lower()
 
     def test_delete_draft(self, client, auth_headers, governance_area):
         """Test DELETE /api/v1/indicators/drafts/{draft_id}."""

@@ -25,7 +25,7 @@ class TestLanguageCodeValidation:
         user_create = UserCreate(
             email="test@example.com",
             name="Test User",
-            password="password123",
+            password="TestPassword123!",
             preferred_language="ceb",
         )
         assert user_create.preferred_language == "ceb"
@@ -35,7 +35,7 @@ class TestLanguageCodeValidation:
         user_create = UserCreate(
             email="test@example.com",
             name="Test User",
-            password="password123",
+            password="TestPassword123!",
             preferred_language="fil",
         )
         assert user_create.preferred_language == "fil"
@@ -45,7 +45,7 @@ class TestLanguageCodeValidation:
         user_create = UserCreate(
             email="test@example.com",
             name="Test User",
-            password="password123",
+            password="TestPassword123!",
             preferred_language="en",
         )
         assert user_create.preferred_language == "en"
@@ -56,7 +56,7 @@ class TestLanguageCodeValidation:
             UserCreate(
                 email="test@example.com",
                 name="Test User",
-                password="password123",
+                password="TestPassword123!",
                 preferred_language="invalid_code",
             )
 
@@ -70,7 +70,7 @@ class TestLanguageCodeValidation:
             UserCreate(
                 email="test@example.com",
                 name="Test User",
-                password="password123",
+                password="TestPassword123!",
                 preferred_language="",
             )
 
@@ -83,7 +83,7 @@ class TestUserCreateSchemaLanguage:
 
     def test_user_create_default_language_is_ceb(self):
         """Test that default language is 'ceb' when not specified."""
-        user_create = UserCreate(email="test@example.com", name="Test User", password="password123")
+        user_create = UserCreate(email="test@example.com", name="Test User", password="TestPassword123!")
         assert user_create.preferred_language == "ceb"
 
     def test_user_create_with_explicit_language(self):
@@ -91,7 +91,7 @@ class TestUserCreateSchemaLanguage:
         user_create = UserCreate(
             email="test@example.com",
             name="Test User",
-            password="password123",
+            password="TestPassword123!",
             preferred_language="fil",
         )
         assert user_create.preferred_language == "fil"
@@ -102,7 +102,7 @@ class TestUserCreateSchemaLanguage:
             user_create = UserCreate(
                 email=f"test_{lang}@example.com",
                 name=f"Test User {lang}",
-                password="password123",
+                password="TestPassword123!",
                 preferred_language=lang,
             )
             assert user_create.preferred_language == lang
@@ -144,7 +144,7 @@ class TestUserAdminCreateSchemaLanguage:
         user_create = UserAdminCreate(
             email="admin@example.com",
             name="Admin User",
-            password="password123",
+            password="TestPassword123!",
             role=UserRole.MLGOO_DILG,
         )
         assert user_create.preferred_language == "ceb"
@@ -154,7 +154,7 @@ class TestUserAdminCreateSchemaLanguage:
         user_create = UserAdminCreate(
             email="admin@example.com",
             name="Admin User",
-            password="password123",
+            password="TestPassword123!",
             role=UserRole.MLGOO_DILG,
             preferred_language="en",
         )
@@ -165,7 +165,7 @@ class TestUserAdminCreateSchemaLanguage:
         user_create = UserAdminCreate(
             email="blgu@example.com",
             name="BLGU User",
-            password="password123",
+            password="TestPassword123!",
             role=UserRole.BLGU_USER,
             barangay_id=1,
             preferred_language="fil",
