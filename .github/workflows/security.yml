@@ -150,21 +150,15 @@ jobs:
         uses: aquasecurity/trivy-action@0.28.0
         with:
           image-ref: "sinag-api:scan"
-          format: "sarif"
-          output: "trivy-api-results.sarif"
+          format: "table"
           severity: "CRITICAL,HIGH"
-
-      - name: Upload Trivy scan results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v4
-        if: always()
-        with:
-          sarif_file: "trivy-api-results.sarif"
-          category: "trivy-api"
 
       - name: Generate Trivy summary
         run: |
           echo "## Trivy Container Scan" >> $GITHUB_STEP_SUMMARY
           echo "Scanned sinag-api:scan for CRITICAL and HIGH vulnerabilities" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "See job logs for detailed scan results." >> $GITHUB_STEP_SUMMARY
 
   # ============================================================================
   # Secret Scanning with Gitleaks
