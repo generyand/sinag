@@ -1071,6 +1071,12 @@ export interface RemarkSchema {
 
 
 /**
+ * ResolveSchemaRequestSchemaData
+ */
+export type ResolveSchemaRequestSchemaData = { [key: string]: unknown };
+
+
+/**
  * ReworkComment
  */
 export interface ReworkComment {
@@ -1312,3 +1318,29 @@ export interface WorkflowMetrics {
  * WorkflowMetricsCountsByStatus
  */
 export type WorkflowMetricsCountsByStatus = {[key: string]: number};
+
+
+/**
+ * YearPlaceholderInfo
+ */
+export interface YearPlaceholderInfo {
+  /** Placeholder syntax (e.g., {CURRENT_YEAR}) */
+  placeholder: string;
+  /** Description of what this placeholder resolves to */
+  description: string;
+  /** Example resolved value for current year */
+  example_value: string;
+}
+
+
+/**
+ * YearResolutionPreview
+ */
+export interface YearResolutionPreview {
+  /** The assessment year used for resolution */
+  assessment_year: number;
+  /** The previous year (assessment_year - 1) */
+  previous_year: number;
+  /** List of all available placeholders with resolved values */
+  placeholders: YearPlaceholderInfo[];
+}

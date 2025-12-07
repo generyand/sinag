@@ -577,6 +577,23 @@ export type GetAnswersResponseUpdatedAt = string | null;
 
 
 /**
+ * GetYearConfigCurrentYear200
+ */
+export type GetYearConfigCurrentYear200 = { [key: string]: unknown };
+
+
+/**
+ * GetYearConfigPlaceholdersParams
+ */
+export type GetYearConfigPlaceholdersParams = {
+/**
+ * Specific year for preview (uses active config if not provided)
+ */
+assessment_year?: number | null;
+};
+
+
+/**
  * HealthCheck
  */
 export interface HealthCheck {
@@ -714,6 +731,18 @@ export interface ReportsDataResponse {
   /** Report generation metadata and applied filters */
   metadata: ReportMetadata;
 }
+
+
+/**
+ * ResolveSchemaResponseOriginalSchema
+ */
+export type ResolveSchemaResponseOriginalSchema = { [key: string]: unknown };
+
+
+/**
+ * ResolveSchemaResponseResolvedSchema
+ */
+export type ResolveSchemaResponseResolvedSchema = { [key: string]: unknown };
 
 
 /**

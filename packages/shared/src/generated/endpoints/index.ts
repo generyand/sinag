@@ -21,3 +21,4 @@ export * from './municipal-overview';
 export * from './notifications';
 export * from './system';
 export * from './users';
+export * from './year-config';

@@ -9,6 +9,7 @@ import type { AppSchemasBbiBBIComplianceSummary } from '../bbis';
 import type { ProgressSummary } from '../common';
 import type { GovernanceAreaProgress } from '../common';
 import type { GovernanceAreaDetailItem } from '../common';
+import type { AppSchemasYearConfigUserNested } from '../users';
 
 /**
  * ApproveAssessmentRequest
@@ -355,6 +356,106 @@ export type AssessmentDetailsResponseMessage = string | null;
 
 
 /**
+ * AssessmentIndicatorSnapshotResponse
+ */
+export interface AssessmentIndicatorSnapshotResponse {
+  id: number;
+  assessment_id: number;
+  indicator_id: number;
+  indicator_version: number;
+  assessment_year: number;
+  indicator_code?: AssessmentIndicatorSnapshotResponseIndicatorCode;
+  name: string;
+  description?: AssessmentIndicatorSnapshotResponseDescription;
+  is_active: boolean;
+  is_auto_calculable: boolean;
+  is_profiling_only: boolean;
+  is_bbi: boolean;
+  validation_rule: string;
+  form_schema_resolved?: AssessmentIndicatorSnapshotResponseFormSchemaResolved;
+  calculation_schema_resolved?: AssessmentIndicatorSnapshotResponseCalculationSchemaResolved;
+  remark_schema_resolved?: AssessmentIndicatorSnapshotResponseRemarkSchemaResolved;
+  technical_notes_resolved?: AssessmentIndicatorSnapshotResponseTechnicalNotesResolved;
+  checklist_items_resolved?: AssessmentIndicatorSnapshotResponseChecklistItemsResolved;
+  governance_area_id: number;
+  parent_id?: AssessmentIndicatorSnapshotResponseParentId;
+  created_at: string;
+}
+
+
+/**
+ * AssessmentIndicatorSnapshotResponseCalculationSchemaResolved
+ */
+export type AssessmentIndicatorSnapshotResponseCalculationSchemaResolved = AssessmentIndicatorSnapshotResponseCalculationSchemaResolvedAnyOf | null;
+
+
+/**
+ * AssessmentIndicatorSnapshotResponseCalculationSchemaResolvedAnyOf
+ */
+export type AssessmentIndicatorSnapshotResponseCalculationSchemaResolvedAnyOf = { [key: string]: unknown };
+
+
+/**
+ * AssessmentIndicatorSnapshotResponseChecklistItemsResolved
+ */
+export type AssessmentIndicatorSnapshotResponseChecklistItemsResolved = AssessmentIndicatorSnapshotResponseChecklistItemsResolvedAnyOfItem[] | null;
+
+
+/**
+ * AssessmentIndicatorSnapshotResponseChecklistItemsResolvedAnyOfItem
+ */
+export type AssessmentIndicatorSnapshotResponseChecklistItemsResolvedAnyOfItem = { [key: string]: unknown };
+
+
+/**
+ * AssessmentIndicatorSnapshotResponseDescription
+ */
+export type AssessmentIndicatorSnapshotResponseDescription = string | null;
+
+
+/**
+ * AssessmentIndicatorSnapshotResponseFormSchemaResolved
+ */
+export type AssessmentIndicatorSnapshotResponseFormSchemaResolved = AssessmentIndicatorSnapshotResponseFormSchemaResolvedAnyOf | null;
+
+
+/**
+ * AssessmentIndicatorSnapshotResponseFormSchemaResolvedAnyOf
+ */
+export type AssessmentIndicatorSnapshotResponseFormSchemaResolvedAnyOf = { [key: string]: unknown };
+
+
+/**
+ * AssessmentIndicatorSnapshotResponseIndicatorCode
+ */
+export type AssessmentIndicatorSnapshotResponseIndicatorCode = string | null;
+
+
+/**
+ * AssessmentIndicatorSnapshotResponseParentId
+ */
+export type AssessmentIndicatorSnapshotResponseParentId = number | null;
+
+
+/**
+ * AssessmentIndicatorSnapshotResponseRemarkSchemaResolved
+ */
+export type AssessmentIndicatorSnapshotResponseRemarkSchemaResolved = AssessmentIndicatorSnapshotResponseRemarkSchemaResolvedAnyOf | null;
+
+
+/**
+ * AssessmentIndicatorSnapshotResponseRemarkSchemaResolvedAnyOf
+ */
+export type AssessmentIndicatorSnapshotResponseRemarkSchemaResolvedAnyOf = { [key: string]: unknown };
+
+
+/**
+ * AssessmentIndicatorSnapshotResponseTechnicalNotesResolved
+ */
+export type AssessmentIndicatorSnapshotResponseTechnicalNotesResolved = string | null;
+
+
+/**
  * AssessmentResponse
  */
 export interface AssessmentResponse {
@@ -536,6 +637,129 @@ export type AssessmentSubmissionValidationErrorsItem = { [key: string]: unknown 
  * AssessmentSubmissionValidationWarningsItem
  */
 export type AssessmentSubmissionValidationWarningsItem = { [key: string]: unknown };
+
+
+/**
+ * AssessmentYearConfigCreate
+ */
+export interface AssessmentYearConfigCreate {
+  /**
+   * Assessment year (e.g., 2025)
+   * @minimum 2020
+   * @maximum 2100
+   */
+  current_assessment_year: number;
+  /** Start of the assessment period */
+  assessment_period_start: string;
+  /** End of the assessment period */
+  assessment_period_end: string;
+  /** Optional description for this configuration */
+  description?: AssessmentYearConfigCreateDescription;
+  /** Whether to activate this configuration immediately */
+  activate?: boolean;
+}
+
+
+/**
+ * AssessmentYearConfigCreateDescription
+ */
+export type AssessmentYearConfigCreateDescription = string | null;
+
+
+/**
+ * AssessmentYearConfigListResponse
+ */
+export interface AssessmentYearConfigListResponse {
+  configs: AssessmentYearConfigResponse[];
+  /** Currently active assessment year */
+  active_year?: AssessmentYearConfigListResponseActiveYear;
+}
+
+
+/**
+ * AssessmentYearConfigListResponseActiveYear
+ */
+export type AssessmentYearConfigListResponseActiveYear = number | null;
+
+
+/**
+ * AssessmentYearConfigResponse
+ */
+export interface AssessmentYearConfigResponse {
+  id: number;
+  current_assessment_year: number;
+  assessment_period_start: string;
+  assessment_period_end: string;
+  is_active: boolean;
+  description?: AssessmentYearConfigResponseDescription;
+  created_at: string;
+  updated_at: string;
+  activated_at?: AssessmentYearConfigResponseActivatedAt;
+  deactivated_at?: AssessmentYearConfigResponseDeactivatedAt;
+  activated_by?: AssessmentYearConfigResponseActivatedBy;
+  deactivated_by?: AssessmentYearConfigResponseDeactivatedBy;
+}
+
+
+/**
+ * AssessmentYearConfigResponseActivatedAt
+ */
+export type AssessmentYearConfigResponseActivatedAt = string | null;
+
+
+/**
+ * AssessmentYearConfigResponseActivatedBy
+ */
+export type AssessmentYearConfigResponseActivatedBy = AppSchemasYearConfigUserNested | null;
+
+
+/**
+ * AssessmentYearConfigResponseDeactivatedAt
+ */
+export type AssessmentYearConfigResponseDeactivatedAt = string | null;
+
+
+/**
+ * AssessmentYearConfigResponseDeactivatedBy
+ */
+export type AssessmentYearConfigResponseDeactivatedBy = AppSchemasYearConfigUserNested | null;
+
+
+/**
+ * AssessmentYearConfigResponseDescription
+ */
+export type AssessmentYearConfigResponseDescription = string | null;
+
+
+/**
+ * AssessmentYearConfigUpdate
+ */
+export interface AssessmentYearConfigUpdate {
+  /** New start of the assessment period */
+  assessment_period_start?: AssessmentYearConfigUpdateAssessmentPeriodStart;
+  /** New end of the assessment period */
+  assessment_period_end?: AssessmentYearConfigUpdateAssessmentPeriodEnd;
+  /** New description */
+  description?: AssessmentYearConfigUpdateDescription;
+}
+
+
+/**
+ * AssessmentYearConfigUpdateAssessmentPeriodEnd
+ */
+export type AssessmentYearConfigUpdateAssessmentPeriodEnd = string | null;
+
+
+/**
+ * AssessmentYearConfigUpdateAssessmentPeriodStart
+ */
+export type AssessmentYearConfigUpdateAssessmentPeriodStart = string | null;
+
+
+/**
+ * AssessmentYearConfigUpdateDescription
+ */
+export type AssessmentYearConfigUpdateDescription = string | null;
 
 
 /**
@@ -860,6 +1084,18 @@ export type PostMlgooAssessmentsAssessmentIdApproveBody = ApproveAssessmentReque
  * PostMlgooAssessmentsAssessmentIdUnlockBody
  */
 export type PostMlgooAssessmentsAssessmentIdUnlockBody = UnlockAssessmentRequest | null;
+
+
+/**
+ * ResolveSchemaRequestAssessmentYear
+ */
+export type ResolveSchemaRequestAssessmentYear = number | null;
+
+
+/**
+ * ResolveTextRequestAssessmentYear
+ */
+export type ResolveTextRequestAssessmentYear = number | null;
 
 
 /**
