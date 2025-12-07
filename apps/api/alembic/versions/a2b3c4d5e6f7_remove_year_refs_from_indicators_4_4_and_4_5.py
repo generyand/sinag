@@ -132,7 +132,7 @@ def upgrade() -> None:
                             ELSE field
                         END
                     )
-                    FROM jsonb_array_elements(form_schema->'fields') AS field
+                    FROM jsonb_array_elements((form_schema->'fields')::jsonb) AS field
                 )
             )
         )
@@ -187,7 +187,7 @@ def upgrade() -> None:
                             ELSE field
                         END
                     )
-                    FROM jsonb_array_elements(form_schema->'fields') AS field
+                    FROM jsonb_array_elements((form_schema->'fields')::jsonb) AS field
                 )
             )
         )
@@ -226,7 +226,7 @@ def upgrade() -> None:
                             ELSE field
                         END
                     )
-                    FROM jsonb_array_elements(form_schema->'fields') AS field
+                    FROM jsonb_array_elements((form_schema->'fields')::jsonb) AS field
                 )
             )
         )
@@ -267,7 +267,7 @@ def upgrade() -> None:
                             ELSE field
                         END
                     )
-                    FROM jsonb_array_elements(form_schema->'fields') AS field
+                    FROM jsonb_array_elements((form_schema->'fields')::jsonb) AS field
                 )
             )
         )
