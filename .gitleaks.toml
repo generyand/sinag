@@ -1,0 +1,19 @@
+# Gitleaks configuration for SINAG project
+# https://github.com/gitleaks/gitleaks
+
+title = "SINAG Gitleaks Configuration"
+
+# Allowlist specific findings that are false positives or intentional test values
+[allowlist]
+  description = "Allowlist for test/CI environment variables"
+
+  # Allow test SECRET_KEY values used in E2E tests (not real secrets)
+  regexTarget = "match"
+  regexes = [
+    '''test-secret-key-for-e2e-tests-\w+''',
+  ]
+
+  # Allow specific paths that contain test configurations
+  paths = [
+    '''\.github/workflows/playwright\.yml''',
+  ]
