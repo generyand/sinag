@@ -346,11 +346,12 @@ services:
 
     environment:
       # Development polling for better file watching in Docker
+      - CI=true
       - WATCHPACK_POLLING=true
       # Server-side API URL (for SSR in Docker, uses internal network)
       - API_BASE_URL=http://api:8000
 
-    command: sh -lc "pnpm install --frozen-lockfile && pnpm --filter web dev"
+    command: sh -lc "pnpm install --frozen-lockfile --force && pnpm --filter web dev"
 
     depends_on:
       api:
@@ -394,7 +395,7 @@ services:
 
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d
       - nginx-logs:/var/log/nginx
 
     depends_on:
