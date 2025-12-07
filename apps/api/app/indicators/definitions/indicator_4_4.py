@@ -22,7 +22,7 @@ INDICATOR_4_4 = Indicator(
         # Sub-Indicator 4.4.1: Presence of Kasambahay Desk with designated KDO
         SubIndicator(
             code="4.4.1",
-            name="Presence of Kasambahay Desk with designated Kasambahay Desk Officer (KDO)",
+            name="Presence of Kasambahay Desk with designated Kasambahay Desk Officer (KDO) covering {JAN_TO_OCT_CURRENT_YEAR}",
             upload_instructions=(
                 "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) designating a KDO to manage the Kasambahay Desk, signed by the PB, Barangay Secretary and SBMs"
             ),
@@ -40,7 +40,7 @@ INDICATOR_4_4 = Indicator(
         # Sub-Indicator 4.4.2: Maintenance/updating of a Kasambahay Masterlist
         SubIndicator(
             code="4.4.2",
-            name="Maintenance/updating of a Kasambahay Masterlist",
+            name="Maintenance/updating of a Kasambahay Masterlist covering {JUL_SEP_CURRENT_YEAR}",
             upload_instructions=(
                 "Upload: Copy of the Updated Kasambahay Report for the 3rd Quarter\n\n"
                 "Please supply the number of documents submitted:\n"

@@ -80,10 +80,10 @@ INDICATOR_4_1 = Indicator(
         # Sub-Indicator 4.1.1
         SubIndicator(
             code="4.1.1",
-            name="Structure: Organized Barangay VAW Desk and designated Barangay VAW Desk Officer",
+            name="Structure: Established Barangay VAW Desk and designated Barangay VAW Desk Officer covering {JAN_TO_OCT_CURRENT_YEAR}",
             upload_instructions=(
                 "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) "
-                "on the establishment of Barangay VAW Desk and designated VAW Desk Officer covering January to October 2023"
+                "on the establishment of Barangay VAW Desk and designated VAW Desk Officer covering {JAN_TO_OCT_CURRENT_YEAR}"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
@@ -119,8 +119,8 @@ INDICATOR_4_1 = Indicator(
         # Sub-Indicator 4.1.3
         SubIndicator(
             code="4.1.3",
-            name="Plan and Budget: Approved CY 2023 Barangay Gender and Development (GAD) Plan and Budget",
-            upload_instructions=("Upload: Approved Barangay GAD Plan and Budget for CY 2023"),
+            name="Plan and Budget: Approved {CY_CURRENT_YEAR} Barangay Gender and Development (GAD) Plan and Budget",
+            upload_instructions=("Upload: Approved Barangay GAD Plan and Budget for {CY_CURRENT_YEAR}"),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 # Upload Verification
@@ -136,9 +136,9 @@ INDICATOR_4_1 = Indicator(
         # Sub-Indicator 4.1.4
         SubIndicator(
             code="4.1.4",
-            name="Accomplishment Reports: Quarterly accomplishment reports based on the database/records of VAW cases reported in the barangay covering 1st to 3rd quarter of CY 2023 with received stamp by the C/MSWDO and C/MLGOO",
+            name="Accomplishment Reports: Quarterly accomplishment reports based on the database/records of VAW cases reported in the barangay covering {Q1_Q3_CURRENT_YEAR} with received stamp by the C/MSWDO and C/MLGOO",
             upload_instructions=(
-                "Upload: Accomplishment Report covering 1st to 3rd quarter of CY 2023 with received stamp by the C/MSWDO and C/MLGOO\n\n"
+                "Upload: Accomplishment Report covering {Q1_Q3_CURRENT_YEAR} with received stamp by the C/MSWDO and C/MLGOO\n\n"
                 "Quarterly accomplishment reports based on the database/records of VAW cases reported in the barangay "
                 "with the following information at the minimum: total number of VAW cases received, assistance provided to victim-survivors, "
                 "total number of cases documented for violating RA 9262 and other VAW-related laws, total barangay population, number of male "
@@ -240,7 +240,7 @@ INDICATOR_4_1 = Indicator(
         # Sub-Indicator 4.1.6
         SubIndicator(
             code="4.1.6",
-            name="Accomplishment Reports: Physical accomplishment OR fund utilization (only 1 of the below reports is required)",
+            name="Accomplishment Reports: At least 50% accomplishment (Physical) OR 50% fund utilization (Financial) - {CY_CURRENT_YEAR}",
             upload_instructions=(
                 "Upload the following:\n\n"
                 "SHARED (Required):\n"
@@ -262,7 +262,6 @@ INDICATOR_4_1 = Indicator(
                     item_type="checkbox",
                     required=True,
                     display_order=1,
-                    option_group="shared",
                 ),
                 # Option A: Physical Accomplishment - YES/NO assessment
                 ChecklistItem(
@@ -271,8 +270,7 @@ INDICATOR_4_1 = Indicator(
                     mov_description="Checkbox for physical accomplishment option",
                     item_type="assessment_field",
                     required=False,
-                    display_order=4,
-                    option_group="option_a",
+                    display_order=2,
                 ),
                 ChecklistItem(
                     id="4_1_6_cert_physical",
@@ -280,8 +278,7 @@ INDICATOR_4_1 = Indicator(
                     mov_description="Verification of certification for physical accomplishment",
                     item_type="checkbox",
                     required=False,
-                    display_order=5,
-                    option_group="option_a",
+                    display_order=3,
                 ),
                 ChecklistItem(
                     id="4_1_6_physical_accomplished",
@@ -289,16 +286,14 @@ INDICATOR_4_1 = Indicator(
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=6,
-                    option_group="option_a",
+                    display_order=4,
                 ),
                 ChecklistItem(
                     id="4_1_6_physical_reflected",
                     label="Total number of activities/projects reflected in the Plan",
                     item_type="calculation_field",
                     required=False,
-                    display_order=7,
-                    option_group="option_a",
+                    display_order=5,
                 ),
                 # OR Separator (info_text)
                 ChecklistItem(
@@ -307,7 +302,7 @@ INDICATOR_4_1 = Indicator(
                     mov_description="OR",
                     item_type="info_text",
                     required=False,
-                    display_order=8,
+                    display_order=6,
                 ),
                 # Option B: Fund Utilization - YES/NO assessment
                 ChecklistItem(
@@ -316,8 +311,7 @@ INDICATOR_4_1 = Indicator(
                     mov_description="Checkbox for fund utilization option",
                     item_type="assessment_field",
                     required=False,
-                    display_order=9,
-                    option_group="option_b",
+                    display_order=7,
                 ),
                 ChecklistItem(
                     id="4_1_6_cert_financial",
@@ -325,25 +319,22 @@ INDICATOR_4_1 = Indicator(
                     mov_description="Verification of certification for 50% fund utilization",
                     item_type="checkbox",
                     required=False,
-                    display_order=10,
-                    option_group="option_b",
+                    display_order=8,
                 ),
                 ChecklistItem(
                     id="4_1_6_financial_utilized",
-                    label="Total amount utilized (as of Dec. 31, 2023)",
+                    label="Total amount utilized (as of {DEC_31_CURRENT_YEAR})",
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
-                    display_order=11,
-                    option_group="option_b",
+                    display_order=9,
                 ),
                 ChecklistItem(
                     id="4_1_6_financial_allocated",
-                    label="Total amount allocated for PPAs in the GAD Plan",
+                    label="Total amount allocated for PPAs in the GAD Plan for {CY_CURRENT_YEAR}",
                     item_type="calculation_field",
                     required=False,
-                    display_order=12,
-                    option_group="option_b",
+                    display_order=10,
                 ),
             ],
         ),

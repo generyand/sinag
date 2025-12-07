@@ -9,6 +9,7 @@ from .barangay import Barangay
 from .bbi import BBI, BBIResult
 from .governance_area import GovernanceArea, Indicator
 from .notification import Notification
+from .system import AssessmentIndicatorSnapshot, AssessmentYearConfig
 from .user import User
 
 __all__ = [
@@ -26,4 +27,6 @@ __all__ = [
     "BBI",
     "BBIResult",
     "Notification",
+    "AssessmentYearConfig",
+    "AssessmentIndicatorSnapshot",
 ]

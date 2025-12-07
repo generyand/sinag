@@ -56,7 +56,6 @@ INDICATOR_6_2 = Indicator(
                     mov_description="Verification of photo documentation",
                     required=False,
                     display_order=2,
-                    option_group="Option A",
                 ),
                 # OR separator 1
                 ChecklistItem(
@@ -83,7 +82,6 @@ INDICATOR_6_2 = Indicator(
                     mov_description="Verification of MOA with junkshop",
                     required=False,
                     display_order=5,
-                    option_group="Option B",
                 ),
                 ChecklistItem(
                     id="6_2_1_b_mechanism",
@@ -92,7 +90,6 @@ INDICATOR_6_2 = Indicator(
                     mov_description="Verification of mechanism to process biodegradable wastes",
                     required=False,
                     display_order=6,
-                    option_group="Option B",
                 ),
                 ChecklistItem(
                     id="6_2_1_b_moa_service",
@@ -101,7 +98,6 @@ INDICATOR_6_2 = Indicator(
                     mov_description="Verification of MOA with service provider",
                     required=False,
                     display_order=7,
-                    option_group="Option B",
                 ),
                 # OR separator 2
                 ChecklistItem(
@@ -128,7 +124,6 @@ INDICATOR_6_2 = Indicator(
                     mov_description="Verification of MOA with host barangay",
                     required=False,
                     display_order=10,
-                    option_group="Option C",
                 ),
                 ChecklistItem(
                     id="6_2_1_c_moa_lgu",
@@ -137,7 +132,6 @@ INDICATOR_6_2 = Indicator(
                     mov_description="Verification of MOA or LGU document",
                     required=False,
                     display_order=11,
-                    option_group="Option C",
                 ),
             ],
         ),

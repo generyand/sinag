@@ -7,7 +7,7 @@ from typing import Any
 
 from fastapi import HTTPException, status  # type: ignore[reportMissingImports]
 from sqlalchemy import and_, func  # type: ignore[reportMissingImports]
-from sqlalchemy.orm import Session, joinedload  # type: ignore[reportMissingImports]
+from sqlalchemy.orm import Session, joinedload, selectinload  # type: ignore[reportMissingImports]
 
 from app.db.enums import AssessmentStatus, MOVStatus
 from app.db.models import (
@@ -33,6 +33,7 @@ from app.schemas.assessment import (
     ProgressSummary,
 )
 from app.services.completeness_validation_service import completeness_validation_service
+from app.services.year_config_service import indicator_snapshot_service
 
 
 class AssessmentService:
@@ -161,6 +162,14 @@ class AssessmentService:
         Get complete assessment data for BLGU user including all governance areas,
         indicators, and responses.
 
+        PERFORMANCE: Uses 3 simple queries instead of one mega query to avoid
+        timeouts with the Supabase connection pooler. Each query is simple and fast,
+        and the results are merged in Python (which is very fast).
+
+        Query 1: User + Barangay + Assessment (with auto-create)
+        Query 2: Static data - Governance areas + Indicators (cacheable)
+        Query 3: User data - Responses + MOVs + Comments
+
         Args:
             db: Database session
             blgu_user_id: ID of the BLGU user
@@ -168,188 +177,322 @@ class AssessmentService:
         Returns:
             Dictionary with assessment and governance areas data
         """
+        import time
+        import logging
+        logger = logging.getLogger(__name__)
+
+        total_start = time.time()
+        from sqlalchemy import text
+
+        # Initialize year placeholder resolver for dynamic year resolution
+        from app.core.year_resolver import get_year_resolver
+
         try:
-            # Get user with barangay info
-            user = db.query(User).filter(User.id == blgu_user_id).first()
-            barangay_name = None
-            barangay_id = None
-            if user and user.barangay:
-                barangay_name = user.barangay.name
-                barangay_id = user.barangay.id
+            year_resolver = get_year_resolver(db)
+        except ValueError:
+            # If no active assessment year config, skip resolution
+            year_resolver = None
 
-            # Get assessment
-            assessment = (
-                db.query(Assessment).filter(Assessment.blgu_user_id == blgu_user_id).first()
-            )
-
-            # Create if not exists
-            if assessment is None:
-                assessment = Assessment(
-                    blgu_user_id=blgu_user_id,
-                    status=AssessmentStatus.DRAFT,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow(),
+        try:
+            # QUERY 1a: Ensure assessment exists (INSERT if not exists)
+            step_start = time.time()
+            q1a = text("""
+                INSERT INTO assessments (
+                    blgu_user_id, status, created_at, updated_at,
+                    rework_count, is_calibration_rework, calibration_count,
+                    is_mlgoo_recalibration, mlgoo_recalibration_count, is_locked_for_deadline
                 )
-                db.add(assessment)
-                db.commit()
-                db.refresh(assessment)
+                SELECT :user_id, 'DRAFT', NOW(), NOW(),
+                       0, false, 0, false, 0, false
+                WHERE NOT EXISTS (SELECT 1 FROM assessments WHERE blgu_user_id = :user_id)
+            """)
+            db.execute(q1a, {"user_id": blgu_user_id})
+            db.commit()
 
-            # Ensure governance areas exist (dev safeguard)
-            self._ensure_governance_areas_exist(db)
+            # QUERY 1b: Get user + barangay + assessment
+            q1b = text("""
+                SELECT
+                    u.id as user_id, u.barangay_id, b.name as barangay_name,
+                    a.id as assessment_id, a.status, a.created_at, a.updated_at,
+                    a.submitted_at, a.validated_at, a.rework_requested_at,
+                    a.is_mlgoo_recalibration, a.mlgoo_recalibration_requested_at,
+                    a.mlgoo_recalibration_indicator_ids, a.mlgoo_recalibration_comments,
+                    a.mlgoo_recalibration_count
+                FROM users u
+                LEFT JOIN barangays b ON u.barangay_id = b.id
+                LEFT JOIN assessments a ON a.blgu_user_id = u.id
+                WHERE u.id = :user_id
+            """)
+            result1 = db.execute(q1b, {"user_id": blgu_user_id})
+            row1 = result1.fetchone()
+            logger.info(f"[PERF] Query 1 (user+assessment): {time.time() - step_start:.2f}s")
 
-            # Get all governance areas
-            governance_areas = db.query(GovernanceArea).all()
+            if not row1:
+                logger.error(f"User {blgu_user_id} not found")
+                return None
 
-            # If no indicators exist, create some sample indicators for development
-            areas_with_no_indicators = (
-                db.query(GovernanceArea)
-                .outerjoin(Indicator)
-                .group_by(GovernanceArea.id)
-                .having(func.count(Indicator.id) == 0)
-                .all()
-            )
-            if areas_with_no_indicators:
-                self._create_sample_indicators(db)
+            user_info = {
+                "user_id": row1[0],
+                "barangay_id": row1[1],
+                "barangay_name": row1[2],
+            }
+            assessment_info = {
+                "id": row1[3],
+                "status": row1[4],
+                "created_at": row1[5].isoformat() + "Z" if row1[5] else None,
+                "updated_at": row1[6].isoformat() + "Z" if row1[6] else None,
+                "submitted_at": row1[7].isoformat() + "Z" if row1[7] else None,
+                "validated_at": row1[8].isoformat() + "Z" if row1[8] else None,
+                "rework_requested_at": row1[9].isoformat() + "Z" if row1[9] else None,
+                "is_mlgoo_recalibration": row1[10],
+                "mlgoo_recalibration_requested_at": row1[11].isoformat() + "Z" if row1[11] else None,
+                "mlgoo_recalibration_indicator_ids": row1[12],
+                "mlgoo_recalibration_comments": row1[13],
+                "mlgoo_recalibration_count": row1[14],
+            }
+
+            if not assessment_info["id"]:
+                logger.error(f"Assessment not created for user {blgu_user_id}")
+                return None
+
+            assessment_id = assessment_info["id"]
+
+            # QUERY 2: Get static data - governance areas and indicators
+            step_start = time.time()
+            q2 = text("""
+                SELECT
+                    ga.id as ga_id, ga.name as ga_name, ga.area_type,
+                    i.id as ind_id, i.name as ind_name, i.description,
+                    i.indicator_code, i.form_schema, i.governance_area_id,
+                    i.parent_id, i.sort_order
+                FROM governance_areas ga
+                LEFT JOIN indicators i ON i.governance_area_id = ga.id
+                ORDER BY ga.id, i.sort_order, i.indicator_code
+            """)
+            result2 = db.execute(q2)
+            rows2 = result2.fetchall()
+            logger.info(f"[PERF] Query 2 (static data): {time.time() - step_start:.2f}s")
+
+            # Build governance areas and indicators from static data
+            governance_areas_raw = {}
+            indicators_raw = []
+            for row in rows2:
+                ga_id = row[0]
+                if ga_id not in governance_areas_raw:
+                    governance_areas_raw[ga_id] = {
+                        "id": ga_id,
+                        "name": row[1],
+                        "area_type": row[2],
+                    }
+                if row[3]:  # has indicator
+                    # Apply year placeholder resolution to name, description, and form_schema
+                    ind_name = row[4]
+                    ind_description = row[5]
+                    ind_form_schema = row[7]
+
+                    if year_resolver:
+                        ind_name = year_resolver.resolve_string(ind_name)
+                        ind_description = year_resolver.resolve_string(ind_description)
+                        ind_form_schema = year_resolver.resolve_schema(ind_form_schema)
+
+                    indicators_raw.append({
+                        "id": row[3],
+                        "name": ind_name,
+                        "description": ind_description,
+                        "indicator_code": row[6],
+                        "form_schema": ind_form_schema,
+                        "governance_area_id": row[8],
+                        "parent_id": row[9],
+                        "sort_order": row[10],
+                        # Will be filled in from query 3
+                        "response_id": None,
+                        "response_data": None,
+                        "is_completed": None,
+                        "requires_rework": None,
+                        "generated_remark": None,
+                        "movs": [],
+                        "comments": [],
+                    })
+
+            # QUERY 3: Get user-specific data - responses, MOVs, comments
+            step_start = time.time()
+            q3 = text("""
+                SELECT
+                    ar.id as response_id, ar.indicator_id, ar.response_data,
+                    ar.is_completed, ar.requires_rework, ar.generated_remark,
+                    m.id as mov_id, m.original_filename, m.file_size,
+                    m.storage_path, m.content_type, m.status as mov_status,
+                    fc.id as comment_id, fc.comment, fc.comment_type,
+                    fc.is_internal_note, fc.assessor_id, fc.created_at
+                FROM assessment_responses ar
+                LEFT JOIN movs m ON m.response_id = ar.id
+                LEFT JOIN feedback_comments fc ON fc.response_id = ar.id AND fc.is_internal_note = false
+                WHERE ar.assessment_id = :assessment_id
+                ORDER BY ar.indicator_id
+            """)
+            result3 = db.execute(q3, {"assessment_id": assessment_id})
+            rows3 = result3.fetchall()
+            logger.info(f"[PERF] Query 3 (user data): {time.time() - step_start:.2f}s")
+
+            # Build responses, MOVs, comments lookup
+            responses_by_indicator = {}
+            movs_by_response = {}
+            comments_by_response = {}
+
+            for row in rows3:
+                response_id = row[0]
+                indicator_id = row[1]
+
+                # Build response entry
+                if indicator_id not in responses_by_indicator:
+                    responses_by_indicator[indicator_id] = {
+                        "id": response_id,
+                        "response_data": row[2],
+                        "is_completed": row[3],
+                        "requires_rework": row[4],
+                        "generated_remark": row[5],
+                    }
+
+                # Build MOV entry
+                mov_id = row[6]
+                if mov_id and response_id not in movs_by_response:
+                    movs_by_response[response_id] = {}
+                if mov_id and mov_id not in movs_by_response.get(response_id, {}):
+                    movs_by_response.setdefault(response_id, {})[mov_id] = {
+                        "id": mov_id,
+                        "name": row[7],
+                        "size": row[8],
+                        "storage_path": row[9],
+                        "content_type": row[10],
+                        "status": row[11],
+                    }
+
+                # Build comment entry
+                comment_id = row[12]
+                if comment_id and response_id not in comments_by_response:
+                    comments_by_response[response_id] = {}
+                if comment_id and comment_id not in comments_by_response.get(response_id, {}):
+                    comments_by_response.setdefault(response_id, {})[comment_id] = {
+                        "id": comment_id,
+                        "comment": row[13],
+                        "comment_type": row[14],
+                        "is_internal_note": row[15],
+                        "assessor_id": row[16],
+                        "created_at": row[17].isoformat() + "Z" if row[17] else None,
+                    }
+
+            # Merge response data into indicators
+            for ind in indicators_raw:
+                ind_id = ind["id"]
+                if ind_id in responses_by_indicator:
+                    resp = responses_by_indicator[ind_id]
+                    ind["response_id"] = resp["id"]
+                    ind["response_data"] = resp["response_data"]
+                    ind["is_completed"] = resp["is_completed"]
+                    ind["requires_rework"] = resp["requires_rework"]
+                    ind["generated_remark"] = resp["generated_remark"]
+                    ind["movs"] = list(movs_by_response.get(resp["id"], {}).values())
+                    ind["comments"] = list(comments_by_response.get(resp["id"], {}).values())
+
+            governance_areas_list = list(governance_areas_raw.values())
 
         except Exception as e:
-            print(f"Error in get_assessment_for_blgu_with_full_data: {e}")
+            logger.error(f"Error in get_assessment_for_blgu_with_full_data: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             raise
 
-        # Get all responses for this assessment
-        responses = (
-            db.query(AssessmentResponse)
-            .options(
-                joinedload(AssessmentResponse.indicator),
-                joinedload(AssessmentResponse.movs),
-                joinedload(AssessmentResponse.feedback_comments),
-            )
-            .filter(AssessmentResponse.assessment_id == assessment.id)
-            .all()
-        )
+        # Process the JSON results (fast, in-memory)
+        step_start = time.time()
 
-        # Create response lookup
-        response_lookup = {r.indicator_id: r for r in responses}
+        # Build assessment dict
+        assessment_dict = {
+            "id": assessment_info.get("id"),
+            "status": assessment_info.get("status"),
+            "blgu_user_id": blgu_user_id,
+            "barangay_id": user_info.get("barangay_id"),
+            "barangay_name": user_info.get("barangay_name"),
+            "created_at": assessment_info.get("created_at"),
+            "updated_at": assessment_info.get("updated_at"),
+            "submitted_at": assessment_info.get("submitted_at"),
+            "validated_at": assessment_info.get("validated_at"),
+            "rework_requested_at": assessment_info.get("rework_requested_at"),
+            "is_mlgoo_recalibration": assessment_info.get("is_mlgoo_recalibration"),
+            "mlgoo_recalibration_requested_at": assessment_info.get("mlgoo_recalibration_requested_at"),
+            "mlgoo_recalibration_indicator_ids": assessment_info.get("mlgoo_recalibration_indicator_ids"),
+            "mlgoo_recalibration_comments": assessment_info.get("mlgoo_recalibration_comments"),
+            "mlgoo_recalibration_count": assessment_info.get("mlgoo_recalibration_count"),
+        }
 
-        # Fetch all indicators once to avoid N+1 and build a tree by area
-        # Sort by sort_order to ensure correct ordering
-        all_indicators = (
-            db.query(Indicator)
-            .order_by(
-                Indicator.governance_area_id,
-                Indicator.sort_order,
-                Indicator.indicator_code,
-            )
-            .all()
-        )
-        indicators_by_area: dict[int, list[Indicator]] = {}
-        for ind in all_indicators:
-            indicators_by_area.setdefault(ind.governance_area_id, []).append(ind)
+        # Build lookup structures
+        indicators_by_area: dict[int, list[dict]] = {}
+        children_by_parent: dict[int | None, list[dict]] = {}
 
-        # Pre-build adjacency lists for indicators for O(n) tree assembly
-        # Children inherit order from sorted query
-        children_by_parent: dict[int | None, list[Indicator]] = {}
-        for ind in all_indicators:
-            children_by_parent.setdefault(getattr(ind, "parent_id", None), []).append(ind)
+        for ind in indicators_raw:
+            ga_id = ind.get("governance_area_id")
+            parent_id = ind.get("parent_id")
+            indicators_by_area.setdefault(ga_id, []).append(ind)
+            children_by_parent.setdefault(parent_id, []).append(ind)
 
-        def serialize_indicator_node(ind: Indicator) -> dict[str, Any]:
-            """Serialize an indicator and attach nested children without triggering lazy loads."""
-            response = response_lookup.get(ind.id)
+        def serialize_indicator_node(ind: dict) -> dict[str, Any]:
+            """Serialize an indicator dict and attach nested children."""
+            response_obj = None
+            if ind.get("response_id") is not None:
+                response_obj = {
+                    "id": ind["response_id"],
+                    "response_data": ind.get("response_data"),
+                    "is_completed": ind.get("is_completed"),
+                    "requires_rework": ind.get("requires_rework"),
+                    "generated_remark": ind.get("generated_remark"),
+                }
+
+            movs_list = ind.get("movs") or []
+            comments_list = ind.get("comments") or []
+
             node = {
-                "id": ind.id,
-                "indicator_code": ind.indicator_code,  # CRITICAL FIX: Include indicator_code (e.g., "1.1.1")
-                "name": ind.name,
-                "description": ind.description,
-                "form_schema": ind.form_schema,
-                "response": self._serialize_response_obj(response),
-                "movs": self._serialize_mov_list(response.movs) if response else [],
-                "feedback_comments": [
-                    {
-                        "id": c.id,
-                        "comment": c.comment,
-                        "comment_type": c.comment_type,
-                        "is_internal_note": c.is_internal_note,
-                        "response_id": c.response_id,
-                        "assessor_id": c.assessor_id,
-                        "created_at": c.created_at.isoformat() + "Z" if c.created_at else None,
-                    }
-                    for c in (response.feedback_comments if response else [])
-                    if not getattr(c, "is_internal_note", False)
-                ],
+                "id": ind["id"],
+                "indicator_code": ind.get("indicator_code"),
+                "name": ind.get("name"),
+                "description": ind.get("description"),
+                "form_schema": ind.get("form_schema"),
+                "response": response_obj,
+                "movs": movs_list,
+                "feedback_comments": comments_list,
                 "children": [],
             }
-            # Recurse over children using pre-built adjacency lists
-            # Sort children by sort_order to ensure correct ordering
-            children = children_by_parent.get(ind.id, [])
+
+            children = children_by_parent.get(ind["id"], [])
             children_sorted = sorted(
-                children, key=lambda x: (x.sort_order or 0, x.indicator_code or "")
+                children, key=lambda x: (x.get("sort_order") or 0, x.get("indicator_code") or "")
             )
             for child in children_sorted:
                 node["children"].append(serialize_indicator_node(child))
             return node
 
-        # Build governance areas with top-level indicators and nested children
+        # Build governance areas with nested indicators
         governance_areas_data = []
-        for area in governance_areas:
+        for area in governance_areas_list:
             area_data = {
-                "id": area.id,
-                "name": area.name,
-                "area_type": area.area_type.value,
+                "id": area["id"],
+                "name": area["name"],
+                "area_type": area["area_type"],
                 "indicators": [],
             }
 
-            # Add only top-level indicators for this area, with nested children
-            top_level_nodes: list[dict[str, Any]] = []
             top_level_inds = [
                 ind
-                for ind in indicators_by_area.get(area.id, [])
-                if getattr(ind, "parent_id", None) is None
+                for ind in indicators_by_area.get(area["id"], [])
+                if ind.get("parent_id") is None
             ]
-            # Sort by sort_order to ensure correct ordering (1.1, 1.2, ... not 1.1, 1.10, 1.2)
-            top_level_inds.sort(key=lambda x: (x.sort_order or 0, x.indicator_code or ""))
-
-            # All indicators should be shown (no legacy filtering)
-            # Previously filtered to show only 1 legacy + Epic 3 indicators per area
-            # Now showing all 84 sub-indicators (hardcoded SGLGB indicators 1.1-6.3)
+            top_level_inds.sort(key=lambda x: (x.get("sort_order") or 0, x.get("indicator_code") or ""))
 
             for ind in top_level_inds:
-                top_level_nodes.append(serialize_indicator_node(ind))
-
-            # No longer generating mock/synthetic sub-indicators
-            # All 84 hardcoded SGLGB indicators (1.1-6.3) are now in the database
-            # with proper parent_id hierarchy and form_schema from checklist_items
-
-            area_data["indicators"].extend(top_level_nodes)
+                area_data["indicators"].append(serialize_indicator_node(ind))
 
             governance_areas_data.append(area_data)
 
-        # Convert SQLAlchemy models to dictionaries for JSON serialization
-        assessment_dict = {
-            "id": assessment.id,
-            "status": assessment.status.value,
-            "blgu_user_id": assessment.blgu_user_id,
-            "barangay_id": barangay_id,
-            "barangay_name": barangay_name,
-            "created_at": assessment.created_at.isoformat() + "Z",
-            "updated_at": assessment.updated_at.isoformat() + "Z",
-            "submitted_at": assessment.submitted_at.isoformat() + "Z"
-            if assessment.submitted_at
-            else None,
-            "validated_at": assessment.validated_at.isoformat() + "Z"
-            if assessment.validated_at
-            else None,
-            "rework_requested_at": assessment.rework_requested_at.isoformat() + "Z"
-            if assessment.rework_requested_at
-            else None,
-            # MLGOO RE-calibration tracking
-            "is_mlgoo_recalibration": assessment.is_mlgoo_recalibration,
-            "mlgoo_recalibration_requested_at": assessment.mlgoo_recalibration_requested_at.isoformat()
-            + "Z"
-            if assessment.mlgoo_recalibration_requested_at
-            else None,
-            "mlgoo_recalibration_indicator_ids": assessment.mlgoo_recalibration_indicator_ids,
-            "mlgoo_recalibration_comments": assessment.mlgoo_recalibration_comments,
-            "mlgoo_recalibration_count": assessment.mlgoo_recalibration_count,
-        }
+        logger.info(f"[PERF] Process results: {time.time() - step_start:.2f}s")
+        logger.info(f"[PERF] TOTAL get_assessment_for_blgu_with_full_data: {time.time() - total_start:.2f}s")
 
         return {
             "assessment": assessment_dict,
@@ -807,9 +950,9 @@ class AssessmentService:
         return (
             db.query(AssessmentResponse)
             .options(
-                joinedload(AssessmentResponse.indicator),
-                joinedload(AssessmentResponse.movs),
-                joinedload(AssessmentResponse.feedback_comments),
+                selectinload(AssessmentResponse.indicator),
+                selectinload(AssessmentResponse.movs),
+                selectinload(AssessmentResponse.feedback_comments),
             )
             .filter(AssessmentResponse.id == response_id)
             .first()
@@ -1372,6 +1515,29 @@ class AssessmentService:
 
             db.commit()
             db.refresh(assessment)
+
+            # Create indicator snapshots on FIRST submission only
+            # Snapshots preserve the exact indicator definitions (with resolved year placeholders)
+            # at the time of initial submission for historical integrity
+            if not is_resubmission:
+                try:
+                    # Get all indicator IDs that have responses
+                    indicator_ids = [r.indicator_id for r in assessment.responses]
+                    if indicator_ids:
+                        snapshots = indicator_snapshot_service.create_snapshot_for_assessment(
+                            db=db,
+                            assessment_id=assessment_id,
+                            indicator_ids=indicator_ids,
+                        )
+                        db.commit()
+                        self.logger.info(
+                            f"Created {len(snapshots)} indicator snapshots for assessment {assessment_id}"
+                        )
+                except Exception as e:
+                    # Log error but don't fail submission - snapshots are for historical record
+                    self.logger.error(
+                        f"Failed to create indicator snapshots for assessment {assessment_id}: {e}"
+                    )
 
             # Trigger notification based on submission type
             try:

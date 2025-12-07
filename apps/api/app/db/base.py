@@ -48,7 +48,8 @@ if settings.DATABASE_URL:
 
     # Connection arguments - SSL required for remote, optional for local
     connect_args = {
-        "options": "-c timezone=utc",
+        # PERFORMANCE: Set statement timeout to 120s to avoid Supabase pooler's default 60s timeout
+        "options": "-c timezone=utc -c statement_timeout=120000",
         "connect_timeout": 10,  # PERFORMANCE: Timeout for initial connection
         "application_name": "sinag-api",  # Identify connections in pg_stat_activity
     }

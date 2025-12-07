@@ -8,13 +8,13 @@ IMPORTANT NOTES FOR PHASE 9 (VALIDATION SERVICE):
 1. Date Input Requirement:
    - Validators must input the "Date of Approval" from the Barangay Appropriation Ordinance
    - This date determines compliance with the deadline requirements
-   - Primary deadline: December 31, 2022
-   - Grace period (consideration): March 31, 2023
+   - Primary deadline: December 31 of the PREVIOUS year
+   - Grace period (consideration): March 31 of the CURRENT year
 
 2. Grace Period Logic:
-   - Ordinances approved on or before December 31, 2022 → Full compliance (PASSED)
-   - Ordinances approved between January 1, 2023 and March 31, 2023 → Considered compliance (CONSIDERED)
-   - Ordinances approved after March 31, 2023 → Non-compliance (FAILED)
+   - Ordinances approved on or before December 31 of PREVIOUS year → Full compliance (PASSED)
+   - Ordinances approved between January 1 and March 31 of CURRENT year → Considered compliance (CONSIDERED)
+   - Ordinances approved after March 31 of CURRENT year → Non-compliance (FAILED)
 
 3. Validation Workflow:
    - Validator verifies the presence of the Barangay Appropriation Ordinance
@@ -43,15 +43,15 @@ INDICATOR_1_3 = Indicator(
     governance_area_id=1,  # Financial Administration and Sustainability
     is_bbi=False,  # Budget approval is NOT a BBI - it's a compliance requirement
     sort_order=3,
-    description="Presence of a Barangay Appropriation Ordinance approved on or before December 31, 2022 (Consideration: Approval until March 31, 2023)",
+    description="Presence of a Barangay Appropriation Ordinance approved on or before {DEC_31_PREVIOUS_YEAR} (Consideration: Approval until {MARCH_CURRENT_YEAR})",
     children=[
         # Sub-Indicator 1.3.1
         SubIndicator(
             code="1.3.1",
-            name="Presence of a Barangay Appropriation Ordinance approved on or before December 31, 2022",
+            name="Presence of a Barangay Appropriation Ordinance approved on or before {DEC_31_PREVIOUS_YEAR}",
             upload_instructions=(
                 "Upload: Approved Barangay Appropriation Ordinance signed by the Sangguniang Barangay Members (SBMs), SK Chairperson, Barangay Secretary, and Punong Barangay\n"
-                "(Consideration: Approval until March 31, 2023)"
+                "(Consideration: Approval until {MARCH_CURRENT_YEAR})"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
@@ -66,7 +66,7 @@ INDICATOR_1_3 = Indicator(
                 ChecklistItem(
                     id="1_3_1_date_approval",
                     label="Date of Approval",
-                    mov_description="CONSIDERATION: Approval until March 31, 2023",
+                    mov_description="CONSIDERATION: Approval until {MARCH_CURRENT_YEAR}",
                     required=True,
                     item_type="date_input",
                     display_order=2,
