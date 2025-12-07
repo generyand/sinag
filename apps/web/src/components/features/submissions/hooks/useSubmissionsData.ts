@@ -44,14 +44,18 @@ export function useSubmissionsData({
   }, [statusFilter]);
 
   // Fetch data from API
-  const { data: apiData, isLoading, error } = useGetAssessmentsList({
+  const {
+    data: apiData,
+    isLoading,
+    error,
+  } = useGetAssessmentsList({
     assessment_status: apiStatusFilter,
   });
 
   // Transform API data to UI models
   const submissions = useMemo((): SubmissionUIModel[] => {
     if (!apiData) return [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     return transformAssessmentsToUI(apiData as any[]);
   }, [apiData]);
 

@@ -21,11 +21,7 @@ interface ExportControlsProps {
   reportsData?: ReportsDataResponse;
 }
 
-export function ExportControls({
-  tableData,
-  currentFilters,
-  reportsData,
-}: ExportControlsProps) {
+export function ExportControls({ tableData, currentFilters, reportsData }: ExportControlsProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [exportType, setExportType] = useState<string | null>(null);
 
@@ -89,19 +85,16 @@ export function ExportControls({
       setIsExporting(true);
       setExportType("PDF");
 
-      await exportReportToPDF(
-        reportsData,
-        currentFilters || {},
-        {
-          generatedAt: new Date().toISOString(),
-          dateRange: currentFilters?.start_date && currentFilters?.end_date
+      await exportReportToPDF(reportsData, currentFilters || {}, {
+        generatedAt: new Date().toISOString(),
+        dateRange:
+          currentFilters?.start_date && currentFilters?.end_date
             ? {
                 start: currentFilters.start_date,
                 end: currentFilters.end_date,
               }
             : undefined,
-        }
-      );
+      });
     } catch (error) {
       console.error("PDF export failed:", error);
       showError("Failed to export PDF", {
@@ -137,7 +130,6 @@ export function ExportControls({
             {isExporting && exportType === "PNG" ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
-              // eslint-disable-next-line jsx-a11y/alt-text
               <Image className="h-4 w-4 mr-2" />
             )}
             Export PNG
@@ -145,30 +137,16 @@ export function ExportControls({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            onClick={() =>
-              handlePNGExport("bar_chart", "bar-chart-container")
-            }
-          >
+          <DropdownMenuItem onClick={() => handlePNGExport("bar_chart", "bar-chart-container")}>
             Bar Chart
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() =>
-              handlePNGExport("pie_chart", "pie-chart-container")
-            }
-          >
+          <DropdownMenuItem onClick={() => handlePNGExport("pie_chart", "pie-chart-container")}>
             Pie Chart
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() =>
-              handlePNGExport("line_chart", "line-chart-container")
-            }
-          >
+          <DropdownMenuItem onClick={() => handlePNGExport("line_chart", "line-chart-container")}>
             Line Chart
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => handlePNGExport("map", "map-container")}
-          >
+          <DropdownMenuItem onClick={() => handlePNGExport("map", "map-container")}>
             Map
           </DropdownMenuItem>
         </DropdownMenuContent>

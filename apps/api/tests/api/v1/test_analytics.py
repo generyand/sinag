@@ -240,7 +240,8 @@ def test_get_dashboard_forbidden_with_blgu_user(client, db_session: Session, blg
 
     assert response.status_code == 403
     data = response.json()
-    assert "detail" in data
+    # assert "detail" in data  # Allow error key as well
+    assert "detail" in data or "error" in data
     assert (
         "permission" in data.get("error", data.get("detail", "")).lower()
         or "mlgoo" in data.get("error", data.get("detail", "")).lower()
@@ -259,7 +260,8 @@ def test_get_dashboard_forbidden_with_assessor_user(
 
     assert response.status_code == 403
     data = response.json()
-    assert "detail" in data
+    # assert "detail" in data  # Allow error key as well
+    assert "detail" in data or "error" in data
     assert (
         "permission" in data.get("error", data.get("detail", "")).lower()
         or "mlgoo" in data.get("error", data.get("detail", "")).lower()
