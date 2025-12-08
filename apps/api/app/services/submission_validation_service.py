@@ -238,40 +238,7 @@ class SubmissionValidationService:
                     )
                     continue
 
-            # During normal operations (not rework), trust the database flag
-            if not is_rework or not rework_requested_at:
-                self.logger.info(
-                    f"[COMPLETENESS DEBUG] Indicator {indicator.id}: Taking NORMAL path (not rework)"
-                )
-                is_complete = response.is_completed if response.is_completed is not None else False
-                if not is_complete:
-                    incomplete_indicators.append(indicator.name)
-                continue
-
-            # During REWORK: Check if indicator has feedback
-            self.logger.info(f"[COMPLETENESS DEBUG] Indicator {indicator.id}: Taking REWORK path")
-            feedback_count = (
-                db.query(FeedbackComment)
-                .filter(
-                    FeedbackComment.response_id == response.id,
-                    FeedbackComment.is_internal_note == False,
-                )
-                .count()
-            )
-
-            annotation_count = (
-                db.query(MOVAnnotation)
-                .join(MOVFile)
-                .filter(
-                    MOVFile.assessment_id == assessment_id,
-                    MOVFile.indicator_id == indicator.id,
-                )
-                .count()
-            )
-
-            has_feedback = feedback_count > 0 or annotation_count > 0
-
-            # Get MOV files for this indicator
+            # Get MOV files for this indicator (needed for both normal and rework paths)
             mov_files = (
                 db.query(MOVFile)
                 .filter(
@@ -282,19 +249,52 @@ class SubmissionValidationService:
                 .all()
             )
 
-            # Apply selective filtering based on feedback
-            if has_feedback:
-                # Only count files uploaded after rework
-                mov_files = [
-                    m for m in mov_files if m.uploaded_at and m.uploaded_at >= rework_requested_at
-                ]
+            # During REWORK: Apply selective filtering based on feedback
+            if is_rework and rework_requested_at:
                 self.logger.info(
-                    f"[COMPLETENESS] Indicator {indicator.id} has feedback - counting only new files: {len(mov_files)}"
+                    f"[COMPLETENESS DEBUG] Indicator {indicator.id}: Taking REWORK path"
                 )
+                feedback_count = (
+                    db.query(FeedbackComment)
+                    .filter(
+                        FeedbackComment.response_id == response.id,
+                        FeedbackComment.is_internal_note == False,
+                    )
+                    .count()
+                )
+
+                annotation_count = (
+                    db.query(MOVAnnotation)
+                    .join(MOVFile)
+                    .filter(
+                        MOVFile.assessment_id == assessment_id,
+                        MOVFile.indicator_id == indicator.id,
+                    )
+                    .count()
+                )
+
+                has_feedback = feedback_count > 0 or annotation_count > 0
+
+                # Apply selective filtering based on feedback
+                if has_feedback:
+                    # Only count files uploaded after rework
+                    mov_files = [
+                        m
+                        for m in mov_files
+                        if m.uploaded_at and m.uploaded_at >= rework_requested_at
+                    ]
+                    self.logger.info(
+                        f"[COMPLETENESS] Indicator {indicator.id} has feedback - counting only new files: {len(mov_files)}"
+                    )
+                else:
+                    # No feedback - count all files (old + new)
+                    self.logger.info(
+                        f"[COMPLETENESS] Indicator {indicator.id} has NO feedback - counting all files: {len(mov_files)}"
+                    )
             else:
-                # No feedback - count all files (old + new)
+                # Normal path (not rework) - use all MOV files
                 self.logger.info(
-                    f"[COMPLETENESS] Indicator {indicator.id} has NO feedback - counting all files: {len(mov_files)}"
+                    f"[COMPLETENESS DEBUG] Indicator {indicator.id}: Taking NORMAL path - {len(mov_files)} MOV files"
                 )
 
             # Use completeness_validation_service to check completion

@@ -7,7 +7,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.db.models.system import AssessmentYearConfig
+from app.db.models.system import AssessmentYear
 
 
 class YearPlaceholderResolver:
@@ -98,22 +98,19 @@ class YearPlaceholderResolver:
         Raises:
             ValueError: If no active assessment year configuration exists
         """
-        config = (
-            db.query(AssessmentYearConfig).filter(AssessmentYearConfig.is_active == True).first()
-        )
+        active_year = db.query(AssessmentYear).filter(AssessmentYear.is_active == True).first()
 
-        if not config:
+        if not active_year:
             raise ValueError(
-                "No active assessment year configuration found. "
-                "Please configure the current assessment year in the system."
+                "No active assessment year found. Please activate an assessment year in the system."
             )
 
-        return cls(config.current_assessment_year)
+        return cls(active_year.year)
 
     @classmethod
     def get_current_year(cls, db: Session) -> int:
         """
-        Get the current assessment year from the database.
+        Get the current active assessment year from the database.
 
         Args:
             db: Database session
@@ -124,17 +121,14 @@ class YearPlaceholderResolver:
         Raises:
             ValueError: If no active assessment year configuration exists
         """
-        config = (
-            db.query(AssessmentYearConfig).filter(AssessmentYearConfig.is_active == True).first()
-        )
+        active_year = db.query(AssessmentYear).filter(AssessmentYear.is_active == True).first()
 
-        if not config:
+        if not active_year:
             raise ValueError(
-                "No active assessment year configuration found. "
-                "Please configure the current assessment year in the system."
+                "No active assessment year found. Please activate an assessment year in the system."
             )
 
-        return config.current_assessment_year
+        return active_year.year
 
     def resolve_string(self, text: str | None) -> str | None:
         """
@@ -287,19 +281,22 @@ class YearPlaceholderResolver:
         return self.PLACEHOLDER_PATTERN.findall(text)
 
 
-def get_year_resolver(db: Session) -> YearPlaceholderResolver:
+def get_year_resolver(db: Session, year: int | None = None) -> YearPlaceholderResolver:
     """
-    Factory function to get a YearPlaceholderResolver for the current assessment year.
+    Factory function to get a YearPlaceholderResolver for a specific assessment year.
 
     Args:
         db: Database session
+        year: Specific year to use. If not provided, uses the active year from database.
 
     Returns:
         Configured YearPlaceholderResolver
 
     Raises:
-        ValueError: If no active assessment year configuration exists
+        ValueError: If no active assessment year configuration exists and no year specified
     """
+    if year is not None:
+        return YearPlaceholderResolver(year)
     return YearPlaceholderResolver.from_database(db)
 
 

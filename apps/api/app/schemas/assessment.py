@@ -51,6 +51,7 @@ class Assessment(BaseModel):
     id: int
     status: AssessmentStatus
     blgu_user_id: int
+    assessment_year: int  # Year this assessment belongs to
     created_at: datetime
     updated_at: datetime
     submitted_at: datetime | None = None
@@ -76,6 +77,7 @@ class AssessmentCreate(BaseModel):
     """Schema for creating a new assessment."""
 
     blgu_user_id: int
+    assessment_year: int | None = None  # If not provided, uses active year
 
 
 class AssessmentUpdate(BaseModel):

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useGetUsersMe } from "@sinag/shared";
@@ -19,14 +19,12 @@ import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 export default function AdminDashboardPage() {
   const router = useRouter();
   const { user, setUser, isAuthenticated } = useAuthStore();
-  const [selectedCycleId] = useState<number | undefined>(undefined);
 
   // Auto-generated hook to fetch current user data
   const userQuery = useGetUsersMe();
 
-  // Admin dashboard data hook (now uses real API)
-  // Pass undefined to get data for all cycles, or a specific cycle_id
-  const dashboardQuery = useAdminDashboard(selectedCycleId);
+  // Admin dashboard data hook - automatically uses year from global store
+  const dashboardQuery = useAdminDashboard();
 
   // Redirect unauthenticated users to login
   useEffect(() => {
@@ -128,10 +126,6 @@ export default function AdminDashboardPage() {
           <DashboardHeader
             municipality={dashboardData.municipality}
             performanceYear={dashboardData.performanceYear}
-            assessmentYear={dashboardData.assessmentYear}
-            onAssessmentYearChange={(year) => {
-              console.log("Year changed:", year);
-            }}
           />
         </header>
 

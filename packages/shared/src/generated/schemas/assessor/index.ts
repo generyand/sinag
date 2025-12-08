@@ -46,6 +46,28 @@ export type AssessorQueueItemSubmissionDate = string | null;
 
 
 /**
+ * GetAssessorQueueParams
+ */
+export type GetAssessorQueueParams = {
+/**
+ * Filter by assessment year (e.g., 2024, 2025). Defaults to active year.
+ */
+year?: number | null;
+};
+
+
+/**
+ * GetAssessorStatsParams
+ */
+export type GetAssessorStatsParams = {
+/**
+ * Filter by assessment year (e.g., 2024, 2025). Defaults to active year.
+ */
+year?: number | null;
+};
+
+
+/**
  * IndicatorDetailItemAssessorRemarks
  */
 export type IndicatorDetailItemAssessorRemarks = string | null;

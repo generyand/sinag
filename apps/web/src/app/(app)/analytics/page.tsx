@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
-import { useGetUsersMe, useGetAnalyticsReports, useGetMunicipalOverviewDashboard, useGetAdminCycles } from "@sinag/shared";
+import { useGetUsersMe, useGetAnalyticsReports, useGetMunicipalOverviewDashboard } from "@sinag/shared";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -20,6 +20,7 @@ import {
   Filter,
   BarChart3,
 } from "lucide-react";
+import { YearSelector } from "@/components/features/assessment-year/YearSelector";
 import { useDashboardAnalytics } from "@/hooks/useDashboardAnalytics";
 import {
   ComplianceRateCard,
@@ -55,12 +56,11 @@ export default function AnalyticsPage() {
   const initialTab = (searchParams.get("tab") as AnalyticsTabId) || "overview";
   const [activeTab, setActiveTab] = useState<AnalyticsTabId>(initialTab);
 
-  // Use the centralized filter hook
+  // Use the centralized filter hook (now uses year instead of cycle)
   const {
-    selectedCycle,
+    selectedYear,
     selectedPhase,
     filters,
-    setSelectedCycle,
     setSelectedPhase,
     clearAllFilters,
     hasActiveFilters,
@@ -70,21 +70,21 @@ export default function AnalyticsPage() {
   // Auto-generated hook to fetch current user data
   const userQuery = useGetUsersMe();
 
-  // Analytics dashboard data hook
+  // Analytics dashboard data hook (now using year instead of cycle)
   const {
     data: dashboardData,
     isLoading: isDashboardLoading,
     error: dashboardError,
     refetch: refetchDashboard,
-  } = useDashboardAnalytics(selectedCycle);
+  } = useDashboardAnalytics(selectedYear);
 
-  // Reports data hook
+  // Reports data hook (now using year instead of cycle_id)
   const {
     data: reportsData,
     isLoading: isReportsLoading,
     error: reportsError,
   } = useGetAnalyticsReports({
-    cycle_id: filters.cycle_id,
+    year: filters.year,
     start_date: filters.start_date,
     end_date: filters.end_date,
     governance_area: filters.governance_area,
@@ -101,12 +101,6 @@ export default function AnalyticsPage() {
     error: municipalError,
   } = useGetMunicipalOverviewDashboard();
 
-  // Assessment cycles data hook
-  const {
-    data: cyclesData,
-    isLoading: isCyclesLoading,
-  } = useGetAdminCycles();
-
   // Handler for viewing CapDev insights - navigates to submissions detail page
   const handleViewCapDev = (assessmentId: number) => {
     router.push(`/mlgoo/submissions/${assessmentId}`);
@@ -119,9 +113,6 @@ export default function AnalyticsPage() {
     params.set("tab", tab);
     router.push(`/analytics?${params.toString()}`, { scroll: false });
   };
-
-  // Get cycle name for display in filter pills
-  const selectedCycleName = cyclesData?.find(c => c.id === selectedCycle)?.name;
 
   // Redirect unauthenticated users to login
   useEffect(() => {
@@ -252,7 +243,7 @@ export default function AnalyticsPage() {
                     <ExportControls
                       tableData={reportsData.table_data.rows || []}
                       currentFilters={{
-                        cycle_id: filters.cycle_id,
+                        year: filters.year,
                         start_date: filters.start_date,
                         end_date: filters.end_date,
                         governance_area: filters.governance_area,
@@ -299,55 +290,10 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Filters Row */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              {/* Cycle Selector */}
-              <div className="w-full sm:w-64">
-                <label
-                  htmlFor="cycle-select"
-                  className="block text-xs font-medium text-[var(--text-secondary)] mb-1 uppercase tracking-wide"
-                >
-                  Assessment Cycle
-                </label>
-                <Select
-                  value={selectedCycle?.toString() || "all"}
-                  onValueChange={(value) => {
-                    setSelectedCycle(value === "all" ? null : parseInt(value));
-                  }}
-                  disabled={isCyclesLoading}
-                >
-                  <SelectTrigger
-                    id="cycle-select"
-                    className="w-full bg-[var(--background)] border-[var(--border)] rounded-sm"
-                  >
-                    <SelectValue placeholder={isCyclesLoading ? "Loading cycles..." : "Select cycle"} />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[var(--card)] border border-[var(--border)] shadow-xl rounded-sm z-50">
-                    <SelectItem
-                      value="all"
-                      className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
-                    >
-                      All Cycles
-                    </SelectItem>
-                    {cyclesData?.map((cycle) => (
-                      <SelectItem
-                        key={cycle.id}
-                        value={cycle.id.toString()}
-                        className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
-                      >
-                        {cycle.name} ({cycle.year}){cycle.is_active && " ✓"}
-                      </SelectItem>
-                    ))}
-                    {!isCyclesLoading && (!cyclesData || cyclesData.length === 0) && (
-                      <SelectItem
-                        value="none"
-                        disabled
-                        className="text-[var(--text-secondary)] px-3 py-2"
-                      >
-                        No cycles available
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+              {/* Year Selector */}
+              <div className="w-full sm:w-auto">
+                <YearSelector showLabel showIcon />
               </div>
 
               {/* Phase Selector */}
@@ -398,7 +344,6 @@ export default function AnalyticsPage() {
           {/* Active Filter Pills */}
           <ActiveFilterPills
             filterLabels={activeFilterLabels}
-            cycleName={selectedCycleName}
             onClearAll={clearAllFilters}
             hasActiveFilters={hasActiveFilters}
           />

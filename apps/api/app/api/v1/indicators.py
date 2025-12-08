@@ -543,6 +543,7 @@ def get_indicator_tree_by_governance_area(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
     governance_area_id: int,
+    year: int | None = None,
 ) -> list[dict]:
     """
     Get hierarchical tree structure of indicators for a governance area.
@@ -551,6 +552,12 @@ def get_indicator_tree_by_governance_area(
 
     **Path Parameters**:
     - governance_area_id: Governance area ID
+
+    **Query Parameters**:
+    - year: Optional assessment year for placeholder resolution.
+            If viewing a historical assessment, pass the assessment's year.
+            If not provided, uses the currently active year.
+            Example: year=2024 will resolve {CURRENT_YEAR} as "2024"
 
     **Returns**: List of root indicator nodes with nested children
 
@@ -583,6 +590,7 @@ def get_indicator_tree_by_governance_area(
     - Automatic code generation (1.1, 1.1.1, etc.)
     - MOV checklist items included
     - Form, calculation, and remark schemas included
+    - Dynamic year placeholder resolution ({CURRENT_YEAR}, {PREVIOUS_YEAR}, etc.)
 
     **Raises**:
     - 404: Governance area not found
@@ -590,6 +598,7 @@ def get_indicator_tree_by_governance_area(
     tree = indicator_service.get_indicator_tree(
         db=db,
         governance_area_id=governance_area_id,
+        assessment_year=year,
     )
 
     return tree

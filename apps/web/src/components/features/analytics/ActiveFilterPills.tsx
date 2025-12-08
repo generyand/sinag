@@ -12,7 +12,6 @@ interface FilterLabel {
 
 interface ActiveFilterPillsProps {
   filterLabels: FilterLabel[];
-  cycleName?: string;
   onClearAll: () => void;
   hasActiveFilters: boolean;
 }
@@ -23,7 +22,6 @@ interface ActiveFilterPillsProps {
  */
 export function ActiveFilterPills({
   filterLabels,
-  cycleName,
   onClearAll,
   hasActiveFilters,
 }: ActiveFilterPillsProps) {
@@ -31,21 +29,13 @@ export function ActiveFilterPills({
     return null;
   }
 
-  // Update cycle label with actual name if provided
-  const displayLabels = filterLabels.map((filter) => {
-    if (filter.key === "cycle" && cycleName) {
-      return { ...filter, label: `Cycle: ${cycleName}` };
-    }
-    return filter;
-  });
-
   return (
     <div className="flex flex-wrap items-center gap-2 px-6 py-3 bg-[var(--muted)]/20 border border-[var(--border)] rounded-sm">
       <span className="text-sm text-[var(--muted-foreground)] mr-2">
         Active filters:
       </span>
 
-      {displayLabels.map((filter) => (
+      {filterLabels.map((filter) => (
         <Badge
           key={filter.key}
           variant="secondary"

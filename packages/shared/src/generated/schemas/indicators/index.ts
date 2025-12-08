@@ -268,6 +268,14 @@ export type GetIndicatorsTreeGovernanceAreaId200Item = { [key: string]: unknown 
 
 
 /**
+ * GetIndicatorsTreeGovernanceAreaIdParams
+ */
+export type GetIndicatorsTreeGovernanceAreaIdParams = {
+year?: number | null;
+};
+
+
+/**
  * GetMunicipalOverviewTopFailingIndicatorsParams
  */
 export type GetMunicipalOverviewTopFailingIndicatorsParams = {

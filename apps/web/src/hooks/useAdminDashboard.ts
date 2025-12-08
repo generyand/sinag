@@ -1,4 +1,5 @@
 import { DashboardKPIResponse, useGetAnalyticsDashboard } from '@sinag/shared';
+import { useEffectiveYear } from './useAssessmentYear';
 
 // Status color mapping for the municipal progress chart
 const statusColorMap: Record<string, { color: string; bgColor: string }> = {
@@ -168,11 +169,23 @@ function transformDashboardData(apiData: DashboardKPIResponse): AdminDashboardDa
   };
 }
 
-export function useAdminDashboard(cycleId?: number) {
-  // Pass cycle_id only if explicitly provided (not a year string)
-  const query = useGetAnalyticsDashboard(
-    cycleId ? { cycle_id: cycleId } : undefined
-  );
+export interface UseAdminDashboardOptions {
+  cycleId?: number;
+  /** Override the year from the global store. If not provided, uses effective year from store. */
+  year?: number;
+}
+
+export function useAdminDashboard(options?: UseAdminDashboardOptions) {
+  const effectiveYear = useEffectiveYear();
+
+  // Use provided year, fall back to effective year from store
+  const yearToUse = options?.year ?? effectiveYear;
+
+  // Pass year parameter to the API call
+  const query = useGetAnalyticsDashboard({
+    ...(options?.cycleId ? { cycle_id: options.cycleId } : {}),
+    ...(yearToUse ? { year: yearToUse } : {}),
+  });
 
   // Transform the data when available
   const transformedData = query.data ? transformDashboardData(query.data) : undefined;
@@ -180,5 +193,6 @@ export function useAdminDashboard(cycleId?: number) {
   return {
     ...query,
     data: transformedData,
+    year: yearToUse,
   };
 }

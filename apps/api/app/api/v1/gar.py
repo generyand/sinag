@@ -20,16 +20,23 @@ router = APIRouter()
     tags=["gar"],
 )
 async def get_gar_assessments(
+    year: int | None = Query(
+        None,
+        description="Filter by assessment year (e.g., 2024, 2025). Defaults to active year.",
+        ge=2020,
+        le=2100,
+    ),
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_admin_user),
 ):
     """
     Get list of assessments available for GAR generation.
 
-    Returns completed and awaiting final validation assessments.
+    Returns completed and awaiting final validation assessments
+    filtered by the specified assessment year.
     Only accessible by MLGOO_DILG users.
     """
-    return gar_service.get_completed_assessments(db)
+    return gar_service.get_completed_assessments(db, assessment_year=year)
 
 
 @router.get(

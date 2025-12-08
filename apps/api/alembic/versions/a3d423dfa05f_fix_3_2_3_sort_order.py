@@ -11,7 +11,6 @@ Fixes the sort_order for indicator 3.2.3 so it appears after 3.2.2 in the list.
 from typing import Sequence, Union
 
 from alembic import op
-from sqlalchemy.orm import Session
 
 
 # revision identifiers, used by Alembic.
@@ -22,49 +21,41 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    """Fix sort_order for indicator 3.2.3."""
-    from app.db.models.governance_area import Indicator
+    """Fix sort_order for indicator 3.2.3 using raw SQL.
 
-    bind = op.get_bind()
-    session = Session(bind=bind)
+    NOTE: Using raw SQL instead of ORM because the model may have columns
+    that are added by later migrations, causing compatibility issues.
+    """
+    print("Fixing sort_order for indicator 3.2.3...")
 
-    try:
-        print("Fixing sort_order for indicator 3.2.3...")
+    # Update sort_order for 3.2.1
+    op.execute(
+        """
+        UPDATE indicators SET sort_order = 1
+        WHERE indicator_code = '3.2.1'
+        """
+    )
+    print("  - Updated 3.2.1 sort_order to 1")
 
-        # Get indicator 3.2.3 and fix its sort_order
-        indicator_3_2_3 = (
-            session.query(Indicator).filter(Indicator.indicator_code == "3.2.3").first()
-        )
+    # Update sort_order for 3.2.2
+    op.execute(
+        """
+        UPDATE indicators SET sort_order = 2
+        WHERE indicator_code = '3.2.2'
+        """
+    )
+    print("  - Updated 3.2.2 sort_order to 2")
 
-        if indicator_3_2_3:
-            # Set sort_order to 3 (after 3.2.1=1, 3.2.2=2)
-            indicator_3_2_3.sort_order = 3
-            print("  - Updated 3.2.3 sort_order to 3")
+    # Update sort_order for 3.2.3
+    op.execute(
+        """
+        UPDATE indicators SET sort_order = 3
+        WHERE indicator_code = '3.2.3'
+        """
+    )
+    print("  - Updated 3.2.3 sort_order to 3")
 
-        # Also ensure 3.2.1 and 3.2.2 have correct sort_order
-        indicator_3_2_1 = (
-            session.query(Indicator).filter(Indicator.indicator_code == "3.2.1").first()
-        )
-        if indicator_3_2_1:
-            indicator_3_2_1.sort_order = 1
-            print("  - Updated 3.2.1 sort_order to 1")
-
-        indicator_3_2_2 = (
-            session.query(Indicator).filter(Indicator.indicator_code == "3.2.2").first()
-        )
-        if indicator_3_2_2:
-            indicator_3_2_2.sort_order = 2
-            print("  - Updated 3.2.2 sort_order to 2")
-
-        session.commit()
-        print("Migration complete!")
-
-    except Exception as e:
-        session.rollback()
-        print(f"Error during migration: {e}")
-        raise
-    finally:
-        session.close()
+    print("Migration complete!")
 
 
 def downgrade() -> None:

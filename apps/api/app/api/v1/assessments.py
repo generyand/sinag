@@ -67,6 +67,12 @@ async def get_current_blgu_user(
 
 @router.get("/dashboard", response_model=AssessmentDashboardResponse, tags=["assessments"])
 async def get_assessment_dashboard(
+    year: int | None = Query(
+        None,
+        description="Assessment year. If not provided, uses the active year.",
+        ge=2020,
+        le=2100,
+    ),
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(get_current_blgu_user),
 ):
@@ -81,11 +87,14 @@ async def get_assessment_dashboard(
     - Assessment status and metadata
 
     This endpoint automatically creates an assessment if one doesn't exist
-    for the BLGU user.
+    for the BLGU user (for the active year only).
+
+    **Query Parameters:**
+    - year: Optional assessment year. If not provided, uses the active year.
     """
     try:
         dashboard_data = assessment_service.get_assessment_dashboard_data(
-            db, getattr(current_user, "id")
+            db, getattr(current_user, "id"), assessment_year=year
         )
 
         if not dashboard_data:
@@ -105,6 +114,12 @@ async def get_assessment_dashboard(
 
 @router.get("/my-assessment", response_model=dict[str, Any], tags=["assessments"])
 async def get_my_assessment(
+    year: int | None = Query(
+        None,
+        description="Assessment year to retrieve. If not provided, returns the active year's assessment.",
+        ge=2020,
+        le=2100,
+    ),
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(get_current_blgu_user),
 ):
@@ -120,11 +135,15 @@ async def get_my_assessment(
     - Feedback comments from assessors
 
     This endpoint automatically creates an assessment if one doesn't exist
-    for the BLGU user.
+    for the BLGU user (for the active year).
+
+    **Query Parameters:**
+    - year: Optional assessment year. If not provided, uses the active year.
     """
     try:
+        # Pass year parameter to service (to be added)
         assessment_data = assessment_service.get_assessment_for_blgu_with_full_data(
-            db, getattr(current_user, "id")
+            db, getattr(current_user, "id"), assessment_year=year
         )
 
         if not assessment_data:
@@ -448,17 +467,24 @@ async def get_all_validated_assessments(
     assessment_status: AssessmentStatus | None = Query(
         None, description="Filter by assessment status (returns all if not specified)"
     ),
+    year: int | None = Query(
+        None,
+        description="Filter by assessment year (e.g., 2024, 2025). Defaults to active year.",
+        ge=2020,
+        le=2100,
+    ),
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(get_current_admin_user),
 ):
     """
-    Get all assessments with compliance status (optionally filtered by status).
+    Get all assessments with compliance status (optionally filtered by status and year).
 
     Returns a list of assessments with their compliance status,
     area results, and barangay information. Used for MLGOO reports dashboard.
 
     Args:
         assessment_status: Optional filter by assessment status (shows all if not provided)
+        year: Optional filter by assessment year (defaults to active year)
         db: Database session
         current_user: Current admin/MLGOO user
 
@@ -466,7 +492,9 @@ async def get_all_validated_assessments(
         List of assessment dictionaries with compliance data
     """
     try:
-        assessments = assessment_service.get_all_validated_assessments(db, status=assessment_status)
+        assessments = assessment_service.get_all_validated_assessments(
+            db, status=assessment_status, assessment_year=year
+        )
         return assessments
     except Exception as e:
         raise HTTPException(

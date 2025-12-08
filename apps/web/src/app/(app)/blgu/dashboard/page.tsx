@@ -26,10 +26,16 @@ import {
 import { useGetBlguDashboardAssessmentId, useGetAssessmentsMyAssessment } from "@sinag/shared";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Loader2, AlertCircle } from "lucide-react";
+import { YearSelector } from "@/components/features/assessment-year/YearSelector";
+import { useEffectiveYear, useIsActiveYear } from "@/hooks/useAssessmentYear";
 
 export default function BLGUDashboardPage() {
   const { user } = useAuthStore();
   const router = useRouter();
+
+  // Year state from global store
+  const effectiveYear = useEffectiveYear();
+  const isActiveYear = useIsActiveYear();
 
   // Language state for AI summary (defaults to user's preference or Bisaya)
   const [selectedLanguage, setSelectedLanguage] = useState<string>(
@@ -62,15 +68,19 @@ export default function BLGUDashboardPage() {
     data: myAssessment,
     isLoading: isLoadingAssessment,
     error: assessmentError,
-  } = useGetAssessmentsMyAssessment({
-    query: {
-      enabled: isBLGU, // Only fetch for BLGU users
-      refetchOnWindowFocus: false, // Only refetch when explicitly invalidated
-      refetchOnMount: false, // Trust cache on remount
-      staleTime: 2 * 60 * 1000, // 2 minutes - data is fresh for this duration
-      gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
-    } as any,
-  });
+  } = useGetAssessmentsMyAssessment(
+    // Pass year parameter to filter by selected year
+    { year: effectiveYear ?? undefined },
+    {
+      query: {
+        enabled: isBLGU && effectiveYear !== null, // Only fetch for BLGU users when year is available
+        refetchOnWindowFocus: false, // Only refetch when explicitly invalidated
+        refetchOnMount: false, // Trust cache on remount
+        staleTime: 2 * 60 * 1000, // 2 minutes - data is fresh for this duration
+        gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+      },
+    }
+  );
 
   const assessmentId = (myAssessment?.assessment as any)?.id;
 
@@ -92,7 +102,7 @@ export default function BLGUDashboardPage() {
       refetchOnMount: false, // Trust cache on remount
       staleTime: 2 * 60 * 1000, // 2 minutes - data is fresh for this duration
       gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
-    } as any,
+    },
   });
 
   // Handler for language change - refetches dashboard with new language
@@ -163,12 +173,28 @@ export default function BLGUDashboardPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Page Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[var(--foreground)]">
-            Assessment Dashboard
-          </h1>
-          <p className="mt-2 text-[var(--text-secondary)]">
-            Track your SGLGB assessment progress through each phase
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold text-[var(--foreground)]">
+                  Assessment Dashboard
+                </h1>
+                {/* Historical Year Indicator */}
+                {!isActiveYear && effectiveYear && (
+                  <span className="px-2 py-1 text-xs font-medium rounded-sm bg-amber-100 text-amber-800 border border-amber-200">
+                    Viewing {effectiveYear}
+                  </span>
+                )}
+              </div>
+              <p className="mt-2 text-[var(--text-secondary)]">
+                Track your SGLGB assessment progress through each phase
+              </p>
+            </div>
+            {/* Year Selector */}
+            <div className="flex-shrink-0">
+              <YearSelector size="md" />
+            </div>
+          </div>
         </div>
 
         {/* Main Content: Timeline + Phases */}

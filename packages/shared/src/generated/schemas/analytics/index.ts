@@ -154,9 +154,13 @@ export interface ExternalAnalyticsDashboardResponse {
  */
 export type GetAnalyticsDashboardParams = {
 /**
- * Assessment cycle ID (defaults to latest cycle if not provided)
+ * [DEPRECATED] Assessment cycle ID. Use 'year' parameter instead.
  */
 cycle_id?: number | null;
+/**
+ * Assessment year (e.g., 2024, 2025). Defaults to active year if not provided.
+ */
+year?: number | null;
 };
 
 
@@ -165,9 +169,9 @@ cycle_id?: number | null;
  */
 export type GetAnalyticsReportsParams = {
 /**
- * Filter by assessment cycle ID
+ * Filter by assessment year (e.g., 2024, 2025). Defaults to active year.
  */
-cycle_id?: number | null;
+year?: number | null;
 /**
  * Filter by start date (inclusive)
  */

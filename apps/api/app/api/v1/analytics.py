@@ -1,9 +1,13 @@
 # 📊 Analytics API Routes
 # Endpoints for analytics and dashboard data
 
+import logging
+import warnings
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+
+logger = logging.getLogger(__name__)
 from fastapi import status as http_status
 from sqlalchemy.orm import Session
 
@@ -55,6 +59,8 @@ async def get_current_mlgoo_dilg_user(
         "- Top 5 failed indicators\n"
         "- Barangay rankings by compliance score\n"
         "- Historical trends across cycles\n\n"
+        "**Filtering:**\n"
+        "- `year`: Filter by assessment year (e.g., 2024, 2025). Defaults to active year.\n\n"
         "**Access:** Requires MLGOO_DILG role."
     ),
     responses={
@@ -119,7 +125,11 @@ async def get_current_mlgoo_dilg_user(
 async def get_dashboard(
     cycle_id: int | None = Query(
         None,
-        description="Assessment cycle ID (defaults to latest cycle if not provided)",
+        description="[DEPRECATED] Assessment cycle ID. Use 'year' parameter instead.",
+    ),
+    year: int | None = Query(
+        None,
+        description="Assessment year (e.g., 2024, 2025). Defaults to active year if not provided.",
     ),
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(get_current_mlgoo_dilg_user),
@@ -131,7 +141,8 @@ async def get_dashboard(
     failed indicators, barangay rankings, and historical trends.
 
     Args:
-        cycle_id: Optional assessment cycle ID (defaults to latest)
+        cycle_id: [DEPRECATED] Use year parameter instead
+        year: Optional assessment year (defaults to active year)
         db: Database session
         current_user: Current authenticated MLGOO-DILG user
 
@@ -141,8 +152,22 @@ async def get_dashboard(
     Raises:
         HTTPException: 401 if not authenticated, 403 if insufficient permissions
     """
+    # Log deprecation warning if cycle_id is used
+    if cycle_id is not None:
+        warnings.warn(
+            "The 'cycle_id' parameter is deprecated and will be removed in a future version. "
+            "Use the 'year' parameter instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        logger.warning(
+            "DEPRECATED: 'cycle_id' parameter used in /analytics/dashboard. "
+            "Use 'year' parameter instead. cycle_id=%s",
+            cycle_id,
+        )
+
     try:
-        dashboard_kpis = analytics_service.get_dashboard_kpis(db, cycle_id)
+        dashboard_kpis = analytics_service.get_dashboard_kpis(db, assessment_year=year)
         return dashboard_kpis
     except Exception as e:
         raise HTTPException(
@@ -164,7 +189,7 @@ async def get_dashboard(
         "- Paginated table data for assessments\n"
         "- Report metadata (generation timestamp, applied filters)\n\n"
         "**Filters:**\n"
-        "- `cycle_id`: Filter by assessment cycle\n"
+        "- `year`: Filter by assessment year (e.g., 2024, 2025)\n"
         "- `start_date`, `end_date`: Filter by date range\n"
         "- `governance_area`: Filter by governance area codes (can specify multiple)\n"
         "- `barangay_id`: Filter by barangay IDs (can specify multiple)\n"
@@ -255,10 +280,12 @@ async def get_dashboard(
     },
 )
 async def get_reports(
-    cycle_id: int | None = Query(
+    year: int | None = Query(
         None,
-        description="Filter by assessment cycle ID",
-        examples=[1],
+        description="Filter by assessment year (e.g., 2024, 2025). Defaults to active year.",
+        ge=2020,
+        le=2100,
+        examples=[2025],
     ),
     start_date: date | None = Query(
         None,
@@ -309,7 +336,7 @@ async def get_reports(
     paginated table data based on the provided filters and user's role.
 
     Args:
-        cycle_id: Optional assessment cycle ID
+        year: Optional assessment year (defaults to active year)
         start_date: Optional start date for filtering
         end_date: Optional end date for filtering
         governance_area: Optional list of governance area codes
@@ -330,7 +357,7 @@ async def get_reports(
     try:
         # Build filters
         filters = ReportsFilters(
-            cycle_id=cycle_id,
+            assessment_year=year,
             start_date=start_date,
             end_date=end_date,
             governance_area_codes=governance_area,

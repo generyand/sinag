@@ -42,6 +42,19 @@ from .assessment import (
     MOVUpdate,
     ReworkSummaryResponse,
 )
+from .assessment_year import (
+    AccessibleYearsResponse,
+    ActivateYearRequest,
+    ActivateYearResponse,
+    AssessmentYearBase,
+    AssessmentYearCreate,
+    AssessmentYearListResponse,
+    AssessmentYearResponse,
+    AssessmentYearSimple,
+    AssessmentYearUpdate,
+    PublishYearRequest,
+    PublishYearResponse,
+)
 from .assessor import (
     AnnotationCreate,
     AnnotationResponse,
@@ -77,6 +90,18 @@ __all__ = [
     "TrendData",
     "StatusDistributionItem",
     "ReworkStats",
+    # Assessment Year schemas
+    "AssessmentYearBase",
+    "AssessmentYearCreate",
+    "AssessmentYearUpdate",
+    "AssessmentYearResponse",
+    "AssessmentYearListResponse",
+    "AssessmentYearSimple",
+    "ActivateYearRequest",
+    "ActivateYearResponse",
+    "PublishYearRequest",
+    "PublishYearResponse",
+    "AccessibleYearsResponse",
     # Assessment schemas
     "Assessment",
     "AssessmentCreate",

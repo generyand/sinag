@@ -26,6 +26,7 @@ import type {
   FormSchemaResponse,
   GetIndicatorsParams,
   GetIndicatorsTreeGovernanceAreaId200Item,
+  GetIndicatorsTreeGovernanceAreaIdParams,
   HTTPValidationError,
   IndicatorCreate,
   IndicatorHistoryResponse,
@@ -921,6 +922,12 @@ export function useGetIndicatorsIndicatorIdFormSchema<TData = Awaited<ReturnType
 **Path Parameters**:
 - governance_area_id: Governance area ID
 
+**Query Parameters**:
+- year: Optional assessment year for placeholder resolution.
+        If viewing a historical assessment, pass the assessment's year.
+        If not provided, uses the currently active year.
+        Example: year=2024 will resolve {CURRENT_YEAR} as "2024"
+
 **Returns**: List of root indicator nodes with nested children
 
 **Tree Structure**:
@@ -952,6 +959,7 @@ export function useGetIndicatorsIndicatorIdFormSchema<TData = Awaited<ReturnType
 - Automatic code generation (1.1, 1.1.1, etc.)
 - MOV checklist items included
 - Form, calculation, and remark schemas included
+- Dynamic year placeholder resolution ({CURRENT_YEAR}, {PREVIOUS_YEAR}, etc.)
 
 **Raises**:
 - 404: Governance area not found
@@ -959,12 +967,14 @@ export function useGetIndicatorsIndicatorIdFormSchema<TData = Awaited<ReturnType
  */
 export const getIndicatorsTree$GovernanceAreaId = (
     governanceAreaId: number,
+    params?: GetIndicatorsTreeGovernanceAreaIdParams,
  options?: SecondParameter<typeof mutator>,signal?: AbortSignal
 ) => {
       
       
       return mutator<GetIndicatorsTreeGovernanceAreaId200Item[]>(
-      {url: `/api/v1/indicators/tree/${governanceAreaId}`, method: 'GET', signal
+      {url: `/api/v1/indicators/tree/${governanceAreaId}`, method: 'GET',
+        params, signal
     },
       options);
     }
@@ -972,23 +982,25 @@ export const getIndicatorsTree$GovernanceAreaId = (
 
 
 
-export const getGetIndicatorsTreeGovernanceAreaIdQueryKey = (governanceAreaId?: number,) => {
+export const getGetIndicatorsTreeGovernanceAreaIdQueryKey = (governanceAreaId?: number,
+    params?: GetIndicatorsTreeGovernanceAreaIdParams,) => {
     return [
-    `/api/v1/indicators/tree/${governanceAreaId}`
+    `/api/v1/indicators/tree/${governanceAreaId}`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getGetIndicatorsTreeGovernanceAreaIdQueryOptions = <TData = Awaited<ReturnType<typeof getIndicatorsTree$GovernanceAreaId>>, TError = HTTPValidationError>(governanceAreaId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsTree$GovernanceAreaId>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export const getGetIndicatorsTreeGovernanceAreaIdQueryOptions = <TData = Awaited<ReturnType<typeof getIndicatorsTree$GovernanceAreaId>>, TError = HTTPValidationError>(governanceAreaId: number,
+    params?: GetIndicatorsTreeGovernanceAreaIdParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsTree$GovernanceAreaId>>, TError, TData>, request?: SecondParameter<typeof mutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetIndicatorsTreeGovernanceAreaIdQueryKey(governanceAreaId);
+  const queryKey =  queryOptions?.queryKey ?? getGetIndicatorsTreeGovernanceAreaIdQueryKey(governanceAreaId,params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIndicatorsTree$GovernanceAreaId>>> = ({ signal }) => getIndicatorsTree$GovernanceAreaId(governanceAreaId, requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIndicatorsTree$GovernanceAreaId>>> = ({ signal }) => getIndicatorsTree$GovernanceAreaId(governanceAreaId,params, requestOptions, signal);
 
       
 
@@ -1006,11 +1018,12 @@ export type GetIndicatorsTreeGovernanceAreaIdQueryError = HTTPValidationError
  */
 
 export function useGetIndicatorsTreeGovernanceAreaId<TData = Awaited<ReturnType<typeof getIndicatorsTree$GovernanceAreaId>>, TError = HTTPValidationError>(
- governanceAreaId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsTree$GovernanceAreaId>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+ governanceAreaId: number,
+    params?: GetIndicatorsTreeGovernanceAreaIdParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsTree$GovernanceAreaId>>, TError, TData>, request?: SecondParameter<typeof mutator>}
   
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetIndicatorsTreeGovernanceAreaIdQueryOptions(governanceAreaId,options)
+  const queryOptions = getGetIndicatorsTreeGovernanceAreaIdQueryOptions(governanceAreaId,params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

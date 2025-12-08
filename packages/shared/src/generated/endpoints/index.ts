@@ -4,6 +4,7 @@
 
 export * from './admin';
 export * from './analytics';
+export * from './assessment-years';
 export * from './assessments';
 export * from './assessor';
 export * from './auth';

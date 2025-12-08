@@ -58,7 +58,8 @@ jobs:
     env:
       # Backend environment variables
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
-      SECRET_KEY: test-secret-key-for-e2e-tests-1234567890abcdef # gitleaks:allow
+      # Test-only secret key for E2E tests - NOT a real secret
+      SECRET_KEY: test-secret-key-for-e2e-tests-only
       CELERY_BROKER_URL: redis://localhost:6379/0
       REDIS_CACHE_URL: redis://localhost:6379/0
       SUPABASE_URL: https://example.supabase.co
@@ -165,7 +166,8 @@ jobs:
     env:
       # Backend environment variables
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
-      SECRET_KEY: test-secret-key-for-e2e-tests-1234567890abcdef # gitleaks:allow
+      # Test-only secret key for E2E tests - NOT a real secret
+      SECRET_KEY: test-secret-key-for-e2e-tests-only
       CELERY_BROKER_URL: redis://localhost:6379/0
       REDIS_CACHE_URL: redis://localhost:6379/0
       SUPABASE_URL: https://example.supabase.co
@@ -276,7 +278,8 @@ jobs:
     env:
       # Backend environment variables
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
-      SECRET_KEY: test-secret-key-for-e2e-tests-1234567890abcdef # gitleaks:allow
+      # Test-only secret key for E2E tests - NOT a real secret
+      SECRET_KEY: test-secret-key-for-e2e-tests-only
       CELERY_BROKER_URL: redis://localhost:6379/0
       REDIS_CACHE_URL: redis://localhost:6379/0
       SUPABASE_URL: https://example.supabase.co
