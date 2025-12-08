@@ -823,6 +823,142 @@ class StorageService:
             logger.error(f"Failed to soft delete MOVFile {file_id}: {str(e)}")
             raise Exception(f"Database operation failed: {str(e)}")
 
+    # ============================================================================
+    # Signed URL Generation for Secure File Access
+    # ============================================================================
+
+    def get_signed_url(self, file_url: str, expires_in: int = 3600) -> str:
+        """
+        Generate a signed URL for secure, time-limited access to a file.
+
+        This method extracts the storage path from a file URL and generates
+        a signed URL that expires after the specified duration.
+
+        Args:
+            file_url: The public file URL stored in the database
+            expires_in: URL expiration time in seconds (default: 3600 = 1 hour)
+
+        Returns:
+            str: A signed URL that provides temporary access to the file
+
+        Raises:
+            ValueError: If the storage path cannot be extracted from the URL
+            Exception: If signed URL generation fails
+        """
+        # Extract storage path from file_url
+        # URL format: https://[project].supabase.co/storage/v1/object/public/mov-files/{path}
+        storage_path = None
+        try:
+            # Try to extract path after bucket name
+            if f"/{self.MOV_FILES_BUCKET}/" in file_url:
+                storage_path = file_url.split(f"/{self.MOV_FILES_BUCKET}/")[1]
+            else:
+                raise ValueError(f"Could not extract storage path from URL: {file_url}")
+        except Exception as e:
+            logger.error(f"Error extracting storage path from URL {file_url}: {str(e)}")
+            raise ValueError(f"Invalid file URL format: {file_url}")
+
+        # Get Supabase client and generate signed URL
+        try:
+            supabase = _get_supabase_client()
+            result = supabase.storage.from_(self.MOV_FILES_BUCKET).create_signed_url(
+                path=storage_path,
+                expires_in=expires_in,
+            )
+
+            # The result contains the signed URL
+            if isinstance(result, dict) and "signedURL" in result:
+                signed_url = result["signedURL"]
+            elif hasattr(result, "signed_url"):
+                signed_url = result.signed_url
+            else:
+                # Handle different response formats from supabase-py
+                signed_url = str(result)
+
+            logger.debug(f"Generated signed URL for {storage_path}, expires in {expires_in}s")
+            return signed_url
+
+        except Exception as e:
+            logger.error(f"Failed to generate signed URL for {storage_path}: {str(e)}")
+            raise Exception(f"Failed to generate signed URL: {str(e)}")
+
+    def get_signed_url_for_file(
+        self, db: Session, file_id: int, user_id: int, expires_in: int = 3600
+    ) -> str:
+        """
+        Generate a signed URL for a MOV file with permission checking.
+
+        This method verifies that the user has permission to access the file
+        before generating a signed URL.
+
+        Args:
+            db: Database session
+            file_id: ID of the MOV file
+            user_id: ID of the requesting user
+            expires_in: URL expiration time in seconds (default: 3600 = 1 hour)
+
+        Returns:
+            str: A signed URL that provides temporary access to the file
+
+        Raises:
+            HTTPException 404: If file not found
+            HTTPException 403: If user doesn't have permission
+            Exception: If signed URL generation fails
+        """
+        from app.db.models.assessment import Assessment
+        from app.db.models.user import User
+
+        # Load the MOV file
+        mov_file = db.query(MOVFile).filter(MOVFile.id == file_id).first()
+
+        if not mov_file:
+            raise HTTPException(status_code=404, detail=f"File with ID {file_id} not found")
+
+        if mov_file.deleted_at is not None:
+            raise HTTPException(status_code=404, detail="File has been deleted")
+
+        # Load the user to check role
+        user = db.query(User).filter(User.id == user_id).first()
+
+        if not user:
+            raise HTTPException(status_code=403, detail="User not found")
+
+        # Permission check based on user role
+        from app.db.enums import UserRole
+        from app.db.models.governance_area import Indicator
+
+        # KATUPARAN_CENTER_USER should not access individual MOV files
+        # They only have read-only access to aggregated analytics data
+        if user.role == UserRole.KATUPARAN_CENTER_USER:
+            raise HTTPException(
+                status_code=403,
+                detail="Katuparan Center users do not have access to individual MOV files",
+            )
+
+        # BLGU users can only access files from their own barangay's assessments
+        if user.role == UserRole.BLGU_USER:
+            assessment = (
+                db.query(Assessment).filter(Assessment.id == mov_file.assessment_id).first()
+            )
+            if assessment and assessment.barangay_id != user.barangay_id:
+                raise HTTPException(
+                    status_code=403, detail="You don't have permission to access this file"
+                )
+
+        # VALIDATORs can only access files within their assigned governance area
+        if user.role == UserRole.VALIDATOR and user.validator_area_id:
+            indicator = db.query(Indicator).filter(Indicator.id == mov_file.indicator_id).first()
+            if indicator and indicator.governance_area_id != user.validator_area_id:
+                raise HTTPException(
+                    status_code=403,
+                    detail="You can only access files within your assigned governance area",
+                )
+
+        # ASSESSOR and MLGOO_DILG have access to all files (no additional restrictions)
+
+        # Generate and return signed URL
+        return self.get_signed_url(mov_file.file_url, expires_in)
+
 
 # Create a singleton instance
 storage_service = StorageService()

@@ -4,8 +4,9 @@ import { FileList } from "@/components/features/movs/FileList";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useMovAnnotations } from "@/hooks/useMovAnnotations";
+import { useSignedUrl } from "@/hooks/useSignedUrl";
 import type { AssessmentDetailsResponse } from "@sinag/shared";
-import { FileIcon, X } from "lucide-react";
+import { FileIcon, X, Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import * as React from "react";
 
@@ -24,6 +25,101 @@ const ImageAnnotator = dynamic(() => import("@/components/shared/ImageAnnotator"
     <div className="flex items-center justify-center h-[70vh]">Loading image viewer...</div>
   ),
 });
+
+/**
+ * Inner component that fetches signed URL and renders the appropriate file viewer.
+ * Separated to allow conditional rendering with hooks.
+ */
+function SecureFileContent({
+  file,
+  annotationsLoading,
+  pdfAnnotations,
+  imageAnnotations,
+  onAddAnnotation,
+}: {
+  file: any;
+  annotationsLoading: boolean;
+  pdfAnnotations: any[];
+  imageAnnotations: any[];
+  onAddAnnotation: (annotation: any) => void;
+}) {
+  const { signedUrl, isLoading: urlLoading, error: urlError, refetch } = useSignedUrl(file?.id);
+
+  if (urlLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-3" />
+        <p className="text-sm text-muted-foreground">Loading file...</p>
+      </div>
+    );
+  }
+
+  if (urlError || !signedUrl) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center p-6">
+        <FileIcon className="h-16 w-16 text-red-400 mb-4" />
+        <p className="text-sm text-red-600 mb-2">Failed to load file</p>
+        <p className="text-xs text-muted-foreground">
+          {urlError?.message || "Unable to generate secure URL"}
+        </p>
+        <Button variant="outline" onClick={() => refetch()} className="mt-4">
+          Try Again
+        </Button>
+      </div>
+    );
+  }
+
+  // At this point, signedUrl is guaranteed to be a string (non-null)
+  // TypeScript doesn't narrow the type correctly after the early return,
+  // so we use a type assertion here
+  const url = signedUrl as string;
+
+  if (file.file_type === "application/pdf") {
+    if (annotationsLoading) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <p className="text-muted-foreground">Loading annotations...</p>
+        </div>
+      );
+    }
+    return (
+      <PdfAnnotator
+        url={url}
+        annotateEnabled={true}
+        annotations={pdfAnnotations}
+        onAdd={onAddAnnotation}
+      />
+    );
+  }
+
+  if (file.file_type?.startsWith("image/")) {
+    if (annotationsLoading) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <p className="text-muted-foreground">Loading annotations...</p>
+        </div>
+      );
+    }
+    return (
+      <ImageAnnotator
+        url={url}
+        annotateEnabled={true}
+        annotations={imageAnnotations}
+        onAdd={onAddAnnotation}
+      />
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center h-full text-center p-6">
+      <FileIcon className="h-16 w-16 text-muted-foreground/50 mb-4" />
+      <p className="text-sm text-muted-foreground mb-4">Preview not available for this file type</p>
+      <Button onClick={() => window.open(url, "_blank")} variant="outline">
+        Open in New Tab
+      </Button>
+    </div>
+  );
+}
 
 interface MiddleMovFilesPanelProps {
   assessment: AssessmentDetailsResponse;
@@ -143,7 +239,17 @@ export function MiddleMovFilesPanel({
 
   const handleDownload = async (file: any) => {
     try {
-      const response = await fetch(file.file_url);
+      // First fetch a signed URL for secure access
+      const signedUrlResponse = await fetch(`/api/v1/movs/files/${file.id}/signed-url`, {
+        credentials: "include",
+      });
+      if (!signedUrlResponse.ok) {
+        throw new Error("Failed to get download URL");
+      }
+      const { signed_url } = await signedUrlResponse.json();
+
+      // Then fetch the file using the signed URL
+      const response = await fetch(signed_url);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -364,51 +470,15 @@ export function MiddleMovFilesPanel({
                 </Button>
               </div>
 
-              {/* File Content */}
+              {/* File Content - Uses signed URLs for secure access */}
               <div className="flex-1" style={{ minHeight: 0 }}>
-                {selectedFile.file_type === "application/pdf" ? (
-                  // PDF Viewer with Annotations
-                  annotationsLoading ? (
-                    <div className="flex items-center justify-center h-full">
-                      <p className="text-muted-foreground">Loading annotations...</p>
-                    </div>
-                  ) : (
-                    <PdfAnnotator
-                      url={selectedFile.file_url}
-                      annotateEnabled={true}
-                      annotations={pdfAnnotations}
-                      onAdd={handleAddAnnotation}
-                    />
-                  )
-                ) : selectedFile.file_type?.startsWith("image/") ? (
-                  // Image Viewer with Annotations
-                  annotationsLoading ? (
-                    <div className="flex items-center justify-center h-full">
-                      <p className="text-muted-foreground">Loading annotations...</p>
-                    </div>
-                  ) : (
-                    <ImageAnnotator
-                      url={selectedFile.file_url}
-                      annotateEnabled={true}
-                      annotations={imageAnnotations}
-                      onAdd={handleAddAnnotation}
-                    />
-                  )
-                ) : (
-                  // Unsupported file type
-                  <div className="flex flex-col items-center justify-center h-full text-center p-6">
-                    <FileIcon className="h-16 w-16 text-muted-foreground/50 mb-4" />
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Preview not available for this file type
-                    </p>
-                    <Button
-                      onClick={() => window.open(selectedFile.file_url, "_blank")}
-                      variant="outline"
-                    >
-                      Open in New Tab
-                    </Button>
-                  </div>
-                )}
+                <SecureFileContent
+                  file={selectedFile}
+                  annotationsLoading={annotationsLoading}
+                  pdfAnnotations={pdfAnnotations}
+                  imageAnnotations={imageAnnotations}
+                  onAddAnnotation={handleAddAnnotation}
+                />
               </div>
             </div>
 

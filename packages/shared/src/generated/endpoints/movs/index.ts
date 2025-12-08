@@ -23,7 +23,8 @@ import type {
   BodyUploadMovFileApiV1MovsAssessmentsAssessmentIdIndicatorsIndicatorIdUploadPost,
   HTTPValidationError,
   MOVFileListResponse,
-  MOVFileResponse
+  MOVFileResponse,
+  SignedUrlResponse
 } from '../../schemas';
 
 import { mutator } from '../../../../../../apps/web/src/lib/api';
@@ -188,6 +189,81 @@ export function useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles<TDat
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFilesQueryOptions(assessmentId,indicatorId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
+ * Generate a time-limited signed URL for secure access to a MOV file.
+
+    - **Permission check**: Validates user has access to the file
+    - **Time-limited**: URL expires after 1 hour by default
+    - **Secure**: Only authenticated users can generate URLs
+
+    Returns a signed URL that can be used to access the file directly.
+ * @summary Get a signed URL for a MOV file
+ */
+export const getMovsFiles$FileIdSignedUrl = (
+    fileId: number,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<SignedUrlResponse>(
+      {url: `/api/v1/movs/files/${fileId}/signed-url`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetMovsFilesFileIdSignedUrlQueryKey = (fileId?: number,) => {
+    return [
+    `/api/v1/movs/files/${fileId}/signed-url`
+    ] as const;
+    }
+
+    
+export const getGetMovsFilesFileIdSignedUrlQueryOptions = <TData = Awaited<ReturnType<typeof getMovsFiles$FileIdSignedUrl>>, TError = HTTPValidationError>(fileId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMovsFiles$FileIdSignedUrl>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMovsFilesFileIdSignedUrlQueryKey(fileId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMovsFiles$FileIdSignedUrl>>> = ({ signal }) => getMovsFiles$FileIdSignedUrl(fileId, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(fileId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMovsFiles$FileIdSignedUrl>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMovsFilesFileIdSignedUrlQueryResult = NonNullable<Awaited<ReturnType<typeof getMovsFiles$FileIdSignedUrl>>>
+export type GetMovsFilesFileIdSignedUrlQueryError = HTTPValidationError
+
+
+/**
+ * @summary Get a signed URL for a MOV file
+ */
+
+export function useGetMovsFilesFileIdSignedUrl<TData = Awaited<ReturnType<typeof getMovsFiles$FileIdSignedUrl>>, TError = HTTPValidationError>(
+ fileId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMovsFiles$FileIdSignedUrl>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMovsFilesFileIdSignedUrlQueryOptions(fileId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

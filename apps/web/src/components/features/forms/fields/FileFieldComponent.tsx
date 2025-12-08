@@ -18,10 +18,12 @@ import {
   getGetAssessmentsMyAssessmentQueryKey,
   getGetBlguDashboardAssessmentIdQueryKey,
   getGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFilesQueryKey,
+  getGetMovsFilesFileIdSignedUrlQueryKey,
   MOVFileResponse,
   useGetAssessmentsMyAssessment,
   useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles,
   usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload,
+  useGetMovsFilesFileIdSignedUrl,
 } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, CheckCircle2, FileIcon, Info, Loader2, X } from "lucide-react";
@@ -43,6 +45,105 @@ const ImageAnnotator = dynamic(() => import("@/components/shared/ImageAnnotator"
     <div className="flex items-center justify-center h-[70vh]">Loading image viewer...</div>
   ),
 });
+
+/**
+ * Secure file preview component that fetches signed URL before rendering.
+ * This ensures files from private buckets can be accessed securely.
+ */
+function SecureFilePreview({ file, annotations }: { file: MOVFileResponse; annotations: any[] }) {
+  const {
+    data: signedUrlData,
+    isLoading,
+    error,
+    refetch,
+  } = useGetMovsFilesFileIdSignedUrl(file.id, {
+    query: {
+      queryKey: getGetMovsFilesFileIdSignedUrlQueryKey(file.id),
+      staleTime: 1000 * 60 * 30, // Cache for 30 minutes
+      retry: 2,
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <p className="text-sm text-muted-foreground">Loading file...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const signedUrl = signedUrlData?.signed_url;
+
+  if (error || !signedUrl) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center p-6">
+        <FileIcon className="h-16 w-16 text-red-300 mb-4" />
+        <p className="text-sm text-red-600 mb-2">Failed to load file</p>
+        <p className="text-xs text-muted-foreground">
+          {error instanceof Error ? error.message : "Unable to generate secure URL"}
+        </p>
+        <Button variant="outline" onClick={() => refetch()} className="mt-4">
+          Try Again
+        </Button>
+      </div>
+    );
+  }
+
+  // At this point, signedUrl is guaranteed to be a string (non-null)
+  // TypeScript doesn't narrow the type correctly after the early return,
+  // so we use a type assertion here
+  const url = signedUrl as string;
+
+  if (file.file_type === "application/pdf") {
+    return (
+      <PdfAnnotator
+        url={url}
+        annotateEnabled={false}
+        annotations={annotations
+          .filter((ann: any) => ann.mov_file_id === file.id)
+          .map((ann: any) => ({
+            id: String(ann.id),
+            type: "pdfRect" as const,
+            page: ann.page_number || 0,
+            rect: ann.rect || { x: 0, y: 0, w: 10, h: 10 },
+            rects: ann.rects,
+            comment: ann.comment || "",
+            createdAt: ann.created_at || new Date().toISOString(),
+          }))}
+        onAdd={() => {}}
+      />
+    );
+  }
+
+  if (file.file_type?.startsWith("image/")) {
+    return (
+      <ImageAnnotator
+        url={url}
+        annotateEnabled={false}
+        annotations={annotations
+          .filter((ann: any) => ann.mov_file_id === file.id)
+          .map((ann: any) => ({
+            id: String(ann.id),
+            rect: ann.rect || { x: 0, y: 0, w: 10, h: 10 },
+            comment: ann.comment || "",
+            createdAt: ann.created_at || new Date().toISOString(),
+          }))}
+        onAdd={() => {}}
+      />
+    );
+  }
+
+  // Unsupported file type
+  return (
+    <div className="flex flex-col items-center justify-center h-full text-center p-6">
+      <FileIcon className="h-16 w-16 text-muted-foreground/50 mb-4" />
+      <p className="text-sm text-muted-foreground mb-4">Preview not available for this file type</p>
+    </div>
+  );
+}
 
 interface FileFieldComponentProps {
   field: FileUploadField;
@@ -363,8 +464,17 @@ export function FileFieldComponent({
 
   const handleDownload = async (file: MOVFileResponse) => {
     try {
-      // Fetch the file as a blob to bypass CORS restrictions on download attribute
-      const response = await fetch(file.file_url);
+      // First fetch a signed URL for secure access
+      const signedUrlResponse = await fetch(`/api/v1/movs/files/${file.id}/signed-url`, {
+        credentials: "include",
+      });
+      if (!signedUrlResponse.ok) {
+        throw new Error("Failed to get download URL");
+      }
+      const { signed_url } = await signedUrlResponse.json();
+
+      // Then fetch the file using the signed URL
+      const response = await fetch(signed_url);
       const blob = await response.blob();
 
       // Create a blob URL and trigger download
@@ -758,59 +868,9 @@ export function FileFieldComponent({
                 </Button>
               </div>
 
-              {/* File Content */}
+              {/* File Content - Uses SecureFilePreview for secure access */}
               <div className="flex-1" style={{ minHeight: 0 }}>
-                {selectedFileForPreview.file_type === "application/pdf" ? (
-                  // PDF Viewer
-                  <PdfAnnotator
-                    url={selectedFileForPreview.file_url}
-                    annotateEnabled={false}
-                    annotations={movAnnotations
-                      .filter((ann: any) => ann.mov_file_id === selectedFileForPreview.id)
-                      .map((ann: any) => ({
-                        id: String(ann.id),
-                        type: "pdfRect" as const,
-                        page: ann.page_number || 0,
-                        rect: ann.rect || { x: 0, y: 0, w: 10, h: 10 },
-                        rects: ann.rects,
-                        comment: ann.comment || "",
-                        createdAt: ann.created_at || new Date().toISOString(),
-                      }))}
-                    onAdd={() => {}}
-                  />
-                ) : selectedFileForPreview.file_type?.startsWith("image/") ? (
-                  // Image Viewer
-                  <ImageAnnotator
-                    url={selectedFileForPreview.file_url}
-                    annotateEnabled={false}
-                    annotations={movAnnotations
-                      .filter((ann: any) => ann.mov_file_id === selectedFileForPreview.id)
-                      .map((ann: any) => ({
-                        id: String(ann.id),
-                        rect: ann.rect || { x: 0, y: 0, w: 10, h: 10 },
-                        comment: ann.comment || "",
-                        createdAt: ann.created_at || new Date().toISOString(),
-                      }))}
-                    onAdd={() => {}}
-                  />
-                ) : (
-                  // Unsupported file type
-                  <div className="flex flex-col items-center justify-center h-full text-center p-6">
-                    <FileIcon
-                      className="h-16 w-16 text-muted-foreground/50 mb-4"
-                      aria-hidden="true"
-                    />
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Preview not available for this file type
-                    </p>
-                    <Button
-                      onClick={() => window.open(selectedFileForPreview.file_url, "_blank")}
-                      variant="outline"
-                    >
-                      Open in New Tab
-                    </Button>
-                  </div>
-                )}
+                <SecureFilePreview file={selectedFileForPreview} annotations={movAnnotations} />
               </div>
             </div>
 

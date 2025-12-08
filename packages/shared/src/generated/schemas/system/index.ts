@@ -802,6 +802,14 @@ export type ReworkSummaryResponseLanguage = string | null;
 
 
 /**
+ * SignedUrlResponse
+ */
+export interface SignedUrlResponse {
+  signed_url: string;
+}
+
+
+/**
  * SubmissionStatusResponse
  */
 export interface SubmissionStatusResponse {

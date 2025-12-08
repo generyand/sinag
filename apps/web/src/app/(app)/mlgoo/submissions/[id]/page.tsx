@@ -13,7 +13,6 @@ import {
   Loader2,
   RotateCcw,
   File,
-  ExternalLink,
   X,
   Eye,
 } from "lucide-react";
@@ -33,6 +32,7 @@ import {
   usePostCapdevAssessmentsAssessmentIdRegenerate,
   getGetCapdevAssessmentsAssessmentIdQueryKey,
 } from "@sinag/shared";
+import { SecureFileViewer } from "@/components/features/movs/FileList";
 import {
   Select,
   SelectContent,
@@ -63,8 +63,8 @@ export default function SubmissionDetailsPage() {
 
   // State for file preview modal
   const [previewFile, setPreviewFile] = React.useState<{
+    id: number;
     file_name: string;
-    file_url: string;
     file_type: string;
   } | null>(null);
 
@@ -745,8 +745,8 @@ export default function SubmissionDetailsPage() {
                                     size="sm"
                                     onClick={() =>
                                       setPreviewFile({
+                                        id: file.id,
                                         file_name: file.file_name,
-                                        file_url: file.file_url,
                                         file_type: file.file_type,
                                       })
                                     }
@@ -1102,50 +1102,29 @@ export default function SubmissionDetailsPage() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => window.open(previewFile.file_url, "_blank")}
-                >
-                  <ExternalLink className="h-4 w-4 mr-1" />
-                  Open in New Tab
-                </Button>
                 <Button variant="ghost" size="sm" onClick={() => setPreviewFile(null)}>
                   <X className="h-5 w-5" />
                 </Button>
               </div>
             </div>
 
-            {/* Content */}
-            <div className="flex-1 p-4 overflow-auto">
-              {previewFile.file_type === "application/pdf" ? (
-                <iframe
-                  src={previewFile.file_url}
-                  className="w-full h-full rounded border border-gray-200"
-                  title={previewFile.file_name}
-                />
-              ) : previewFile.file_type?.startsWith("image/") ? (
-                <div className="flex items-center justify-center h-full">
-                  <img
-                    src={previewFile.file_url}
-                    alt={previewFile.file_name}
-                    className="max-w-full max-h-full object-contain rounded"
-                  />
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center">
-                  <File className="h-16 w-16 text-muted-foreground/50 mb-4" />
-                  <p className="text-muted-foreground mb-4">
-                    Preview not available for this file type
-                  </p>
-                  <Button
-                    onClick={() => window.open(previewFile.file_url, "_blank")}
-                    variant="outline"
-                  >
-                    Open in New Tab
-                  </Button>
-                </div>
-              )}
+            {/* Content - Use SecureFileViewer for secure file access */}
+            <div className="flex-1 overflow-auto bg-white">
+              <SecureFileViewer
+                file={{
+                  id: previewFile.id,
+                  file_name: previewFile.file_name,
+                  file_type: previewFile.file_type,
+                  file_size: 0,
+                  file_url: "",
+                  assessment_id: assessmentId,
+                  indicator_id: 0,
+                  uploaded_by: 0,
+                  uploaded_at: null,
+                }}
+                annotations={[]}
+                annotateEnabled={false}
+              />
             </div>
           </div>
         </div>

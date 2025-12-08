@@ -508,6 +508,21 @@ class MOVFileListResponse(BaseModel):
     files: list[MOVFileResponse]
 
 
+class SignedUrlResponse(BaseModel):
+    """
+    Response schema for signed URL generation.
+
+    Provides a time-limited signed URL for secure access to MOV files
+    stored in private Supabase Storage buckets.
+
+    Fields:
+        signed_url: A signed URL that provides temporary access to the file.
+                   The URL expires after a configurable duration (default: 1 hour).
+    """
+
+    signed_url: str
+
+
 # ============================================================================
 # Submission Workflow Schemas (Epic 5.0)
 # ============================================================================
