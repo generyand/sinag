@@ -4,7 +4,8 @@ Guidance for Claude Code when working with the SINAG codebase.
 
 ## Project Overview
 
-SINAG is a governance assessment platform for the DILG's Seal of Good Local Governance for Barangays (SGLGB). Monorepo with FastAPI backend + Next.js 16 frontend.
+SINAG is a governance assessment platform for the DILG's Seal of Good Local Governance for Barangays
+(SGLGB). Monorepo with FastAPI backend + Next.js 16 frontend.
 
 ### Architecture Principles
 
@@ -40,7 +41,18 @@ cd apps/api && pytest        # Backend only
 pnpm build
 pnpm lint
 pnpm type-check
+
+# Manual formatting (auto-runs on commit via husky)
+pnpm format                        # Format JS/TS/JSON/CSS/MD
+cd apps/api && uv run ruff format  # Format Python
 ```
+
+## Pre-commit Hooks
+
+Husky automatically runs on every commit:
+
+- **JS/TS/JSON/CSS/MD**: lint-staged + Prettier
+- **Python**: ruff check --fix + ruff format (auto-formats and re-stages)
 
 ## Project Structure
 
@@ -102,45 +114,45 @@ DRAFT → SUBMITTED → IN_REVIEW → AWAITING_FINAL_VALIDATION → AWAITING_MLG
               REWORK ←──────────── (Calibration) ←─────────── (RE-calibration)
 ```
 
-| Role | Responsibility |
-|------|----------------|
-| BLGU_USER | Submit assessments with MOVs |
-| ASSESSOR | Review, provide feedback, request rework (once) |
-| VALIDATOR | Determine Pass/Fail, request calibration |
-| MLGOO_DILG | Final approval, request RE-calibration |
+| Role       | Responsibility                                  |
+| ---------- | ----------------------------------------------- |
+| BLGU_USER  | Submit assessments with MOVs                    |
+| ASSESSOR   | Review, provide feedback, request rework (once) |
+| VALIDATOR  | Determine Pass/Fail, request calibration        |
+| MLGOO_DILG | Final approval, request RE-calibration          |
 
 See `docs/workflows/assessor-validation.md` for detailed workflow.
 
 ## User Roles
 
-| Role | Access | Required Field |
-|------|--------|----------------|
-| MLGOO_DILG | System-wide admin | None |
-| VALIDATOR | Assigned governance area | `validator_area_id` |
-| ASSESSOR | All barangays (review only) | None |
-| BLGU_USER | Own barangay only | `barangay_id` |
-| KATUPARAN_CENTER_USER | Read-only analytics | None |
+| Role                  | Access                      | Required Field      |
+| --------------------- | --------------------------- | ------------------- |
+| MLGOO_DILG            | System-wide admin           | None                |
+| VALIDATOR             | Assigned governance area    | `validator_area_id` |
+| ASSESSOR              | All barangays (review only) | None                |
+| BLGU_USER             | Own barangay only           | `barangay_id`       |
+| KATUPARAN_CENTER_USER | Read-only analytics         | None                |
 
 See `docs/architecture/user-roles.md` for details.
 
 ## Tech Stack
 
-| Layer | Technologies |
-|-------|--------------|
-| Backend | Python 3.13+, FastAPI, SQLAlchemy, Alembic, Celery, Redis |
+| Layer    | Technologies                                                   |
+| -------- | -------------------------------------------------------------- |
+| Backend  | Python 3.13+, FastAPI, SQLAlchemy, Alembic, Celery, Redis      |
 | Frontend | Next.js 16, React 19, TypeScript, Tailwind, shadcn/ui, Zustand |
-| Database | PostgreSQL (Supabase) |
-| Tooling | Turborepo, pnpm, Orval, uv, Docker |
+| Database | PostgreSQL (Supabase)                                          |
+| Tooling  | Turborepo, pnpm, Orval, uv, Docker                             |
 
 ## Key Services
 
-| Service | Purpose |
-|---------|---------|
-| `assessment_service` | Core assessment CRUD |
-| `assessor_service` | Validation workflow |
-| `intelligence_service` | AI/Gemini integration |
-| `mlgoo_service` | MLGOO approval workflow |
-| `bbi_service` | BBI functionality |
+| Service                | Purpose                 |
+| ---------------------- | ----------------------- |
+| `assessment_service`   | Core assessment CRUD    |
+| `assessor_service`     | Validation workflow     |
+| `intelligence_service` | AI/Gemini integration   |
+| `mlgoo_service`        | MLGOO approval workflow |
+| `bbi_service`          | BBI functionality       |
 
 ## Key Patterns
 
@@ -163,6 +175,7 @@ def create(self, db: Session, data: CreateSchema):
 ### FastAPI Tags
 
 Tags organize generated code:
+
 ```python
 @router.get("/", tags=["assessments"])  # → endpoints/assessments/
 ```
@@ -170,6 +183,7 @@ Tags organize generated code:
 ## Environment Variables
 
 ### Backend (`apps/api/.env`)
+
 ```env
 DATABASE_URL=postgresql://...
 SUPABASE_URL=https://[project].supabase.co
@@ -179,6 +193,7 @@ GEMINI_API_KEY=...
 ```
 
 ### Frontend (`apps/web/.env.local`)
+
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000
 NEXT_PUBLIC_API_V1_URL=http://localhost:8000/api/v1
@@ -187,11 +202,13 @@ NEXT_PUBLIC_API_V1_URL=http://localhost:8000/api/v1
 ## Common Issues
 
 ### Type Generation Fails
+
 1. Ensure backend is running: `pnpm dev:api`
 2. Check OpenAPI: `curl http://localhost:8000/openapi.json`
 3. Verify Pydantic schemas are valid
 
 ### Migration Conflicts
+
 ```bash
 cd apps/api
 alembic merge heads -m "merge migrations"
@@ -199,21 +216,22 @@ alembic upgrade head
 ```
 
 ### Celery Tasks Not Running
+
 1. Ensure Redis is running: `pnpm redis:start`
 2. Start Celery: `pnpm celery`
 
 ## Documentation
 
-| Topic | Location |
-|-------|----------|
-| Project structure | `docs/architecture/project-structure.md` |
-| User roles | `docs/architecture/user-roles.md` |
-| Assessment workflow | `docs/workflows/assessor-validation.md` |
-| BLGU workflow | `docs/workflows/blgu-assessment.md` |
-| External analytics | `docs/features/external-analytics.md` |
-| API endpoints | `docs/api/endpoints/` |
-| PRDs | `docs/prds/` |
-| Changelog | `CHANGELOG.md` |
+| Topic               | Location                                 |
+| ------------------- | ---------------------------------------- |
+| Project structure   | `docs/architecture/project-structure.md` |
+| User roles          | `docs/architecture/user-roles.md`        |
+| Assessment workflow | `docs/workflows/assessor-validation.md`  |
+| BLGU workflow       | `docs/workflows/blgu-assessment.md`      |
+| External analytics  | `docs/features/external-analytics.md`    |
+| API endpoints       | `docs/api/endpoints/`                    |
+| PRDs                | `docs/prds/`                             |
+| Changelog           | `CHANGELOG.md`                           |
 
 ## Docker Development
 
