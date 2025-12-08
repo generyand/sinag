@@ -236,6 +236,39 @@ export type GARIndicatorValidationStatus = string | null;
 
 
 /**
+ * GetIndicatorsCodeIndicatorCodeParams
+ */
+export type GetIndicatorsCodeIndicatorCodeParams = {
+/**
+ * Assessment year for placeholder resolution
+ */
+year?: number | null;
+};
+
+
+/**
+ * GetIndicatorsCodeIndicatorCodeTreeParams
+ */
+export type GetIndicatorsCodeIndicatorCodeTreeParams = {
+/**
+ * Assessment year for placeholder resolution
+ */
+year?: number | null;
+};
+
+
+/**
+ * GetIndicatorsIndicatorIdParams
+ */
+export type GetIndicatorsIndicatorIdParams = {
+/**
+ * Assessment year for placeholder resolution
+ */
+year?: number | null;
+};
+
+
+/**
  * GetIndicatorsParams
  */
 export type GetIndicatorsParams = {
@@ -258,6 +291,10 @@ skip?: number;
  * @maximum 1000
  */
 limit?: number;
+/**
+ * Assessment year for placeholder resolution
+ */
+year?: number | null;
 };
 
 

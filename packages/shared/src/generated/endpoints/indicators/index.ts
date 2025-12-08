@@ -24,6 +24,9 @@ import type {
   CalculationSchema,
   FormSchema,
   FormSchemaResponse,
+  GetIndicatorsCodeIndicatorCodeParams,
+  GetIndicatorsCodeIndicatorCodeTreeParams,
+  GetIndicatorsIndicatorIdParams,
   GetIndicatorsParams,
   GetIndicatorsTreeGovernanceAreaId200Item,
   GetIndicatorsTreeGovernanceAreaIdParams,
@@ -142,8 +145,9 @@ export const usePostIndicators = <TError = HTTPValidationError,
 - is_active: Filter by active status (optional)
 - skip: Pagination offset (default: 0)
 - limit: Max records (default: 100, max: 1000)
+- year: Assessment year for placeholder resolution (optional, uses active year if not provided)
 
-**Returns**: List of indicators matching filters
+**Returns**: List of indicators matching filters with resolved year placeholders
  * @summary List all indicators
  */
 export const getIndicators = (
@@ -515,7 +519,10 @@ export const usePostIndicatorsTestCalculation = <TError = HTTPValidationError,
 **Path Parameters**:
 - indicator_id: ID of the indicator
 
-**Returns**: Indicator details including current version
+**Query Parameters**:
+- year: Assessment year for placeholder resolution (optional, uses active year if not provided)
+
+**Returns**: Indicator details including current version with resolved year placeholders
 
 **Raises**:
 - 404: Indicator not found
@@ -523,12 +530,14 @@ export const usePostIndicatorsTestCalculation = <TError = HTTPValidationError,
  */
 export const getIndicators$IndicatorId = (
     indicatorId: number,
+    params?: GetIndicatorsIndicatorIdParams,
  options?: SecondParameter<typeof mutator>,signal?: AbortSignal
 ) => {
       
       
       return mutator<IndicatorResponse>(
-      {url: `/api/v1/indicators/${indicatorId}`, method: 'GET', signal
+      {url: `/api/v1/indicators/${indicatorId}`, method: 'GET',
+        params, signal
     },
       options);
     }
@@ -536,23 +545,25 @@ export const getIndicators$IndicatorId = (
 
 
 
-export const getGetIndicatorsIndicatorIdQueryKey = (indicatorId?: number,) => {
+export const getGetIndicatorsIndicatorIdQueryKey = (indicatorId?: number,
+    params?: GetIndicatorsIndicatorIdParams,) => {
     return [
-    `/api/v1/indicators/${indicatorId}`
+    `/api/v1/indicators/${indicatorId}`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getGetIndicatorsIndicatorIdQueryOptions = <TData = Awaited<ReturnType<typeof getIndicators$IndicatorId>>, TError = HTTPValidationError>(indicatorId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIndicators$IndicatorId>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export const getGetIndicatorsIndicatorIdQueryOptions = <TData = Awaited<ReturnType<typeof getIndicators$IndicatorId>>, TError = HTTPValidationError>(indicatorId: number,
+    params?: GetIndicatorsIndicatorIdParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIndicators$IndicatorId>>, TError, TData>, request?: SecondParameter<typeof mutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetIndicatorsIndicatorIdQueryKey(indicatorId);
+  const queryKey =  queryOptions?.queryKey ?? getGetIndicatorsIndicatorIdQueryKey(indicatorId,params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIndicators$IndicatorId>>> = ({ signal }) => getIndicators$IndicatorId(indicatorId, requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIndicators$IndicatorId>>> = ({ signal }) => getIndicators$IndicatorId(indicatorId,params, requestOptions, signal);
 
       
 
@@ -570,11 +581,12 @@ export type GetIndicatorsIndicatorIdQueryError = HTTPValidationError
  */
 
 export function useGetIndicatorsIndicatorId<TData = Awaited<ReturnType<typeof getIndicators$IndicatorId>>, TError = HTTPValidationError>(
- indicatorId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIndicators$IndicatorId>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+ indicatorId: number,
+    params?: GetIndicatorsIndicatorIdParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIndicators$IndicatorId>>, TError, TData>, request?: SecondParameter<typeof mutator>}
   
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetIndicatorsIndicatorIdQueryOptions(indicatorId,options)
+  const queryOptions = getGetIndicatorsIndicatorIdQueryOptions(indicatorId,params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1135,7 +1147,11 @@ and seeded into the database.
 **Path Parameters**:
 - indicator_code: Indicator code (e.g., "1.1", "1.1.1")
 
+**Query Parameters**:
+- year: Assessment year for placeholder resolution (optional, uses active year if not provided)
+
 **Returns**: Indicator with checklist items (if sub-indicator) or children (if parent)
+             with resolved year placeholders
 
 **Raises**:
 - 404: Indicator not found
@@ -1148,12 +1164,14 @@ GET /api/v1/indicators/code/1.1.1
  */
 export const getIndicatorsCode$IndicatorCode = (
     indicatorCode: string,
+    params?: GetIndicatorsCodeIndicatorCodeParams,
  options?: SecondParameter<typeof mutator>,signal?: AbortSignal
 ) => {
       
       
       return mutator<SimplifiedIndicatorResponse>(
-      {url: `/api/v1/indicators/code/${indicatorCode}`, method: 'GET', signal
+      {url: `/api/v1/indicators/code/${indicatorCode}`, method: 'GET',
+        params, signal
     },
       options);
     }
@@ -1161,23 +1179,25 @@ export const getIndicatorsCode$IndicatorCode = (
 
 
 
-export const getGetIndicatorsCodeIndicatorCodeQueryKey = (indicatorCode?: string,) => {
+export const getGetIndicatorsCodeIndicatorCodeQueryKey = (indicatorCode?: string,
+    params?: GetIndicatorsCodeIndicatorCodeParams,) => {
     return [
-    `/api/v1/indicators/code/${indicatorCode}`
+    `/api/v1/indicators/code/${indicatorCode}`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getGetIndicatorsCodeIndicatorCodeQueryOptions = <TData = Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCode>>, TError = HTTPValidationError>(indicatorCode: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCode>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export const getGetIndicatorsCodeIndicatorCodeQueryOptions = <TData = Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCode>>, TError = HTTPValidationError>(indicatorCode: string,
+    params?: GetIndicatorsCodeIndicatorCodeParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCode>>, TError, TData>, request?: SecondParameter<typeof mutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetIndicatorsCodeIndicatorCodeQueryKey(indicatorCode);
+  const queryKey =  queryOptions?.queryKey ?? getGetIndicatorsCodeIndicatorCodeQueryKey(indicatorCode,params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCode>>> = ({ signal }) => getIndicatorsCode$IndicatorCode(indicatorCode, requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCode>>> = ({ signal }) => getIndicatorsCode$IndicatorCode(indicatorCode,params, requestOptions, signal);
 
       
 
@@ -1195,11 +1215,12 @@ export type GetIndicatorsCodeIndicatorCodeQueryError = HTTPValidationError
  */
 
 export function useGetIndicatorsCodeIndicatorCode<TData = Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCode>>, TError = HTTPValidationError>(
- indicatorCode: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCode>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+ indicatorCode: string,
+    params?: GetIndicatorsCodeIndicatorCodeParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCode>>, TError, TData>, request?: SecondParameter<typeof mutator>}
   
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetIndicatorsCodeIndicatorCodeQueryOptions(indicatorCode,options)
+  const queryOptions = getGetIndicatorsCodeIndicatorCodeQueryOptions(indicatorCode,params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1220,7 +1241,11 @@ This endpoint returns the complete hierarchy for a parent indicator
 **Path Parameters**:
 - indicator_code: Parent indicator code (e.g., "1.1", "2.3")
 
+**Query Parameters**:
+- year: Assessment year for placeholder resolution (optional, uses active year if not provided)
+
 **Returns**: Complete indicator tree with all children and checklist items
+             with resolved year placeholders
 
 **Raises**:
 - 404: Indicator not found
@@ -1238,12 +1263,14 @@ Returns indicator 1.1 with:
  */
 export const getIndicatorsCode$IndicatorCodeTree = (
     indicatorCode: string,
+    params?: GetIndicatorsCodeIndicatorCodeTreeParams,
  options?: SecondParameter<typeof mutator>,signal?: AbortSignal
 ) => {
       
       
       return mutator<IndicatorTreeResponse>(
-      {url: `/api/v1/indicators/code/${indicatorCode}/tree`, method: 'GET', signal
+      {url: `/api/v1/indicators/code/${indicatorCode}/tree`, method: 'GET',
+        params, signal
     },
       options);
     }
@@ -1251,23 +1278,25 @@ export const getIndicatorsCode$IndicatorCodeTree = (
 
 
 
-export const getGetIndicatorsCodeIndicatorCodeTreeQueryKey = (indicatorCode?: string,) => {
+export const getGetIndicatorsCodeIndicatorCodeTreeQueryKey = (indicatorCode?: string,
+    params?: GetIndicatorsCodeIndicatorCodeTreeParams,) => {
     return [
-    `/api/v1/indicators/code/${indicatorCode}/tree`
+    `/api/v1/indicators/code/${indicatorCode}/tree`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getGetIndicatorsCodeIndicatorCodeTreeQueryOptions = <TData = Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCodeTree>>, TError = HTTPValidationError>(indicatorCode: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCodeTree>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export const getGetIndicatorsCodeIndicatorCodeTreeQueryOptions = <TData = Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCodeTree>>, TError = HTTPValidationError>(indicatorCode: string,
+    params?: GetIndicatorsCodeIndicatorCodeTreeParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCodeTree>>, TError, TData>, request?: SecondParameter<typeof mutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetIndicatorsCodeIndicatorCodeTreeQueryKey(indicatorCode);
+  const queryKey =  queryOptions?.queryKey ?? getGetIndicatorsCodeIndicatorCodeTreeQueryKey(indicatorCode,params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCodeTree>>> = ({ signal }) => getIndicatorsCode$IndicatorCodeTree(indicatorCode, requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCodeTree>>> = ({ signal }) => getIndicatorsCode$IndicatorCodeTree(indicatorCode,params, requestOptions, signal);
 
       
 
@@ -1285,11 +1314,12 @@ export type GetIndicatorsCodeIndicatorCodeTreeQueryError = HTTPValidationError
  */
 
 export function useGetIndicatorsCodeIndicatorCodeTree<TData = Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCodeTree>>, TError = HTTPValidationError>(
- indicatorCode: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCodeTree>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+ indicatorCode: string,
+    params?: GetIndicatorsCodeIndicatorCodeTreeParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCodeTree>>, TError, TData>, request?: SecondParameter<typeof mutator>}
   
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetIndicatorsCodeIndicatorCodeTreeQueryOptions(indicatorCode,options)
+  const queryOptions = getGetIndicatorsCodeIndicatorCodeTreeQueryOptions(indicatorCode,params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

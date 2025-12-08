@@ -81,7 +81,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getComplianceAssessments$AssessmentIdComplianceOverview>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getComplianceAssessments$AssessmentIdComplianceOverview>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetComplianceAssessmentsAssessmentIdComplianceOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getComplianceAssessments$AssessmentIdComplianceOverview>>>
