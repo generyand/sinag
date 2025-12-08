@@ -30,29 +30,16 @@ INDICATOR_2_1 = Indicator(
             code="2.1.1",
             name="Structure: Organized BDRRMC with its composition compliant to the provisions of NDRRMC, DILG, DBM, and CSC JMC No. 2014-01, covering {JAN_TO_OCT_CURRENT_YEAR}",
             upload_instructions=(
-                "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the BDRRMC with its composition compliant to the provisions of JMC No. 2014-01\n\n"
-                "Minimum Composition of the BDRRMC:\n"
-                "- Punong Barangay\n"
-                "- A Representative from the Sangguniang Barangay; and\n"
-                "- Two (2) CSO representatives from the existing and active community-based people's organizations representing the most vulnerable and marginalized groups in the barangay (Item 5.7. of NDRRMC, DILG, DBM, and CSC JMC No. 2014-01)\n\n"
-                "Please supply the required information:\n"
-                "Date of approval"
+                "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the BDRRMC with its composition compliant to the provisions of JMC No. 2014-01, covering {JAN_TO_OCT_CURRENT_YEAR}"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
                     id="2_1_1_eo",
-                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the BDRRMC with its composition compliant to the provisions of JMC No. 2014-01",
+                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the BDRRMC with its composition compliant to the provisions of JMC No. 2014-01, covering {JAN_TO_OCT_CURRENT_YEAR}",
                     required=True,
                     requires_document_count=False,
                     display_order=1,
-                ),
-                ChecklistItem(
-                    id="2_1_1_date",
-                    label="Date of approval",
-                    item_type="date_input",
-                    required=False,  # Date fields are for assessor review, not BLGU submission
-                    display_order=2,
                 ),
             ],
             notes=FormNotes(
