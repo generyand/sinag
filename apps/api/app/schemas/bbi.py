@@ -199,9 +199,7 @@ class BarangayBBIComplianceResponse(BaseModel):
     barangay_id: int = Field(..., description="Barangay ID")
     barangay_name: str | None = Field(None, description="Barangay name")
     assessment_year: int = Field(..., description="Assessment year")
-    bbi_results: list[dict[str, Any]] = Field(
-        ..., description="Compliance results for each BBI"
-    )
+    bbi_results: list[dict[str, Any]] = Field(..., description="Compliance results for each BBI")
     summary: BBIComplianceSummary = Field(..., description="Summary statistics for BBI compliance")
 
 

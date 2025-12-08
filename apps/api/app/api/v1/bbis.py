@@ -231,7 +231,9 @@ async def test_bbi_calculation(
         from app.db.enums import BBIStatus
 
         # Use HIGHLY_FUNCTIONAL for backward compatibility (replaces old FUNCTIONAL in 4-tier system)
-        predicted_status = BBIStatus.HIGHLY_FUNCTIONAL if is_functional else BBIStatus.NON_FUNCTIONAL
+        predicted_status = (
+            BBIStatus.HIGHLY_FUNCTIONAL if is_functional else BBIStatus.NON_FUNCTIONAL
+        )
 
         # Build evaluation details
         operator = request.mapping_rules.get("operator", "AND")

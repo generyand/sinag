@@ -199,7 +199,9 @@ class MLGOOService:
                 f"{len(bbi_results)} BBIs processed"
             )
         except Exception as e:
-            self.logger.error(f"Failed to calculate BBI compliance for assessment {assessment_id}: {e}")
+            self.logger.error(
+                f"Failed to calculate BBI compliance for assessment {assessment_id}: {e}"
+            )
             # Don't fail the approval if BBI calculation fails
 
         db.commit()

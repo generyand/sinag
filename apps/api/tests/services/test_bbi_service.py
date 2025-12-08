@@ -454,8 +454,14 @@ def test_calculate_all_bbi_statuses(
     assert len(results) >= 2
     # BBI1 should be functional (indicator 0 passes)
     # BBI2 should be non-functional (indicator 1 fails)
-    assert any(r.bbi_id == bbi1.id and r.compliance_rating == BBIStatus.HIGHLY_FUNCTIONAL.value for r in results)
-    assert any(r.bbi_id == bbi2.id and r.compliance_rating == BBIStatus.NON_FUNCTIONAL.value for r in results)
+    assert any(
+        r.bbi_id == bbi1.id and r.compliance_rating == BBIStatus.HIGHLY_FUNCTIONAL.value
+        for r in results
+    )
+    assert any(
+        r.bbi_id == bbi2.id and r.compliance_rating == BBIStatus.NON_FUNCTIONAL.value
+        for r in results
+    )
 
 
 @pytest.mark.skip(

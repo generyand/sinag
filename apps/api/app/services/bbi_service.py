@@ -587,9 +587,7 @@ class BBIService:
         else:
             return BBIStatus.NON_FUNCTIONAL
 
-    def calculate_all_bbi_compliance(
-        self, db: Session, assessment: Assessment
-    ) -> list[BBIResult]:
+    def calculate_all_bbi_compliance(self, db: Session, assessment: Assessment) -> list[BBIResult]:
         """
         Calculate compliance for all BBI indicators for an assessment.
 
@@ -745,7 +743,9 @@ class BBIService:
             )
             db.add(bbi)
             db.flush()  # Get the ID without committing
-            logger.info(f"Created BBI for indicator {indicator.indicator_code}: {abbreviation} ({name})")
+            logger.info(
+                f"Created BBI for indicator {indicator.indicator_code}: {abbreviation} ({name})"
+            )
 
         return bbi
 

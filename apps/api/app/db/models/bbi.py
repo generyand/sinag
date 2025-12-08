@@ -86,9 +86,7 @@ class BBIResult(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
 
     # Direct links for efficient queries
-    barangay_id: Mapped[int] = mapped_column(
-        ForeignKey("barangays.id"), nullable=False, index=True
-    )
+    barangay_id: Mapped[int] = mapped_column(ForeignKey("barangays.id"), nullable=False, index=True)
     assessment_year: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
 
     # Reference to the assessment that triggered this calculation
