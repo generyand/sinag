@@ -1,13 +1,15 @@
 # ==============================================================================
-# E2E Testing with Playwright
+# E2E Testing with Playwright (Optimized)
 # ==============================================================================
-# This workflow runs Playwright E2E tests at different levels:
+# This workflow runs Playwright E2E tests with smart test selection:
 #   - Smoke tests: Fast sanity checks on every PR/push
-#   - Critical paths: Core user flows on PRs
+#   - Critical paths: Core user flows on PRs (auth, route protection)
 #   - Full suite: All E2E tests on main/develop merges
 #
-# Tests run in parallel for faster feedback.
-# Backend services (Postgres, Redis) are started for authentication tests.
+# Optimizations:
+#   - Single job with conditional test selection (eliminates setup duplication)
+#   - Playwright browser caching for faster startup
+#   - Parallel test execution within the selected test set
 # ==============================================================================
 
 name: E2E Tests
@@ -23,121 +25,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # ============================================================================
-  # Smoke Tests - Run on every PR and push
-  # ============================================================================
-  smoke-tests:
-    name: Smoke Tests
-    timeout-minutes: 10
-    runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: test_db
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-
-    env:
-      # Backend environment variables
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
-      # Test-only secret key for E2E tests - NOT a real secret
-      SECRET_KEY: test-secret-key-for-e2e-tests-only
-      CELERY_BROKER_URL: redis://localhost:6379/0
-      REDIS_CACHE_URL: redis://localhost:6379/0
-      SUPABASE_URL: https://example.supabase.co
-      SUPABASE_ANON_KEY: test-anon-key
-      SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
-      GEMINI_API_KEY: test-gemini-key
-      # Frontend environment variables (needed for Next.js to connect to API)
-      NEXT_PUBLIC_API_URL: http://localhost:8000
-      NEXT_PUBLIC_API_V1_URL: http://localhost:8000/api/v1
-      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.11.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-          cache: pnpm
-
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-
-      - name: Install uv
-        run: pip install uv
-
-      - name: Cache uv dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/uv
-          key: ${{ runner.os }}-uv-${{ hashFiles('apps/api/uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-uv-
-
-      - name: Install Python dependencies
-        run: cd apps/api && uv sync --group dev
-
-      - name: Install Node dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium
-
-      - name: Run database migrations
-        run: cd apps/api && uv run alembic upgrade head
-
-      - name: Seed test users
-        run: cd apps/api && uv run python scripts/seed_e2e_users.py
-
-      - name: Run smoke tests
-        continue-on-error: true # Don't block CI while fixing E2E tests
-        run: pnpm exec playwright test smoke.spec.ts --project=chromium
-
-      - name: Upload smoke test report
-        uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: smoke-test-report
-          path: playwright-report/
-          retention-days: 7
-
-  # ============================================================================
-  # Critical Path Tests - Run on PRs
-  # ============================================================================
-  critical-path-tests:
-    name: Critical Path Tests
+  e2e-tests:
+    name: E2E Tests
     timeout-minutes: 15
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
 
     services:
       postgres:
@@ -184,41 +75,33 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.11.0
+      - name: Setup Node.js environment
+        uses: ./.github/actions/setup-node
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-          cache: pnpm
+      - name: Setup Python API environment
+        uses: ./.github/actions/setup-python-api
 
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
+      # Cache Playwright browsers for faster subsequent runs
+      - name: Get Playwright version
+        id: playwright-version
+        run: echo "version=$(pnpm exec playwright --version | head -1)" >> $GITHUB_OUTPUT
 
-      - name: Install uv
-        run: pip install uv
-
-      - name: Cache uv dependencies
+      - name: Cache Playwright browsers
+        id: playwright-cache
         uses: actions/cache@v4
         with:
-          path: ~/.cache/uv
-          key: ${{ runner.os }}-uv-${{ hashFiles('apps/api/uv.lock') }}
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
           restore-keys: |
-            ${{ runner.os }}-uv-
-
-      - name: Install Python dependencies
-        run: cd apps/api && uv sync --group dev
-
-      - name: Install Node dependencies
-        run: pnpm install --frozen-lockfile
+            ${{ runner.os }}-playwright-
 
       - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install --with-deps chromium
+
+      - name: Install Playwright system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps chromium
 
       - name: Run database migrations
         run: cd apps/api && uv run alembic upgrade head
@@ -226,127 +109,38 @@ jobs:
       - name: Seed test users
         run: cd apps/api && uv run python scripts/seed_e2e_users.py
 
-      - name: Run critical path tests
+      # Determine which tests to run based on event type
+      - name: Determine test scope
+        id: test-scope
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            # Full suite on pushes to main/develop
+            echo "tests=" >> $GITHUB_OUTPUT
+            echo "name=Full E2E Suite" >> $GITHUB_OUTPUT
+            echo "report-name=full-e2e-report" >> $GITHUB_OUTPUT
+          else
+            # Smoke + critical path tests on PRs
+            echo "tests=smoke.spec.ts authentication.spec.ts route-protection.spec.ts" >> $GITHUB_OUTPUT
+            echo "name=PR E2E Tests (Smoke + Critical Path)" >> $GITHUB_OUTPUT
+            echo "report-name=pr-e2e-report" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run E2E tests - ${{ steps.test-scope.outputs.name }}
         continue-on-error: true # Don't block CI while fixing E2E tests
         run: |
-          pnpm exec playwright test \
-            authentication.spec.ts \
-            route-protection.spec.ts \
-            --project=chromium
+          if [ -z "${{ steps.test-scope.outputs.tests }}" ]; then
+            # Run all tests
+            pnpm exec playwright test --project=chromium
+          else
+            # Run specific test files
+            pnpm exec playwright test ${{ steps.test-scope.outputs.tests }} --project=chromium
+          fi
 
-      - name: Upload critical path report
-        uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: critical-path-report
-          path: playwright-report/
-          retention-days: 7
-
-  # ============================================================================
-  # Full E2E Suite - Run on main/develop merges
-  # ============================================================================
-  full-e2e-suite:
-    name: Full E2E Suite
-    timeout-minutes: 20
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
-
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: test_db
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-
-    env:
-      # Backend environment variables
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
-      # Test-only secret key for E2E tests - NOT a real secret
-      SECRET_KEY: test-secret-key-for-e2e-tests-only
-      CELERY_BROKER_URL: redis://localhost:6379/0
-      REDIS_CACHE_URL: redis://localhost:6379/0
-      SUPABASE_URL: https://example.supabase.co
-      SUPABASE_ANON_KEY: test-anon-key
-      SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
-      GEMINI_API_KEY: test-gemini-key
-      # Frontend environment variables (needed for Next.js to connect to API)
-      NEXT_PUBLIC_API_URL: http://localhost:8000
-      NEXT_PUBLIC_API_V1_URL: http://localhost:8000/api/v1
-      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.11.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-          cache: pnpm
-
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-
-      - name: Install uv
-        run: pip install uv
-
-      - name: Cache uv dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/uv
-          key: ${{ runner.os }}-uv-${{ hashFiles('apps/api/uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-uv-
-
-      - name: Install Python dependencies
-        run: cd apps/api && uv sync --group dev
-
-      - name: Install Node dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium
-
-      - name: Run database migrations
-        run: cd apps/api && uv run alembic upgrade head
-
-      - name: Seed test users
-        run: cd apps/api && uv run python scripts/seed_e2e_users.py
-
-      - name: Run all E2E tests
-        continue-on-error: true # Don't block CI while fixing E2E tests
-        run: pnpm exec playwright test --project=chromium
-
-      - name: Upload full E2E report
+      - name: Upload E2E test report
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: full-e2e-report
+          name: ${{ steps.test-scope.outputs.report-name }}
           path: playwright-report/
           retention-days: 14
 
@@ -355,6 +149,8 @@ jobs:
         run: |
           echo "## E2E Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Full E2E suite completed on ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Test Scope:** ${{ steps.test-scope.outputs.name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Event:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "See artifact 'full-e2e-report' for detailed results." >> $GITHUB_STEP_SUMMARY
+          echo "See artifact '${{ steps.test-scope.outputs.report-name }}' for detailed results." >> $GITHUB_STEP_SUMMARY
