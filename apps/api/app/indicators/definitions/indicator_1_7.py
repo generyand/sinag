@@ -64,22 +64,22 @@ INDICATOR_1_7 = Indicator(
     governance_area_id=1,  # Financial Administration and Sustainability
     is_bbi=False,  # Barangay Assembly is NOT a BBI - it's a governance activity
     sort_order=7,
-    description="Conducted the 1st semester Barangay Assembly",
+    description="Conducted the 1st semester Barangay Assembly for {CY_CURRENT_YEAR}",
     children=[
         # Sub-Indicator 1.7.1
         SubIndicator(
             code="1.7.1",
-            name="Conducted the 1st semester Barangay Assembly",
+            name="Conducted the 1st semester Barangay Assembly for {CY_CURRENT_YEAR}",
             upload_instructions=(
-                "Upload: Post Activity Report/ Minutes on the conduct of the 1st semester Barangay Assembly duly approved by the Punong Barangay"
+                "Upload: Post Activity Report/ Minutes on the conduct of the 1st semester Barangay Assembly for {CY_CURRENT_YEAR} duly approved by the Punong Barangay"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 # Upload Verification
                 ChecklistItem(
                     id="1_7_1_upload_1",
-                    label="Post Activity Report/ Minutes on the conduct of the 1st semester Barangay Assembly duly approved by the Punong Barangay",
-                    mov_description="Verification of uploaded Post Activity Report or Minutes of the 1st semester Barangay Assembly with approval from the Punong Barangay",
+                    label="Post Activity Report/ Minutes on the conduct of the 1st semester Barangay Assembly for {CY_CURRENT_YEAR} duly approved by the Punong Barangay",
+                    mov_description="Verification of uploaded Post Activity Report or Minutes of the 1st semester Barangay Assembly for {CY_CURRENT_YEAR} with approval from the Punong Barangay",
                     required=True,
                     display_order=1,
                 ),

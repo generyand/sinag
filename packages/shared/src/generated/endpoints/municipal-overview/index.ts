@@ -60,8 +60,12 @@ export const getMunicipalOverviewDashboard = (
     }
   
 
+
+
 export const getGetMunicipalOverviewDashboardQueryKey = (params?: GetMunicipalOverviewDashboardParams,) => {
-    return [`/api/v1/municipal-overview/dashboard`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/municipal-overview/dashboard`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -98,12 +102,13 @@ export function useGetMunicipalOverviewDashboard<TData = Awaited<ReturnType<type
 
   const queryOptions = getGetMunicipalOverviewDashboardQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -125,8 +130,12 @@ export const getMunicipalOverviewComplianceSummary = (
     }
   
 
+
+
 export const getGetMunicipalOverviewComplianceSummaryQueryKey = (params?: GetMunicipalOverviewComplianceSummaryParams,) => {
-    return [`/api/v1/municipal-overview/compliance-summary`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/municipal-overview/compliance-summary`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -163,12 +172,13 @@ export function useGetMunicipalOverviewComplianceSummary<TData = Awaited<ReturnT
 
   const queryOptions = getGetMunicipalOverviewComplianceSummaryQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -190,8 +200,12 @@ export const getMunicipalOverviewGovernanceAreas = (
     }
   
 
+
+
 export const getGetMunicipalOverviewGovernanceAreasQueryKey = (params?: GetMunicipalOverviewGovernanceAreasParams,) => {
-    return [`/api/v1/municipal-overview/governance-areas`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/municipal-overview/governance-areas`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -228,12 +242,13 @@ export function useGetMunicipalOverviewGovernanceAreas<TData = Awaited<ReturnTyp
 
   const queryOptions = getGetMunicipalOverviewGovernanceAreasQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -255,8 +270,12 @@ export const getMunicipalOverviewTopFailingIndicators = (
     }
   
 
+
+
 export const getGetMunicipalOverviewTopFailingIndicatorsQueryKey = (params?: GetMunicipalOverviewTopFailingIndicatorsParams,) => {
-    return [`/api/v1/municipal-overview/top-failing-indicators`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/municipal-overview/top-failing-indicators`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -293,12 +312,13 @@ export function useGetMunicipalOverviewTopFailingIndicators<TData = Awaited<Retu
 
   const queryOptions = getGetMunicipalOverviewTopFailingIndicatorsQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -320,8 +340,12 @@ export const getMunicipalOverviewCapdevSummary = (
     }
   
 
+
+
 export const getGetMunicipalOverviewCapdevSummaryQueryKey = (params?: GetMunicipalOverviewCapdevSummaryParams,) => {
-    return [`/api/v1/municipal-overview/capdev-summary`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/municipal-overview/capdev-summary`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -358,12 +382,13 @@ export function useGetMunicipalOverviewCapdevSummary<TData = Awaited<ReturnType<
 
   const queryOptions = getGetMunicipalOverviewCapdevSummaryQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -385,8 +410,12 @@ export const getMunicipalOverviewBarangayStatuses = (
     }
   
 
+
+
 export const getGetMunicipalOverviewBarangayStatusesQueryKey = (params?: GetMunicipalOverviewBarangayStatusesParams,) => {
-    return [`/api/v1/municipal-overview/barangay-statuses`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/municipal-overview/barangay-statuses`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -423,12 +452,13 @@ export function useGetMunicipalOverviewBarangayStatuses<TData = Awaited<ReturnTy
 
   const queryOptions = getGetMunicipalOverviewBarangayStatusesQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 

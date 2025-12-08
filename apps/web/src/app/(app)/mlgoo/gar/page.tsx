@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useEffectiveYear } from '@/store/useAssessmentYearStore';
+import { YearSelector } from '@/components/features/assessment-year/YearSelector';
 import { useGetGarAssessments, useGetGarAssessmentId } from '@sinag/shared';
 import { FileSpreadsheet, FileText, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,10 +17,13 @@ import {
 } from '@/components/ui/select';
 import { GARReportDisplay } from '@/components/features/gar/GARReportDisplay';
 import { GARSkeleton } from '@/components/features/gar/GARSkeleton';
+import { getApiV1URL } from '@/lib/api';
+import { showError, showWarning } from '@/lib/toast';
 
 export default function GARPage() {
   const router = useRouter();
   const { user, isAuthenticated, token } = useAuthStore();
+  const effectiveYear = useEffectiveYear();
   const [selectedAssessmentId, setSelectedAssessmentId] = useState<string>('');
   const [selectedAreaId, setSelectedAreaId] = useState<string>('all'); // Default to All Areas
   const [exportingExcel, setExportingExcel] = useState(false);
@@ -38,8 +43,15 @@ export default function GARPage() {
     }
   }, [isAuthenticated, user, router]);
 
-  // Fetch completed assessments list
-  const { data: assessmentsData, isLoading: loadingAssessments } = useGetGarAssessments();
+  // Reset selected assessment when year changes
+  useEffect(() => {
+    setSelectedAssessmentId('');
+  }, [effectiveYear]);
+
+  // Fetch completed assessments list for the selected year
+  const { data: assessmentsData, isLoading: loadingAssessments } = useGetGarAssessments({
+    year: effectiveYear ?? undefined,
+  });
 
   // Fetch GAR data for selected assessment
   const { data: garData, isLoading: loadingGar, error: garError } = useGetGarAssessmentId(
@@ -64,12 +76,14 @@ export default function GARPage() {
     if (format === 'excel') setExportingExcel(true);
     if (format === 'pdf') setExportingPdf(true);
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_V1_URL || 'http://localhost:8000/api/v1';
+    const baseUrl = getApiV1URL();
     const areaParam = selectedAreaId === 'all' ? '' : `?governance_area_id=${selectedAreaId}`;
     const url = `${baseUrl}/gar/${selectedAssessmentId}/export/${format}${areaParam}`;
 
     if (!token) {
-      alert('Authentication required. Please log in again.');
+      showWarning('Authentication required', {
+        description: 'Please log in again.',
+      });
       if (format === 'excel') setExportingExcel(false);
       if (format === 'pdf') setExportingPdf(false);
       return;
@@ -98,7 +112,9 @@ export default function GARPage() {
       document.body.removeChild(a);
     } catch (error) {
       console.error('Export failed:', error);
-      alert('Export failed. Please try again.');
+      showError('Export failed', {
+        description: 'Please try again.',
+      });
     } finally {
       // Reset loading state
       if (format === 'excel') setExportingExcel(false);
@@ -141,8 +157,9 @@ export default function GARPage() {
                   </p>
                 </div>
 
-                {/* Quick Stats */}
+                {/* Year Selector + Quick Stats */}
                 <div className="flex items-center gap-4">
+                  <YearSelector showLabel showIcon />
                   <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)]">
                     <div className="text-2xl font-bold text-[var(--foreground)]">
                       {assessmentsData?.total || 0}

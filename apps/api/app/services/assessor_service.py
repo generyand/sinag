@@ -8,6 +8,7 @@ from typing import Any
 from fastapi import UploadFile
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from app.core.year_resolver import get_year_resolver
 from app.db.enums import AssessmentStatus, ComplianceStatus, ValidationStatus
 from app.db.models.assessment import (
     MOV as MOVModel,  # SQLAlchemy model - alias to avoid conflict
@@ -28,9 +29,11 @@ class AssessorService:
         """Initialize the assessor service"""
         self.logger = logging.getLogger(__name__)
 
-    def get_assessor_queue(self, db: Session, assessor: User) -> list[dict]:
+    def get_assessor_queue(
+        self, db: Session, assessor: User, assessment_year: int | None = None
+    ) -> list[dict]:
         """
-        Return submissions filtered by user role and governance area.
+        Return submissions filtered by user role, governance area, and assessment year.
 
         **Validators** (users with validator_area_id):
         - See assessments in AWAITING_FINAL_VALIDATION status (ready for validation)
@@ -45,8 +48,19 @@ class AssessorService:
         - System-wide access (all governance areas)
         - These are assessments ready for initial review
 
+        Args:
+            db: Database session
+            assessor: Current assessor/validator user
+            assessment_year: Optional year filter. Defaults to active year.
+
         Includes barangay name, submission date, status, and last updated.
         """
+        # Get active year if not specified
+        if assessment_year is None:
+            from app.services.assessment_year_service import assessment_year_service
+
+            assessment_year = assessment_year_service.get_active_year_number(db)
+
         # Base query with eager loading to prevent N+1 queries
         # PERFORMANCE FIX: Load governance_area to avoid lazy loading in loop
         query = (
@@ -60,6 +74,10 @@ class AssessorService:
                 .joinedload(Indicator.governance_area),
             )
         )
+
+        # Filter by assessment year (always applied - defaults to active year above)
+        if assessment_year:
+            query = query.filter(Assessment.assessment_year == assessment_year)
 
         # Validators: Filter by governance area AND show assessments they can work on
         # - AWAITING_FINAL_VALIDATION: Ready for validation
@@ -193,7 +211,9 @@ class AssessorService:
 
         return items
 
-    def get_validator_completed_count(self, db: Session, validator: User) -> int:
+    def get_validator_completed_count(
+        self, db: Session, validator: User, assessment_year: int | None = None
+    ) -> int:
         """
         Count assessments where the validator has completed their governance area validation.
 
@@ -201,15 +221,26 @@ class AssessorService:
         - Assessments still in AWAITING_FINAL_VALIDATION (waiting for other validators)
         - Assessments in COMPLETED status
 
+        Args:
+            db: Database session
+            validator: Validator user
+            assessment_year: Optional year filter. Defaults to active year.
+
         Returns the count of assessments where all indicators in the validator's
         governance area have validation_status set.
         """
         if validator.validator_area_id is None:
             return 0
 
+        # Get active year if not specified
+        if assessment_year is None:
+            from app.services.assessment_year_service import assessment_year_service
+
+            assessment_year = assessment_year_service.get_active_year_number(db)
+
         # Query assessments that are either awaiting validation or completed
         # PERFORMANCE FIX: Add governance_area eager loading
-        assessments = (
+        query = (
             db.query(Assessment)
             .join(AssessmentResponse, AssessmentResponse.assessment_id == Assessment.id)
             .join(Indicator, Indicator.id == AssessmentResponse.indicator_id)
@@ -228,9 +259,13 @@ class AssessorService:
                 ),
                 Assessment.submitted_at.isnot(None),
             )
-            .distinct(Assessment.id)
-            .all()
         )
+
+        # Filter by assessment year
+        if assessment_year:
+            query = query.filter(Assessment.assessment_year == assessment_year)
+
+        assessments = query.distinct(Assessment.id).all()
 
         # Count assessments where all responses in validator's area are validated
         completed_count = 0
@@ -691,6 +726,17 @@ class AssessorService:
                 f"Assessor will only see files uploaded AFTER this timestamp."
             )
 
+        # Initialize year placeholder resolver for resolving dynamic year placeholders
+        # Use the assessment's year so historical assessments show correct dates
+        try:
+            year_resolver = get_year_resolver(db, year=assessment.assessment_year)
+        except ValueError:
+            # If no active assessment year config, skip resolution (use raw values)
+            year_resolver = None
+            self.logger.warning(
+                "[YEAR RESOLVER] No active assessment year found, using raw indicator values"
+            )
+
         # Process responses based on assessor's governance area assignment
         for response in assessment.responses:
             # Skip parent indicators that have children (only show leaf indicators)
@@ -791,11 +837,20 @@ class AssessorService:
                 "updated_at": response.updated_at.isoformat() + "Z",
                 "indicator": {
                     "id": response.indicator.id,
-                    "name": response.indicator.name,
+                    # Resolve year placeholders in indicator name
+                    "name": year_resolver.resolve_string(response.indicator.name)
+                    if year_resolver
+                    else response.indicator.name,
                     "code": response.indicator.indicator_code,
                     "indicator_code": response.indicator.indicator_code,
-                    "description": response.indicator.description,
-                    "form_schema": response.indicator.form_schema,
+                    # Resolve year placeholders in description
+                    "description": year_resolver.resolve_string(response.indicator.description)
+                    if year_resolver
+                    else response.indicator.description,
+                    # Resolve year placeholders in form_schema (deep resolution)
+                    "form_schema": year_resolver.resolve_schema(response.indicator.form_schema)
+                    if year_resolver
+                    else response.indicator.form_schema,
                     "validation_rule": response.indicator.validation_rule,
                     "remark_schema": response.indicator.remark_schema,
                     "governance_area": {
@@ -804,23 +859,36 @@ class AssessorService:
                         "code": response.indicator.governance_area.code,
                         "area_type": response.indicator.governance_area.area_type.value,
                     },
-                    # Technical notes - for now using description, but this could be a separate field
-                    "technical_notes": response.indicator.description
+                    # Technical notes - resolve year placeholders
+                    "technical_notes": (
+                        year_resolver.resolve_string(response.indicator.description)
+                        if year_resolver
+                        else response.indicator.description
+                    )
                     or "No technical notes available",
-                    # Checklist items for validation
+                    # Checklist items for validation - resolve year placeholders in labels
                     "checklist_items": [
                         {
                             "id": item.id,
                             "item_id": item.item_id,
-                            "label": item.label,
+                            # Resolve year placeholders in checklist item label
+                            "label": year_resolver.resolve_string(item.label)
+                            if year_resolver
+                            else item.label,
                             "item_type": item.item_type,
                             "group_name": item.group_name,
-                            "mov_description": item.mov_description,
+                            # Resolve year placeholders in mov_description
+                            "mov_description": year_resolver.resolve_string(item.mov_description)
+                            if year_resolver
+                            else item.mov_description,
                             "required": item.required,
                             "requires_document_count": item.requires_document_count,
                             "display_order": item.display_order,
                             "option_group": item.option_group,
-                            "field_notes": item.field_notes,
+                            # Resolve year placeholders in field_notes
+                            "field_notes": year_resolver.resolve_dict(item.field_notes)
+                            if year_resolver
+                            else item.field_notes,
                         }
                         for item in sorted(
                             response.indicator.checklist_items,

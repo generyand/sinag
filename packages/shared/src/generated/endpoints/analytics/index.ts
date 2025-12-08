@@ -45,6 +45,9 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 - Barangay rankings by compliance score
 - Historical trends across cycles
 
+**Filtering:**
+- `year`: Filter by assessment year (e.g., 2024, 2025). Defaults to active year.
+
 **Access:** Requires MLGOO_DILG role.
  * @summary Get Dashboard KPIs
  */
@@ -62,8 +65,12 @@ export const getAnalyticsDashboard = (
     }
   
 
+
+
 export const getGetAnalyticsDashboardQueryKey = (params?: GetAnalyticsDashboardParams,) => {
-    return [`/api/v1/analytics/dashboard`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/analytics/dashboard`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -100,12 +107,13 @@ export function useGetAnalyticsDashboard<TData = Awaited<ReturnType<typeof getAn
 
   const queryOptions = getGetAnalyticsDashboardQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -119,7 +127,7 @@ export function useGetAnalyticsDashboard<TData = Awaited<ReturnType<typeof getAn
 - Report metadata (generation timestamp, applied filters)
 
 **Filters:**
-- `cycle_id`: Filter by assessment cycle
+- `year`: Filter by assessment year (e.g., 2024, 2025)
 - `start_date`, `end_date`: Filter by date range
 - `governance_area`: Filter by governance area codes (can specify multiple)
 - `barangay_id`: Filter by barangay IDs (can specify multiple)
@@ -149,8 +157,12 @@ export const getAnalyticsReports = (
     }
   
 
+
+
 export const getGetAnalyticsReportsQueryKey = (params?: GetAnalyticsReportsParams,) => {
-    return [`/api/v1/analytics/reports`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/analytics/reports`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -187,12 +199,13 @@ export function useGetAnalyticsReports<TData = Awaited<ReturnType<typeof getAnal
 
   const queryOptions = getGetAnalyticsReportsQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 

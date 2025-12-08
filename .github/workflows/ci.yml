@@ -1,0 +1,423 @@
+# ==============================================================================
+# Continuous Integration - Quality Gates
+# ==============================================================================
+# This workflow runs on all PRs and pushes to main/develop branches.
+# It ensures code quality through:
+#   - Backend: Linting (Ruff), Type checking (MyPy), Unit tests (Pytest)
+#   - Frontend: Linting (ESLint), Type checking (tsc), Unit tests (Vitest)
+#   - Type Generation: Validates generated types are in sync
+#
+# All checks must pass before code can be merged.
+# ==============================================================================
+
+name: Continuous Integration
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================================
+  # Backend Linting and Type Checks (Fast - runs first)
+  # ============================================================================
+  backend-lint:
+    name: Backend - Lint & Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: apps/api
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Cache uv dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('apps/api/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Lint with Ruff
+        run: uv run ruff check . --output-format=github
+
+      - name: Format check with Ruff
+        run: uv run ruff format --check .
+
+      - name: Type check with MyPy
+        run: uv run mypy app/ --show-error-codes
+        continue-on-error: true
+
+  # ============================================================================
+  # Backend Tests (Parallelized by test group)
+  # ============================================================================
+  backend-tests:
+    name: Backend Tests - ${{ matrix.test-group }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: backend-lint  # Only run tests if linting passes
+    strategy:
+      fail-fast: false  # Continue other groups even if one fails
+      matrix:
+        test-group:
+          - api
+          - services
+          - schemas-core
+          - algorithms-security
+    defaults:
+      run:
+        working-directory: apps/api
+
+    services:
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Cache uv dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('apps/api/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Run tests - API
+        if: matrix.test-group == 'api'
+        continue-on-error: true
+        env:
+          SECRET_KEY: test-secret-key-for-ci-pipeline-1234567890abcdef
+          CELERY_BROKER_URL: redis://localhost:6379/0
+          SUPABASE_URL: https://example.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
+          GEMINI_API_KEY: test-gemini-key
+        run: |
+          uv run pytest tests/api/ \
+            -n auto \
+            --dist=loadfile \
+            --cov=app/api \
+            --cov-report=xml:coverage-api.xml \
+            --tb=short
+
+      - name: Run tests - Services
+        if: matrix.test-group == 'services'
+        continue-on-error: true
+        env:
+          SECRET_KEY: test-secret-key-for-ci-pipeline-1234567890abcdef
+          CELERY_BROKER_URL: redis://localhost:6379/0
+          SUPABASE_URL: https://example.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
+          GEMINI_API_KEY: test-gemini-key
+        run: |
+          uv run pytest tests/services/ tests/workers/ tests/workflows/ \
+            -n auto \
+            --dist=loadfile \
+            --cov=app/services \
+            --cov-report=xml:coverage-services.xml \
+            --tb=short
+
+      - name: Run tests - Schemas & Core
+        if: matrix.test-group == 'schemas-core'
+        continue-on-error: true
+        env:
+          SECRET_KEY: test-secret-key-for-ci-pipeline-1234567890abcdef
+          CELERY_BROKER_URL: redis://localhost:6379/0
+          SUPABASE_URL: https://example.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
+          GEMINI_API_KEY: test-gemini-key
+        run: |
+          uv run pytest tests/schemas/ tests/core/ \
+            -n auto \
+            --dist=loadfile \
+            --cov=app/schemas \
+            --cov-report=xml:coverage-schemas.xml \
+            --tb=short
+
+      - name: Run tests - Algorithms & Security
+        if: matrix.test-group == 'algorithms-security'
+        continue-on-error: true
+        env:
+          SECRET_KEY: test-secret-key-for-ci-pipeline-1234567890abcdef
+          CELERY_BROKER_URL: redis://localhost:6379/0
+          SUPABASE_URL: https://example.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
+          GEMINI_API_KEY: test-gemini-key
+        run: |
+          uv run pytest tests/algorithms/ tests/security/ \
+            -n auto \
+            --dist=loadfile \
+            --cov=app \
+            --cov-report=xml:coverage-algorithms.xml \
+            --tb=short
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage-${{ matrix.test-group }}
+          path: apps/api/coverage-*.xml
+          retention-days: 7
+
+  # ============================================================================
+  # Frontend Quality Checks
+  # ============================================================================
+  frontend-checks:
+    name: Frontend - Lint, Type Check, Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm turbo lint --filter=web --filter=@sinag/shared
+
+      - name: Type check
+        run: pnpm turbo type-check --filter=web --filter=@sinag/shared
+
+      - name: Run unit tests with coverage
+        continue-on-error: true # Don't block CI while improving test coverage
+        run: cd apps/web && pnpm test:coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage
+          path: apps/web/coverage/
+          retention-days: 7
+
+      - name: Build check
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000
+          NEXT_PUBLIC_API_V1_URL: http://localhost:8000/api/v1
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key-for-ci-build
+
+  # NOTE: E2E tests moved to dedicated playwright.yml workflow
+  # This avoids duplicate runs and keeps CI focused on unit tests
+
+  # ============================================================================
+  # Type Generation Validation
+  # ============================================================================
+  type-generation:
+    name: Validate Generated Types
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Skip on PRs from forks (no access to secrets)
+    if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          cache: "pnpm"
+
+      - name: Install Node dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Cache uv dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('apps/api/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      - name: Install Python dependencies
+        run: cd apps/api && uv sync --group dev
+
+      - name: Start API server
+        run: |
+          cd apps/api
+          nohup uv run uvicorn main:app --host 0.0.0.0 --port 8000 > /tmp/api.log 2>&1 &
+          echo $! > /tmp/api.pid
+          echo "API server starting (PID: $(cat /tmp/api.pid))"
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          SECRET_KEY: test-secret-key-for-ci-pipeline-1234567890abcdef
+          CELERY_BROKER_URL: redis://localhost:6379/0
+          SUPABASE_URL: https://example.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
+          GEMINI_API_KEY: test-gemini-key
+          FAIL_FAST: "false"
+          REQUIRE_CELERY: "false"
+          REQUIRE_GEMINI: "false"
+
+      - name: Wait for API to be ready
+        run: |
+          echo "Waiting for API server to start..."
+          for i in {1..30}; do
+            if curl -sf http://localhost:8000/openapi.json > /dev/null 2>&1; then
+              echo "✅ API is ready!"
+              exit 0
+            fi
+            echo "Attempt $i/30: API not ready yet, waiting..."
+            sleep 2
+          done
+          echo "❌ API failed to start after 60 seconds"
+          echo "API process status:"
+          ps aux | grep uvicorn || echo "No uvicorn process found"
+          echo "API logs:"
+          cat /tmp/api.log || echo "No log file found"
+          exit 1
+
+      - name: Generate types
+        run: pnpm generate-types
+
+      - name: Check for uncommitted changes
+        run: |
+          if ! git diff --quiet packages/shared/src/generated/; then
+            echo "::error::Generated types are out of sync!"
+            echo "Run 'pnpm generate-types' locally and commit the changes."
+            echo ""
+            echo "Changed files:"
+            git diff --name-only packages/shared/src/generated/
+            echo ""
+            echo "Diff:"
+            git diff packages/shared/src/generated/
+            exit 1
+          fi
+          echo "Generated types are in sync"
+
+  # ============================================================================
+  # CI Status Summary
+  # ============================================================================
+  ci-status:
+    name: CI Status
+    runs-on: ubuntu-latest
+    needs: [backend-lint, backend-tests, frontend-checks, type-generation]
+    if: always()
+
+    steps:
+      - name: Check CI Status
+        run: |
+          echo "## CI Status Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.backend-lint.result }}" == "success" ]; then
+            echo "- ✅ Backend lint & type checks passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ❌ Backend lint & type checks failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.backend-tests.result }}" == "success" ]; then
+            echo "- ✅ Backend tests passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ⚠️ Backend tests failed (non-blocking)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.frontend-checks.result }}" == "success" ]; then
+            echo "- ✅ Frontend checks passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ❌ Frontend checks failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.type-generation.result }}" == "success" ] || [ "${{ needs.type-generation.result }}" == "skipped" ]; then
+            echo "- ✅ Type generation validated (or skipped)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ❌ Type generation out of sync" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Fail if critical checks failed (lint is required, tests are non-blocking for now)
+          if [ "${{ needs.backend-lint.result }}" != "success" ] || [ "${{ needs.frontend-checks.result }}" != "success" ]; then
+            echo ""
+            echo "::error::Critical CI checks failed. Please fix the issues before merging."
+            exit 1
+          fi

@@ -2,7 +2,7 @@
 # Endpoints for assessor-specific functionality (secure queue, validation actions)
 
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
 
 from app.api import deps
@@ -26,19 +26,34 @@ router = APIRouter()
 
 @router.get("/queue", response_model=list[AssessorQueueItem], tags=["assessor"])
 async def get_assessor_queue(
+    year: int | None = Query(
+        None,
+        description="Filter by assessment year (e.g., 2024, 2025). Defaults to active year.",
+        ge=2020,
+        le=2100,
+    ),
     db: Session = Depends(deps.get_db),
     current_assessor: User = Depends(deps.get_current_area_assessor_user),
 ):
     """
     Get the assessor's secure submissions queue.
 
-    Returns a list of submissions filtered by the assessor's governance area.
+    Returns a list of submissions filtered by the assessor's governance area
+    and optionally by assessment year.
     """
-    return assessor_service.get_assessor_queue(db=db, assessor=current_assessor)
+    return assessor_service.get_assessor_queue(
+        db=db, assessor=current_assessor, assessment_year=year
+    )
 
 
 @router.get("/stats", tags=["assessor"])
 async def get_assessor_stats(
+    year: int | None = Query(
+        None,
+        description="Filter by assessment year (e.g., 2024, 2025). Defaults to active year.",
+        ge=2020,
+        le=2100,
+    ),
     db: Session = Depends(deps.get_db),
     current_assessor: User = Depends(deps.get_current_area_assessor_user),
 ):
@@ -56,7 +71,7 @@ async def get_assessor_stats(
     # For validators, count completed assessments
     if current_assessor.validator_area_id is not None:
         validated_count = assessor_service.get_validator_completed_count(
-            db=db, validator=current_assessor
+            db=db, validator=current_assessor, assessment_year=year
         )
 
     return {

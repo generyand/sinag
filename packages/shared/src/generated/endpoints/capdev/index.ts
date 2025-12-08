@@ -56,8 +56,12 @@ export const getCapdevAssessments$AssessmentId = (
     }
   
 
-export const getGetCapdevAssessmentsAssessmentIdQueryKey = (assessmentId: number,) => {
-    return [`/api/v1/capdev/assessments/${assessmentId}`] as const;
+
+
+export const getGetCapdevAssessmentsAssessmentIdQueryKey = (assessmentId?: number,) => {
+    return [
+    `/api/v1/capdev/assessments/${assessmentId}`
+    ] as const;
     }
 
     
@@ -94,12 +98,13 @@ export function useGetCapdevAssessmentsAssessmentId<TData = Awaited<ReturnType<t
 
   const queryOptions = getGetCapdevAssessmentsAssessmentIdQueryOptions(assessmentId,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -121,9 +126,13 @@ export const getCapdevAssessments$AssessmentIdLanguage$Language = (
     }
   
 
-export const getGetCapdevAssessmentsAssessmentIdLanguageLanguageQueryKey = (assessmentId: number,
-    language: string,) => {
-    return [`/api/v1/capdev/assessments/${assessmentId}/language/${language}`] as const;
+
+
+export const getGetCapdevAssessmentsAssessmentIdLanguageLanguageQueryKey = (assessmentId?: number,
+    language?: string,) => {
+    return [
+    `/api/v1/capdev/assessments/${assessmentId}/language/${language}`
+    ] as const;
     }
 
     
@@ -162,12 +171,13 @@ export function useGetCapdevAssessmentsAssessmentIdLanguageLanguage<TData = Awai
 
   const queryOptions = getGetCapdevAssessmentsAssessmentIdLanguageLanguageQueryOptions(assessmentId,language,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -188,8 +198,12 @@ export const getCapdevAssessments$AssessmentIdStatus = (
     }
   
 
-export const getGetCapdevAssessmentsAssessmentIdStatusQueryKey = (assessmentId: number,) => {
-    return [`/api/v1/capdev/assessments/${assessmentId}/status`] as const;
+
+
+export const getGetCapdevAssessmentsAssessmentIdStatusQueryKey = (assessmentId?: number,) => {
+    return [
+    `/api/v1/capdev/assessments/${assessmentId}/status`
+    ] as const;
     }
 
     
@@ -226,12 +240,13 @@ export function useGetCapdevAssessmentsAssessmentIdStatus<TData = Awaited<Return
 
   const queryOptions = getGetCapdevAssessmentsAssessmentIdStatusQueryOptions(assessmentId,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -298,7 +313,7 @@ export const usePostCapdevAssessmentsAssessmentIdRegenerate = <TError = HTTPVali
 
       const mutationOptions = getPostCapdevAssessmentsAssessmentIdRegenerateMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Generate CapDev insights in a new language for an assessment. MLGOO only.
@@ -362,6 +377,6 @@ export const usePostCapdevAssessmentsAssessmentIdGenerateLanguageLanguage = <TEr
 
       const mutationOptions = getPostCapdevAssessmentsAssessmentIdGenerateLanguageLanguageMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     

@@ -52,7 +52,7 @@ class TestSubmissionValidationService:
                     {
                         "field_id": "field1",
                         "label": "Field 1",
-                        "field_type": "text",
+                        "field_type": "text_input",
                         "required": True,
                     }
                 ]
@@ -117,7 +117,7 @@ class TestSubmissionValidationService:
                     {
                         "field_id": "required_field",
                         "label": "Required Field",
-                        "field_type": "text",
+                        "field_type": "text_input",
                         "required": True,
                     }
                 ]
@@ -274,6 +274,7 @@ class TestSubmissionValidationService:
             assessment_id=assessment.id,
             indicator_id=indicator.id,
             uploaded_by=user.id,
+            field_id="file_field",  # Must match field_id in form_schema
             file_name="test.pdf",
             file_url="https://example.com/test.pdf",
             file_type="application/pdf",
@@ -328,7 +329,7 @@ class TestSubmissionValidationService:
                     {
                         "field_id": "required_text",
                         "label": "Required Text",
-                        "field_type": "text",
+                        "field_type": "text_input",
                         "required": True,
                     }
                 ]
@@ -380,7 +381,11 @@ class TestSubmissionValidationService:
         )
 
         assert result.is_valid is False
-        assert len(result.incomplete_indicators) == 1
+        # Both indicators are incomplete: one missing text input, one missing file upload
+        # The file_upload indicator is also counted as incomplete since no MOV was uploaded
+        assert len(result.incomplete_indicators) == 2
+        assert "Incomplete Indicator" in result.incomplete_indicators
+        assert "Missing MOV Indicator" in result.incomplete_indicators
         assert len(result.missing_movs) == 1
         assert "incomplete" in result.error_message.lower()
         assert "file upload" in result.error_message.lower()

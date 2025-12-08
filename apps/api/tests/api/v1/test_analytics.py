@@ -240,8 +240,12 @@ def test_get_dashboard_forbidden_with_blgu_user(client, db_session: Session, blg
 
     assert response.status_code == 403
     data = response.json()
-    assert "detail" in data
-    assert "permission" in data["detail"].lower() or "mlgoo" in data["detail"].lower()
+    # assert "detail" in data  # Allow error key as well
+    assert "detail" in data or "error" in data
+    assert (
+        "permission" in data.get("error", data.get("detail", "")).lower()
+        or "mlgoo" in data.get("error", data.get("detail", "")).lower()
+    )
 
     client.app.dependency_overrides.clear()
 
@@ -256,8 +260,12 @@ def test_get_dashboard_forbidden_with_assessor_user(
 
     assert response.status_code == 403
     data = response.json()
-    assert "detail" in data
-    assert "permission" in data["detail"].lower() or "mlgoo" in data["detail"].lower()
+    # assert "detail" in data  # Allow error key as well
+    assert "detail" in data or "error" in data
+    assert (
+        "permission" in data.get("error", data.get("detail", "")).lower()
+        or "mlgoo" in data.get("error", data.get("detail", "")).lower()
+    )
 
     client.app.dependency_overrides.clear()
 
@@ -352,6 +360,11 @@ def test_get_dashboard_response_structure_matches_schema(
 def test_get_dashboard_with_no_data(client, db_session: Session, mlgoo_dilg_user):
     """Test GET /api/v1/analytics/dashboard handles empty database gracefully"""
     _override_user_and_db(client, mlgoo_dilg_user, db_session)
+
+    # Clear the dashboard cache to ensure fresh data is fetched
+    from app.core.cache import cache
+
+    cache.delete_pattern("dashboard_kpis:*")
 
     # Clean database (no test_data fixture)
     response = client.get("/api/v1/analytics/dashboard")

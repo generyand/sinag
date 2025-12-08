@@ -12,10 +12,8 @@ import {
   AlertCircle,
   Loader2,
   RotateCcw,
-  Lightbulb,
   File,
   ExternalLink,
-  Download,
   X,
   Eye,
 } from "lucide-react";
@@ -147,7 +145,8 @@ export default function SubmissionDetailsPage() {
       router.push("/mlgoo/submissions");
     } catch (err: any) {
       toast.dismiss("approve-toast");
-      const errorMessage = err?.response?.data?.detail || err?.message || "Failed to approve assessment";
+      const errorMessage =
+        err?.response?.data?.detail || err?.message || "Failed to approve assessment";
       toast.error(`Approval failed: ${errorMessage}`, { duration: 6000 });
     }
   };
@@ -175,9 +174,12 @@ export default function SubmissionDetailsPage() {
       });
 
       toast.dismiss("recalibrate-toast");
-      toast.success("Recalibration requested! The BLGU has been notified and given a 3-day grace period.", {
-        duration: 6000,
-      });
+      toast.success(
+        "Recalibration requested! The BLGU has been notified and given a 3-day grace period.",
+        {
+          duration: 6000,
+        }
+      );
 
       // Invalidate queries to refresh data
       await queryClient.invalidateQueries();
@@ -186,16 +188,15 @@ export default function SubmissionDetailsPage() {
       router.push("/mlgoo/submissions");
     } catch (err: any) {
       toast.dismiss("recalibrate-toast");
-      const errorMessage = err?.response?.data?.detail || err?.message || "Failed to request recalibration";
+      const errorMessage =
+        err?.response?.data?.detail || err?.message || "Failed to request recalibration";
       toast.error(`Recalibration request failed: ${errorMessage}`, { duration: 6000 });
     }
   };
 
   const toggleIndicatorSelection = (indicatorId: number) => {
     setSelectedIndicators((prev) =>
-      prev.includes(indicatorId)
-        ? prev.filter((id) => id !== indicatorId)
-        : [...prev, indicatorId]
+      prev.includes(indicatorId) ? prev.filter((id) => id !== indicatorId) : [...prev, indicatorId]
     );
   };
 
@@ -265,7 +266,8 @@ export default function SubmissionDetailsPage() {
       setValidationUpdates({});
     } catch (err: any) {
       toast.dismiss("save-validation-toast");
-      const errorMessage = err?.response?.data?.detail || err?.message || "Failed to save validation updates";
+      const errorMessage =
+        err?.response?.data?.detail || err?.message || "Failed to save validation updates";
       toast.error(`Save failed: ${errorMessage}`, { duration: 6000 });
     }
   };
@@ -304,14 +306,14 @@ export default function SubmissionDetailsPage() {
     const errorTitle = isForbidden
       ? "Access Denied"
       : isUnauthorized
-      ? "Authentication Required"
-      : "Failed to load assessment";
+        ? "Authentication Required"
+        : "Failed to load assessment";
 
     const errorMessage = isForbidden
       ? "You need MLGOO/DILG admin privileges to access this page. Please log in with an admin account (e.g., admin@sinag.com)."
       : isUnauthorized
-      ? "Please log in to access this page."
-      : (error as any)?.message || "Please try again later.";
+        ? "Please log in to access this page."
+        : (error as any)?.message || "Please try again later.";
 
     return (
       <div className="min-h-screen bg-[var(--background)]">
@@ -324,9 +326,13 @@ export default function SubmissionDetailsPage() {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Submissions
           </Button>
-          <Card className={`${isForbidden ? "bg-yellow-50 border-yellow-200" : "bg-red-50 border-red-200"}`}>
+          <Card
+            className={`${isForbidden ? "bg-yellow-50 border-yellow-200" : "bg-red-50 border-red-200"}`}
+          >
             <CardContent className="pt-6">
-              <div className={`flex items-center gap-3 ${isForbidden ? "text-yellow-700" : "text-red-700"}`}>
+              <div
+                className={`flex items-center gap-3 ${isForbidden ? "text-yellow-700" : "text-red-700"}`}
+              >
                 <AlertCircle className="h-6 w-6" />
                 <div>
                   <p className="font-semibold">{errorTitle}</p>
@@ -348,13 +354,24 @@ export default function SubmissionDetailsPage() {
   // Calculate totals
   const totalPass = governanceAreas.reduce((sum: number, ga: any) => sum + (ga.pass_count || 0), 0);
   const totalFail = governanceAreas.reduce((sum: number, ga: any) => sum + (ga.fail_count || 0), 0);
-  const totalConditional = governanceAreas.reduce((sum: number, ga: any) => sum + (ga.conditional_count || 0), 0);
+  const totalConditional = governanceAreas.reduce(
+    (sum: number, ga: any) => sum + (ga.conditional_count || 0),
+    0
+  );
   const totalIndicators = totalPass + totalFail + totalConditional;
-  const overallScore = assessment.overall_score ?? (totalIndicators > 0 ? Math.round((totalPass / totalIndicators) * 100) : 0);
+  const overallScore =
+    assessment.overall_score ??
+    (totalIndicators > 0 ? Math.round((totalPass / totalIndicators) * 100) : 0);
 
   // Get all failed/conditional indicators for recalibration selection
   // Note: validation_status from backend is uppercase (PASS, FAIL, CONDITIONAL)
-  const failedIndicators: { id: number; name: string; code: string; areaName: string; status: string }[] = [];
+  const failedIndicators: {
+    id: number;
+    name: string;
+    code: string;
+    areaName: string;
+    status: string;
+  }[] = [];
   governanceAreas.forEach((ga: any) => {
     (ga.indicators || []).forEach((ind: any) => {
       const statusUpper = ind.validation_status?.toUpperCase();
@@ -378,7 +395,13 @@ export default function SubmissionDetailsPage() {
     indicator_code: string;
     areaName: string;
     validation_status: string;
-    mov_files: { id: number; file_name: string; file_url: string; file_type: string; file_size: number }[];
+    mov_files: {
+      id: number;
+      file_name: string;
+      file_url: string;
+      file_type: string;
+      file_size: number;
+    }[];
   }[] = [];
   governanceAreas.forEach((ga: any) => {
     (ga.indicators || []).forEach((ind: any) => {
@@ -396,7 +419,8 @@ export default function SubmissionDetailsPage() {
   });
 
   // Check if this is a resubmission after recalibration (has recalibration targets but not in active recalibration)
-  const hasResubmittedRecalibration = recalibrationTargetIndicators.length > 0 &&
+  const hasResubmittedRecalibration =
+    recalibrationTargetIndicators.length > 0 &&
     !assessment.is_mlgoo_recalibration &&
     isAwaitingApproval;
 
@@ -432,8 +456,8 @@ export default function SubmissionDetailsPage() {
                   isAwaitingApproval
                     ? "bg-yellow-100 text-yellow-800"
                     : assessment.status === "COMPLETED"
-                    ? "bg-green-100 text-green-800"
-                    : "bg-gray-100 text-gray-800"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-gray-100 text-gray-800"
                 }`}
               >
                 {isAwaitingApproval ? (
@@ -510,8 +534,8 @@ export default function SubmissionDetailsPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm text-orange-700">
-                  Select the indicators you believe were unfairly marked as Fail or Conditional.
-                  The BLGU will be given a 3-day grace period to provide additional documentation.
+                  Select the indicators you believe were unfairly marked as Fail or Conditional. The
+                  BLGU will be given a 3-day grace period to provide additional documentation.
                 </p>
 
                 <div className="bg-white rounded-sm border border-orange-200 p-4 max-h-64 overflow-y-auto">
@@ -565,11 +589,7 @@ export default function SubmissionDetailsPage() {
                 </div>
 
                 <div className="flex gap-3 pt-2">
-                  <Button
-                    variant="outline"
-                    onClick={cancelRecalibrationMode}
-                    className="flex-1"
-                  >
+                  <Button variant="outline" onClick={cancelRecalibrationMode} className="flex-1">
                     Cancel
                   </Button>
                   <Button
@@ -609,8 +629,8 @@ export default function SubmissionDetailsPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm text-purple-700">
-                  Review the BLGU&apos;s updated submissions for the recalibration targets.
-                  Update the validation status for each indicator, then approve the assessment.
+                  Review the BLGU&apos;s updated submissions for the recalibration targets. Update
+                  the validation status for each indicator, then approve the assessment.
                 </p>
 
                 <div className="bg-white rounded-sm border border-purple-200 p-4 space-y-4">
@@ -635,8 +655,8 @@ export default function SubmissionDetailsPage() {
                                   ind.validation_status?.toUpperCase() === "PASS"
                                     ? "bg-green-100 text-green-700"
                                     : ind.validation_status?.toUpperCase() === "FAIL"
-                                    ? "bg-red-100 text-red-700"
-                                    : "bg-yellow-100 text-yellow-700"
+                                      ? "bg-red-100 text-red-700"
+                                      : "bg-yellow-100 text-yellow-700"
                                 }`}
                               >
                                 Current: {ind.validation_status}
@@ -652,8 +672,12 @@ export default function SubmissionDetailsPage() {
                               Update Status
                             </label>
                             <Select
-                              value={validationUpdates[ind.indicator_id]?.status || ind.validation_status}
-                              onValueChange={(value) => updateIndicatorStatus(ind.indicator_id, value)}
+                              value={
+                                validationUpdates[ind.indicator_id]?.status || ind.validation_status
+                              }
+                              onValueChange={(value) =>
+                                updateIndicatorStatus(ind.indicator_id, value)
+                              }
                             >
                               <SelectTrigger className="h-10 bg-white border-purple-300 focus:ring-purple-500">
                                 <SelectValue placeholder="Select status" />
@@ -693,7 +717,8 @@ export default function SubmissionDetailsPage() {
                                 NEW
                               </div>
                               <p className="text-sm font-medium text-green-800">
-                                {ind.mov_files.length} file{ind.mov_files.length > 1 ? 's' : ''} uploaded after recalibration
+                                {ind.mov_files.length} file{ind.mov_files.length > 1 ? "s" : ""}{" "}
+                                uploaded after recalibration
                               </p>
                             </div>
                             <div className="space-y-2">
@@ -707,7 +732,9 @@ export default function SubmissionDetailsPage() {
                                       <FileText className="h-5 w-5 text-green-600" />
                                     </div>
                                     <div className="min-w-0">
-                                      <p className="text-sm font-medium text-gray-900 truncate">{file.file_name}</p>
+                                      <p className="text-sm font-medium text-gray-900 truncate">
+                                        {file.file_name}
+                                      </p>
                                       <p className="text-xs text-gray-500">
                                         {Math.round(file.file_size / 1024)} KB
                                       </p>
@@ -716,11 +743,13 @@ export default function SubmissionDetailsPage() {
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => setPreviewFile({
-                                      file_name: file.file_name,
-                                      file_url: file.file_url,
-                                      file_type: file.file_type,
-                                    })}
+                                    onClick={() =>
+                                      setPreviewFile({
+                                        file_name: file.file_name,
+                                        file_url: file.file_url,
+                                        file_type: file.file_type,
+                                      })
+                                    }
                                     className="border-green-300 text-green-700 hover:bg-green-50 hover:text-green-800"
                                   >
                                     <Eye className="h-4 w-4 mr-1" />
@@ -735,9 +764,12 @@ export default function SubmissionDetailsPage() {
                             <div className="flex items-start gap-3">
                               <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
                               <div>
-                                <p className="text-sm font-medium text-amber-800">No new files uploaded</p>
+                                <p className="text-sm font-medium text-amber-800">
+                                  No new files uploaded
+                                </p>
                                 <p className="text-xs text-amber-600 mt-0.5">
-                                  BLGU has not uploaded new MOV files since recalibration was requested
+                                  BLGU has not uploaded new MOV files since recalibration was
+                                  requested
                                 </p>
                               </div>
                             </div>
@@ -751,7 +783,9 @@ export default function SubmissionDetailsPage() {
                           </label>
                           <Textarea
                             value={validationUpdates[ind.indicator_id]?.remarks || ""}
-                            onChange={(e) => updateIndicatorRemarks(ind.indicator_id, e.target.value)}
+                            onChange={(e) =>
+                              updateIndicatorRemarks(ind.indicator_id, e.target.value)
+                            }
                             placeholder="Add remarks explaining your decision..."
                             className="min-h-20 text-sm border-gray-200 focus:border-purple-300 focus:ring-purple-200"
                           />
@@ -762,11 +796,7 @@ export default function SubmissionDetailsPage() {
                 </div>
 
                 <div className="flex gap-3 pt-2">
-                  <Button
-                    variant="outline"
-                    onClick={cancelReviewMode}
-                    className="flex-1"
-                  >
+                  <Button variant="outline" onClick={cancelReviewMode} className="flex-1">
                     Cancel
                   </Button>
                   <Button
@@ -798,8 +828,8 @@ export default function SubmissionDetailsPage() {
                 <div className="flex items-center gap-3 text-purple-700">
                   <AlertCircle className="h-5 w-5" />
                   <p className="text-sm">
-                    Recalibration has already been requested once for this assessment.
-                    Each assessment can only be recalibrated once.
+                    Recalibration has already been requested once for this assessment. Each
+                    assessment can only be recalibrated once.
                   </p>
                 </div>
               </CardContent>
@@ -937,15 +967,21 @@ export default function SubmissionDetailsPage() {
                             indicator.validation_status?.toUpperCase() === "PASS"
                               ? "bg-green-100 text-green-700"
                               : indicator.validation_status?.toUpperCase() === "FAIL"
-                              ? "bg-red-100 text-red-700"
-                              : indicator.validation_status?.toUpperCase() === "CONDITIONAL"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-gray-100 text-gray-700"
+                                ? "bg-red-100 text-red-700"
+                                : indicator.validation_status?.toUpperCase() === "CONDITIONAL"
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : "bg-gray-100 text-gray-700"
                           }`}
                         >
-                          {indicator.validation_status?.toUpperCase() === "PASS" && <CheckCircle className="h-3 w-3" />}
-                          {indicator.validation_status?.toUpperCase() === "FAIL" && <XCircle className="h-3 w-3" />}
-                          {indicator.validation_status?.toUpperCase() === "CONDITIONAL" && <AlertCircle className="h-3 w-3" />}
+                          {indicator.validation_status?.toUpperCase() === "PASS" && (
+                            <CheckCircle className="h-3 w-3" />
+                          )}
+                          {indicator.validation_status?.toUpperCase() === "FAIL" && (
+                            <XCircle className="h-3 w-3" />
+                          )}
+                          {indicator.validation_status?.toUpperCase() === "CONDITIONAL" && (
+                            <AlertCircle className="h-3 w-3" />
+                          )}
                           {indicator.validation_status || "Pending"}
                         </span>
                       </div>
@@ -969,7 +1005,9 @@ export default function SubmissionDetailsPage() {
                 <div className="space-y-3">
                   <div>
                     <p className="text-sm font-medium text-purple-700">MLGOO Comments:</p>
-                    <p className="text-sm text-purple-900 mt-1">{assessment.mlgoo_recalibration_comments}</p>
+                    <p className="text-sm text-purple-900 mt-1">
+                      {assessment.mlgoo_recalibration_comments}
+                    </p>
                   </div>
                   {assessment.grace_period_expires_at && (
                     <div>
@@ -992,7 +1030,10 @@ export default function SubmissionDetailsPage() {
                   className="w-8 h-8 rounded-sm flex items-center justify-center"
                   style={{ backgroundColor: "var(--analytics-success-bg)" }}
                 >
-                  <Calendar className="h-5 w-5" style={{ color: "var(--analytics-success-text-light)" }} />
+                  <Calendar
+                    className="h-5 w-5"
+                    style={{ color: "var(--analytics-success-text-light)" }}
+                  />
                 </div>
                 Assessment Timeline
               </CardTitle>
@@ -1057,7 +1098,7 @@ export default function SubmissionDetailsPage() {
               <div>
                 <h2 className="text-lg font-semibold">{previewFile.file_name}</h2>
                 <p className="text-sm text-muted-foreground">
-                  {previewFile.file_type === 'application/pdf' ? 'PDF Document' : 'Image File'}
+                  {previewFile.file_type === "application/pdf" ? "PDF Document" : "Image File"}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -1069,11 +1110,7 @@ export default function SubmissionDetailsPage() {
                   <ExternalLink className="h-4 w-4 mr-1" />
                   Open in New Tab
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setPreviewFile(null)}
-                >
+                <Button variant="ghost" size="sm" onClick={() => setPreviewFile(null)}>
                   <X className="h-5 w-5" />
                 </Button>
               </div>
@@ -1081,13 +1118,13 @@ export default function SubmissionDetailsPage() {
 
             {/* Content */}
             <div className="flex-1 p-4 overflow-auto">
-              {previewFile.file_type === 'application/pdf' ? (
+              {previewFile.file_type === "application/pdf" ? (
                 <iframe
                   src={previewFile.file_url}
                   className="w-full h-full rounded border border-gray-200"
                   title={previewFile.file_name}
                 />
-              ) : previewFile.file_type?.startsWith('image/') ? (
+              ) : previewFile.file_type?.startsWith("image/") ? (
                 <div className="flex items-center justify-center h-full">
                   <img
                     src={previewFile.file_url}

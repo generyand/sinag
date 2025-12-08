@@ -52,7 +52,10 @@ class TestMaliciousFileUploadSecurity:
         # Should be rejected
         assert response.status_code == 400
         data = response.json()
-        assert "executable" in data["detail"].lower() or "security" in data["detail"].lower()
+        assert (
+            "executable" in data.get("error", data.get("detail", "")).lower()
+            or "security" in data.get("error", data.get("detail", "")).lower()
+        )
 
     def test_reject_elf_executable_content(
         self,
@@ -79,7 +82,10 @@ class TestMaliciousFileUploadSecurity:
 
         assert response.status_code == 400
         data = response.json()
-        assert "executable" in data["detail"].lower() or "security" in data["detail"].lower()
+        assert (
+            "executable" in data.get("error", data.get("detail", "")).lower()
+            or "security" in data.get("error", data.get("detail", "")).lower()
+        )
 
     def test_sanitize_filename_path_traversal(
         self,
@@ -180,7 +186,10 @@ class TestMaliciousFileUploadSecurity:
 
         assert response.status_code == 400
         data = response.json()
-        assert "file type" in data["detail"].lower() or "not supported" in data["detail"].lower()
+        assert (
+            "file type" in data.get("error", data.get("detail", "")).lower()
+            or "not supported" in data.get("error", data.get("detail", "")).lower()
+        )
 
     def test_reject_html_file_with_javascript(
         self,
@@ -239,7 +248,10 @@ class TestMaliciousFileUploadSecurity:
 
         assert response.status_code == 400
         data = response.json()
-        assert "size" in data["detail"].lower() or "large" in data["detail"].lower()
+        assert (
+            "size" in data.get("error", data.get("detail", "")).lower()
+            or "large" in data.get("error", data.get("detail", "")).lower()
+        )
 
     def test_extension_mismatch_detection(
         self,
@@ -268,7 +280,10 @@ class TestMaliciousFileUploadSecurity:
 
         assert response.status_code == 400
         data = response.json()
-        assert "mismatch" in data["detail"].lower() or "content" in data["detail"].lower()
+        assert (
+            "mismatch" in data.get("error", data.get("detail", "")).lower()
+            or "content" in data.get("error", data.get("detail", "")).lower()
+        )
 
     def test_reject_php_file(
         self,
@@ -393,4 +408,7 @@ class TestMaliciousFileUploadSecurity:
         # Should be detected and rejected
         assert response.status_code == 400
         data = response.json()
-        assert "executable" in data["detail"].lower() or "security" in data["detail"].lower()
+        assert (
+            "executable" in data.get("error", data.get("detail", "")).lower()
+            or "security" in data.get("error", data.get("detail", "")).lower()
+        )

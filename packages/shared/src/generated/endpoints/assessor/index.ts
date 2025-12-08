@@ -27,6 +27,8 @@ import type {
   AssessorAnalyticsResponse,
   AssessorQueueItem,
   BodyUploadMovFileForAssessorApiV1AssessorAssessmentResponsesResponseIdMovsUploadPost,
+  GetAssessorQueueParams,
+  GetAssessorStatsParams,
   HTTPValidationError,
   MOVCreate,
   MOVUploadResponse,
@@ -48,37 +50,43 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 /**
  * Get the assessor's secure submissions queue.
 
-Returns a list of submissions filtered by the assessor's governance area.
+Returns a list of submissions filtered by the assessor's governance area
+and optionally by assessment year.
  * @summary Get Assessor Queue
  */
 export const getAssessorQueue = (
-    
+    params?: GetAssessorQueueParams,
  options?: SecondParameter<typeof mutator>,signal?: AbortSignal
 ) => {
       
       
       return mutator<AssessorQueueItem[]>(
-      {url: `/api/v1/assessor/queue`, method: 'GET', signal
+      {url: `/api/v1/assessor/queue`, method: 'GET',
+        params, signal
     },
       options);
     }
   
 
-export const getGetAssessorQueueQueryKey = () => {
-    return [`/api/v1/assessor/queue`] as const;
+
+
+export const getGetAssessorQueueQueryKey = (params?: GetAssessorQueueParams,) => {
+    return [
+    `/api/v1/assessor/queue`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
-export const getGetAssessorQueueQueryOptions = <TData = Awaited<ReturnType<typeof getAssessorQueue>>, TError = unknown>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorQueue>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export const getGetAssessorQueueQueryOptions = <TData = Awaited<ReturnType<typeof getAssessorQueue>>, TError = HTTPValidationError>(params?: GetAssessorQueueParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorQueue>>, TError, TData>, request?: SecondParameter<typeof mutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAssessorQueueQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetAssessorQueueQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessorQueue>>> = ({ signal }) => getAssessorQueue(requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessorQueue>>> = ({ signal }) => getAssessorQueue(params, requestOptions, signal);
 
       
 
@@ -88,26 +96,27 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetAssessorQueueQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessorQueue>>>
-export type GetAssessorQueueQueryError = unknown
+export type GetAssessorQueueQueryError = HTTPValidationError
 
 
 /**
  * @summary Get Assessor Queue
  */
 
-export function useGetAssessorQueue<TData = Awaited<ReturnType<typeof getAssessorQueue>>, TError = unknown>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorQueue>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export function useGetAssessorQueue<TData = Awaited<ReturnType<typeof getAssessorQueue>>, TError = HTTPValidationError>(
+ params?: GetAssessorQueueParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorQueue>>, TError, TData>, request?: SecondParameter<typeof mutator>}
   
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetAssessorQueueQueryOptions(options)
+  const queryOptions = getGetAssessorQueueQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -122,33 +131,38 @@ For assessors, returns:
  * @summary Get Assessor Stats
  */
 export const getAssessorStats = (
-    
+    params?: GetAssessorStatsParams,
  options?: SecondParameter<typeof mutator>,signal?: AbortSignal
 ) => {
       
       
       return mutator<unknown>(
-      {url: `/api/v1/assessor/stats`, method: 'GET', signal
+      {url: `/api/v1/assessor/stats`, method: 'GET',
+        params, signal
     },
       options);
     }
   
 
-export const getGetAssessorStatsQueryKey = () => {
-    return [`/api/v1/assessor/stats`] as const;
+
+
+export const getGetAssessorStatsQueryKey = (params?: GetAssessorStatsParams,) => {
+    return [
+    `/api/v1/assessor/stats`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
-export const getGetAssessorStatsQueryOptions = <TData = Awaited<ReturnType<typeof getAssessorStats>>, TError = unknown>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorStats>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export const getGetAssessorStatsQueryOptions = <TData = Awaited<ReturnType<typeof getAssessorStats>>, TError = HTTPValidationError>(params?: GetAssessorStatsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorStats>>, TError, TData>, request?: SecondParameter<typeof mutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAssessorStatsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetAssessorStatsQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessorStats>>> = ({ signal }) => getAssessorStats(requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessorStats>>> = ({ signal }) => getAssessorStats(params, requestOptions, signal);
 
       
 
@@ -158,26 +172,27 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetAssessorStatsQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessorStats>>>
-export type GetAssessorStatsQueryError = unknown
+export type GetAssessorStatsQueryError = HTTPValidationError
 
 
 /**
  * @summary Get Assessor Stats
  */
 
-export function useGetAssessorStats<TData = Awaited<ReturnType<typeof getAssessorStats>>, TError = unknown>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorStats>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export function useGetAssessorStats<TData = Awaited<ReturnType<typeof getAssessorStats>>, TError = HTTPValidationError>(
+ params?: GetAssessorStatsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorStats>>, TError, TData>, request?: SecondParameter<typeof mutator>}
   
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetAssessorStatsQueryOptions(options)
+  const queryOptions = getGetAssessorStatsQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -254,7 +269,7 @@ export const usePostAssessorAssessmentResponsesResponseIdValidate = <TError = HT
 
       const mutationOptions = getPostAssessorAssessmentResponsesResponseIdValidateMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Upload a MOV (Means of Verification) for an assessment response.
@@ -328,7 +343,7 @@ export const usePostAssessorAssessmentResponsesResponseIdMovs = <TError = HTTPVa
 
       const mutationOptions = getPostAssessorAssessmentResponsesResponseIdMovsMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Upload a MOV file via multipart/form-data for an assessment response.
@@ -417,7 +432,7 @@ export const usePostAssessorAssessmentResponsesResponseIdMovsUpload = <TError = 
 
       const mutationOptions = getPostAssessorAssessmentResponsesResponseIdMovsUploadMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Get detailed assessment data for assessor review.
@@ -447,8 +462,12 @@ export const getAssessorAssessments$AssessmentId = (
     }
   
 
-export const getGetAssessorAssessmentsAssessmentIdQueryKey = (assessmentId: number,) => {
-    return [`/api/v1/assessor/assessments/${assessmentId}`] as const;
+
+
+export const getGetAssessorAssessmentsAssessmentIdQueryKey = (assessmentId?: number,) => {
+    return [
+    `/api/v1/assessor/assessments/${assessmentId}`
+    ] as const;
     }
 
     
@@ -485,12 +504,13 @@ export function useGetAssessorAssessmentsAssessmentId<TData = Awaited<ReturnType
 
   const queryOptions = getGetAssessorAssessmentsAssessmentIdQueryOptions(assessmentId,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -561,7 +581,7 @@ export const usePostAssessorAssessmentsAssessmentIdRework = <TError = HTTPValida
 
       const mutationOptions = getPostAssessorAssessmentsAssessmentIdReworkMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Submit assessment for calibration (Validators only).
@@ -635,7 +655,7 @@ export const usePostAssessorAssessmentsAssessmentIdCalibrate = <TError = HTTPVal
 
       const mutationOptions = getPostAssessorAssessmentsAssessmentIdCalibrateMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Finalize assessment validation, permanently locking it.
@@ -704,7 +724,7 @@ export const usePostAssessorAssessmentsAssessmentIdFinalize = <TError = HTTPVali
 
       const mutationOptions = getPostAssessorAssessmentsAssessmentIdFinalizeMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Manually trigger the classification algorithm for an assessment.
@@ -773,7 +793,7 @@ export const usePostAssessorAssessmentsAssessmentIdClassify = <TError = HTTPVali
 
       const mutationOptions = getPostAssessorAssessmentsAssessmentIdClassifyMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Get analytics data for the assessor's governance area.
@@ -801,8 +821,12 @@ export const getAssessorAnalytics = (
     }
   
 
+
+
 export const getGetAssessorAnalyticsQueryKey = () => {
-    return [`/api/v1/assessor/analytics`] as const;
+    return [
+    `/api/v1/assessor/analytics`
+    ] as const;
     }
 
     
@@ -839,12 +863,13 @@ export function useGetAssessorAnalytics<TData = Awaited<ReturnType<typeof getAss
 
   const queryOptions = getGetAssessorAnalyticsQueryOptions(options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -916,7 +941,7 @@ export const usePostAssessorMovsMovFileIdAnnotations = <TError = HTTPValidationE
 
       const mutationOptions = getPostAssessorMovsMovFileIdAnnotationsMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Get all annotations for a specific MOV file.
@@ -938,8 +963,12 @@ export const getAssessorMovs$MovFileIdAnnotations = (
     }
   
 
-export const getGetAssessorMovsMovFileIdAnnotationsQueryKey = (movFileId: number,) => {
-    return [`/api/v1/assessor/movs/${movFileId}/annotations`] as const;
+
+
+export const getGetAssessorMovsMovFileIdAnnotationsQueryKey = (movFileId?: number,) => {
+    return [
+    `/api/v1/assessor/movs/${movFileId}/annotations`
+    ] as const;
     }
 
     
@@ -976,12 +1005,13 @@ export function useGetAssessorMovsMovFileIdAnnotations<TData = Awaited<ReturnTyp
 
   const queryOptions = getGetAssessorMovsMovFileIdAnnotationsQueryOptions(movFileId,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -1005,8 +1035,12 @@ export const getAssessorAssessments$AssessmentIdAnnotations = (
     }
   
 
-export const getGetAssessorAssessmentsAssessmentIdAnnotationsQueryKey = (assessmentId: number,) => {
-    return [`/api/v1/assessor/assessments/${assessmentId}/annotations`] as const;
+
+
+export const getGetAssessorAssessmentsAssessmentIdAnnotationsQueryKey = (assessmentId?: number,) => {
+    return [
+    `/api/v1/assessor/assessments/${assessmentId}/annotations`
+    ] as const;
     }
 
     
@@ -1043,12 +1077,13 @@ export function useGetAssessorAssessmentsAssessmentIdAnnotations<TData = Awaited
 
   const queryOptions = getGetAssessorAssessmentsAssessmentIdAnnotationsQueryOptions(assessmentId,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -1118,7 +1153,7 @@ export const usePatchAssessorAnnotationsAnnotationId = <TError = HTTPValidationE
 
       const mutationOptions = getPatchAssessorAnnotationsAnnotationIdMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Delete an annotation.
@@ -1183,6 +1218,6 @@ export const useDeleteAssessorAnnotationsAnnotationId = <TError = HTTPValidation
 
       const mutationOptions = getDeleteAssessorAnnotationsAnnotationIdMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     

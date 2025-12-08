@@ -15,17 +15,17 @@ export interface DashboardAnalyticsResponse extends DashboardKPIResponse {
  * - Typed data with defaults for missing fields
  * - Simplified return interface
  *
- * @param cycleId - Optional assessment cycle ID (defaults to latest cycle if not provided)
+ * @param year - Optional assessment year (e.g., 2024, 2025). Defaults to active year if not provided.
  * @returns Object containing data, loading state, error, and refetch function
  */
-export function useDashboardAnalytics(cycleId?: number | null) {
+export function useDashboardAnalytics(year?: number | null) {
   const {
     data,
     isLoading,
     error: queryError,
     refetch,
   } = useGetAnalyticsDashboard({
-    cycle_id: cycleId,
+    year: year ?? undefined,
   });
 
   const rawData = data as DashboardAnalyticsResponse | undefined;
@@ -95,7 +95,7 @@ function formatErrorMessage(error: unknown): string {
     }
 
     if (axiosError.response?.status === 404) {
-      return 'Analytics data not found for the selected cycle.';
+      return 'Analytics data not found for the selected year.';
     }
 
     if (axiosError.response?.status === 500) {

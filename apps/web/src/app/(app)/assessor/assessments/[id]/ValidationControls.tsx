@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { useAssessorMOVUploadMutation, useAssessorValidationMutation } from "@/hooks/useAssessor";
+import { showError, showSuccess, showWarning } from "@/lib/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { MOVCreate, ValidationStatus } from "@sinag/shared";
 import { AlertTriangle, CheckCircle, Eye, FileText, MessageSquare, Save, Upload, X, XCircle } from "lucide-react";
@@ -50,13 +51,13 @@ export function ValidationControls({
 
   const handleSave = async () => {
     if (!validationStatus) {
-      alert("Please select a validation status");
+      showWarning("Please select a validation status");
       return;
     }
 
     // Validate that public comment is provided for Conditional status
     if (validationStatus === "Conditional" && !publicComment.trim()) {
-      alert("Public comment is required for Conditional status");
+      showWarning("Public comment is required for Conditional status");
       return;
     }
 
@@ -71,20 +72,22 @@ export function ValidationControls({
       });
 
       // Invalidate the assessment details query to refresh the data
-      queryClient.invalidateQueries({ 
-        queryKey: ["assessor", "assessment", assessmentId] 
+      queryClient.invalidateQueries({
+        queryKey: ["assessor", "assessment", assessmentId]
       });
 
-      alert("Validation saved successfully!");
+      showSuccess("Validation saved successfully!");
     } catch (error) {
       console.error("Validation save failed:", error);
-      alert("Failed to save validation. Please try again.");
+      showError("Failed to save validation", {
+        description: "Please try again.",
+      });
     }
   };
 
   const handleSaveAsDraft = async () => {
     if (!validationStatus) {
-      alert("Please select a validation status");
+      showWarning("Please select a validation status");
       return;
     }
 
@@ -99,14 +102,16 @@ export function ValidationControls({
       });
 
       // Invalidate the assessment details query to refresh the data
-      queryClient.invalidateQueries({ 
-        queryKey: ["assessor", "assessment", assessmentId] 
+      queryClient.invalidateQueries({
+        queryKey: ["assessor", "assessment", assessmentId]
       });
 
-      alert("Draft saved successfully!");
+      showSuccess("Draft saved successfully!");
     } catch (error) {
       console.error("Draft save failed:", error);
-      alert("Failed to save draft. Please try again.");
+      showError("Failed to save draft", {
+        description: "Please try again.",
+      });
     }
   };
 
@@ -137,7 +142,7 @@ export function ValidationControls({
 
   const handleMOVUpload = async () => {
     if (!selectedFile) {
-      alert("Please select a file to upload");
+      showWarning("Please select a file to upload");
       return;
     }
 
@@ -145,7 +150,7 @@ export function ValidationControls({
       // For now, we'll create a mock storage path since we don't have Supabase integration yet
       // In a real implementation, you would upload to Supabase first and get the storage path
       const mockStoragePath = `movs/${Date.now()}-${selectedFile.name}`;
-      
+
       const movData: MOVCreate = {
         filename: selectedFile.name,
         original_filename: selectedFile.name,
@@ -164,8 +169,8 @@ export function ValidationControls({
       });
 
       // Invalidate the assessment details query to refresh the data
-      queryClient.invalidateQueries({ 
-        queryKey: ["assessor", "assessment", assessmentId] 
+      queryClient.invalidateQueries({
+        queryKey: ["assessor", "assessment", assessmentId]
       });
 
       // Clear the selected file
@@ -174,10 +179,12 @@ export function ValidationControls({
         fileInputRef.current.value = "";
       }
 
-      alert("MOV uploaded successfully!");
+      showSuccess("MOV uploaded successfully!");
     } catch (error) {
       console.error("MOV upload failed:", error);
-      alert("Failed to upload MOV. Please try again.");
+      showError("Failed to upload MOV", {
+        description: "Please try again.",
+      });
     }
   };
 

@@ -21,6 +21,7 @@ import type {
   GetGarAssessmentIdExportExcelParams,
   GetGarAssessmentIdExportPdfParams,
   GetGarAssessmentIdParams,
+  GetGarAssessmentsParams,
   HTTPValidationError
 } from '../../schemas';
 
@@ -38,38 +39,44 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 /**
  * Get list of assessments available for GAR generation.
 
-Returns completed and awaiting final validation assessments.
+Returns completed and awaiting final validation assessments
+filtered by the specified assessment year.
 Only accessible by MLGOO_DILG users.
  * @summary Get Gar Assessments
  */
 export const getGarAssessments = (
-    
+    params?: GetGarAssessmentsParams,
  options?: SecondParameter<typeof mutator>,signal?: AbortSignal
 ) => {
       
       
       return mutator<GARAssessmentListResponse>(
-      {url: `/api/v1/gar/assessments`, method: 'GET', signal
+      {url: `/api/v1/gar/assessments`, method: 'GET',
+        params, signal
     },
       options);
     }
   
 
-export const getGetGarAssessmentsQueryKey = () => {
-    return [`/api/v1/gar/assessments`] as const;
+
+
+export const getGetGarAssessmentsQueryKey = (params?: GetGarAssessmentsParams,) => {
+    return [
+    `/api/v1/gar/assessments`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
-export const getGetGarAssessmentsQueryOptions = <TData = Awaited<ReturnType<typeof getGarAssessments>>, TError = unknown>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGarAssessments>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export const getGetGarAssessmentsQueryOptions = <TData = Awaited<ReturnType<typeof getGarAssessments>>, TError = HTTPValidationError>(params?: GetGarAssessmentsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGarAssessments>>, TError, TData>, request?: SecondParameter<typeof mutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetGarAssessmentsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetGarAssessmentsQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGarAssessments>>> = ({ signal }) => getGarAssessments(requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGarAssessments>>> = ({ signal }) => getGarAssessments(params, requestOptions, signal);
 
       
 
@@ -79,26 +86,27 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetGarAssessmentsQueryResult = NonNullable<Awaited<ReturnType<typeof getGarAssessments>>>
-export type GetGarAssessmentsQueryError = unknown
+export type GetGarAssessmentsQueryError = HTTPValidationError
 
 
 /**
  * @summary Get Gar Assessments
  */
 
-export function useGetGarAssessments<TData = Awaited<ReturnType<typeof getGarAssessments>>, TError = unknown>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGarAssessments>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export function useGetGarAssessments<TData = Awaited<ReturnType<typeof getGarAssessments>>, TError = HTTPValidationError>(
+ params?: GetGarAssessmentsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGarAssessments>>, TError, TData>, request?: SecondParameter<typeof mutator>}
   
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetGarAssessmentsQueryOptions(options)
+  const queryOptions = getGetGarAssessmentsQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -134,9 +142,13 @@ export const getGar$AssessmentId = (
     }
   
 
-export const getGetGarAssessmentIdQueryKey = (assessmentId: number,
+
+
+export const getGetGarAssessmentIdQueryKey = (assessmentId?: number,
     params?: GetGarAssessmentIdParams,) => {
-    return [`/api/v1/gar/${assessmentId}`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/gar/${assessmentId}`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -175,12 +187,13 @@ export function useGetGarAssessmentId<TData = Awaited<ReturnType<typeof getGar$A
 
   const queryOptions = getGetGarAssessmentIdQueryOptions(assessmentId,params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -208,9 +221,13 @@ export const getGar$AssessmentIdExportExcel = (
     }
   
 
-export const getGetGarAssessmentIdExportExcelQueryKey = (assessmentId: number,
+
+
+export const getGetGarAssessmentIdExportExcelQueryKey = (assessmentId?: number,
     params?: GetGarAssessmentIdExportExcelParams,) => {
-    return [`/api/v1/gar/${assessmentId}/export/excel`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/gar/${assessmentId}/export/excel`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -249,12 +266,13 @@ export function useGetGarAssessmentIdExportExcel<TData = Awaited<ReturnType<type
 
   const queryOptions = getGetGarAssessmentIdExportExcelQueryOptions(assessmentId,params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -282,9 +300,13 @@ export const getGar$AssessmentIdExportPdf = (
     }
   
 
-export const getGetGarAssessmentIdExportPdfQueryKey = (assessmentId: number,
+
+
+export const getGetGarAssessmentIdExportPdfQueryKey = (assessmentId?: number,
     params?: GetGarAssessmentIdExportPdfParams,) => {
-    return [`/api/v1/gar/${assessmentId}/export/pdf`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/gar/${assessmentId}/export/pdf`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -323,12 +345,13 @@ export function useGetGarAssessmentIdExportPdf<TData = Awaited<ReturnType<typeof
 
   const queryOptions = getGetGarAssessmentIdExportPdfQueryOptions(assessmentId,params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 

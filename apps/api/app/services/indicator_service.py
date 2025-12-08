@@ -16,10 +16,10 @@ from loguru import logger
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.security import sanitize_rich_text, sanitize_text_input
+from app.core.year_resolver import get_year_resolver
 from app.db.models.governance_area import GovernanceArea, Indicator, IndicatorHistory
 from app.schemas.calculation_schema import CalculationSchema
 from app.schemas.form_schema import FormSchema
-from app.services.audit_service import audit_service
 from app.services.form_schema_validator import (
     generate_validation_errors,
     validate_calculation_schema_field_references,
@@ -173,6 +173,7 @@ class IndicatorService:
         governance_area_id: int | None = None,
         is_active: bool | None = None,
         search: str | None = None,
+        assessment_year: int | None = None,
         skip: int = 0,
         limit: int = 100,
     ) -> list[Indicator]:
@@ -184,12 +185,17 @@ class IndicatorService:
             governance_area_id: Filter by governance area
             is_active: Filter by active status
             search: Search in name (case-insensitive)
+            assessment_year: Filter by assessment year effectivity.
+                            If provided, only returns indicators that are
+                            effective for that year.
             skip: Number of records to skip (pagination)
             limit: Maximum number of records to return
 
         Returns:
             List of Indicator instances
         """
+        from sqlalchemy import or_
+
         query = db.query(Indicator).options(joinedload(Indicator.governance_area))
 
         # Apply filters
@@ -202,6 +208,21 @@ class IndicatorService:
         if search:
             query = query.filter(Indicator.name.ilike(f"%{search}%"))
 
+        # Apply year-based effectivity filter
+        if assessment_year is not None:
+            query = query.filter(
+                # effective_from_year is NULL (applies to all years) OR <= assessment_year
+                or_(
+                    Indicator.effective_from_year.is_(None),
+                    Indicator.effective_from_year <= assessment_year,
+                ),
+                # effective_to_year is NULL (ongoing) OR >= assessment_year
+                or_(
+                    Indicator.effective_to_year.is_(None),
+                    Indicator.effective_to_year >= assessment_year,
+                ),
+            )
+
         # Order by governance_area_id, then name
         query = query.order_by(Indicator.governance_area_id, Indicator.name)
 
@@ -209,6 +230,34 @@ class IndicatorService:
         indicators = query.offset(skip).limit(limit).all()
 
         return indicators
+
+    def get_indicators_for_year(
+        self,
+        db: Session,
+        assessment_year: int,
+        governance_area_id: int | None = None,
+    ) -> list[Indicator]:
+        """
+        Get all active indicators effective for a specific assessment year.
+
+        This filters indicators based on their effective_from_year and
+        effective_to_year fields.
+
+        Args:
+            db: Database session
+            assessment_year: The assessment year to filter for
+            governance_area_id: Optional governance area filter
+
+        Returns:
+            List of active Indicator instances effective for the given year
+        """
+        return self.list_indicators(
+            db=db,
+            governance_area_id=governance_area_id,
+            is_active=True,
+            assessment_year=assessment_year,
+            limit=10000,  # Get all indicators
+        )
 
     def update_indicator(
         self, db: Session, indicator_id: int, data: dict[str, Any], user_id: int
@@ -466,359 +515,27 @@ class IndicatorService:
 
         return False
 
-    # ========================================================================
-    # Bulk Operations (Phase 6: Hierarchical Indicator Creation)
-    # ========================================================================
-
-    def bulk_create_indicators(
+    def get_indicator_tree(
         self,
         db: Session,
         governance_area_id: int,
-        indicators_data: list[dict[str, Any]],
-        user_id: int,
-    ) -> tuple[list[Indicator], dict[str, int], list[dict[str, str]]]:
-        """
-        Create multiple indicators in bulk with proper dependency ordering.
-
-        Uses topological sorting to ensure parents are created before children.
-        All operations are wrapped in a transaction for atomicity.
-
-        Args:
-            db: Database session
-            governance_area_id: Governance area ID for all indicators
-            indicators_data: List of indicator dictionaries with temp_id, parent_temp_id, order
-            user_id: ID of user creating the indicators
-
-        Returns:
-            tuple of (created_indicators, temp_id_mapping, errors)
-            - created_indicators: List of created Indicator instances
-            - temp_id_mapping: Dict mapping temp_id to real database ID
-            - errors: List of error dictionaries with temp_id and error message
-
-        Raises:
-            HTTPException: If governance area doesn't exist or circular dependencies detected
-        """
-        # Validate governance area exists
-        governance_area = (
-            db.query(GovernanceArea).filter(GovernanceArea.id == governance_area_id).first()
-        )
-        if not governance_area:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Governance area with ID {governance_area_id} not found",
-            )
-
-        created_indicators: list[Indicator] = []
-        temp_id_mapping: dict[str, int] = {}
-        errors: list[dict[str, str]] = []
-
-        try:
-            # Topological sort by dependency
-            sorted_indicators = self._topological_sort_indicators(indicators_data)
-
-            # Create indicators in dependency order
-            for indicator_data in sorted_indicators:
-                temp_id = indicator_data.get("temp_id")
-                parent_temp_id = indicator_data.get("parent_temp_id")
-
-                try:
-                    # Resolve parent_id if parent_temp_id is provided
-                    parent_id = None
-                    if parent_temp_id:
-                        parent_id = temp_id_mapping.get(parent_temp_id)
-                        if parent_id is None:
-                            raise ValueError(
-                                f"Parent temp_id {parent_temp_id} not found in mapping"
-                            )
-
-                    # Prepare indicator data
-                    create_data = {
-                        "name": indicator_data["name"],
-                        "description": indicator_data.get("description"),
-                        "governance_area_id": governance_area_id,
-                        "parent_id": parent_id,
-                        "is_active": indicator_data.get("is_active", True),
-                        "is_auto_calculable": indicator_data.get("is_auto_calculable", False),
-                        "is_profiling_only": indicator_data.get("is_profiling_only", False),
-                        "form_schema": indicator_data.get("form_schema"),
-                        "calculation_schema": indicator_data.get("calculation_schema"),
-                        "remark_schema": indicator_data.get("remark_schema"),
-                        "technical_notes_text": indicator_data.get("technical_notes_text"),
-                    }
-
-                    # Create the indicator (reusing existing validation logic)
-                    indicator = self.create_indicator(db, create_data, user_id)
-
-                    # Store mapping
-                    temp_id_mapping[temp_id] = indicator.id
-                    created_indicators.append(indicator)
-
-                    logger.info(
-                        f"Created indicator '{indicator.name}' (temp_id: {temp_id}, real_id: {indicator.id})"
-                    )
-
-                except Exception as e:
-                    logger.error(f"Error creating indicator with temp_id {temp_id}: {str(e)}")
-                    errors.append({"temp_id": temp_id, "error": str(e)})
-                    # Continue processing other indicators if possible
-                    # Or raise to rollback all if strict atomicity is required
-                    # For now, we'll continue and report errors
-
-            # If any errors occurred, rollback the transaction
-            if errors:
-                db.rollback()
-                logger.warning(
-                    f"Bulk creation failed with {len(errors)} errors, transaction rolled back"
-                )
-                return [], {}, errors
-
-            # Commit transaction
-            db.commit()
-            logger.info(f"Successfully created {len(created_indicators)} indicators in bulk")
-
-            # Log audit event for bulk publication
-            audit_service.log_audit_event(
-                db=db,
-                user_id=user_id,
-                entity_type="indicator",
-                entity_id=None,  # Bulk operation, no single entity
-                action="bulk_create",
-                changes={
-                    "governance_area_id": governance_area_id,
-                    "count": len(created_indicators),
-                    "indicator_ids": [ind.id for ind in created_indicators],
-                },
-            )
-
-            return created_indicators, temp_id_mapping, errors
-
-        except Exception as e:
-            db.rollback()
-            logger.error(f"Bulk creation failed: {str(e)}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Bulk indicator creation failed: {str(e)}",
-            )
-
-    def _topological_sort_indicators(
-        self, indicators_data: list[dict[str, Any]]
+        assessment_year: int | None = None,
     ) -> list[dict[str, Any]]:
-        """
-        Topologically sort indicators by parent-child dependencies.
-
-        Args:
-            indicators_data: List of indicator dictionaries with temp_id and parent_temp_id
-
-        Returns:
-            Sorted list where parents always appear before children
-
-        Raises:
-            ValueError: If circular dependencies are detected
-        """
-        # Build adjacency list and in-degree count
-        graph: dict[str, list[str]] = {}
-        in_degree: dict[str, int] = {}
-        node_data: dict[str, dict[str, Any]] = {}
-
-        # Initialize
-        for indicator in indicators_data:
-            temp_id = indicator["temp_id"]
-            parent_temp_id = indicator.get("parent_temp_id")
-
-            node_data[temp_id] = indicator
-            in_degree[temp_id] = 0
-            graph[temp_id] = []
-
-        # Build graph
-        for indicator in indicators_data:
-            temp_id = indicator["temp_id"]
-            parent_temp_id = indicator.get("parent_temp_id")
-
-            if parent_temp_id:
-                if parent_temp_id not in graph:
-                    raise ValueError(
-                        f"Parent temp_id {parent_temp_id} not found for indicator {temp_id}"
-                    )
-                graph[parent_temp_id].append(temp_id)
-                in_degree[temp_id] += 1
-
-        # Kahn's algorithm for topological sort
-        queue = [node for node in in_degree if in_degree[node] == 0]
-        sorted_nodes = []
-
-        while queue:
-            current = queue.pop(0)
-            sorted_nodes.append(current)
-
-            for neighbor in graph[current]:
-                in_degree[neighbor] -= 1
-                if in_degree[neighbor] == 0:
-                    queue.append(neighbor)
-
-        # Check for circular dependencies
-        if len(sorted_nodes) != len(indicators_data):
-            raise ValueError("Circular dependency detected in indicator hierarchy")
-
-        # Return sorted indicator data
-        return [node_data[temp_id] for temp_id in sorted_nodes]
-
-    def reorder_indicators(
-        self, db: Session, reorder_data: list[dict[str, Any]], user_id: int
-    ) -> list[Indicator]:
-        """
-        Reorder indicators by updating codes and parent_ids in batch.
-
-        Args:
-            db: Database session
-            reorder_data: List of dicts with {id, code, parent_id}
-            user_id: ID of user performing the reorder
-
-        Returns:
-            List of updated Indicator instances
-
-        Raises:
-            HTTPException: If circular references are detected
-        """
-        updated_indicators: list[Indicator] = []
-
-        try:
-            # Validate no circular references
-            self._validate_no_circular_references(db, reorder_data)
-
-            # Update each indicator
-            for update in reorder_data:
-                indicator_id = update["id"]
-                indicator = db.query(Indicator).filter(Indicator.id == indicator_id).first()
-
-                if not indicator:
-                    logger.warning(f"Indicator ID {indicator_id} not found, skipping")
-                    continue
-
-                # Update fields
-                if "code" in update:
-                    # Assuming we add a 'code' field to indicators later
-                    # For now, we can update the name to include the code
-                    pass
-
-                if "parent_id" in update:
-                    indicator.parent_id = update["parent_id"]
-
-                updated_indicators.append(indicator)
-
-            db.commit()
-            logger.info(f"Reordered {len(updated_indicators)} indicators")
-
-            return updated_indicators
-
-        except Exception as e:
-            db.rollback()
-            logger.error(f"Reorder failed: {str(e)}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Indicator reorder failed: {str(e)}",
-            )
-
-    def _validate_no_circular_references(
-        self, db: Session, reorder_data: list[dict[str, Any]]
-    ) -> None:
-        """
-        Validate that the proposed reorder doesn't create circular references.
-
-        Args:
-            db: Database session
-            reorder_data: List of dicts with {id, parent_id}
-
-        Raises:
-            ValueError: If circular references are detected
-        """
-        # Build parent map from reorder data
-        parent_map: dict[int, int | None] = {}
-        for update in reorder_data:
-            parent_map[update["id"]] = update.get("parent_id")
-
-        # Check each node for cycles
-        for indicator_id in parent_map:
-            visited = set()
-            current = indicator_id
-
-            while current is not None:
-                if current in visited:
-                    raise ValueError(f"Circular reference detected: indicator {indicator_id}")
-
-                visited.add(current)
-                current = parent_map.get(current)
-
-    def validate_tree_structure(
-        self,
-        db: Session,
-        governance_area_id: int,
-        indicators_data: list[dict[str, Any]],
-    ) -> list[str]:
-        """
-        Validate indicator tree structure before bulk creation.
-
-        Checks for:
-        - Circular references
-        - Valid calculation schema field references
-        - Weight sum validation (if applicable)
-
-        Args:
-            db: Database session
-            governance_area_id: Governance area ID
-            indicators_data: List of indicator dictionaries
-
-        Returns:
-            List of validation error messages (empty if valid)
-        """
-        errors: list[str] = []
-
-        try:
-            # Check circular references via topological sort
-            try:
-                self._topological_sort_indicators(indicators_data)
-            except ValueError as e:
-                errors.append(f"Circular reference detected: {str(e)}")
-
-            # Validate calculation schema field references
-            for indicator_data in indicators_data:
-                form_schema = indicator_data.get("form_schema")
-                calculation_schema = indicator_data.get("calculation_schema")
-
-                if form_schema and calculation_schema:
-                    try:
-                        form_schema_obj = FormSchema(**form_schema)
-                        field_ref_errors = validate_calculation_schema_field_references(
-                            form_schema_obj, calculation_schema
-                        )
-                        if field_ref_errors:
-                            errors.extend(
-                                [
-                                    f"Indicator {indicator_data.get('temp_id')}: {err}"
-                                    for err in field_ref_errors
-                                ]
-                            )
-                    except Exception as e:
-                        errors.append(
-                            f"Indicator {indicator_data.get('temp_id')}: Invalid schema - {str(e)}"
-                        )
-
-            # TODO: Add weight sum validation if needed
-
-        except Exception as e:
-            errors.append(f"Validation failed: {str(e)}")
-
-        return errors
-
-    def get_indicator_tree(self, db: Session, governance_area_id: int) -> list[dict[str, Any]]:
         """
         Get hierarchical tree structure of indicators for a governance area.
 
         Returns indicators organized in tree structure with parent-child relationships.
         Each node includes children nested under it.
 
+        Year placeholders like {CURRENT_YEAR} and {PREVIOUS_YEAR} are resolved based on
+        the provided assessment_year. If no year is provided, uses the active year.
+
         Args:
             db: Database session
             governance_area_id: Governance area ID to filter indicators
+            assessment_year: Optional specific year for placeholder resolution.
+                           If viewing a historical assessment, pass that assessment's year.
+                           If not provided, uses the currently active year.
 
         Returns:
             List of root indicator dictionaries with nested children
@@ -852,13 +569,31 @@ class IndicatorService:
             .all()
         )
 
-        # Build indicator map
+        # Initialize year placeholder resolver for dynamic year resolution
+        # If a specific assessment_year is provided, use that for resolution
+        # Otherwise, use the currently active year
+        try:
+            year_resolver = get_year_resolver(db, year=assessment_year)
+        except ValueError:
+            # If no active assessment year config and no year specified, skip resolution
+            year_resolver = None
+            logger.warning(
+                "[YEAR RESOLVER] No active assessment year found, using raw indicator values"
+            )
+
+        # Build indicator map with year placeholder resolution
         indicator_map: dict[int, dict[str, Any]] = {}
         for indicator in indicators:
             indicator_map[indicator.id] = {
                 "id": indicator.id,
-                "name": indicator.name,
-                "description": indicator.description,
+                # Resolve year placeholders in name
+                "name": year_resolver.resolve_string(indicator.name)
+                if year_resolver
+                else indicator.name,
+                # Resolve year placeholders in description
+                "description": year_resolver.resolve_string(indicator.description)
+                if year_resolver
+                else indicator.description,
                 "indicator_code": indicator.indicator_code,
                 "sort_order": indicator.sort_order,
                 "selection_mode": indicator.selection_mode,
@@ -866,10 +601,16 @@ class IndicatorService:
                 "is_active": indicator.is_active,
                 "is_auto_calculable": indicator.is_auto_calculable,
                 "is_profiling_only": indicator.is_profiling_only,
-                "form_schema": indicator.form_schema,
+                # Resolve year placeholders in form_schema
+                "form_schema": year_resolver.resolve_schema(indicator.form_schema)
+                if year_resolver
+                else indicator.form_schema,
                 "calculation_schema": indicator.calculation_schema,
                 "remark_schema": indicator.remark_schema,
-                "mov_checklist_items": indicator.mov_checklist_items,
+                # Resolve year placeholders in mov_checklist_items
+                "mov_checklist_items": year_resolver.resolve_list(indicator.mov_checklist_items)
+                if year_resolver
+                else indicator.mov_checklist_items,
                 "version": indicator.version,
                 "created_at": indicator.created_at.isoformat() + "Z"
                 if indicator.created_at

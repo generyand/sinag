@@ -63,8 +63,12 @@ export const getUsersMe = (
     }
   
 
+
+
 export const getGetUsersMeQueryKey = () => {
-    return [`/api/v1/users/me`] as const;
+    return [
+    `/api/v1/users/me`
+    ] as const;
     }
 
     
@@ -101,12 +105,13 @@ export function useGetUsersMe<TData = Awaited<ReturnType<typeof getUsersMe>>, TE
 
   const queryOptions = getGetUsersMeQueryOptions(options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -174,7 +179,7 @@ export const usePutUsersMe = <TError = HTTPValidationError,
 
       const mutationOptions = getPutUsersMeMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Update user's preferred language for AI-generated summaries.
@@ -251,7 +256,7 @@ export const usePatchUsersMeLanguage = <TError = HTTPValidationError,
 
       const mutationOptions = getPatchUsersMeLanguageMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Get paginated list of users with optional filtering.
@@ -273,8 +278,12 @@ export const getUsers = (
     }
   
 
+
+
 export const getGetUsersQueryKey = (params?: GetUsersParams,) => {
-    return [`/api/v1/users/`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/users/`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -311,12 +320,13 @@ export function useGetUsers<TData = Awaited<ReturnType<typeof getUsers>>, TError
 
   const queryOptions = getGetUsersQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -393,7 +403,7 @@ export const usePostUsers = <TError = HTTPValidationError,
 
       const mutationOptions = getPostUsersMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Get user by ID.
@@ -414,8 +424,12 @@ export const getUsers$UserId = (
     }
   
 
-export const getGetUsersUserIdQueryKey = (userId: number,) => {
-    return [`/api/v1/users/${userId}`] as const;
+
+
+export const getGetUsersUserIdQueryKey = (userId?: number,) => {
+    return [
+    `/api/v1/users/${userId}`
+    ] as const;
     }
 
     
@@ -452,12 +466,13 @@ export function useGetUsersUserId<TData = Awaited<ReturnType<typeof getUsers$Use
 
   const queryOptions = getGetUsersUserIdQueryOptions(userId,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -535,7 +550,7 @@ export const usePutUsersUserId = <TError = HTTPValidationError,
 
       const mutationOptions = getPutUsersUserIdMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Deactivate user by ID (soft delete).
@@ -599,7 +614,7 @@ export const useDeleteUsersUserId = <TError = HTTPValidationError,
 
       const mutationOptions = getDeleteUsersUserIdMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Activate user by ID.
@@ -664,7 +679,7 @@ export const usePostUsersUserIdActivate = <TError = HTTPValidationError,
 
       const mutationOptions = getPostUsersUserIdActivateMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Reset user password.
@@ -739,7 +754,7 @@ export const usePostUsersUserIdResetPassword = <TError = HTTPValidationError,
 
       const mutationOptions = getPostUsersUserIdResetPasswordMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Get user statistics for admin dashboard.
@@ -760,8 +775,12 @@ export const getUsersStatsDashboard = (
     }
   
 
+
+
 export const getGetUsersStatsDashboardQueryKey = () => {
-    return [`/api/v1/users/stats/dashboard`] as const;
+    return [
+    `/api/v1/users/stats/dashboard`
+    ] as const;
     }
 
     
@@ -798,12 +817,13 @@ export function useGetUsersStatsDashboard<TData = Awaited<ReturnType<typeof getU
 
   const queryOptions = getGetUsersStatsDashboardQueryOptions(options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 

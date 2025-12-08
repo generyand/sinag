@@ -48,13 +48,13 @@ describe('AreaBreakdownBarChart', () => {
   it('displays "No data available" message when data is empty', () => {
     render(<AreaBreakdownBarChart data={[]} />);
 
-    expect(screen.getByText('No data available for chart')).toBeInTheDocument();
+    expect(screen.getByText('No assessments yet')).toBeInTheDocument();
   });
 
   it('displays "No data available" message when data is undefined', () => {
     render(<AreaBreakdownBarChart data={undefined as any} />);
 
-    expect(screen.getByText('No data available for chart')).toBeInTheDocument();
+    expect(screen.getByText('No assessments yet')).toBeInTheDocument();
   });
 
   it('accepts array of data with correct structure', () => {
@@ -104,13 +104,13 @@ describe('ComplianceStatusPieChart', () => {
   it('displays "No data available" message when data is empty', () => {
     render(<ComplianceStatusPieChart data={[]} />);
 
-    expect(screen.getByText('No data available for chart')).toBeInTheDocument();
+    expect(screen.getByText('No assessments yet')).toBeInTheDocument();
   });
 
   it('displays "No data available" message when data is undefined', () => {
     render(<ComplianceStatusPieChart data={undefined as any} />);
 
-    expect(screen.getByText('No data available for chart')).toBeInTheDocument();
+    expect(screen.getByText('No assessments yet')).toBeInTheDocument();
   });
 
   it('accepts array of data with correct structure', () => {
@@ -169,13 +169,13 @@ describe('TrendLineChart', () => {
   it('displays "No trend data available" message when data is empty', () => {
     render(<TrendLineChart data={[]} />);
 
-    expect(screen.getByText('No trend data available')).toBeInTheDocument();
+    expect(screen.getByText('No assessments yet')).toBeInTheDocument();
   });
 
   it('displays "No trend data available" message when data is undefined', () => {
     render(<TrendLineChart data={undefined as any} />);
 
-    expect(screen.getByText('No trend data available')).toBeInTheDocument();
+    expect(screen.getByText('No assessments yet')).toBeInTheDocument();
   });
 
   it('accepts array of data with correct structure', () => {
@@ -251,12 +251,12 @@ describe('Chart Components - Integration', () => {
   it('all charts handle empty data gracefully', () => {
     // Test that all charts show appropriate empty state messages
     const { rerender } = render(<AreaBreakdownBarChart data={[]} />);
-    expect(screen.getByText('No data available for chart')).toBeInTheDocument();
+    expect(screen.getByText('No assessments yet')).toBeInTheDocument();
 
     rerender(<ComplianceStatusPieChart data={[]} />);
-    expect(screen.getByText('No data available for chart')).toBeInTheDocument();
+    expect(screen.getByText('No assessments yet')).toBeInTheDocument();
 
     rerender(<TrendLineChart data={[]} />);
-    expect(screen.getByText('No trend data available')).toBeInTheDocument();
+    expect(screen.getByText('No assessments yet')).toBeInTheDocument();
   });
 });

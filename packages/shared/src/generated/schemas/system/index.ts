@@ -3,6 +3,7 @@
 // 📁 System-related types
 // 🏷️  Based on FastAPI tag: "system"
 
+import type { ActivateYearResponseAssessmentsCreated } from '../assessments';
 import type { PdfRect } from '../common';
 import type { AnonymizedInsight } from '../common';
 import type { ApprovalQueueItem } from '../common';
@@ -28,6 +29,7 @@ import type { ReworkStats } from '../common';
 import type { DashboardKPIResponseBbiAnalytics } from '../analytics';
 import type { DeadlineOverrideResponse } from '../deadlineoverride';
 import type { OverallComplianceResponseAssessmentCycle } from '../assessments';
+import type { ReportMetadataAssessmentYear } from '../assessments';
 import type { ChartData } from '../common';
 import type { MapData } from '../common';
 import type { TableData } from '../common';
@@ -57,6 +59,46 @@ export type SystemicWeaknessIndicatorId = number | null;
  * SystemicWeaknessReason
  */
 export type SystemicWeaknessReason = string | null;
+
+
+/**
+ * AccessibleYearsResponse
+ */
+export interface AccessibleYearsResponse {
+  /** List of year numbers accessible to the current user */
+  years: number[];
+  /** Currently active year (if accessible) */
+  active_year?: AccessibleYearsResponseActiveYear;
+  /** User role that determined access */
+  role: string;
+}
+
+
+/**
+ * AccessibleYearsResponseActiveYear
+ */
+export type AccessibleYearsResponseActiveYear = number | null;
+
+
+/**
+ * ActivateYearResponse
+ */
+export interface ActivateYearResponse {
+  success: boolean;
+  message: string;
+  year: number;
+  activated_at: string;
+  /** The year that was deactivated (if any) */
+  previous_active_year?: ActivateYearResponsePreviousActiveYear;
+  /** Number of assessments created for BLGU users (if bulk creation triggered) */
+  assessments_created?: ActivateYearResponseAssessmentsCreated;
+}
+
+
+/**
+ * ActivateYearResponsePreviousActiveYear
+ */
+export type ActivateYearResponsePreviousActiveYear = number | null;
 
 
 /**
@@ -577,6 +619,23 @@ export type GetAnswersResponseUpdatedAt = string | null;
 
 
 /**
+ * GetYearConfigCurrentYear200
+ */
+export type GetYearConfigCurrentYear200 = { [key: string]: unknown };
+
+
+/**
+ * GetYearConfigPlaceholdersParams
+ */
+export type GetYearConfigPlaceholdersParams = {
+/**
+ * Specific year for preview (uses active config if not provided)
+ */
+assessment_year?: number | null;
+};
+
+
+/**
  * HealthCheck
  */
 export interface HealthCheck {
@@ -645,13 +704,24 @@ export type PhaseStatusResponseSubmittedAt = string | null;
 
 
 /**
+ * PublishYearResponse
+ */
+export interface PublishYearResponse {
+  success: boolean;
+  message: string;
+  year: number;
+  is_published: boolean;
+}
+
+
+/**
  * ReportMetadata
  */
 export interface ReportMetadata {
   /** Timestamp when the report was generated */
   generated_at: string;
-  /** Filter: Assessment cycle ID */
-  cycle_id?: ReportMetadataCycleId;
+  /** Filter: Assessment year (e.g., 2024, 2025) */
+  assessment_year?: ReportMetadataAssessmentYear;
   /** Filter: Start date */
   start_date?: ReportMetadataStartDate;
   /** Filter: End date */
@@ -669,12 +739,6 @@ export interface ReportMetadata {
  * ReportMetadataBarangayIds
  */
 export type ReportMetadataBarangayIds = number[] | null;
-
-
-/**
- * ReportMetadataCycleId
- */
-export type ReportMetadataCycleId = number | null;
 
 
 /**
@@ -714,6 +778,18 @@ export interface ReportsDataResponse {
   /** Report generation metadata and applied filters */
   metadata: ReportMetadata;
 }
+
+
+/**
+ * ResolveSchemaResponseOriginalSchema
+ */
+export type ResolveSchemaResponseOriginalSchema = { [key: string]: unknown };
+
+
+/**
+ * ResolveSchemaResponseResolvedSchema
+ */
+export type ResolveSchemaResponseResolvedSchema = { [key: string]: unknown };
 
 
 /**

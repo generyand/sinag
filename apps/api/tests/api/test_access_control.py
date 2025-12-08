@@ -41,7 +41,9 @@ class TestAccessControl:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
         data = response.json()
-        assert "not enough permissions" in data["detail"].lower()
+        # Response uses standardized error format with "error" key
+        error_msg = data.get("error", data.get("detail", "")).lower()
+        assert "not enough permissions" in error_msg
 
     def test_validator_denied_access(self, client: TestClient, validator_user, db_session):
         """Test that VALIDATOR users are denied access to admin endpoints."""
@@ -56,7 +58,9 @@ class TestAccessControl:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
         data = response.json()
-        assert "not enough permissions" in data["detail"].lower()
+        # Response uses standardized error format with "error" key
+        error_msg = data.get("error", data.get("detail", "")).lower()
+        assert "not enough permissions" in error_msg
 
     def test_assessor_denied_access(self, client: TestClient, assessor_user, db_session):
         """Test that ASSESSOR users are denied access to admin endpoints."""
@@ -71,7 +75,9 @@ class TestAccessControl:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
         data = response.json()
-        assert "not enough permissions" in data["detail"].lower()
+        # Response uses standardized error format with "error" key
+        error_msg = data.get("error", data.get("detail", "")).lower()
+        assert "not enough permissions" in error_msg
 
     def test_unauthenticated_request_denied(self, client: TestClient):
         """Test that unauthenticated requests are denied."""
@@ -134,4 +140,6 @@ class TestAccessControl:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         data = response.json()
-        assert "inactive user" in data["detail"].lower()
+        # Response uses standardized error format with "error" key
+        error_msg = data.get("error", data.get("detail", "")).lower()
+        assert "inactive user" in error_msg

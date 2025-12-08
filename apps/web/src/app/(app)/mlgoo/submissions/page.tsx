@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useEffectiveYear } from "@/store/useAssessmentYearStore";
+import { YearSelector } from "@/components/features/assessment-year/YearSelector";
 import {
   Filter,
   Search,
@@ -39,6 +41,7 @@ import {
 export default function AdminSubmissionsPage() {
   const { isAuthenticated } = useAuthStore();
   const router = useRouter();
+  const effectiveYear = useEffectiveYear();
 
   // Use custom hooks for filter and data management
   const {
@@ -51,17 +54,11 @@ export default function AdminSubmissionsPage() {
     hasActiveFilters,
   } = useSubmissionsFilters();
 
-  const {
-    submissions,
-    filteredSubmissions,
-    isLoading,
-    error,
-    totalCount,
-    completedCount,
-  } = useSubmissionsData({
+  const { filteredSubmissions, isLoading, error, totalCount, completedCount } = useSubmissionsData({
     statusFilter: filters.statusFilter,
     searchQuery: filters.searchQuery,
     sortConfig,
+    year: effectiveYear ?? undefined,
   });
 
   // Show loading if not authenticated
@@ -103,9 +100,7 @@ export default function AdminSubmissionsPage() {
             ) : (
               <XCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
             )}
-            <h2 className="text-xl font-semibold text-[var(--foreground)] mb-2">
-              {errorTitle}
-            </h2>
+            <h2 className="text-xl font-semibold text-[var(--foreground)] mb-2">{errorTitle}</h2>
             <p className="text-[var(--muted-foreground)] mb-4">{errorMessage}</p>
             <Button
               onClick={() => window.location.reload()}
@@ -171,20 +166,17 @@ export default function AdminSubmissionsPage() {
                   </h1>
                 </div>
 
-                {/* Quick Stats */}
+                {/* Year Selector + Quick Stats */}
                 <div className="flex items-center gap-4 sm:gap-6">
+                  <YearSelector showLabel showIcon />
                   <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)] min-w-[100px]">
-                    <div className="text-3xl font-bold text-[var(--foreground)]">
-                      {totalCount}
-                    </div>
+                    <div className="text-3xl font-bold text-[var(--foreground)]">{totalCount}</div>
                     <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
                       Submissions
                     </div>
                   </div>
                   <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)] min-w-[100px]">
-                    <div className="text-3xl font-bold text-green-600">
-                      {completedCount}
-                    </div>
+                    <div className="text-3xl font-bold text-green-600">{completedCount}</div>
                     <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
                       Completed
                     </div>
@@ -198,9 +190,7 @@ export default function AdminSubmissionsPage() {
           <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg p-6">
             <div className="flex items-center gap-3 mb-6">
               <Filter className="h-5 w-5 text-[var(--cityscape-yellow)]" />
-              <h2 className="text-lg font-semibold text-[var(--foreground)]">
-                Filters & Search
-              </h2>
+              <h2 className="text-lg font-semibold text-[var(--foreground)]">Filters & Search</h2>
             </div>
 
             <div className="flex flex-col lg:flex-row gap-6">
@@ -240,10 +230,7 @@ export default function AdminSubmissionsPage() {
                     >
                       Filter by Status
                     </label>
-                    <Select
-                      value={filters.statusFilter}
-                      onValueChange={setStatusFilter}
-                    >
+                    <Select value={filters.statusFilter} onValueChange={setStatusFilter}>
                       <SelectTrigger
                         id="status-filter"
                         className="h-10 bg-[var(--background)] border-[var(--border)] rounded-sm focus:border-[var(--cityscape-yellow)] focus:ring-[var(--cityscape-yellow)]/20 transition-all duration-200"
@@ -301,8 +288,8 @@ export default function AdminSubmissionsPage() {
                 <div className="hidden lg:block overflow-x-auto">
                   <table className="w-full" role="table">
                     <caption className="sr-only">
-                      Assessment submissions with filterable columns for barangay name,
-                      progress, status, validators, and last updated date
+                      Assessment submissions with filterable columns for barangay name, progress,
+                      status, validators, and last updated date
                     </caption>
                     <thead className="bg-[var(--muted)]/20 border-b border-[var(--border)]">
                       <tr role="row">

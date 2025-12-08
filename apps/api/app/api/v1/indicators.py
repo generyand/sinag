@@ -1,8 +1,6 @@
 # 📊 Indicator API Endpoints
 # CRUD operations for indicator management with versioning support
 
-from uuid import UUID
-
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
@@ -11,29 +9,16 @@ from app.db.models.user import User
 from app.schemas.calculation_schema import CalculationSchema
 from app.schemas.form_schema import FormSchema
 from app.schemas.indicator import (
-    BulkIndicatorCreate,
-    BulkIndicatorResponse,
     FormSchemaResponse,
     IndicatorCreate,
-    IndicatorDraftCreate,
-    IndicatorDraftDeltaUpdate,
-    IndicatorDraftResponse,
-    IndicatorDraftSummary,
-    IndicatorDraftUpdate,
     IndicatorHistoryResponse,
     IndicatorResponse,
     IndicatorTreeResponse,
     IndicatorUpdate,
-    IndicatorValidationRequest,
-    IndicatorValidationResponse,
-    ReorderRequest,
     SimplifiedIndicatorResponse,
-    ValidationError,
 )
 from app.services.form_schema_validator import generate_validation_errors
-from app.services.indicator_draft_service import indicator_draft_service
 from app.services.indicator_service import indicator_service
-from app.services.indicator_validation_service import indicator_validation_service
 from app.services.intelligence_service import intelligence_service
 
 router = APIRouter(tags=["indicators"])
@@ -515,14 +500,27 @@ def get_indicator_form_schema(
 
     # Extract form_schema and metadata
     # Note: Do NOT include calculation_schema or remark_schema (assessor-only fields)
+    from app.core.year_resolver import get_year_resolver
     from app.schemas.indicator import FormSchemaMetadata
+
+    # Apply year placeholder resolution
+    try:
+        year_resolver = get_year_resolver(db)
+        resolved_name = year_resolver.resolve_string(indicator.name)
+        resolved_description = year_resolver.resolve_string(indicator.description)
+        resolved_form_schema = year_resolver.resolve_schema(indicator.form_schema)
+    except ValueError:
+        # If no active assessment year config, use raw values
+        resolved_name = indicator.name
+        resolved_description = indicator.description
+        resolved_form_schema = indicator.form_schema
 
     return FormSchemaResponse(
         indicator_id=indicator.id,
-        form_schema=indicator.form_schema or {},
+        form_schema=resolved_form_schema or {},
         metadata=FormSchemaMetadata(
-            title=indicator.name,
-            description=indicator.description,
+            title=resolved_name,
+            description=resolved_description,
             governance_area_name=indicator.governance_area.name
             if indicator.governance_area
             else None,
@@ -545,6 +543,7 @@ def get_indicator_tree_by_governance_area(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
     governance_area_id: int,
+    year: int | None = None,
 ) -> list[dict]:
     """
     Get hierarchical tree structure of indicators for a governance area.
@@ -553,6 +552,12 @@ def get_indicator_tree_by_governance_area(
 
     **Path Parameters**:
     - governance_area_id: Governance area ID
+
+    **Query Parameters**:
+    - year: Optional assessment year for placeholder resolution.
+            If viewing a historical assessment, pass the assessment's year.
+            If not provided, uses the currently active year.
+            Example: year=2024 will resolve {CURRENT_YEAR} as "2024"
 
     **Returns**: List of root indicator nodes with nested children
 
@@ -585,6 +590,7 @@ def get_indicator_tree_by_governance_area(
     - Automatic code generation (1.1, 1.1.1, etc.)
     - MOV checklist items included
     - Form, calculation, and remark schemas included
+    - Dynamic year placeholder resolution ({CURRENT_YEAR}, {PREVIOUS_YEAR}, etc.)
 
     **Raises**:
     - 404: Governance area not found
@@ -592,6 +598,7 @@ def get_indicator_tree_by_governance_area(
     tree = indicator_service.get_indicator_tree(
         db=db,
         governance_area_id=governance_area_id,
+        assessment_year=year,
     )
 
     return tree
@@ -646,557 +653,6 @@ def recalculate_indicator_codes(
     )
 
     return updated_indicators
-
-
-# =============================================================================
-# Bulk Operations Endpoints (Phase 6: Hierarchical Indicator Creation)
-# =============================================================================
-
-
-@router.post(
-    "/bulk",
-    response_model=BulkIndicatorResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="Create multiple indicators in bulk",
-)
-def bulk_create_indicators(
-    *,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.require_mlgoo_dilg),
-    bulk_data: BulkIndicatorCreate,
-) -> BulkIndicatorResponse:
-    """
-    Create multiple indicators in bulk with proper dependency ordering.
-
-    **Permissions**: MLGOO_DILG only
-
-    **Request Body**:
-    - governance_area_id: Governance area ID for all indicators
-    - indicators: List of indicators with temp_id, parent_temp_id, order, and standard indicator fields
-
-    **Returns**: BulkIndicatorResponse with created indicators, temp_id_mapping, and errors
-
-    **Features**:
-    - Automatic topological sorting to ensure parents are created before children
-    - Transaction rollback if any errors occur
-    - Temp ID to real ID mapping for frontend
-
-    **Raises**:
-    - 404: Governance area not found
-    - 400: Circular dependencies detected
-    - 500: Bulk creation failed
-    """
-    created_indicators, temp_id_mapping, errors = indicator_service.bulk_create_indicators(
-        db=db,
-        governance_area_id=bulk_data.governance_area_id,
-        indicators_data=[ind.model_dump() for ind in bulk_data.indicators],
-        user_id=current_user.id,
-    )
-
-    return BulkIndicatorResponse(
-        created=created_indicators,
-        temp_id_mapping=temp_id_mapping,
-        errors=errors,
-    )
-
-
-@router.post(
-    "/reorder",
-    response_model=list[IndicatorResponse],
-    summary="Reorder indicators",
-)
-def reorder_indicators(
-    *,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.require_mlgoo_dilg),
-    reorder_data: ReorderRequest,
-) -> list[IndicatorResponse]:
-    """
-    Reorder indicators by updating codes and parent_ids in batch.
-
-    **Permissions**: MLGOO_DILG only
-
-    **Request Body**:
-    - indicators: List of indicator updates with id, code, parent_id
-
-    **Returns**: List of updated indicators
-
-    **Raises**:
-    - 400: Circular references detected
-    - 500: Reorder failed
-    """
-    updated_indicators = indicator_service.reorder_indicators(
-        db=db,
-        reorder_data=reorder_data.indicators,
-        user_id=current_user.id,
-    )
-
-    return updated_indicators
-
-
-# =============================================================================
-# Indicator Draft Endpoints (Phase 6: Draft Auto-Save)
-# =============================================================================
-
-
-@router.post(
-    "/drafts",
-    response_model=IndicatorDraftResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="Create a new indicator draft",
-)
-def create_indicator_draft(
-    *,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.require_mlgoo_dilg),
-    draft_data: IndicatorDraftCreate,
-) -> IndicatorDraftResponse:
-    """
-    Create a new indicator draft for the wizard workflow.
-
-    **Permissions**: MLGOO_DILG only
-
-    **Request Body**:
-    - governance_area_id: Governance area ID
-    - creation_mode: Creation mode ('incremental' or 'bulk_import')
-    - title: Optional draft title
-    - data: Optional initial draft data (list of indicator nodes)
-
-    **Returns**: Created draft with UUID
-
-    **Raises**:
-    - 404: Governance area not found
-    - 404: User not found
-    """
-    draft = indicator_draft_service.create_draft(
-        db=db,
-        user_id=current_user.id,
-        governance_area_id=draft_data.governance_area_id,
-        creation_mode=draft_data.creation_mode,
-        title=draft_data.title,
-        data=draft_data.data,
-    )
-
-    return draft
-
-
-@router.get(
-    "/drafts",
-    response_model=list[IndicatorDraftSummary],
-    summary="List user's indicator drafts",
-)
-def list_indicator_drafts(
-    *,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.require_mlgoo_dilg),
-    governance_area_id: int | None = Query(None, description="Filter by governance area"),
-    status: str | None = Query(None, description="Filter by status"),
-) -> list[IndicatorDraftSummary]:
-    """
-    List all drafts for the current user with optional filtering.
-
-    **Permissions**: MLGOO_DILG only
-
-    **Query Parameters**:
-    - governance_area_id: Filter by governance area (optional)
-    - status: Filter by status (optional)
-
-    **Returns**: List of draft summaries ordered by last accessed (most recent first)
-    """
-    drafts = indicator_draft_service.get_user_drafts(
-        db=db,
-        user_id=current_user.id,
-        governance_area_id=governance_area_id,
-        status=status,
-    )
-
-    return drafts
-
-
-@router.get(
-    "/drafts/{draft_id}",
-    response_model=IndicatorDraftResponse,
-    summary="Get indicator draft by ID",
-)
-def get_indicator_draft(
-    *,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.require_mlgoo_dilg),
-    draft_id: UUID,
-) -> IndicatorDraftResponse:
-    """
-    Load an indicator draft by ID.
-
-    **Permissions**: MLGOO_DILG only (must own the draft)
-
-    **Path Parameters**:
-    - draft_id: Draft UUID
-
-    **Returns**: Full draft data
-
-    **Raises**:
-    - 404: Draft not found
-    - 403: Access denied (not draft owner)
-    """
-    draft = indicator_draft_service.load_draft(
-        db=db,
-        draft_id=draft_id,
-        user_id=current_user.id,
-    )
-
-    return draft
-
-
-@router.put(
-    "/drafts/{draft_id}",
-    response_model=IndicatorDraftResponse,
-    summary="Update indicator draft",
-)
-def update_indicator_draft(
-    *,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.require_mlgoo_dilg),
-    draft_id: UUID,
-    draft_update: IndicatorDraftUpdate,
-) -> IndicatorDraftResponse:
-    """
-    Update an indicator draft with optimistic locking.
-
-    **Permissions**: MLGOO_DILG only (must own the draft)
-
-    **Path Parameters**:
-    - draft_id: Draft UUID
-
-    **Request Body**:
-    - current_step: Current wizard step (optional)
-    - status: Draft status (optional)
-    - data: Draft indicator data (optional)
-    - title: Draft title (optional)
-    - version: Current version number (required for optimistic locking)
-
-    **Returns**: Updated draft with incremented version
-
-    **Features**:
-    - Optimistic locking to prevent concurrent edit conflicts
-    - Automatic lock acquisition
-    - Lock expiration after 30 minutes
-
-    **Raises**:
-    - 404: Draft not found
-    - 403: Access denied (not draft owner)
-    - 409: Version conflict (draft was modified by another process)
-    - 423: Draft locked by another user
-    """
-    update_data = draft_update.model_dump(exclude={"version"}, exclude_unset=True)
-
-    draft = indicator_draft_service.save_draft(
-        db=db,
-        draft_id=draft_id,
-        user_id=current_user.id,
-        update_data=update_data,
-        version=draft_update.version,
-    )
-
-    return draft
-
-
-@router.post(
-    "/drafts/{draft_id}/delta",
-    response_model=IndicatorDraftResponse,
-    summary="Delta update indicator draft (only changed indicators)",
-)
-def delta_update_indicator_draft(
-    *,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.require_mlgoo_dilg),
-    draft_id: UUID,
-    delta_update: IndicatorDraftDeltaUpdate,
-) -> IndicatorDraftResponse:
-    """
-    Update indicator draft with delta-based save (only changed indicators).
-
-    This endpoint provides ~95% payload reduction compared to full updates,
-    improving save performance from 2-3s to <300ms.
-
-    **Permissions**: MLGOO_DILG only (must own the draft)
-
-    **Path Parameters**:
-    - draft_id: Draft UUID
-
-    **Request Body**:
-    - changed_indicators: List of changed indicator dictionaries
-    - changed_ids: List of temp_ids for changed indicators
-    - version: Current version number (required for optimistic locking)
-    - metadata: Optional metadata (current_step, status, title)
-
-    **Returns**: Updated draft with incremented version
-
-    **Features**:
-    - Delta merge: Only updates changed indicators in existing tree
-    - 95% payload reduction (600 KB → 15 KB typical)
-    - 10x performance improvement (<300ms vs 2-3s)
-    - Optimistic locking to prevent concurrent edit conflicts
-    - Automatic lock acquisition
-    - Lock expiration after 30 minutes
-
-    **Raises**:
-    - 404: Draft not found
-    - 403: Access denied (not draft owner)
-    - 409: Version conflict (draft was modified by another process)
-    - 423: Draft locked by another user
-
-    **Example**:
-    ```json
-    {
-      "changed_indicators": [
-        {"temp_id": "abc123", "name": "Updated Indicator", ...},
-        {"temp_id": "def456", "name": "Another Update", ...}
-      ],
-      "changed_ids": ["abc123", "def456"],
-      "version": 5,
-      "metadata": {"current_step": 3}
-    }
-    ```
-    """
-    draft = indicator_draft_service.save_draft_delta(
-        db=db,
-        draft_id=draft_id,
-        user_id=current_user.id,
-        changed_indicators=delta_update.changed_indicators,
-        changed_ids=delta_update.changed_ids,
-        version=delta_update.version,
-        metadata=delta_update.metadata,
-    )
-
-    return draft
-
-
-@router.delete(
-    "/drafts/{draft_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete indicator draft",
-)
-def delete_indicator_draft(
-    *,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.require_mlgoo_dilg),
-    draft_id: UUID,
-) -> None:
-    """
-    Delete an indicator draft.
-
-    **Permissions**: MLGOO_DILG only (must own the draft)
-
-    **Path Parameters**:
-    - draft_id: Draft UUID
-
-    **Returns**: 204 No Content on success
-
-    **Raises**:
-    - 404: Draft not found
-    - 403: Access denied (not draft owner)
-    """
-    indicator_draft_service.delete_draft(
-        db=db,
-        draft_id=draft_id,
-        user_id=current_user.id,
-    )
-
-
-@router.post(
-    "/drafts/{draft_id}/release-lock",
-    response_model=IndicatorDraftResponse,
-    summary="Release lock on indicator draft",
-)
-def release_draft_lock(
-    *,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.require_mlgoo_dilg),
-    draft_id: UUID,
-) -> IndicatorDraftResponse:
-    """
-    Release lock on an indicator draft.
-
-    **Permissions**: MLGOO_DILG only (must own the draft and hold the lock)
-
-    **Path Parameters**:
-    - draft_id: Draft UUID
-
-    **Returns**: Draft with lock released
-
-    **Raises**:
-    - 404: Draft not found
-    - 403: Access denied (not draft owner)
-    - 400: Lock not held by you
-    """
-    draft = indicator_draft_service.release_lock(
-        db=db,
-        draft_id=draft_id,
-        user_id=current_user.id,
-    )
-
-    return draft
-
-
-# =============================================================================
-# Validation Endpoints (Phase 6: Pre-Publish Validation)
-# =============================================================================
-
-
-@router.post(
-    "/validate-tree",
-    response_model=IndicatorValidationResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Validate indicator tree structure before publishing",
-)
-def validate_indicator_tree(
-    *,
-    current_user: User = Depends(deps.require_mlgoo_dilg),
-    request_data: IndicatorValidationRequest,
-) -> IndicatorValidationResponse:
-    """
-    Validate indicator tree structure, relationships, and schemas before bulk publish.
-
-    **Permissions**: MLGOO_DILG only
-
-    **Validations Performed**:
-    - Circular reference detection (DFS algorithm)
-    - Parent-child relationship integrity
-    - Indicator code format validation (pattern: `1`, `1.1`, `1.1.1`, etc.)
-    - Sort order validation (sequential starting from 0)
-    - Schema completeness (form, MOV, calculation, remark)
-    - Weight sum validation (siblings must sum to 100%)
-
-    **Request Body**:
-    ```json
-    {
-      "indicators": [
-        {
-          "id": "temp_1",
-          "parent_id": null,
-          "indicator_code": "1",
-          "sort_order": 0,
-          "weight": 60,
-          "form_schema": {...},
-          "calculation_schema": {...},
-          "remark_schema": {...}
-        },
-        {
-          "id": "temp_2",
-          "parent_id": "temp_1",
-          "indicator_code": "1.1",
-          "sort_order": 0,
-          "weight": 100
-        }
-      ]
-    }
-    ```
-
-    **Returns**:
-    ```json
-    {
-      "is_valid": true,
-      "errors": [],
-      "warnings": ["Indicator temp_3 has no indicator_code set"]
-    }
-    ```
-
-    **Error Response Example**:
-    ```json
-    {
-      "is_valid": false,
-      "errors": [
-        {
-          "type": "circular_reference",
-          "message": "Circular reference detected: 1 → 1.1 → 1",
-          "indicator_id": "temp_1"
-        },
-        {
-          "type": "invalid_code",
-          "message": "Indicator 1. has invalid code format (must match pattern: 1, 1.1, 1.1.1, etc.)",
-          "indicator_id": "temp_2"
-        },
-        {
-          "type": "weight_sum",
-          "message": "Weights for indicators 1.1, 1.2 sum to 90%, must be 100% (parent temp_1)",
-          "indicator_id": null
-        }
-      ],
-      "warnings": []
-    }
-    ```
-
-    **Status Codes**:
-    - 200: Validation completed (check `is_valid` field)
-    - 401: Unauthorized (not authenticated)
-    - 403: Forbidden (not MLGOO_DILG role)
-    """
-    indicators = request_data.indicators
-
-    # Validate tree structure (circular refs, parent-child, codes, sort order)
-    tree_result = indicator_validation_service.validate_tree_structure(indicators)
-
-    # Validate weights
-    weight_result = indicator_validation_service.validate_weights(indicators)
-
-    # Collect all errors
-    all_errors: list[ValidationError] = []
-
-    # Add tree validation errors
-    for error_msg in tree_result.errors:
-        # Categorize errors by type
-        error_type = "tree_structure"
-        if "Circular reference" in error_msg:
-            error_type = "circular_reference"
-        elif "invalid code format" in error_msg:
-            error_type = "invalid_code"
-        elif "non-existent parent" in error_msg:
-            error_type = "invalid_parent"
-        elif "sort_order" in error_msg:
-            error_type = "invalid_sort_order"
-        elif "Duplicate indicator code" in error_msg:
-            error_type = "duplicate_code"
-
-        all_errors.append(
-            ValidationError(
-                type=error_type,
-                message=error_msg,
-                indicator_id=None,  # Could extract from message if needed
-            )
-        )
-
-    # Add weight validation errors
-    for parent_id, error_msg in weight_result.errors.items():
-        all_errors.append(
-            ValidationError(
-                type="weight_sum",
-                message=error_msg,
-                indicator_id=parent_id,
-            )
-        )
-
-    # Validate schemas for each indicator
-    for indicator in indicators:
-        schema_result = indicator_validation_service.validate_schemas(indicator)
-        if not schema_result.is_valid:
-            for schema_type, schema_errors in schema_result.errors.items():
-                for error_msg in schema_errors:
-                    all_errors.append(
-                        ValidationError(
-                            type=f"schema_{schema_type}",
-                            message=error_msg,
-                            indicator_id=indicator.get("id"),
-                        )
-                    )
-
-    # Overall validity
-    is_valid = len(all_errors) == 0
-
-    return IndicatorValidationResponse(
-        is_valid=is_valid,
-        errors=all_errors,
-        warnings=tree_result.warnings,
-    )
 
 
 # =============================================================================

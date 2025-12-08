@@ -1,9 +1,69 @@
 import { defineConfig } from 'orval';
+import fs from 'fs';
+
+/**
+ * Reads a simple key=value .env file and returns an object
+ */
+function loadEnvFile(filePath: string): Record<string, string> {
+  const env: Record<string, string> = {};
+  if (fs.existsSync(filePath)) {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    content.split('\n').forEach((line) => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) return;
+
+      const [key, ...valueParts] = trimmed.split('=');
+      if (key && valueParts.length > 0) {
+        env[key.trim()] = valueParts.join('=').trim();
+      }
+    });
+  }
+  return env;
+}
+
+/**
+ * Gets the API port from various sources in priority order:
+ * 1. ORVAL_API_URL environment variable (full URL)
+ * 2. API_PORT environment variable
+ * 3. Root .env file (API_PORT)
+ * 4. .worktree-info file (API_PORT)
+ * 5. Default: 8000
+ */
+function getOpenApiUrl(): string {
+  // 1. Check for full URL override first
+  if (process.env.ORVAL_API_URL) {
+    return process.env.ORVAL_API_URL;
+  }
+
+  // 2. Check API_PORT environment variable
+  if (process.env.API_PORT) {
+    return `http://localhost:${process.env.API_PORT}/openapi.json`;
+  }
+
+  // 3. Check root .env file
+  const rootEnv = loadEnvFile('.env');
+  if (rootEnv.API_PORT) {
+    return `http://localhost:${rootEnv.API_PORT}/openapi.json`;
+  }
+
+  // 4. Check .worktree-info file (for worktree setups)
+  const worktreeInfo = loadEnvFile('.worktree-info');
+  if (worktreeInfo.API_PORT) {
+    return `http://localhost:${worktreeInfo.API_PORT}/openapi.json`;
+  }
+
+  // 5. Default fallback
+  return 'http://localhost:8000/openapi.json';
+}
+
+// Allow overriding the OpenAPI URL via environment variable for CI/CD
+// Also supports worktree development with dynamic ports
+const openApiUrl = getOpenApiUrl();
 
 export default defineConfig({
   sinag: {
     input: {
-      target: 'http://localhost:8000/openapi.json',
+      target: openApiUrl,
     },
     output: {
       // 🎯 Professional scaling approach: Split by FastAPI tags automatically!

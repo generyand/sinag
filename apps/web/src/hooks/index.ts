@@ -3,6 +3,16 @@
 // Theme hooks
 export { useThemeToggle } from './useThemeToggle';
 
+// Assessment Year hooks
+export {
+  useAccessibleYears,
+  useYearDetails,
+  useCurrentYear,
+  useYearSelector,
+  useEffectiveYear,
+  useIsActiveYear,
+} from './useAssessmentYear';
+
 // User management hooks
 export { useUsers } from './useUsers';
 

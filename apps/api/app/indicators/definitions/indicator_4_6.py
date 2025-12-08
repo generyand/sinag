@@ -22,7 +22,7 @@ INDICATOR_4_6 = Indicator(
         # Sub-Indicator 4.6.1: Organized Barangay GAD Focal Point System
         SubIndicator(
             code="4.6.1",
-            name="Organized Barangay GAD Focal Point System",
+            name="Organized Barangay GAD Focal Point System covering {JAN_TO_OCT_CURRENT_YEAR}",
             upload_instructions=(
                 "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the Barangay GAD Focal Point System\n\n"
                 "Please supply the required information:\n"

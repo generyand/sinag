@@ -6,7 +6,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { isFieldRequired } from "@/lib/forms/formSchemaParser";
 import type { FormSchema, FormSchemaFieldsItem, MOVFileResponse } from "@sinag/shared";
-import { useGetAssessmentsMyAssessment, useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles } from "@sinag/shared";
+import {
+  useGetAssessmentsMyAssessment,
+  useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles,
+} from "@sinag/shared";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { useMemo } from "react";
 
@@ -51,8 +54,8 @@ export function CompletionFeedbackPanel({
 
   // Get rework status and timestamp
   const assessmentData = myAssessmentData as any;
-  const normalizedStatus = (assessmentData?.assessment?.status || '').toUpperCase();
-  const isReworkStatus = normalizedStatus === 'REWORK' || normalizedStatus === 'NEEDS_REWORK';
+  const normalizedStatus = (assessmentData?.assessment?.status || "").toUpperCase();
+  const isReworkStatus = normalizedStatus === "REWORK" || normalizedStatus === "NEEDS_REWORK";
   const reworkRequestedAt = assessmentData?.assessment?.rework_requested_at;
 
   // Calculate completion metrics
@@ -63,10 +66,14 @@ export function CompletionFeedbackPanel({
     if (formSchema && "fields" in formSchema && Array.isArray(formSchema.fields)) {
       // Root-level fields (newer format: type: mov_checklist)
       fields = formSchema.fields as FormSchemaFieldsItem[];
-    } else if (formSchema && "sections" in formSchema && Array.isArray((formSchema as any).sections)) {
+    } else if (
+      formSchema &&
+      "sections" in formSchema &&
+      Array.isArray((formSchema as any).sections)
+    ) {
       // Sections format (older format: sections[].fields)
       const sections = (formSchema as any).sections as Array<{ fields?: FormSchemaFieldsItem[] }>;
-      fields = sections.flatMap(section => section.fields || []);
+      fields = sections.flatMap((section) => section.fields || []);
     }
 
     if (fields.length === 0) {
@@ -81,13 +88,15 @@ export function CompletionFeedbackPanel({
 
     // For OR-logic indicators, treat all file_upload fields as "required" for completion purposes
     // (even though individual fields have required: false)
-    const isOrLogic = validationRule === "ANY_ITEM_REQUIRED" || validationRule === "OR_LOGIC_AT_LEAST_1_REQUIRED";
+    const isOrLogic =
+      validationRule === "ANY_ITEM_REQUIRED" || validationRule === "OR_LOGIC_AT_LEAST_1_REQUIRED";
     const isSharedPlusOrLogic = validationRule === "SHARED_PLUS_OR_LOGIC";
 
     // Get fields to track for completion
-    const requiredFields = (isOrLogic || isSharedPlusOrLogic)
-      ? fields.filter((field) => field.field_type === "file_upload")  // All upload fields for OR logic
-      : fields.filter((field) => isFieldRequired(field));  // Only required fields for AND logic
+    const requiredFields =
+      isOrLogic || isSharedPlusOrLogic
+        ? fields.filter((field) => field.field_type === "file_upload") // All upload fields for OR logic
+        : fields.filter((field) => isFieldRequired(field)); // Only required fields for AND logic
 
     // Helper function to check if a field is filled
     const isFieldFilled = (field: FormSchemaFieldsItem): boolean => {
@@ -124,32 +133,31 @@ export function CompletionFeedbackPanel({
     // For SHARED+OR logic (e.g., indicator 4.1.6, 4.8.4)
     // Pattern: SHARED (required) + (OPTION A OR OPTION B) = 2 total requirements
     if (isSharedPlusOrLogic) {
-      // Group fields by option_group
+      // Group fields by completion_group (not option_group to avoid accordion rendering)
       const sharedFields: FormSchemaFieldsItem[] = [];
       const optionAFields: FormSchemaFieldsItem[] = [];
       const optionBFields: FormSchemaFieldsItem[] = [];
 
       requiredFields.forEach((field) => {
-        const optionGroup = (field as any).option_group;
-        if (optionGroup === 'shared') {
+        const completionGroup = (field as any).completion_group;
+        if (completionGroup === "shared") {
           sharedFields.push(field);
-        } else if (optionGroup === 'option_a') {
+        } else if (completionGroup === "option_a") {
           optionAFields.push(field);
-        } else if (optionGroup === 'option_b') {
+        } else if (completionGroup === "option_b") {
           optionBFields.push(field);
         }
       });
 
       // Check SHARED fields - all must be filled
-      const sharedComplete = sharedFields.length > 0
-        ? sharedFields.every(field => isFieldFilled(field))
-        : true;
+      const sharedComplete =
+        sharedFields.length > 0 ? sharedFields.every((field) => isFieldFilled(field)) : true;
 
       // Check OPTION A - at least 1 upload
-      const optionAHasUpload = optionAFields.some(field => isFieldFilled(field));
+      const optionAHasUpload = optionAFields.some((field) => isFieldFilled(field));
 
       // Check OPTION B - at least 1 upload
-      const optionBHasUpload = optionBFields.some(field => isFieldFilled(field));
+      const optionBHasUpload = optionBFields.some((field) => isFieldFilled(field));
 
       // Either option_a OR option_b must have at least 1 upload
       const optionComplete = optionAHasUpload || optionBHasUpload;
@@ -165,12 +173,12 @@ export function CompletionFeedbackPanel({
       // Get incomplete fields for display
       const incompleteFields: FormSchemaFieldsItem[] = [];
       if (!sharedComplete) {
-        incompleteFields.push(...sharedFields.filter(field => !isFieldFilled(field)));
+        incompleteFields.push(...sharedFields.filter((field) => !isFieldFilled(field)));
       }
       if (!optionComplete) {
         // Show first incomplete field from each option as hint
-        const firstOptionAIncomplete = optionAFields.find(field => !isFieldFilled(field));
-        const firstOptionBIncomplete = optionBFields.find(field => !isFieldFilled(field));
+        const firstOptionAIncomplete = optionAFields.find((field) => !isFieldFilled(field));
+        const firstOptionBIncomplete = optionBFields.find((field) => !isFieldFilled(field));
         if (firstOptionAIncomplete) incompleteFields.push(firstOptionAIncomplete);
         if (firstOptionBIncomplete) incompleteFields.push(firstOptionBIncomplete);
       }
@@ -205,14 +213,18 @@ export function CompletionFeedbackPanel({
           // (e.g., 1.6.1.3 with 2 separate upload options)
           // Otherwise, group section_1+section_2 together (e.g., 2.1.4 Option A)
 
-          if (requiredFields.length === 2 &&
-              requiredFields.every(f => f.field_id.includes('section_1') || f.field_id.includes('section_2'))) {
+          if (
+            requiredFields.length === 2 &&
+            requiredFields.every(
+              (f) => f.field_id.includes("section_1") || f.field_id.includes("section_2")
+            )
+          ) {
             // Only 2 fields, both with section_1 or section_2 → each is its own option
             groupName = `Field ${fieldId}`;
-          } else if (fieldId.includes('section_1') || fieldId.includes('section_2')) {
+          } else if (fieldId.includes("section_1") || fieldId.includes("section_2")) {
             // Part of a multi-field group (Option A)
             groupName = "Group A (Option A)";
-          } else if (fieldId.includes('section_3') || fieldId.includes('section_4')) {
+          } else if (fieldId.includes("section_3") || fieldId.includes("section_4")) {
             // Part of a multi-field group (Option B)
             groupName = "Group B (Option B)";
           } else {
@@ -230,7 +242,7 @@ export function CompletionFeedbackPanel({
       // Check if at least one complete group is filled
       const completeGroups = Object.entries(groups).filter(([groupName, groupFields]) => {
         // All fields in this group must be filled
-        return groupFields.every(field => isFieldFilled(field));
+        return groupFields.every((field) => isFieldFilled(field));
       });
 
       // At least one group must be complete for OR logic
@@ -239,7 +251,8 @@ export function CompletionFeedbackPanel({
       const percentage = totalRequired > 0 ? Math.round((completed / totalRequired) * 100) : 0;
 
       // Get incomplete required fields (only show if NO groups are complete)
-      const incompleteFields = completed === 0 ? requiredFields.filter((field) => !isFieldFilled(field)) : [];
+      const incompleteFields =
+        completed === 0 ? requiredFields.filter((field) => !isFieldFilled(field)) : [];
 
       return {
         totalRequired,
@@ -299,7 +312,9 @@ export function CompletionFeedbackPanel({
             <span id="progress-label" className="font-medium text-[var(--text-secondary)]">
               Overall Progress
             </span>
-            <span className="font-bold text-[var(--foreground)]" aria-live="polite">{percentage}% Complete</span>
+            <span className="font-bold text-[var(--foreground)]" aria-live="polite">
+              {percentage}% Complete
+            </span>
           </div>
           <div
             className="h-2.5 w-full bg-[var(--muted)] rounded-full overflow-hidden"
@@ -314,7 +329,7 @@ export function CompletionFeedbackPanel({
               className="h-full transition-all duration-500 ease-out rounded-full"
               style={{
                 width: `${percentage}%`,
-                backgroundColor: getProgressColor()
+                backgroundColor: getProgressColor(),
               }}
               aria-hidden="true"
             />
@@ -323,8 +338,15 @@ export function CompletionFeedbackPanel({
 
         {/* Success Message for 100% Completion */}
         {percentage === 100 && (
-          <div className="flex items-start gap-3 p-3 rounded-sm bg-green-500/10 border border-green-500/20" role="status" aria-live="polite">
-            <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" aria-hidden="true" />
+          <div
+            className="flex items-start gap-3 p-3 rounded-sm bg-green-500/10 border border-green-500/20"
+            role="status"
+            aria-live="polite"
+          >
+            <CheckCircle2
+              className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0"
+              aria-hidden="true"
+            />
             <div>
               <h4 className="text-sm font-bold text-green-700">All set!</h4>
               <p className="text-xs text-green-600/90 mt-0.5">
@@ -336,19 +358,34 @@ export function CompletionFeedbackPanel({
 
         {/* Incomplete Required Fields List */}
         {percentage < 100 && incompleteFields.length > 0 && (
-          <section className="space-y-3 pt-2 border-t border-[var(--border)]" aria-labelledby="missing-requirements-title">
-            <h4 id="missing-requirements-title" className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] flex items-center gap-2">
+          <section
+            className="space-y-3 pt-2 border-t border-[var(--border)]"
+            aria-labelledby="missing-requirements-title"
+          >
+            <h4
+              id="missing-requirements-title"
+              className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] flex items-center gap-2"
+            >
               <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
               Missing Requirements
             </h4>
-            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="list" aria-label="List of missing required fields">
+            <ul
+              className="grid grid-cols-1 sm:grid-cols-2 gap-2"
+              role="list"
+              aria-label="List of missing required fields"
+            >
               {incompleteFields.map((field) => (
                 <li
                   key={field.field_id}
                   className="flex items-center gap-2 text-xs text-red-600 bg-red-50 dark:bg-red-900/10 px-2 py-1.5 rounded-sm border border-red-100 dark:border-red-900/20"
                 >
-                  <div className="h-1.5 w-1.5 rounded-sm bg-red-500 flex-shrink-0" aria-hidden="true" />
-                  <span className="truncate" title={field.label}>{field.label}</span>
+                  <div
+                    className="h-1.5 w-1.5 rounded-sm bg-red-500 flex-shrink-0"
+                    aria-hidden="true"
+                  />
+                  <span className="truncate" title={field.label}>
+                    {field.label}
+                  </span>
                 </li>
               ))}
             </ul>

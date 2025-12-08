@@ -38,7 +38,7 @@ class TestEmailValidation:
             user = UserCreate(
                 email=email,
                 name="Test User",
-                password="ValidPass123",
+                password="ValidPass123!@",
             )
             assert user.email == email
 
@@ -57,7 +57,7 @@ class TestEmailValidation:
                 UserCreate(
                     email=email,
                     name="Test User",
-                    password="ValidPass123",
+                    password="ValidPass123!@",
                 )
 
             error = exc_info.value.errors()[0]
@@ -69,7 +69,7 @@ class TestEmailValidation:
             UserCreate(
                 email="",
                 name="Test User",
-                password="ValidPass123",
+                password="ValidPass123!@",
             )
 
         error = exc_info.value.errors()[0]
@@ -81,7 +81,7 @@ class TestEmailValidation:
             UserAdminCreate(
                 email="invalid-email",
                 name="Admin User",
-                password="ValidPass123",
+                password="ValidPass123!@",
                 role=UserRole.MLGOO_DILG,
             )
 
@@ -116,11 +116,11 @@ class TestPasswordStrengthValidation:
     def test_valid_password_accepted(self):
         """Test that passwords meeting all requirements are accepted."""
         valid_passwords = [
-            "ValidPass123",
-            "SecurePassword1",
-            "Abcd1234efgh",
-            "P@ssw0rd123",
-            "MySecure123Pass",
+            "ValidPass123!@",
+            "SecurePassword1#",
+            "Abcd1234efgh!",
+            "P@ssw0rd1234",
+            "MySecure123Pass!",
         ]
 
         for password in valid_passwords:
@@ -132,12 +132,12 @@ class TestPasswordStrengthValidation:
             assert user.password == password
 
     def test_password_too_short_rejected(self):
-        """Test that passwords shorter than 8 characters are rejected."""
+        """Test that passwords shorter than 12 characters are rejected."""
         short_passwords = [
-            "Short1",  # 6 chars
-            "Pass1",  # 5 chars
-            "Abc123",  # 6 chars
-            "Test1",  # 5 chars
+            "Short1!",  # 7 chars
+            "Pass1!@",  # 7 chars
+            "Abc123!@#",  # 9 chars
+            "Test1234!",  # 9 chars
         ]
 
         for password in short_passwords:
@@ -150,14 +150,14 @@ class TestPasswordStrengthValidation:
 
             error = exc_info.value.errors()[0]
             assert "password" in error["loc"]
-            assert "at least 8 characters" in str(error["ctx"]["error"]).lower()
+            assert "at least 12 characters" in str(error["ctx"]["error"]).lower()
 
     def test_password_missing_uppercase_rejected(self):
         """Test that passwords without uppercase letters are rejected."""
         no_uppercase = [
-            "alllowercase123",
-            "password1234",
-            "nouppercasehere1",
+            "alllowercase123!@",
+            "password1234!@#$",
+            "nouppercasehere1!",
         ]
 
         for password in no_uppercase:
@@ -175,9 +175,9 @@ class TestPasswordStrengthValidation:
     def test_password_missing_lowercase_rejected(self):
         """Test that passwords without lowercase letters are rejected."""
         no_lowercase = [
-            "ALLUPPERCASE123",
-            "PASSWORD1234",
-            "NOLOWERCASEHERE1",
+            "ALLUPPERCASE123!@",
+            "PASSWORD1234!@#$",
+            "NOLOWERCASEHERE1!",
         ]
 
         for password in no_lowercase:
@@ -195,9 +195,9 @@ class TestPasswordStrengthValidation:
     def test_password_missing_digit_rejected(self):
         """Test that passwords without digits are rejected."""
         no_digit = [
-            "NoDigitsHere",
-            "PasswordOnly",
-            "AllLettersNoNumber",
+            "NoDigitsHere!@#$",
+            "PasswordOnly!@#",
+            "AllLettersNoNumber!",
         ]
 
         for password in no_digit:
@@ -218,7 +218,7 @@ class TestPasswordStrengthValidation:
             UserAdminCreate(
                 email="admin@example.com",
                 name="Admin User",
-                password="weak",  # Too short, missing uppercase and digit
+                password="weak",  # Too short, missing uppercase, digit, and special char
                 role=UserRole.MLGOO_DILG,
             )
 
@@ -228,7 +228,7 @@ class TestPasswordStrengthValidation:
     def test_password_validation_in_reset_request(self):
         """Test password validation in PasswordResetRequest schema."""
         with pytest.raises(ValidationError) as exc_info:
-            PasswordResetRequest(new_password="short1")
+            PasswordResetRequest(new_password="short1!")
 
         error = exc_info.value.errors()[0]
         assert "new_password" in error["loc"]
@@ -236,21 +236,24 @@ class TestPasswordStrengthValidation:
     def test_validate_password_strength_function_direct(self):
         """Test the validate_password_strength function directly."""
         # Valid password should return unchanged
-        valid = "ValidPass123"
+        valid = "ValidPass123!"
         assert validate_password_strength(valid) == valid
 
         # Invalid passwords should raise ValueError
-        with pytest.raises(ValueError, match="at least 8 characters"):
-            validate_password_strength("Short1")
+        with pytest.raises(ValueError, match="at least 12 characters"):
+            validate_password_strength("Short1!")
 
         with pytest.raises(ValueError, match="uppercase"):
-            validate_password_strength("nouppercase123")
+            validate_password_strength("nouppercase123!@")
 
         with pytest.raises(ValueError, match="lowercase"):
-            validate_password_strength("NOLOWERCASE123")
+            validate_password_strength("NOLOWERCASE123!@")
 
         with pytest.raises(ValueError, match="digit"):
-            validate_password_strength("NoDigitsHere")
+            validate_password_strength("NoDigitsHere!@#")
+
+        with pytest.raises(ValueError, match="special character"):
+            validate_password_strength("NoSpecialChar123")
 
 
 # ====================================================================
@@ -289,7 +292,7 @@ class TestTypeCoercion:
         user = UserCreate(
             email="test@example.com",
             name="Test User",
-            password="ValidPass123",
+            password="ValidPass123!@",
             barangay_id="42",  # String instead of int
         )
         assert user.barangay_id == 42
@@ -301,7 +304,7 @@ class TestTypeCoercion:
         user = UserCreate(
             email="test@example.com",
             name="Test User",
-            password="ValidPass123",
+            password="ValidPass123!@",
             barangay_id="",  # Empty string
         )
         assert user.barangay_id is None
@@ -310,7 +313,7 @@ class TestTypeCoercion:
         user = UserCreate(
             email="test@example.com",
             name="Test User",
-            password="ValidPass123",
+            password="ValidPass123!@",
             barangay_id="null",  # String "null"
         )
         assert user.barangay_id is None
@@ -330,7 +333,7 @@ class TestTypeCoercion:
         user = UserAdminCreate(
             email="test@example.com",
             name="Test User",
-            password="ValidPass123",
+            password="ValidPass123!@",
             role=UserRole.VALIDATOR,
             validator_area_id="3",  # String
             barangay_id="7",  # String (will be cleared for VALIDATOR role)
@@ -363,11 +366,11 @@ class TestCombinedValidation:
         user = UserCreate(
             email="valid.email@example.com",  # Valid email
             name="Test User",
-            password="SecurePass123",  # Valid password
+            password="SecurePass123!@",  # Valid password
             barangay_id="42",  # String coerced to int
         )
         assert user.email == "valid.email@example.com"
-        assert user.password == "SecurePass123"
+        assert user.password == "SecurePass123!@"
         assert user.barangay_id == 42
 
     def test_valid_admin_create_with_all_validations(self):
@@ -375,12 +378,12 @@ class TestCombinedValidation:
         user = UserAdminCreate(
             email="admin@dilg.gov.ph",  # Valid email
             name="Admin User",
-            password="StrongPass456",  # Valid password
+            password="StrongPass456!@",  # Valid password
             role=UserRole.VALIDATOR,
             validator_area_id="3",  # String coerced to int
         )
         assert user.email == "admin@dilg.gov.ph"
-        assert user.password == "StrongPass456"
+        assert user.password == "StrongPass456!@"
         assert user.validator_area_id == 3
 
     def test_invalid_email_and_password_both_rejected(self):
@@ -389,7 +392,7 @@ class TestCombinedValidation:
             UserCreate(
                 email="not-valid-email",  # Invalid email
                 name="Test User",
-                password="weak",  # Invalid password (too short, missing uppercase and digit)
+                password="weak",  # Invalid password (too short, missing uppercase, digit, and special char)
             )
 
         errors = exc_info.value.errors()
@@ -401,8 +404,8 @@ class TestCombinedValidation:
     def test_password_reset_request_validation(self):
         """Test PasswordResetRequest schema validation."""
         # Valid password
-        request = PasswordResetRequest(new_password="NewSecure123")
-        assert request.new_password == "NewSecure123"
+        request = PasswordResetRequest(new_password="NewSecure123!@")
+        assert request.new_password == "NewSecure123!@"
 
         # Invalid password
         with pytest.raises(ValidationError) as exc_info:
@@ -421,21 +424,21 @@ class TestEdgeCases:
     """Test suite for edge cases and boundary conditions."""
 
     def test_password_exactly_8_characters_accepted(self):
-        """Test that 8-character passwords are accepted (minimum length)."""
+        """Test that 12-character passwords are accepted (minimum length)."""
         user = UserCreate(
             email="test@example.com",
             name="Test User",
-            password="Valid123",  # Exactly 8 characters
+            password="Valid123456!",  # Exactly 12 characters
         )
-        assert user.password == "Valid123"
+        assert user.password == "Valid123456!"
 
     def test_password_with_special_characters_accepted(self):
         """Test that passwords with special characters are accepted."""
         special_passwords = [
-            "P@ssw0rd",
-            "Secure#123",
-            "Valid$Pass1",
-            "Test!Pass123",
+            "P@ssw0rd1234",
+            "Secure#12345",
+            "Valid$Pass123",
+            "Test!Pass1234",
         ]
 
         for password in special_passwords:
@@ -447,8 +450,8 @@ class TestEdgeCases:
             assert user.password == password
 
     def test_very_long_password_accepted(self):
-        """Test that very long passwords are accepted."""
-        long_password = "VeryLongSecurePassword123" * 10  # 250 characters
+        """Test that very long passwords are accepted (up to 72 chars due to bcrypt limit)."""
+        long_password = "VeryLongSecurePassword123!@#$%^&*()_+-="  # Under 72 chars
         user = UserCreate(
             email="test@example.com",
             name="Test User",
@@ -462,7 +465,7 @@ class TestEdgeCases:
         user = UserCreate(
             email="test@example.com",
             name="Test User",
-            password="ValidPass123",
+            password="ValidPass123!@",
             barangay_id=0,
         )
         assert user.barangay_id == 0
@@ -471,7 +474,7 @@ class TestEdgeCases:
         user = UserCreate(
             email="test@example.com",
             name="Test User",
-            password="ValidPass123",
+            password="ValidPass123!@",
             barangay_id="0",
         )
         assert user.barangay_id == 0
@@ -481,7 +484,7 @@ class TestEdgeCases:
         user = UserCreate(
             email="Test.User@Example.COM",
             name="Test User",
-            password="ValidPass123",
+            password="ValidPass123!@",
         )
         # EmailStr preserves case but validates format
         # (case-insensitive comparison happens at DB level via collation)

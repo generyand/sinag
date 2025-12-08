@@ -28,11 +28,11 @@ INDICATOR_3_4 = Indicator(
         # Sub-Indicator 3.4.1: Structure
         SubIndicator(
             code="3.4.1",
-            name="Structure: Organized Barangay Tanod with its composition compliant to the provisions of DILG MC No. 2003-42",
+            name="Structure: Organized Barangay Tanod with its composition compliant to the provisions of DILG MC No. 2003-42 covering {JAN_TO_OCT_CURRENT_YEAR}",
             upload_instructions=(
                 "Upload the following:\n\n"
                 "1. EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) "
-                "on the organization of the Barangay Tanod covering January to October 2023\n\n"
+                "on the organization of the Barangay Tanod covering {JAN_TO_OCT_CURRENT_YEAR}\n\n"
                 "Please also supply the required information:\n"
                 "Date of approval"
             ),
@@ -41,7 +41,7 @@ INDICATOR_3_4 = Indicator(
                 # Simplified checklist - only 1 checkbox for the main EO requirement
                 ChecklistItem(
                     id="3_4_1_upload",
-                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the organization of the Barangay Tanod",
+                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the organization of the Barangay Tanod covering {JAN_TO_OCT_CURRENT_YEAR}",
                     mov_description="Verification that the EO/issuance creates Barangay Tanod with proper composition",
                     item_type="checkbox",
                     required=False,

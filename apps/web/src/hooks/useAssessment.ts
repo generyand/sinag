@@ -143,14 +143,13 @@ export function useCurrentAssessment() {
   type MappedIndicator = Record<string, unknown> & {
     children?: MappedIndicator[];
   };
-  
+
   const mapIndicatorTree = (areaId: number, indicator: IndicatorNode): MappedIndicator => {
     const mapped = {
       id: indicator.id.toString(),
       // Preserve backend link to real DB indicator for synthetic children
       responseIndicatorId:
-        (indicator as any).responseIndicatorId ??
-        (indicator as any).response_indicator_id,
+        (indicator as any).responseIndicatorId ?? (indicator as any).response_indicator_id,
       code: (() => {
         // Use indicator_code from backend if it exists (CRITICAL FIX: field name is indicator_code not code)
         if ((indicator as any).indicator_code) {
@@ -184,7 +183,7 @@ export function useCurrentAssessment() {
       complianceAnswer: (() => {
         const data = indicator.response?.response_data as any;
         if (!data) return undefined;
-        
+
         // First, check for fields ending in _compliance (for areas 1-6)
         const complianceFields: string[] = [];
         for (const key in data) {
@@ -195,7 +194,7 @@ export function useCurrentAssessment() {
             }
           }
         }
-        
+
         // If we found compliance fields, determine the answer:
         // - If any field is "yes", return "yes" (need MOVs)
         // - If all fields are answered (yes/no/na), return the first one for compatibility
@@ -204,14 +203,17 @@ export function useCurrentAssessment() {
           // Check form schema to see how many compliance fields are required
           const formSchema = indicator.form_schema || {};
           const requiredFields = formSchema.required || [];
-          const complianceRequiredFields = requiredFields.filter((f: string) => 
+          const complianceRequiredFields = requiredFields.filter((f: string) =>
             f.endsWith("_compliance")
           );
-          
+
           // If we have all required compliance fields answered, return based on content
-          if (complianceFields.length >= complianceRequiredFields.length || complianceRequiredFields.length === 0) {
+          if (
+            complianceFields.length >= complianceRequiredFields.length ||
+            complianceRequiredFields.length === 0
+          ) {
             // If any field is "yes", return "yes" (indicates MOVs needed)
-            if (complianceFields.some(v => v === "yes")) {
+            if (complianceFields.some((v) => v === "yes")) {
               return "yes" as any;
             }
             // All fields answered, return first one (for areas 2-6 with single field)
@@ -220,7 +222,7 @@ export function useCurrentAssessment() {
           // Not all required fields answered yet
           return undefined;
         }
-        
+
         // Fall back to common compliance field names
         const val =
           data.compliance ??
@@ -233,7 +235,7 @@ export function useCurrentAssessment() {
         return undefined;
       })(),
       movFiles: (indicator.movs || []).map((m: any) => {
-        const storagePath = m.storage_path || (m as any).storagePath || '';
+        const storagePath = m.storage_path || (m as any).storagePath || "";
         // Detect section from storage path (same logic as DynamicIndicatorForm)
         const section = (() => {
           if (typeof storagePath !== "string") return undefined;
@@ -247,21 +249,21 @@ export function useCurrentAssessment() {
             "beswmc_documents",
           ];
           for (const sec of sections) {
-            const pathOnly = storagePath.split('?')[0]; // Remove query params if present
-            const hasSection = 
+            const pathOnly = storagePath.split("?")[0]; // Remove query params if present
+            const hasSection =
               pathOnly.includes(`/${sec}/`) ||
               pathOnly.endsWith(`/${sec}`) ||
               pathOnly.includes(`/${sec}-`) ||
               pathOnly.includes(`${sec}/`) ||
-              new RegExp(`[/_-]${sec.replace(/_/g, '[_/]')}[_/-]`).test(pathOnly);
-            
+              new RegExp(`[/_-]${sec.replace(/_/g, "[_/]")}[_/-]`).test(pathOnly);
+
             if (hasSection) {
               return sec;
             }
           }
           return undefined;
         })();
-        
+
         return {
           id: String(m.id),
           name: m.name ?? m.original_filename ?? m.filename,
@@ -287,41 +289,38 @@ export function useCurrentAssessment() {
         },
       },
       responseData: indicator.response?.response_data || {},
-      children: (indicator.children || []).map((child) =>
-        mapIndicatorTree(areaId, child)
-      ),
+      children: (indicator.children || []).map((child) => mapIndicatorTree(areaId, child)),
     };
     return mapped;
   };
 
   const transformedData = assessmentData
     ? {
-        id: (
-          assessmentData as unknown as APIAssessment
-        ).assessment.id.toString(),
-        barangayId: (assessmentData as unknown as APIAssessment).assessment.barangay_id?.toString() || "unknown",
-        barangayName: (assessmentData as unknown as APIAssessment).assessment.barangay_name || "Unknown Barangay",
+        id: (assessmentData as unknown as APIAssessment).assessment.id.toString(),
+        barangayId:
+          (assessmentData as unknown as APIAssessment).assessment.barangay_id?.toString() ||
+          "unknown",
+        barangayName:
+          (assessmentData as unknown as APIAssessment).assessment.barangay_name ||
+          "Unknown Barangay",
         status: (assessmentData as unknown as APIAssessment).assessment.status
           .toLowerCase()
           .replaceAll("_", "-") as AssessmentStatus,
-        createdAt: (assessmentData as unknown as APIAssessment).assessment
-          .created_at,
-        updatedAt: (assessmentData as unknown as APIAssessment).assessment
-          .updated_at,
-        submittedAt: (assessmentData as unknown as APIAssessment).assessment
-          .submitted_at,
-        governanceAreas: (
-          assessmentData as unknown as APIAssessment
-        ).governance_areas.map((area) => ({
-          id: area.id.toString(),
-          name: area.name,
-          code: area.name.substring(0, 2).toUpperCase(),
-          description: `${area.name} governance area`,
-          isCore: area.area_type === "Core",
-          indicators: area.indicators
-            .filter((i) => true) // top-level already from API
-            .map((indicator) => mapIndicatorTree(area.id, indicator)),
-        })),
+        createdAt: (assessmentData as unknown as APIAssessment).assessment.created_at,
+        updatedAt: (assessmentData as unknown as APIAssessment).assessment.updated_at,
+        submittedAt: (assessmentData as unknown as APIAssessment).assessment.submitted_at,
+        governanceAreas: (assessmentData as unknown as APIAssessment).governance_areas.map(
+          (area) => ({
+            id: area.id.toString(),
+            name: area.name,
+            code: area.name.substring(0, 2).toUpperCase(),
+            description: `${area.name} governance area`,
+            isCore: area.area_type === "Core",
+            indicators: area.indicators
+              .filter((i) => true) // top-level already from API
+              .map((indicator) => mapIndicatorTree(area.id, indicator)),
+          })
+        ),
         totalIndicators: (() => {
           // Count only LEAF indicators (indicators without children)
           // For areas with parent-child structure (1-6), only count children
@@ -334,9 +333,7 @@ export function useCurrentAssessment() {
               // Count leaf indicators only
               return acc + 1;
             }, 0);
-          return (
-            assessmentData as unknown as APIAssessment
-          ).governance_areas.reduce(
+          return (assessmentData as unknown as APIAssessment).governance_areas.reduce(
             (total, area) => total + countLeafIndicators(area.indicators),
             0
           );
@@ -360,26 +357,23 @@ export function useCurrentAssessment() {
               const isCompleted = n.response?.is_completed === true;
               return acc + (isCompleted ? 1 : 0);
             }, 0);
-          return (
-            assessmentData as unknown as APIAssessment
-          ).governance_areas.reduce(
+          return (assessmentData as unknown as APIAssessment).governance_areas.reduce(
             (total, area) => total + countCompleted(area.indicators),
             0
           );
         })(),
-        needsReworkIndicators: (
-          assessmentData as unknown as APIAssessment
-        ).governance_areas.reduce((total, area) => {
-          const countRework = (nodes: IndicatorNode[] | undefined): number =>
-            (nodes || []).reduce(
-              (acc, n) =>
-                acc +
-                ((n.feedback_comments || []).length > 0 ? 1 : 0) +
-                countRework(n.children),
-              0
-            );
-          return total + countRework(area.indicators);
-        }, 0),
+        needsReworkIndicators: (assessmentData as unknown as APIAssessment).governance_areas.reduce(
+          (total, area) => {
+            const countRework = (nodes: IndicatorNode[] | undefined): number =>
+              (nodes || []).reduce(
+                (acc, n) =>
+                  acc + ((n.feedback_comments || []).length > 0 ? 1 : 0) + countRework(n.children),
+                0
+              );
+            return total + countRework(area.indicators);
+          },
+          0
+        ),
       }
     : null;
 
@@ -399,18 +393,18 @@ export function useCurrentAssessment() {
           const localCompleted = prev.completedIndicators || 0;
           const serverTotal = (transformedData as any).totalIndicators || 0;
           const localTotal = prev.totalIndicators || 0;
-          
+
           // If totals don't match, always sync (schema might have changed)
           if (serverTotal !== localTotal) {
             return transformedData as unknown as Assessment;
           }
-          
+
           // If local has higher completion count, preserve it (server might be stale)
           // Only sync if server count is higher or equal (meaning server caught up)
           if (serverCompleted >= localCompleted) {
             return transformedData as unknown as Assessment;
           }
-          
+
           // If server is lower, keep optimistic update but merge other changes if needed
           // This prevents flickering when server hasn't finished processing yet
           return prev;
@@ -448,7 +442,7 @@ export function useCurrentAssessment() {
             if (n.children && n.children.length > 0) {
               return acc + countCompleted(n.children);
             }
-            
+
             // TRUST BACKEND'S STATUS
             // Check the indicator's status field which is derived from backend's is_completed
             // status is set to "completed" only when backend validates it as complete
@@ -496,11 +490,11 @@ export function useAssessmentValidation(assessment: Assessment | null) {
         indicator.children.forEach((child: any) => checkIndicator(child));
         return;
       }
-      
+
       // For leaf indicators, extract complianceAnswer from responseData (same logic as counting)
       const responseData = indicator.responseData || {};
       let complianceAnswer: string | undefined = indicator.complianceAnswer;
-      
+
       // If not already set, extract from responseData
       if (!complianceAnswer) {
         // Check for fields ending in _compliance (for areas 1-6)
@@ -513,19 +507,22 @@ export function useAssessmentValidation(assessment: Assessment | null) {
             }
           }
         }
-        
+
         if (complianceFields.length > 0) {
           // Check form schema to see how many compliance fields are required
           const formSchema = indicator.formSchema || {};
           const requiredFields = formSchema.required || [];
-          const complianceRequiredFields = requiredFields.filter((f: string) => 
+          const complianceRequiredFields = requiredFields.filter((f: string) =>
             f.endsWith("_compliance")
           );
-          
+
           // If we have all required compliance fields answered
-          if (complianceFields.length >= complianceRequiredFields.length || complianceRequiredFields.length === 0) {
+          if (
+            complianceFields.length >= complianceRequiredFields.length ||
+            complianceRequiredFields.length === 0
+          ) {
             // If any field is "yes", return "yes" (need MOVs)
-            if (complianceFields.some(v => v === "yes")) {
+            if (complianceFields.some((v) => v === "yes")) {
               complianceAnswer = "yes";
             } else {
               // All fields answered, use first one
@@ -542,40 +539,40 @@ export function useAssessmentValidation(assessment: Assessment | null) {
           }
         }
       }
-      
+
       if (!complianceAnswer) {
         missingIndicators.push(`${indicator.code} - ${indicator.name}`);
         return;
       }
-      
+
       // Check MOVs only for sections with "yes" answers
       // Sections with "no" or "na" don't need MOVs
       // Note: responseData is already defined above
       const props = (indicator.formSchema as any)?.properties || {};
-      
+
       // Build map of field_name -> section for fields with mov_upload_section
       const fieldToSection: Record<string, string> = {};
       for (const [fieldName, fieldProps] of Object.entries(props)) {
         const section = (fieldProps as any)?.mov_upload_section;
-        if (typeof section === 'string') {
+        if (typeof section === "string") {
           fieldToSection[fieldName] = section;
         }
       }
-      
+
       // Only require MOVs for sections where the answer is "yes"
       const requiredSectionsWithYes = new Set<string>();
       for (const [fieldName, section] of Object.entries(fieldToSection)) {
         const value = responseData[fieldName];
-        if (typeof value === 'string' && value.toLowerCase() === 'yes') {
+        if (typeof value === "string" && value.toLowerCase() === "yes") {
           requiredSectionsWithYes.add(section);
         }
       }
-      
+
       if (requiredSectionsWithYes.size > 0) {
         // Check all required sections (with "yes" answers) have at least one MOV
         const present = new Set<string>();
         const movFilesList = indicator.movFiles || [];
-        
+
         console.log(`[VALIDATION] Checking indicator ${indicator.code}:`, {
           requiredSectionsWithYes: Array.from(requiredSectionsWithYes),
           movCount: movFilesList.length,
@@ -584,11 +581,12 @@ export function useAssessmentValidation(assessment: Assessment | null) {
             section: (m as any).section,
           })),
         });
-        
+
         for (const mov of movFilesList) {
-          const sp = (mov as any).storagePath || (mov as any).storage_path || (mov as any).url || '';
+          const sp =
+            (mov as any).storagePath || (mov as any).storage_path || (mov as any).url || "";
           const movSection = (mov as any).section;
-          
+
           // Check both explicit section field and storage path
           for (const rs of requiredSectionsWithYes) {
             // If MOV has explicit section metadata, use that
@@ -599,34 +597,38 @@ export function useAssessmentValidation(assessment: Assessment | null) {
             // Otherwise, check if section name appears in storage path
             // Storage path format from frontend: "assessmentId/responseId/section/timestamp-filename"
             // e.g., "1/123/bdrrmc_documents/1234567890-file.pdf"
-            if (typeof sp === 'string' && sp.length > 0) {
+            if (typeof sp === "string" && sp.length > 0) {
               // Remove any URL prefixes and get just the path
-              const pathOnly = sp.split('?')[0]; // Remove query params if present
+              const pathOnly = sp.split("?")[0]; // Remove query params if present
               // Check various patterns: /section/, /section (at end), section/ (after /)
-              const hasSection = 
-                pathOnly.includes(`/${rs}/`) ||      // Matches: /bdrrmc_documents/
-                pathOnly.endsWith(`/${rs}`) ||       // Matches: .../bdrrmc_documents
-                pathOnly.includes(`/${rs}-`) ||      // Matches: /bdrrmc_documents-timestamp
-                pathOnly.includes(`${rs}/`) ||       // Matches: bdrrmc_documents/
-                new RegExp(`[/_-]${rs.replace(/_/g, '[_/]')}[_/-]`).test(pathOnly); // Flexible matching
-              
+              const hasSection =
+                pathOnly.includes(`/${rs}/`) || // Matches: /bdrrmc_documents/
+                pathOnly.endsWith(`/${rs}`) || // Matches: .../bdrrmc_documents
+                pathOnly.includes(`/${rs}-`) || // Matches: /bdrrmc_documents-timestamp
+                pathOnly.includes(`${rs}/`) || // Matches: bdrrmc_documents/
+                new RegExp(`[/_-]${rs.replace(/_/g, "[_/]")}[_/-]`).test(pathOnly); // Flexible matching
+
               if (hasSection) {
                 present.add(rs);
               }
             }
           }
         }
-        
-        const missingSections = Array.from(requiredSectionsWithYes).filter(s => !present.has(s));
+
+        const missingSections = Array.from(requiredSectionsWithYes).filter((s) => !present.has(s));
         console.log(`[VALIDATION] Indicator ${indicator.code} sections:`, {
           required: Array.from(requiredSectionsWithYes),
           present: Array.from(present),
           missing: missingSections,
         });
-        
-        const allSectionsHaveMOVs = Array.from(requiredSectionsWithYes).every((s) => present.has(s));
+
+        const allSectionsHaveMOVs = Array.from(requiredSectionsWithYes).every((s) =>
+          present.has(s)
+        );
         if (!allSectionsHaveMOVs) {
-          missingMOVs.push(`${indicator.code} - ${indicator.name} (missing sections: ${missingSections.join(', ')})`);
+          missingMOVs.push(
+            `${indicator.code} - ${indicator.name} (missing sections: ${missingSections.join(", ")})`
+          );
         }
       } else if (complianceAnswer === "yes") {
         // Has "yes" but no section-based uploads, so require at least one MOV overall
@@ -653,14 +655,14 @@ export function useAssessmentValidation(assessment: Assessment | null) {
     const isComplete = assessment.completedIndicators === assessment.totalIndicators;
 
     // Status comparison should be case-insensitive since backend returns lowercase
-    const normalizedStatus = (assessment.status || '').toLowerCase();
+    const normalizedStatus = (assessment.status || "").toLowerCase();
     const canSubmit =
       isComplete &&
       (normalizedStatus === "draft" ||
-       normalizedStatus === "rework" ||
-       normalizedStatus === "needs-rework");
+        normalizedStatus === "rework" ||
+        normalizedStatus === "needs-rework");
 
-    console.log('[VALIDATION] Trusting backend is_completed flags:', {
+    console.log("[VALIDATION] Trusting backend is_completed flags:", {
       isComplete,
       canSubmit,
       status: assessment.status,
@@ -671,7 +673,9 @@ export function useAssessmentValidation(assessment: Assessment | null) {
 
     return {
       isComplete,
-      missingIndicators: isComplete ? [] : [`${assessment.totalIndicators - assessment.completedIndicators} indicators remaining`],
+      missingIndicators: isComplete
+        ? []
+        : [`${assessment.totalIndicators - assessment.completedIndicators} indicators remaining`],
       missingMOVs: [],
       canSubmit,
     };
@@ -699,7 +703,7 @@ export function useUpdateIndicatorAnswer() {
       // No need to manually refetch multiple times - invalidation handles it
       queryClient.invalidateQueries({
         queryKey: getGetAssessmentsMyAssessmentQueryKey(),
-        refetchType: 'active', // Only refetch queries currently mounted
+        refetchType: "active", // Only refetch queries currently mounted
       });
     },
   });
@@ -712,13 +716,7 @@ export function useUploadMOV() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      responseId,
-      data,
-    }: {
-      responseId: number;
-      data: MOVCreate;
-    }) => {
+    mutationFn: async ({ responseId, data }: { responseId: number; data: MOVCreate }) => {
       return postAssessmentsResponses$ResponseIdMovs(responseId, data);
     },
     onSuccess: () => {
@@ -726,7 +724,7 @@ export function useUploadMOV() {
       // No artificial delay needed - backend processes synchronously
       queryClient.invalidateQueries({
         queryKey: getGetAssessmentsMyAssessmentQueryKey(),
-        refetchType: 'active', // Only refetch queries currently mounted
+        refetchType: "active", // Only refetch queries currently mounted
       });
     },
   });
@@ -739,13 +737,7 @@ export function useDeleteMOV() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      movId,
-      storagePath,
-    }: {
-      movId: number;
-      storagePath?: string;
-    }) => {
+    mutationFn: async ({ movId, storagePath }: { movId: number; storagePath?: string }) => {
       // Try deleting from Supabase first if we have a storage path
       if (storagePath) {
         try {
@@ -753,7 +745,7 @@ export function useDeleteMOV() {
           await deleteMovFile(storagePath);
         } catch (err) {
           // Continue with DB deletion even if storage deletion fails
-          // eslint-disable-next-line no-console
+
           console.warn("Failed to delete file from storage:", err);
         }
       }
@@ -765,7 +757,7 @@ export function useDeleteMOV() {
       // No artificial delay needed - backend processes synchronously
       queryClient.invalidateQueries({
         queryKey: getGetAssessmentsMyAssessmentQueryKey(),
-        refetchType: 'active', // Only refetch queries currently mounted
+        refetchType: "active", // Only refetch queries currently mounted
       });
     },
   });
@@ -785,7 +777,7 @@ export function useSubmitAssessment() {
       // Invalidate queries - React Query handles refetching active queries automatically
       queryClient.invalidateQueries({
         queryKey: getGetAssessmentsMyAssessmentQueryKey(),
-        refetchType: 'active', // Only refetch queries currently mounted
+        refetchType: "active", // Only refetch queries currently mounted
       });
     },
   });
@@ -809,10 +801,7 @@ export function useIndicator(indicatorId: string) {
       return null;
     };
 
-    if (
-      assessment.governanceAreas &&
-      Array.isArray(assessment.governanceAreas)
-    ) {
+    if (assessment.governanceAreas && Array.isArray(assessment.governanceAreas)) {
       for (const area of assessment.governanceAreas) {
         if (area.indicators && Array.isArray(area.indicators)) {
           const indicator = findInTree(area.indicators as any);
@@ -832,16 +821,10 @@ export function useGovernanceArea(areaId: string) {
   const { data: assessment } = useCurrentAssessment();
 
   return useMemo(() => {
-    if (
-      !assessment ||
-      !assessment.governanceAreas ||
-      !Array.isArray(assessment.governanceAreas)
-    )
+    if (!assessment || !assessment.governanceAreas || !Array.isArray(assessment.governanceAreas))
       return null;
 
-    return (
-      assessment.governanceAreas.find((area) => area.id === areaId) || null
-    );
+    return assessment.governanceAreas.find((area) => area.id === areaId) || null;
   }, [assessment, areaId]);
 }
 
@@ -865,7 +848,7 @@ export function useUpdateResponse() {
       // No artificial delay needed - backend processes synchronously
       queryClient.invalidateQueries({
         queryKey: getGetAssessmentsMyAssessmentQueryKey(),
-        refetchType: 'active', // Only refetch queries currently mounted
+        refetchType: "active", // Only refetch queries currently mounted
       });
     },
   });

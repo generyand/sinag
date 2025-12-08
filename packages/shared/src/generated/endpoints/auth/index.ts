@@ -107,7 +107,7 @@ export const usePostAuthLogin = <TError = HTTPValidationError,
 
       const mutationOptions = getPostAuthLoginMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Change user password endpoint.
@@ -178,7 +178,7 @@ export const usePostAuthChangePassword = <TError = HTTPValidationError,
 
       const mutationOptions = getPostAuthChangePasswordMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Logout endpoint - invalidate user session by blacklisting the token.
@@ -246,7 +246,7 @@ export const usePostAuthLogout = <TError = unknown,
 
       const mutationOptions = getPostAuthLogoutMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Verify authentication status.
@@ -268,8 +268,12 @@ export const getAuthVerify = (
     }
   
 
+
+
 export const getGetAuthVerifyQueryKey = () => {
-    return [`/api/v1/auth/verify`] as const;
+    return [
+    `/api/v1/auth/verify`
+    ] as const;
     }
 
     
@@ -306,12 +310,13 @@ export function useGetAuthVerify<TData = Awaited<ReturnType<typeof getAuthVerify
 
   const queryOptions = getGetAuthVerifyQueryOptions(options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 

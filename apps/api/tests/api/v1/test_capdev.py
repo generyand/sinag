@@ -311,7 +311,8 @@ def test_get_capdev_insights_forbidden_blgu_other_assessment(
     response = client.get(f"/api/v1/capdev/assessments/{completed_assessment_with_capdev.id}")
 
     assert response.status_code == 403
-    assert "only access CapDev insights for your own assessment" in response.json()["detail"]
+    error_msg = response.json().get("error", response.json().get("detail", ""))
+    assert "only access CapDev insights for your own assessment" in error_msg
 
 
 def test_get_capdev_insights_not_found(
@@ -325,7 +326,8 @@ def test_get_capdev_insights_not_found(
     response = client.get("/api/v1/capdev/assessments/99999")
 
     assert response.status_code == 404
-    assert "not found" in response.json()["detail"]
+    error_msg = response.json().get("error", response.json().get("detail", ""))
+    assert "not found" in error_msg
 
 
 def test_get_capdev_insights_not_mlgoo_approved(
@@ -340,7 +342,8 @@ def test_get_capdev_insights_not_mlgoo_approved(
     response = client.get(f"/api/v1/capdev/assessments/{draft_assessment.id}")
 
     assert response.status_code == 400
-    assert "only available after MLGOO approval" in response.json()["detail"]
+    error_msg = response.json().get("error", response.json().get("detail", ""))
+    assert "only available after MLGOO approval" in error_msg
 
 
 def test_get_capdev_insights_returns_barangay_name(
@@ -420,7 +423,8 @@ def test_get_capdev_insights_by_language_invalid_language(
     )
 
     assert response.status_code == 400
-    assert "Invalid language" in response.json()["detail"]
+    error_msg = response.json().get("error", response.json().get("detail", ""))
+    assert "Invalid language" in error_msg
 
 
 def test_get_capdev_insights_by_language_not_available(
@@ -587,8 +591,9 @@ def test_regenerate_capdev_insights_requires_force_if_exists(
     )
 
     assert response.status_code == 400
-    assert "already exist" in response.json()["detail"]
-    assert "force=true" in response.json()["detail"]
+    error_msg = response.json().get("error", response.json().get("detail", ""))
+    assert "already exist" in error_msg
+    assert "force=true" in error_msg
 
 
 def test_regenerate_capdev_insights_not_mlgoo_approved(
@@ -603,7 +608,8 @@ def test_regenerate_capdev_insights_not_mlgoo_approved(
     response = client.post(f"/api/v1/capdev/assessments/{draft_assessment.id}/regenerate")
 
     assert response.status_code == 400
-    assert "not MLGOO approved" in response.json()["detail"]
+    error_msg = response.json().get("error", response.json().get("detail", ""))
+    assert "not MLGOO approved" in error_msg
 
 
 def test_regenerate_capdev_insights_assessment_not_found(
@@ -654,7 +660,8 @@ def test_generate_capdev_language_invalid_language(
     )
 
     assert response.status_code == 400
-    assert "Invalid language" in response.json()["detail"]
+    error_msg = response.json().get("error", response.json().get("detail", ""))
+    assert "Invalid language" in error_msg
 
 
 def test_generate_capdev_language_already_exists(
@@ -672,7 +679,8 @@ def test_generate_capdev_language_already_exists(
     )
 
     assert response.status_code == 400
-    assert "already exist for language" in response.json()["detail"]
+    error_msg = response.json().get("error", response.json().get("detail", ""))
+    assert "already exist for language" in error_msg
 
 
 def test_generate_capdev_language_not_mlgoo_approved(
@@ -689,7 +697,8 @@ def test_generate_capdev_language_not_mlgoo_approved(
     )
 
     assert response.status_code == 400
-    assert "not MLGOO approved" in response.json()["detail"]
+    error_msg = response.json().get("error", response.json().get("detail", ""))
+    assert "not MLGOO approved" in error_msg
 
 
 # ============================================================================

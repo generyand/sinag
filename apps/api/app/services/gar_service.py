@@ -29,13 +29,26 @@ class GARService:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
 
-    def get_completed_assessments(self, db: Session) -> GARAssessmentListResponse:
+    def get_completed_assessments(
+        self, db: Session, assessment_year: int | None = None
+    ) -> GARAssessmentListResponse:
         """
         Get list of completed assessments available for GAR generation.
+
+        Args:
+            db: Database session
+            assessment_year: Filter by assessment year (e.g., 2024, 2025).
+                            Defaults to active year if not provided.
 
         Returns assessments with status COMPLETED or AWAITING_FINAL_VALIDATION
         (for preview purposes).
         """
+        # Resolve assessment year if not provided
+        if assessment_year is None:
+            from app.services.assessment_year_service import assessment_year_service
+
+            assessment_year = assessment_year_service.get_active_year_number(db)
+
         assessments = (
             db.query(Assessment)
             .join(User, Assessment.blgu_user_id == User.id)
@@ -46,7 +59,8 @@ class GARService:
                         AssessmentStatus.COMPLETED,
                         AssessmentStatus.AWAITING_FINAL_VALIDATION,
                     ]
-                )
+                ),
+                Assessment.assessment_year == assessment_year,
             )
             .order_by(
                 Assessment.validated_at.desc().nullslast(),

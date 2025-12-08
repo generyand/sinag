@@ -4,6 +4,26 @@
 // 🏷️  Based on FastAPI tag: "users"
 
 /**
+ * AppSchemasIndicatorUserNested
+ */
+export interface AppSchemasIndicatorUserNested {
+  id: number;
+  name: string;
+  email: string;
+}
+
+
+/**
+ * AppSchemasYearConfigUserNested
+ */
+export interface AppSchemasYearConfigUserNested {
+  id: number;
+  name: string;
+  email: string;
+}
+
+
+/**
  * ApprovalQueueItemBlguUserId
  */
 export type ApprovalQueueItemBlguUserId = number | null;
@@ -58,15 +78,9 @@ export type GetUsersStatsDashboard200 = { [key: string]: unknown };
 
 
 /**
- * IndicatorDraftResponseLockedByUserId
- */
-export type IndicatorDraftResponseLockedByUserId = number | null;
-
-
-/**
  * IndicatorHistoryResponseArchivedByUser
  */
-export type IndicatorHistoryResponseArchivedByUser = UserNested | null;
+export type IndicatorHistoryResponseArchivedByUser = AppSchemasIndicatorUserNested | null;
 
 
 /**
@@ -249,16 +263,6 @@ export interface UserListResponse {
   page: number;
   size: number;
   total_pages: number;
-}
-
-
-/**
- * UserNested
- */
-export interface UserNested {
-  id: number;
-  name: string;
-  email: string;
 }
 
 

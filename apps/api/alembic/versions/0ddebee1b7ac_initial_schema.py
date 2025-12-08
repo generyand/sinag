@@ -306,7 +306,7 @@ def upgrade() -> None:
         "checklist_items",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("indicator_id", sa.Integer(), nullable=False),
-        sa.Column("item_id", sa.String(length=20), nullable=False),
+        sa.Column("item_id", sa.String(length=50), nullable=False),
         sa.Column("label", sa.String(), nullable=False),
         sa.Column("item_type", sa.String(length=30), server_default="checkbox", nullable=False),
         sa.Column("group_name", sa.String(length=100), nullable=True),
@@ -320,6 +320,7 @@ def upgrade() -> None:
         ),
         sa.Column("display_order", sa.Integer(), server_default="0", nullable=False),
         sa.Column("option_group", sa.String(length=50), nullable=True),
+        sa.Column("field_notes", sa.dialects.postgresql.JSONB(), nullable=True),
         sa.Column("created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
         sa.Column("updated_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
         sa.ForeignKeyConstraint(["indicator_id"], ["indicators.id"], ondelete="CASCADE"),
@@ -403,64 +404,6 @@ def upgrade() -> None:
         op.f("ix_deadline_overrides_indicator_id"),
         "deadline_overrides",
         ["indicator_id"],
-        unique=False,
-    )
-    op.create_table(
-        "indicator_drafts",
-        sa.Column("id", sa.UUID(), nullable=False),
-        sa.Column("user_id", sa.Integer(), nullable=False),
-        sa.Column("governance_area_id", sa.Integer(), nullable=False),
-        sa.Column("creation_mode", sa.String(length=50), nullable=False),
-        sa.Column("current_step", sa.Integer(), nullable=False),
-        sa.Column("status", sa.String(length=50), nullable=False),
-        sa.Column("data", sa.JSON(), server_default="[]", nullable=False),
-        sa.Column("title", sa.String(length=200), nullable=True),
-        sa.Column(
-            "created_at",
-            sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
-            nullable=False,
-        ),
-        sa.Column(
-            "updated_at",
-            sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
-            nullable=False,
-        ),
-        sa.Column(
-            "last_accessed_at",
-            sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
-            nullable=False,
-        ),
-        sa.Column("version", sa.Integer(), nullable=False),
-        sa.Column("lock_token", sa.UUID(), nullable=True),
-        sa.Column("locked_by_user_id", sa.Integer(), nullable=True),
-        sa.Column("locked_at", sa.DateTime(timezone=True), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["governance_area_id"],
-            ["governance_areas.id"],
-        ),
-        sa.ForeignKeyConstraint(
-            ["locked_by_user_id"],
-            ["users.id"],
-        ),
-        sa.ForeignKeyConstraint(
-            ["user_id"],
-            ["users.id"],
-        ),
-        sa.PrimaryKeyConstraint("id"),
-    )
-    op.create_index(
-        op.f("ix_indicator_drafts_governance_area_id"),
-        "indicator_drafts",
-        ["governance_area_id"],
-        unique=False,
-    )
-    op.create_index(
-        op.f("ix_indicator_drafts_user_id"),
-        "indicator_drafts",
-        ["user_id"],
         unique=False,
     )
     op.create_table(
@@ -806,9 +749,6 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_indicators_history_indicator_id"), table_name="indicators_history")
     op.drop_index(op.f("ix_indicators_history_id"), table_name="indicators_history")
     op.drop_table("indicators_history")
-    op.drop_index(op.f("ix_indicator_drafts_user_id"), table_name="indicator_drafts")
-    op.drop_index(op.f("ix_indicator_drafts_governance_area_id"), table_name="indicator_drafts")
-    op.drop_table("indicator_drafts")
     op.drop_index(op.f("ix_deadline_overrides_indicator_id"), table_name="deadline_overrides")
     op.drop_index(op.f("ix_deadline_overrides_id"), table_name="deadline_overrides")
     op.drop_index(op.f("ix_deadline_overrides_cycle_id"), table_name="deadline_overrides")

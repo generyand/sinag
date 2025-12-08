@@ -43,7 +43,7 @@ INDICATOR_4_7 = Indicator(
         # Sub-Indicator 4.7.1
         SubIndicator(
             code="4.7.1",
-            name="Presence of updated RBI for the first (1st) semester of CY 2023",
+            name="Presence of updated RBI for the first (1st) semester of {CY_CURRENT_YEAR}",
             upload_instructions=(
                 "Upload the following documents:\n"
                 "1. RBI Monitoring Form C, and\n"

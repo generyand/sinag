@@ -85,9 +85,20 @@ EOF
 
 # Start Redis if not running
 ensure_redis() {
-    if ! docker ps --format '{{.Names}}' | grep -q "sinag-redis"; then
+    local need_celery=false
+    local need_cache=false
+
+    if ! docker ps --format '{{.Names}}' | grep -q "sinag-redis-celery"; then
+        need_celery=true
+    fi
+
+    if ! docker ps --format '{{.Names}}' | grep -q "sinag-redis-cache"; then
+        need_cache=true
+    fi
+
+    if $need_celery || $need_cache; then
         echo -e "${BLUE}Starting Redis...${NC}"
-        docker compose -f "${PROJECT_ROOT}/docker-compose.yml" up -d redis
+        docker compose -f "${PROJECT_ROOT}/docker-compose.yml" up -d redis-celery redis-cache
         echo -e "${GREEN}✓ Redis started${NC}"
     else
         echo -e "${GREEN}✓ Redis already running${NC}"

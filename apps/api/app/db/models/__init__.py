@@ -3,12 +3,13 @@
 
 # Import Base for migrations and table creation
 from ..base import Base
-from .admin import AuditLog
+from .admin import AssessmentCycle, AuditLog, DeadlineOverride
 from .assessment import MOV, Assessment, AssessmentResponse, FeedbackComment, MOVFile
 from .barangay import Barangay
 from .bbi import BBI, BBIResult
 from .governance_area import GovernanceArea, Indicator
 from .notification import Notification
+from .system import AssessmentIndicatorSnapshot, AssessmentYear, AssessmentYearConfig
 from .user import User
 
 __all__ = [
@@ -23,7 +24,12 @@ __all__ = [
     "MOVFile",
     "FeedbackComment",
     "AuditLog",
+    "AssessmentCycle",
+    "DeadlineOverride",
     "BBI",
     "BBIResult",
     "Notification",
+    "AssessmentYear",
+    "AssessmentYearConfig",
+    "AssessmentIndicatorSnapshot",
 ]

@@ -54,7 +54,7 @@ class TestUploadMOVFile:
     """Test suite for POST /api/v1/movs/assessments/{assessment_id}/indicators/{indicator_id}/upload"""
 
     @pytest.fixture
-    def blgu_user(self, db_session):
+    def blgu_user(self, db_session, mock_barangay):
         """Fixture providing a BLGU user."""
         user = User(
             id=100,
@@ -62,7 +62,7 @@ class TestUploadMOVFile:
             name="Test BLGU User",
             hashed_password="hashed",
             role="BLGU_USER",
-            barangay_id=1,
+            barangay_id=mock_barangay.id,
         )
         db_session.add(user)
         db_session.commit()
@@ -211,9 +211,8 @@ class TestUploadMOVFile:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         data = response.json()
-        assert "detail" in data
-        assert "not allowed" in data["detail"]["message"].lower()
-        assert data["detail"]["error_code"] == "INVALID_FILE_TYPE"
+        assert "not allowed" in data["error"].lower()
+        assert data["error_code"] == "INVALID_FILE_TYPE"
 
     def test_upload_rejects_text_file(self, client, assessment, auth_headers):
         """Test that upload rejects .txt files."""
@@ -228,7 +227,7 @@ class TestUploadMOVFile:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         data = response.json()
-        assert data["detail"]["error_code"] == "INVALID_FILE_TYPE"
+        assert data["error_code"] == "INVALID_FILE_TYPE"
 
     def test_upload_rejects_oversized_file(self, client, assessment, auth_headers):
         """Test that upload rejects files larger than 50MB."""
@@ -245,8 +244,8 @@ class TestUploadMOVFile:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         data = response.json()
-        assert "exceeds 50MB limit" in data["detail"]["message"]
-        assert data["detail"]["error_code"] == "FILE_TOO_LARGE"
+        assert "exceeds 50MB limit" in data["error"]
+        assert data["error_code"] == "FILE_TOO_LARGE"
 
     def test_upload_rejects_executable_content(self, client, assessment, auth_headers):
         """Test that upload rejects files with executable content."""
@@ -262,8 +261,8 @@ class TestUploadMOVFile:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         data = response.json()
-        assert "suspicious or executable" in data["detail"]["message"].lower()
-        assert data["detail"]["error_code"] == "SUSPICIOUS_CONTENT"
+        assert "suspicious or executable" in data["error"].lower()
+        assert data["error_code"] == "SUSPICIOUS_CONTENT"
 
     def test_upload_rejects_extension_mismatch(self, client, assessment, auth_headers):
         """Test that upload rejects files where extension doesn't match content type."""
@@ -279,8 +278,8 @@ class TestUploadMOVFile:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         data = response.json()
-        assert "extension does not match" in data["detail"]["message"].lower()
-        assert data["detail"]["error_code"] == "EXTENSION_MISMATCH"
+        assert "extension does not match" in data["error"].lower()
+        assert data["error_code"] == "EXTENSION_MISMATCH"
 
     def test_upload_handles_storage_service_error(self, client, assessment, auth_headers):
         """Test that upload handles storage service errors gracefully."""
@@ -299,7 +298,7 @@ class TestUploadMOVFile:
 
             assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
             data = response.json()
-            assert "Failed to upload file" in data["detail"]
+            assert "Failed to upload file" in data["error"]
 
     def test_upload_requires_authentication(self, client, assessment):
         """Test that upload requires authentication."""
@@ -351,14 +350,14 @@ class TestListMOVFiles:
     """Test suite for GET /api/v1/movs/assessments/{assessment_id}/indicators/{indicator_id}/files"""
 
     @pytest.fixture
-    def blgu_user(self, db_session):
+    def blgu_user(self, db_session, mock_barangay):
         """Fixture providing a BLGU user."""
         user = User(
             email="blgu@test.com",
             name="Test BLGU User",
             hashed_password="hashed",
             role="BLGU_USER",
-            barangay_id=1,
+            barangay_id=mock_barangay.id,
         )
         db_session.add(user)
         db_session.commit()
@@ -366,14 +365,27 @@ class TestListMOVFiles:
         return user
 
     @pytest.fixture
-    def other_blgu_user(self, db_session):
+    def other_barangay(self, db_session):
+        """Fixture providing another barangay."""
+        import uuid
+
+        from app.db.models.barangay import Barangay
+
+        barangay = Barangay(name=f"Other Barangay {uuid.uuid4().hex[:8]}")
+        db_session.add(barangay)
+        db_session.commit()
+        db_session.refresh(barangay)
+        return barangay
+
+    @pytest.fixture
+    def other_blgu_user(self, db_session, other_barangay):
         """Fixture providing another BLGU user."""
         user = User(
             email="other_blgu@test.com",
             name="Other BLGU User",
             hashed_password="hashed",
             role="BLGU_USER",
-            barangay_id=2,
+            barangay_id=other_barangay.id,
         )
         db_session.add(user)
         db_session.commit()
@@ -395,6 +407,26 @@ class TestListMOVFiles:
         return user
 
     @pytest.fixture
+    def indicator(self, db_session, mock_governance_area):
+        """Fixture providing an indicator."""
+        import uuid
+
+        from app.db.models.governance_area import Indicator
+
+        unique_id = uuid.uuid4().hex[:8]
+        indicator = Indicator(
+            name=f"Test Indicator {unique_id}",
+            indicator_code=f"TI{unique_id[:3].upper()}",
+            description="Test indicator for MOV tests",
+            governance_area_id=mock_governance_area.id,
+            sort_order=1,
+        )
+        db_session.add(indicator)
+        db_session.commit()
+        db_session.refresh(indicator)
+        return indicator
+
+    @pytest.fixture
     def assessment(self, db_session, blgu_user):
         """Fixture providing a draft assessment."""
         assessment = Assessment(
@@ -407,13 +439,13 @@ class TestListMOVFiles:
         return assessment
 
     def test_list_files_blgu_user_sees_only_own_files(
-        self, client, db_session, assessment, blgu_user, other_blgu_user
+        self, client, db_session, assessment, blgu_user, other_blgu_user, indicator
     ):
         """Test that BLGU users only see their own uploaded files."""
         # Create files from different users
         file1 = MOVFile(
             assessment_id=assessment.id,
-            indicator_id=1,
+            indicator_id=indicator.id,
             uploaded_by=blgu_user.id,
             file_name="blgu_file1.pdf",
             file_url="https://storage.example.com/file1.pdf",
@@ -465,13 +497,13 @@ class TestListMOVFiles:
         assert "other_file.pdf" not in file_names  # Other user's file not visible
 
     def test_list_files_assessor_sees_all_files(
-        self, client, db_session, assessment, blgu_user, other_blgu_user, assessor_user
+        self, client, db_session, assessment, blgu_user, other_blgu_user, assessor_user, indicator
     ):
         """Test that assessors see all files for an indicator."""
         # Create files from different BLGU users
         file1 = MOVFile(
             assessment_id=assessment.id,
-            indicator_id=1,
+            indicator_id=indicator.id,
             uploaded_by=blgu_user.id,
             file_name="blgu1_file.pdf",
             file_url="https://storage.example.com/file1.pdf",
@@ -481,7 +513,7 @@ class TestListMOVFiles:
         )
         file2 = MOVFile(
             assessment_id=assessment.id,
-            indicator_id=1,
+            indicator_id=indicator.id,
             uploaded_by=other_blgu_user.id,
             file_name="blgu2_file.pdf",
             file_url="https://storage.example.com/file2.pdf",
@@ -499,7 +531,9 @@ class TestListMOVFiles:
         authenticate_user(client, assessor_user)
 
         # List files as assessor
-        response = client.get(f"/api/v1/movs/assessments/{assessment.id}/indicators/1/files")
+        response = client.get(
+            f"/api/v1/movs/assessments/{assessment.id}/indicators/{indicator.id}/files"
+        )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -511,12 +545,14 @@ class TestListMOVFiles:
         assert "blgu1_file.pdf" in file_names
         assert "blgu2_file.pdf" in file_names
 
-    def test_list_files_excludes_soft_deleted(self, client, db_session, assessment, blgu_user):
+    def test_list_files_excludes_soft_deleted(
+        self, client, db_session, assessment, blgu_user, indicator
+    ):
         """Test that soft-deleted files are excluded from the list."""
         # Create active file
         active_file = MOVFile(
             assessment_id=assessment.id,
-            indicator_id=1,
+            indicator_id=indicator.id,
             uploaded_by=blgu_user.id,
             file_name="active_file.pdf",
             file_url="https://storage.example.com/active.pdf",
@@ -527,7 +563,7 @@ class TestListMOVFiles:
         # Create soft-deleted file
         deleted_file = MOVFile(
             assessment_id=assessment.id,
-            indicator_id=1,
+            indicator_id=indicator.id,
             uploaded_by=blgu_user.id,
             file_name="deleted_file.pdf",
             file_url="https://storage.example.com/deleted.pdf",
@@ -546,7 +582,9 @@ class TestListMOVFiles:
         authenticate_user(client, blgu_user)
 
         # List files
-        response = client.get(f"/api/v1/movs/assessments/{assessment.id}/indicators/1/files")
+        response = client.get(
+            f"/api/v1/movs/assessments/{assessment.id}/indicators/{indicator.id}/files"
+        )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -556,7 +594,9 @@ class TestListMOVFiles:
         # Verify only active file is returned
         assert data["files"][0]["file_name"] == "active_file.pdf"
 
-    def test_list_files_ordered_by_upload_time(self, client, db_session, assessment, blgu_user):
+    def test_list_files_ordered_by_upload_time(
+        self, client, db_session, assessment, blgu_user, indicator
+    ):
         """Test that files are ordered by upload time (most recent first)."""
         from datetime import timedelta
 
@@ -565,7 +605,7 @@ class TestListMOVFiles:
         # Create files with different upload times
         old_file = MOVFile(
             assessment_id=assessment.id,
-            indicator_id=1,
+            indicator_id=indicator.id,
             uploaded_by=blgu_user.id,
             file_name="old_file.pdf",
             file_url="https://storage.example.com/old.pdf",
@@ -575,7 +615,7 @@ class TestListMOVFiles:
         )
         recent_file = MOVFile(
             assessment_id=assessment.id,
-            indicator_id=1,
+            indicator_id=indicator.id,
             uploaded_by=blgu_user.id,
             file_name="recent_file.pdf",
             file_url="https://storage.example.com/recent.pdf",
@@ -585,7 +625,7 @@ class TestListMOVFiles:
         )
         middle_file = MOVFile(
             assessment_id=assessment.id,
-            indicator_id=1,
+            indicator_id=indicator.id,
             uploaded_by=blgu_user.id,
             file_name="middle_file.pdf",
             file_url="https://storage.example.com/middle.pdf",
@@ -603,7 +643,9 @@ class TestListMOVFiles:
         authenticate_user(client, blgu_user)
 
         # List files
-        response = client.get(f"/api/v1/movs/assessments/{assessment.id}/indicators/1/files")
+        response = client.get(
+            f"/api/v1/movs/assessments/{assessment.id}/indicators/{indicator.id}/files"
+        )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -629,12 +671,31 @@ class TestListMOVFiles:
         assert "files" in data
         assert len(data["files"]) == 0
 
-    def test_list_files_filters_by_indicator(self, client, db_session, assessment, blgu_user):
+    def test_list_files_filters_by_indicator(
+        self, client, db_session, assessment, blgu_user, indicator, mock_governance_area
+    ):
         """Test that files are filtered by indicator_id."""
+        # Create a second indicator
+        import uuid
+
+        from app.db.models.governance_area import Indicator
+
+        unique_id = uuid.uuid4().hex[:8]
+        indicator2 = Indicator(
+            name=f"Test Indicator 2 {unique_id}",
+            indicator_code=f"T2{unique_id[:3].upper()}",
+            description="Second test indicator",
+            governance_area_id=mock_governance_area.id,
+            sort_order=2,
+        )
+        db_session.add(indicator2)
+        db_session.commit()
+        db_session.refresh(indicator2)
+
         # Create files for different indicators
         file_indicator1 = MOVFile(
             assessment_id=assessment.id,
-            indicator_id=1,
+            indicator_id=indicator.id,
             uploaded_by=blgu_user.id,
             file_name="indicator1_file.pdf",
             file_url="https://storage.example.com/ind1.pdf",
@@ -644,7 +705,7 @@ class TestListMOVFiles:
         )
         file_indicator2 = MOVFile(
             assessment_id=assessment.id,
-            indicator_id=2,
+            indicator_id=indicator2.id,
             uploaded_by=blgu_user.id,
             file_name="indicator2_file.pdf",
             file_url="https://storage.example.com/ind2.pdf",
@@ -662,27 +723,29 @@ class TestListMOVFiles:
         authenticate_user(client, blgu_user)
 
         # List files for indicator 1
-        response = client.get(f"/api/v1/movs/assessments/{assessment.id}/indicators/1/files")
+        response = client.get(
+            f"/api/v1/movs/assessments/{assessment.id}/indicators/{indicator.id}/files"
+        )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert len(data["files"]) == 1
         assert data["files"][0]["file_name"] == "indicator1_file.pdf"
-        assert data["files"][0]["indicator_id"] == 1
+        assert data["files"][0]["indicator_id"] == indicator.id
 
 
 class TestDeleteMOVFile:
     """Test suite for DELETE /api/v1/movs/files/{file_id}"""
 
     @pytest.fixture
-    def blgu_user(self, db_session):
+    def blgu_user(self, db_session, mock_barangay):
         """Fixture providing a BLGU user."""
         user = User(
             email="blgu@test.com",
             name="Test BLGU User",
             hashed_password="hashed",
             role="BLGU_USER",
-            barangay_id=1,
+            barangay_id=mock_barangay.id,
         )
         db_session.add(user)
         db_session.commit()
@@ -690,14 +753,27 @@ class TestDeleteMOVFile:
         return user
 
     @pytest.fixture
-    def other_blgu_user(self, db_session):
+    def other_barangay(self, db_session):
+        """Fixture providing another barangay."""
+        import uuid
+
+        from app.db.models.barangay import Barangay
+
+        barangay = Barangay(name=f"Other Barangay {uuid.uuid4().hex[:8]}")
+        db_session.add(barangay)
+        db_session.commit()
+        db_session.refresh(barangay)
+        return barangay
+
+    @pytest.fixture
+    def other_blgu_user(self, db_session, other_barangay):
         """Fixture providing another BLGU user."""
         user = User(
             email="other_blgu@test.com",
             name="Other BLGU User",
             hashed_password="hashed",
             role="BLGU_USER",
-            barangay_id=2,
+            barangay_id=other_barangay.id,
         )
         db_session.add(user)
         db_session.commit()
@@ -728,12 +804,32 @@ class TestDeleteMOVFile:
         db_session.refresh(assessment)
         return assessment
 
-    def test_delete_file_success(self, client, db_session, draft_assessment, blgu_user):
+    @pytest.fixture
+    def indicator(self, db_session, mock_governance_area):
+        """Fixture providing an indicator."""
+        import uuid
+
+        from app.db.models.governance_area import Indicator
+
+        unique_id = uuid.uuid4().hex[:8]
+        indicator = Indicator(
+            name=f"Delete Test Indicator {unique_id}",
+            indicator_code=f"DT{unique_id[:3].upper()}",
+            description="Test indicator for delete tests",
+            governance_area_id=mock_governance_area.id,
+            sort_order=1,
+        )
+        db_session.add(indicator)
+        db_session.commit()
+        db_session.refresh(indicator)
+        return indicator
+
+    def test_delete_file_success(self, client, db_session, draft_assessment, blgu_user, indicator):
         """Test successful deletion of a file by the uploader for DRAFT assessment."""
         # Create a MOV file
         mov_file = MOVFile(
             assessment_id=draft_assessment.id,
-            indicator_id=1,
+            indicator_id=indicator.id,
             uploaded_by=blgu_user.id,
             file_name="test_file.pdf",
             file_url="https://storage.example.com/test_file.pdf",
@@ -766,13 +862,13 @@ class TestDeleteMOVFile:
         assert mov_file.deleted_at is not None
 
     def test_delete_file_permission_denied_different_user(
-        self, client, db_session, draft_assessment, blgu_user, other_blgu_user
+        self, client, db_session, draft_assessment, blgu_user, other_blgu_user, indicator
     ):
         """Test that user cannot delete files uploaded by another user."""
         # Create file uploaded by blgu_user
         mov_file = MOVFile(
             assessment_id=draft_assessment.id,
-            indicator_id=1,
+            indicator_id=indicator.id,
             uploaded_by=blgu_user.id,
             file_name="test_file.pdf",
             file_url="https://storage.example.com/test_file.pdf",
@@ -793,20 +889,20 @@ class TestDeleteMOVFile:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
         data = response.json()
-        assert "You can only delete files you uploaded" in data["detail"]
+        assert "You can only delete files you uploaded" in data["error"]
 
         # Verify file was NOT deleted
         db_session.refresh(mov_file)
         assert mov_file.deleted_at is None
 
     def test_delete_file_rejected_for_submitted_assessment(
-        self, client, db_session, submitted_assessment, blgu_user
+        self, client, db_session, submitted_assessment, blgu_user, indicator
     ):
         """Test that deletion is rejected for SUBMITTED assessment."""
         # Create file in submitted assessment
         mov_file = MOVFile(
             assessment_id=submitted_assessment.id,
-            indicator_id=1,
+            indicator_id=indicator.id,
             uploaded_by=blgu_user.id,
             file_name="test_file.pdf",
             file_url="https://storage.example.com/test_file.pdf",
@@ -827,7 +923,7 @@ class TestDeleteMOVFile:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
         data = response.json()
-        assert "Cannot delete files from" in data["detail"]
+        assert "Cannot delete files from" in data["error"]
 
         # Verify file was NOT deleted
         db_session.refresh(mov_file)
@@ -842,14 +938,16 @@ class TestDeleteMOVFile:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN  # Permission check fails first
         data = response.json()
-        assert "not found" in data["detail"]
+        assert "not found" in data["error"]
 
-    def test_delete_already_deleted_file(self, client, db_session, draft_assessment, blgu_user):
+    def test_delete_already_deleted_file(
+        self, client, db_session, draft_assessment, blgu_user, indicator
+    ):
         """Test that already deleted files cannot be deleted again."""
         # Create already deleted file
         mov_file = MOVFile(
             assessment_id=draft_assessment.id,
-            indicator_id=1,
+            indicator_id=indicator.id,
             uploaded_by=blgu_user.id,
             file_name="test_file.pdf",
             file_url="https://storage.example.com/test_file.pdf",
@@ -871,4 +969,4 @@ class TestDeleteMOVFile:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
         data = response.json()
-        assert "already been deleted" in data["detail"]
+        assert "already been deleted" in data["error"]

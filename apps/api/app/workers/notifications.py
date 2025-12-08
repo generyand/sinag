@@ -1,10 +1,17 @@
 # Notification Worker
 # Background tasks for handling notifications
+#
+# All notification tasks include retry logic to handle transient failures:
+# - Max 3 retries with exponential backoff (60s, 120s, 240s)
+# - Retries on database connection errors and unexpected exceptions
+# - No retry on permanent failures (e.g., assessment not found)
 
 import logging
 from datetime import datetime
 from typing import Any
 
+from celery.exceptions import MaxRetriesExceededError
+from sqlalchemy.exc import OperationalError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.core.celery_app import celery_app
@@ -18,11 +25,30 @@ from app.services.notification_service import notification_service
 # Configure logging
 logger = logging.getLogger(__name__)
 
+# Retry configuration constants
+MAX_RETRIES = 3
+RETRY_BACKOFF = 60  # Initial backoff in seconds
+RETRY_BACKOFF_MAX = 300  # Maximum backoff in seconds
+
+
+class PermanentTaskError(Exception):
+    """Exception for errors that should NOT trigger a retry (e.g., resource not found)."""
+
+    pass
+
 
 # ==================== NEW SUBMISSION NOTIFICATION ====================
 
 
-@celery_app.task(bind=True, name="notifications.send_new_submission_notification")
+@celery_app.task(
+    bind=True,
+    name="notifications.send_new_submission_notification",
+    autoretry_for=(OperationalError, SQLAlchemyError, ConnectionError, TimeoutError),
+    retry_backoff=RETRY_BACKOFF,
+    retry_backoff_max=RETRY_BACKOFF_MAX,
+    max_retries=MAX_RETRIES,
+    retry_jitter=True,
+)
 def send_new_submission_notification(self: Any, assessment_id: int) -> dict[str, Any]:
     """
     Notification #1: BLGU submits assessment -> All active Assessors notified.
@@ -32,6 +58,10 @@ def send_new_submission_notification(self: Any, assessment_id: int) -> dict[str,
 
     Returns:
         dict: Result of the notification process
+
+    Retry Policy:
+        - Retries up to 3 times on transient errors (DB connection, timeouts)
+        - No retry on permanent errors (assessment not found)
     """
     db: Session = SessionLocal()
 
@@ -40,8 +70,9 @@ def send_new_submission_notification(self: Any, assessment_id: int) -> dict[str,
         assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
 
         if not assessment:
+            # Permanent error - don't retry
             logger.error("Assessment %s not found", assessment_id)
-            return {"success": False, "error": "Assessment not found"}
+            return {"success": False, "error": "Assessment not found", "permanent": True}
 
         # Get barangay name
         barangay_name = "Unknown Barangay"
@@ -75,11 +106,31 @@ def send_new_submission_notification(self: Any, assessment_id: int) -> dict[str,
             "notifications_created": len(notifications),
         }
 
+    except (OperationalError, SQLAlchemyError, ConnectionError, TimeoutError) as e:
+        # Transient errors - let Celery handle retry via autoretry_for
+        logger.warning(
+            "Transient error in new submission notification for assessment %s (attempt %d/%d): %s",
+            assessment_id,
+            self.request.retries + 1,
+            MAX_RETRIES + 1,
+            str(e),
+        )
+        db.rollback()
+        raise  # Re-raise to trigger Celery retry
+
+    except MaxRetriesExceededError:
+        logger.error(
+            "Max retries exceeded for new submission notification - assessment %s",
+            assessment_id,
+        )
+        return {"success": False, "error": "Max retries exceeded", "assessment_id": assessment_id}
+
     except Exception as e:
         logger.error(
-            "Error sending new submission notification for assessment %s: %s",
+            "Unexpected error sending new submission notification for assessment %s: %s",
             assessment_id,
             str(e),
+            exc_info=True,
         )
         db.rollback()
         return {"success": False, "error": str(e)}
@@ -91,7 +142,15 @@ def send_new_submission_notification(self: Any, assessment_id: int) -> dict[str,
 # ==================== REWORK NOTIFICATION ====================
 
 
-@celery_app.task(bind=True, name="notifications.send_rework_notification")
+@celery_app.task(
+    bind=True,
+    name="notifications.send_rework_notification",
+    autoretry_for=(OperationalError, SQLAlchemyError, ConnectionError, TimeoutError),
+    retry_backoff=RETRY_BACKOFF,
+    retry_backoff_max=RETRY_BACKOFF_MAX,
+    max_retries=MAX_RETRIES,
+    retry_jitter=True,
+)
 def send_rework_notification(self: Any, assessment_id: int) -> dict[str, Any]:
     """
     Notification #2: Assessor sends rework -> BLGU user notified.
@@ -110,11 +169,11 @@ def send_rework_notification(self: Any, assessment_id: int) -> dict[str, Any]:
 
         if not assessment:
             logger.error("Assessment %s not found", assessment_id)
-            return {"success": False, "error": "Assessment not found"}
+            return {"success": False, "error": "Assessment not found", "permanent": True}
 
         if not assessment.blgu_user_id:
             logger.error("Assessment %s has no BLGU user", assessment_id)
-            return {"success": False, "error": "BLGU user not found"}
+            return {"success": False, "error": "BLGU user not found", "permanent": True}
 
         # Get barangay name
         barangay_name = "Unknown Barangay"
@@ -147,11 +206,27 @@ def send_rework_notification(self: Any, assessment_id: int) -> dict[str, Any]:
             "notification_id": notification.id,
         }
 
+    except (OperationalError, SQLAlchemyError, ConnectionError, TimeoutError) as e:
+        logger.warning(
+            "Transient error in rework notification for assessment %s (attempt %d/%d): %s",
+            assessment_id,
+            self.request.retries + 1,
+            MAX_RETRIES + 1,
+            str(e),
+        )
+        db.rollback()
+        raise
+
+    except MaxRetriesExceededError:
+        logger.error("Max retries exceeded for rework notification - assessment %s", assessment_id)
+        return {"success": False, "error": "Max retries exceeded", "assessment_id": assessment_id}
+
     except Exception as e:
         logger.error(
-            "Error sending rework notification for assessment %s: %s",
+            "Unexpected error sending rework notification for assessment %s: %s",
             assessment_id,
             str(e),
+            exc_info=True,
         )
         db.rollback()
         return {"success": False, "error": str(e)}
@@ -163,7 +238,15 @@ def send_rework_notification(self: Any, assessment_id: int) -> dict[str, Any]:
 # ==================== REWORK RESUBMISSION NOTIFICATION ====================
 
 
-@celery_app.task(bind=True, name="notifications.send_rework_resubmission_notification")
+@celery_app.task(
+    bind=True,
+    name="notifications.send_rework_resubmission_notification",
+    autoretry_for=(OperationalError, SQLAlchemyError, ConnectionError, TimeoutError),
+    retry_backoff=RETRY_BACKOFF,
+    retry_backoff_max=RETRY_BACKOFF_MAX,
+    max_retries=MAX_RETRIES,
+    retry_jitter=True,
+)
 def send_rework_resubmission_notification(self: Any, assessment_id: int) -> dict[str, Any]:
     """
     Notification #3: BLGU resubmits after rework -> All active Assessors notified.
@@ -182,7 +265,7 @@ def send_rework_resubmission_notification(self: Any, assessment_id: int) -> dict
 
         if not assessment:
             logger.error("Assessment %s not found", assessment_id)
-            return {"success": False, "error": "Assessment not found"}
+            return {"success": False, "error": "Assessment not found", "permanent": True}
 
         # Get barangay name
         barangay_name = "Unknown Barangay"
@@ -216,11 +299,30 @@ def send_rework_resubmission_notification(self: Any, assessment_id: int) -> dict
             "notifications_created": len(notifications),
         }
 
+    except (OperationalError, SQLAlchemyError, ConnectionError, TimeoutError) as e:
+        logger.warning(
+            "Transient error in rework resubmission notification for assessment %s (attempt %d/%d): %s",
+            assessment_id,
+            self.request.retries + 1,
+            MAX_RETRIES + 1,
+            str(e),
+        )
+        db.rollback()
+        raise
+
+    except MaxRetriesExceededError:
+        logger.error(
+            "Max retries exceeded for rework resubmission notification - assessment %s",
+            assessment_id,
+        )
+        return {"success": False, "error": "Max retries exceeded", "assessment_id": assessment_id}
+
     except Exception as e:
         logger.error(
-            "Error sending rework resubmission notification for assessment %s: %s",
+            "Unexpected error sending rework resubmission notification for assessment %s: %s",
             assessment_id,
             str(e),
+            exc_info=True,
         )
         db.rollback()
         return {"success": False, "error": str(e)}
@@ -232,7 +334,15 @@ def send_rework_resubmission_notification(self: Any, assessment_id: int) -> dict
 # ==================== READY FOR VALIDATION NOTIFICATION ====================
 
 
-@celery_app.task(bind=True, name="notifications.send_ready_for_validation_notification")
+@celery_app.task(
+    bind=True,
+    name="notifications.send_ready_for_validation_notification",
+    autoretry_for=(OperationalError, SQLAlchemyError, ConnectionError, TimeoutError),
+    retry_backoff=RETRY_BACKOFF,
+    retry_backoff_max=RETRY_BACKOFF_MAX,
+    max_retries=MAX_RETRIES,
+    retry_jitter=True,
+)
 def send_ready_for_validation_notification(
     self: Any, assessment_id: int, governance_area_id: int
 ) -> dict[str, Any]:
@@ -254,7 +364,7 @@ def send_ready_for_validation_notification(
 
         if not assessment:
             logger.error("Assessment %s not found", assessment_id)
-            return {"success": False, "error": "Assessment not found"}
+            return {"success": False, "error": "Assessment not found", "permanent": True}
 
         # Get governance area
         governance_area = (
@@ -296,11 +406,30 @@ def send_ready_for_validation_notification(
             "notifications_created": len(notifications),
         }
 
+    except (OperationalError, SQLAlchemyError, ConnectionError, TimeoutError) as e:
+        logger.warning(
+            "Transient error in ready for validation notification for assessment %s (attempt %d/%d): %s",
+            assessment_id,
+            self.request.retries + 1,
+            MAX_RETRIES + 1,
+            str(e),
+        )
+        db.rollback()
+        raise
+
+    except MaxRetriesExceededError:
+        logger.error(
+            "Max retries exceeded for ready for validation notification - assessment %s",
+            assessment_id,
+        )
+        return {"success": False, "error": "Max retries exceeded", "assessment_id": assessment_id}
+
     except Exception as e:
         logger.error(
-            "Error sending ready for validation notification for assessment %s: %s",
+            "Unexpected error sending ready for validation notification for assessment %s: %s",
             assessment_id,
             str(e),
+            exc_info=True,
         )
         db.rollback()
         return {"success": False, "error": str(e)}
@@ -312,7 +441,15 @@ def send_ready_for_validation_notification(
 # ==================== CALIBRATION NOTIFICATION ====================
 
 
-@celery_app.task(bind=True, name="notifications.send_calibration_notification")
+@celery_app.task(
+    bind=True,
+    name="notifications.send_calibration_notification",
+    autoretry_for=(OperationalError, SQLAlchemyError, ConnectionError, TimeoutError),
+    retry_backoff=RETRY_BACKOFF,
+    retry_backoff_max=RETRY_BACKOFF_MAX,
+    max_retries=MAX_RETRIES,
+    retry_jitter=True,
+)
 def send_calibration_notification(self: Any, assessment_id: int) -> dict[str, Any]:
     """
     Notification #5: Validator requests calibration -> BLGU user notified.
@@ -331,11 +468,11 @@ def send_calibration_notification(self: Any, assessment_id: int) -> dict[str, An
 
         if not assessment:
             logger.error("Assessment %s not found", assessment_id)
-            return {"success": False, "error": "Assessment not found"}
+            return {"success": False, "error": "Assessment not found", "permanent": True}
 
         if not assessment.blgu_user_id:
             logger.error("Assessment %s has no BLGU user", assessment_id)
-            return {"success": False, "error": "BLGU user not found"}
+            return {"success": False, "error": "BLGU user not found", "permanent": True}
 
         # Get barangay name
         barangay_name = "Unknown Barangay"
@@ -382,11 +519,29 @@ def send_calibration_notification(self: Any, assessment_id: int) -> dict[str, An
             "notification_id": notification.id,
         }
 
+    except (OperationalError, SQLAlchemyError, ConnectionError, TimeoutError) as e:
+        logger.warning(
+            "Transient error in calibration notification for assessment %s (attempt %d/%d): %s",
+            assessment_id,
+            self.request.retries + 1,
+            MAX_RETRIES + 1,
+            str(e),
+        )
+        db.rollback()
+        raise
+
+    except MaxRetriesExceededError:
+        logger.error(
+            "Max retries exceeded for calibration notification - assessment %s", assessment_id
+        )
+        return {"success": False, "error": "Max retries exceeded", "assessment_id": assessment_id}
+
     except Exception as e:
         logger.error(
-            "Error sending calibration notification for assessment %s: %s",
+            "Unexpected error sending calibration notification for assessment %s: %s",
             assessment_id,
             str(e),
+            exc_info=True,
         )
         db.rollback()
         return {"success": False, "error": str(e)}
@@ -398,7 +553,15 @@ def send_calibration_notification(self: Any, assessment_id: int) -> dict[str, An
 # ==================== CALIBRATION RESUBMISSION NOTIFICATION ====================
 
 
-@celery_app.task(bind=True, name="notifications.send_calibration_resubmission_notification")
+@celery_app.task(
+    bind=True,
+    name="notifications.send_calibration_resubmission_notification",
+    autoretry_for=(OperationalError, SQLAlchemyError, ConnectionError, TimeoutError),
+    retry_backoff=RETRY_BACKOFF,
+    retry_backoff_max=RETRY_BACKOFF_MAX,
+    max_retries=MAX_RETRIES,
+    retry_jitter=True,
+)
 def send_calibration_resubmission_notification(
     self: Any, assessment_id: int, validator_id: int
 ) -> dict[str, Any]:
@@ -467,11 +630,30 @@ def send_calibration_resubmission_notification(
             "notification_id": notification.id,
         }
 
+    except (OperationalError, SQLAlchemyError, ConnectionError, TimeoutError) as e:
+        logger.warning(
+            "Transient error in calibration resubmission notification for assessment %s (attempt %d/%d): %s",
+            assessment_id,
+            self.request.retries + 1,
+            MAX_RETRIES + 1,
+            str(e),
+        )
+        db.rollback()
+        raise
+
+    except MaxRetriesExceededError:
+        logger.error(
+            "Max retries exceeded for calibration resubmission notification - assessment %s",
+            assessment_id,
+        )
+        return {"success": False, "error": "Max retries exceeded", "assessment_id": assessment_id}
+
     except Exception as e:
         logger.error(
-            "Error sending calibration resubmission notification for assessment %s: %s",
+            "Unexpected error sending calibration resubmission notification for assessment %s: %s",
             assessment_id,
             str(e),
+            exc_info=True,
         )
         db.rollback()
         return {"success": False, "error": str(e)}
@@ -483,7 +665,15 @@ def send_calibration_resubmission_notification(
 # ==================== VALIDATION COMPLETE NOTIFICATION ====================
 
 
-@celery_app.task(bind=True, name="notifications.send_validation_complete_notification")
+@celery_app.task(
+    bind=True,
+    name="notifications.send_validation_complete_notification",
+    autoretry_for=(OperationalError, SQLAlchemyError, ConnectionError, TimeoutError),
+    retry_backoff=RETRY_BACKOFF,
+    retry_backoff_max=RETRY_BACKOFF_MAX,
+    max_retries=MAX_RETRIES,
+    retry_jitter=True,
+)
 def send_validation_complete_notification(self: Any, assessment_id: int) -> dict[str, Any]:
     """
     Send notification to MLGOO users and BLGU user when assessment validation is complete.
@@ -552,11 +742,30 @@ def send_validation_complete_notification(self: Any, assessment_id: int) -> dict
             "notifications_created": notifications_created,
         }
 
+    except (OperationalError, SQLAlchemyError, ConnectionError, TimeoutError) as e:
+        logger.warning(
+            "Transient error in validation complete notification for assessment %s (attempt %d/%d): %s",
+            assessment_id,
+            self.request.retries + 1,
+            MAX_RETRIES + 1,
+            str(e),
+        )
+        db.rollback()
+        raise
+
+    except MaxRetriesExceededError:
+        logger.error(
+            "Max retries exceeded for validation complete notification - assessment %s",
+            assessment_id,
+        )
+        return {"success": False, "error": "Max retries exceeded", "assessment_id": assessment_id}
+
     except Exception as e:
         logger.error(
-            "Error processing validation complete notification for assessment %s: %s",
+            "Unexpected error processing validation complete notification for assessment %s: %s",
             assessment_id,
             str(e),
+            exc_info=True,
         )
         db.rollback()
         return {"success": False, "error": str(e)}
@@ -568,7 +777,15 @@ def send_validation_complete_notification(self: Any, assessment_id: int) -> dict
 # ==================== DEADLINE EXTENSION NOTIFICATION ====================
 
 
-@celery_app.task(bind=True, name="notifications.send_deadline_extension_notification")
+@celery_app.task(
+    bind=True,
+    name="notifications.send_deadline_extension_notification",
+    autoretry_for=(OperationalError, SQLAlchemyError, ConnectionError, TimeoutError),
+    retry_backoff=RETRY_BACKOFF,
+    retry_backoff_max=RETRY_BACKOFF_MAX,
+    max_retries=MAX_RETRIES,
+    retry_jitter=True,
+)
 def send_deadline_extension_notification(
     self: Any,
     barangay_id: int,
@@ -693,7 +910,15 @@ def send_deadline_extension_notification(
 # ==================== READY FOR MLGOO APPROVAL NOTIFICATION ====================
 
 
-@celery_app.task(bind=True, name="notifications.send_ready_for_mlgoo_approval_notification")
+@celery_app.task(
+    bind=True,
+    name="notifications.send_ready_for_mlgoo_approval_notification",
+    autoretry_for=(OperationalError, SQLAlchemyError, ConnectionError, TimeoutError),
+    retry_backoff=RETRY_BACKOFF,
+    retry_backoff_max=RETRY_BACKOFF_MAX,
+    max_retries=MAX_RETRIES,
+    retry_jitter=True,
+)
 def send_ready_for_mlgoo_approval_notification(self: Any, assessment_id: int) -> dict[str, Any]:
     """
     Notification #8: All Validators complete -> MLGOO notified for final approval.
@@ -748,11 +973,30 @@ def send_ready_for_mlgoo_approval_notification(self: Any, assessment_id: int) ->
             "notifications_created": len(notifications),
         }
 
+    except (OperationalError, SQLAlchemyError, ConnectionError, TimeoutError) as e:
+        logger.warning(
+            "Transient error in ready for MLGOO approval notification for assessment %s (attempt %d/%d): %s",
+            assessment_id,
+            self.request.retries + 1,
+            MAX_RETRIES + 1,
+            str(e),
+        )
+        db.rollback()
+        raise
+
+    except MaxRetriesExceededError:
+        logger.error(
+            "Max retries exceeded for ready for MLGOO approval notification - assessment %s",
+            assessment_id,
+        )
+        return {"success": False, "error": "Max retries exceeded", "assessment_id": assessment_id}
+
     except Exception as e:
         logger.error(
-            "Error sending ready for MLGOO approval notification for assessment %s: %s",
+            "Unexpected error sending ready for MLGOO approval notification for assessment %s: %s",
             assessment_id,
             str(e),
+            exc_info=True,
         )
         db.rollback()
         return {"success": False, "error": str(e)}
@@ -764,7 +1008,15 @@ def send_ready_for_mlgoo_approval_notification(self: Any, assessment_id: int) ->
 # ==================== MLGOO RECALIBRATION NOTIFICATION ====================
 
 
-@celery_app.task(bind=True, name="notifications.send_mlgoo_recalibration_notification")
+@celery_app.task(
+    bind=True,
+    name="notifications.send_mlgoo_recalibration_notification",
+    autoretry_for=(OperationalError, SQLAlchemyError, ConnectionError, TimeoutError),
+    retry_backoff=RETRY_BACKOFF,
+    retry_backoff_max=RETRY_BACKOFF_MAX,
+    max_retries=MAX_RETRIES,
+    retry_jitter=True,
+)
 def send_mlgoo_recalibration_notification(self: Any, assessment_id: int) -> dict[str, Any]:
     """
     Notification #9: MLGOO requests RE-calibration -> BLGU notified.
@@ -823,11 +1075,30 @@ def send_mlgoo_recalibration_notification(self: Any, assessment_id: int) -> dict
             "notification_id": notification.id,
         }
 
+    except (OperationalError, SQLAlchemyError, ConnectionError, TimeoutError) as e:
+        logger.warning(
+            "Transient error in MLGOO recalibration notification for assessment %s (attempt %d/%d): %s",
+            assessment_id,
+            self.request.retries + 1,
+            MAX_RETRIES + 1,
+            str(e),
+        )
+        db.rollback()
+        raise
+
+    except MaxRetriesExceededError:
+        logger.error(
+            "Max retries exceeded for MLGOO recalibration notification - assessment %s",
+            assessment_id,
+        )
+        return {"success": False, "error": "Max retries exceeded", "assessment_id": assessment_id}
+
     except Exception as e:
         logger.error(
-            "Error sending MLGOO RE-calibration notification for assessment %s: %s",
+            "Unexpected error sending MLGOO RE-calibration notification for assessment %s: %s",
             assessment_id,
             str(e),
+            exc_info=True,
         )
         db.rollback()
         return {"success": False, "error": str(e)}
@@ -839,7 +1110,15 @@ def send_mlgoo_recalibration_notification(self: Any, assessment_id: int) -> dict
 # ==================== ASSESSMENT APPROVED NOTIFICATION ====================
 
 
-@celery_app.task(bind=True, name="notifications.send_assessment_approved_notification")
+@celery_app.task(
+    bind=True,
+    name="notifications.send_assessment_approved_notification",
+    autoretry_for=(OperationalError, SQLAlchemyError, ConnectionError, TimeoutError),
+    retry_backoff=RETRY_BACKOFF,
+    retry_backoff_max=RETRY_BACKOFF_MAX,
+    max_retries=MAX_RETRIES,
+    retry_jitter=True,
+)
 def send_assessment_approved_notification(self: Any, assessment_id: int) -> dict[str, Any]:
     """
     Notification #10: MLGOO approves assessment -> BLGU notified.
@@ -897,11 +1176,30 @@ def send_assessment_approved_notification(self: Any, assessment_id: int) -> dict
             "notifications_created": notifications_created,
         }
 
+    except (OperationalError, SQLAlchemyError, ConnectionError, TimeoutError) as e:
+        logger.warning(
+            "Transient error in assessment approved notification for assessment %s (attempt %d/%d): %s",
+            assessment_id,
+            self.request.retries + 1,
+            MAX_RETRIES + 1,
+            str(e),
+        )
+        db.rollback()
+        raise
+
+    except MaxRetriesExceededError:
+        logger.error(
+            "Max retries exceeded for assessment approved notification - assessment %s",
+            assessment_id,
+        )
+        return {"success": False, "error": "Max retries exceeded", "assessment_id": assessment_id}
+
     except Exception as e:
         logger.error(
-            "Error sending assessment approved notification for assessment %s: %s",
+            "Unexpected error sending assessment approved notification for assessment %s: %s",
             assessment_id,
             str(e),
+            exc_info=True,
         )
         db.rollback()
         return {"success": False, "error": str(e)}
@@ -913,7 +1211,15 @@ def send_assessment_approved_notification(self: Any, assessment_id: int) -> dict
 # ==================== GRACE PERIOD WARNING NOTIFICATION ====================
 
 
-@celery_app.task(bind=True, name="notifications.send_grace_period_warning_notification")
+@celery_app.task(
+    bind=True,
+    name="notifications.send_grace_period_warning_notification",
+    autoretry_for=(OperationalError, SQLAlchemyError, ConnectionError, TimeoutError),
+    retry_backoff=RETRY_BACKOFF,
+    retry_backoff_max=RETRY_BACKOFF_MAX,
+    max_retries=MAX_RETRIES,
+    retry_jitter=True,
+)
 def send_grace_period_warning_notification(
     self: Any, assessment_id: int, hours_remaining: int
 ) -> dict[str, Any]:
@@ -976,11 +1282,30 @@ def send_grace_period_warning_notification(
             "notification_id": notification.id,
         }
 
+    except (OperationalError, SQLAlchemyError, ConnectionError, TimeoutError) as e:
+        logger.warning(
+            "Transient error in grace period warning notification for assessment %s (attempt %d/%d): %s",
+            assessment_id,
+            self.request.retries + 1,
+            MAX_RETRIES + 1,
+            str(e),
+        )
+        db.rollback()
+        raise
+
+    except MaxRetriesExceededError:
+        logger.error(
+            "Max retries exceeded for grace period warning notification - assessment %s",
+            assessment_id,
+        )
+        return {"success": False, "error": "Max retries exceeded", "assessment_id": assessment_id}
+
     except Exception as e:
         logger.error(
-            "Error sending grace period warning notification for assessment %s: %s",
+            "Unexpected error sending grace period warning notification for assessment %s: %s",
             assessment_id,
             str(e),
+            exc_info=True,
         )
         db.rollback()
         return {"success": False, "error": str(e)}
@@ -992,7 +1317,15 @@ def send_grace_period_warning_notification(
 # ==================== DEADLINE EXPIRED LOCKED NOTIFICATION ====================
 
 
-@celery_app.task(bind=True, name="notifications.send_deadline_expired_notification")
+@celery_app.task(
+    bind=True,
+    name="notifications.send_deadline_expired_notification",
+    autoretry_for=(OperationalError, SQLAlchemyError, ConnectionError, TimeoutError),
+    retry_backoff=RETRY_BACKOFF,
+    retry_backoff_max=RETRY_BACKOFF_MAX,
+    max_retries=MAX_RETRIES,
+    retry_jitter=True,
+)
 def send_deadline_expired_notification(self: Any, assessment_id: int) -> dict[str, Any]:
     """
     Notification #12: Grace period expired -> BLGU locked, MLGOO notified.
@@ -1062,11 +1395,29 @@ def send_deadline_expired_notification(self: Any, assessment_id: int) -> dict[st
             "notifications_created": notifications_created,
         }
 
+    except (OperationalError, SQLAlchemyError, ConnectionError, TimeoutError) as e:
+        logger.warning(
+            "Transient error in deadline expired notification for assessment %s (attempt %d/%d): %s",
+            assessment_id,
+            self.request.retries + 1,
+            MAX_RETRIES + 1,
+            str(e),
+        )
+        db.rollback()
+        raise
+
+    except MaxRetriesExceededError:
+        logger.error(
+            "Max retries exceeded for deadline expired notification - assessment %s", assessment_id
+        )
+        return {"success": False, "error": "Max retries exceeded", "assessment_id": assessment_id}
+
     except Exception as e:
         logger.error(
-            "Error sending deadline expired notification for assessment %s: %s",
+            "Unexpected error sending deadline expired notification for assessment %s: %s",
             assessment_id,
             str(e),
+            exc_info=True,
         )
         db.rollback()
         return {"success": False, "error": str(e)}

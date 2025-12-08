@@ -32,9 +32,11 @@ import type {
   GetAssessmentsAssessmentIdAnswersParams,
   GetAssessmentsAssessmentIdCalibrationSummaryParams,
   GetAssessmentsAssessmentIdReworkSummaryParams,
+  GetAssessmentsDashboardParams,
   GetAssessmentsList200Item,
   GetAssessmentsListParams,
   GetAssessmentsMyAssessment200,
+  GetAssessmentsMyAssessmentParams,
   HTTPValidationError,
   MOVCreate,
   Mov,
@@ -72,37 +74,45 @@ Returns dashboard-specific data optimized for overview and progress tracking:
 - Assessment status and metadata
 
 This endpoint automatically creates an assessment if one doesn't exist
-for the BLGU user.
+for the BLGU user (for the active year only).
+
+**Query Parameters:**
+- year: Optional assessment year. If not provided, uses the active year.
  * @summary Get Assessment Dashboard
  */
 export const getAssessmentsDashboard = (
-    
+    params?: GetAssessmentsDashboardParams,
  options?: SecondParameter<typeof mutator>,signal?: AbortSignal
 ) => {
       
       
       return mutator<AssessmentDashboardResponse>(
-      {url: `/api/v1/assessments/dashboard`, method: 'GET', signal
+      {url: `/api/v1/assessments/dashboard`, method: 'GET',
+        params, signal
     },
       options);
     }
   
 
-export const getGetAssessmentsDashboardQueryKey = () => {
-    return [`/api/v1/assessments/dashboard`] as const;
+
+
+export const getGetAssessmentsDashboardQueryKey = (params?: GetAssessmentsDashboardParams,) => {
+    return [
+    `/api/v1/assessments/dashboard`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
-export const getGetAssessmentsDashboardQueryOptions = <TData = Awaited<ReturnType<typeof getAssessmentsDashboard>>, TError = unknown>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsDashboard>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export const getGetAssessmentsDashboardQueryOptions = <TData = Awaited<ReturnType<typeof getAssessmentsDashboard>>, TError = HTTPValidationError>(params?: GetAssessmentsDashboardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsDashboard>>, TError, TData>, request?: SecondParameter<typeof mutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAssessmentsDashboardQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetAssessmentsDashboardQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessmentsDashboard>>> = ({ signal }) => getAssessmentsDashboard(requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessmentsDashboard>>> = ({ signal }) => getAssessmentsDashboard(params, requestOptions, signal);
 
       
 
@@ -112,26 +122,27 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetAssessmentsDashboardQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessmentsDashboard>>>
-export type GetAssessmentsDashboardQueryError = unknown
+export type GetAssessmentsDashboardQueryError = HTTPValidationError
 
 
 /**
  * @summary Get Assessment Dashboard
  */
 
-export function useGetAssessmentsDashboard<TData = Awaited<ReturnType<typeof getAssessmentsDashboard>>, TError = unknown>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsDashboard>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export function useGetAssessmentsDashboard<TData = Awaited<ReturnType<typeof getAssessmentsDashboard>>, TError = HTTPValidationError>(
+ params?: GetAssessmentsDashboardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsDashboard>>, TError, TData>, request?: SecondParameter<typeof mutator>}
   
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetAssessmentsDashboardQueryOptions(options)
+  const queryOptions = getGetAssessmentsDashboardQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -147,37 +158,45 @@ Returns the full assessment data including:
 - Feedback comments from assessors
 
 This endpoint automatically creates an assessment if one doesn't exist
-for the BLGU user.
+for the BLGU user (for the active year).
+
+**Query Parameters:**
+- year: Optional assessment year. If not provided, uses the active year.
  * @summary Get My Assessment
  */
 export const getAssessmentsMyAssessment = (
-    
+    params?: GetAssessmentsMyAssessmentParams,
  options?: SecondParameter<typeof mutator>,signal?: AbortSignal
 ) => {
       
       
       return mutator<GetAssessmentsMyAssessment200>(
-      {url: `/api/v1/assessments/my-assessment`, method: 'GET', signal
+      {url: `/api/v1/assessments/my-assessment`, method: 'GET',
+        params, signal
     },
       options);
     }
   
 
-export const getGetAssessmentsMyAssessmentQueryKey = () => {
-    return [`/api/v1/assessments/my-assessment`] as const;
+
+
+export const getGetAssessmentsMyAssessmentQueryKey = (params?: GetAssessmentsMyAssessmentParams,) => {
+    return [
+    `/api/v1/assessments/my-assessment`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
-export const getGetAssessmentsMyAssessmentQueryOptions = <TData = Awaited<ReturnType<typeof getAssessmentsMyAssessment>>, TError = unknown>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsMyAssessment>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export const getGetAssessmentsMyAssessmentQueryOptions = <TData = Awaited<ReturnType<typeof getAssessmentsMyAssessment>>, TError = HTTPValidationError>(params?: GetAssessmentsMyAssessmentParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsMyAssessment>>, TError, TData>, request?: SecondParameter<typeof mutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAssessmentsMyAssessmentQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetAssessmentsMyAssessmentQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessmentsMyAssessment>>> = ({ signal }) => getAssessmentsMyAssessment(requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessmentsMyAssessment>>> = ({ signal }) => getAssessmentsMyAssessment(params, requestOptions, signal);
 
       
 
@@ -187,26 +206,27 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetAssessmentsMyAssessmentQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessmentsMyAssessment>>>
-export type GetAssessmentsMyAssessmentQueryError = unknown
+export type GetAssessmentsMyAssessmentQueryError = HTTPValidationError
 
 
 /**
  * @summary Get My Assessment
  */
 
-export function useGetAssessmentsMyAssessment<TData = Awaited<ReturnType<typeof getAssessmentsMyAssessment>>, TError = unknown>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsMyAssessment>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+export function useGetAssessmentsMyAssessment<TData = Awaited<ReturnType<typeof getAssessmentsMyAssessment>>, TError = HTTPValidationError>(
+ params?: GetAssessmentsMyAssessmentParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsMyAssessment>>, TError, TData>, request?: SecondParameter<typeof mutator>}
   
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetAssessmentsMyAssessmentQueryOptions(options)
+  const queryOptions = getGetAssessmentsMyAssessmentQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -233,8 +253,12 @@ export const getAssessmentsResponses$ResponseId = (
     }
   
 
-export const getGetAssessmentsResponsesResponseIdQueryKey = (responseId: number,) => {
-    return [`/api/v1/assessments/responses/${responseId}`] as const;
+
+
+export const getGetAssessmentsResponsesResponseIdQueryKey = (responseId?: number,) => {
+    return [
+    `/api/v1/assessments/responses/${responseId}`
+    ] as const;
     }
 
     
@@ -271,12 +295,13 @@ export function useGetAssessmentsResponsesResponseId<TData = Awaited<ReturnType<
 
   const queryOptions = getGetAssessmentsResponsesResponseIdQueryOptions(responseId,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -352,7 +377,7 @@ export const usePutAssessmentsResponsesResponseId = <TError = HTTPValidationErro
 
       const mutationOptions = getPutAssessmentsResponsesResponseIdMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Create a new assessment response.
@@ -420,7 +445,7 @@ export const usePostAssessmentsResponses = <TError = HTTPValidationError,
 
       const mutationOptions = getPostAssessmentsResponsesMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Submit the assessment for review.
@@ -490,7 +515,7 @@ export const usePostAssessmentsSubmit = <TError = unknown,
 
       const mutationOptions = getPostAssessmentsSubmitMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Upload a MOV (Means of Verification) file for an assessment response.
@@ -560,7 +585,7 @@ export const usePostAssessmentsResponsesResponseIdMovs = <TError = HTTPValidatio
 
       const mutationOptions = getPostAssessmentsResponsesResponseIdMovsMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Delete a MOV (Means of Verification) file.
@@ -625,16 +650,17 @@ export const useDeleteAssessmentsMovsMovId = <TError = HTTPValidationError,
 
       const mutationOptions = getDeleteAssessmentsMovsMovIdMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
- * Get all assessments with compliance status (optionally filtered by status).
+ * Get all assessments with compliance status (optionally filtered by status and year).
 
 Returns a list of assessments with their compliance status,
 area results, and barangay information. Used for MLGOO reports dashboard.
 
 Args:
     assessment_status: Optional filter by assessment status (shows all if not provided)
+    year: Optional filter by assessment year (defaults to active year)
     db: Database session
     current_user: Current admin/MLGOO user
 
@@ -656,8 +682,12 @@ export const getAssessmentsList = (
     }
   
 
+
+
 export const getGetAssessmentsListQueryKey = (params?: GetAssessmentsListParams,) => {
-    return [`/api/v1/assessments/list`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/assessments/list`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -694,12 +724,13 @@ export function useGetAssessmentsList<TData = Awaited<ReturnType<typeof getAsses
 
   const queryOptions = getGetAssessmentsListQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -786,7 +817,7 @@ export const usePostAssessmentsIdGenerateInsights = <TError = HTTPValidationErro
 
       const mutationOptions = getPostAssessmentsIdGenerateInsightsMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Save form responses for an assessment.
@@ -890,7 +921,7 @@ export const usePostAssessmentsAssessmentIdAnswers = <TError = HTTPValidationErr
 
       const mutationOptions = getPostAssessmentsAssessmentIdAnswersMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Retrieve saved form responses for a specific indicator in an assessment.
@@ -941,9 +972,13 @@ export const getAssessments$AssessmentIdAnswers = (
     }
   
 
-export const getGetAssessmentsAssessmentIdAnswersQueryKey = (assessmentId: number,
-    params: GetAssessmentsAssessmentIdAnswersParams,) => {
-    return [`/api/v1/assessments/${assessmentId}/answers`, ...(params ? [params]: [])] as const;
+
+
+export const getGetAssessmentsAssessmentIdAnswersQueryKey = (assessmentId?: number,
+    params?: GetAssessmentsAssessmentIdAnswersParams,) => {
+    return [
+    `/api/v1/assessments/${assessmentId}/answers`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -982,12 +1017,13 @@ export function useGetAssessmentsAssessmentIdAnswers<TData = Awaited<ReturnType<
 
   const queryOptions = getGetAssessmentsAssessmentIdAnswersQueryOptions(assessmentId,params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -1080,7 +1116,7 @@ export const usePostAssessmentsAssessmentIdValidateCompleteness = <TError = HTTP
 
       const mutationOptions = getPostAssessmentsAssessmentIdValidateCompletenessMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Submit an assessment for assessor review (Story 5.5).
@@ -1171,7 +1207,7 @@ export const usePostAssessmentsAssessmentIdSubmit = <TError = HTTPValidationErro
 
       const mutationOptions = getPostAssessmentsAssessmentIdSubmitMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Request rework on a submitted assessment (Story 5.6).
@@ -1273,7 +1309,7 @@ export const usePostAssessmentsAssessmentIdRequestRework = <TError = HTTPValidat
 
       const mutationOptions = getPostAssessmentsAssessmentIdRequestReworkMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Resubmit an assessment after completing rework (Story 5.7).
@@ -1371,7 +1407,7 @@ export const usePostAssessmentsAssessmentIdResubmit = <TError = HTTPValidationEr
 
       const mutationOptions = getPostAssessmentsAssessmentIdResubmitMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Submit assessment for calibration review (Phase 2 Validator workflow).
@@ -1467,7 +1503,7 @@ export const usePostAssessmentsAssessmentIdSubmitForCalibration = <TError = HTTP
 
       const mutationOptions = getPostAssessmentsAssessmentIdSubmitForCalibrationMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Get the submission status of an assessment (Story 5.8).
@@ -1518,8 +1554,12 @@ export const getAssessments$AssessmentIdSubmissionStatus = (
     }
   
 
-export const getGetAssessmentsAssessmentIdSubmissionStatusQueryKey = (assessmentId: number,) => {
-    return [`/api/v1/assessments/${assessmentId}/submission-status`] as const;
+
+
+export const getGetAssessmentsAssessmentIdSubmissionStatusQueryKey = (assessmentId?: number,) => {
+    return [
+    `/api/v1/assessments/${assessmentId}/submission-status`
+    ] as const;
     }
 
     
@@ -1556,12 +1596,13 @@ export function useGetAssessmentsAssessmentIdSubmissionStatus<TData = Awaited<Re
 
   const queryOptions = getGetAssessmentsAssessmentIdSubmissionStatusQueryOptions(assessmentId,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -1616,9 +1657,13 @@ export const getAssessments$AssessmentIdReworkSummary = (
     }
   
 
-export const getGetAssessmentsAssessmentIdReworkSummaryQueryKey = (assessmentId: number,
+
+
+export const getGetAssessmentsAssessmentIdReworkSummaryQueryKey = (assessmentId?: number,
     params?: GetAssessmentsAssessmentIdReworkSummaryParams,) => {
-    return [`/api/v1/assessments/${assessmentId}/rework-summary`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/assessments/${assessmentId}/rework-summary`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -1657,12 +1702,13 @@ export function useGetAssessmentsAssessmentIdReworkSummary<TData = Awaited<Retur
 
   const queryOptions = getGetAssessmentsAssessmentIdReworkSummaryQueryOptions(assessmentId,params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -1721,9 +1767,13 @@ export const getAssessments$AssessmentIdCalibrationSummary = (
     }
   
 
-export const getGetAssessmentsAssessmentIdCalibrationSummaryQueryKey = (assessmentId: number,
+
+
+export const getGetAssessmentsAssessmentIdCalibrationSummaryQueryKey = (assessmentId?: number,
     params?: GetAssessmentsAssessmentIdCalibrationSummaryParams,) => {
-    return [`/api/v1/assessments/${assessmentId}/calibration-summary`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/assessments/${assessmentId}/calibration-summary`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -1762,12 +1812,13 @@ export function useGetAssessmentsAssessmentIdCalibrationSummary<TData = Awaited<
 
   const queryOptions = getGetAssessmentsAssessmentIdCalibrationSummaryQueryOptions(assessmentId,params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 

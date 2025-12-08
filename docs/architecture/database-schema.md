@@ -6,6 +6,7 @@ This document provides comprehensive visual documentation of the SINAG database 
 
 - [Complete Entity Relationship Diagram](#complete-entity-relationship-diagram)
 - [User and Role Management](#user-and-role-management)
+- [Assessment Years](#assessment-years)
 - [Assessment Workflow](#assessment-workflow)
 - [Governance Areas and Indicators](#governance-areas-and-indicators)
 - [BBI Functionality System](#bbi-functionality-system)
@@ -27,9 +28,12 @@ erDiagram
     users ||--o| governance_areas : "validator assigned to"
     users ||--o{ deadline_overrides : "creator"
     users ||--o{ mov_files : "uploaded_by"
+    users ||--o{ assessment_years : "activated_by"
 
     barangays ||--o{ users : "has users"
     barangays ||--o{ deadline_overrides : "has overrides"
+
+    assessment_years ||--o{ assessments : "contains"
 
     governance_areas ||--o{ users : "has validators"
     governance_areas ||--o{ indicators : "contains"
@@ -103,13 +107,36 @@ erDiagram
         boolean is_bbi
         datetime effective_date
         datetime retired_date
+        int effective_from_year "First assessment year (NULL = all)"
+        int effective_to_year "Last assessment year (NULL = ongoing)"
         datetime created_at
         datetime updated_at
+    }
+
+    assessment_years {
+        int id PK
+        int year UK "Assessment year e.g. 2025"
+        datetime assessment_period_start
+        datetime assessment_period_end
+        datetime phase1_deadline
+        datetime rework_deadline
+        datetime phase2_deadline
+        datetime calibration_deadline
+        boolean is_active "Only ONE can be true"
+        boolean is_published "Visible to Katuparan Center"
+        text description
+        datetime created_at
+        datetime updated_at
+        datetime activated_at
+        int activated_by_id FK
+        datetime deactivated_at
+        int deactivated_by_id FK
     }
 
     assessments {
         int id PK
         enum status "DRAFT, SUBMITTED, IN_REVIEW, REWORK, AWAITING_FINAL_VALIDATION, AWAITING_MLGOO_APPROVAL, COMPLETED"
+        int assessment_year FK "Links to assessment_years.year"
         int rework_count
         datetime rework_requested_at
         int rework_requested_by FK
@@ -380,6 +407,94 @@ FROM users u
 JOIN governance_areas ga ON u.validator_area_id = ga.id
 WHERE u.id = 42 AND u.role = 'VALIDATOR';
 ```
+
+---
+
+## Assessment Years
+
+The `assessment_years` table provides unified management of annual SGLGB assessment cycles, combining year configuration with phase deadlines:
+
+```mermaid
+erDiagram
+    assessment_years ||--o{ assessments : "contains"
+    users ||--o{ assessment_years : "activated_by"
+    users ||--o{ assessment_years : "deactivated_by"
+
+    assessment_years {
+        int id PK
+        int year UK "Unique year number e.g. 2025"
+        datetime assessment_period_start "Start of assessment window"
+        datetime assessment_period_end "End of assessment window"
+        datetime phase1_deadline "Initial submission deadline"
+        datetime rework_deadline "Rework submission deadline"
+        datetime phase2_deadline "Final submission deadline"
+        datetime calibration_deadline "Calibration deadline"
+        boolean is_active "Only ONE year can be active"
+        boolean is_published "Visible to Katuparan Center"
+        text description "Optional notes"
+        datetime created_at
+        datetime updated_at
+        datetime activated_at "When year was activated"
+        int activated_by_id FK "User who activated"
+        datetime deactivated_at "When year was deactivated"
+        int deactivated_by_id FK "User who deactivated"
+    }
+
+    assessments {
+        int id PK
+        int assessment_year FK "Links to assessment_years.year"
+        int blgu_user_id FK
+        enum status
+    }
+```
+
+**Key Concepts:**
+
+| Concept | Description |
+|---------|-------------|
+| **Active Year** | The year currently accepting new submissions. Only ONE year can be active at a time. Activating a new year automatically deactivates the previous one. |
+| **Published Year** | The year's data is visible to Katuparan Center users for external analytics. Multiple years can be published simultaneously. |
+| **Year Lifecycle** | CREATE (inactive) -> ACTIVATE (active) -> PUBLISH (visible) -> DEACTIVATE (historical) |
+
+**Unique Constraints:**
+
+```sql
+-- Only one active year at a time (partial unique index)
+CREATE UNIQUE INDEX uq_assessment_years_single_active
+ON assessment_years (is_active) WHERE is_active = true;
+
+-- Each BLGU can only have one assessment per year
+ALTER TABLE assessments ADD CONSTRAINT uq_assessment_blgu_year
+    UNIQUE (blgu_user_id, assessment_year);
+```
+
+**Role-Based Year Access:**
+
+| Role | Accessible Years |
+|------|------------------|
+| MLGOO_DILG | All years (published and unpublished) |
+| KATUPARAN_CENTER_USER | Published years only |
+| BLGU_USER | Years they have assessments for |
+| ASSESSOR / VALIDATOR | Active year only |
+
+**Year Placeholder Resolution:**
+
+The `YearPlaceholderResolver` uses the assessment year to resolve dynamic placeholders in indicator definitions:
+
+| Placeholder | Example (Year 2025) |
+|-------------|---------------------|
+| `{CURRENT_YEAR}` | 2025 |
+| `{PREVIOUS_YEAR}` | 2024 |
+| `{JAN_OCT_CURRENT_YEAR}` | January to October 2025 |
+| `{CY_CURRENT_YEAR}` | CY 2025 |
+
+**Migration from Legacy Tables:**
+
+The `assessment_years` table unifies data from two legacy tables:
+- `assessment_year_configs`: Year and period configuration
+- `assessment_cycles`: Phase deadline configuration
+
+Both legacy tables are preserved for backward compatibility.
 
 ---
 

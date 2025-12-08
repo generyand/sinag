@@ -5,6 +5,8 @@ import { ReportsSkeleton } from '@/components/features/reports/ReportsSkeleton';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AssessmentStatus, useGetAssessmentsList, type GetAssessmentsListQueryResult } from '@sinag/shared';
+import { useEffectiveYear } from '@/store/useAssessmentYearStore';
+import { YearSelector } from '@/components/features/assessment-year/YearSelector';
 import {
   Activity,
   Brain,
@@ -15,12 +17,13 @@ import {
 import { useState } from 'react';
 
 export default function ReportsPage() {
-  const [selectedPeriod, setSelectedPeriod] = useState('sglgb-2024');
   const [selectedBarangay, setSelectedBarangay] = useState('');
-  
-  // Fetch validated assessments with compliance data
+  const effectiveYear = useEffectiveYear();
+
+  // Fetch validated assessments with compliance data for the selected year
   const { data: assessments, isLoading } = useGetAssessmentsList<GetAssessmentsListQueryResult>({
     assessment_status: AssessmentStatus.VALIDATED,
+    year: effectiveYear ?? undefined,
   });
 
   // Ensure we only render arrays in JSX to avoid unknown -> ReactNode errors
@@ -181,8 +184,9 @@ export default function ReportsPage() {
                   </h1>
                 </div>
 
-                {/* Quick Stats */}
+                {/* Year Selector + Quick Stats */}
                 <div className="flex items-center gap-6">
+                  <YearSelector showLabel showIcon />
                   <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)]">
                     <div className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
                       {analyticsData.officialPerformance.passRate}%
@@ -200,36 +204,6 @@ export default function ReportsPage() {
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Global Filters */}
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Filter className="h-5 w-5" style={{ color: 'var(--cityscape-yellow)' }} />
-              <h2 className="text-lg font-semibold text-[var(--foreground)]">Global Filters</h2>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-[var(--foreground)]">Assessment Period:</span>
-                <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                  <SelectTrigger className="w-40 bg-[var(--background)] border-[var(--border)] rounded-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[var(--card)] border border-[var(--border)] shadow-xl rounded-sm z-50">
-                    {analyticsData.globalFilters.availablePeriods.map((period) => (
-                      <SelectItem
-                        key={period}
-                        value={period.toLowerCase().replace(' ', '-')}
-                        className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
-                      >
-                        {period}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
             </div>
           </div>

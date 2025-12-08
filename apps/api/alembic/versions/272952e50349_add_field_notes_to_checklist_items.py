@@ -22,10 +22,18 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Add field_notes column to checklist_items table."""
-    op.add_column("checklist_items", sa.Column("field_notes", JSONB, nullable=True))
+    # Check if column already exists (idempotent migration)
+    conn = op.get_bind()
+    result = conn.execute(
+        sa.text("""
+        SELECT column_name FROM information_schema.columns
+        WHERE table_name = 'checklist_items' AND column_name = 'field_notes'
+    """)
+    )
+    if result.fetchone() is None:
+        op.add_column("checklist_items", sa.Column("field_notes", JSONB, nullable=True))
 
     # Add field_notes to 3_1_8_a (Three Transmittals of CIR)
-    conn = op.get_bind()
     conn.execute(
         sa.text("""
         UPDATE checklist_items

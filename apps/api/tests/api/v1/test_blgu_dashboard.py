@@ -182,7 +182,9 @@ class TestBLGUDashboardEndpoint:
         response = client.get("/api/v1/blgu-dashboard/99999")
 
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
+        assert (
+            "not found" in response.json().get("error", response.json().get("detail", "")).lower()
+        )
 
     def test_get_dashboard_forbidden_other_user(
         self, client: TestClient, db_session: Session, other_blgu_user, assessment
@@ -484,7 +486,9 @@ class TestSaveAssessmentAnswers:
         )
 
         assert response.status_code == 404
-        assert "assessment" in response.json()["detail"].lower()
+        assert (
+            "assessment" in response.json().get("error", response.json().get("detail", "")).lower()
+        )
 
     def test_save_answers_not_found_indicator(
         self, client: TestClient, db_session: Session, blgu_user, assessment
@@ -500,7 +504,9 @@ class TestSaveAssessmentAnswers:
         )
 
         assert response.status_code == 404
-        assert "indicator" in response.json()["detail"].lower()
+        assert (
+            "indicator" in response.json().get("error", response.json().get("detail", "")).lower()
+        )
 
     def test_save_answers_forbidden_other_user(
         self,
@@ -546,7 +552,7 @@ class TestSaveAssessmentAnswers:
         )
 
         assert response.status_code == 400
-        assert "locked" in response.json()["detail"].lower()
+        assert "locked" in response.json().get("error", response.json().get("detail", "")).lower()
 
     def test_save_answers_upsert_behavior(
         self, client: TestClient, db_session: Session, blgu_user, assessment, indicator
@@ -843,7 +849,9 @@ class TestValidateAssessmentCompleteness:
         response = client.post("/api/v1/assessments/99999/validate-completeness")
 
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
+        assert (
+            "not found" in response.json().get("error", response.json().get("detail", "")).lower()
+        )
 
     def test_validate_completeness_forbidden_other_user(
         self, client: TestClient, db_session: Session, other_blgu_user, assessment

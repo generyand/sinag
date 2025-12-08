@@ -1,16 +1,21 @@
-'use client';
+"use client";
 
 import {
-    AIInsightsDisplay,
-    AreaResultsDisplay,
-    ComplianceBadge,
-    InsightsGenerator,
-} from '@/components/features/reports';
-import { PageHeader } from '@/components/shared';
-import { useIntelligence } from '@/hooks';
-import { useGetMlgooAssessmentsAssessmentId, useGetCapdevAssessmentsAssessmentId, getGetCapdevAssessmentsAssessmentIdQueryKey, getGetMlgooAssessmentsAssessmentIdQueryKey } from '@sinag/shared';
-import { useParams } from 'next/navigation';
-import { useMemo } from 'react';
+  AIInsightsDisplay,
+  AreaResultsDisplay,
+  ComplianceBadge,
+  InsightsGenerator,
+} from "@/components/features/reports";
+import { PageHeader } from "@/components/shared";
+import { useIntelligence } from "@/hooks";
+import {
+  getGetCapdevAssessmentsAssessmentIdQueryKey,
+  getGetMlgooAssessmentsAssessmentIdQueryKey,
+  useGetCapdevAssessmentsAssessmentId,
+  useGetMlgooAssessmentsAssessmentId,
+} from "@sinag/shared";
+import { useParams } from "next/navigation";
+import { useMemo } from "react";
 
 export default function ReportDetailsPage() {
   const params = useParams();
@@ -21,27 +26,30 @@ export default function ReportDetailsPage() {
     data: assessmentData,
     isLoading,
     error: fetchError,
-    refetch: refetchAssessment
   } = useGetMlgooAssessmentsAssessmentId(assessmentId, {
     query: {
       queryKey: getGetMlgooAssessmentsAssessmentIdQueryKey(assessmentId),
       enabled: !isNaN(assessmentId),
-    }
+    },
   });
 
   // Fetch CapDev insights (AI recommendations)
   const {
     data: capdevData,
     isLoading: isLoadingCapdev,
-    refetch: refetchCapdev
+    refetch: refetchCapdev,
   } = useGetCapdevAssessmentsAssessmentId(assessmentId, {
     query: {
       queryKey: getGetCapdevAssessmentsAssessmentIdQueryKey(assessmentId),
-      enabled: !isNaN(assessmentId) && assessmentData?.status === 'COMPLETED',
-    }
+      enabled: !isNaN(assessmentId) && assessmentData?.status === "COMPLETED",
+    },
   });
 
-  const { generateInsights: handleGenerateInsights, isGenerating, error: generationError } = useIntelligence();
+  const {
+    generateInsights: handleGenerateInsights,
+    isGenerating,
+    error: generationError,
+  } = useIntelligence();
 
   // Transform area_results from API format to display format
   const areaResults = useMemo(() => {
@@ -49,12 +57,12 @@ export default function ReportDetailsPage() {
 
     // Convert area_results object to the expected format
     const results: Record<string, string> = {};
-    if (typeof assessmentData.area_results === 'object') {
+    if (typeof assessmentData.area_results === "object") {
       Object.entries(assessmentData.area_results).forEach(([key, value]) => {
         // Handle different possible formats
-        if (typeof value === 'string') {
+        if (typeof value === "string") {
           results[key] = value;
-        } else if (typeof value === 'object' && value !== null && 'status' in value) {
+        } else if (typeof value === "object" && value !== null && "status" in value) {
           results[key] = (value as { status: string }).status;
         }
       });
@@ -70,8 +78,8 @@ export default function ReportDetailsPage() {
     const results: Record<string, string> = {};
     assessmentData.governance_areas.forEach((area) => {
       // Determine pass/fail based on area validation status
-      const isPassed = area.indicators?.every(ind => ind.validation_status === 'PASSED') ?? false;
-      results[area.name] = isPassed ? 'Passed' : 'Failed';
+      const isPassed = area.indicators?.every((ind) => ind.validation_status === "PASSED") ?? false;
+      results[area.name] = isPassed ? "Passed" : "Failed";
     });
     return Object.keys(results).length > 0 ? results : undefined;
   }, [areaResults, assessmentData?.governance_areas]);
@@ -86,11 +94,62 @@ export default function ReportDetailsPage() {
         refetchCapdev();
       }, 5000);
     } catch (err) {
-      console.error('Failed to generate insights:', err);
+      console.error("Failed to generate insights:", err);
     }
   };
 
-  const error = fetchError ? 'Failed to load assessment details' : null;
+  const error = fetchError ? "Failed to load assessment details" : null;
+
+  // Determine compliance status from API response
+  const complianceStatus = assessmentData?.compliance_status as "Passed" | "Failed" | undefined;
+  const isValidated =
+    assessmentData?.status === "COMPLETED" || assessmentData?.status === "AWAITING_MLGOO_APPROVAL";
+  const hasCapdevInsights = capdevData?.status === "completed" && capdevData?.insights;
+
+  // Transform CapDev insights to the format expected by AIInsightsDisplay
+  const transformedInsights = useMemo(() => {
+    if (!hasCapdevInsights || !capdevData?.insights) return null;
+
+    // Get the first available language's insights
+    const defaultLang = capdevData.available_languages?.[0] || "en";
+    const langInsights = capdevData.insights[defaultLang] as Record<string, unknown> | null;
+    if (!langInsights) return null;
+
+    // Handle flexible AI-generated content structure
+    const summary = typeof langInsights.summary === "string" ? langInsights.summary : "";
+
+    const recommendations = Array.isArray(langInsights.recommendations)
+      ? langInsights.recommendations.map((r: unknown) => {
+          if (typeof r === "string") return r;
+          if (typeof r === "object" && r !== null) {
+            return (
+              (r as { title?: string; description?: string }).title ||
+              (r as { description?: string }).description ||
+              ""
+            );
+          }
+          return "";
+        })
+      : [];
+
+    const capacity_development_needs = Array.isArray(langInsights.capacity_development_needs)
+      ? langInsights.capacity_development_needs.map((n: unknown) => {
+          if (typeof n === "string") return n;
+          if (typeof n === "object" && n !== null) {
+            const obj = n as {
+              area?: string;
+              current_gap?: string;
+              category?: string;
+              description?: string;
+            };
+            return obj.area || obj.current_gap || obj.category || obj.description || "";
+          }
+          return "";
+        })
+      : [];
+
+    return { summary, recommendations, capacity_development_needs };
+  }, [hasCapdevInsights, capdevData?.insights, capdevData?.available_languages]);
 
   if (isLoading) {
     return (
@@ -107,61 +166,17 @@ export default function ReportDetailsPage() {
     return (
       <div className="min-h-screen bg-background p-8">
         <div className="max-w-4xl mx-auto">
-          <PageHeader
-            title="Assessment Report"
-            description={error || 'Assessment not found'}
-          />
+          <PageHeader title="Assessment Report" description={error || "Assessment not found"} />
         </div>
       </div>
     );
   }
 
-  // Determine compliance status from API response
-  const complianceStatus = assessmentData.compliance_status as 'Passed' | 'Failed' | undefined;
-  const isValidated = assessmentData.status === 'COMPLETED' || assessmentData.status === 'AWAITING_MLGOO_APPROVAL';
-  const hasCapdevInsights = capdevData?.status === 'completed' && capdevData?.insights;
-
-  // Transform CapDev insights to the format expected by AIInsightsDisplay
-  const transformedInsights = useMemo(() => {
-    if (!hasCapdevInsights || !capdevData?.insights) return null;
-
-    // Get the first available language's insights
-    const defaultLang = capdevData.available_languages?.[0] || 'en';
-    const langInsights = capdevData.insights[defaultLang] as Record<string, unknown> | null;
-    if (!langInsights) return null;
-
-    // Handle flexible AI-generated content structure
-    const summary = typeof langInsights.summary === 'string' ? langInsights.summary : '';
-
-    const recommendations = Array.isArray(langInsights.recommendations)
-      ? langInsights.recommendations.map((r: unknown) => {
-          if (typeof r === 'string') return r;
-          if (typeof r === 'object' && r !== null) {
-            return (r as { title?: string; description?: string }).title || (r as { description?: string }).description || '';
-          }
-          return '';
-        })
-      : [];
-
-    const capacity_development_needs = Array.isArray(langInsights.capacity_development_needs)
-      ? langInsights.capacity_development_needs.map((n: unknown) => {
-          if (typeof n === 'string') return n;
-          if (typeof n === 'object' && n !== null) {
-            const obj = n as { area?: string; current_gap?: string; category?: string; description?: string };
-            return obj.area || obj.current_gap || obj.category || obj.description || '';
-          }
-          return '';
-        })
-      : [];
-
-    return { summary, recommendations, capacity_development_needs };
-  }, [hasCapdevInsights, capdevData?.insights, capdevData?.available_languages]);
-
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-4xl mx-auto space-y-6">
         <PageHeader
-          title={`Assessment Report - ${assessmentData.barangay_name || 'Unknown'}`}
+          title={`Assessment Report - ${assessmentData.barangay_name || "Unknown"}`}
           description="View detailed SGLGB compliance status and area breakdown"
         />
 
@@ -225,9 +240,7 @@ export default function ReportDetailsPage() {
           {isLoadingCapdev && !isGenerating && (
             <div className="flex items-center gap-2 p-4 bg-muted/50 rounded-md border border-muted">
               <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm text-muted-foreground">
-                Loading AI insights...
-              </p>
+              <p className="text-sm text-muted-foreground">Loading AI insights...</p>
             </div>
           )}
 
@@ -241,17 +254,16 @@ export default function ReportDetailsPage() {
           )}
 
           {/* Display CapDev Insights */}
-          {transformedInsights && (
-            <AIInsightsDisplay insights={transformedInsights} />
-          )}
+          {transformedInsights && <AIInsightsDisplay insights={transformedInsights} />}
 
           {/* Show status message if insights exist but are not completed */}
-          {capdevData && !hasCapdevInsights && capdevData.status !== 'not_generated' && (
+          {capdevData && !hasCapdevInsights && capdevData.status !== "not_generated" && (
             <div className="p-4 bg-muted/50 rounded-md border border-muted">
               <p className="text-sm text-muted-foreground">
-                {capdevData.status === 'pending' && 'AI insights generation is queued...'}
-                {capdevData.status === 'generating' && 'AI insights are being generated...'}
-                {capdevData.status === 'failed' && 'AI insights generation failed. You can try regenerating.'}
+                {capdevData.status === "pending" && "AI insights generation is queued..."}
+                {capdevData.status === "generating" && "AI insights are being generated..."}
+                {capdevData.status === "failed" &&
+                  "AI insights generation failed. You can try regenerating."}
               </p>
             </div>
           )}

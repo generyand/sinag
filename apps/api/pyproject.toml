@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "api"
 version = "0.1.0"
@@ -37,8 +41,13 @@ dev = [
     "pytest>=8.4.0",
     "pytest-asyncio>=1.0.0",
     "pytest-cov>=7.0.0",
+    "pytest-xdist>=3.5.0",
     "ruff>=0.11.13",
 ]
+
+[tool.setuptools]
+# Explicitly include only the 'app' package, excluding alembic, tests, scripts, etc.
+packages = ["app"]
 
 [tool.ruff]
 line-length = 100

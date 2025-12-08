@@ -65,30 +65,47 @@ class Settings(BaseSettings):
 
         return v
 
-    # CORS
-    BACKEND_CORS_ORIGINS: list[str] = [
-        # Development
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "https://localhost:3000",
-        "https://localhost:3001",
-        # Docker internal network access
-        "http://sinag-web:3000",
-        "http://172.25.0.40:3000",
-        # Production (add your production domain here)
-        # "https://sinag.dilg.gov.ph",
-        # "https://www.sinag.dilg.gov.ph",
-    ]
+    # CORS - Set via BACKEND_CORS_ORIGINS environment variable (comma-separated)
+    # Example: BACKEND_CORS_ORIGINS=https://staging.dilg-sinag.tech,https://dilg-sinag.tech
+    BACKEND_CORS_ORIGINS: list[str] = []
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
-    def assemble_cors_origins(cls, v):
-        """Parse CORS origins from string or list."""
-        if isinstance(v, str) and not v.startswith("["):
-            return [i.strip() for i in v.split(",")]
-        elif isinstance(v, (list, str)):
-            return v
-        raise ValueError(v)
+    def assemble_cors_origins(cls, v, info: ValidationInfo):
+        """Parse CORS origins from string or list, with environment-aware defaults."""
+        origins = []
+
+        # Parse input
+        if isinstance(v, str) and v:
+            if not v.startswith("["):
+                origins = [i.strip() for i in v.split(",") if i.strip()]
+            else:
+                origins = v
+        elif isinstance(v, list):
+            origins = v
+
+        # Add development defaults if no origins specified and not in production
+        environment = info.data.get("ENVIRONMENT", "development") if info.data else "development"
+
+        if not origins:
+            if environment == "production":
+                warnings.warn(
+                    "BACKEND_CORS_ORIGINS not set in production. "
+                    "Set it via environment variable (comma-separated URLs).",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            else:
+                # Development defaults
+                origins = [
+                    "http://localhost:3000",
+                    "http://localhost:3001",
+                    "https://localhost:3000",
+                    "https://localhost:3001",
+                    "http://sinag-web:3000",
+                ]
+
+        return origins
 
     # Supabase Configuration
     SUPABASE_URL: str = ""
@@ -157,6 +174,42 @@ class Settings(BaseSettings):
     # First Superuser
     FIRST_SUPERUSER: str = "admin@sinag.dilg.gov.ph"
     FIRST_SUPERUSER_PASSWORD: str = "changethis"
+
+    # External User Default Password (Katuparan Center, etc.)
+    EXTERNAL_USER_DEFAULT_PASSWORD: str = "changethis"
+
+    @field_validator("FIRST_SUPERUSER_PASSWORD", mode="after")
+    @classmethod
+    def validate_superuser_password(cls, v: str, info: ValidationInfo) -> str:
+        """Validate superuser password is not the default in production."""
+        environment = info.data.get("ENVIRONMENT", "development") if info.data else "development"
+
+        if environment == "production" and v == "changethis":
+            raise ValueError(
+                "FIRST_SUPERUSER_PASSWORD must be changed from default 'changethis' in production. "
+                "Set a secure password via environment variable."
+            )
+
+        if environment == "production" and len(v) < 12:
+            raise ValueError(
+                "FIRST_SUPERUSER_PASSWORD must be at least 12 characters in production."
+            )
+
+        return v
+
+    @field_validator("EXTERNAL_USER_DEFAULT_PASSWORD", mode="after")
+    @classmethod
+    def validate_external_user_password(cls, v: str, info: ValidationInfo) -> str:
+        """Validate external user default password is not the default in production."""
+        environment = info.data.get("ENVIRONMENT", "development") if info.data else "development"
+
+        if environment == "production" and v == "changethis":
+            raise ValueError(
+                "EXTERNAL_USER_DEFAULT_PASSWORD must be changed from default 'changethis' in production. "
+                "Set a secure password via environment variable."
+            )
+
+        return v
 
     model_config = ConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 

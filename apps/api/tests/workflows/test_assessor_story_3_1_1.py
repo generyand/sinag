@@ -34,7 +34,7 @@ def create_test_data_for_rework(db_session: Session) -> dict:
     governance_area = GovernanceArea(
         name=f"Test Governance Area Rework 3.1.1 {timestamp}",
         code=str(timestamp)[:2].upper(),
-        area_type=AreaType.CORE
+        area_type=AreaType.CORE,
     )
     db_session.add(governance_area)
     db_session.commit()
@@ -194,7 +194,7 @@ def test_send_assessment_for_rework_already_sent(client, db_session: Session):
 
     assert response.status_code == 400
     data = response.json()
-    assert "already been sent for rework" in data["detail"]
+    assert "already been sent for rework" in data.get("error", data.get("detail", ""))
 
     # Clear dependency overrides
     client.app.dependency_overrides.clear()
@@ -226,7 +226,7 @@ def test_send_assessment_for_rework_not_found(client, db_session: Session):
     # Should return 400 with "not found" message
     assert response.status_code == 400
     data = response.json()
-    assert "not found" in data["detail"].lower()
+    assert "not found" in data.get("error", data.get("detail", "")).lower()
 
     # Clear dependency overrides
     client.app.dependency_overrides.clear()
@@ -258,7 +258,7 @@ def test_send_assessment_for_rework_unauthorized(client, db_session: Session):
 
     assert response.status_code == 403  # No authentication -> 403 Forbidden
     data = response.json()
-    assert "authenticated" in data["detail"].lower()
+    assert "authenticated" in data.get("error", data.get("detail", "")).lower()
 
     # Clear dependency overrides
     client.app.dependency_overrides.clear()

@@ -35,7 +35,7 @@ def admin_user(db_session: Session):
     user = User(
         email=unique_email,
         name="Admin User",
-        hashed_password=pwd_context.hash("adminpass123"),
+        hashed_password=pwd_context.hash("AdminPass123!"),
         role=UserRole.MLGOO_DILG,
         is_active=True,
     )
@@ -46,16 +46,16 @@ def admin_user(db_session: Session):
 
 
 @pytest.fixture
-def blgu_user(db_session: Session):
+def blgu_user(db_session: Session, mock_barangay):
     """Create a BLGU user for testing"""
     unique_email = f"blgu_{uuid.uuid4().hex[:8]}@example.com"
 
     user = User(
         email=unique_email,
         name="BLGU User",
-        hashed_password=pwd_context.hash("blgupass123"),
+        hashed_password=pwd_context.hash("BlguPass123!"),
         role=UserRole.BLGU_USER,
-        barangay_id=1,  # Required for BLGU_USER role
+        barangay_id=mock_barangay.id,
         is_active=True,
     )
     db_session.add(user)
@@ -72,7 +72,7 @@ def assessor_user(db_session: Session):
     user = User(
         email=unique_email,
         name="Assessor User",
-        hashed_password=pwd_context.hash("assessorpass123"),
+        hashed_password=pwd_context.hash("AssessorPass123!"),
         role=UserRole.ASSESSOR,
         is_active=True,
     )
@@ -392,7 +392,7 @@ def test_create_user_as_admin(
     user_data = {
         "email": unique_email,
         "name": "New User",
-        "password": "NewPassword123",
+        "password": "NewPassword123!",
         "role": UserRole.BLGU_USER.value,
         "barangay_id": mock_barangay.id,  # Required for BLGU_USER role
     }
@@ -420,7 +420,7 @@ def test_create_user_forbidden_for_non_admin(
     user_data = {
         "email": "newuser@example.com",
         "name": "New User",
-        "password": "NewPassword123",
+        "password": "NewPassword123!",
         "role": UserRole.BLGU_USER.value,
         "barangay_id": 1,  # Required for BLGU_USER role
     }
@@ -435,7 +435,7 @@ def test_create_user_unauthorized(client: TestClient):
     user_data = {
         "email": "newuser@example.com",
         "name": "New User",
-        "password": "NewPassword123",
+        "password": "NewPassword123!",
         "role": UserRole.BLGU_USER.value,
         "barangay_id": 1,  # Required for BLGU_USER role
     }
@@ -571,7 +571,9 @@ def test_deactivate_user_cannot_deactivate_self(
     response = client.delete(f"/api/v1/users/{admin_user.id}")
 
     assert response.status_code == 400
-    assert "Cannot deactivate your own account" in response.json()["detail"]
+    assert "Cannot deactivate your own account" in response.json().get(
+        "error", response.json().get("detail", "")
+    )
 
 
 def test_deactivate_user_not_found(client: TestClient, db_session: Session, admin_user: User):
@@ -599,16 +601,18 @@ def test_deactivate_user_forbidden_for_non_admin(
 # ====================================================================
 
 
-def test_activate_user_as_admin(client: TestClient, db_session: Session, admin_user: User):
+def test_activate_user_as_admin(
+    client: TestClient, db_session: Session, admin_user: User, mock_barangay
+):
     """Test admin can activate inactive user"""
     # Create inactive user
     unique_email = f"inactive_{uuid.uuid4().hex[:8]}@example.com"
     inactive_user = User(
         email=unique_email,
         name="Inactive User",
-        hashed_password=pwd_context.hash("password123"),
+        hashed_password=pwd_context.hash("TestPassword123!"),
         role=UserRole.BLGU_USER,
-        barangay_id=1,  # Required for BLGU_USER role
+        barangay_id=mock_barangay.id,
         is_active=False,
     )
     db_session.add(inactive_user)
@@ -662,7 +666,7 @@ def test_reset_user_password_as_admin(
 
     response = client.post(
         f"/api/v1/users/{blgu_user.id}/reset-password",
-        json={"new_password": "ResetPassword123"},
+        json={"new_password": "ResetPassword123!"},
     )
 
     assert response.status_code == 200
@@ -679,7 +683,7 @@ def test_reset_user_password_not_found(client: TestClient, db_session: Session, 
 
     response = client.post(
         "/api/v1/users/99999/reset-password",
-        json={"new_password": "NewPassword123"},
+        json={"new_password": "NewPassword123!"},
     )
 
     assert response.status_code == 404
@@ -693,7 +697,7 @@ def test_reset_user_password_forbidden_for_non_admin(
 
     response = client.post(
         f"/api/v1/users/{assessor_user.id}/reset-password",
-        json={"new_password": "NewPassword123"},
+        json={"new_password": "NewPassword123!"},
     )
 
     assert response.status_code == 403
@@ -756,7 +760,7 @@ def test_create_validator_user_with_area_assignment(
     user_data = {
         "email": unique_email,
         "name": "Validator User",
-        "password": "Validatorpass123",
+        "password": "ValidatorPass123!",
         "role": UserRole.VALIDATOR.value,
         "validator_area_id": mock_governance_area.id,  # Required for VALIDATOR role
     }
@@ -786,7 +790,7 @@ def test_create_validator_user_without_area_fails(
     user_data = {
         "email": unique_email,
         "name": "Validator User",
-        "password": "Validatorpass123",
+        "password": "ValidatorPass123!",
         "role": UserRole.VALIDATOR.value,
         # validator_area_id is missing
     }
@@ -794,7 +798,7 @@ def test_create_validator_user_without_area_fails(
     response = client.post("/api/v1/users/", json=user_data)
 
     assert response.status_code == 400
-    detail_lower = response.json()["detail"].lower()
+    detail_lower = response.json().get("error", response.json().get("detail", "")).lower()
     assert "governance area" in detail_lower and "validator" in detail_lower
 
 
@@ -808,7 +812,7 @@ def test_create_assessor_user_no_assignment_required(
     user_data = {
         "email": unique_email,
         "name": "Assessor User",
-        "password": "Assessorpass123",
+        "password": "AssessorPass123!",
         "role": UserRole.ASSESSOR.value,
         # No barangay_id or validator_area_id
     }
@@ -832,7 +836,7 @@ def test_create_assessor_with_validator_area_clears_it(
     user_data = {
         "email": unique_email,
         "name": "Assessor User",
-        "password": "Assessorpass123",
+        "password": "AssessorPass123!",
         "role": UserRole.ASSESSOR.value,
         "validator_area_id": 1,  # Should be cleared for ASSESSOR
     }
@@ -860,7 +864,7 @@ def test_create_mlgoo_dilg_user_no_assignment_required(
     user_data = {
         "email": unique_email,
         "name": "MLGOO DILG User",
-        "password": "Mlgoopass123",
+        "password": "MlgooPass123!",
         "role": UserRole.MLGOO_DILG.value,
         # No assignments
     }
@@ -884,7 +888,7 @@ def test_create_blgu_user_requires_barangay(
     user_data = {
         "email": unique_email,
         "name": "BLGU User",
-        "password": "Blgupass123",
+        "password": "BlguPass123!",
         "role": UserRole.BLGU_USER.value,
         "barangay_id": mock_barangay.id,
     }
@@ -910,7 +914,7 @@ def test_create_duplicate_email_fails(
     user_data = {
         "email": blgu_user.email,  # Duplicate email
         "name": "Another User",
-        "password": "Password123",
+        "password": "Password123!",
         "role": UserRole.BLGU_USER.value,
         "barangay_id": mock_barangay.id,
     }
@@ -918,7 +922,7 @@ def test_create_duplicate_email_fails(
     response = client.post("/api/v1/users/", json=user_data)
 
     assert response.status_code == 400
-    assert "email" in response.json()["detail"].lower()
+    assert "email" in response.json().get("error", response.json().get("detail", "")).lower()
 
 
 # ====================================================================
@@ -962,7 +966,7 @@ def test_update_user_role_from_blgu_to_validator(
 
 
 def test_update_user_role_from_validator_to_assessor(
-    client: TestClient, db_session: Session, admin_user: User
+    client: TestClient, db_session: Session, admin_user: User, mock_governance_area
 ):
     """Test changing user from VALIDATOR to ASSESSOR clears validator_area_id"""
     _override_user_and_db(client, admin_user, db_session)
@@ -972,9 +976,9 @@ def test_update_user_role_from_validator_to_assessor(
     validator = User(
         email=unique_email,
         name="Validator User",
-        hashed_password=pwd_context.hash("password123"),
+        hashed_password=pwd_context.hash("TestPassword123!"),
         role=UserRole.VALIDATOR,
-        validator_area_id=1,
+        validator_area_id=mock_governance_area.id,
         is_active=True,
     )
     db_session.add(validator)
@@ -1035,7 +1039,7 @@ def test_update_user_role_from_assessor_to_blgu(
 
 
 def test_only_mlgoo_dilg_can_access_user_management(
-    client: TestClient, db_session: Session, assessor_user: User
+    client: TestClient, db_session: Session, assessor_user: User, mock_barangay
 ):
     """Test that only MLGOO_DILG role can access user management endpoints"""
     _override_user_and_db(client, assessor_user, db_session)
@@ -1050,24 +1054,26 @@ def test_only_mlgoo_dilg_can_access_user_management(
         json={
             "email": "test@example.com",
             "name": "Test",
-            "password": "Password123",
+            "password": "Password123!",
             "role": UserRole.BLGU_USER.value,
-            "barangay_id": 1,
+            "barangay_id": mock_barangay.id,
         },
     )
     assert response.status_code == 403
 
 
-def test_validator_cannot_access_user_management(client: TestClient, db_session: Session):
+def test_validator_cannot_access_user_management(
+    client: TestClient, db_session: Session, mock_governance_area
+):
     """Test that VALIDATOR role cannot access user management endpoints"""
     # Create validator user
     unique_email = f"validator_{uuid.uuid4().hex[:8]}@example.com"
     validator = User(
         email=unique_email,
         name="Validator User",
-        hashed_password=pwd_context.hash("password123"),
+        hashed_password=pwd_context.hash("TestPassword123!"),
         role=UserRole.VALIDATOR,
-        validator_area_id=1,
+        validator_area_id=mock_governance_area.id,
         is_active=True,
     )
     db_session.add(validator)

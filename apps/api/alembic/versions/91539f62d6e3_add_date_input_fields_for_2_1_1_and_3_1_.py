@@ -16,7 +16,7 @@ Adds/updates date input fields for:
 from typing import Sequence, Union
 
 from alembic import op
-from sqlalchemy.orm import Session
+import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
@@ -27,106 +27,125 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    """Add/update date input fields."""
-    from app.db.models.governance_area import (
-        Indicator,
-        ChecklistItem as ChecklistItemModel,
+    """Add/update date input fields using raw SQL."""
+    conn = op.get_bind()
+
+    print("Adding/updating date input fields...")
+
+    # === 2.1.1: Add new date field ===
+    result = conn.execute(
+        sa.text("SELECT id FROM indicators WHERE indicator_code = :code"),
+        {"code": "2.1.1"},
+    ).fetchone()
+
+    if result:
+        indicator_id = result[0]
+        # Check if date field already exists
+        existing = conn.execute(
+            sa.text("SELECT id FROM checklist_items WHERE item_id = :item_id"),
+            {"item_id": "2_1_1_date"},
+        ).fetchone()
+
+        if not existing:
+            conn.execute(
+                sa.text("""
+                    INSERT INTO checklist_items (
+                        indicator_id, item_id, label, item_type, required, display_order
+                    ) VALUES (
+                        :indicator_id, :item_id, :label, :item_type, :required, :display_order
+                    )
+                """),
+                {
+                    "indicator_id": indicator_id,
+                    "item_id": "2_1_1_date",
+                    "label": "Date of approval",
+                    "item_type": "date_input",
+                    "required": True,
+                    "display_order": 2,
+                },
+            )
+            print("  - Added 2_1_1_date field")
+
+    # === 3.1.1: Add new date field ===
+    result = conn.execute(
+        sa.text("SELECT id FROM indicators WHERE indicator_code = :code"),
+        {"code": "3.1.1"},
+    ).fetchone()
+
+    if result:
+        indicator_id = result[0]
+        # Check if date field already exists
+        existing = conn.execute(
+            sa.text("SELECT id FROM checklist_items WHERE item_id = :item_id"),
+            {"item_id": "3_1_1_date"},
+        ).fetchone()
+
+        if not existing:
+            conn.execute(
+                sa.text("""
+                    INSERT INTO checklist_items (
+                        indicator_id, item_id, label, item_type, required, display_order
+                    ) VALUES (
+                        :indicator_id, :item_id, :label, :item_type, :required, :display_order
+                    )
+                """),
+                {
+                    "indicator_id": indicator_id,
+                    "item_id": "3_1_1_date",
+                    "label": "Date of approval",
+                    "item_type": "date_input",
+                    "required": True,
+                    "display_order": 2,
+                },
+            )
+            print("  - Added 3_1_1_date field")
+
+    # === 3.1.2: Update existing date field ===
+    conn.execute(
+        sa.text("""
+            UPDATE checklist_items
+            SET item_type = :item_type, requires_document_count = :requires_doc_count
+            WHERE item_id = :item_id
+        """),
+        {
+            "item_id": "3_1_2_date",
+            "item_type": "date_input",
+            "requires_doc_count": False,
+        },
     )
+    print("  - Updated 3_1_2_date to date_input type")
 
-    bind = op.get_bind()
-    session = Session(bind=bind)
+    # === 3.1.3: Update existing date field ===
+    conn.execute(
+        sa.text("""
+            UPDATE checklist_items
+            SET item_type = :item_type, requires_document_count = :requires_doc_count
+            WHERE item_id = :item_id
+        """),
+        {
+            "item_id": "3_1_3_date",
+            "item_type": "date_input",
+            "requires_doc_count": False,
+        },
+    )
+    print("  - Updated 3_1_3_date to date_input type")
 
-    try:
-        print("Adding/updating date input fields...")
+    # === 3.1.4: Update existing date field ===
+    conn.execute(
+        sa.text("""
+            UPDATE checklist_items
+            SET item_type = :item_type, requires_document_count = :requires_doc_count
+            WHERE item_id = :item_id
+        """),
+        {
+            "item_id": "3_1_4_date",
+            "item_type": "date_input",
+            "requires_doc_count": False,
+        },
+    )
+    print("  - Updated 3_1_4_date to date_input type")
 
-        # === 2.1.1: Add new date field ===
-        indicator_2_1_1 = (
-            session.query(Indicator).filter(Indicator.indicator_code == "2.1.1").first()
-        )
-        if indicator_2_1_1:
-            # Check if date field already exists
-            existing = (
-                session.query(ChecklistItemModel)
-                .filter(ChecklistItemModel.item_id == "2_1_1_date")
-                .first()
-            )
-            if not existing:
-                new_item = ChecklistItemModel(
-                    indicator_id=indicator_2_1_1.id,
-                    item_id="2_1_1_date",
-                    label="Date of approval",
-                    item_type="date_input",
-                    required=True,
-                    display_order=2,
-                )
-                session.add(new_item)
-                print("  - Added 2_1_1_date field")
-
-        # === 3.1.1: Add new date field ===
-        indicator_3_1_1 = (
-            session.query(Indicator).filter(Indicator.indicator_code == "3.1.1").first()
-        )
-        if indicator_3_1_1:
-            # Check if date field already exists
-            existing = (
-                session.query(ChecklistItemModel)
-                .filter(ChecklistItemModel.item_id == "3_1_1_date")
-                .first()
-            )
-            if not existing:
-                new_item = ChecklistItemModel(
-                    indicator_id=indicator_3_1_1.id,
-                    item_id="3_1_1_date",
-                    label="Date of approval",
-                    item_type="date_input",
-                    required=True,
-                    display_order=2,
-                )
-                session.add(new_item)
-                print("  - Added 3_1_1_date field")
-
-        # === 3.1.2: Update existing date field ===
-        checklist_3_1_2 = (
-            session.query(ChecklistItemModel)
-            .filter(ChecklistItemModel.item_id == "3_1_2_date")
-            .first()
-        )
-        if checklist_3_1_2:
-            checklist_3_1_2.item_type = "date_input"
-            checklist_3_1_2.requires_document_count = False
-            print("  - Updated 3_1_2_date to date_input type")
-
-        # === 3.1.3: Update existing date field ===
-        checklist_3_1_3 = (
-            session.query(ChecklistItemModel)
-            .filter(ChecklistItemModel.item_id == "3_1_3_date")
-            .first()
-        )
-        if checklist_3_1_3:
-            checklist_3_1_3.item_type = "date_input"
-            checklist_3_1_3.requires_document_count = False
-            print("  - Updated 3_1_3_date to date_input type")
-
-        # === 3.1.4: Update existing date field ===
-        checklist_3_1_4 = (
-            session.query(ChecklistItemModel)
-            .filter(ChecklistItemModel.item_id == "3_1_4_date")
-            .first()
-        )
-        if checklist_3_1_4:
-            checklist_3_1_4.item_type = "date_input"
-            checklist_3_1_4.requires_document_count = False
-            print("  - Updated 3_1_4_date to date_input type")
-
-        session.commit()
-        print("Migration complete!")
-
-    except Exception as e:
-        session.rollback()
-        print(f"Error during migration: {e}")
-        raise
-    finally:
-        session.close()
+    print("Migration complete!")
 
 
 def downgrade() -> None:

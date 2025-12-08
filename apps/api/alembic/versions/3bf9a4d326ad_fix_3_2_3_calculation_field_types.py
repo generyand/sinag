@@ -12,7 +12,7 @@ so they initialize with empty string instead of boolean false.
 from typing import Sequence, Union
 
 from alembic import op
-from sqlalchemy.orm import Session
+import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
@@ -23,43 +23,31 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    """Fix calculation_field item types for 3.2.3."""
-    from app.db.models.governance_area import ChecklistItem as ChecklistItemModel
+    """Fix calculation_field item types for 3.2.3 using raw SQL."""
+    conn = op.get_bind()
 
-    bind = op.get_bind()
-    session = Session(bind=bind)
+    print("Fixing calculation_field item types for 3.2.3...")
 
-    try:
-        print("Fixing calculation_field item types for 3.2.3...")
+    # List of calculation field item_ids that need to be updated
+    calculation_field_ids = [
+        "3_2_3_physical_accomplished",
+        "3_2_3_physical_reflected",
+        "3_2_3_financial_allocated",
+        "3_2_3_financial_utilized",
+    ]
 
-        # List of calculation field item_ids that need to be updated
-        calculation_field_ids = [
-            "3_2_3_physical_accomplished",
-            "3_2_3_physical_reflected",
-            "3_2_3_financial_allocated",
-            "3_2_3_financial_utilized",
-        ]
+    for item_id in calculation_field_ids:
+        conn.execute(
+            sa.text("""
+                UPDATE checklist_items
+                SET item_type = 'calculation_field', requires_document_count = false
+                WHERE item_id = :item_id
+            """),
+            {"item_id": item_id},
+        )
+        print(f"  - Updated {item_id} to calculation_field type")
 
-        for item_id in calculation_field_ids:
-            item = (
-                session.query(ChecklistItemModel)
-                .filter(ChecklistItemModel.item_id == item_id)
-                .first()
-            )
-            if item:
-                item.item_type = "calculation_field"
-                item.requires_document_count = False
-                print(f"  - Updated {item_id} to calculation_field type")
-
-        session.commit()
-        print("Migration complete!")
-
-    except Exception as e:
-        session.rollback()
-        print(f"Error during migration: {e}")
-        raise
-    finally:
-        session.close()
+    print("Migration complete!")
 
 
 def downgrade() -> None:

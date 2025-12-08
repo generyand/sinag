@@ -48,7 +48,7 @@ from app.schemas.analytics import (
 class ReportsFilters:
     """Data class for reports filtering parameters."""
 
-    cycle_id: int | None = None
+    assessment_year: int | None = None
     start_date: date | None = None
     end_date: date | None = None
     governance_area_codes: list[str] | None = None
@@ -59,13 +59,15 @@ class ReportsFilters:
 class AnalyticsService:
     """Service class for analytics and dashboard KPI calculations."""
 
-    def get_dashboard_kpis(self, db: Session, cycle_id: int | None = None) -> DashboardKPIResponse:
+    def get_dashboard_kpis(
+        self, db: Session, assessment_year: int | None = None
+    ) -> DashboardKPIResponse:
         """
         Get all dashboard KPIs for the MLGOO-DILG dashboard.
 
         Args:
             db: Database session
-            cycle_id: Optional assessment cycle ID (defaults to latest cycle if None)
+            assessment_year: Optional assessment year (defaults to active year if None)
 
         Returns:
             DashboardKPIResponse containing all KPI data
@@ -73,8 +75,14 @@ class AnalyticsService:
         PERFORMANCE: Results are cached in Redis for 30 minutes to reduce
         database load and improve response times for the dashboard.
         """
-        # Build cache key based on cycle_id
-        cache_key = f"dashboard_kpis:cycle_{cycle_id or 'all'}"
+        # Get active year if not specified
+        if assessment_year is None:
+            from app.services.assessment_year_service import assessment_year_service
+
+            assessment_year = assessment_year_service.get_active_year_number(db)
+
+        # Build cache key based on assessment_year
+        cache_key = f"dashboard_kpis:year_{assessment_year or 'all'}"
 
         # Try to get from cache first
         if cache.is_available:
@@ -86,15 +94,15 @@ class AnalyticsService:
         logger.info(f"📊 Computing dashboard KPIs (cache miss for {cache_key})")
 
         # Calculate all KPIs
-        overall_compliance = self._calculate_overall_compliance(db, cycle_id)
-        completion_status = self._calculate_completion_status(db, cycle_id)
-        area_breakdown = self._calculate_area_breakdown(db, cycle_id)
-        top_failed = self._calculate_top_failed_indicators(db, cycle_id)
+        overall_compliance = self._calculate_overall_compliance(db, assessment_year)
+        completion_status = self._calculate_completion_status(db, assessment_year)
+        area_breakdown = self._calculate_area_breakdown(db, assessment_year)
+        top_failed = self._calculate_top_failed_indicators(db, assessment_year)
         trends = self._calculate_trends(db)
-        barangay_rankings = self._calculate_barangay_rankings(db, cycle_id)
-        status_distribution = self._calculate_status_distribution(db, cycle_id)
-        rework_stats = self._calculate_rework_stats(db, cycle_id)
-        bbi_analytics = self._calculate_bbi_analytics(db, cycle_id)
+        barangay_rankings = self._calculate_barangay_rankings(db, assessment_year)
+        status_distribution = self._calculate_status_distribution(db, assessment_year)
+        rework_stats = self._calculate_rework_stats(db, assessment_year)
+        bbi_analytics = self._calculate_bbi_analytics(db, assessment_year)
         total_barangays = self._get_total_barangays(db)
 
         response = DashboardKPIResponse(
@@ -115,21 +123,23 @@ class AnalyticsService:
             try:
                 # Convert Pydantic model to dict for caching
                 cache.set(cache_key, response.model_dump(), ttl=CACHE_TTL_DASHBOARD)
-                logger.info(f"💾 Dashboard KPIs cached for {cache_key} (TTL: {CACHE_TTL_DASHBOARD}s)")
+                logger.info(
+                    f"💾 Dashboard KPIs cached for {cache_key} (TTL: {CACHE_TTL_DASHBOARD}s)"
+                )
             except Exception as e:
                 logger.warning(f"⚠️  Failed to cache dashboard KPIs: {e}")
 
         return response
 
     def _calculate_overall_compliance(
-        self, db: Session, cycle_id: int | None = None
+        self, db: Session, assessment_year: int | None = None
     ) -> ComplianceRate:
         """
         Calculate overall compliance rate (pass/fail statistics).
 
         Args:
             db: Database session
-            cycle_id: Optional assessment cycle ID
+            assessment_year: Optional assessment year
 
         Returns:
             ComplianceRate schema with total, passed, failed counts and percentage
@@ -137,9 +147,9 @@ class AnalyticsService:
         # Build base query for validated assessments
         query = db.query(Assessment).filter(Assessment.final_compliance_status.isnot(None))
 
-        # TODO: Add cycle_id filter when cycle field is added to Assessment model
-        # if cycle_id is not None:
-        #     query = query.filter(Assessment.cycle_id == cycle_id)
+        # Filter by assessment year
+        if assessment_year is not None:
+            query = query.filter(Assessment.assessment_year == assessment_year)
 
         # Get all assessments with final compliance status
         assessments = query.all()
@@ -170,14 +180,14 @@ class AnalyticsService:
         )
 
     def _calculate_completion_status(
-        self, db: Session, cycle_id: int | None = None
+        self, db: Session, assessment_year: int | None = None
     ) -> ComplianceRate:
         """
         Calculate completion status (validated vs in-progress assessments).
 
         Args:
             db: Database session
-            cycle_id: Optional assessment cycle ID
+            assessment_year: Optional assessment year
 
         Returns:
             ComplianceRate schema representing completion statistics
@@ -185,9 +195,9 @@ class AnalyticsService:
         # For completion status, we consider all assessments
         query = db.query(Assessment)
 
-        # TODO: Add cycle_id filter when cycle field is added
-        # if cycle_id is not None:
-        #     query = query.filter(Assessment.cycle_id == cycle_id)
+        # Filter by assessment year
+        if assessment_year is not None:
+            query = query.filter(Assessment.assessment_year == assessment_year)
 
         assessments = query.all()
         total = len(assessments)
@@ -207,14 +217,14 @@ class AnalyticsService:
         )
 
     def _calculate_area_breakdown(
-        self, db: Session, cycle_id: int | None = None
+        self, db: Session, assessment_year: int | None = None
     ) -> list[AreaBreakdown]:
         """
         Calculate compliance breakdown by governance area.
 
         Args:
             db: Database session
-            cycle_id: Optional assessment cycle ID
+            assessment_year: Optional assessment year
 
         Returns:
             List of AreaBreakdown schemas, one per governance area
@@ -236,9 +246,11 @@ class AnalyticsService:
             .filter(Assessment.final_compliance_status.isnot(None))
         )
 
-        # TODO: Add cycle_id filter
-        # if cycle_id is not None:
-        #     assessment_query = assessment_query.filter(Assessment.cycle_id == cycle_id)
+        # Filter by assessment year
+        if assessment_year is not None:
+            assessment_query = assessment_query.filter(
+                Assessment.assessment_year == assessment_year
+            )
 
         validated_assessments = assessment_query.all()
 
@@ -322,7 +334,7 @@ class AnalyticsService:
         return area_breakdown
 
     def _calculate_top_failed_indicators(
-        self, db: Session, cycle_id: int | None = None
+        self, db: Session, assessment_year: int | None = None
     ) -> list[FailedIndicator]:
         """
         Calculate top 5 most frequently failed indicators.
@@ -332,7 +344,7 @@ class AnalyticsService:
 
         Args:
             db: Database session
-            cycle_id: Optional assessment cycle ID
+            assessment_year: Optional assessment year
 
         Returns:
             List of FailedIndicator schemas (max 5)
@@ -348,9 +360,11 @@ class AnalyticsService:
             .filter(AssessmentResponse.validation_status == ValidationStatus.FAIL)
         )
 
-        # TODO: Add cycle_id filter via Assessment join
-        # if cycle_id is not None:
-        #     query = query.join(Assessment).filter(Assessment.cycle_id == cycle_id)
+        # Filter by assessment year via Assessment join
+        if assessment_year is not None:
+            query = query.join(Assessment).filter(
+                Assessment.assessment_year == assessment_year
+            )
 
         # Group by indicator, order by count descending, limit to 5
         results = (
@@ -403,14 +417,14 @@ class AnalyticsService:
         return []
 
     def _calculate_barangay_rankings(
-        self, db: Session, cycle_id: int | None = None
+        self, db: Session, assessment_year: int | None = None
     ) -> list[BarangayRanking]:
         """
         Calculate barangay rankings by compliance score.
 
         Args:
             db: Database session
-            cycle_id: Optional assessment cycle ID
+            assessment_year: Optional assessment year
 
         Returns:
             List of BarangayRanking schemas ordered by score (highest first)
@@ -440,9 +454,9 @@ class AnalyticsService:
             .group_by(Barangay.id, Barangay.name)
         )
 
-        # TODO: Add cycle_id filter when cycle field is added to Assessment model
-        # if cycle_id is not None:
-        #     query = query.filter(Assessment.cycle_id == cycle_id)
+        # Filter by assessment year
+        if assessment_year is not None:
+            query = query.filter(Assessment.assessment_year == assessment_year)
 
         # Get results ordered by score descending
         results = query.order_by(desc("score")).all()
@@ -463,14 +477,14 @@ class AnalyticsService:
         return rankings
 
     def _calculate_status_distribution(
-        self, db: Session, cycle_id: int | None = None
+        self, db: Session, assessment_year: int | None = None
     ) -> list[StatusDistributionItem]:
         """
         Calculate distribution of assessments by workflow status.
 
         Args:
             db: Database session
-            cycle_id: Optional assessment cycle ID
+            assessment_year: Optional assessment year
 
         Returns:
             List of StatusDistributionItem schemas with count and percentage per status
@@ -478,9 +492,9 @@ class AnalyticsService:
         # Query all assessments grouped by status
         query = db.query(Assessment)
 
-        # TODO: Add cycle_id filter when implemented
-        # if cycle_id is not None:
-        #     query = query.filter(Assessment.cycle_id == cycle_id)
+        # Filter by assessment year
+        if assessment_year is not None:
+            query = query.filter(Assessment.assessment_year == assessment_year)
 
         assessments = query.all()
         total = len(assessments)
@@ -529,13 +543,15 @@ class AnalyticsService:
 
         return distribution
 
-    def _calculate_rework_stats(self, db: Session, cycle_id: int | None = None) -> ReworkStats:
+    def _calculate_rework_stats(
+        self, db: Session, assessment_year: int | None = None
+    ) -> ReworkStats:
         """
         Calculate rework and calibration usage statistics.
 
         Args:
             db: Database session
-            cycle_id: Optional assessment cycle ID
+            assessment_year: Optional assessment year
 
         Returns:
             ReworkStats schema with rework and calibration rates
@@ -543,9 +559,9 @@ class AnalyticsService:
         # Query all assessments
         query = db.query(Assessment)
 
-        # TODO: Add cycle_id filter when implemented
-        # if cycle_id is not None:
-        #     query = query.filter(Assessment.cycle_id == cycle_id)
+        # Filter by assessment year
+        if assessment_year is not None:
+            query = query.filter(Assessment.assessment_year == assessment_year)
 
         assessments = query.all()
         total = len(assessments)
@@ -594,7 +610,7 @@ class AnalyticsService:
         return db.query(Barangay).count()
 
     def _calculate_bbi_analytics(
-        self, db: Session, cycle_id: int | None = None
+        self, db: Session, assessment_year: int | None = None
     ) -> BBIAnalyticsData | None:
         """
         Calculate BBI (Barangay-based Institutions) compliance analytics.
@@ -610,7 +626,7 @@ class AnalyticsService:
 
         Args:
             db: Database session
-            cycle_id: Optional assessment cycle ID
+            assessment_year: Optional assessment year
 
         Returns:
             BBIAnalyticsData or None if no BBI data available
@@ -622,9 +638,9 @@ class AnalyticsService:
             .join(Assessment, BBIResult.assessment_id == Assessment.id)
         )
 
-        # TODO: Add cycle_id filter when implemented
-        # if cycle_id is not None:
-        #     query = query.filter(Assessment.cycle_id == cycle_id)
+        # Filter by assessment year
+        if assessment_year is not None:
+            query = query.filter(Assessment.assessment_year == assessment_year)
 
         bbi_results = query.all()
 
@@ -753,7 +769,7 @@ class AnalyticsService:
 
         metadata = ReportMetadata(
             generated_at=datetime.utcnow(),
-            cycle_id=filters.cycle_id,
+            assessment_year=filters.assessment_year,
             start_date=datetime.combine(filters.start_date, datetime.min.time())
             if filters.start_date
             else None,
@@ -1235,10 +1251,16 @@ class AnalyticsService:
 
         # Apply dynamic filters (only if provided)
 
-        # Filter by cycle_id
-        # TODO: Uncomment when cycle_id field is added to Assessment model
-        # if filters.cycle_id is not None:
-        #     query = query.filter(Assessment.cycle_id == filters.cycle_id)
+        # Filter by assessment year
+        if filters.assessment_year is not None:
+            query = query.filter(Assessment.assessment_year == filters.assessment_year)
+        else:
+            # Default to active year if not specified
+            from app.services.assessment_year_service import assessment_year_service
+
+            active_year = assessment_year_service.get_active_year_number(db)
+            if active_year:
+                query = query.filter(Assessment.assessment_year == active_year)
 
         # Filter by date range
         if filters.start_date is not None:

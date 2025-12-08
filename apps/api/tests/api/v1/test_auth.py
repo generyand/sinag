@@ -144,7 +144,10 @@ def test_login_with_invalid_password(client: TestClient, db_session: Session, te
     )
 
     assert response.status_code == 401
-    assert "Incorrect email or password" in response.json()["detail"]
+    # Response uses standardized error format with "error" key
+    assert "Incorrect email or password" in response.json().get(
+        "error", response.json().get("detail", "")
+    )
 
 
 def test_login_with_nonexistent_email(client: TestClient, db_session: Session):
@@ -157,7 +160,10 @@ def test_login_with_nonexistent_email(client: TestClient, db_session: Session):
     )
 
     assert response.status_code == 401
-    assert "Incorrect email or password" in response.json()["detail"]
+    # Response uses standardized error format with "error" key
+    assert "Incorrect email or password" in response.json().get(
+        "error", response.json().get("detail", "")
+    )
 
 
 def test_login_with_inactive_account(client: TestClient, db_session: Session, inactive_user: User):
@@ -175,7 +181,10 @@ def test_login_with_inactive_account(client: TestClient, db_session: Session, in
 
     # Security improvement: same error as invalid credentials
     assert response.status_code == 401
-    assert "Incorrect email or password" in response.json()["detail"]
+    # Response uses standardized error format with "error" key
+    assert "Incorrect email or password" in response.json().get(
+        "error", response.json().get("detail", "")
+    )
 
 
 def test_login_with_missing_fields(client: TestClient):
@@ -261,7 +270,10 @@ def test_change_password_with_incorrect_current_password(
     )
 
     assert response.status_code == 400
-    assert "Incorrect current password" in response.json()["detail"]
+    # Response uses standardized error format with "error" key
+    assert "Incorrect current password" in response.json().get(
+        "error", response.json().get("detail", "")
+    )
 
 
 def test_change_password_unauthorized_without_token(client: TestClient):
@@ -458,7 +470,7 @@ def assessor_user(db_session: Session):
 
 
 @pytest.fixture
-def validator_user(db_session: Session):
+def validator_user(db_session: Session, mock_governance_area):
     """Create a VALIDATOR user for role testing"""
     unique_email = f"validator_{uuid.uuid4().hex[:8]}@example.com"
 
@@ -469,7 +481,7 @@ def validator_user(db_session: Session):
         role=UserRole.VALIDATOR,
         is_active=True,
         must_change_password=False,
-        validator_area_id=1,  # Assuming governance area 1 exists
+        validator_area_id=mock_governance_area.id,
     )
     db_session.add(user)
     db_session.commit()
@@ -478,7 +490,7 @@ def validator_user(db_session: Session):
 
 
 @pytest.fixture
-def blgu_user(db_session: Session):
+def blgu_user(db_session: Session, mock_barangay):
     """Create a BLGU_USER for role testing"""
     unique_email = f"blgu_{uuid.uuid4().hex[:8]}@example.com"
 
@@ -489,7 +501,7 @@ def blgu_user(db_session: Session):
         role=UserRole.BLGU_USER,
         is_active=True,
         must_change_password=False,
-        barangay_id=1,  # Assuming barangay 1 exists
+        barangay_id=mock_barangay.id,
     )
     db_session.add(user)
     db_session.commit()

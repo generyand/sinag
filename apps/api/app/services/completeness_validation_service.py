@@ -23,7 +23,7 @@ Usage:
 """
 
 import logging
-from typing import Any, List
+from typing import Any
 
 from app.schemas.form_schema import (
     ConditionalMOVLogic,
@@ -132,7 +132,11 @@ class CompletenessValidationService:
             # Check for grouped OR validation (e.g., indicator 2.1.4, 6.2.1)
             validation_rule = form_schema.get("validation_rule", "ALL_ITEMS_REQUIRED")
 
-            if validation_rule in ('ANY_ITEM_REQUIRED', 'OR_LOGIC_AT_LEAST_1_REQUIRED', 'ANY_OPTION_GROUP_REQUIRED'):
+            if validation_rule in (
+                "ANY_ITEM_REQUIRED",
+                "OR_LOGIC_AT_LEAST_1_REQUIRED",
+                "ANY_OPTION_GROUP_REQUIRED",
+            ):
                 # For OR-logic, get ALL file_upload fields (not just required=True)
                 # because individual fields have required=False but completing one option group is required
                 # ANY_OPTION_GROUP_REQUIRED: Used for indicators like 1.6.1 where user must complete
@@ -140,10 +144,10 @@ class CompletenessValidationService:
                 or_fields = [
                     field for field in schema_obj.fields if isinstance(field, FileUploadField)
                 ]
-                logger.info(f"[OR LOGIC] Found {len(or_fields)} file_upload fields for OR validation (rule: {validation_rule})")
-                return self._validate_grouped_or_fields(
-                    or_fields, response_data, uploaded_movs
+                logger.info(
+                    f"[OR LOGIC] Found {len(or_fields)} file_upload fields for OR validation (rule: {validation_rule})"
                 )
+                return self._validate_grouped_or_fields(or_fields, response_data, uploaded_movs)
 
             if validation_rule == "SHARED_PLUS_OR_LOGIC":
                 # SHARED+OR validation: SHARED fields (required) + (OPTION A OR OPTION B)
@@ -367,7 +371,8 @@ class CompletenessValidationService:
             if isinstance(notes, dict) and "items" in notes:
                 # Filter out note items with empty or whitespace-only text
                 filtered_items = [
-                    item for item in notes.get("items", [])
+                    item
+                    for item in notes.get("items", [])
                     if isinstance(item, dict)
                     and item.get("text")
                     and str(item.get("text", "")).strip()
@@ -383,7 +388,8 @@ class CompletenessValidationService:
             secondary_notes = sanitized["secondary_notes"]
             if isinstance(secondary_notes, dict) and "items" in secondary_notes:
                 filtered_items = [
-                    item for item in secondary_notes.get("items", [])
+                    item
+                    for item in secondary_notes.get("items", [])
                     if isinstance(item, dict)
                     and item.get("text")
                     and str(item.get("text", "")).strip()
@@ -457,12 +463,14 @@ class CompletenessValidationService:
                         f"Filled fields: {[f.field_id for f in group_filled]}"
                     )
                 else:
-                    incomplete_groups.append({
-                        "group_name": group_name,
-                        "missing_fields": group_fields,  # All fields shown as options
-                        "total_fields": len(group_fields),
-                        "internal_or": True
-                    })
+                    incomplete_groups.append(
+                        {
+                            "group_name": group_name,
+                            "missing_fields": group_fields,  # All fields shown as options
+                            "total_fields": len(group_fields),
+                            "internal_or": True,
+                        }
+                    )
                     logger.info(
                         f"[GROUPED OR] Group '{group_name}' is INCOMPLETE (internal OR: need at least 1 of {len(group_fields)} fields)"
                     )
@@ -476,12 +484,14 @@ class CompletenessValidationService:
                         f"Filled fields: {[f.field_id for f in group_filled]}"
                     )
                 else:
-                    incomplete_groups.append({
-                        "group_name": group_name,
-                        "missing_fields": group_missing,
-                        "total_fields": len(group_fields),
-                        "internal_or": False
-                    })
+                    incomplete_groups.append(
+                        {
+                            "group_name": group_name,
+                            "missing_fields": group_missing,
+                            "total_fields": len(group_fields),
+                            "internal_or": False,
+                        }
+                    )
                     logger.info(
                         f"[GROUPED OR] Group '{group_name}' is INCOMPLETE ({len(group_missing)}/{len(group_fields)} missing). "
                         f"Missing: {[f.field_id for f in group_missing]}, Filled: {[f.field_id for f in group_filled]}"
@@ -520,7 +530,7 @@ class CompletenessValidationService:
             "filled_field_count": filled_count,
         }
 
-    def _group_has_internal_or_logic(self, group_name: str, group_fields: List[FormField]) -> bool:
+    def _group_has_internal_or_logic(self, group_name: str, group_fields: list[FormField]) -> bool:
         """
         Detect if a group has internal OR logic (e.g., Option 3 where opt3_a OR opt3_b satisfies it).
 
@@ -539,13 +549,19 @@ class CompletenessValidationService:
         # Known groups with internal OR logic
         if "Option 3" in group_name:
             # Check if there are multiple file upload fields (indicating OR between them)
-            file_fields = [f for f in group_fields if hasattr(f, 'field_type') and f.field_type == 'file_upload']
+            file_fields = [
+                f
+                for f in group_fields
+                if hasattr(f, "field_type") and f.field_type == "file_upload"
+            ]
             if len(file_fields) > 1:
                 return True
 
         # Check for "_or" pattern in field_ids which indicates OR separator was between fields
         field_ids = [f.field_id for f in group_fields]
-        has_or_separator_pattern = any('_or' in fid.lower() or 'opt3_a' in fid or 'opt3_b' in fid for fid in field_ids)
+        has_or_separator_pattern = any(
+            "_or" in fid.lower() or "opt3_a" in fid or "opt3_b" in fid for fid in field_ids
+        )
 
         if has_or_separator_pattern and len(group_fields) >= 2:
             return True
@@ -574,19 +590,20 @@ class CompletenessValidationService:
         Returns:
             Dict with validation results showing X/2 completion
         """
-        # Group fields by option_group
+        # Group fields by completion_group (not option_group to avoid accordion rendering)
         shared_fields = []
         option_a_fields = []
         option_b_fields = []
 
         for field in fields:
             if isinstance(field, FileUploadField):
-                option_group = field.option_group
-                if option_group == "shared":
+                # Use completion_group for SHARED_PLUS_OR_LOGIC
+                completion_group = field.completion_group
+                if completion_group == "shared":
                     shared_fields.append(field)
-                elif option_group == "option_a":
+                elif completion_group == "option_a":
                     option_a_fields.append(field)
-                elif option_group == "option_b":
+                elif completion_group == "option_b":
                     option_b_fields.append(field)
 
         logger.info(

@@ -8,12 +8,14 @@ interface PerformanceHotspotsWidgetProps {
   onWeaknessClick: (weakness: SystemicWeakness) => void;
 }
 
-export function PerformanceHotspotsWidget({ data, onWeaknessClick }: PerformanceHotspotsWidgetProps) {
+export function PerformanceHotspotsWidget({
+  data,
+  onWeaknessClick,
+}: PerformanceHotspotsWidgetProps) {
   return (
     <section
       className="bg-[var(--card)] rounded-sm border border-[var(--border)] p-8 shadow-sm hover:shadow-md transition-shadow duration-200"
       aria-labelledby="performance-hotspots-title"
-      role="region"
     >
       <header className="flex items-center justify-between mb-6">
         <h3 id="performance-hotspots-title" className="text-xl font-bold text-[var(--foreground)]">
@@ -38,40 +40,43 @@ export function PerformanceHotspotsWidget({ data, onWeaknessClick }: Performance
         </div>
       </header>
 
-      <ul className="space-y-4" role="list" aria-label="Performance hotspots list">
+      <ul className="space-y-4" aria-label="Performance hotspots list">
         {data.systemicWeaknesses.map((weakness, index) => {
           const severity = getSeverityLevel(weakness.failedCount);
-          const impactPercentage = calculateImpactPercentage(weakness.failedCount, data.assignedBarangays);
+          const impactPercentage = calculateImpactPercentage(
+            weakness.failedCount,
+            data.assignedBarangays
+          );
 
           const getSeverityColors = (color: string) => {
             switch (color) {
-              case 'red':
+              case "red":
                 return {
-                  indicator: 'var(--analytics-danger)',
-                  badgeBg: 'var(--analytics-danger-bg)',
-                  badgeText: 'var(--analytics-danger-text)',
-                  progressBar: 'var(--analytics-danger)'
+                  indicator: "var(--analytics-danger)",
+                  badgeBg: "var(--analytics-danger-bg)",
+                  badgeText: "var(--analytics-danger-text)",
+                  progressBar: "var(--analytics-danger)",
                 };
-              case 'orange':
+              case "orange":
                 return {
-                  indicator: 'var(--analytics-warning)',
-                  badgeBg: 'var(--analytics-warning-bg)',
-                  badgeText: 'var(--analytics-warning-text)',
-                  progressBar: 'var(--analytics-warning)'
+                  indicator: "var(--analytics-warning)",
+                  badgeBg: "var(--analytics-warning-bg)",
+                  badgeText: "var(--analytics-warning-text)",
+                  progressBar: "var(--analytics-warning)",
                 };
-              case 'yellow':
+              case "yellow":
                 return {
-                  indicator: 'var(--analytics-warning)',
-                  badgeBg: 'var(--analytics-warning-bg)',
-                  badgeText: 'var(--analytics-warning-text)',
-                  progressBar: 'var(--analytics-warning)'
+                  indicator: "var(--analytics-warning)",
+                  badgeBg: "var(--analytics-warning-bg)",
+                  badgeText: "var(--analytics-warning-text)",
+                  progressBar: "var(--analytics-warning)",
                 };
               default:
                 return {
-                  indicator: 'var(--analytics-neutral)',
-                  badgeBg: 'var(--analytics-neutral-bg)',
-                  badgeText: 'var(--analytics-neutral-text)',
-                  progressBar: 'var(--analytics-neutral)'
+                  indicator: "var(--analytics-neutral)",
+                  badgeBg: "var(--analytics-neutral-bg)",
+                  badgeText: "var(--analytics-neutral-text)",
+                  progressBar: "var(--analytics-neutral)",
                 };
             }
           };
@@ -83,8 +88,8 @@ export function PerformanceHotspotsWidget({ data, onWeaknessClick }: Performance
               key={index}
               className="group rounded-sm p-5 cursor-pointer border hover:shadow-md transition-all duration-200"
               style={{
-                backgroundColor: 'var(--analytics-neutral-bg)',
-                borderColor: 'var(--analytics-neutral-border)'
+                backgroundColor: "var(--analytics-neutral-bg)",
+                borderColor: "var(--analytics-neutral-border)",
               }}
             >
               <button
@@ -105,7 +110,7 @@ export function PerformanceHotspotsWidget({ data, onWeaknessClick }: Performance
                         className="px-2 py-1 rounded-sm text-xs font-medium"
                         style={{
                           backgroundColor: colors.badgeBg,
-                          color: colors.badgeText
+                          color: colors.badgeText,
                         }}
                       >
                         {severity.level}
@@ -115,8 +120,7 @@ export function PerformanceHotspotsWidget({ data, onWeaknessClick }: Performance
                       {weakness.indicator}
                     </h4>
                     <p className="text-sm text-[var(--text-secondary)]">
-                      Failed by {weakness.failedCount} of{" "}
-                      {data.assignedBarangays} barangays
+                      Failed by {weakness.failedCount} of {data.assignedBarangays} barangays
                     </p>
                   </div>
 
@@ -124,16 +128,14 @@ export function PerformanceHotspotsWidget({ data, onWeaknessClick }: Performance
                     {/* Enhanced Progress Bar */}
                     <div className="w-32">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-[var(--text-muted)]">
-                          Impact
-                        </span>
+                        <span className="text-xs text-[var(--text-muted)]">Impact</span>
                         <span className="text-xs font-medium text-[var(--text-primary)]">
                           {impactPercentage}%
                         </span>
                       </div>
                       <div
                         className="w-full rounded-sm h-2.5"
-                        style={{ backgroundColor: 'var(--analytics-neutral-border)' }}
+                        style={{ backgroundColor: "var(--analytics-neutral-border)" }}
                         role="progressbar"
                         aria-valuenow={impactPercentage}
                         aria-valuemin={0}
@@ -154,9 +156,7 @@ export function PerformanceHotspotsWidget({ data, onWeaknessClick }: Performance
                       <div className="text-2xl font-bold text-[var(--foreground)]">
                         {weakness.failedCount}
                       </div>
-                      <div className="text-xs text-[var(--text-muted)]">
-                        failures
-                      </div>
+                      <div className="text-xs text-[var(--text-muted)]">failures</div>
                     </div>
 
                     <svg
@@ -182,4 +182,4 @@ export function PerformanceHotspotsWidget({ data, onWeaknessClick }: Performance
       </ul>
     </section>
   );
-} 
+}

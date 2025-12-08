@@ -234,7 +234,7 @@ def test_create_indicator_invalid_governance_area(
     response = client.post("/api/v1/indicators", json=payload)
 
     assert response.status_code == 404
-    assert "not found" in response.json()["detail"].lower()
+    assert "not found" in response.json().get("error", response.json().get("detail", "")).lower()
 
 
 # ====================================================================
@@ -319,7 +319,7 @@ def test_get_indicator_not_found(client: TestClient, db_session: Session, admin_
     response = client.get("/api/v1/indicators/99999")
 
     assert response.status_code == 404
-    assert "not found" in response.json()["detail"].lower()
+    assert "not found" in response.json().get("error", response.json().get("detail", "")).lower()
 
 
 # ====================================================================
@@ -577,7 +577,7 @@ def test_get_form_schema_not_found(client: TestClient, db_session: Session, admi
     response = client.get("/api/v1/indicators/99999/form-schema")
 
     assert response.status_code == 404
-    assert "not found" in response.json()["detail"].lower()
+    assert "not found" in response.json().get("error", response.json().get("detail", "")).lower()
 
 
 def test_get_form_schema_unauthorized(client: TestClient, test_indicator: Indicator):

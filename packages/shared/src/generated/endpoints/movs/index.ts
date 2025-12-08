@@ -118,7 +118,7 @@ export const usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload = <TE
 
       const mutationOptions = getPostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUploadMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Retrieve all MOV (Means of Verification) files for a specific indicator in an assessment.
@@ -144,9 +144,13 @@ export const getMovsAssessments$AssessmentIdIndicators$IndicatorIdFiles = (
     }
   
 
-export const getGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFilesQueryKey = (assessmentId: number,
-    indicatorId: number,) => {
-    return [`/api/v1/movs/assessments/${assessmentId}/indicators/${indicatorId}/files`] as const;
+
+
+export const getGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFilesQueryKey = (assessmentId?: number,
+    indicatorId?: number,) => {
+    return [
+    `/api/v1/movs/assessments/${assessmentId}/indicators/${indicatorId}/files`
+    ] as const;
     }
 
     
@@ -185,12 +189,13 @@ export function useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles<TDat
 
   const queryOptions = getGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFilesQueryOptions(assessmentId,indicatorId,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -261,6 +266,6 @@ export const useDeleteMovsFilesFileId = <TError = HTTPValidationError,
 
       const mutationOptions = getDeleteMovsFilesFileIdMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     

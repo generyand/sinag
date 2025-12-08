@@ -46,7 +46,6 @@ INDICATOR_4_2 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=1,
-                    option_group="option_a",
                 ),
                 ChecklistItem(
                     id="4_2_1_option_a",
@@ -55,7 +54,6 @@ INDICATOR_4_2 = Indicator(
                     item_type="assessment_field",
                     required=False,
                     display_order=2,
-                    option_group="option_a",
                 ),
                 # Option B - Clustered BHS/C (both items must be complete for this option)
                 ChecklistItem(
@@ -65,7 +63,6 @@ INDICATOR_4_2 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=3,
-                    option_group="option_b",
                 ),
                 ChecklistItem(
                     id="4_2_1_option_b",
@@ -74,14 +71,13 @@ INDICATOR_4_2 = Indicator(
                     item_type="assessment_field",
                     required=False,
                     display_order=4,
-                    option_group="option_b",
                 ),
             ],
         ),
         # Sub-Indicator 4.2.2: Appointment of Barangay Health Personnel (FOR PROFILING)
         SubIndicator(
             code="4.2.2",
-            name="Appointment of the following Barangay Health Personnel (FOR PROFILING)",
+            name="Appointment of the following Barangay Health Personnel: (FOR PROFILING) covering {JAN_TO_OCT_CURRENT_YEAR}",
             upload_instructions=(
                 "Upload EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the Appointment of BHW and/or BHO or BHAsst"
             ),
@@ -94,7 +90,6 @@ INDICATOR_4_2 = Indicator(
                     required=False,
                     requires_document_count=False,
                     display_order=1,
-                    option_group="option_a",
                 ),
                 # AND/OR Separator
                 ChecklistItem(
@@ -111,7 +106,6 @@ INDICATOR_4_2 = Indicator(
                     required=False,
                     requires_document_count=False,
                     display_order=3,
-                    option_group="option_b",
                 ),
             ],
             notes=FormNotes(

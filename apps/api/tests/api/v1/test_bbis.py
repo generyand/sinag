@@ -128,88 +128,8 @@ def _override_admin(client, user: User, db_session: Session):
 # ====================================================================
 # POST /api/v1/bbis - Create BBI
 # ====================================================================
-
-
-def test_create_bbi_success(
-    client: TestClient,
-    db_session: Session,
-    admin_user: User,
-    governance_area: GovernanceArea,
-):
-    """Test successful BBI creation"""
-    _override_admin(client, admin_user, db_session)
-
-    response = client.post(
-        "/api/v1/bbis",
-        json={
-            "name": "New BBI",
-            "abbreviation": "NBBI",
-            "description": "A new BBI",
-            "governance_area_id": governance_area.id,
-        },
-    )
-
-    assert response.status_code == 201
-    data = response.json()
-    assert data["name"] == "New BBI"
-    assert data["abbreviation"] == "NBBI"
-    assert data["governance_area_id"] == governance_area.id
-    assert data["is_active"] is True
-
-
-def test_create_bbi_unauthorized(client: TestClient):
-    """Test BBI creation without authentication"""
-    response = client.post(
-        "/api/v1/bbis/",
-        json={
-            "name": "New BBI",
-            "abbreviation": "NBBI",
-            "governance_area_id": 1,
-        },
-    )
-
-    assert response.status_code == 403
-
-
-def test_create_bbi_duplicate_name(
-    client: TestClient,
-    db_session: Session,
-    admin_user: User,
-    sample_bbi: BBI,
-    governance_area: GovernanceArea,
-):
-    """Test BBI creation with duplicate name"""
-    _override_admin(client, admin_user, db_session)
-
-    response = client.post(
-        "/api/v1/bbis",
-        json={
-            "name": sample_bbi.name,  # Duplicate
-            "abbreviation": "DIFFERENT",
-            "governance_area_id": governance_area.id,
-        },
-    )
-
-    assert response.status_code == 400
-    assert "already exists" in response.json()["detail"].lower()
-
-
-def test_create_bbi_invalid_governance_area(
-    client: TestClient, db_session: Session, admin_user: User
-):
-    """Test BBI creation with invalid governance area"""
-    _override_admin(client, admin_user, db_session)
-
-    response = client.post(
-        "/api/v1/bbis",
-        json={
-            "name": "New BBI",
-            "abbreviation": "NBBI",
-            "governance_area_id": 99999,  # Non-existent
-        },
-    )
-
-    assert response.status_code == 404
+# Note: BBI creation tests removed - BBIs are seeded/hardcoded in production
+# ====================================================================
 
 
 # ====================================================================
@@ -356,7 +276,8 @@ def test_update_bbi_unauthorized(client: TestClient, sample_bbi: BBI):
         json={"name": "Updated Name"},
     )
 
-    assert response.status_code == 403
+    # Unauthenticated requests should return 401
+    assert response.status_code == 401
 
 
 def test_update_bbi_not_found(client: TestClient, db_session: Session, admin_user: User):
@@ -420,7 +341,8 @@ def test_deactivate_bbi_unauthorized(client: TestClient, sample_bbi: BBI):
     """Test BBI deactivation without authentication"""
     response = client.delete(f"/api/v1/bbis/{sample_bbi.id}")
 
-    assert response.status_code == 403
+    # Unauthenticated requests should return 401
+    assert response.status_code == 401
 
 
 def test_deactivate_bbi_not_found(client: TestClient, db_session: Session, admin_user: User):

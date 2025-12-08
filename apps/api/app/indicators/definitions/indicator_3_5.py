@@ -19,9 +19,9 @@ IMPORTANT NOTES FOR PHASE 9 (VALIDATION SERVICE):
    - Validation rule: "ANY_ITEM_REQUIRED" (either option is acceptable)
 
 4. Year Dependency:
-   - Sub-indicator 3.5.1: BHERT organization covering January to October 2023
-   - Sub-indicator 3.5.2: Social media screenshot must cover CY 2023
-   - Future assessments may need to update these years
+   - Sub-indicator 3.5.1: BHERT organization covering January to October of current year
+   - Sub-indicator 3.5.2: Social media screenshot must cover current year
+   - Uses dynamic year placeholders (e.g., {CY_CURRENT_YEAR})
 
 5. BHERT Composition Requirements:
    - Minimum composition specified:
@@ -50,11 +50,11 @@ INDICATOR_3_5 = Indicator(
         # Sub-Indicator 3.5.1
         SubIndicator(
             code="3.5.1",
-            name="Organized Barangay Health and Emergency Response Team (BHERT) with its composition compliant to the provisions of DILG MC No. 2020-023",
+            name="Organized Barangay Health and Emergency Response Team (BHERT) with its composition compliant to the provisions of DILG MC No. 2020-023 covering {JAN_TO_OCT_CURRENT_YEAR}",
             upload_instructions=(
                 "Upload the following:\n\n"
                 "1. EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) "
-                "on the organization of BHERTs covering January to October 2023\n\n"
+                "on the organization of BHERTs covering {JAN_TO_OCT_CURRENT_YEAR}\n\n"
                 "The BHERT must include the following minimum composition:\n"
                 "- Executive Officer\n"
                 "- A Barangay Tanod\n"
@@ -67,8 +67,8 @@ INDICATOR_3_5 = Indicator(
                 # Simplified checklist - only 1 checkbox for the main EO requirement
                 ChecklistItem(
                     id="3_5_1_upload",
-                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the organization of BHERT",
-                    mov_description="Verification of uploaded Executive Order or similar issuance organizing the BHERT",
+                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the organization of BHERT covering {JAN_TO_OCT_CURRENT_YEAR}",
+                    mov_description="Verification of uploaded Executive Order or similar issuance organizing the BHERT covering {JAN_TO_OCT_CURRENT_YEAR}",
                     item_type="checkbox",
                     required=False,
                     display_order=1,
@@ -91,7 +91,7 @@ INDICATOR_3_5 = Indicator(
                 "Upload ONE of the following (only 1 required):\n\n"
                 "1. Two (2) Photo documentations of poster or tarpaulin "
                 "(Photo Requirements: One photo with Distant View and one photo with Close-up View)\n"
-                "2. Screenshot of the posting on social media with date covering CY 2023\n\n"
+                "2. Screenshot of the posting on social media with date covering {CY_CURRENT_YEAR}\n\n"
                 "Note: You only need to upload ONE option (either option 1 OR option 2)."
             ),
             validation_rule="ANY_ITEM_REQUIRED",  # OR logic: either photos OR screenshot
@@ -104,7 +104,6 @@ INDICATOR_3_5 = Indicator(
                     required=False,  # OR logic - only one option is required
                     requires_document_count=False,
                     display_order=1,
-                    option_group="Option A",
                 ),
                 # OR Separator
                 ChecklistItem(
@@ -117,12 +116,11 @@ INDICATOR_3_5 = Indicator(
                 # Option B: Social Media Screenshot
                 ChecklistItem(
                     id="3_5_2_b_upload",
-                    label="Screenshot of the posting on social media with date",
-                    mov_description="Verification of uploaded screenshot showing social media posting with contact information and date (Option 2)",
+                    label="Screenshot of the posting on social media with date covering {CY_CURRENT_YEAR}",
+                    mov_description="Verification of uploaded screenshot showing social media posting with contact information and date covering {CY_CURRENT_YEAR} (Option 2)",
                     required=False,  # OR logic - only one option is required
                     requires_document_count=False,
                     display_order=3,
-                    option_group="Option B",
                 ),
             ],
         ),

@@ -23,7 +23,6 @@ import type { TopFailingIndicatorsList } from '../indicators';
 import type { AggregatedCapDevSummary } from '../capdev';
 import type { MunicipalOverviewDashboardAssessmentCycle } from '../assessments';
 import type { ConditionalRemark } from '../conditionalremark';
-import type { ReorderRequestIndicatorsItem } from '../indicators';
 import type { AssessmentRow } from '../assessments';
 
 /**
@@ -608,6 +607,8 @@ export interface FileUploadField {
   conditional_mov_requirement?: FileUploadFieldConditionalMovRequirement;
   /** Optional group identifier for OR-logic validation (e.g., 'option_a', 'option_b') */
   option_group?: FileUploadFieldOptionGroup;
+  /** Group identifier for SHARED_PLUS_OR_LOGIC completion tracking (e.g., 'shared', 'option_a', 'option_b'). Used separately from option_group to avoid accordion rendering. */
+  completion_group?: FileUploadFieldCompletionGroup;
 }
 
 
@@ -615,6 +616,12 @@ export interface FileUploadField {
  * FileUploadFieldAllowedFileTypes
  */
 export type FileUploadFieldAllowedFileTypes = string[] | null;
+
+
+/**
+ * FileUploadFieldCompletionGroup
+ */
+export type FileUploadFieldCompletionGroup = string | null;
 
 
 /**
@@ -1072,12 +1079,9 @@ export interface RemarkSchema {
 
 
 /**
- * ReorderRequest
+ * ResolveSchemaRequestSchemaData
  */
-export interface ReorderRequest {
-  /** List of indicator updates with id, code, parent_id */
-  indicators: ReorderRequestIndicatorsItem[];
-}
+export type ResolveSchemaRequestSchemaData = { [key: string]: unknown };
 
 
 /**
@@ -1322,3 +1326,29 @@ export interface WorkflowMetrics {
  * WorkflowMetricsCountsByStatus
  */
 export type WorkflowMetricsCountsByStatus = {[key: string]: number};
+
+
+/**
+ * YearPlaceholderInfo
+ */
+export interface YearPlaceholderInfo {
+  /** Placeholder syntax (e.g., {CURRENT_YEAR}) */
+  placeholder: string;
+  /** Description of what this placeholder resolves to */
+  description: string;
+  /** Example resolved value for current year */
+  example_value: string;
+}
+
+
+/**
+ * YearResolutionPreview
+ */
+export interface YearResolutionPreview {
+  /** The assessment year used for resolution */
+  assessment_year: number;
+  /** The previous year (assessment_year - 1) */
+  previous_year: number;
+  /** List of all available placeholders with resolved values */
+  placeholders: YearPlaceholderInfo[];
+}

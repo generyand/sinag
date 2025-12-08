@@ -67,8 +67,12 @@ export const getMlgooApprovalQueue = (
     }
   
 
+
+
 export const getGetMlgooApprovalQueueQueryKey = (params?: GetMlgooApprovalQueueParams,) => {
-    return [`/api/v1/mlgoo/approval-queue`, ...(params ? [params]: [])] as const;
+    return [
+    `/api/v1/mlgoo/approval-queue`, ...(params ? [params]: [])
+    ] as const;
     }
 
     
@@ -105,12 +109,13 @@ export function useGetMlgooApprovalQueue<TData = Awaited<ReturnType<typeof getMl
 
   const queryOptions = getGetMlgooApprovalQueueQueryOptions(params,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -135,8 +140,12 @@ export const getMlgooAssessments$AssessmentId = (
     }
   
 
-export const getGetMlgooAssessmentsAssessmentIdQueryKey = (assessmentId: number,) => {
-    return [`/api/v1/mlgoo/assessments/${assessmentId}`] as const;
+
+
+export const getGetMlgooAssessmentsAssessmentIdQueryKey = (assessmentId?: number,) => {
+    return [
+    `/api/v1/mlgoo/assessments/${assessmentId}`
+    ] as const;
     }
 
     
@@ -173,12 +182,13 @@ export function useGetMlgooAssessmentsAssessmentId<TData = Awaited<ReturnType<ty
 
   const queryOptions = getGetMlgooAssessmentsAssessmentIdQueryOptions(assessmentId,options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -254,7 +264,7 @@ export const usePostMlgooAssessmentsAssessmentIdApprove = <TError = void | HTTPV
 
       const mutationOptions = getPostMlgooAssessmentsAssessmentIdApproveMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Request RE-calibration for specific indicators.
@@ -330,7 +340,7 @@ export const usePostMlgooAssessmentsAssessmentIdRecalibrate = <TError = void | H
 
       const mutationOptions = getPostMlgooAssessmentsAssessmentIdRecalibrateMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Unlock an assessment that was locked due to deadline expiry.
@@ -404,7 +414,7 @@ export const usePostMlgooAssessmentsAssessmentIdUnlock = <TError = void | HTTPVa
 
       const mutationOptions = getPostMlgooAssessmentsAssessmentIdUnlockMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     /**
  * Update the validation status of recalibration target indicators.
@@ -478,6 +488,6 @@ export const usePatchMlgooAssessmentsAssessmentIdRecalibrationValidation = <TErr
 
       const mutationOptions = getPatchMlgooAssessmentsAssessmentIdRecalibrationValidationMutationOptions(options);
 
-      return useMutation(mutationOptions );
+      return useMutation(mutationOptions);
     }
     

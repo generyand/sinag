@@ -24,10 +24,26 @@ class HealthCheck(BaseModel):
 
 
 class ErrorResponse(BaseModel):
-    """Error response schema."""
+    """
+    Standardized error response schema.
+
+    All API errors should follow this format for consistent client handling.
+    """
 
     error: str
+    """Human-readable error message."""
+
+    error_code: str
+    """Machine-readable error code (e.g., NOT_FOUND, VALIDATION_ERROR)."""
+
     detail: str | None = None
+    """Additional context about the error."""
+
+    error_id: str | None = None
+    """Unique identifier for tracking this error in logs."""
+
+    errors: list[dict[str, Any]] | None = None
+    """List of field-level errors (for validation errors)."""
 
 
 class SuccessResponse(BaseModel):

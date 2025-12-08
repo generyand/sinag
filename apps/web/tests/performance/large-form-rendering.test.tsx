@@ -4,6 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { DynamicFormRenderer } from "@/components/features/forms/DynamicFormRenderer";
 import type { FormSchema, FormField } from "@sinag/shared";
 
@@ -94,6 +95,17 @@ function generateLargeFormSchema(
   return { fields };
 }
 
+// Helper to render with QueryClient
+const renderWithQueryClient = (ui: React.ReactElement) => {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+};
+
 describe("Performance: Large Form Rendering", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -127,7 +139,7 @@ describe("Performance: Large Form Rendering", () => {
     // Measure render time
     const startTime = performance.now();
 
-    render(
+    renderWithQueryClient(
       <DynamicFormRenderer
         formSchema={largeSchema}
         assessmentId={1}
@@ -154,7 +166,7 @@ describe("Performance: Large Form Rendering", () => {
     // Measure render time
     const startTime = performance.now();
 
-    render(
+    renderWithQueryClient(
       <DynamicFormRenderer
         formSchema={veryLargeSchema}
         assessmentId={1}
@@ -179,7 +191,7 @@ describe("Performance: Large Form Rendering", () => {
 
     const startTime = performance.now();
 
-    render(
+    renderWithQueryClient(
       <DynamicFormRenderer
         formSchema={manySectionsSchema}
         assessmentId={1}
@@ -213,7 +225,7 @@ describe("Performance: Large Form Rendering", () => {
 
     const startTime = performance.now();
 
-    render(
+    renderWithQueryClient(
       <DynamicFormRenderer
         formSchema={mixedSchema}
         assessmentId={1}
@@ -259,7 +271,7 @@ describe("Performance: Large Form Rendering", () => {
 
     const startTime = performance.now();
 
-    render(
+    renderWithQueryClient(
       <DynamicFormRenderer
         formSchema={largeSchema}
         assessmentId={1}
@@ -279,23 +291,34 @@ describe("Performance: Large Form Rendering", () => {
   it("should handle re-renders efficiently", () => {
     const schema = generateLargeFormSchema(10, 6);
 
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+
     const { rerender } = render(
-      <DynamicFormRenderer
-        formSchema={schema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+      <QueryClientProvider client={queryClient}>
+        <DynamicFormRenderer
+          formSchema={schema}
+          assessmentId={1}
+          indicatorId={1}
+        />
+      </QueryClientProvider>
     );
 
     // Measure re-render time
     const startTime = performance.now();
 
     rerender(
-      <DynamicFormRenderer
-        formSchema={schema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+      <QueryClientProvider client={queryClient}>
+        <DynamicFormRenderer
+          formSchema={schema}
+          assessmentId={1}
+          indicatorId={1}
+        />
+      </QueryClientProvider>
     );
 
     const endTime = performance.now();
@@ -337,7 +360,7 @@ describe("Performance: Form Interaction Response Time", () => {
 
     const startTime = performance.now();
 
-    const { container } = render(
+    const { container } = renderWithQueryClient(
       <DynamicFormRenderer
         formSchema={schema}
         assessmentId={1}

@@ -33,7 +33,7 @@ export function useMovAnnotations(movFileId: number | null) {
         // Invalidate and refetch annotations for this MOV
         if (movFileId) {
           queryClient.invalidateQueries({
-            queryKey: [`http://localhost:8000/api/v1/assessor/movs/${movFileId}/annotations`],
+            queryKey: [`/api/v1/assessor/movs/${movFileId}/annotations`],
           });
         }
       },
@@ -47,7 +47,7 @@ export function useMovAnnotations(movFileId: number | null) {
         // Invalidate and refetch annotations for this MOV
         if (movFileId) {
           queryClient.invalidateQueries({
-            queryKey: [`http://localhost:8000/api/v1/assessor/movs/${movFileId}/annotations`],
+            queryKey: [`/api/v1/assessor/movs/${movFileId}/annotations`],
           });
         }
       },
@@ -61,7 +61,7 @@ export function useMovAnnotations(movFileId: number | null) {
         // Invalidate and refetch annotations for this MOV
         if (movFileId) {
           queryClient.invalidateQueries({
-            queryKey: [`http://localhost:8000/api/v1/assessor/movs/${movFileId}/annotations`],
+            queryKey: [`/api/v1/assessor/movs/${movFileId}/annotations`],
           });
         }
       },

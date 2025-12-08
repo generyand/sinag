@@ -1,61 +1,25 @@
-
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useAuthStore } from "@/store/useAuthStore";
 import {
   Calendar,
-  Plus,
-  MoreHorizontal,
-  Save,
-  ChevronDown,
+  Settings,
+  ExternalLink,
+  Database,
+  Users,
+  Shield,
+  Bell,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
 import { SettingsSkeleton } from "@/components/features/settings/SettingsSkeleton";
 
 export default function AdminSettingsPage() {
-  const { isAuthenticated } = useAuthStore();
-  
+  const { isAuthenticated, user } = useAuthStore();
+
   // Mock loading state - in real app this would come from API
   const [isLoading] = useState(false);
-
-  // State for deadlines
-  const [blguDeadline, setBlguDeadline] = useState("April 1st, 2024");
-  const [reworkDeadline, setReworkDeadline] = useState("May 1st, 2024");
-
-  // Mock data matching the design from the image
-  const assessmentPeriods: AssessmentPeriod[] = [
-    {
-      id: 1,
-      performanceYear: 2023,
-      assessmentYear: 2024,
-      status: "Active",
-      statusColor: "green",
-    },
-    {
-      id: 2,
-      performanceYear: 2022,
-      assessmentYear: 2023,
-      status: "Archived",
-      statusColor: "gray",
-    },
-    {
-      id: 3,
-      performanceYear: 2024,
-      assessmentYear: 2025,
-      status: "Upcoming",
-      statusColor: "blue",
-    },
-  ];
 
   // Show loading if not authenticated
   if (!isAuthenticated) {
@@ -69,50 +33,55 @@ export default function AdminSettingsPage() {
     );
   }
 
-  const getStatusConfig = (status: string) => {
-    const configs = {
-      Active: { 
-        bgColor: 'var(--analytics-success-bg)', 
-        textColor: 'var(--analytics-success-text)'
-      },
-      Archived: { 
-        bgColor: 'var(--analytics-neutral-bg)', 
-        textColor: 'var(--analytics-neutral-text)'
-      },
-      Upcoming: { 
-        bgColor: 'var(--kpi-blue-from)', 
-        textColor: 'var(--kpi-blue-text)'
-      },
-    };
-    return configs[status as keyof typeof configs] || configs["Archived"];
-  };
-
-  const handleCreateNewPeriod = () => {
-    toast.success("Create New Assessment Period functionality coming soon");
-  };
-
-  const handleSaveDeadlines = () => {
-    toast.success("Deadlines saved successfully");
-  };
-
-  interface AssessmentPeriod {
-    id: number;
-    performanceYear: number;
-    assessmentYear: number;
-    status: string;
-    statusColor: string;
-  }
-
-  const handlePeriodAction = (action: string, period: AssessmentPeriod) => {
-    toast.success(
-      `${action} action for ${period.performanceYear}/${period.assessmentYear} period`
-    );
-  };
-
   // Show skeleton while loading
   if (isLoading) {
     return <SettingsSkeleton />;
   }
+
+  const settingsSections = [
+    {
+      title: "Assessment Years",
+      description: "Manage assessment years, deadlines, and submission periods",
+      icon: Calendar,
+      href: "/mlgoo/cycles",
+      color: "var(--cityscape-yellow)",
+      isLink: true,
+    },
+    {
+      title: "User Management",
+      description: "Manage system users, roles, and permissions",
+      icon: Users,
+      href: "/mlgoo/users",
+      color: "#3B82F6",
+      isLink: true,
+    },
+    {
+      title: "Governance Areas",
+      description: "Configure governance areas and indicators",
+      icon: Database,
+      href: "/mlgoo/governance-areas",
+      color: "#10B981",
+      isLink: true,
+    },
+    {
+      title: "Security",
+      description: "Security settings and audit logs",
+      icon: Shield,
+      href: "#",
+      color: "#8B5CF6",
+      isLink: false,
+      badge: "Coming Soon",
+    },
+    {
+      title: "Notifications",
+      description: "Configure system notifications and alerts",
+      icon: Bell,
+      href: "#",
+      color: "#F59E0B",
+      isLink: false,
+      badge: "Coming Soon",
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
@@ -127,260 +96,140 @@ export default function AdminSettingsPage() {
             <div className="relative z-10">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                 <div className="space-y-3">
-                  <h1 className="text-3xl font-bold text-[var(--foreground)]">
-                    System{" "}
-                    <span className="bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] bg-clip-text text-transparent">
-                      Settings
-                    </span>
-                  </h1>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-12 h-12 rounded-sm flex items-center justify-center shadow-sm"
+                      style={{
+                        background: 'linear-gradient(to bottom right, var(--cityscape-yellow), var(--cityscape-yellow-dark))'
+                      }}
+                    >
+                      <Settings className="h-6 w-6 text-[var(--foreground)]" />
+                    </div>
+                    <h1 className="text-3xl font-bold text-[var(--foreground)]">
+                      System{" "}
+                      <span className="bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] bg-clip-text text-transparent">
+                        Settings
+                      </span>
+                    </h1>
+                  </div>
+                  <p className="text-[var(--muted-foreground)]">
+                    Configure and manage SINAG system settings
+                  </p>
                 </div>
 
-                {/* Quick Stats */}
-                <div className="flex items-center gap-6">
-                  <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)]">
-                    <div className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                      {assessmentPeriods.filter((p) => p.status === "Active").length}
-                    </div>
-                    <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
-                      Active
-                    </div>
+                {/* User Info */}
+                {user && (
+                  <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 shadow-sm border border-[var(--border)]">
+                    <div className="text-sm text-[var(--muted-foreground)]">Logged in as</div>
+                    <div className="font-semibold text-[var(--foreground)]">{user.name}</div>
+                    <div className="text-xs text-[var(--muted-foreground)]">{user.role}</div>
                   </div>
-                  <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)]">
-                    <div className="text-3xl font-bold text-[var(--foreground)]">
-                      {assessmentPeriods.length}
-                    </div>
-                    <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
-                      Total Periods
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Assessment Periods Card */}
-          <Card className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg overflow-hidden">
-            <CardHeader className="pb-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <CardTitle className="text-xl font-bold text-[var(--foreground)]">
-                  Assessment Periods
-                </CardTitle>
-                <Button
-                  onClick={handleCreateNewPeriod}
-                  className="px-6 py-2.5 font-semibold hover:shadow-lg transition-all duration-200"
-                  style={{
-                    background: 'linear-gradient(to bottom right, var(--cityscape-yellow), var(--cityscape-yellow-dark))',
-                    color: 'var(--foreground)',
-                  }}
+          {/* Settings Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {settingsSections.map((section) => {
+              const Icon = section.icon;
+              const content = (
+                <Card
+                  className={`bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg overflow-hidden transition-all duration-200 ${
+                    section.isLink ? 'hover:shadow-xl hover:border-[var(--cityscape-yellow)]/50 cursor-pointer' : 'opacity-75'
+                  }`}
                 >
-                  <Plus className="h-5 w-5 mr-2" />
-                  Create New Period
-                </Button>
-              </div>
-            </CardHeader>
+                  <CardHeader className="pb-4">
+                    <div className="flex items-start justify-between">
+                      <div
+                        className="w-12 h-12 rounded-sm flex items-center justify-center shadow-sm"
+                        style={{
+                          backgroundColor: `${section.color}20`,
+                        }}
+                      >
+                        <Icon
+                          className="h-6 w-6"
+                          style={{ color: section.color }}
+                        />
+                      </div>
+                      {section.badge && (
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                          {section.badge}
+                        </span>
+                      )}
+                      {section.isLink && (
+                        <ExternalLink className="h-4 w-4 text-[var(--muted-foreground)]" />
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <CardTitle className="text-lg font-semibold text-[var(--foreground)] mb-2">
+                      {section.title}
+                    </CardTitle>
+                    <p className="text-sm text-[var(--muted-foreground)]">
+                      {section.description}
+                    </p>
+                  </CardContent>
+                </Card>
+              );
 
+              if (section.isLink) {
+                return (
+                  <Link key={section.title} href={section.href}>
+                    {content}
+                  </Link>
+                );
+              }
+
+              return <div key={section.title}>{content}</div>;
+            })}
+          </div>
+
+          {/* Quick Links */}
+          <Card className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg overflow-hidden">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold text-[var(--foreground)]">
+                Quick Links
+              </CardTitle>
+            </CardHeader>
             <CardContent>
-              <div className="overflow-hidden">
-                <table className="w-full">
-                  <thead className="bg-[var(--muted)]/20 border-b border-[var(--border)]">
-                    <tr>
-                      <th className="px-6 py-4 text-left">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                          Performance Year
-                          <ChevronDown className="h-4 w-4" />
-                        </div>
-                      </th>
-                      <th className="px-6 py-4 text-left">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                          Assessment Year
-                          <ChevronDown className="h-4 w-4" />
-                        </div>
-                      </th>
-                      <th className="px-6 py-4 text-left">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                          Status
-                          <ChevronDown className="h-4 w-4" />
-                        </div>
-                      </th>
-                      <th className="px-6 py-4 text-left">
-                        <div className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                          Actions
-                        </div>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[var(--border)]">
-                    {assessmentPeriods.map((period) => {
-                      const statusConfig = getStatusConfig(period.status);
-
-                      return (
-                        <tr
-                          key={period.id}
-                          className="hover:bg-[var(--cityscape-yellow)]/5 transition-colors"
-                        >
-                          <td className="px-6 py-4">
-                            <div className="text-sm font-medium text-[var(--foreground)]">
-                              {period.performanceYear}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="text-sm font-medium text-[var(--foreground)]">
-                              {period.assessmentYear}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div
-                              className="inline-flex items-center px-3 py-1 rounded-sm text-sm font-medium"
-                              style={{
-                                backgroundColor: statusConfig.bgColor,
-                                color: statusConfig.textColor
-                              }}
-                            >
-                              {period.status}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent
-                                align="end"
-                                className="bg-[var(--card)] border border-[var(--border)] shadow-xl rounded-sm z-50"
-                              >
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    handlePeriodAction("Edit", period)
-                                  }
-                                  className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
-                                >
-                                  Edit Period
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    handlePeriodAction("Activate", period)
-                                  }
-                                  className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
-                                >
-                                  Activate
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    handlePeriodAction("Archive", period)
-                                  }
-                                  className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
-                                >
-                                  Archive
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    handlePeriodAction("Delete", period)
-                                  }
-                                  className="cursor-pointer px-3 py-2"
-                                  style={{
-                                    color: 'var(--analytics-danger-text-light)'
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    e.currentTarget.style.backgroundColor = 'var(--analytics-danger-bg)';
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    e.currentTarget.style.backgroundColor = 'transparent';
-                                  }}
-                                >
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Active Period Deadlines Card */}
-          <Card className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg overflow-hidden">
-            <CardHeader className="pb-6">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <div
-                    className="w-10 h-10 rounded-sm flex items-center justify-center shadow-sm"
-                    style={{
-                      background: 'linear-gradient(to bottom right, var(--cityscape-yellow), var(--cityscape-yellow-dark))'
-                    }}
-                  >
-                    <Calendar className="h-5 w-5 text-[var(--foreground)]" />
-                  </div>
-                  <CardTitle className="text-xl font-bold text-[var(--foreground)]">
-                    Active Period Deadlines (SGLGB 2024)
-                  </CardTitle>
-                </div>
-              </div>
-            </CardHeader>
-
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* BLGU Submission Deadline */}
-                <div className="space-y-3">
-                  <label className="block text-sm font-semibold text-[var(--foreground)]">
-                    BLGU Submission Deadline
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Calendar className="h-5 w-5 text-[var(--muted-foreground)]" />
-                    </div>
-                    <Input
-                      type="text"
-                      value={blguDeadline}
-                      onChange={(e) => setBlguDeadline(e.target.value)}
-                      className="pl-10 h-12 bg-[var(--background)] border-[var(--border)] rounded-sm focus:border-[var(--cityscape-yellow)] focus:ring-[var(--cityscape-yellow)]/20 transition-all duration-200"
-                      placeholder="Select deadline date"
-                    />
-                  </div>
-                </div>
-
-                {/* Rework Completion Deadline */}
-                <div className="space-y-3">
-                  <label className="block text-sm font-semibold text-[var(--foreground)]">
-                    Rework Completion Deadline
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Calendar className="h-5 w-5 text-[var(--muted-foreground)]" />
-                    </div>
-                    <Input
-                      type="text"
-                      value={reworkDeadline}
-                      onChange={(e) => setReworkDeadline(e.target.value)}
-                      className="pl-10 h-12 bg-[var(--background)] border-[var(--border)] rounded-sm focus:border-[var(--cityscape-yellow)] focus:ring-[var(--cityscape-yellow)]/20 transition-all duration-200"
-                      placeholder="Select deadline date"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Save Button */}
-              <div className="flex justify-end pt-4">
-                <Button
-                  onClick={handleSaveDeadlines}
-                  className="px-8 h-12 font-semibold hover:shadow-lg transition-all duration-200 flex items-center gap-2 rounded-sm"
-                  style={{
-                    background: 'linear-gradient(to bottom right, var(--cityscape-yellow), var(--cityscape-yellow-dark))',
-                    color: 'var(--foreground)',
-                  }}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Link
+                  href="/mlgoo/cycles"
+                  className="flex items-center gap-3 p-3 rounded-sm border border-[var(--border)] hover:bg-[var(--cityscape-yellow)]/5 hover:border-[var(--cityscape-yellow)]/30 transition-all"
                 >
-                  <Save className="h-5 w-5" />
-                  Save Deadlines
-                </Button>
+                  <Calendar className="h-5 w-5 text-[var(--cityscape-yellow)]" />
+                  <span className="text-sm font-medium text-[var(--foreground)]">
+                    Manage Assessment Years
+                  </span>
+                </Link>
+                <Link
+                  href="/mlgoo/dashboard"
+                  className="flex items-center gap-3 p-3 rounded-sm border border-[var(--border)] hover:bg-[var(--cityscape-yellow)]/5 hover:border-[var(--cityscape-yellow)]/30 transition-all"
+                >
+                  <Database className="h-5 w-5 text-[var(--cityscape-yellow)]" />
+                  <span className="text-sm font-medium text-[var(--foreground)]">
+                    View Dashboard
+                  </span>
+                </Link>
+                <Link
+                  href="/mlgoo/analytics"
+                  className="flex items-center gap-3 p-3 rounded-sm border border-[var(--border)] hover:bg-[var(--cityscape-yellow)]/5 hover:border-[var(--cityscape-yellow)]/30 transition-all"
+                >
+                  <Settings className="h-5 w-5 text-[var(--cityscape-yellow)]" />
+                  <span className="text-sm font-medium text-[var(--foreground)]">
+                    View Analytics
+                  </span>
+                </Link>
+                <Link
+                  href="/mlgoo/submissions"
+                  className="flex items-center gap-3 p-3 rounded-sm border border-[var(--border)] hover:bg-[var(--cityscape-yellow)]/5 hover:border-[var(--cityscape-yellow)]/30 transition-all"
+                >
+                  <Users className="h-5 w-5 text-[var(--cityscape-yellow)]" />
+                  <span className="text-sm font-medium text-[var(--foreground)]">
+                    View Submissions
+                  </span>
+                </Link>
               </div>
             </CardContent>
           </Card>

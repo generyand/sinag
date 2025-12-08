@@ -50,8 +50,12 @@ export const getLookupsGovernanceAreas = (
     }
   
 
+
+
 export const getGetLookupsGovernanceAreasQueryKey = () => {
-    return [`/api/v1/lookups/governance-areas`] as const;
+    return [
+    `/api/v1/lookups/governance-areas`
+    ] as const;
     }
 
     
@@ -88,12 +92,13 @@ export function useGetLookupsGovernanceAreas<TData = Awaited<ReturnType<typeof g
 
   const queryOptions = getGetLookupsGovernanceAreasQueryOptions(options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -115,8 +120,12 @@ export const getLookupsBarangays = (
     }
   
 
+
+
 export const getGetLookupsBarangaysQueryKey = () => {
-    return [`/api/v1/lookups/barangays`] as const;
+    return [
+    `/api/v1/lookups/barangays`
+    ] as const;
     }
 
     
@@ -153,12 +162,13 @@ export function useGetLookupsBarangays<TData = Awaited<ReturnType<typeof getLook
 
   const queryOptions = getGetLookupsBarangaysQueryOptions(options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 
@@ -181,8 +191,12 @@ export const getLookupsRoles = (
     }
   
 
+
+
 export const getGetLookupsRolesQueryKey = () => {
-    return [`/api/v1/lookups/roles`] as const;
+    return [
+    `/api/v1/lookups/roles`
+    ] as const;
     }
 
     
@@ -219,12 +233,13 @@ export function useGetLookupsRoles<TData = Awaited<ReturnType<typeof getLookupsR
 
   const queryOptions = getGetLookupsRolesQueryOptions(options)
 
-  const query = useQuery(queryOptions ) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
 
 
 

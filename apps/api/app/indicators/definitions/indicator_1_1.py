@@ -25,7 +25,7 @@ INDICATOR_1_1 = Indicator(
         # Sub-Indicator 1.1.1
         SubIndicator(
             code="1.1.1",
-            name="Posted the following financial documents in the BFDP board",
+            name="Posted the following {CY_CURRENT_YEAR} financial documents in the BFDP board",
             upload_instructions=(
                 "Upload the following documents:\n"
                 "1. BFDP Monitoring Form A of the DILG Advisory (covering 1st - 3rd quarter monitoring data)\n"

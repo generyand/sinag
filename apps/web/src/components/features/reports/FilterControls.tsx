@@ -147,16 +147,10 @@ export function FilterControls({
 
         {/* Barangay Filter - Placeholder */}
         <div className="space-y-2">
-          <label
-            className={`text-sm font-medium ${
-              userRole === "BLGU_USER"
-                ? "text-muted-foreground"
-                : "text-muted-foreground"
-            }`}
-          >
+          <label className="text-sm font-medium text-muted-foreground">
             Barangay (Coming Soon)
           </label>
-          <Select disabled={userRole === "BLGU_USER"}>
+          <Select disabled>
             <SelectTrigger>
               <SelectValue placeholder="Select barangays" />
             </SelectTrigger>

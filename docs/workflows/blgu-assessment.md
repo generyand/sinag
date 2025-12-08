@@ -4,7 +4,18 @@
 
 The **BLGU Assessment Workflow** is the first stage of the SGLGB (Seal of Good Local Governance for Barangays) assessment process. This workflow enables Barangay Local Government Unit (BLGU) users to complete their self-assessment by providing responses to governance indicators and uploading Means of Verification (MOVs) as evidence.
 
-**Last Updated:** 2025-12-06
+**Last Updated:** 2025-12-08
+
+### Multi-Year Assessment Support
+
+As of December 2024, the BLGU assessment workflow supports **multi-year assessments**. Each BLGU user can have one assessment per assessment year (e.g., 2024, 2025, 2026). Key changes:
+
+- **Year Selector**: The dashboard and assessment pages include a year dropdown to switch between accessible years
+- **Year-Based Filtering**: All dashboard data, indicators, and progress metrics are filtered by the selected assessment year
+- **One Assessment Per Year**: Each BLGU can only have one assessment per year (enforced by `unique(blgu_user_id, assessment_year)` constraint)
+- **Default Year**: If no year is specified, the system uses the currently **active** assessment year
+
+See [Multi-Year Assessments](/docs/features/multi-year-assessments.md) for complete technical documentation.
 
 ### SGLGB Stage
 
@@ -747,16 +758,23 @@ For backward compatibility:
 
 ### Assessment Auto-Creation
 
-**Rule**: System automatically creates assessment on first dashboard load if none exists
+**Rule**: System automatically creates assessment on first dashboard load if none exists **for the active year**
 
 **Process**:
 1. BLGU user logs in for first time
-2. System checks: `SELECT * FROM assessments WHERE blgu_user_id = ?`
-3. If no result, creates new assessment:
+2. System gets the currently active assessment year from `assessment_years` table
+3. System checks: `SELECT * FROM assessments WHERE blgu_user_id = ? AND assessment_year = ?`
+4. If no result, creates new assessment:
    - `status` = `DRAFT`
    - `blgu_user_id` = current user ID
+   - `assessment_year` = active year (e.g., 2025)
    - `created_at` = current timestamp
-4. Returns assessment to dashboard
+5. Returns assessment to dashboard
+
+**Year-Based Constraints**:
+- Each BLGU can only have ONE assessment per year
+- Enforced by database constraint: `UNIQUE(blgu_user_id, assessment_year)`
+- Auto-creation only happens for the active year, not when viewing historical years
 
 **Rationale**: Eliminates need for manual "Create Assessment" button, simplifies UX
 

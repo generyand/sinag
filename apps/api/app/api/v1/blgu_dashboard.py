@@ -121,6 +121,19 @@ def get_blgu_dashboard(
         for ind in all_indicators:
             parent_id = ind.parent_id
             children_by_parent.setdefault(parent_id, []).append(ind)
+
+        # Initialize year placeholder resolver for dynamic year resolution
+        # Use the assessment's year so historical assessments show correct dates
+        from app.core.year_resolver import get_year_resolver
+
+        try:
+            # Pass the assessment's year to resolve placeholders correctly
+            # This ensures viewing 2024 assessment shows "CY 2024" not "CY 2025"
+            year_resolver = get_year_resolver(db, year=assessment.assessment_year)
+        except ValueError:
+            # If no active assessment year config, skip resolution
+            year_resolver = None
+
     except Exception as e:
         import traceback
 
@@ -193,10 +206,15 @@ def get_blgu_dashboard(
         # MOV annotation count will be calculated after we load all annotations
         # We'll update this in a second pass below
 
+        # Resolve year placeholders in indicator name
+        resolved_name = (
+            year_resolver.resolve_string(indicator.name) if year_resolver else indicator.name
+        )
+
         governance_area_groups[area_id]["indicators"].append(
             {
                 "indicator_id": indicator.id,
-                "indicator_name": indicator.name,
+                "indicator_name": resolved_name,
                 "is_complete": is_complete,
                 "response_id": response.id if response else None,
                 # NEW: Add validation status and feedback counts for rework workflow
@@ -267,12 +285,18 @@ def get_blgu_dashboard(
             for feedback in response.feedback_comments:
                 # Only include non-internal feedback (public comments for BLGU)
                 if not feedback.is_internal_note:
+                    # Resolve year placeholders in indicator name
+                    resolved_ind_name = (
+                        year_resolver.resolve_string(response.indicator.name)
+                        if year_resolver
+                        else response.indicator.name
+                    )
                     comments_list.append(
                         {
                             "comment": feedback.comment,
                             "comment_type": feedback.comment_type,
                             "indicator_id": response.indicator_id,
-                            "indicator_name": response.indicator.name,
+                            "indicator_name": resolved_ind_name,
                             "created_at": feedback.created_at.isoformat() + "Z"
                             if feedback.created_at
                             else None,
@@ -328,7 +352,9 @@ def get_blgu_dashboard(
                             if annotation.created_at
                             else None,
                             "indicator_id": response.indicator_id,
-                            "indicator_name": response.indicator.name,
+                            "indicator_name": year_resolver.resolve_string(response.indicator.name)
+                            if year_resolver
+                            else response.indicator.name,
                         }
                     )
 
@@ -872,6 +898,15 @@ def get_indicator_navigation(
     # Build navigation list with completion status and route paths
     navigation_list = []
 
+    # Initialize year placeholder resolver with the assessment's year
+    # This ensures historical assessments show correct year in indicator names
+    from app.core.year_resolver import get_year_resolver
+
+    try:
+        year_resolver = get_year_resolver(db, year=assessment.assessment_year)
+    except ValueError:
+        year_resolver = None
+
     for response in assessment.responses:
         # TRUST DATABASE's is_completed FLAG
         # This flag is already calculated and stored by storage_service.py
@@ -882,10 +917,17 @@ def get_indicator_navigation(
         # Generate frontend route path
         route_path = f"/blgu/assessment/{assessment_id}/indicator/{response.indicator.id}"
 
+        # Resolve year placeholders in indicator name
+        resolved_title = (
+            year_resolver.resolve_string(response.indicator.name)
+            if year_resolver
+            else response.indicator.name
+        )
+
         navigation_list.append(
             {
                 "indicator_id": response.indicator.id,
-                "title": response.indicator.name,
+                "title": resolved_title,
                 "completion_status": completion_status,
                 "route_path": route_path,
                 "governance_area_name": response.indicator.governance_area.name,

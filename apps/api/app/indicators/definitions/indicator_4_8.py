@@ -29,7 +29,7 @@ INDICATOR_4_8 = Indicator(
         # Sub-Indicator 4.8.1: Structure - Organized BNC
         SubIndicator(
             code="4.8.1",
-            name="Structure: Organized BNC",
+            name="Structure: Organized BNC covering {JAN_TO_OCT_CURRENT_YEAR}",
             upload_instructions=(
                 "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the Barangay Nutrition Committee (BNC)\n\n"
                 "Minimum Composition of BNC:\n"
@@ -83,7 +83,7 @@ INDICATOR_4_8 = Indicator(
         # Sub-Indicator 4.8.2: Plan - Presence of approved BNAP
         SubIndicator(
             code="4.8.2",
-            name="Plan: Presence of approved BNAP",
+            name="Plan: Presence of approved BNAP {CY_CURRENT_YEAR}",
             upload_instructions=("Upload: Approved BNAP signed by the BNC"),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
@@ -102,7 +102,7 @@ INDICATOR_4_8 = Indicator(
             name="Decrease in Prevalence Rate in the barangay, for the following categories",
             upload_instructions=(
                 "Upload the following (all required):\n\n"
-                "1. Operation Timbang (OPT) Plus Form 1A (Barangay Tally and Summary Sheet of Preschoolers with Weight & Height Measurement by Age Group, Sex and Nutritional Status) of CYs 2022 and 2023; and\n"
+                "1. Operation Timbang (OPT) Plus Form 1A (Barangay Tally and Summary Sheet of Preschoolers with Weight & Height Measurement by Age Group, Sex and Nutritional Status) of CYs {PREVIOUS_YEAR} and {CURRENT_YEAR}; and\n"
                 "2. Certification from the C/MHO on the Decrease in Prevalence Rate"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
@@ -110,8 +110,8 @@ INDICATOR_4_8 = Indicator(
                 # Document verification checkboxes
                 ChecklistItem(
                     id="4_8_3_upload_opt",
-                    label="Operation Timbang (OPT) Plus Form 1A (Barangay Tally and Summary Sheet of Preschoolers with Weight & Height Measurement by Age Group, Sex and Nutritional Status) of CYs 2022 and 2023",
-                    mov_description="Verification of uploaded Operation Timbang (OPT) Plus Form 1A for CYs 2022 and 2023",
+                    label="Operation Timbang (OPT) Plus Form 1A (Barangay Tally and Summary Sheet of Preschoolers with Weight & Height Measurement by Age Group, Sex and Nutritional Status) of CYs {PREVIOUS_YEAR} and {CURRENT_YEAR}",
+                    mov_description="Verification of uploaded Operation Timbang (OPT) Plus Form 1A for CYs {PREVIOUS_YEAR} and {CURRENT_YEAR}",
                     item_type="checkbox",
                     required=False,
                     display_order=1,
@@ -162,7 +162,7 @@ INDICATOR_4_8 = Indicator(
         # Sub-Indicator 4.8.4: Accomplishment Report
         SubIndicator(
             code="4.8.4",
-            name="Accomplishment Report",
+            name="Accomplishment Reports: At least 50% accomplishment (Physical) OR 50% fund utilization (Financial) - {CY_CURRENT_YEAR}",
             upload_instructions=(
                 "Upload the following:\n\n"
                 "SHARED (Required):\n"
@@ -184,7 +184,6 @@ INDICATOR_4_8 = Indicator(
                     item_type="checkbox",
                     required=True,
                     display_order=1,
-                    option_group="shared",
                 ),
                 # OPTION A: YES/NO, then CERTIFICATION, then calculation
                 ChecklistItem(
@@ -194,7 +193,6 @@ INDICATOR_4_8 = Indicator(
                     item_type="assessment_field",
                     required=False,
                     display_order=2,
-                    option_group="option_a",
                 ),
                 ChecklistItem(
                     id="4_8_4_cert_a",
@@ -203,7 +201,6 @@ INDICATOR_4_8 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=3,
-                    option_group="option_a",
                 ),
                 ChecklistItem(
                     id="4_8_4_physical_accomplished",
@@ -212,7 +209,6 @@ INDICATOR_4_8 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=4,
-                    option_group="option_a",
                 ),
                 ChecklistItem(
                     id="4_8_4_physical_reflected",
@@ -220,7 +216,6 @@ INDICATOR_4_8 = Indicator(
                     item_type="calculation_field",
                     required=False,
                     display_order=5,
-                    option_group="option_a",
                 ),
                 # OR separator
                 ChecklistItem(
@@ -239,7 +234,6 @@ INDICATOR_4_8 = Indicator(
                     item_type="assessment_field",
                     required=False,
                     display_order=7,
-                    option_group="option_b",
                 ),
                 ChecklistItem(
                     id="4_8_4_cert_b",
@@ -248,24 +242,21 @@ INDICATOR_4_8 = Indicator(
                     item_type="checkbox",
                     required=False,
                     display_order=8,
-                    option_group="option_b",
                 ),
                 ChecklistItem(
                     id="4_8_4_financial_utilized",
-                    label="Total amount utilized (as of Dec. 31, 2023)",
+                    label="Total amount utilized (as of {DEC_31_CURRENT_YEAR})",
                     mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
                     display_order=9,
-                    option_group="option_b",
                 ),
                 ChecklistItem(
                     id="4_8_4_financial_allocated",
-                    label="Total amount allocated for PPAs in the BNAP",
+                    label="Total amount allocated for PPAs in the BNAP for {CY_CURRENT_YEAR}",
                     item_type="calculation_field",
                     required=False,
                     display_order=10,
-                    option_group="option_b",
                 ),
             ],
         ),

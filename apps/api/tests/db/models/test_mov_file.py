@@ -27,7 +27,9 @@ class TestMOVFileModel:
         # Get or create a governance area and indicator
         governance_area = db_session.query(GovernanceArea).first()
         if not governance_area:
-            governance_area = GovernanceArea(name="Test Governance Area", code="TG", area_type=AreaType.CORE)
+            governance_area = GovernanceArea(
+                name="Test Governance Area", code="TG", area_type=AreaType.CORE
+            )
             db_session.add(governance_area)
             db_session.flush()
 
@@ -110,7 +112,9 @@ class TestMOVFileModel:
     ):
         """Test that MOVFile has correct relationship with Indicator."""
         # Create governance area and indicator
-        governance_area = GovernanceArea(name="Financial Governance", code="FG", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(
+            name="Financial Governance", code="FG", area_type=AreaType.CORE
+        )
         db_session.add(governance_area)
         db_session.flush()
 
@@ -225,7 +229,9 @@ class TestMOVFileModel:
         This test verifies the model relationship is set up correctly.
         """
         # Create indicator
-        governance_area = GovernanceArea(name="Test Area for Cascade", code="TA", area_type=AreaType.CORE)
+        governance_area = GovernanceArea(
+            name="Test Area for Cascade", code="TA", area_type=AreaType.CORE
+        )
         db_session.add(governance_area)
         db_session.flush()
 

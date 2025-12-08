@@ -1,4 +1,4 @@
-import { useCallback, useRef, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from "react";
 
 /**
  * useDebouncedCallback Hook
@@ -45,8 +45,8 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
     };
   }, []);
 
-  return useCallback(
-    ((...args: any[]) => {
+  const debounced = useCallback(
+    (...args: any[]) => {
       // Clear existing timeout
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
@@ -56,7 +56,9 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
       timeoutRef.current = setTimeout(() => {
         callbackRef.current(...args);
       }, delay);
-    }) as T,
+    },
     [delay]
   );
+
+  return debounced as T;
 }

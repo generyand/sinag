@@ -15,16 +15,19 @@ export function PerformanceOverviewWidget({ data }: PerformanceOverviewWidgetPro
     <section
       className="bg-[var(--card)] rounded-sm border border-[var(--border)] p-8 shadow-sm hover:shadow-md transition-shadow duration-200"
       aria-labelledby="performance-overview-title"
-      role="region"
     >
       <header className="flex items-center justify-between mb-6">
         <h3 id="performance-overview-title" className="text-xl font-bold text-[var(--foreground)]">
           Official Performance in {data.name}
         </h3>
-        <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]" role="status" aria-live="polite">
+        <div
+          className="flex items-center gap-2 text-sm text-[var(--text-secondary)]"
+          role="status"
+          aria-live="polite"
+        >
           <div
             className="w-2 h-2 rounded-full animate-pulse"
-            style={{ backgroundColor: 'var(--analytics-success)' }}
+            style={{ backgroundColor: "var(--analytics-success)" }}
             aria-hidden="true"
           ></div>
           <span>Live Data</span>
@@ -42,7 +45,9 @@ export function PerformanceOverviewWidget({ data }: PerformanceOverviewWidgetPro
               aria-label={`Donut chart showing ${performance.passed} passed and ${performance.failed} failed out of ${performance.totalAssessed} total assessments`}
             >
               <title>Assessment Results Chart</title>
-              <desc>A donut chart displaying the pass/fail distribution for barangay assessments</desc>
+              <desc>
+                A donut chart displaying the pass/fail distribution for barangay assessments
+              </desc>
               {/* Background circle */}
               <path
                 stroke="var(--analytics-neutral-border)"
@@ -86,7 +91,7 @@ export function PerformanceOverviewWidget({ data }: PerformanceOverviewWidgetPro
             <div className="flex items-center gap-2" role="listitem">
               <div
                 className="w-3 h-3 rounded-sm"
-                style={{ backgroundColor: 'var(--analytics-success)' }}
+                style={{ backgroundColor: "var(--analytics-success)" }}
                 aria-hidden="true"
               ></div>
               <span className="text-sm text-[var(--text-primary)]">
@@ -96,7 +101,7 @@ export function PerformanceOverviewWidget({ data }: PerformanceOverviewWidgetPro
             <div className="flex items-center gap-2" role="listitem">
               <div
                 className="w-3 h-3 rounded-sm"
-                style={{ backgroundColor: 'var(--analytics-danger)' }}
+                style={{ backgroundColor: "var(--analytics-danger)" }}
                 aria-hidden="true"
               ></div>
               <span className="text-sm text-[var(--text-primary)]">
@@ -107,19 +112,22 @@ export function PerformanceOverviewWidget({ data }: PerformanceOverviewWidgetPro
         </figure>
 
         {/* Enhanced Key Data Points */}
-        <ul className="space-y-4" role="list" aria-label="Performance metrics">
+        <ul className="space-y-4" aria-label="Performance metrics">
           <li
             className="rounded-sm p-4 border hover:opacity-90 transition-all duration-200"
             style={{
-              backgroundColor: 'var(--analytics-neutral-bg)',
-              borderColor: 'var(--analytics-neutral-border)'
+              backgroundColor: "var(--analytics-neutral-bg)",
+              borderColor: "var(--analytics-neutral-border)",
             }}
           >
             <div className="flex justify-between items-center">
-              <span className="font-medium" style={{ color: 'var(--analytics-neutral-text)' }}>
+              <span className="font-medium" style={{ color: "var(--analytics-neutral-text)" }}>
                 Total Barangays Assessed
               </span>
-              <span className="text-2xl font-bold text-[var(--foreground)]" aria-label={`${performance.totalAssessed} barangays assessed`}>
+              <span
+                className="text-2xl font-bold text-[var(--foreground)]"
+                aria-label={`${performance.totalAssessed} barangays assessed`}
+              >
                 {performance.totalAssessed}
               </span>
             </div>
@@ -128,16 +136,20 @@ export function PerformanceOverviewWidget({ data }: PerformanceOverviewWidgetPro
           <li
             className="rounded-sm p-4 border hover:opacity-90 transition-all duration-200"
             style={{
-              backgroundColor: 'var(--analytics-success-bg)',
-              borderColor: 'var(--analytics-success-border)'
+              backgroundColor: "var(--analytics-success-bg)",
+              borderColor: "var(--analytics-success-border)",
             }}
           >
             <div className="flex justify-between items-center">
-              <span className="font-medium" style={{ color: 'var(--analytics-success-text)' }}>
+              <span className="font-medium" style={{ color: "var(--analytics-success-text)" }}>
                 Pass Rate for this Area
               </span>
               <div className="text-right">
-                <span className="text-2xl font-bold" style={{ color: 'var(--analytics-success-text-light)' }} aria-label={`${performance.passRate} percent pass rate`}>
+                <span
+                  className="text-2xl font-bold"
+                  style={{ color: "var(--analytics-success-text-light)" }}
+                  aria-label={`${performance.passRate} percent pass rate`}
+                >
                   {performance.passRate}%
                 </span>
               </div>
@@ -147,15 +159,19 @@ export function PerformanceOverviewWidget({ data }: PerformanceOverviewWidgetPro
           <li
             className="rounded-sm p-4 border hover:opacity-90 transition-all duration-200"
             style={{
-              backgroundColor: 'var(--analytics-danger-bg)',
-              borderColor: 'var(--analytics-danger-border)'
+              backgroundColor: "var(--analytics-danger-bg)",
+              borderColor: "var(--analytics-danger-border)",
             }}
           >
             <div className="flex justify-between items-center">
-              <span className="font-medium" style={{ color: 'var(--analytics-danger-text)' }}>
+              <span className="font-medium" style={{ color: "var(--analytics-danger-text)" }}>
                 Failed Barangays
               </span>
-              <span className="text-2xl font-bold" style={{ color: 'var(--analytics-danger-text-light)' }} aria-label={`${performance.failed} barangays failed`}>
+              <span
+                className="text-2xl font-bold"
+                style={{ color: "var(--analytics-danger-text-light)" }}
+                aria-label={`${performance.failed} barangays failed`}
+              >
                 {performance.failed}
               </span>
             </div>
@@ -164,4 +180,4 @@ export function PerformanceOverviewWidget({ data }: PerformanceOverviewWidgetPro
       </div>
     </section>
   );
-} 
+}

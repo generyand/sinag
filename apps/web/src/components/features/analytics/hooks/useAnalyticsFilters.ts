@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
+import { useEffectiveYear } from "@/store/useAssessmentYearStore";
 
 export interface AnalyticsFilters {
-  cycle_id?: number;
+  year?: number;
   start_date?: string;
   end_date?: string;
   governance_area?: string[];
@@ -15,26 +16,26 @@ export interface AnalyticsFilters {
 }
 
 export interface AnalyticsFilterState {
-  selectedCycle: number | null;
+  selectedYear: number | null;
   selectedPhase: "phase1" | "phase2" | "all";
   filters: AnalyticsFilters;
 }
 
 interface UseAnalyticsFiltersReturn {
   // State
-  selectedCycle: number | null;
+  selectedYear: number | null;
   selectedPhase: "phase1" | "phase2" | "all";
   filters: AnalyticsFilters;
 
   // Setters
-  setSelectedCycle: (cycleId: number | null) => void;
+  setSelectedYear: (year: number | null) => void;
   setSelectedPhase: (phase: "phase1" | "phase2" | "all") => void;
   setFilters: (filters: AnalyticsFilters) => void;
   updateFilter: <K extends keyof AnalyticsFilters>(key: K, value: AnalyticsFilters[K]) => void;
 
   // Actions
   clearAllFilters: () => void;
-  clearCycleFilter: () => void;
+  clearYearFilter: () => void;
   clearPhaseFilter: () => void;
 
   // Computed
@@ -44,7 +45,7 @@ interface UseAnalyticsFiltersReturn {
 }
 
 const DEFAULT_FILTERS: AnalyticsFilters = {
-  cycle_id: undefined,
+  year: undefined,
   start_date: undefined,
   end_date: undefined,
   governance_area: undefined,
@@ -58,18 +59,31 @@ const DEFAULT_FILTERS: AnalyticsFilters = {
 /**
  * Custom hook for managing analytics filter state.
  * Centralizes filter logic for the Analytics & Reports page.
+ * Uses the global effective year from the assessment year store.
  */
 export function useAnalyticsFilters(): UseAnalyticsFiltersReturn {
-  const [selectedCycle, setSelectedCycleState] = useState<number | null>(null);
+  const effectiveYear = useEffectiveYear();
+  const [selectedYear, setSelectedYearState] = useState<number | null>(null);
   const [selectedPhase, setSelectedPhaseState] = useState<"phase1" | "phase2" | "all">("all");
   const [filters, setFiltersState] = useState<AnalyticsFilters>(DEFAULT_FILTERS);
 
-  // Set cycle and sync with filters
-  const setSelectedCycle = useCallback((cycleId: number | null) => {
-    setSelectedCycleState(cycleId);
+  // Sync with global effective year on mount and when it changes
+  useEffect(() => {
+    if (effectiveYear !== null) {
+      setSelectedYearState(effectiveYear);
+      setFiltersState((prev) => ({
+        ...prev,
+        year: effectiveYear,
+      }));
+    }
+  }, [effectiveYear]);
+
+  // Set year and sync with filters
+  const setSelectedYear = useCallback((year: number | null) => {
+    setSelectedYearState(year);
     setFiltersState((prev) => ({
       ...prev,
-      cycle_id: cycleId ?? undefined,
+      year: year ?? undefined,
     }));
   }, []);
 
@@ -98,21 +112,24 @@ export function useAnalyticsFilters(): UseAnalyticsFiltersReturn {
     []
   );
 
-  // Clear all filters
+  // Clear all filters (resets to effective year)
   const clearAllFilters = useCallback(() => {
-    setSelectedCycleState(null);
+    setSelectedYearState(effectiveYear);
     setSelectedPhaseState("all");
-    setFiltersState(DEFAULT_FILTERS);
-  }, []);
+    setFiltersState({
+      ...DEFAULT_FILTERS,
+      year: effectiveYear ?? undefined,
+    });
+  }, [effectiveYear]);
 
-  // Clear just the cycle filter
-  const clearCycleFilter = useCallback(() => {
-    setSelectedCycleState(null);
+  // Clear just the year filter (resets to effective year)
+  const clearYearFilter = useCallback(() => {
+    setSelectedYearState(effectiveYear);
     setFiltersState((prev) => ({
       ...prev,
-      cycle_id: undefined,
+      year: effectiveYear ?? undefined,
     }));
-  }, []);
+  }, [effectiveYear]);
 
   // Clear just the phase filter
   const clearPhaseFilter = useCallback(() => {
@@ -123,28 +140,29 @@ export function useAnalyticsFilters(): UseAnalyticsFiltersReturn {
     }));
   }, []);
 
-  // Check if any filters are active
+  // Check if any filters are active (different from defaults)
   const hasActiveFilters = useMemo(() => {
-    return selectedCycle !== null || selectedPhase !== "all";
-  }, [selectedCycle, selectedPhase]);
+    const yearDiffers = selectedYear !== effectiveYear;
+    return yearDiffers || selectedPhase !== "all";
+  }, [selectedYear, effectiveYear, selectedPhase]);
 
   // Count active filters
   const activeFilterCount = useMemo(() => {
     let count = 0;
-    if (selectedCycle !== null) count++;
+    if (selectedYear !== effectiveYear) count++;
     if (selectedPhase !== "all") count++;
     return count;
-  }, [selectedCycle, selectedPhase]);
+  }, [selectedYear, effectiveYear, selectedPhase]);
 
   // Generate filter labels for display
   const activeFilterLabels = useMemo(() => {
     const labels: { key: string; label: string; onClear: () => void }[] = [];
 
-    if (selectedCycle !== null) {
+    if (selectedYear !== null) {
       labels.push({
-        key: "cycle",
-        label: `Cycle: ${selectedCycle}`,
-        onClear: clearCycleFilter,
+        key: "year",
+        label: `Year: ${selectedYear}`,
+        onClear: clearYearFilter,
       });
     }
 
@@ -160,23 +178,23 @@ export function useAnalyticsFilters(): UseAnalyticsFiltersReturn {
     }
 
     return labels;
-  }, [selectedCycle, selectedPhase, clearCycleFilter, clearPhaseFilter]);
+  }, [selectedYear, selectedPhase, clearYearFilter, clearPhaseFilter]);
 
   return {
     // State
-    selectedCycle,
+    selectedYear,
     selectedPhase,
     filters,
 
     // Setters
-    setSelectedCycle,
+    setSelectedYear,
     setSelectedPhase,
     setFilters,
     updateFilter,
 
     // Actions
     clearAllFilters,
-    clearCycleFilter,
+    clearYearFilter,
     clearPhaseFilter,
 
     // Computed

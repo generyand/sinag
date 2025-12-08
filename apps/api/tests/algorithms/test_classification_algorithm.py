@@ -65,7 +65,12 @@ def test_data(db_session):
             "code": "BU",
             "area_type": AreaType.ESSENTIAL,
         },
-        {"id": 6, "name": "Environmental Management", "code": "EN", "area_type": AreaType.ESSENTIAL},
+        {
+            "id": 6,
+            "name": "Environmental Management",
+            "code": "EN",
+            "area_type": AreaType.ESSENTIAL,
+        },
     ]
 
     for area_data in core_areas:
