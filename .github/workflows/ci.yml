@@ -38,24 +38,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-
-      - name: Install uv
-        run: pip install uv
-
-      - name: Cache uv dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/uv
-          key: ${{ runner.os }}-uv-${{ hashFiles('apps/api/uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-uv-
-
-      - name: Install dependencies
-        run: uv sync --group dev
+      - name: Setup Python API environment
+        uses: ./.github/actions/setup-python-api
 
       - name: Lint with Ruff
         run: uv run ruff check . --output-format=github
@@ -74,7 +58,8 @@ jobs:
     name: Backend Tests - ${{ matrix.test-group }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: backend-lint  # Only run tests if linting passes
+    # Note: Removed `needs: backend-lint` to allow parallel execution.
+    # CI status job validates both pass before merge is allowed.
     strategy:
       fail-fast: false  # Continue other groups even if one fails
       matrix:
@@ -102,24 +87,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-
-      - name: Install uv
-        run: pip install uv
-
-      - name: Cache uv dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/uv
-          key: ${{ runner.os }}-uv-${{ hashFiles('apps/api/uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-uv-
-
-      - name: Install dependencies
-        run: uv sync --group dev
+      - name: Setup Python API environment
+        uses: ./.github/actions/setup-python-api
 
       - name: Run tests - API
         if: matrix.test-group == 'api'
@@ -198,36 +167,49 @@ jobs:
           retention-days: 7
 
   # ============================================================================
-  # Frontend Quality Checks
+  # Frontend Quality Checks (Parallelized)
   # ============================================================================
-  frontend-checks:
-    name: Frontend - Lint, Type Check, Test
+  frontend-lint:
+    name: Frontend - Lint
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.11.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "lts/*"
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup Node.js environment
+        uses: ./.github/actions/setup-node
 
       - name: Lint
         run: pnpm turbo lint --filter=web --filter=@sinag/shared
 
+  frontend-typecheck:
+    name: Frontend - Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js environment
+        uses: ./.github/actions/setup-node
+
       - name: Type check
         run: pnpm turbo type-check --filter=web --filter=@sinag/shared
+
+  frontend-test:
+    name: Frontend - Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js environment
+        uses: ./.github/actions/setup-node
 
       - name: Run unit tests with coverage
         continue-on-error: true # Don't block CI while improving test coverage
@@ -240,6 +222,18 @@ jobs:
           name: frontend-coverage
           path: apps/web/coverage/
           retention-days: 7
+
+  frontend-build:
+    name: Frontend - Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js environment
+        uses: ./.github/actions/setup-node
 
       - name: Build check
         run: pnpm build
@@ -290,38 +284,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.11.0
+      - name: Setup Node.js environment
+        uses: ./.github/actions/setup-node
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "lts/*"
-          cache: "pnpm"
-
-      - name: Install Node dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-
-      - name: Install uv
-        run: pip install uv
-
-      - name: Cache uv dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/uv
-          key: ${{ runner.os }}-uv-${{ hashFiles('apps/api/uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-uv-
-
-      - name: Install Python dependencies
-        run: cd apps/api && uv sync --group dev
+      - name: Setup Python API environment
+        uses: ./.github/actions/setup-python-api
 
       - name: Start API server
         run: |
@@ -382,7 +349,14 @@ jobs:
   ci-status:
     name: CI Status
     runs-on: ubuntu-latest
-    needs: [backend-lint, backend-tests, frontend-checks, type-generation]
+    needs:
+      - backend-lint
+      - backend-tests
+      - frontend-lint
+      - frontend-typecheck
+      - frontend-test
+      - frontend-build
+      - type-generation
     if: always()
 
     steps:
@@ -391,6 +365,7 @@ jobs:
           echo "## CI Status Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
+          # Backend checks
           if [ "${{ needs.backend-lint.result }}" == "success" ]; then
             echo "- ✅ Backend lint & type checks passed" >> $GITHUB_STEP_SUMMARY
           else
@@ -403,20 +378,46 @@ jobs:
             echo "- ⚠️ Backend tests failed (non-blocking)" >> $GITHUB_STEP_SUMMARY
           fi
 
-          if [ "${{ needs.frontend-checks.result }}" == "success" ]; then
-            echo "- ✅ Frontend checks passed" >> $GITHUB_STEP_SUMMARY
+          # Frontend checks (now parallel)
+          FRONTEND_FAILED=false
+
+          if [ "${{ needs.frontend-lint.result }}" == "success" ]; then
+            echo "- ✅ Frontend lint passed" >> $GITHUB_STEP_SUMMARY
           else
-            echo "- ❌ Frontend checks failed" >> $GITHUB_STEP_SUMMARY
+            echo "- ❌ Frontend lint failed" >> $GITHUB_STEP_SUMMARY
+            FRONTEND_FAILED=true
           fi
 
+          if [ "${{ needs.frontend-typecheck.result }}" == "success" ]; then
+            echo "- ✅ Frontend type check passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ❌ Frontend type check failed" >> $GITHUB_STEP_SUMMARY
+            FRONTEND_FAILED=true
+          fi
+
+          if [ "${{ needs.frontend-test.result }}" == "success" ]; then
+            echo "- ✅ Frontend tests passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ⚠️ Frontend tests failed (non-blocking)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.frontend-build.result }}" == "success" ]; then
+            echo "- ✅ Frontend build passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ❌ Frontend build failed" >> $GITHUB_STEP_SUMMARY
+            FRONTEND_FAILED=true
+          fi
+
+          # Type generation
           if [ "${{ needs.type-generation.result }}" == "success" ] || [ "${{ needs.type-generation.result }}" == "skipped" ]; then
             echo "- ✅ Type generation validated (or skipped)" >> $GITHUB_STEP_SUMMARY
           else
             echo "- ❌ Type generation out of sync" >> $GITHUB_STEP_SUMMARY
           fi
 
-          # Fail if critical checks failed (lint is required, tests are non-blocking for now)
-          if [ "${{ needs.backend-lint.result }}" != "success" ] || [ "${{ needs.frontend-checks.result }}" != "success" ]; then
+          # Fail if critical checks failed
+          # Backend lint, frontend lint/typecheck/build are required; tests are non-blocking
+          if [ "${{ needs.backend-lint.result }}" != "success" ] || [ "$FRONTEND_FAILED" == "true" ]; then
             echo ""
             echo "::error::Critical CI checks failed. Please fix the issues before merging."
             exit 1

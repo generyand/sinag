@@ -1,0 +1,22 @@
+# Composite action for setting up Node.js with pnpm
+# Reduces duplication across CI workflows
+name: Setup Node.js
+description: Sets up Node.js LTS with pnpm and installs dependencies
+
+runs:
+  using: composite
+  steps:
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 10.11.0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: "lts/*"
+        cache: "pnpm"
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile

@@ -79,13 +79,20 @@ deployments:
 ┌──────────────────────────────────────────────────────────────┐
 │                     On Push/PR                                │
 │                                                               │
-│   ci.yml ─────────────────┐                                  │
-│                           │                                  │
-│   security.yml ───────────┼──► deploy.yml (validates all)   │
-│                           │                                  │
-│   build-and-push.yml ─────┘                                  │
+│   ci.yml (all jobs parallel) ────┐                           │
+│     ├── backend-lint             │                           │
+│     ├── backend-tests [4x]       │                           │
+│     ├── frontend-lint            ├──► deploy.yml             │
+│     ├── frontend-typecheck       │    (validates all)        │
+│     ├── frontend-test            │                           │
+│     ├── frontend-build           │                           │
+│     └── type-generation          │                           │
+│                                  │                           │
+│   security.yml ──────────────────┤                           │
+│                                  │                           │
+│   build-and-push.yml ────────────┘                           │
 │                                                               │
-│   playwright.yml (independent E2E testing)                   │
+│   playwright.yml (single optimized E2E job)                  │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -111,7 +118,24 @@ All workflow files are in `.github/workflows/`:
 
 **File**: `.github/workflows/ci.yml`
 
-The CI workflow ensures code quality through comprehensive checks.
+The CI workflow ensures code quality through comprehensive checks with optimized parallel execution.
+
+### Optimizations
+
+The CI pipeline has been optimized for speed:
+
+1. **Parallel Execution**: All jobs run in parallel (no sequential dependencies)
+2. **Composite Actions**: Reusable setup actions reduce code duplication
+3. **Smart Caching**: Dependencies and Playwright browsers are cached
+
+### Composite Actions
+
+Located in `.github/actions/`:
+
+| Action             | Purpose                               |
+| ------------------ | ------------------------------------- |
+| `setup-python-api` | Python 3.13, uv, and API dependencies |
+| `setup-node`       | pnpm, Node.js LTS, and dependencies   |
 
 ### Jobs
 
@@ -131,7 +155,7 @@ working-directory: apps/api
 
 #### 2. Backend Tests (`backend-tests`)
 
-Parallelized test execution across four test groups:
+Parallelized test execution across four test groups (runs in parallel with linting):
 
 | Test Group            | Coverage Area                       |
 | --------------------- | ----------------------------------- |
@@ -140,18 +164,18 @@ Parallelized test execution across four test groups:
 | `schemas-core`        | Pydantic schemas, core utilities    |
 | `algorithms-security` | Business algorithms, security tests |
 
-**Dependencies**: Requires `backend-lint` to pass first.
-
 **Services**: Redis container for Celery-dependent tests.
 
-#### 3. Frontend Checks (`frontend-checks`)
+#### 3. Frontend Checks (Parallelized)
 
-Comprehensive frontend quality checks:
+Frontend quality checks run as four parallel jobs:
 
-- **ESLint**: Code quality linting
-- **TypeScript**: Type checking
-- **Vitest**: Unit test execution with coverage
-- **Build Check**: Ensures production build succeeds
+| Job                  | Purpose                         | Blocking |
+| -------------------- | ------------------------------- | -------- |
+| `frontend-lint`      | ESLint code quality             | Yes      |
+| `frontend-typecheck` | TypeScript type checking        | Yes      |
+| `frontend-test`      | Vitest unit tests with coverage | No       |
+| `frontend-build`     | Production build verification   | Yes      |
 
 #### 4. Type Generation (`type-generation`)
 
@@ -378,23 +402,40 @@ Only reports `CRITICAL` and `HIGH` severity vulnerabilities.
 
 **File**: `.github/workflows/playwright.yml`
 
-End-to-end testing using Playwright.
+End-to-end testing using Playwright with optimized single-job execution.
+
+### Optimizations
+
+The E2E workflow has been consolidated for efficiency:
+
+1. **Single Job**: All tests run in one job with conditional test selection
+2. **Browser Caching**: Playwright browsers are cached for faster subsequent runs
+3. **Smart Test Selection**: PR vs push determines which tests to run
 
 ### Test Levels
 
-| Level         | When                   | Tests                                                |
-| ------------- | ---------------------- | ---------------------------------------------------- |
-| Smoke Tests   | All PRs/pushes         | `smoke.spec.ts`                                      |
-| Critical Path | PRs only               | `authentication.spec.ts`, `route-protection.spec.ts` |
-| Full Suite    | Pushes to main/develop | All E2E tests                                        |
+| Event Type           | Tests Run                                                             |
+| -------------------- | --------------------------------------------------------------------- |
+| Pull Request         | `smoke.spec.ts`, `authentication.spec.ts`, `route-protection.spec.ts` |
+| Push to main/develop | All E2E tests (full suite)                                            |
 
 ### Test Environment
 
-Each test job provisions:
+The single job provisions:
 
 - PostgreSQL 16 database
 - Redis 7 cache
 - Test user seeding via `seed_e2e_users.py`
+
+### Browser Caching
+
+Playwright browsers are cached based on version:
+
+```yaml
+key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
+```
+
+This saves ~1-2 minutes per run after the first execution.
 
 ### Browser
 
@@ -402,11 +443,10 @@ Currently runs on Chromium only for faster feedback.
 
 ### Artifacts
 
-Test reports are uploaded on failure:
+Test reports are uploaded:
 
-- `smoke-test-report`
-- `critical-path-report`
-- `full-e2e-report`
+- `pr-e2e-report` - For pull request runs
+- `full-e2e-report` - For push runs to main/develop
 
 ---
 
@@ -709,4 +749,4 @@ uv run ruff format .       # Format code
 
 ---
 
-**Last Updated**: 2025-12-08 **Maintained By**: SINAG DevOps Team
+**Last Updated**: 2025-12-08 (CI optimization update) **Maintained By**: SINAG DevOps Team
