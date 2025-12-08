@@ -5,19 +5,24 @@ The SINAG system implements role-based access control (RBAC) with five distinct 
 ## Role Definitions
 
 ### 1. MLGOO_DILG (Admin Role)
+
 - System administrators with full access to all features
 - Can manage users, view all submissions, access analytics
 - No barangay or governance area assignments (system-wide access)
 - Replaces the legacy SUPERADMIN role
 
 ### 2. VALIDATOR
+
 - DILG validators assigned to specific governance areas
 - Validates assessments for barangays within their assigned governance area
 - **Required field**: `validator_area_id` (governance area assignment)
 - Can determine Pass/Fail/Conditional status for indicators
 - Can request calibration (routes back to same Validator)
+- Has access to Analytics page (shared with MLGOO_DILG) to view BBI compliance and municipal
+  overview
 
 ### 3. ASSESSOR
+
 - DILG assessors who can work with any barangay
 - No pre-assigned governance areas (flexible assignment)
 - Can review MOVs and leave comments
@@ -25,12 +30,14 @@ The SINAG system implements role-based access control (RBAC) with five distinct 
 - Can request rework (one cycle allowed)
 
 ### 4. BLGU_USER
+
 - Barangay-level users who submit assessments
 - **Required field**: `barangay_id` (barangay assignment)
 - Limited to their assigned barangay's data
 - Can upload MOVs and respond to feedback
 
 ### 5. KATUPARAN_CENTER_USER (External Stakeholder)
+
 - External user from Katuparan Center with read-only analytics access
 - Can view aggregated, anonymized SGLGB data for research
 - No access to individual barangay data (privacy protection)
@@ -62,11 +69,11 @@ KATUPARAN_CENTER_USER → No assignments required
 
 The User model includes these role-related fields:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `role` | String enum | MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER, KATUPARAN_CENTER_USER |
-| `validator_area_id` | Integer (nullable) | FK to governance_areas table |
-| `barangay_id` | Integer (nullable) | FK to barangays table |
+| Field               | Type               | Description                                                       |
+| ------------------- | ------------------ | ----------------------------------------------------------------- |
+| `role`              | String enum        | MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER, KATUPARAN_CENTER_USER |
+| `validator_area_id` | Integer (nullable) | FK to governance_areas table                                      |
+| `barangay_id`       | Integer (nullable) | FK to barangays table                                             |
 
 **Note**: The field `governance_area_id` was renamed to `validator_area_id` in November 2025.
 
@@ -82,3 +89,27 @@ All admin endpoints require `MLGOO_DILG` role:
 - `POST /api/v1/users/{user_id}/reset-password` - Reset password
 
 See `apps/api/app/api/v1/users.py` for implementation.
+
+## Analytics Access
+
+The Analytics page (`/analytics`) provides municipal-level overview and BBI compliance data.
+
+| Role                  | Analytics Access        | Notes                                               |
+| --------------------- | ----------------------- | --------------------------------------------------- |
+| MLGOO_DILG            | Full access             | System-wide analytics                               |
+| VALIDATOR             | Full access             | Added Dec 2025 for BBI visibility during validation |
+| ASSESSOR              | No access               | -                                                   |
+| BLGU_USER             | No access               | -                                                   |
+| KATUPARAN_CENTER_USER | External analytics only | Uses `/external-analytics` endpoint                 |
+
+## Navigation Links by Role
+
+| Role                  | Sidebar Navigation                                                                  |
+| --------------------- | ----------------------------------------------------------------------------------- |
+| MLGOO_DILG            | Dashboard, Submissions, Users, Governance Areas, Analytics, BBI Management, Profile |
+| VALIDATOR             | Submissions Queue, Analytics & Reports, Profile                                     |
+| ASSESSOR              | Submissions Queue, Profile                                                          |
+| BLGU_USER             | Dashboard, Assessment, Reports, Profile                                             |
+| KATUPARAN_CENTER_USER | External Analytics                                                                  |
+
+See `apps/web/src/lib/navigation.ts` for navigation configuration.

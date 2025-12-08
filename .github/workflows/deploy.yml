@@ -48,7 +48,8 @@ on:
 
 permissions:
   contents: read
-  actions: read  # Required to query workflow runs via gh api
+  actions: read    # Required to query workflow runs via gh api
+  packages: read   # Required to pull images from GHCR
 
 jobs:
   # ==========================================================================

@@ -2,20 +2,86 @@
 
 All notable changes to the SINAG project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project
+adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
 ### Added
 
+#### BBI 4-Tier Compliance Rating System (2025-12-08)
+
+**Summary:** Implemented the official DILG MC 2024-417 BBI (Barangay-Based Institutions) compliance
+rating system with 4-tier functionality ratings and improved visibility for validators.
+
+- **4-Tier Rating System**
+  - HIGHLY_FUNCTIONAL: 75-100% compliance
+  - MODERATELY_FUNCTIONAL: 50-74% compliance
+  - LOW_FUNCTIONAL: 1-49% compliance
+  - NON_FUNCTIONAL: 0% compliance (new distinction from LOW_FUNCTIONAL)
+
+- **Schema Changes**
+  - Added `barangay_id`, `assessment_year`, `indicator_id` to BBIResult model
+  - Added unique constraint per barangay/year/BBI combination
+  - Removed legacy FUNCTIONAL/NON_FUNCTIONAL enum values
+  - Source of truth: `validation_status` (validator decisions)
+
+- **BBI Visibility Improvements**
+  - VALIDATOR role now has access to Analytics page (previously MLGOO only)
+  - Added Analytics & Reports navigation link to validator sidebar
+  - BBI indicator badges (2.1, 3.1, 3.2, 4.1, 4.3, 4.5, 6.1) shown in tree navigator
+  - BBIPreviewPanel moved to sticky footer with expanded default state
+
+- **Trigger Integration**
+  - BBI compliance calculated automatically when assessment reaches COMPLETED status
+  - Added `calculate_all_bbi_compliance()` for batch calculation
+
+- **API Endpoints**
+  - GET `/api/v1/bbis/compliance/barangay/{barangay_id}` - Get BBI results by barangay
+  - Updated existing BBI endpoints with year filter support
+
+- **Documentation**
+  - New feature documentation: `docs/features/bbi-compliance.md`
+
+### Changed
+
+#### CI/CD Quality Gates Enhancement (2025-12-08)
+
+**Summary:** Improved deployment workflow to ensure all quality checks pass before deployment.
+
+- **Deploy Workflow Updates**
+  - Added `actions: read` permission for querying workflow status
+  - Deploy now waits for CI workflow to complete (up to 10 minutes)
+  - Deploy waits for Security workflow to complete (up to 5 minutes)
+  - Quality gates: Build + CI + Security must all pass before deployment
+  - Manual deployments still bypass quality gates (use with caution)
+
+#### Developer Experience Improvements (2025-12-08)
+
+**Summary:** Pre-commit hooks now auto-format Python files instead of just checking.
+
+- **Pre-commit Hook Changes**
+  - Python files are now automatically formatted with `ruff format`
+  - Formatted files are automatically re-staged before commit
+  - Prevents CI failures from unformatted code
+  - Still runs `ruff check --fix` for linting auto-fixes
+
+### Fixed
+
+- Minor typo fix in CI permissions ("permssions" -> "permissions" in deploy workflow)
+
+---
+
 #### User Management Validation and Error Handling (2025-11-30)
 
-**Summary:** Comprehensive validation and error handling improvements for user management, including role-based routing fixes and form validation enhancements.
+**Summary:** Comprehensive validation and error handling improvements for user management, including
+role-based routing fixes and form validation enhancements.
 
 - **Role-Based Routing Fix**
-  - Fixed password change page redirect logic to correctly route all 5 user roles to their appropriate dashboards
-  - KATUPARAN_CENTER_USER now correctly redirects to `/external-analytics` instead of `/blgu/dashboard`
+  - Fixed password change page redirect logic to correctly route all 5 user roles to their
+    appropriate dashboards
+  - KATUPARAN_CENTER_USER now correctly redirects to `/external-analytics` instead of
+    `/blgu/dashboard`
   - ASSESSOR redirects to `/assessor/submissions`
   - VALIDATOR redirects to `/validator/submissions`
   - Prevents "access denied" errors for non-BLGU users after password change
@@ -38,7 +104,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Production Deployment Infrastructure (2025-11-28)
 
-**Summary:** Production-ready Docker configuration, Nginx reverse proxy, and EC2 deployment automation.
+**Summary:** Production-ready Docker configuration, Nginx reverse proxy, and EC2 deployment
+automation.
 
 - **Nginx Reverse Proxy**
   - Complete Nginx configuration with request routing (`/api/*` -> FastAPI, `/` -> Next.js)
@@ -70,7 +137,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Gemini API Integration Enhancement (2025-11-29)
 
-**Summary:** Enhanced AI-powered insights with improved Gemini API integration and streamlined production deployment.
+**Summary:** Enhanced AI-powered insights with improved Gemini API integration and streamlined
+production deployment.
 
 - Improved intelligence service with better error handling
 - Optimized API request batching for classification tasks
@@ -89,9 +157,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Documentation Cleanup (2025-11-30)
 
-**Summary:** Cleaned up temporary documentation files generated during Claude Code sessions to improve project organization.
+**Summary:** Cleaned up temporary documentation files generated during Claude Code sessions to
+improve project organization.
 
 **Deleted Files (9 temporary documentation files):**
+
 - `NGINX_SETUP_SUMMARY.md` - Implementation summary (Nov 2025)
 - `NGINX_IMPLEMENTATION_CHECKLIST.md` - Implementation checklist (Nov 2025)
 - `DOCKER_SECURITY_AUDIT.md` - Audit report (Nov 2025)
@@ -102,17 +172,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `docs/testing/password-change-routing-test-gap-analysis.md` - Gap analysis document
 - `apps/api/tests/api/v1/README_PASSWORD_CHANGE_TESTS.md` - Redundant test readme
 
-**Rationale:** These temporary documentation files were generated during coding sessions and documented completed work. Essential content is already consolidated in CLAUDE.md, the organized `docs/` folder structure, and code comments.
+**Rationale:** These temporary documentation files were generated during coding sessions and
+documented completed work. Essential content is already consolidated in CLAUDE.md, the organized
+`docs/` folder structure, and code comments.
 
 #### Documentation Cleanup (2025-11-25)
 
-**Summary:** Cleaned up temporary documentation files from root directory to improve project organization. Temporary implementation summaries are now consolidated into CLAUDE.md and the docs/ folder structure.
+**Summary:** Cleaned up temporary documentation files from root directory to improve project
+organization. Temporary implementation summaries are now consolidated into CLAUDE.md and the docs/
+folder structure.
 
 **Deleted Files (9 temporary documentation files):**
+
 - `CELERY-SETUP.md` - Content consolidated into CLAUDE.md and `apps/api/CELERY.md`
 - `DEV-WORKFLOW.md` - Content consolidated into CLAUDE.md Development Commands section
-- `DOCKER-OPTIMIZATION-SUMMARY.md` - Implementation summary (Nov 2024), content in `docs/docker-best-practices.md`
-- `IMPLEMENTATION-SUMMARY-FAIL-FAST.md` - Implementation summary, content in `docs/guides/fail-fast-startup-checks.md`
+- `DOCKER-OPTIMIZATION-SUMMARY.md` - Implementation summary (Nov 2024), content in
+  `docs/docker-best-practices.md`
+- `IMPLEMENTATION-SUMMARY-FAIL-FAST.md` - Implementation summary, content in
+  `docs/guides/fail-fast-startup-checks.md`
 - `QUICK-START.md` - Redundant with CLAUDE.md quick start section
 - `REDIS-FAIL-FAST-FIX.md` - Issue resolution document (Nov 2024)
 - `REDIS-SETUP.md` - Content consolidated into CLAUDE.md Redis section
@@ -120,24 +197,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `TESTING-REWORK-SUMMARY.md` - Testing guide for specific feature
 
 **Reorganized Files:**
+
 - `generate_indicator_specs.py` - Moved from root to `scripts/` folder
 
 **Removed Artifacts:**
+
 - `turbo` - Empty file (build artifact)
 - `sinag@1.0.0` - Empty file (build artifact)
 
 **Root Directory Now Contains Only Essential Files:**
+
 - `CHANGELOG.md` - Project changelog
 - `CLAUDE.md` - Development instructions (source of truth)
 - `README.md` - Project overview
 
-**Rationale:** Temporary documentation files documenting completed work were cluttering the root directory. All essential content has been consolidated into CLAUDE.md (the canonical source for development instructions) or the organized `docs/` folder structure.
+**Rationale:** Temporary documentation files documenting completed work were cluttering the root
+directory. All essential content has been consolidated into CLAUDE.md (the canonical source for
+development instructions) or the organized `docs/` folder structure.
 
 ### Added
 
 #### Phase 6: Administrative Features - Hierarchical Indicator Builder (COMPLETE) ✅
 
-**Summary:** Complete implementation of hierarchical indicator creation system with 6 epics, 59 stories, and comprehensive testing coverage.
+**Summary:** Complete implementation of hierarchical indicator creation system with 6 epics, 59
+stories, and comprehensive testing coverage.
 
 - **Epic 1.0: Draft System & Auto-Save Infrastructure**
   - Draft management with optimistic locking and version conflict resolution
@@ -148,12 +231,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Epic 2.0: Hierarchical Tree Editor & Split-Pane UI**
   - Split-pane layout (30% tree + 70% editor) with react-arborist integration
   - Drag-and-drop tree navigation with parent-child relationship management
-  - Indicator form view with 5 tabs: Basic Info, MOV Checklist, Form Schema, Calculation Schema, Remark Schema
+  - Indicator form view with 5 tabs: Basic Info, MOV Checklist, Form Schema, Calculation Schema,
+    Remark Schema
   - Real-time validation badges (✓/⚠/❌) on tree nodes and tabs
 
 - **Epic 3.0: MOV Checklist Builder (9 Item Types)**
   - Visual builder for Means of Verification checklists with 9 specialized item types
-  - Checkbox, Group (OR logic), Currency Input, Number Input, Text Input, Date Input, Assessment, Radio Group, Dropdown
+  - Checkbox, Group (OR logic), Currency Input, Number Input, Text Input, Date Input, Assessment,
+    Radio Group, Dropdown
   - Advanced validation: grace periods, thresholds, conditional display, OR logic with min_required
   - Validation statuses: Passed, Considered, Failed, Not Applicable, Pending
   - Tested against all 29 validated indicators from Spec v1.4 (1.1-6.3)
@@ -181,6 +266,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Spec v1.4 validation: All 29 SGLGB indicator patterns validated
 
 **Technical Highlights:**
+
 - Backend: SQLAlchemy models with JSONB schemas, Pydantic validation, service layer pattern
 - Frontend: Next.js 15, React 19, Zustand state management, react-arborist tree editor
 - Type Safety: Full end-to-end type generation via Orval (FastAPI → TypeScript)
@@ -191,6 +277,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 #### Epic 6.0: Audit & Security Infrastructure
+
 - **Backend Audit Logging**
   - `AuditLog` database model with optimized composite indexes
   - Comprehensive `AuditService` with event logging, JSON diff, and filtering
@@ -224,6 +311,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request ID and processing time validation tests
 
 ### Changed
+
 - Consolidated Docker troubleshooting from 8 separate files into organized guides
 - Reorganized documentation into clear, maintainable structure
 - Enhanced Axios interceptor with comprehensive error handling and toast notifications
@@ -232,34 +320,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.0] - 2025-10-28
 
 ### Added
+
 - **Epic 4.0**: Gemini API integration for AI-powered insights and recommendations
 - Core intelligence layer with SGLGB classification algorithm ("3+1" logic)
 - Celery background processing for insights generation
 - Gap analysis comparing initial vs final assessments
 
 ### Fixed
+
 - ReportsPage safe rendering for assessments with improved type handling
 - Docker authentication issues with bcrypt
 - TypeScript and ESLint errors for successful build
 
 ### Changed
+
 - Enhanced local Docker support
 
 ## [0.3.0] - 2025-10-19
 
 ### Added
+
 - **Epic 3**: Assessor validation workflow
 - Assessment rework and finalization endpoints
 - Validation workflow for assessors
 - PRD and task list for Assessor workflow
 
 ### Changed
+
 - Enhanced assessment models for assessor workflow
 - Renamed and reorganized MOV and UserUpdatedAt interfaces
 
 ## [0.2.0] - 2025-10-12
 
 ### Added
+
 - **Epic 2**: BLGU Dashboard & Assessment UI (with mock data)
 - **Epic 3**: Dynamic forms & MOV upload functionality
 - Assessment dashboard endpoint with comprehensive data aggregation
@@ -267,17 +361,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sample indicators creation in assessment service
 
 ### Changed
+
 - Updated BLGU branding to SINAG throughout application
 - Assessment hooks now utilize API data instead of mock implementations
 - Enhanced assessment service with improved error handling
 
 ### Fixed
+
 - MOVStatus import path in generated types
 - Build configuration for Vercel deployment
 
 ## [0.1.0] - 2025-08-18
 
 ### Added
+
 - **Epic 1**: Core user authentication and management
 - Initial BLGU pre-assessment workflow foundation
 - FastAPI backend with SQLAlchemy ORM
@@ -289,13 +386,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Docker development environment
 
 ### Changed
+
 - Initial project architecture and structure
 
 ---
 
 ## Changelog Maintenance
 
-See [Maintaining the Changelog](./docs/guides/maintaining-changelog.md) for guidelines on updating this file.
+See [Maintaining the Changelog](./docs/guides/maintaining-changelog.md) for guidelines on updating
+this file.
 
 To add an entry, use: `/changelog add`
 
@@ -306,6 +405,7 @@ To add an entry, use: `/changelog add`
 ### Version Numbers
 
 We follow [Semantic Versioning](https://semver.org/):
+
 - **MAJOR** version (X.0.0): Incompatible API changes
 - **MINOR** version (0.X.0): New features (backward compatible)
 - **PATCH** version (0.0.X): Bug fixes (backward compatible)
@@ -321,7 +421,8 @@ We follow [Semantic Versioning](https://semver.org/):
 
 ### Unreleased Section
 
-The `[Unreleased]` section tracks changes that are committed but not yet released. When creating a new release:
+The `[Unreleased]` section tracks changes that are committed but not yet released. When creating a
+new release:
 
 1. Rename `[Unreleased]` to the new version number with date: `[X.Y.Z] - YYYY-MM-DD`
 2. Create a new `[Unreleased]` section at the top

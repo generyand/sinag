@@ -241,13 +241,34 @@ Deploys the application to EC2 instances.
 
 ### Quality Gates
 
-Before deployment, the workflow validates:
+Before deployment, the workflow validates all quality checks passed. The deploy workflow actively
+waits for dependent workflows to complete:
 
-1. Build workflow succeeded
-2. CI workflow succeeded (linting, tests)
-3. Security workflow succeeded (no critical vulnerabilities)
+1. **Build workflow** - Must succeed (immediate check)
+2. **CI workflow** - Must succeed (waits up to 10 minutes for completion)
+3. **Security workflow** - Must succeed (waits up to 5 minutes for completion)
 
-**Note**: Manual deployments (`workflow_dispatch`) bypass quality gates.
+```yaml
+permissions:
+  contents: read
+  actions: read # Required to query workflow runs via gh api
+```
+
+The deploy workflow uses `gh api` to poll workflow status:
+
+```bash
+# Example: Wait for CI workflow
+gh api repos/$REPO/actions/workflows/ci.yml/runs \
+  --jq ".workflow_runs[] | select(.head_sha == \"$SHA\") | .conclusion"
+```
+
+**Timeout Behavior:**
+
+- CI workflow: Blocks deployment if not completed within 10 minutes
+- Security workflow: Warns but proceeds if not completed within 5 minutes
+
+**Note**: Manual deployments (`workflow_dispatch`) bypass quality gates. Use with caution for
+emergency deployments only.
 
 ### Deployment Process
 
@@ -688,4 +709,4 @@ uv run ruff format .       # Format code
 
 ---
 
-**Last Updated**: 2025-12-07 **Maintained By**: SINAG DevOps Team
+**Last Updated**: 2025-12-08 **Maintained By**: SINAG DevOps Team
