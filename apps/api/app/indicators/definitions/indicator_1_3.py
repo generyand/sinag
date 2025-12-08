@@ -67,7 +67,7 @@ INDICATOR_1_3 = Indicator(
                     id="1_3_1_date_approval",
                     label="Date of Approval",
                     mov_description="CONSIDERATION: Approval until {MARCH_CURRENT_YEAR}",
-                    required=True,
+                    required=False,  # Date fields are for assessor review, not BLGU submission
                     item_type="date_input",
                     display_order=2,
                 ),

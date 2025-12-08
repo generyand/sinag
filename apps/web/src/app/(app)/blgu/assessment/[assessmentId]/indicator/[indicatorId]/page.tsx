@@ -74,6 +74,12 @@ export default function IndicatorFormPage() {
   // Epic 5.0: Get MOV annotations for this indicator (if in rework status)
   const movAnnotations = dashboardData?.mov_annotations_by_indicator?.[indicatorId] || [];
 
+  // Epic 5.0: Get rework comments for this indicator (if in rework status)
+  // Filter from dashboard's rework_comments array - these are the assessor's text feedback
+  const reworkComments = (dashboardData?.rework_comments || []).filter(
+    (comment: any) => comment.indicator_id === indicatorId
+  );
+
   // Handle save success - could redirect or show confirmation
   const handleSaveSuccess = () => {
     // Could add additional logic here if needed
@@ -239,6 +245,7 @@ export default function IndicatorFormPage() {
           onSaveSuccess={handleSaveSuccess}
           isLocked={isLocked || false}
           movAnnotations={movAnnotations}
+          reworkComments={reworkComments}
         />
       ) : (
         <Alert>

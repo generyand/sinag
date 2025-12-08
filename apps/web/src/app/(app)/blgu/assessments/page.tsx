@@ -44,6 +44,11 @@ export default function BLGUAssessmentsPage() {
     }
   );
 
+  // Epic 5.0: Trust the backend's completion count
+  // The backend correctly tracks is_completed for indicators during rework.
+  // No frontend adjustment needed - just use the assessment as-is.
+  const reworkAwareAssessment = assessment;
+
   // Selected indicator state
   const [selectedIndicatorId, setSelectedIndicatorId] = useState<string | null>(
     null
@@ -194,10 +199,12 @@ export default function BLGUAssessmentsPage() {
   const selectedIndicator = selectedIndicatorData?.indicator || null;
 
   // Calculate progress percentage for mobile button
+  // Use reworkAwareAssessment for correct count during rework status
+  const displayAssessment = reworkAwareAssessment || assessment;
   const progressPercentage =
-    assessment.totalIndicators > 0
+    displayAssessment.totalIndicators > 0
       ? Math.round(
-          (assessment.completedIndicators / assessment.totalIndicators) * 100
+          (displayAssessment.completedIndicators / displayAssessment.totalIndicators) * 100
         )
       : 0;
 
@@ -210,7 +217,7 @@ export default function BLGUAssessmentsPage() {
       <header className="border-b border-[var(--border)] bg-[var(--card)]">
         <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <AssessmentHeader
-            assessment={assessment}
+            assessment={displayAssessment}
             validation={validation}
             isCalibrationRework={dashboardData?.is_calibration_rework === true}
             calibrationGovernanceAreaName={(dashboardData as any)?.calibration_governance_area_name}

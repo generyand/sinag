@@ -1609,9 +1609,11 @@ def submit_for_calibration_review(
     # Clear requires_rework AND validation_status on the indicators that were calibrated
     # IMPORTANT: Clear validation_status so the Validator can re-review these indicators
     # Without this, the queue logic will skip the assessment (thinking validator already completed)
+    # Also clear response_data (validator's checklist) so they can re-validate from scratch
     for response in rework_responses:
         response.requires_rework = False
         response.validation_status = None  # Reset so Validator can re-validate
+        response.response_data = {}  # Reset validator's checklist so they can re-verify
 
     # CRITICAL: Delete old feedback comments for calibrated responses
     # When BLGU resubmits for calibration, validator's old comments should be cleared
