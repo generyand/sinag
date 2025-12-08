@@ -1559,8 +1559,14 @@ def submit_for_calibration_review(
         pass
     else:
         # Validate only the rework indicators using completeness check
+        from app.db.models.assessment import MOVAnnotation, MOVFile
         from app.services.completeness_validation_service import (
             completeness_validation_service,
+        )
+
+        # Get calibration timestamp for filtering MOVs (same logic as storage_service)
+        calibration_requested_at = (
+            assessment.calibration_requested_at or assessment.rework_requested_at
         )
 
         incomplete_indicators = []
@@ -1572,10 +1578,52 @@ def submit_for_calibration_review(
 
             form_schema = indicator.form_schema
 
-            # Get MOVs for this indicator
-            indicator_movs = [
-                mf for mf in assessment.mov_files if mf.indicator_id == response.indicator_id
-            ]
+            # Get MOVs for this indicator - MUST filter out soft-deleted files
+            # Query directly to ensure we get fresh data and proper filtering
+            indicator_movs = (
+                db.query(MOVFile)
+                .filter(
+                    MOVFile.assessment_id == assessment_id,
+                    MOVFile.indicator_id == response.indicator_id,
+                    MOVFile.deleted_at.is_(None),
+                )
+                .all()
+            )
+
+            # Apply timestamp filtering only if indicator has feedback
+            # This matches the logic in storage_service.py for consistency
+            if calibration_requested_at and indicator_movs:
+                # Check for feedback comments (non-internal)
+                feedback_count = (
+                    db.query(FeedbackComment)
+                    .filter(
+                        FeedbackComment.response_id == response.id,
+                        FeedbackComment.is_internal_note == False,
+                    )
+                    .count()
+                )
+
+                # Check for MOV annotations
+                annotation_count = (
+                    db.query(MOVAnnotation)
+                    .join(MOVFile)
+                    .filter(
+                        MOVFile.assessment_id == assessment_id,
+                        MOVFile.indicator_id == response.indicator_id,
+                    )
+                    .count()
+                )
+
+                has_feedback = feedback_count > 0 or annotation_count > 0
+
+                # Only filter MOVs by timestamp if indicator has assessor feedback
+                # Indicators without feedback keep their old files (old files still valid)
+                if has_feedback:
+                    indicator_movs = [
+                        mf
+                        for mf in indicator_movs
+                        if mf.uploaded_at and mf.uploaded_at >= calibration_requested_at
+                    ]
 
             # Validate using the completeness service
             validation = completeness_validation_service.validate_completeness(
