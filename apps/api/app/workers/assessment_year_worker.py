@@ -77,9 +77,7 @@ def create_bulk_assessments(self: Any, year: int) -> dict[str, Any]:
 
     try:
         # Verify the year exists
-        year_record = (
-            db.query(AssessmentYear).filter(AssessmentYear.year == year).first()
-        )
+        year_record = db.query(AssessmentYear).filter(AssessmentYear.year == year).first()
 
         if not year_record:
             logger.error("Assessment year %s not found", year)
@@ -91,9 +89,7 @@ def create_bulk_assessments(self: Any, year: int) -> dict[str, Any]:
 
         # Get all BLGU users
         blgu_users = (
-            db.query(User)
-            .filter(User.role == UserRole.BLGU_USER, User.is_active == True)
-            .all()
+            db.query(User).filter(User.role == UserRole.BLGU_USER, User.is_active == True).all()
         )
 
         # Get all existing assessments for this year in ONE query (optimization)
@@ -221,15 +217,9 @@ def create_assessment_for_blgu(
     try:
         # Determine the year
         if year is None:
-            active_year = (
-                db.query(AssessmentYear)
-                .filter(AssessmentYear.is_active == True)
-                .first()
-            )
+            active_year = db.query(AssessmentYear).filter(AssessmentYear.is_active == True).first()
             if not active_year:
-                logger.warning(
-                    "No active assessment year for BLGU user %s", blgu_user_id
-                )
+                logger.warning("No active assessment year for BLGU user %s", blgu_user_id)
                 return {
                     "success": False,
                     "error": "No active assessment year configured",
@@ -248,9 +238,7 @@ def create_assessment_for_blgu(
             }
 
         if user.role != UserRole.BLGU_USER:
-            logger.warning(
-                "User %s is not a BLGU user (role: %s)", blgu_user_id, user.role
-            )
+            logger.warning("User %s is not a BLGU user (role: %s)", blgu_user_id, user.role)
             return {
                 "success": False,
                 "error": f"User {blgu_user_id} is not a BLGU user",
@@ -368,16 +356,10 @@ def finalize_year(self: Any, year: int) -> dict[str, Any]:
             .count()
         )
 
-        total_count = (
-            db.query(Assessment)
-            .filter(Assessment.assessment_year == year)
-            .count()
-        )
+        total_count = db.query(Assessment).filter(Assessment.assessment_year == year).count()
 
         # Publish the year
-        year_record = (
-            db.query(AssessmentYear).filter(AssessmentYear.year == year).first()
-        )
+        year_record = db.query(AssessmentYear).filter(AssessmentYear.year == year).first()
         if year_record:
             year_record.is_published = True
             db.commit()

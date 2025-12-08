@@ -132,7 +132,8 @@ class ActivateYearResponse(BaseModel):
         None, description="The year that was deactivated (if any)"
     )
     assessments_created: int | None = Field(
-        None, description="Number of assessments created for BLGU users (if bulk creation triggered)"
+        None,
+        description="Number of assessments created for BLGU users (if bulk creation triggered)",
     )
 
 
@@ -159,8 +160,6 @@ class PublishYearResponse(BaseModel):
 class AccessibleYearsResponse(BaseModel):
     """Response schema for accessible years based on user role."""
 
-    years: list[int] = Field(
-        ..., description="List of year numbers accessible to the current user"
-    )
+    years: list[int] = Field(..., description="List of year numbers accessible to the current user")
     active_year: int | None = Field(None, description="Currently active year (if accessible)")
     role: str = Field(..., description="User role that determined access")

@@ -46,6 +46,10 @@ on:
       - main
       - develop
 
+permissions:
+  contents: read
+  actions: read  # Required to query workflow runs via gh api
+
 jobs:
   # ==========================================================================
   # Validate all required workflows passed before deployment
@@ -77,22 +81,39 @@ jobs:
         run: |
           echo "Checking CI workflow status for commit ${{ github.event.workflow_run.head_sha }}..."
 
-          # Get the CI workflow run for this commit
-          CI_RUN=$(gh api repos/${{ github.repository }}/actions/workflows/ci.yml/runs \
-            --jq ".workflow_runs[] | select(.head_sha == \"${{ github.event.workflow_run.head_sha }}\") | select(.event == \"push\" or .event == \"pull_request\") | .conclusion" \
-            --paginate | head -n 1)
+          # Wait up to 10 minutes for CI to complete (CI typically takes 5-15 min)
+          MAX_WAIT=600
+          ELAPSED=0
+          WAIT_INTERVAL=15
 
-          if [ -z "$CI_RUN" ]; then
-            echo "::warning::CI workflow run not found for this commit. This might be expected for manual builds."
-            echo "Skipping CI validation (manual deployment or CI not yet triggered)"
-          elif [ "$CI_RUN" != "success" ]; then
-            echo "::error::CI workflow did not succeed. Conclusion: $CI_RUN"
-            echo "Deployment blocked because CI checks failed."
-            echo "Please ensure all CI checks pass before deploying."
-            exit 1
-          else
-            echo "✅ CI workflow succeeded"
-          fi
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            # Get the CI workflow run for this commit
+            CI_RUN=$(gh api repos/${{ github.repository }}/actions/workflows/ci.yml/runs \
+              --jq ".workflow_runs[] | select(.head_sha == \"${{ github.event.workflow_run.head_sha }}\") | select(.event == \"push\" or .event == \"pull_request\") | .conclusion" \
+              --paginate | head -n 1)
+
+            if [ -n "$CI_RUN" ]; then
+              # CI run found and completed
+              if [ "$CI_RUN" != "success" ]; then
+                echo "::error::CI workflow did not succeed. Conclusion: $CI_RUN"
+                echo "Deployment blocked because CI checks failed."
+                echo "Please ensure all CI checks pass before deploying."
+                exit 1
+              else
+                echo "✅ CI workflow succeeded"
+                exit 0
+              fi
+            fi
+
+            echo "CI workflow not completed yet, waiting... ($ELAPSED/$MAX_WAIT seconds)"
+            sleep $WAIT_INTERVAL
+            ELAPSED=$((ELAPSED + WAIT_INTERVAL))
+          done
+
+          # Timeout reached
+          echo "::error::CI workflow did not complete within ${MAX_WAIT}s timeout."
+          echo "Deployment blocked - CI must complete before deploying."
+          exit 1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -100,25 +121,40 @@ jobs:
         run: |
           echo "Checking Security workflow status for commit ${{ github.event.workflow_run.head_sha }}..."
 
-          # Get the Security workflow run for this commit
-          SECURITY_RUN=$(gh api repos/${{ github.repository }}/actions/workflows/security.yml/runs \
-            --jq ".workflow_runs[] | select(.head_sha == \"${{ github.event.workflow_run.head_sha }}\") | select(.event == \"push\" or .event == \"pull_request\") | .conclusion" \
-            --paginate | head -n 1)
+          # Wait up to 5 minutes for security scan (usually faster than CI)
+          MAX_WAIT=300
+          ELAPSED=0
+          WAIT_INTERVAL=15
 
-          if [ -z "$SECURITY_RUN" ]; then
-            echo "::warning::Security workflow run not found for this commit."
-            echo "Skipping security validation (security scan may not have run yet)"
-          elif [ "$SECURITY_RUN" != "success" ] && [ "$SECURITY_RUN" != "neutral" ]; then
-            echo "::error::Security workflow did not succeed. Conclusion: $SECURITY_RUN"
-            echo "Deployment blocked because security scans failed."
-            echo "Please review security findings before deploying."
-            exit 1
-          else
-            echo "✅ Security workflow completed (status: ${SECURITY_RUN:-not found})"
-          fi
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            # Get the Security workflow run for this commit
+            SECURITY_RUN=$(gh api repos/${{ github.repository }}/actions/workflows/security.yml/runs \
+              --jq ".workflow_runs[] | select(.head_sha == \"${{ github.event.workflow_run.head_sha }}\") | select(.event == \"push\" or .event == \"pull_request\") | .conclusion" \
+              --paginate | head -n 1)
+
+            if [ -n "$SECURITY_RUN" ]; then
+              # Security run found and completed
+              if [ "$SECURITY_RUN" != "success" ] && [ "$SECURITY_RUN" != "neutral" ]; then
+                echo "::error::Security workflow did not succeed. Conclusion: $SECURITY_RUN"
+                echo "Deployment blocked because security scans failed."
+                echo "Please review security findings before deploying."
+                exit 1
+              else
+                echo "✅ Security workflow completed (status: $SECURITY_RUN)"
+                exit 0
+              fi
+            fi
+
+            echo "Security workflow not completed yet, waiting... ($ELAPSED/$MAX_WAIT seconds)"
+            sleep $WAIT_INTERVAL
+            ELAPSED=$((ELAPSED + WAIT_INTERVAL))
+          done
+
+          # Timeout - security is optional, warn but don't block
+          echo "::warning::Security workflow did not complete within ${MAX_WAIT}s timeout."
+          echo "Proceeding with deployment (security check timed out)"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: false
 
   # ==========================================================================
   # Determine which environment to deploy to

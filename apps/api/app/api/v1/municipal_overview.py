@@ -35,8 +35,11 @@ router = APIRouter(prefix="/municipal-overview", tags=["municipal-overview"])
     description="Returns all dashboard sections for the MLGOO municipal performance overview.",
 )
 async def get_municipal_dashboard(
-    assessment_cycle: str | None = Query(
-        None, description="Assessment cycle filter (defaults to most recent)"
+    year: int | None = Query(
+        None,
+        description="Assessment year filter (e.g., 2024, 2025). Defaults to active year if not provided.",
+        ge=2020,
+        le=2100,
     ),
     include_draft: bool = Query(
         False, description="Whether to include draft assessments in barangay list"
@@ -57,7 +60,7 @@ async def get_municipal_dashboard(
     - Barangay status list
 
     Args:
-        assessment_cycle: Optional cycle identifier
+        year: Optional year filter (e.g., 2024, 2025)
         include_draft: Include draft assessments in barangay list
         db: Database session
         current_user: Authenticated admin user
@@ -68,11 +71,11 @@ async def get_municipal_dashboard(
     try:
         logger.info(
             f"MLGOO {current_user.email} requesting municipal overview dashboard "
-            f"(cycle: {assessment_cycle or 'latest'})"
+            f"(year: {year or 'latest'})"
         )
 
         dashboard = municipal_analytics_service.get_municipal_overview_dashboard(
-            db, assessment_cycle, include_draft
+            db, year, include_draft
         )
 
         return dashboard
@@ -97,7 +100,12 @@ async def get_municipal_dashboard(
     description="Returns municipal-wide compliance statistics.",
 )
 async def get_compliance_summary(
-    assessment_cycle: str | None = Query(None, description="Assessment cycle filter"),
+    year: int | None = Query(
+        None,
+        description="Assessment year filter (e.g., 2024, 2025). Defaults to active year.",
+        ge=2020,
+        le=2100,
+    ),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin_user),
 ):
@@ -114,7 +122,7 @@ async def get_compliance_summary(
     - In-progress count
     """
     try:
-        return municipal_analytics_service.get_compliance_summary(db, assessment_cycle)
+        return municipal_analytics_service.get_compliance_summary(db, year)
     except Exception as e:
         logger.error(f"Error getting compliance summary: {e}", exc_info=True)
         raise HTTPException(
@@ -130,7 +138,12 @@ async def get_compliance_summary(
     description="Returns performance breakdown by governance area.",
 )
 async def get_governance_area_performance(
-    assessment_cycle: str | None = Query(None, description="Assessment cycle filter"),
+    year: int | None = Query(
+        None,
+        description="Assessment year filter (e.g., 2024, 2025). Defaults to active year.",
+        ge=2020,
+        le=2100,
+    ),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin_user),
 ):
@@ -143,7 +156,7 @@ async def get_governance_area_performance(
     along with common weaknesses identified from CapDev insights.
     """
     try:
-        return municipal_analytics_service.get_governance_area_performance(db, assessment_cycle)
+        return municipal_analytics_service.get_governance_area_performance(db, year)
     except Exception as e:
         logger.error(f"Error getting governance area performance: {e}", exc_info=True)
         raise HTTPException(
@@ -160,7 +173,12 @@ async def get_governance_area_performance(
 )
 async def get_top_failing_indicators(
     limit: int = Query(10, ge=1, le=50, description="Maximum number of indicators"),
-    assessment_cycle: str | None = Query(None, description="Assessment cycle filter"),
+    year: int | None = Query(
+        None,
+        description="Assessment year filter (e.g., 2024, 2025). Defaults to active year.",
+        ge=2020,
+        le=2100,
+    ),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin_user),
 ):
@@ -175,7 +193,7 @@ async def get_top_failing_indicators(
     - Common issues from assessor remarks
     """
     try:
-        return municipal_analytics_service.get_top_failing_indicators(db, limit, assessment_cycle)
+        return municipal_analytics_service.get_top_failing_indicators(db, limit, year)
     except Exception as e:
         logger.error(f"Error getting top failing indicators: {e}", exc_info=True)
         raise HTTPException(
@@ -191,7 +209,12 @@ async def get_top_failing_indicators(
     description="Returns aggregated capacity development needs across all barangays.",
 )
 async def get_capdev_summary(
-    assessment_cycle: str | None = Query(None, description="Assessment cycle filter"),
+    year: int | None = Query(
+        None,
+        description="Assessment year filter (e.g., 2024, 2025). Defaults to active year.",
+        ge=2020,
+        le=2100,
+    ),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin_user),
 ):
@@ -207,7 +230,7 @@ async def get_capdev_summary(
     - Skills gap analysis
     """
     try:
-        return municipal_analytics_service.get_aggregated_capdev_summary(db, assessment_cycle)
+        return municipal_analytics_service.get_aggregated_capdev_summary(db, year)
     except Exception as e:
         logger.error(f"Error getting CapDev summary: {e}", exc_info=True)
         raise HTTPException(
@@ -224,6 +247,12 @@ async def get_capdev_summary(
 )
 async def get_barangay_statuses(
     include_draft: bool = Query(False, description="Include draft assessments"),
+    year: int | None = Query(
+        None,
+        description="Assessment year filter (e.g., 2024, 2025). Defaults to active year.",
+        ge=2020,
+        le=2100,
+    ),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin_user),
 ):
@@ -239,7 +268,7 @@ async def get_barangay_statuses(
     - CapDev insights availability
     """
     try:
-        return municipal_analytics_service.get_barangay_status_list(db, include_draft)
+        return municipal_analytics_service.get_barangay_status_list(db, include_draft, year)
     except Exception as e:
         logger.error(f"Error getting barangay statuses: {e}", exc_info=True)
         raise HTTPException(

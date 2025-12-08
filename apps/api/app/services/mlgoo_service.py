@@ -2,6 +2,7 @@
 # Business logic for MLGOO (Municipal Local Government Operations Officer) features
 # Handles final approval workflow, RE-calibration, and grace period management
 # Updated: Added MOV files to assessment details for recalibration review
+# Updated: Triggers BBI calculation when assessment is approved (COMPLETED status)
 
 import logging
 from datetime import datetime, timedelta
@@ -17,6 +18,7 @@ from app.db.models.assessment import (
 )
 from app.db.models.governance_area import Indicator
 from app.db.models.user import User
+from app.services.bbi_service import bbi_service
 
 
 class MLGOOService:
@@ -187,6 +189,20 @@ class MLGOOService:
 
         # Clear any RE-calibration flags if set
         assessment.is_mlgoo_recalibration = False
+
+        # Calculate BBI compliance when assessment reaches COMPLETED status
+        # This calculates the BBI functionality for all 7 BBIs based on validator decisions
+        try:
+            bbi_results = bbi_service.calculate_all_bbi_compliance(db, assessment)
+            self.logger.info(
+                f"Calculated BBI compliance for assessment {assessment_id}: "
+                f"{len(bbi_results)} BBIs processed"
+            )
+        except Exception as e:
+            self.logger.error(
+                f"Failed to calculate BBI compliance for assessment {assessment_id}: {e}"
+            )
+            # Don't fail the approval if BBI calculation fails
 
         db.commit()
         db.refresh(assessment)

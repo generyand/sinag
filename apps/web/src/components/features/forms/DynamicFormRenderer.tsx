@@ -20,6 +20,7 @@ import {
   useGetAssessmentsAssessmentIdAnswers,
   usePostAssessmentsAssessmentIdAnswers,
   useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles,
+  useGetAssessmentsMyAssessment,
 } from "@sinag/shared";
 import { isFieldRequired } from "@/lib/forms/formSchemaParser";
 import { classifyError } from "@/lib/error-utils";
@@ -56,6 +57,8 @@ interface DynamicFormRendererProps {
   isLocked?: boolean;
   /** Epic 5.0: MOV annotations for this indicator (for rework workflow) */
   movAnnotations?: any[];
+  /** Epic 5.0: Rework comments for this indicator from dashboard (assessor feedback) */
+  reworkComments?: any[];
   /** Navigation: Current indicator code */
   currentCode?: string;
   /** Navigation: Current position in the assessment */
@@ -81,6 +84,7 @@ export function DynamicFormRenderer({
   isLoading = false,
   isLocked = false,
   movAnnotations = [],
+  reworkComments = [],
   currentCode,
   currentPosition,
   totalIndicators,
@@ -116,15 +120,110 @@ export function DynamicFormRenderer({
     } as any
   );
 
+  // Fetch assessment details to get status and rework timestamp
+  const { data: myAssessmentData } = useGetAssessmentsMyAssessment({
+    query: {
+      cacheTime: 0,
+      staleTime: 0,
+    } as any,
+  } as any);
+
+  // Get rework status and timestamp
+  const assessmentData = myAssessmentData as any;
+  const normalizedStatus = (assessmentData?.assessment?.status || "").toUpperCase();
+  const isReworkStatus = normalizedStatus === "REWORK" || normalizedStatus === "NEEDS_REWORK";
+  const reworkRequestedAt = assessmentData?.assessment?.rework_requested_at;
+
+  // Check if THIS specific indicator requires rework (has assessor feedback)
+  // Indicators need rework if they have:
+  // 1. Rework comments from dashboard API (most reliable - text feedback from assessor)
+  // 2. OR MOV annotations (highlight/comments on files)
+  // Indicators WITHOUT feedback should keep their completion status unchanged
+  const indicatorRequiresRework = useMemo(() => {
+    // Check reworkComments prop (from dashboard API - most reliable source)
+    // The dashboard API correctly returns rework_comments for this indicator
+    if (reworkComments && reworkComments.length > 0) {
+      console.log(
+        `[REWORK DEBUG] Indicator ${indicatorId} has ${reworkComments.length} rework comments from dashboard - REQUIRES REWORK`
+      );
+      return true;
+    }
+
+    // Check MOV annotations passed as prop
+    // movAnnotations prop contains annotations specifically for this indicator
+    if (movAnnotations && movAnnotations.length > 0) {
+      console.log(
+        `[REWORK DEBUG] Indicator ${indicatorId} has ${movAnnotations.length} MOV annotations - REQUIRES REWORK`
+      );
+      return true;
+    }
+
+    // No feedback found - this indicator doesn't require rework
+    console.log(
+      `[REWORK DEBUG] Indicator ${indicatorId} has NO feedback (0 comments, 0 annotations) - keeping original completion status`
+    );
+    return false;
+  }, [indicatorId, movAnnotations, reworkComments]);
+
   // Get active uploaded files (not deleted)
   const uploadedFiles = useMemo(() => {
     const allFiles = (filesResponse?.files || []) as MOVFileResponse[];
     return allFiles.filter((f) => !f.deleted_at);
   }, [filesResponse]);
 
+  // Get files that count towards completion (filtered by rework timestamp ONLY if indicator requires rework)
+  // Indicators WITHOUT assessor feedback keep all their files (no need to re-upload)
+  // Indicators WITH assessor feedback (requires_rework=true) must have files uploaded AFTER rework
+  const completionValidFiles = useMemo(() => {
+    // Only filter files if:
+    // 1. Assessment is in rework status
+    // 2. We have a rework timestamp
+    // 3. THIS specific indicator requires rework (has assessor feedback)
+    if (!isReworkStatus || !reworkRequestedAt || !indicatorRequiresRework) {
+      return uploadedFiles;
+    }
+    // During rework, only count files uploaded AFTER rework was requested
+    // This only applies to indicators that received assessor feedback
+    const reworkDate = new Date(reworkRequestedAt);
+    return uploadedFiles.filter((file: MOVFileResponse) => {
+      if (!file.uploaded_at) return false;
+      const uploadDate = new Date(file.uploaded_at);
+      return uploadDate >= reworkDate;
+    });
+  }, [uploadedFiles, isReworkStatus, reworkRequestedAt, indicatorRequiresRework]);
+
+  // Get backend's is_completed value for this indicator
+  const backendIsCompleted = useMemo(() => {
+    if (!assessmentData?.governance_areas || !indicatorId) return null;
+
+    for (const area of assessmentData.governance_areas) {
+      if (!area.indicators) continue;
+      for (const ind of area.indicators) {
+        if (String(ind.id) === String(indicatorId)) {
+          return ind.response?.is_completed === true || ind.is_completed === true;
+        }
+        if (ind.children) {
+          for (const child of ind.children) {
+            if (String(child.id) === String(indicatorId)) {
+              return child.response?.is_completed === true || child.is_completed === true;
+            }
+          }
+        }
+      }
+    }
+    return null;
+  }, [assessmentData, indicatorId]);
+
   // Calculate indicator completion status based on uploaded files
-  // This mirrors the logic in CompletionFeedbackPanel
+  // IMPORTANT: For indicators WITHOUT feedback during rework, trust backend's is_completed value
+  // Only recalculate for indicators that HAVE feedback and need rework
   const isIndicatorComplete = useMemo(() => {
+    // If in rework status but this indicator has NO feedback, trust backend's value
+    // This prevents field_id mismatch issues from incorrectly marking indicators incomplete
+    if (isReworkStatus && !indicatorRequiresRework && backendIsCompleted !== null) {
+      return backendIsCompleted;
+    }
+
     if (!formSchema) return false;
 
     // Extract fields from either root-level "fields" or nested "sections[].fields"
@@ -156,10 +255,11 @@ export function DynamicFormRenderer({
         : fields.filter((field) => isFieldRequired(field));
 
     // Helper function to check if a field is filled
+    // Uses completionValidFiles which is filtered by rework timestamp during rework status
     const isFieldFilled = (field: FormSchemaFieldsItem): boolean => {
       const isFileField = field.field_type === "file_upload";
       if (isFileField) {
-        return uploadedFiles.some(
+        return completionValidFiles.some(
           (file: MOVFileResponse) => file.field_id === field.field_id && !file.deleted_at
         );
       }
@@ -257,7 +357,13 @@ export function DynamicFormRenderer({
       }
       return true; // Non-file fields are handled by form validation
     });
-  }, [formSchema, uploadedFiles]);
+  }, [
+    formSchema,
+    completionValidFiles,
+    isReworkStatus,
+    indicatorRequiresRework,
+    backendIsCompleted,
+  ]);
 
   // Track previous completion status to avoid infinite loops
   const prevCompleteRef = useRef<boolean | null>(null);
@@ -417,6 +523,7 @@ export function DynamicFormRenderer({
             isLocked={isLocked}
             movAnnotations={movAnnotations}
             uploadedFiles={uploadedFiles}
+            completionValidFiles={completionValidFiles}
           />
         ))}
 
@@ -470,6 +577,8 @@ interface SectionRendererProps {
   isLocked: boolean;
   movAnnotations: any[];
   uploadedFiles: MOVFileResponse[];
+  /** Files that count towards completion (filtered by rework timestamp if in rework status) */
+  completionValidFiles: MOVFileResponse[];
 }
 
 /**
@@ -615,7 +724,9 @@ function SectionRenderer({
   indicatorId,
   isLocked,
   movAnnotations,
-  uploadedFiles,
+  // uploadedFiles is kept in props for potential future UI use (showing all files)
+  // but for completion tracking we use completionValidFiles (filtered by rework)
+  completionValidFiles,
 }: SectionRendererProps) {
   // Get visible fields for this section based on conditional logic
   const visibleFields = useMemo(() => {
@@ -635,8 +746,9 @@ function SectionRenderer({
   // Render with accordion if option groups detected
   if (optionGroups && optionGroups.length > 0) {
     // Calculate overall completion: need at least 1 option group complete
+    // Use completionValidFiles which is filtered by rework timestamp during rework status
     const completedGroups = optionGroups.filter((group) =>
-      isOptionGroupComplete(group, uploadedFiles)
+      isOptionGroupComplete(group, completionValidFiles)
     ).length;
     const overallComplete = completedGroups >= 1;
 
@@ -676,7 +788,8 @@ function SectionRenderer({
           {/* Accordion for option groups */}
           <Accordion type="single" collapsible className="space-y-4">
             {optionGroups.map((group) => {
-              const progress = getOptionGroupProgress(group, uploadedFiles);
+              // Use completionValidFiles which is filtered by rework timestamp during rework status
+              const progress = getOptionGroupProgress(group, completionValidFiles);
 
               return (
                 <AccordionItem

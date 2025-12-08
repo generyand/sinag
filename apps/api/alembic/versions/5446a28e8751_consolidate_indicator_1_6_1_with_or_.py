@@ -319,7 +319,9 @@ def upgrade() -> None:
     print("=" * 60)
 
 
-def _migrate_responses_raw(conn, old_indicator_id: int, old_code: str, new_indicator_id: int) -> None:
+def _migrate_responses_raw(
+    conn, old_indicator_id: int, old_code: str, new_indicator_id: int
+) -> None:
     """Migrate assessment responses from old child indicator to new parent indicator using raw SQL."""
     # Get responses for the old indicator
     result = conn.execute(
@@ -394,7 +396,9 @@ def _remap_field_ids(response_data: dict, child_code: str) -> dict:
     return remapped
 
 
-def _migrate_mov_files_raw(conn, old_indicator_id: int, new_indicator_id: int, assessment_id: int) -> None:
+def _migrate_mov_files_raw(
+    conn, old_indicator_id: int, new_indicator_id: int, assessment_id: int
+) -> None:
     """Migrate MOV files using raw SQL."""
     # Get MOV files for the old indicator
     result = conn.execute(

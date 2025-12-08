@@ -51,28 +51,38 @@ export default function IndicatorFormPage() {
   });
 
   // Epic 5.0: Fetch assessment status for locked state
-  const {
-    data: dashboardData,
-    isLoading: isLoadingDashboard,
-  } = useGetBlguDashboardAssessmentId(assessmentId, undefined, {
-    query: {
-      enabled: !!assessmentId,
-    } as any,
-  });
+  const { data: dashboardData, isLoading: isLoadingDashboard } = useGetBlguDashboardAssessmentId(
+    assessmentId,
+    undefined,
+    {
+      query: {
+        enabled: !!assessmentId,
+      } as any,
+    }
+  );
 
   // Determine if assessment is locked (SUBMITTED, IN_REVIEW, AWAITING_FINAL_VALIDATION, COMPLETED)
-  const isLocked = dashboardData?.status &&
-    ["SUBMITTED", "IN_REVIEW", "AWAITING_FINAL_VALIDATION", "COMPLETED", "SUBMITTED_FOR_REVIEW"].includes(dashboardData.status);
+  const isLocked =
+    dashboardData?.status &&
+    [
+      "SUBMITTED",
+      "IN_REVIEW",
+      "AWAITING_FINAL_VALIDATION",
+      "COMPLETED",
+      "SUBMITTED_FOR_REVIEW",
+    ].includes(dashboardData.status);
 
   // Epic 5.0: Rework workflow context
-  const reworkContext = useReworkContext(
-    dashboardData as any,
-    indicatorId,
-    assessmentId
-  );
+  const reworkContext = useReworkContext(dashboardData as any, indicatorId, assessmentId);
 
   // Epic 5.0: Get MOV annotations for this indicator (if in rework status)
   const movAnnotations = dashboardData?.mov_annotations_by_indicator?.[indicatorId] || [];
+
+  // Epic 5.0: Get rework comments for this indicator (if in rework status)
+  // Filter from dashboard's rework_comments array - these are the assessor's text feedback
+  const reworkComments = (dashboardData?.rework_comments || []).filter(
+    (comment: any) => comment.indicator_id === indicatorId
+  );
 
   // Handle save success - could redirect or show confirmation
   const handleSaveSuccess = () => {
@@ -109,12 +119,7 @@ export default function IndicatorFormPage() {
           <AlertCircle className="h-4 w-4" />
           <AlertDescription className="flex items-center justify-between">
             <span>Unable to load indicator information. Please try again.</span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetchIndicator()}
-              className="ml-4"
-            >
+            <Button variant="outline" size="sm" onClick={() => refetchIndicator()} className="ml-4">
               <RefreshCw className="mr-2 h-4 w-4" />
               Retry
             </Button>
@@ -141,12 +146,7 @@ export default function IndicatorFormPage() {
           <AlertCircle className="h-4 w-4" />
           <AlertDescription className="flex items-center justify-between">
             <span>Unable to load form. Please try again.</span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetchSchema()}
-              className="ml-4"
-            >
+            <Button variant="outline" size="sm" onClick={() => refetchSchema()} className="ml-4">
               <RefreshCw className="mr-2 h-4 w-4" />
               Retry
             </Button>
@@ -184,10 +184,7 @@ export default function IndicatorFormPage() {
       <div className="space-y-4">
         {/* Breadcrumb Navigation */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Link
-            href="/blgu/dashboard"
-            className="hover:text-foreground transition-colors"
-          >
+          <Link href="/blgu/dashboard" className="hover:text-foreground transition-colors">
             Dashboard
           </Link>
           <span>/</span>
@@ -239,6 +236,7 @@ export default function IndicatorFormPage() {
           onSaveSuccess={handleSaveSuccess}
           isLocked={isLocked || false}
           movAnnotations={movAnnotations}
+          reworkComments={reworkComments}
         />
       ) : (
         <Alert>
@@ -251,10 +249,7 @@ export default function IndicatorFormPage() {
 
       {/* Epic 5.0: Rework Progress Tracker - Navigation bar for rework workflow */}
       {reworkContext?.from_rework && (
-        <ReworkProgressTracker
-          progress={reworkContext.progress}
-          assessmentId={assessmentId}
-        />
+        <ReworkProgressTracker progress={reworkContext.progress} assessmentId={assessmentId} />
       )}
     </div>
   );

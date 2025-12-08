@@ -49,7 +49,7 @@ INDICATOR_1_4 = Indicator(
                     id="1_4_1_date_of_approval",
                     label="Date of Approval",
                     mov_description="Please supply the required information",
-                    required=True,
+                    required=False,  # Date fields are for assessor review, not BLGU submission
                     item_type="date_input",
                     display_order=2,
                 ),

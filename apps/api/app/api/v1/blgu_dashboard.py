@@ -278,6 +278,9 @@ def get_blgu_dashboard(
     # Note: Also check legacy NEEDS_REWORK for backward compatibility
     rework_comments = None
     mov_annotations_by_indicator = None
+    addressed_indicator_ids = (
+        None  # Indicators with feedback that have been re-addressed with new uploads
+    )
     if assessment.status in [AssessmentStatus.REWORK, AssessmentStatus.NEEDS_REWORK]:
         # Collect all feedback comments from all responses (excluding internal notes)
         comments_list = []
@@ -361,6 +364,37 @@ def get_blgu_dashboard(
         mov_annotations_by_indicator = (
             dict(annotations_by_indicator_dict) if annotations_by_indicator_dict else None
         )
+
+        # Epic 5.0: Calculate addressed_indicator_ids - indicators with feedback that have new uploads
+        # This tells the frontend which rework indicators have been re-addressed by BLGU
+        addressed_indicator_ids = []
+        rework_requested_at = assessment.rework_requested_at
+
+        if rework_requested_at:
+            # Get all indicator IDs that have feedback (comments or annotations)
+            feedback_indicator_ids = set()
+
+            # From comments
+            for comment_data in comments_list:
+                if comment_data.get("indicator_id"):
+                    feedback_indicator_ids.add(comment_data["indicator_id"])
+
+            # From annotations
+            for indicator_id in annotations_by_indicator_dict.keys():
+                feedback_indicator_ids.add(indicator_id)
+
+            # Check which feedback indicators have new files uploaded after rework_requested_at
+            for indicator_id in feedback_indicator_ids:
+                # Check if there are any MOV files uploaded after rework_requested_at
+                has_new_files = any(
+                    mf.indicator_id == indicator_id
+                    and mf.uploaded_at
+                    and mf.uploaded_at > rework_requested_at
+                    and mf.deleted_at is None  # Not soft-deleted
+                    for mf in assessment.mov_files
+                )
+                if has_new_files:
+                    addressed_indicator_ids.append(indicator_id)
 
         # SECOND PASS: Update mov_annotation_count in governance_area_groups
         # Now that we have annotations_by_indicator_dict, update the counts
@@ -471,10 +505,13 @@ def get_blgu_dashboard(
                         )
 
                     for ind_sum in lang_summary.get("indicator_summaries", []):
+                        indicator_name = ind_sum.get("indicator_name", "")
+                        if year_resolver:
+                            indicator_name = year_resolver.resolve_string(indicator_name)
                         combined_indicator_summaries.append(
                             AISummaryIndicator(
                                 indicator_id=ind_sum.get("indicator_id", 0),
-                                indicator_name=ind_sum.get("indicator_name", ""),
+                                indicator_name=indicator_name,
                                 key_issues=ind_sum.get("key_issues", []),
                                 suggested_actions=ind_sum.get("suggested_actions", []),
                                 affected_movs=ind_sum.get("affected_movs", []),
@@ -531,10 +568,13 @@ def get_blgu_dashboard(
                 if lang_summary:
                     indicator_summaries = []
                     for ind_sum in lang_summary.get("indicator_summaries", []):
+                        indicator_name = ind_sum.get("indicator_name", "")
+                        if year_resolver:
+                            indicator_name = year_resolver.resolve_string(indicator_name)
                         indicator_summaries.append(
                             AISummaryIndicator(
                                 indicator_id=ind_sum.get("indicator_id", 0),
-                                indicator_name=ind_sum.get("indicator_name", ""),
+                                indicator_name=indicator_name,
                                 key_issues=ind_sum.get("key_issues", []),
                                 suggested_actions=ind_sum.get("suggested_actions", []),
                                 affected_movs=ind_sum.get("affected_movs", []),
@@ -592,10 +632,13 @@ def get_blgu_dashboard(
                 if lang_summary:
                     indicator_summaries = []
                     for ind_sum in lang_summary.get("indicator_summaries", []):
+                        indicator_name = ind_sum.get("indicator_name", "")
+                        if year_resolver:
+                            indicator_name = year_resolver.resolve_string(indicator_name)
                         indicator_summaries.append(
                             AISummaryIndicator(
                                 indicator_id=ind_sum.get("indicator_id", 0),
-                                indicator_name=ind_sum.get("indicator_name", ""),
+                                indicator_name=indicator_name,
                                 key_issues=ind_sum.get("key_issues", []),
                                 suggested_actions=ind_sum.get("suggested_actions", []),
                                 affected_movs=ind_sum.get("affected_movs", []),
@@ -822,6 +865,7 @@ def get_blgu_dashboard(
         "governance_areas": governance_areas_list,
         "rework_comments": rework_comments,
         "mov_annotations_by_indicator": mov_annotations_by_indicator,  # MOV annotations grouped by indicator
+        "addressed_indicator_ids": addressed_indicator_ids,  # Indicators with feedback that have new uploads after rework
         # AI Summary for rework/calibration guidance
         "ai_summary": ai_summary,
         "ai_summary_available_languages": ai_summary_available_languages,

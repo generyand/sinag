@@ -12,10 +12,7 @@ import {
   MobileNavButton,
   findIndicatorById,
 } from "@/components/features/assessments/tree-navigation";
-import {
-  useAssessmentValidation,
-  useCurrentAssessment,
-} from "@/hooks/useAssessment";
+import { useAssessmentValidation, useCurrentAssessment } from "@/hooks/useAssessment";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -23,12 +20,7 @@ import { useGetBlguDashboardAssessmentId } from "@sinag/shared";
 
 export default function BLGUAssessmentsPage() {
   const { isAuthenticated, user, token } = useAuthStore();
-  const {
-    data: assessment,
-    updateAssessmentData,
-    isLoading,
-    error,
-  } = useCurrentAssessment();
+  const { data: assessment, updateAssessmentData, isLoading, error } = useCurrentAssessment();
   const validation = useAssessmentValidation(assessment);
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -44,10 +36,13 @@ export default function BLGUAssessmentsPage() {
     }
   );
 
+  // Epic 5.0: Trust the backend's completion count
+  // The backend correctly tracks is_completed for indicators during rework.
+  // No frontend adjustment needed - just use the assessment as-is.
+  const reworkAwareAssessment = assessment;
+
   // Selected indicator state
-  const [selectedIndicatorId, setSelectedIndicatorId] = useState<string | null>(
-    null
-  );
+  const [selectedIndicatorId, setSelectedIndicatorId] = useState<string | null>(null);
 
   // Mobile drawer state
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
@@ -74,11 +69,7 @@ export default function BLGUAssessmentsPage() {
     params.set("indicator", indicatorId);
 
     // Use window.history.pushState to update URL without triggering scroll
-    window.history.pushState(
-      null,
-      "",
-      `/blgu/assessments?${params.toString()}`
-    );
+    window.history.pushState(null, "", `/blgu/assessments?${params.toString()}`);
   };
 
   // Show loading if not authenticated or if auth state is still loading
@@ -87,9 +78,7 @@ export default function BLGUAssessmentsPage() {
       <div className="flex items-center justify-center min-h-screen bg-[var(--background)]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--cityscape-yellow)] mx-auto mb-4"></div>
-          <p className="text-[var(--text-secondary)]">
-            Loading authentication...
-          </p>
+          <p className="text-[var(--text-secondary)]">Loading authentication...</p>
         </div>
       </div>
     );
@@ -105,7 +94,10 @@ export default function BLGUAssessmentsPage() {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[var(--background)]">
         <div className="text-center bg-[var(--card)] backdrop-blur-sm rounded-sm p-8 shadow-lg border border-[var(--border)]">
-          <div className="w-16 h-16 bg-red-100 rounded-sm flex items-center justify-center mx-auto mb-4" aria-hidden="true">
+          <div
+            className="w-16 h-16 bg-red-100 rounded-sm flex items-center justify-center mx-auto mb-4"
+            aria-hidden="true"
+          >
             <svg
               className="w-8 h-8 text-red-600"
               fill="none"
@@ -143,7 +135,10 @@ export default function BLGUAssessmentsPage() {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[var(--background)]">
         <div className="text-center bg-[var(--card)] backdrop-blur-sm rounded-sm p-8 shadow-lg border border-[var(--border)]">
-          <div className="w-16 h-16 bg-amber-100 rounded-sm flex items-center justify-center mx-auto mb-4" aria-hidden="true">
+          <div
+            className="w-16 h-16 bg-amber-100 rounded-sm flex items-center justify-center mx-auto mb-4"
+            aria-hidden="true"
+          >
             <svg
               className="w-8 h-8 text-amber-600"
               fill="none"
@@ -162,9 +157,7 @@ export default function BLGUAssessmentsPage() {
           <h3 className="text-xl font-semibold text-[var(--foreground)] mb-2">
             No Assessment Data Found
           </h3>
-          <p className="text-amber-600 mb-4">
-            Please try refreshing the page or contact support
-          </p>
+          <p className="text-amber-600 mb-4">Please try refreshing the page or contact support</p>
           <button
             onClick={() => window.location.reload()}
             className="px-6 py-2 bg-amber-600 text-white rounded-sm hover:bg-amber-700 transition-colors duration-200"
@@ -194,15 +187,21 @@ export default function BLGUAssessmentsPage() {
   const selectedIndicator = selectedIndicatorData?.indicator || null;
 
   // Calculate progress percentage for mobile button
+  // Use reworkAwareAssessment for correct count during rework status
+  const displayAssessment = reworkAwareAssessment || assessment;
   const progressPercentage =
-    assessment.totalIndicators > 0
+    displayAssessment.totalIndicators > 0
       ? Math.round(
-          (assessment.completedIndicators / assessment.totalIndicators) * 100
+          (displayAssessment.completedIndicators / displayAssessment.totalIndicators) * 100
         )
       : 0;
 
   return (
-    <div className="min-h-screen bg-[var(--background)] flex flex-col" role="application" aria-label="BLGU Assessment Form">
+    <div
+      className="min-h-screen bg-[var(--background)] flex flex-col"
+      role="application"
+      aria-label="BLGU Assessment Form"
+    >
       {/* Enhanced Locked Banner */}
       {isLocked && <AssessmentLockedBanner status={assessment.status} />}
 
@@ -210,7 +209,7 @@ export default function BLGUAssessmentsPage() {
       <header className="border-b border-[var(--border)] bg-[var(--card)]">
         <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <AssessmentHeader
-            assessment={assessment}
+            assessment={displayAssessment}
             validation={validation}
             isCalibrationRework={dashboardData?.is_calibration_rework === true}
             calibrationGovernanceAreaName={(dashboardData as any)?.calibration_governance_area_name}
@@ -221,7 +220,10 @@ export default function BLGUAssessmentsPage() {
       {/* Split Panel Layout */}
       <div className="flex-1 flex overflow-hidden">
         {/* Desktop: Left Sidebar Tree Navigation */}
-        <nav className="hidden lg:block w-48 xl:w-56 flex-shrink-0" aria-label="Assessment navigation sidebar">
+        <nav
+          className="hidden lg:block w-48 xl:w-56 flex-shrink-0"
+          aria-label="Assessment navigation sidebar"
+        >
           <TreeNavigator
             assessment={assessment}
             selectedIndicatorId={selectedIndicatorId}
@@ -253,10 +255,7 @@ export default function BLGUAssessmentsPage() {
       />
 
       {/* Mobile: Floating Action Button */}
-      <MobileNavButton
-        progress={progressPercentage}
-        onClick={() => setIsMobileDrawerOpen(true)}
-      />
+      <MobileNavButton progress={progressPercentage} onClick={() => setIsMobileDrawerOpen(true)} />
     </div>
   );
 }

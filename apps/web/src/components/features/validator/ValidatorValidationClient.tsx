@@ -1,25 +1,33 @@
 "use client";
 
-import { TreeNavigator } from '@/components/features/assessments/tree-navigation';
-import { StatusBadge } from '@/components/shared';
-import { ValidationPanelSkeleton } from '@/components/shared/skeletons';
-import { BBIPreviewPanel, BBIPreviewData } from './BBIPreviewPanel';
-import { Button } from '@/components/ui/button';
-import { useAuthStore } from '@/store/useAuthStore';
-import { useGetAssessorAssessmentsAssessmentId, usePostAssessorAssessmentResponsesResponseIdValidate, usePostAssessorAssessmentsAssessmentIdCalibrate, usePostAssessorAssessmentsAssessmentIdFinalize } from '@sinag/shared';
-import { useQueryClient } from '@tanstack/react-query';
-import { classifyError } from '@/lib/error-utils';
-import { ChevronLeft } from 'lucide-react';
-import dynamic from 'next/dynamic';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
-import { MiddleMovFilesPanel } from '../assessor/validation/MiddleMovFilesPanel';
+import { TreeNavigator } from "@/components/features/assessments/tree-navigation";
+import { StatusBadge } from "@/components/shared";
+import { ValidationPanelSkeleton } from "@/components/shared/skeletons";
+import { BBIPreviewPanel, BBIPreviewData } from "./BBIPreviewPanel";
+import { Button } from "@/components/ui/button";
+import { useAuthStore } from "@/store/useAuthStore";
+import {
+  useGetAssessorAssessmentsAssessmentId,
+  usePostAssessorAssessmentResponsesResponseIdValidate,
+  usePostAssessorAssessmentsAssessmentIdCalibrate,
+  usePostAssessorAssessmentsAssessmentIdFinalize,
+} from "@sinag/shared";
+import { useQueryClient } from "@tanstack/react-query";
+import { classifyError } from "@/lib/error-utils";
+import { ChevronLeft } from "lucide-react";
+import dynamic from "next/dynamic";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { MiddleMovFilesPanel } from "../assessor/validation/MiddleMovFilesPanel";
 
 // Lazy load heavy RightAssessorPanel component (1400+ LOC)
 const RightAssessorPanel = dynamic(
-  () => import('../assessor/validation/RightAssessorPanel').then(mod => ({ default: mod.RightAssessorPanel })),
+  () =>
+    import("../assessor/validation/RightAssessorPanel").then((mod) => ({
+      default: mod.RightAssessorPanel,
+    })),
   {
     loading: () => <ValidationPanelSkeleton />,
     ssr: false,
@@ -36,8 +44,8 @@ type AnyRecord = Record<string, any>;
  * Sort indicator codes numerically (e.g., 1.1.1, 1.1.2, 1.2.1, etc.)
  */
 function sortIndicatorCode(a: string, b: string): number {
-  const partsA = a.split('.').map(Number);
-  const partsB = b.split('.').map(Number);
+  const partsA = a.split(".").map(Number);
+  const partsB = b.split(".").map(Number);
 
   for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
     const numA = partsA[i] ?? 0;
@@ -59,7 +67,9 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
 
   // All hooks must be called before any conditional returns
   const [selectedIndicatorId, setSelectedIndicatorId] = useState<string | null>(null);
-  const [form, setForm] = useState<Record<number, { status?: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string }>>({});
+  const [form, setForm] = useState<
+    Record<number, { status?: "Pass" | "Fail" | "Conditional"; publicComment?: string }>
+  >({});
   const [expandedId, setExpandedId] = useState<number | null>(null);
   // Store checklist state externally to persist across indicator navigation
   const [checklistState, setChecklistState] = useState<Record<string, any>>({});
@@ -87,7 +97,10 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       const core = (assessment.assessment as AnyRecord) ?? assessment;
       const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
 
-      const initialForm: Record<number, { status?: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string }> = {};
+      const initialForm: Record<
+        number,
+        { status?: "Pass" | "Fail" | "Conditional"; publicComment?: string }
+      > = {};
 
       for (const resp of responses) {
         // Load validation_status from database if it exists
@@ -96,22 +109,26 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
         if (validationStatus) {
           // Map database status (uppercase: PASS, FAIL, CONDITIONAL) to form status (title case: Pass, Fail, Conditional)
           const upperStatus = String(validationStatus).toUpperCase();
-          const status = upperStatus === 'PASS' ? 'Pass'
-            : upperStatus === 'FAIL' ? 'Fail'
-            : upperStatus === 'CONDITIONAL' ? 'Conditional'
-            : undefined;
+          const status =
+            upperStatus === "PASS"
+              ? "Pass"
+              : upperStatus === "FAIL"
+                ? "Fail"
+                : upperStatus === "CONDITIONAL"
+                  ? "Conditional"
+                  : undefined;
 
           // Load public comment from feedback_comments (latest validation comment)
           const feedbackComments = resp.feedback_comments || [];
           const validationComments = feedbackComments.filter(
-            (fc: any) => fc.comment_type === 'validation' && !fc.is_internal_note
+            (fc: any) => fc.comment_type === "validation" && !fc.is_internal_note
           );
           validationComments.sort((a: any, b: any) => {
             const dateA = new Date(a.created_at || 0).getTime();
             const dateB = new Date(b.created_at || 0).getTime();
             return dateB - dateA; // DESC order
           });
-          const publicComment = validationComments[0]?.comment || '';
+          const publicComment = validationComments[0]?.comment || "";
 
           if (status) {
             initialForm[resp.id] = { status, publicComment };
@@ -139,10 +156,10 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
         const responseData = resp.response_data || {};
 
         // Load validator checklist data (validator_val_ prefix)
-        Object.keys(responseData).forEach(key => {
-          if (key.startsWith('validator_val_')) {
+        Object.keys(responseData).forEach((key) => {
+          if (key.startsWith("validator_val_")) {
             // Convert to checklist format: validator_val_item_123 → checklist_{responseId}_item_123
-            const fieldName = key.replace('validator_val_', '');
+            const fieldName = key.replace("validator_val_", "");
             const checklistKey = `checklist_${responseId}_${fieldName}`;
             initialChecklistState[checklistKey] = responseData[key];
           }
@@ -150,7 +167,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       }
 
       if (Object.keys(initialChecklistState).length > 0) {
-        console.log('[Validator] Loading saved checklist state:', initialChecklistState);
+        console.log("[Validator] Loading saved checklist state:", initialChecklistState);
         setChecklistState(initialChecklistState);
       }
     }
@@ -158,21 +175,27 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-7xl px-6 py-10 text-sm text-muted-foreground">Loading assessment…</div>
+      <div className="mx-auto max-w-7xl px-6 py-10 text-sm text-muted-foreground">
+        Loading assessment…
+      </div>
     );
   }
 
   if (isError || !data) {
     const errorInfo = classifyError(error);
-    const isNetworkError = errorInfo.type === 'network';
+    const isNetworkError = errorInfo.type === "network";
 
     return (
       <div className="mx-auto max-w-7xl px-6 py-10 text-sm">
-        <div className={`rounded-md border p-4 ${isNetworkError ? 'border-orange-200 bg-orange-50' : 'border-red-200 bg-red-50'}`}>
-          <div className={`font-medium mb-1 ${isNetworkError ? 'text-orange-700' : 'text-red-700'}`}>
+        <div
+          className={`rounded-md border p-4 ${isNetworkError ? "border-orange-200 bg-orange-50" : "border-red-200 bg-red-50"}`}
+        >
+          <div
+            className={`font-medium mb-1 ${isNetworkError ? "text-orange-700" : "text-red-700"}`}
+          >
             {errorInfo.title}
           </div>
-          <div className={`${isNetworkError ? 'text-orange-600' : 'text-red-600'}`}>
+          <div className={`${isNetworkError ? "text-orange-600" : "text-red-600"}`}>
             {errorInfo.message}
           </div>
         </div>
@@ -183,25 +206,29 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const assessment: AnyRecord = (data as unknown as AnyRecord) ?? {};
   const core = (assessment.assessment as AnyRecord) ?? assessment;
   const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
-  const barangayName: string = (core?.blgu_user?.barangay?.name
-    ?? core?.barangay?.name
-    ?? core?.barangay_name
-    ?? '') as string;
-  const governanceArea: string = (responses[0]?.indicator?.governance_area?.name
-    ?? core?.governance_area?.name
-    ?? core?.governance_area_name
-    ?? '') as string;
-  const cycleYear: string = String(core?.cycle_year ?? core?.year ?? '');
-  const statusText: string = core?.status ?? core?.assessment_status ?? '';
+  const barangayName: string = (core?.blgu_user?.barangay?.name ??
+    core?.barangay?.name ??
+    core?.barangay_name ??
+    "") as string;
+  const governanceArea: string = (responses[0]?.indicator?.governance_area?.name ??
+    core?.governance_area?.name ??
+    core?.governance_area_name ??
+    "") as string;
+  const cycleYear: string = String(core?.cycle_year ?? core?.year ?? "");
+  const statusText: string = core?.status ?? core?.assessment_status ?? "";
 
   // Check if THIS validator's area has already been calibrated (per-area limit)
   const validatorAreaId = currentUser?.validator_area_id;
   const calibratedAreaIds: number[] = (core?.calibrated_area_ids ?? []) as number[];
-  const calibrationAlreadyUsed = validatorAreaId ? calibratedAreaIds.includes(validatorAreaId) : false;
+  const calibrationAlreadyUsed = validatorAreaId
+    ? calibratedAreaIds.includes(validatorAreaId)
+    : false;
 
   // Get timestamps for MOV file separation (new vs old files)
   // These are passed to MiddleMovFilesPanel which determines per-indicator which timestamp to use
-  const calibrationRequestedAt: string | null = (core?.calibration_requested_at ?? null) as string | null;
+  const calibrationRequestedAt: string | null = (core?.calibration_requested_at ?? null) as
+    | string
+    | null;
   const reworkRequestedAt: string | null = (core?.rework_requested_at ?? null) as string | null;
   // Default label (MiddleMovFilesPanel will override based on indicator context)
   const separationLabel = calibrationRequestedAt ? "After Calibration" : "After Rework";
@@ -214,8 +241,8 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     governanceAreas: responses.reduce((acc: any[], resp: any) => {
       const indicator = resp.indicator || {};
       const area = indicator.governance_area || {};
-      const areaId = String(area.id || 'unknown');
-      const areaName = area.name || 'Unknown Area';
+      const areaId = String(area.id || "unknown");
+      const areaName = area.name || "Unknown Area";
       // Generate 2-letter code from area name for logo lookup (e.g., "Financial Administration" -> "FI")
       const areaCode = areaName.substring(0, 2).toUpperCase();
 
@@ -233,10 +260,10 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       existingArea.indicators.push({
         id: String(resp.id),
         code: indicator.indicator_code || indicator.code || String(resp.id),
-        name: indicator.name || 'Unnamed Indicator',
+        name: indicator.name || "Unnamed Indicator",
         // For validators: ONLY show completed if validator has made a decision in form state
         // Don't use database validation_status because that's the assessor's decision, not the validator's
-        status: form[resp.id]?.status ? 'completed' : 'not_started',
+        status: form[resp.id]?.status ? "completed" : "not_started",
       });
 
       // Sort indicators by code after adding
@@ -254,7 +281,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const missingRequiredComments = responses.filter((r) => {
     const v = form[r.id];
     if (!v?.status) return false;
-    if (v.status === 'Fail' || v.status === 'Conditional') {
+    if (v.status === "Fail" || v.status === "Conditional") {
       return !(v.publicComment && v.publicComment.trim().length > 0);
     }
     return false;
@@ -269,10 +296,10 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
 
         // Extract checklist data for this response
         const responseChecklistData: Record<string, any> = {};
-        Object.keys(checklistState).forEach(key => {
+        Object.keys(checklistState).forEach((key) => {
           if (key.startsWith(`checklist_${responseId}_`)) {
             // Convert to validator_val_ prefix for storage
-            const fieldName = key.replace(`checklist_${responseId}_`, '');
+            const fieldName = key.replace(`checklist_${responseId}_`, "");
             const prefixedFieldName = `validator_val_${fieldName}`;
             responseChecklistData[prefixedFieldName] = checklistState[key];
           }
@@ -291,17 +318,28 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
         }
         return null;
       })
-      .filter((x): x is { id: number; v: { status?: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string } | undefined; checklistData: Record<string, any> } => x !== null);
+      .filter(
+        (
+          x
+        ): x is {
+          id: number;
+          v: { status?: "Pass" | "Fail" | "Conditional"; publicComment?: string } | undefined;
+          checklistData: Record<string, any>;
+        } => x !== null
+      );
 
     if (payloads.length === 0) {
-      console.warn('No validation decisions to save');
-      toast.info('No changes to save', { duration: 2000 });
+      console.warn("No validation decisions to save");
+      toast.info("No changes to save", { duration: 2000 });
       return;
     }
 
     try {
       // Show loading toast
-      toast.loading(`Saving ${payloads.length} validation decision${payloads.length > 1 ? 's' : ''}...`, { id: 'save-draft-toast' });
+      toast.loading(
+        `Saving ${payloads.length} validation decision${payloads.length > 1 ? "s" : ""}...`,
+        { id: "save-draft-toast" }
+      );
 
       await Promise.all(
         payloads.map((p) =>
@@ -309,7 +347,9 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
             responseId: p.id,
             data: {
               // Convert to uppercase to match backend ValidationStatus enum (PASS, FAIL, CONDITIONAL)
-              validation_status: p.v?.status ? p.v.status.toUpperCase() as 'PASS' | 'FAIL' | 'CONDITIONAL' : undefined,
+              validation_status: p.v?.status
+                ? (p.v.status.toUpperCase() as "PASS" | "FAIL" | "CONDITIONAL")
+                : undefined,
               public_comment: p.v?.publicComment ?? null,
               // Include checklist data in response_data
               response_data: Object.keys(p.checklistData).length > 0 ? p.checklistData : undefined,
@@ -321,28 +361,31 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       await qc.invalidateQueries();
 
       // Dismiss loading and show success
-      toast.dismiss('save-draft-toast');
-      toast.success(`✅ Saved ${payloads.length} validation decision${payloads.length > 1 ? 's' : ''} as draft`, {
-        duration: 3000,
-      });
+      toast.dismiss("save-draft-toast");
+      toast.success(
+        `✅ Saved ${payloads.length} validation decision${payloads.length > 1 ? "s" : ""} as draft`,
+        {
+          duration: 3000,
+        }
+      );
     } catch (error) {
-      console.error('Error saving validation:', error);
-      toast.dismiss('save-draft-toast');
+      console.error("Error saving validation:", error);
+      toast.dismiss("save-draft-toast");
 
       const errorInfo = classifyError(error);
-      if (errorInfo.type === 'network') {
-        toast.error('Unable to save draft', {
-          description: 'Check your internet connection and try again.',
+      if (errorInfo.type === "network") {
+        toast.error("Unable to save draft", {
+          description: "Check your internet connection and try again.",
           duration: 5000,
         });
-      } else if (errorInfo.type === 'auth') {
-        toast.error('Session expired', {
-          description: 'Please log in again to save your work.',
+      } else if (errorInfo.type === "auth") {
+        toast.error("Session expired", {
+          description: "Please log in again to save your work.",
           duration: 5000,
         });
       } else {
-        toast.error('Failed to save draft', {
-          description: 'Please try again. If the problem persists, contact your MLGOO-DILG.',
+        toast.error("Failed to save draft", {
+          description: "Please try again. If the problem persists, contact your MLGOO-DILG.",
           duration: 5000,
         });
       }
@@ -353,76 +396,83 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const onFinalize = async () => {
     // Prevent double-clicking by checking if already in progress
     if (finalizeMut.isPending) {
-      console.log('Finalize already in progress, ignoring duplicate click');
+      console.log("Finalize already in progress, ignoring duplicate click");
       return;
     }
 
     // Show immediate feedback that the process started
-    toast.loading('Finalizing validation...', { id: 'finalize-toast' });
+    toast.loading("Finalizing validation...", { id: "finalize-toast" });
 
     try {
       // Save any pending changes first
-      console.log('Saving draft before finalize...');
+      console.log("Saving draft before finalize...");
       await onSaveDraft();
 
       // Then finalize
-      console.log('Finalizing assessment...');
-      const result = await finalizeMut.mutateAsync({ assessmentId }) as {
+      console.log("Finalizing assessment...");
+      const result = (await finalizeMut.mutateAsync({ assessmentId })) as {
         new_status?: string;
         already_finalized?: boolean;
       };
       await qc.invalidateQueries();
 
       // Dismiss loading toast
-      toast.dismiss('finalize-toast');
+      toast.dismiss("finalize-toast");
 
       // Handle already finalized case (idempotent response from backend)
       if (result?.already_finalized) {
-        toast.success('✅ Assessment already finalized and awaiting MLGOO approval.', {
+        toast.success("✅ Assessment already finalized and awaiting MLGOO approval.", {
           duration: 4000,
         });
-        router.push('/validator/submissions');
+        router.push("/validator/submissions");
         return;
       }
 
       // Check if assessment is fully complete or partially validated
-      const isFullyComplete = result?.new_status === 'AWAITING_MLGOO_APPROVAL';
+      const isFullyComplete = result?.new_status === "AWAITING_MLGOO_APPROVAL";
 
       if (isFullyComplete) {
-        toast.success('✅ Assessment fully validated! All governance areas are complete. The assessment is now ready for MLGOO review.', {
-          duration: 5000,
-        });
+        toast.success(
+          "✅ Assessment fully validated! All governance areas are complete. The assessment is now ready for MLGOO review.",
+          {
+            duration: 5000,
+          }
+        );
       } else {
-        toast.success('✅ Your governance area validation is complete! Other governance areas are still pending validation.', {
-          duration: 5000,
-        });
+        toast.success(
+          "✅ Your governance area validation is complete! Other governance areas are still pending validation.",
+          {
+            duration: 5000,
+          }
+        );
       }
 
       // Navigate back to submissions queue after successful finalization
-      router.push('/validator/submissions');
+      router.push("/validator/submissions");
     } catch (error: any) {
-      console.error('Finalization error:', error);
-      toast.dismiss('finalize-toast');
+      console.error("Finalization error:", error);
+      toast.dismiss("finalize-toast");
 
       const errorInfo = classifyError(error);
-      if (errorInfo.type === 'network') {
-        toast.error('Unable to finalize validation', {
-          description: 'Check your internet connection and try again. Your progress has been saved.',
+      if (errorInfo.type === "network") {
+        toast.error("Unable to finalize validation", {
+          description:
+            "Check your internet connection and try again. Your progress has been saved.",
           duration: 6000,
         });
-      } else if (errorInfo.type === 'auth') {
-        toast.error('Session expired', {
-          description: 'Please log in again to complete finalization.',
+      } else if (errorInfo.type === "auth") {
+        toast.error("Session expired", {
+          description: "Please log in again to complete finalization.",
           duration: 6000,
         });
-      } else if (errorInfo.type === 'validation') {
-        toast.error('Cannot finalize validation', {
+      } else if (errorInfo.type === "validation") {
+        toast.error("Cannot finalize validation", {
           description: errorInfo.message,
           duration: 6000,
         });
       } else {
-        toast.error('Finalization failed', {
-          description: 'Please try again. If the problem persists, contact your MLGOO-DILG.',
+        toast.error("Finalization failed", {
+          description: "Please try again. If the problem persists, contact your MLGOO-DILG.",
           duration: 6000,
         });
       }
@@ -431,14 +481,14 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
 
   const onCalibrate = async () => {
     // Show immediate feedback that the process started
-    toast.loading('Submitting for calibration...', { id: 'calibrate-toast' });
+    toast.loading("Submitting for calibration...", { id: "calibrate-toast" });
 
     try {
       // Save any pending changes first
       await onSaveDraft();
 
       // Then submit for calibration
-      const result = await calibrateMut.mutateAsync({ assessmentId }) as {
+      const result = (await calibrateMut.mutateAsync({ assessmentId })) as {
         message?: string;
         governance_area?: string;
         calibrated_indicators_count?: number;
@@ -446,40 +496,41 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       await qc.invalidateQueries();
 
       // Dismiss loading toast and show success
-      toast.dismiss('calibrate-toast');
+      toast.dismiss("calibrate-toast");
 
-      const message = result?.message ||
-        `Assessment submitted for calibration. ${result?.calibrated_indicators_count || 0} indicator(s) in ${result?.governance_area || 'your area'} marked for correction.`;
+      const message =
+        result?.message ||
+        `Assessment submitted for calibration. ${result?.calibrated_indicators_count || 0} indicator(s) in ${result?.governance_area || "your area"} marked for correction.`;
 
       toast.success(`✅ ${message}`, {
         duration: 5000,
       });
 
       // Navigate back to submissions queue after successful calibration
-      router.push('/validator/submissions');
+      router.push("/validator/submissions");
     } catch (error: any) {
-      console.error('Calibration error:', error);
-      toast.dismiss('calibrate-toast');
+      console.error("Calibration error:", error);
+      toast.dismiss("calibrate-toast");
 
       const errorInfo = classifyError(error);
-      if (errorInfo.type === 'network') {
-        toast.error('Unable to submit for calibration', {
-          description: 'Check your internet connection and try again.',
+      if (errorInfo.type === "network") {
+        toast.error("Unable to submit for calibration", {
+          description: "Check your internet connection and try again.",
           duration: 6000,
         });
-      } else if (errorInfo.type === 'auth') {
-        toast.error('Session expired', {
-          description: 'Please log in again to submit for calibration.',
+      } else if (errorInfo.type === "auth") {
+        toast.error("Session expired", {
+          description: "Please log in again to submit for calibration.",
           duration: 6000,
         });
-      } else if (errorInfo.type === 'validation') {
-        toast.error('Cannot submit for calibration', {
+      } else if (errorInfo.type === "validation") {
+        toast.error("Cannot submit for calibration", {
           description: errorInfo.message,
           duration: 6000,
         });
       } else {
-        toast.error('Calibration request failed', {
-          description: 'Please try again. If the problem persists, contact your MLGOO-DILG.',
+        toast.error("Calibration request failed", {
+          description: "Please try again. If the problem persists, contact your MLGOO-DILG.",
           duration: 6000,
         });
       }
@@ -498,7 +549,12 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       <div className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
         <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4 min-w-0">
-            <Button asChild variant="ghost" size="sm" className="shrink-0 gap-1 text-muted-foreground hover:text-foreground px-2">
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="shrink-0 gap-1 text-muted-foreground hover:text-foreground px-2"
+            >
               <Link href="/validator/submissions">
                 <ChevronLeft className="h-4 w-4" />
                 <span className="font-medium">Queue</span>
@@ -507,15 +563,20 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
             <div className="h-8 w-px bg-border shrink-0" />
             <div className="min-w-0 flex flex-col justify-center">
               <div className="text-sm font-bold text-foreground truncate leading-tight">
-                {barangayName} <span className="text-muted-foreground font-medium mx-1">/</span> {governanceArea}
+                {barangayName} <span className="text-muted-foreground font-medium mx-1">/</span>{" "}
+                {governanceArea}
               </div>
               <div className="text-xs text-muted-foreground truncate leading-tight mt-0.5">
-                Validator Assessment Review {cycleYear ? `• CY ${cycleYear}` : ''}
+                Validator Assessment Review {cycleYear ? `• CY ${cycleYear}` : ""}
               </div>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {statusText ? <div className="scale-90 origin-right"><StatusBadge status={statusText} /></div> : null}
+            {statusText ? (
+              <div className="scale-90 origin-right">
+                <StatusBadge status={statusText} />
+              </div>
+            ) : null}
             <Button
               variant="outline"
               size="sm"
@@ -568,8 +629,8 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                     setForm((prev) => ({
                       ...prev,
                       [id]: {
-                      ...prev[id],
-                      [field]: value,
+                        ...prev[id],
+                        [field]: value,
                       },
                     }));
                   }}
@@ -588,16 +649,17 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
               </div>
             </div>
           </div>
-
-          {/* BBI Preview Panel */}
-          <div className="mt-4">
-            <BBIPreviewPanel data={(data as any)?.bbi_preview as BBIPreviewData} />
-          </div>
         </div>
       </div>
 
-      {/* Bottom Progress Bar */}
-      <div className="sticky bottom-0 z-10 border-t border-[var(--border)] bg-card/80 backdrop-blur">
+      {/* Bottom Section: BBI Preview + Progress Bar */}
+      <div className="sticky bottom-0 z-10 border-t border-[var(--border)] bg-card/95 backdrop-blur">
+        {/* BBI Preview Panel - Now prominently placed above progress bar */}
+        <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 pt-3">
+          <BBIPreviewPanel data={(data as any)?.bbi_preview as BBIPreviewData} />
+        </div>
+
+        {/* Progress Bar */}
         <div className="relative max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="absolute inset-x-0 -top-[3px] h-[3px] bg-black/5">
             <div
@@ -607,7 +669,9 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
           </div>
           <div className="text-xs text-muted-foreground">
             Indicators Reviewed: {reviewed}/{total}
-            {missingRequiredComments > 0 ? ` • Missing required comments: ${missingRequiredComments}` : ''}
+            {missingRequiredComments > 0
+              ? ` • Missing required comments: ${missingRequiredComments}`
+              : ""}
           </div>
           <div className="flex flex-col sm:flex-row w-full sm:w-auto items-stretch sm:items-center gap-2 sm:gap-3">
             <Button
@@ -620,14 +684,30 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
             >
               {validateMut.isPending ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 inline-block"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Saving...
                 </>
               ) : (
-                'Save as Draft'
+                "Save as Draft"
               )}
             </Button>
             <Button
@@ -636,45 +716,79 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
               onClick={onCalibrate}
               disabled={calibrateMut.isPending || calibrationAlreadyUsed}
               className="w-full sm:w-auto text-white hover:opacity-90"
-              style={{ background: calibrationAlreadyUsed ? 'var(--muted)' : 'var(--cityscape-yellow)' }}
-              title={calibrationAlreadyUsed ? 'Calibration has already been used for your governance area (max 1 per area)' : undefined}
+              style={{
+                background: calibrationAlreadyUsed ? "var(--muted)" : "var(--cityscape-yellow)",
+              }}
+              title={
+                calibrationAlreadyUsed
+                  ? "Calibration has already been used for your governance area (max 1 per area)"
+                  : undefined
+              }
             >
               {calibrateMut.isPending ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Submitting...
                 </>
               ) : calibrationAlreadyUsed ? (
-                'Calibration Used'
+                "Calibration Used"
               ) : (
-                'Submit for Calibration'
+                "Submit for Calibration"
               )}
             </Button>
             <Button
               size="default"
               type="button"
               onClick={onFinalize}
-              disabled={
-                !allReviewed ||
-                missingRequiredComments > 0 ||
-                finalizeMut.isPending
-              }
+              disabled={!allReviewed || missingRequiredComments > 0 || finalizeMut.isPending}
               className="w-full sm:w-auto text-white hover:opacity-90"
-              style={{ background: 'var(--success)' }}
+              style={{ background: "var(--success)" }}
             >
               {finalizeMut.isPending ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Finalizing...
                 </>
               ) : (
-                'Finalize Validation'
+                "Finalize Validation"
               )}
             </Button>
           </div>

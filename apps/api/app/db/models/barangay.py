@@ -21,3 +21,4 @@ class Barangay(Base):
 
     users = relationship("User", back_populates="barangay")
     deadline_overrides = relationship("DeadlineOverride", back_populates="barangay")
+    bbi_results = relationship("BBIResult", back_populates="barangay", cascade="all, delete-orphan")

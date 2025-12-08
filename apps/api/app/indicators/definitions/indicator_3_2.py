@@ -61,7 +61,7 @@ INDICATOR_3_2 = Indicator(
                     label="Date of approval for the EO or similar issuance",
                     mov_description="Please supply the required information:",
                     item_type="date_input",
-                    required=True,
+                    required=False,  # Date fields are for assessor review, not BLGU submission
                     display_order=2,
                 ),
             ],

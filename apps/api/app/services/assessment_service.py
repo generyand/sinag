@@ -151,9 +151,7 @@ class AssessmentService:
 
         return query.first()
 
-    def get_all_assessments_for_blgu(
-        self, db: Session, blgu_user_id: int
-    ) -> list[Assessment]:
+    def get_all_assessments_for_blgu(self, db: Session, blgu_user_id: int) -> list[Assessment]:
         """
         Get all assessments for a BLGU user across all years.
 

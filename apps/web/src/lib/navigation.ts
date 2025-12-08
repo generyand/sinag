@@ -12,37 +12,38 @@ export interface NavItem {
 }
 
 export const mlgooNavigation: NavItem[] = [
-  { name: 'Dashboard', href: '/mlgoo/dashboard', icon: 'home' },
-  { name: 'Submission Queue', href: '/mlgoo/submissions', icon: 'clipboard' },
-  { name: 'GAR Reports', href: '/mlgoo/gar', icon: 'clipboard' },
-  { name: 'Analytics & Reports', href: '/analytics', icon: 'chart' },
-  { name: 'Assessment Cycles', href: '/mlgoo/cycles', icon: 'calendar' },
-  { name: 'User Management', href: '/user-management', icon: 'users' },
-  { name: 'System Settings', href: '/mlgoo/settings', icon: 'settings' },
-  { name: 'Profile', href: '/mlgoo/profile', icon: 'user' },
+  { name: "Dashboard", href: "/mlgoo/dashboard", icon: "home" },
+  { name: "Submission Queue", href: "/mlgoo/submissions", icon: "clipboard" },
+  { name: "GAR Reports", href: "/mlgoo/gar", icon: "clipboard" },
+  { name: "Analytics & Reports", href: "/analytics", icon: "chart" },
+  { name: "Assessment Cycles", href: "/mlgoo/cycles", icon: "calendar" },
+  { name: "User Management", href: "/user-management", icon: "users" },
+  { name: "System Settings", href: "/mlgoo/settings", icon: "settings" },
+  { name: "Profile", href: "/mlgoo/profile", icon: "user" },
 ];
 
 export const blguNavigation: NavItem[] = [
-  { name: 'Dashboard', href: '/blgu/dashboard', icon: 'home' },
-  { name: 'My Assessments', href: '/blgu/assessments', icon: 'clipboard' },
-  { name: 'Profile', href: '/blgu/profile', icon: 'user' },
+  { name: "Dashboard", href: "/blgu/dashboard", icon: "home" },
+  { name: "My Assessments", href: "/blgu/assessments", icon: "clipboard" },
+  { name: "Profile", href: "/blgu/profile", icon: "user" },
 ];
 
 export const assessorNavigation: NavItem[] = [
-  { name: 'Submissions Queue', href: '/assessor/submissions', icon: 'clipboard' },
-  { name: 'Analytics', href: '/assessor/analytics', icon: 'chart' },
-  { name: 'Profile', href: '/assessor/profile', icon: 'user' },
+  { name: "Submissions Queue", href: "/assessor/submissions", icon: "clipboard" },
+  { name: "Analytics", href: "/assessor/analytics", icon: "chart" },
+  { name: "Profile", href: "/assessor/profile", icon: "user" },
 ];
 
 export const validatorNavigation: NavItem[] = [
-  { name: 'Submissions Queue', href: '/validator/submissions', icon: 'clipboard' },
-  { name: 'Profile', href: '/validator/profile', icon: 'user' },
+  { name: "Submissions Queue", href: "/validator/submissions", icon: "clipboard" },
+  { name: "Analytics & Reports", href: "/analytics", icon: "chart" },
+  { name: "Profile", href: "/validator/profile", icon: "user" },
 ];
 
 export const katuparanNavigation: NavItem[] = [
-  { name: 'Dashboard', href: '/katuparan/dashboard', icon: 'home' },
-  { name: 'Reports', href: '/katuparan/reports', icon: 'clipboard' },
-  { name: 'Profile', href: '/katuparan/profile', icon: 'user' },
+  { name: "Dashboard", href: "/katuparan/dashboard", icon: "home" },
+  { name: "Reports", href: "/katuparan/reports", icon: "clipboard" },
+  { name: "Profile", href: "/katuparan/profile", icon: "user" },
 ];
 
 /**
@@ -67,14 +68,14 @@ export function getNavigationByRole(role: string | undefined): NavItem[] {
  */
 export function getDefaultDashboard(role: string | undefined): string {
   const dashboardMap: Record<string, string> = {
-    MLGOO_DILG: '/mlgoo/dashboard',
-    ASSESSOR: '/assessor/submissions',
-    VALIDATOR: '/validator/submissions',
-    KATUPARAN_CENTER_USER: '/katuparan/dashboard',
-    BLGU_USER: '/blgu/dashboard',
+    MLGOO_DILG: "/mlgoo/dashboard",
+    ASSESSOR: "/assessor/submissions",
+    VALIDATOR: "/validator/submissions",
+    KATUPARAN_CENTER_USER: "/katuparan/dashboard",
+    BLGU_USER: "/blgu/dashboard",
   };
 
-  return dashboardMap[role || 'BLGU_USER'] || '/blgu/dashboard';
+  return dashboardMap[role || "BLGU_USER"] || "/blgu/dashboard";
 }
 
 /**
@@ -82,12 +83,12 @@ export function getDefaultDashboard(role: string | undefined): string {
  */
 export function getPortalName(role: string | undefined): string {
   const portalMap: Record<string, string> = {
-    MLGOO_DILG: 'Admin Portal',
-    ASSESSOR: 'Assessor Portal',
-    VALIDATOR: 'Validator Portal',
-    KATUPARAN_CENTER_USER: 'Katuparan Center',
-    BLGU_USER: 'Barangay Portal',
+    MLGOO_DILG: "Admin Portal",
+    ASSESSOR: "Assessor Portal",
+    VALIDATOR: "Validator Portal",
+    KATUPARAN_CENTER_USER: "Katuparan Center",
+    BLGU_USER: "Barangay Portal",
   };
 
-  return portalMap[role || 'BLGU_USER'] || 'Barangay Portal';
+  return portalMap[role || "BLGU_USER"] || "Barangay Portal";
 }

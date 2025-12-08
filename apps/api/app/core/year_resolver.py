@@ -98,14 +98,11 @@ class YearPlaceholderResolver:
         Raises:
             ValueError: If no active assessment year configuration exists
         """
-        active_year = (
-            db.query(AssessmentYear).filter(AssessmentYear.is_active == True).first()
-        )
+        active_year = db.query(AssessmentYear).filter(AssessmentYear.is_active == True).first()
 
         if not active_year:
             raise ValueError(
-                "No active assessment year found. "
-                "Please activate an assessment year in the system."
+                "No active assessment year found. Please activate an assessment year in the system."
             )
 
         return cls(active_year.year)
@@ -124,14 +121,11 @@ class YearPlaceholderResolver:
         Raises:
             ValueError: If no active assessment year configuration exists
         """
-        active_year = (
-            db.query(AssessmentYear).filter(AssessmentYear.is_active == True).first()
-        )
+        active_year = db.query(AssessmentYear).filter(AssessmentYear.is_active == True).first()
 
         if not active_year:
             raise ValueError(
-                "No active assessment year found. "
-                "Please activate an assessment year in the system."
+                "No active assessment year found. Please activate an assessment year in the system."
             )
 
         return active_year.year

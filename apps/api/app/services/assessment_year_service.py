@@ -58,8 +58,7 @@ class AssessmentYearService:
         year_record = self.get_active_year(db)
         if not year_record:
             raise ValueError(
-                "No active assessment year found. "
-                "Please configure and activate an assessment year."
+                "No active assessment year found. Please configure and activate an assessment year."
             )
         return year_record.year
 
@@ -89,9 +88,7 @@ class AssessmentYearService:
         """
         return db.query(AssessmentYear).filter(AssessmentYear.id == year_id).first()
 
-    def get_all_years(
-        self, db: Session, include_unpublished: bool = False
-    ) -> list[AssessmentYear]:
+    def get_all_years(self, db: Session, include_unpublished: bool = False) -> list[AssessmentYear]:
         """
         Get all assessment year configurations.
 
@@ -107,7 +104,9 @@ class AssessmentYearService:
             query = query.filter(AssessmentYear.is_published == True)
         return query.order_by(AssessmentYear.year.desc()).all()
 
-    def list_years(self, db: Session, include_unpublished: bool = True) -> AssessmentYearListResponse:
+    def list_years(
+        self, db: Session, include_unpublished: bool = True
+    ) -> AssessmentYearListResponse:
         """
         Get all years as a list response with active year info.
 
@@ -170,6 +169,7 @@ class AssessmentYearService:
 
         elif user.role == UserRole.BLGU_USER:
             # BLGU users see all years they have assessments for
+            # PLUS the active year (so they can create their first assessment)
             from app.db.models.assessment import Assessment
 
             user_years = (
@@ -179,9 +179,14 @@ class AssessmentYearService:
                 .all()
             )
             years_list = sorted([y[0] for y in user_years], reverse=True)
+
+            # Always include active year so BLGU can create their first assessment
+            if active_year_num and active_year_num not in years_list:
+                years_list = sorted([active_year_num] + years_list, reverse=True)
+
             return AccessibleYearsResponse(
                 years=years_list,
-                active_year=active_year_num if active_year_num in years_list else None,
+                active_year=active_year_num,
                 role=user.role.value,
             )
 
@@ -241,8 +246,7 @@ class AssessmentYearService:
         existing = self.get_year_by_number(db, data.year)
         if existing:
             raise ValueError(
-                f"Assessment year {data.year} already exists. "
-                "Use update methods instead."
+                f"Assessment year {data.year} already exists. Use update methods instead."
             )
 
         year_record = AssessmentYear(
@@ -330,18 +334,12 @@ class AssessmentYearService:
             raise ValueError(f"Assessment year {year} not found.")
 
         if year_record.is_active:
-            raise ValueError(
-                f"Cannot delete active year {year}. Deactivate it first."
-            )
+            raise ValueError(f"Cannot delete active year {year}. Deactivate it first.")
 
         # Check for linked assessments
         from app.db.models.assessment import Assessment
 
-        assessment_count = (
-            db.query(Assessment)
-            .filter(Assessment.assessment_year == year)
-            .count()
-        )
+        assessment_count = db.query(Assessment).filter(Assessment.assessment_year == year).count()
         if assessment_count > 0:
             raise ValueError(
                 f"Cannot delete year {year}. "
@@ -388,10 +386,7 @@ class AssessmentYearService:
         """
         # Lock the target year record to prevent concurrent modifications
         year_record = (
-            db.query(AssessmentYear)
-            .filter(AssessmentYear.year == year)
-            .with_for_update()
-            .first()
+            db.query(AssessmentYear).filter(AssessmentYear.year == year).with_for_update().first()
         )
         if not year_record:
             raise ValueError(f"Assessment year {year} not found.")

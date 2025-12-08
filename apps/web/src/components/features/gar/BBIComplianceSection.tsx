@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * BBIComplianceSection Component
@@ -7,15 +7,16 @@
  * within the GAR (Governance Assessment Report) following the same
  * styling pattern as other GAR sections.
  *
- * Shows the 7 mandatory BBIs with their compliance ratings:
+ * Shows the 7 mandatory BBIs with their compliance ratings (4-tier system):
  * - HIGHLY_FUNCTIONAL: 75-100% (green)
  * - MODERATELY_FUNCTIONAL: 50-74% (yellow/amber)
- * - LOW_FUNCTIONAL: <50% (red)
+ * - LOW_FUNCTIONAL: 1-49% (orange)
+ * - NON_FUNCTIONAL: 0% (red)
  *
  * Per DILG MC 2024-417 guidelines.
  */
 
-import { Building2 } from 'lucide-react';
+import { Building2 } from "lucide-react";
 
 // BBI compliance types (matching backend schema)
 export interface SubIndicatorResult {
@@ -30,15 +31,18 @@ export interface BBIComplianceResult {
   bbi_id: number;
   bbi_name: string;
   bbi_abbreviation: string;
+  indicator_code?: string;
   governance_area_id: number;
   governance_area_name?: string;
   assessment_id: number;
+  barangay_id: number;
+  assessment_year: number;
   compliance_percentage: number;
   compliance_rating: string;
   sub_indicators_passed: number;
   sub_indicators_total: number;
   sub_indicator_results: SubIndicatorResult[];
-  calculation_date: string;
+  calculated_at: string;
 }
 
 export interface BBIComplianceSummary {
@@ -46,13 +50,15 @@ export interface BBIComplianceSummary {
   highly_functional_count: number;
   moderately_functional_count: number;
   low_functional_count: number;
+  non_functional_count: number;
   average_compliance_percentage: number;
 }
 
 export interface BBIComplianceData {
   assessment_id: number;
-  barangay_id?: number;
+  barangay_id: number;
   barangay_name?: string;
+  assessment_year: number;
   bbi_results: BBIComplianceResult[];
   summary: BBIComplianceSummary;
   calculated_at: string;
@@ -62,33 +68,33 @@ interface BBIComplianceSectionProps {
   data?: BBIComplianceData;
 }
 
-// Get rating color for the result bar
+// Get rating color for the result bar (4-tier system)
 function getRatingColor(rating: string): string {
   switch (rating) {
-    case 'HIGHLY_FUNCTIONAL':
-    case 'FUNCTIONAL':
-      return 'bg-green-500';
-    case 'MODERATELY_FUNCTIONAL':
-      return 'bg-yellow-400';
-    case 'LOW_FUNCTIONAL':
-    case 'NON_FUNCTIONAL':
+    case "HIGHLY_FUNCTIONAL":
+      return "bg-green-500";
+    case "MODERATELY_FUNCTIONAL":
+      return "bg-yellow-400";
+    case "LOW_FUNCTIONAL":
+      return "bg-orange-500";
+    case "NON_FUNCTIONAL":
     default:
-      return 'bg-red-500';
+      return "bg-red-500";
   }
 }
 
 // Get rating label for display
 function getRatingLabel(rating: string): string {
   switch (rating) {
-    case 'HIGHLY_FUNCTIONAL':
-    case 'FUNCTIONAL':
-      return 'Highly Functional';
-    case 'MODERATELY_FUNCTIONAL':
-      return 'Moderately Functional';
-    case 'LOW_FUNCTIONAL':
-    case 'NON_FUNCTIONAL':
+    case "HIGHLY_FUNCTIONAL":
+      return "Highly Functional";
+    case "MODERATELY_FUNCTIONAL":
+      return "Moderately Functional";
+    case "LOW_FUNCTIONAL":
+      return "Low Functional";
+    case "NON_FUNCTIONAL":
     default:
-      return 'Low Functional';
+      return "Non Functional";
   }
 }
 
@@ -124,9 +130,10 @@ export function BBIComplianceSection({ data }: BBIComplianceSectionProps) {
               RATING
               <br />
               <span className="text-xs font-normal">
-                (<span className="text-green-600">high</span>,{' '}
-                <span className="text-yellow-600">moderate</span>,{' '}
-                <span className="text-red-600">low</span>)
+                (<span className="text-green-600">high</span>,{" "}
+                <span className="text-yellow-600">mod</span>,{" "}
+                <span className="text-orange-600">low</span>,{" "}
+                <span className="text-red-600">non</span>)
               </span>
             </th>
           </tr>
@@ -161,9 +168,7 @@ export function BBIComplianceSection({ data }: BBIComplianceSectionProps) {
 
           {/* Overall BBI Result Row */}
           <tr className="bg-blue-100 dark:bg-blue-900/30 border-t-2 border-blue-500">
-            <td className="px-4 py-3 font-bold text-[var(--foreground)]">
-              AVERAGE COMPLIANCE
-            </td>
+            <td className="px-4 py-3 font-bold text-[var(--foreground)]">AVERAGE COMPLIANCE</td>
             <td className="px-4 py-3 text-center font-bold text-[var(--foreground)]">
               {Math.round(data.summary.average_compliance_percentage)}%
             </td>
@@ -171,10 +176,12 @@ export function BBIComplianceSection({ data }: BBIComplianceSectionProps) {
               <div
                 className={`h-8 w-full rounded-sm ${
                   data.summary.average_compliance_percentage >= 75
-                    ? 'bg-green-500'
+                    ? "bg-green-500"
                     : data.summary.average_compliance_percentage >= 50
-                    ? 'bg-yellow-400'
-                    : 'bg-red-500'
+                      ? "bg-yellow-400"
+                      : data.summary.average_compliance_percentage > 0
+                        ? "bg-orange-500"
+                        : "bg-red-500"
                 }`}
               />
             </td>
@@ -183,18 +190,22 @@ export function BBIComplianceSection({ data }: BBIComplianceSectionProps) {
       </table>
 
       {/* BBI Stats */}
-      <div className="px-4 py-3 bg-[var(--muted)]/10 flex items-center gap-6 text-sm border-t border-[var(--border)]">
+      <div className="px-4 py-3 bg-[var(--muted)]/10 flex flex-wrap items-center gap-4 text-sm border-t border-[var(--border)]">
         <span className="flex items-center gap-2">
           <span className="w-4 h-4 rounded-sm bg-green-500"></span>
-          Highly Functional: {data.summary.highly_functional_count}
+          Highly: {data.summary.highly_functional_count}
         </span>
         <span className="flex items-center gap-2">
           <span className="w-4 h-4 rounded-sm bg-yellow-400"></span>
-          Moderately Functional: {data.summary.moderately_functional_count}
+          Moderate: {data.summary.moderately_functional_count}
+        </span>
+        <span className="flex items-center gap-2">
+          <span className="w-4 h-4 rounded-sm bg-orange-500"></span>
+          Low: {data.summary.low_functional_count}
         </span>
         <span className="flex items-center gap-2">
           <span className="w-4 h-4 rounded-sm bg-red-500"></span>
-          Low Functional: {data.summary.low_functional_count}
+          Non: {data.summary.non_functional_count}
         </span>
       </div>
     </div>

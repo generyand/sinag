@@ -4,12 +4,13 @@
  * BBIComplianceCard Component
  *
  * Displays BBI (Barangay-based Institutions) compliance results
- * based on DILG MC 2024-417 guidelines.
+ * based on DILG MC 2024-417 guidelines (4-tier system).
  *
  * Shows the 7 mandatory BBIs with their compliance ratings:
  * - HIGHLY_FUNCTIONAL: 75-100% (green)
  * - MODERATELY_FUNCTIONAL: 50-74% (yellow/amber)
- * - LOW_FUNCTIONAL: <50% (red)
+ * - LOW_FUNCTIONAL: 1-49% (orange)
+ * - NON_FUNCTIONAL: 0% (red)
  *
  * Only displayed when assessment is COMPLETED.
  */
@@ -43,15 +44,18 @@ export interface BBIComplianceResult {
   bbi_id: number;
   bbi_name: string;
   bbi_abbreviation: string;
+  indicator_code?: string;
   governance_area_id: number;
   governance_area_name?: string;
   assessment_id: number;
+  barangay_id: number;
+  assessment_year: number;
   compliance_percentage: number;
   compliance_rating: string;
   sub_indicators_passed: number;
   sub_indicators_total: number;
   sub_indicator_results: SubIndicatorResult[];
-  calculation_date: string;
+  calculated_at: string;
 }
 
 export interface BBIComplianceSummary {
@@ -59,13 +63,15 @@ export interface BBIComplianceSummary {
   highly_functional_count: number;
   moderately_functional_count: number;
   low_functional_count: number;
+  non_functional_count: number;
   average_compliance_percentage: number;
 }
 
 export interface BBIComplianceData {
   assessment_id: number;
-  barangay_id?: number;
+  barangay_id: number;
   barangay_name?: string;
+  assessment_year: number;
   bbi_results: BBIComplianceResult[];
   summary: BBIComplianceSummary;
   calculated_at: string;
@@ -87,7 +93,7 @@ const BBIIcons: Record<string, React.ElementType> = {
   BADAC: Briefcase, // Barangay Anti-Drug Abuse Council
 };
 
-// Get rating color classes
+// Get rating color classes (4-tier system)
 function getRatingColor(rating: string): {
   bg: string;
   text: string;
@@ -97,7 +103,6 @@ function getRatingColor(rating: string): {
 } {
   switch (rating) {
     case "HIGHLY_FUNCTIONAL":
-    case "FUNCTIONAL":
       return {
         bg: "bg-green-100 dark:bg-green-950/30",
         text: "text-green-700 dark:text-green-300",
@@ -114,6 +119,13 @@ function getRatingColor(rating: string): {
         label: "Moderately Functional",
       };
     case "LOW_FUNCTIONAL":
+      return {
+        bg: "bg-orange-100 dark:bg-orange-950/30",
+        text: "text-orange-700 dark:text-orange-300",
+        border: "border-orange-200 dark:border-orange-800",
+        icon: AlertTriangle,
+        label: "Low Functional",
+      };
     case "NON_FUNCTIONAL":
     default:
       return {
@@ -121,7 +133,7 @@ function getRatingColor(rating: string): {
         text: "text-red-700 dark:text-red-300",
         border: "border-red-200 dark:border-red-800",
         icon: XCircle,
-        label: "Low Functional",
+        label: "Non Functional",
       };
   }
 }
@@ -150,12 +162,8 @@ function BBICard({ result }: { result: BBIComplianceResult }) {
             <Icon className="w-5 h-5" />
           </div>
           <div className="text-left">
-            <h4 className="font-medium text-[var(--foreground)]">
-              {result.bbi_abbreviation}
-            </h4>
-            <p className="text-xs text-[var(--text-secondary)] line-clamp-1">
-              {result.bbi_name}
-            </p>
+            <h4 className="font-medium text-[var(--foreground)]">{result.bbi_abbreviation}</h4>
+            <p className="text-xs text-[var(--text-secondary)] line-clamp-1">{result.bbi_name}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -168,13 +176,12 @@ function BBICard({ result }: { result: BBIComplianceResult }) {
             </div>
             <p className={`text-xs ${rating.text}`}>{rating.label}</p>
           </div>
-          {result.sub_indicator_results.length > 0 && (
-            isExpanded ? (
+          {result.sub_indicator_results.length > 0 &&
+            (isExpanded ? (
               <ChevronUp className="w-4 h-4 text-[var(--text-secondary)]" />
             ) : (
               <ChevronDown className="w-4 h-4 text-[var(--text-secondary)]" />
-            )
-          )}
+            ))}
         </div>
       </button>
 
@@ -186,10 +193,7 @@ function BBICard({ result }: { result: BBIComplianceResult }) {
           </p>
           <div className="space-y-1.5">
             {result.sub_indicator_results.map((sub, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between text-sm py-1"
-              >
+              <div key={index} className="flex items-center justify-between text-sm py-1">
                 <div className="flex items-center gap-2">
                   {sub.passed ? (
                     <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
@@ -198,9 +202,7 @@ function BBICard({ result }: { result: BBIComplianceResult }) {
                   )}
                   <span className="text-[var(--foreground)]">{sub.name}</span>
                 </div>
-                <span className="text-xs text-[var(--text-secondary)]">
-                  {sub.code}
-                </span>
+                <span className="text-xs text-[var(--text-secondary)]">{sub.code}</span>
               </div>
             ))}
           </div>
@@ -210,7 +212,7 @@ function BBICard({ result }: { result: BBIComplianceResult }) {
   );
 }
 
-// Summary Card
+// Summary Card (4-tier system)
 function SummaryCard({ summary }: { summary: BBIComplianceSummary }) {
   return (
     <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-4 mb-4">
@@ -220,30 +222,30 @@ function SummaryCard({ summary }: { summary: BBIComplianceSummary }) {
           {formatPercentage(summary.average_compliance_percentage)} avg
         </span>
       </div>
-      <div className="grid grid-cols-3 gap-3 text-center">
+      <div className="grid grid-cols-4 gap-2 text-center">
         <div className="bg-green-100 dark:bg-green-950/30 rounded-lg p-2">
           <p className="text-xl font-bold text-green-700 dark:text-green-300">
             {summary.highly_functional_count}
           </p>
-          <p className="text-xs text-green-600 dark:text-green-400">
-            Highly Functional
-          </p>
+          <p className="text-xs text-green-600 dark:text-green-400">Highly</p>
         </div>
         <div className="bg-amber-100 dark:bg-amber-950/30 rounded-lg p-2">
           <p className="text-xl font-bold text-amber-700 dark:text-amber-300">
             {summary.moderately_functional_count}
           </p>
-          <p className="text-xs text-amber-600 dark:text-amber-400">
-            Moderately Functional
+          <p className="text-xs text-amber-600 dark:text-amber-400">Moderate</p>
+        </div>
+        <div className="bg-orange-100 dark:bg-orange-950/30 rounded-lg p-2">
+          <p className="text-xl font-bold text-orange-700 dark:text-orange-300">
+            {summary.low_functional_count}
           </p>
+          <p className="text-xs text-orange-600 dark:text-orange-400">Low</p>
         </div>
         <div className="bg-red-100 dark:bg-red-950/30 rounded-lg p-2">
           <p className="text-xl font-bold text-red-700 dark:text-red-300">
-            {summary.low_functional_count}
+            {summary.non_functional_count}
           </p>
-          <p className="text-xs text-red-600 dark:text-red-400">
-            Low Functional
-          </p>
+          <p className="text-xs text-red-600 dark:text-red-400">Non</p>
         </div>
       </div>
     </div>

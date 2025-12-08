@@ -138,10 +138,14 @@ class Indicator(Base):
     # Year-based effectivity (for multi-year assessment support)
     # These fields control which assessment years this indicator applies to
     effective_from_year: Mapped[int | None] = mapped_column(
-        Integer, nullable=True, index=True,
+        Integer,
+        nullable=True,
+        index=True,
     )  # First assessment year this indicator applies (NULL = all years)
     effective_to_year: Mapped[int | None] = mapped_column(
-        Integer, nullable=True, index=True,
+        Integer,
+        nullable=True,
+        index=True,
     )  # Last assessment year this indicator applies (NULL = ongoing)
 
     # Timestamps

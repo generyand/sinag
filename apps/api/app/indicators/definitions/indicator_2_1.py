@@ -51,7 +51,7 @@ INDICATOR_2_1 = Indicator(
                     id="2_1_1_date",
                     label="Date of approval",
                     item_type="date_input",
-                    required=True,
+                    required=False,  # Date fields are for assessor review, not BLGU submission
                     display_order=2,
                 ),
             ],
