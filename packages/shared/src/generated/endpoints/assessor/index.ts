@@ -92,7 +92,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessorQueue>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessorQueue>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessorQueueQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessorQueue>>>
@@ -168,7 +168,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessorStats>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessorStats>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessorStatsQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessorStats>>>
@@ -486,7 +486,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessorAssessments$AssessmentId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessorAssessments$AssessmentId>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessorAssessmentsAssessmentIdQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessorAssessments$AssessmentId>>>
@@ -845,7 +845,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessorAnalytics>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessorAnalytics>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessorAnalyticsQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessorAnalytics>>>
@@ -987,7 +987,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(movFileId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessorMovs$MovFileIdAnnotations>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(movFileId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessorMovs$MovFileIdAnnotations>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessorMovsMovFileIdAnnotationsQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessorMovs$MovFileIdAnnotations>>>
@@ -1059,7 +1059,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessorAssessments$AssessmentIdAnnotations>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessorAssessments$AssessmentIdAnnotations>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessorAssessmentsAssessmentIdAnnotationsQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessorAssessments$AssessmentIdAnnotations>>>

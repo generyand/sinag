@@ -92,7 +92,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminAuditLogs>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminAuditLogs>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAdminAuditLogsQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminAuditLogs>>>
@@ -161,7 +161,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(logId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminAuditLogs$LogId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(logId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminAuditLogs$LogId>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAdminAuditLogsLogIdQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminAuditLogs$LogId>>>
@@ -233,7 +233,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(entityType && entityId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminAuditLogsEntity$EntityType$EntityId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(entityType && entityId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminAuditLogsEntity$EntityType$EntityId>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAdminAuditLogsEntityEntityTypeEntityIdQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminAuditLogsEntity$EntityType$EntityId>>>
@@ -304,7 +304,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminAuditLogsExport>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminAuditLogsExport>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAdminAuditLogsExportQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminAuditLogsExport>>>
@@ -439,7 +439,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminCycles>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminCycles>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAdminCyclesQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminCycles>>>
@@ -508,7 +508,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminCyclesActive>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminCyclesActive>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAdminCyclesActiveQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminCyclesActive>>>
@@ -643,7 +643,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminDeadlinesStatus>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminDeadlinesStatus>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAdminDeadlinesStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminDeadlinesStatus>>>
@@ -778,7 +778,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminDeadlinesOverrides>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminDeadlinesOverrides>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAdminDeadlinesOverridesQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminDeadlinesOverrides>>>
@@ -848,7 +848,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminDeadlinesOverridesExport>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminDeadlinesOverridesExport>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAdminDeadlinesOverridesExportQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminDeadlinesOverridesExport>>>
@@ -917,7 +917,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminSystemStatus>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminSystemStatus>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAdminSystemStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminSystemStatus>>>

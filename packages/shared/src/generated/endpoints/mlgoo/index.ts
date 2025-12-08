@@ -91,7 +91,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMlgooApprovalQueue>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMlgooApprovalQueue>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetMlgooApprovalQueueQueryResult = NonNullable<Awaited<ReturnType<typeof getMlgooApprovalQueue>>>
@@ -164,7 +164,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMlgooAssessments$AssessmentId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMlgooAssessments$AssessmentId>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetMlgooAssessmentsAssessmentIdQueryResult = NonNullable<Awaited<ReturnType<typeof getMlgooAssessments$AssessmentId>>>

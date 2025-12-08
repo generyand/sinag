@@ -80,7 +80,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCapdevAssessments$AssessmentId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCapdevAssessments$AssessmentId>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetCapdevAssessmentsAssessmentIdQueryResult = NonNullable<Awaited<ReturnType<typeof getCapdevAssessments$AssessmentId>>>
@@ -152,7 +152,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(assessmentId && language),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCapdevAssessments$AssessmentIdLanguage$Language>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(assessmentId && language),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCapdevAssessments$AssessmentIdLanguage$Language>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetCapdevAssessmentsAssessmentIdLanguageLanguageQueryResult = NonNullable<Awaited<ReturnType<typeof getCapdevAssessments$AssessmentIdLanguage$Language>>>
@@ -222,7 +222,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCapdevAssessments$AssessmentIdStatus>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCapdevAssessments$AssessmentIdStatus>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetCapdevAssessmentsAssessmentIdStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getCapdevAssessments$AssessmentIdStatus>>>

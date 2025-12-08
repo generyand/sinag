@@ -165,7 +165,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBbis>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBbis>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetBbisQueryResult = NonNullable<Awaited<ReturnType<typeof getBbis>>>
@@ -239,7 +239,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(bbiId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBbis$BbiId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(bbiId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBbis$BbiId>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetBbisBbiIdQueryResult = NonNullable<Awaited<ReturnType<typeof getBbis$BbiId>>>
@@ -529,7 +529,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBbisResultsAssessment$AssessmentId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBbisResultsAssessment$AssessmentId>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetBbisResultsAssessmentAssessmentIdQueryResult = NonNullable<Awaited<ReturnType<typeof getBbisResultsAssessment$AssessmentId>>>
@@ -608,7 +608,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBbisComplianceAssessment$AssessmentId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBbisComplianceAssessment$AssessmentId>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetBbisComplianceAssessmentAssessmentIdQueryResult = NonNullable<Awaited<ReturnType<typeof getBbisComplianceAssessment$AssessmentId>>>
@@ -768,7 +768,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(barangayId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBbisComplianceBarangay$BarangayId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(barangayId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBbisComplianceBarangay$BarangayId>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetBbisComplianceBarangayBarangayIdQueryResult = NonNullable<Awaited<ReturnType<typeof getBbisComplianceBarangay$BarangayId>>>

@@ -118,7 +118,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsDashboard>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsDashboard>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessmentsDashboardQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessmentsDashboard>>>
@@ -202,7 +202,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsMyAssessment>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsMyAssessment>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessmentsMyAssessmentQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessmentsMyAssessment>>>
@@ -277,7 +277,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(responseId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsResponses$ResponseId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(responseId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsResponses$ResponseId>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessmentsResponsesResponseIdQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessmentsResponses$ResponseId>>>
@@ -706,7 +706,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsList>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsList>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessmentsListQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessmentsList>>>
@@ -998,7 +998,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessments$AssessmentIdAnswers>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessments$AssessmentIdAnswers>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessmentsAssessmentIdAnswersQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessments$AssessmentIdAnswers>>>
@@ -1578,7 +1578,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessments$AssessmentIdSubmissionStatus>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessments$AssessmentIdSubmissionStatus>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessmentsAssessmentIdSubmissionStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessments$AssessmentIdSubmissionStatus>>>
@@ -1683,7 +1683,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessments$AssessmentIdReworkSummary>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessments$AssessmentIdReworkSummary>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessmentsAssessmentIdReworkSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessments$AssessmentIdReworkSummary>>>
@@ -1793,7 +1793,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessments$AssessmentIdCalibrationSummary>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessments$AssessmentIdCalibrationSummary>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessmentsAssessmentIdCalibrationSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessments$AssessmentIdCalibrationSummary>>>

@@ -91,8 +91,8 @@ export default defineConfig({
           useMutation: true,
           useInfinite: false,
           options: {
-            staleTime: 5 * 60 * 1000, // 5 minutes
-            refetchOnWindowFocus: false,
+            staleTime: 30 * 1000, // 30 seconds - allows faster invalidation after mutations
+            refetchOnWindowFocus: true, // Enable automatic refetch when user returns to tab
           },
         },
         operationName: (operation, route, verb) => {

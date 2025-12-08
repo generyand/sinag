@@ -184,7 +184,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIndicators>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIndicators>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetIndicatorsQueryResult = NonNullable<Awaited<ReturnType<typeof getIndicators>>>
@@ -558,7 +558,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(indicatorId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIndicators$IndicatorId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(indicatorId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIndicators$IndicatorId>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetIndicatorsIndicatorIdQueryResult = NonNullable<Awaited<ReturnType<typeof getIndicators$IndicatorId>>>
@@ -805,7 +805,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(indicatorId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIndicators$IndicatorIdHistory>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(indicatorId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIndicators$IndicatorIdHistory>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetIndicatorsIndicatorIdHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getIndicators$IndicatorIdHistory>>>
@@ -886,7 +886,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(indicatorId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIndicators$IndicatorIdFormSchema>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(indicatorId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIndicators$IndicatorIdFormSchema>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetIndicatorsIndicatorIdFormSchemaQueryResult = NonNullable<Awaited<ReturnType<typeof getIndicators$IndicatorIdFormSchema>>>
@@ -1006,7 +1006,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(governanceAreaId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsTree$GovernanceAreaId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(governanceAreaId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsTree$GovernanceAreaId>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetIndicatorsTreeGovernanceAreaIdQueryResult = NonNullable<Awaited<ReturnType<typeof getIndicatorsTree$GovernanceAreaId>>>
@@ -1183,7 +1183,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(indicatorCode),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCode>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(indicatorCode),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCode>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetIndicatorsCodeIndicatorCodeQueryResult = NonNullable<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCode>>>
@@ -1273,7 +1273,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(indicatorCode),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCodeTree>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(indicatorCode),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCodeTree>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetIndicatorsCodeIndicatorCodeTreeQueryResult = NonNullable<Awaited<ReturnType<typeof getIndicatorsCode$IndicatorCodeTree>>>

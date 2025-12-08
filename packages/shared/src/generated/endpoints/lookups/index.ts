@@ -74,7 +74,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLookupsGovernanceAreas>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLookupsGovernanceAreas>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetLookupsGovernanceAreasQueryResult = NonNullable<Awaited<ReturnType<typeof getLookupsGovernanceAreas>>>
@@ -144,7 +144,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLookupsBarangays>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLookupsBarangays>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetLookupsBarangaysQueryResult = NonNullable<Awaited<ReturnType<typeof getLookupsBarangays>>>
@@ -215,7 +215,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLookupsRoles>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLookupsRoles>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetLookupsRolesQueryResult = NonNullable<Awaited<ReturnType<typeof getLookupsRoles>>>

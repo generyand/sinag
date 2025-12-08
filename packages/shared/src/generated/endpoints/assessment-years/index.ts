@@ -86,7 +86,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentYears>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentYears>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessmentYearsQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessmentYears>>>
@@ -220,7 +220,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentYearsAccessible>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentYearsAccessible>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessmentYearsAccessibleQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessmentYearsAccessible>>>
@@ -289,7 +289,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentYearsSimple>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentYearsSimple>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessmentYearsSimpleQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessmentYearsSimple>>>
@@ -358,7 +358,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentYearsActive>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentYearsActive>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessmentYearsActiveQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessmentYearsActive>>>
@@ -427,7 +427,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentYearsActiveNumber>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentYearsActiveNumber>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessmentYearsActiveNumberQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessmentYearsActiveNumber>>>
@@ -496,7 +496,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(year),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentYears$Year>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(year),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentYears$Year>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessmentYearsYearQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessmentYears$Year>>>
@@ -946,7 +946,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(year),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentYears$YearPhase>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(year),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentYears$YearPhase>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessmentYearsYearPhaseQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessmentYears$YearPhase>>>

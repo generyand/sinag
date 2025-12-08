@@ -75,11 +75,11 @@ export default function BLGUDashboardPage() {
     {
       query: {
         enabled: isBLGU && effectiveYear !== null, // Only fetch for BLGU users when year is available
-        refetchOnWindowFocus: false, // Only refetch when explicitly invalidated
-        refetchOnMount: false, // Trust cache on remount
-        staleTime: 2 * 60 * 1000, // 2 minutes - data is fresh for this duration
+        refetchOnWindowFocus: true, // Refetch when user returns to tab for fresh status
+        refetchOnMount: true, // Fresh data on mount for accurate status
+        staleTime: 30 * 1000, // 30 seconds - shorter for faster invalidation after uploads
         gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
-      },
+      } as any,
     }
   );
 
@@ -94,17 +94,21 @@ export default function BLGUDashboardPage() {
     error: dashboardError,
     refetch,
     isFetching: isFetchingDashboard,
-  } = useGetBlguDashboardAssessmentId(assessmentId!, {
-    language: selectedLanguage,
-  }, {
-    query: {
-      enabled: !!assessmentId,
-      refetchOnWindowFocus: false, // Only refetch when explicitly invalidated
-      refetchOnMount: false, // Trust cache on remount
-      staleTime: 2 * 60 * 1000, // 2 minutes - data is fresh for this duration
-      gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+  } = useGetBlguDashboardAssessmentId(
+    assessmentId!,
+    {
+      language: selectedLanguage,
     },
-  });
+    {
+      query: {
+        enabled: !!assessmentId,
+        refetchOnWindowFocus: true, // Refetch when user returns for fresh status updates
+        refetchOnMount: true, // Fresh data on mount for accurate progress
+        staleTime: 30 * 1000, // 30 seconds - shorter for faster invalidation after uploads
+        gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+      } as any,
+    }
+  );
 
   // Handler for language change - refetches dashboard with new language
   const handleLanguageChange = useCallback((lang: string) => {
@@ -211,7 +215,9 @@ export default function BLGUDashboardPage() {
                   currentStatus={dashboardData.status}
                   isCalibrationRework={dashboardData.is_calibration_rework || false}
                   isMlgooRecalibration={(dashboardData as any).is_mlgoo_recalibration || false}
-                  mlgooRecalibrationRequestedAt={(dashboardData as any).mlgoo_recalibration_requested_at}
+                  mlgooRecalibrationRequestedAt={
+                    (dashboardData as any).mlgoo_recalibration_requested_at
+                  }
                   reworkCount={dashboardData.rework_count}
                 />
               </div>
@@ -234,7 +240,9 @@ export default function BLGUDashboardPage() {
                     currentStatus={dashboardData.status}
                     isCalibrationRework={dashboardData.is_calibration_rework || false}
                     isMlgooRecalibration={(dashboardData as any).is_mlgoo_recalibration || false}
-                    mlgooRecalibrationRequestedAt={(dashboardData as any).mlgoo_recalibration_requested_at}
+                    mlgooRecalibrationRequestedAt={
+                      (dashboardData as any).mlgoo_recalibration_requested_at
+                    }
                     reworkCount={dashboardData.rework_count}
                   />
                 </div>

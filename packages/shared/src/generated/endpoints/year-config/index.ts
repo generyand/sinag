@@ -87,7 +87,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getYearConfigConfigs>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getYearConfigConfigs>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetYearConfigConfigsQueryResult = NonNullable<Awaited<ReturnType<typeof getYearConfigConfigs>>>
@@ -221,7 +221,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getYearConfigCurrent>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getYearConfigCurrent>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetYearConfigCurrentQueryResult = NonNullable<Awaited<ReturnType<typeof getYearConfigCurrent>>>
@@ -290,7 +290,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getYearConfigCurrentYear>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getYearConfigCurrentYear>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetYearConfigCurrentYearQueryResult = NonNullable<Awaited<ReturnType<typeof getYearConfigCurrentYear>>>
@@ -488,7 +488,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getYearConfigPlaceholders>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getYearConfigPlaceholders>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetYearConfigPlaceholdersQueryResult = NonNullable<Awaited<ReturnType<typeof getYearConfigPlaceholders>>>
@@ -687,7 +687,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getYearConfigAssessments$AssessmentIdSnapshots>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getYearConfigAssessments$AssessmentIdSnapshots>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetYearConfigAssessmentsAssessmentIdSnapshotsQueryResult = NonNullable<Awaited<ReturnType<typeof getYearConfigAssessments$AssessmentIdSnapshots>>>
@@ -759,7 +759,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(assessmentId && indicatorId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getYearConfigAssessments$AssessmentIdSnapshots$IndicatorId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(assessmentId && indicatorId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getYearConfigAssessments$AssessmentIdSnapshots$IndicatorId>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetYearConfigAssessmentsAssessmentIdSnapshotsIndicatorIdQueryResult = NonNullable<Awaited<ReturnType<typeof getYearConfigAssessments$AssessmentIdSnapshots$IndicatorId>>>
