@@ -125,8 +125,9 @@ export default function AnalyticsPage() {
       setUser(userQuery.data);
     }
 
-    // Check if user has MLGOO_DILG role
-    if (userQuery.data && userQuery.data.role !== "MLGOO_DILG") {
+    // Check if user has MLGOO_DILG or VALIDATOR role (both can access analytics)
+    const allowedRoles = ["MLGOO_DILG", "VALIDATOR"];
+    if (userQuery.data && !allowedRoles.includes(userQuery.data.role)) {
       router.replace("/");
     }
   }, [userQuery.data, user, setUser, router]);
@@ -143,8 +144,9 @@ export default function AnalyticsPage() {
     );
   }
 
-  // Check RBAC - only MLGOO_DILG can access
-  if (user && user.role !== "MLGOO_DILG") {
+  // Check RBAC - MLGOO_DILG and VALIDATOR can access
+  const analyticsAllowedRoles = ["MLGOO_DILG", "VALIDATOR"];
+  if (user && !analyticsAllowedRoles.includes(user.role)) {
     return (
       <div className="min-h-screen bg-[var(--background)] p-8">
         <div className="max-w-7xl mx-auto">
@@ -152,8 +154,8 @@ export default function AnalyticsPage() {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Access Denied</AlertTitle>
             <AlertDescription>
-              You do not have permission to access this page. Only MLGOO-DILG users can view the
-              analytics dashboard.
+              You do not have permission to access this page. Only MLGOO-DILG and Validator users
+              can view the analytics dashboard.
             </AlertDescription>
           </Alert>
         </div>

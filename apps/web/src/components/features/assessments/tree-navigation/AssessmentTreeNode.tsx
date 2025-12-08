@@ -4,12 +4,17 @@ import { getGovernanceAreaLogo } from "@/lib/governance-area-logos";
 import { GovernanceArea, Indicator } from "@/types/assessment";
 import {
     AlertCircle,
+    Building2,
     CheckCircle,
     ChevronRight,
     Circle,
     Folder
 } from "lucide-react";
 import Image from "next/image";
+
+// BBI indicator codes per DILG MC 2024-417
+// These indicators determine Barangay-Based Institution functionality
+const BBI_INDICATOR_CODES = ["2.1", "3.1", "3.2", "4.1", "4.3", "4.5", "6.1"];
 
 interface AssessmentTreeNodeProps {
   type: "area" | "indicator";
@@ -174,7 +179,7 @@ export function AssessmentTreeNode({
       <div className="flex-shrink-0 flex items-center justify-center">{getStatusIcon()}</div>
 
       {/* Label */}
-      <div className="flex-1 min-w-0 flex items-baseline gap-2">
+      <div className="flex-1 min-w-0 flex items-center gap-2">
         {type === "area" ? (
           <>
             <span className="truncate text-sm" title={(item as GovernanceArea).name}>
@@ -187,12 +192,27 @@ export function AssessmentTreeNode({
             )}
           </>
         ) : (
-          <span
-            className="truncate text-xs"
-            title={item.name}
-          >
-            {(item as Indicator).code || item.name}
-          </span>
+          <>
+            <span
+              className="truncate text-xs"
+              title={item.name}
+            >
+              {(item as Indicator).code || item.name}
+            </span>
+            {/* BBI Badge - Shows for indicators that affect Barangay-Based Institutions */}
+            {(() => {
+              const indicatorCode = (item as Indicator).code;
+              return indicatorCode && BBI_INDICATOR_CODES.includes(indicatorCode) ? (
+                <span
+                  className="flex-shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 rounded"
+                  title="This indicator affects BBI (Barangay-Based Institution) functionality rating"
+                >
+                  <Building2 className="h-2.5 w-2.5" aria-hidden="true" />
+                  BBI
+                </span>
+              ) : null;
+            })()}
+          </>
         )}
       </div>
     </div>

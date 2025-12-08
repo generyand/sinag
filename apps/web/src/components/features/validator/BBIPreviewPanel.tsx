@@ -81,7 +81,8 @@ function getRatingStyle(rating: string): {
 }
 
 export function BBIPreviewPanel({ data, isLoading = false }: BBIPreviewPanelProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  // Default to expanded so validators see BBI info immediately
+  const [isExpanded, setIsExpanded] = useState(true);
 
   if (isLoading) {
     return (

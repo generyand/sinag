@@ -36,6 +36,7 @@ export const assessorNavigation: NavItem[] = [
 
 export const validatorNavigation: NavItem[] = [
   { name: 'Submissions Queue', href: '/validator/submissions', icon: 'clipboard' },
+  { name: 'Analytics & Reports', href: '/analytics', icon: 'chart' },
   { name: 'Profile', href: '/validator/profile', icon: 'user' },
 ];
 

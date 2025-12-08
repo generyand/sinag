@@ -588,16 +588,17 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
               </div>
             </div>
           </div>
-
-          {/* BBI Preview Panel */}
-          <div className="mt-4">
-            <BBIPreviewPanel data={(data as any)?.bbi_preview as BBIPreviewData} />
-          </div>
         </div>
       </div>
 
-      {/* Bottom Progress Bar */}
-      <div className="sticky bottom-0 z-10 border-t border-[var(--border)] bg-card/80 backdrop-blur">
+      {/* Bottom Section: BBI Preview + Progress Bar */}
+      <div className="sticky bottom-0 z-10 border-t border-[var(--border)] bg-card/95 backdrop-blur">
+        {/* BBI Preview Panel - Now prominently placed above progress bar */}
+        <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 pt-3">
+          <BBIPreviewPanel data={(data as any)?.bbi_preview as BBIPreviewData} />
+        </div>
+
+        {/* Progress Bar */}
         <div className="relative max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="absolute inset-x-0 -top-[3px] h-[3px] bg-black/5">
             <div
