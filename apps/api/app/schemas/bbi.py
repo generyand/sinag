@@ -71,7 +71,6 @@ class BBIResultBase(BaseModel):
 
     bbi_id: int = Field(..., description="BBI ID")
     assessment_id: int = Field(..., description="Assessment ID")
-    status: BBIStatus = Field(..., description="BBI status (legacy: Functional/Non-Functional)")
 
 
 class BBIResultResponse(BBIResultBase):
@@ -80,29 +79,36 @@ class BBIResultResponse(BBIResultBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    # New compliance fields (DILG MC 2024-417)
-    compliance_percentage: float | None = Field(None, description="Compliance rate 0-100%")
-    compliance_rating: str | None = Field(
-        None,
-        description="3-tier rating: HIGHLY_FUNCTIONAL, MODERATELY_FUNCTIONAL, LOW_FUNCTIONAL",
+    # Direct links for efficient queries
+    barangay_id: int = Field(..., description="Barangay ID")
+    assessment_year: int = Field(..., description="Assessment year")
+    indicator_id: int | None = Field(None, description="Parent BBI indicator ID")
+
+    # Compliance fields (DILG MC 2024-417 - 4-tier system)
+    compliance_percentage: float = Field(..., description="Compliance rate 0-100%")
+    compliance_rating: str = Field(
+        ...,
+        description="4-tier rating: HIGHLY_FUNCTIONAL, MODERATELY_FUNCTIONAL, LOW_FUNCTIONAL, NON_FUNCTIONAL",
     )
-    sub_indicators_passed: int | None = Field(
-        None, description="Number of sub-indicators that passed"
-    )
-    sub_indicators_total: int | None = Field(
-        None, description="Total number of sub-indicators evaluated"
-    )
+    sub_indicators_passed: int = Field(..., description="Number of sub-indicators that passed")
+    sub_indicators_total: int = Field(..., description="Total number of sub-indicators evaluated")
     sub_indicator_results: list[dict[str, Any]] | None = Field(
         None, description="Detailed pass/fail results for each sub-indicator"
     )
-    calculation_details: dict[str, Any] | None = None
-    calculation_date: datetime
+    calculated_at: datetime = Field(..., description="When the compliance was calculated")
 
 
 class BBIResultWithBBI(BBIResultResponse):
     """BBI result with nested BBI information."""
 
     bbi: BBIResponse
+
+
+class BBIResultWithBarangay(BBIResultResponse):
+    """BBI result with nested barangay and BBI information."""
+
+    bbi: BBIResponse
+    barangay_name: str | None = Field(None, description="Barangay name")
 
 
 # ============================================================================
@@ -133,20 +139,23 @@ class BBIComplianceResult(BaseModel):
     bbi_id: int = Field(..., description="BBI ID")
     bbi_name: str = Field(..., description="BBI name")
     bbi_abbreviation: str = Field(..., description="BBI abbreviation (indicator code)")
+    indicator_code: str | None = Field(None, description="Original indicator code (e.g., 2.1)")
     governance_area_id: int = Field(..., description="Governance area ID")
     governance_area_name: str | None = Field(None, description="Governance area name")
     assessment_id: int = Field(..., description="Assessment ID")
+    barangay_id: int = Field(..., description="Barangay ID")
+    assessment_year: int = Field(..., description="Assessment year")
     compliance_percentage: float = Field(..., description="Compliance rate 0-100%")
     compliance_rating: str = Field(
         ...,
-        description="3-tier rating: HIGHLY_FUNCTIONAL, MODERATELY_FUNCTIONAL, LOW_FUNCTIONAL",
+        description="4-tier rating: HIGHLY_FUNCTIONAL, MODERATELY_FUNCTIONAL, LOW_FUNCTIONAL, NON_FUNCTIONAL",
     )
     sub_indicators_passed: int = Field(..., description="Number of sub-indicators that passed")
     sub_indicators_total: int = Field(..., description="Total number of sub-indicators evaluated")
     sub_indicator_results: list[SubIndicatorResult] = Field(
         ..., description="Detailed pass/fail results for each sub-indicator"
     )
-    calculation_date: datetime
+    calculated_at: datetime = Field(..., description="When the compliance was calculated")
 
 
 class BBIComplianceSummary(BaseModel):
@@ -154,12 +163,17 @@ class BBIComplianceSummary(BaseModel):
 
     total_bbis: int = Field(..., description="Total number of BBIs evaluated")
     highly_functional_count: int = Field(
-        ..., description="Number of BBIs with HIGHLY_FUNCTIONAL rating"
+        ..., description="Number of BBIs with HIGHLY_FUNCTIONAL rating (75-100%)"
     )
     moderately_functional_count: int = Field(
-        ..., description="Number of BBIs with MODERATELY_FUNCTIONAL rating"
+        ..., description="Number of BBIs with MODERATELY_FUNCTIONAL rating (50-74%)"
     )
-    low_functional_count: int = Field(..., description="Number of BBIs with LOW_FUNCTIONAL rating")
+    low_functional_count: int = Field(
+        ..., description="Number of BBIs with LOW_FUNCTIONAL rating (1-49%)"
+    )
+    non_functional_count: int = Field(
+        0, description="Number of BBIs with NON_FUNCTIONAL rating (0%)"
+    )
     average_compliance_percentage: float = Field(
         ..., description="Average compliance percentage across all BBIs"
     )
@@ -169,13 +183,26 @@ class AssessmentBBIComplianceResponse(BaseModel):
     """Complete BBI compliance response for an assessment."""
 
     assessment_id: int = Field(..., description="Assessment ID")
-    barangay_id: int | None = Field(None, description="Barangay ID")
+    barangay_id: int = Field(..., description="Barangay ID")
     barangay_name: str | None = Field(None, description="Barangay name")
+    assessment_year: int = Field(..., description="Assessment year")
     bbi_results: list[BBIComplianceResult] = Field(
         ..., description="Compliance results for each BBI"
     )
     summary: BBIComplianceSummary = Field(..., description="Summary statistics for BBI compliance")
     calculated_at: datetime = Field(..., description="When the compliance was calculated")
+
+
+class BarangayBBIComplianceResponse(BaseModel):
+    """BBI compliance response for a specific barangay and year."""
+
+    barangay_id: int = Field(..., description="Barangay ID")
+    barangay_name: str | None = Field(None, description="Barangay name")
+    assessment_year: int = Field(..., description="Assessment year")
+    bbi_results: list[dict[str, Any]] = Field(
+        ..., description="Compliance results for each BBI"
+    )
+    summary: BBIComplianceSummary = Field(..., description="Summary statistics for BBI compliance")
 
 
 # ============================================================================

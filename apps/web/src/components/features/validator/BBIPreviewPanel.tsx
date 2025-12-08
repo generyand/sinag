@@ -6,10 +6,11 @@
  * Displays a compact preview of BBI compliance ratings for validators.
  * Shows predicted ratings based on current validation status.
  *
- * Per DILG MC 2024-417 guidelines:
+ * Per DILG MC 2024-417 guidelines (4-tier system):
  * - HIGHLY_FUNCTIONAL: 75-100%
  * - MODERATELY_FUNCTIONAL: 50-74%
- * - LOW_FUNCTIONAL: <50%
+ * - LOW_FUNCTIONAL: 1-49%
+ * - NON_FUNCTIONAL: 0%
  */
 
 import { useState } from "react";
@@ -44,7 +45,7 @@ interface BBIPreviewPanelProps {
   isLoading?: boolean;
 }
 
-// Get rating color classes
+// Get rating color classes (4-tier system)
 function getRatingStyle(rating: string): {
   bg: string;
   text: string;
@@ -52,7 +53,6 @@ function getRatingStyle(rating: string): {
 } {
   switch (rating) {
     case "HIGHLY_FUNCTIONAL":
-    case "FUNCTIONAL":
       return {
         bg: "bg-green-100 dark:bg-green-950/30",
         text: "text-green-700 dark:text-green-300",
@@ -65,6 +65,11 @@ function getRatingStyle(rating: string): {
         icon: AlertTriangle,
       };
     case "LOW_FUNCTIONAL":
+      return {
+        bg: "bg-orange-100 dark:bg-orange-950/30",
+        text: "text-orange-700 dark:text-orange-300",
+        icon: AlertTriangle,
+      };
     case "NON_FUNCTIONAL":
     default:
       return {
@@ -96,13 +101,16 @@ export function BBIPreviewPanel({ data, isLoading = false }: BBIPreviewPanelProp
   }
 
   const highly = data.bbi_results.filter(
-    (r) => r.compliance_rating === "HIGHLY_FUNCTIONAL" || r.compliance_rating === "FUNCTIONAL"
+    (r) => r.compliance_rating === "HIGHLY_FUNCTIONAL"
   ).length;
   const moderate = data.bbi_results.filter(
     (r) => r.compliance_rating === "MODERATELY_FUNCTIONAL"
   ).length;
   const low = data.bbi_results.filter(
-    (r) => r.compliance_rating === "LOW_FUNCTIONAL" || r.compliance_rating === "NON_FUNCTIONAL"
+    (r) => r.compliance_rating === "LOW_FUNCTIONAL"
+  ).length;
+  const nonFunc = data.bbi_results.filter(
+    (r) => r.compliance_rating === "NON_FUNCTIONAL"
   ).length;
 
   return (
@@ -135,8 +143,13 @@ export function BBIPreviewPanel({ data, isLoading = false }: BBIPreviewPanelProp
               </span>
             )}
             {low > 0 && (
-              <span className="px-1.5 py-0.5 bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200 rounded">
+              <span className="px-1.5 py-0.5 bg-orange-200 dark:bg-orange-800 text-orange-800 dark:text-orange-200 rounded">
                 {low} Low
+              </span>
+            )}
+            {nonFunc > 0 && (
+              <span className="px-1.5 py-0.5 bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200 rounded">
+                {nonFunc} None
               </span>
             )}
           </div>

@@ -4,13 +4,17 @@ Comprehensive BBI (Barangay-based Institutions) management service.
 
 This service handles:
 - Full CRUD operations for BBIs
-- BBI compliance rate calculation based on sub-indicator checklist results (DILG MC 2024-417)
+- BBI compliance rate calculation based on validator decisions (DILG MC 2024-417)
 - Integration with assessment finalization workflow
+- Triggered when assessment reaches COMPLETED status
 
-Compliance Rate Calculation (DILG MC 2024-417):
+Compliance Rate Calculation (DILG MC 2024-417) - 4-tier system:
 - 75% - 100%: HIGHLY_FUNCTIONAL
 - 50% - 74%: MODERATELY_FUNCTIONAL
-- Below 50%: LOW_FUNCTIONAL
+- 1% - 49%: LOW_FUNCTIONAL
+- 0%: NON_FUNCTIONAL
+
+Source of truth: AssessmentResponse.validation_status (validator decisions)
 """
 
 from datetime import datetime
@@ -25,6 +29,38 @@ from app.db.enums import BBIStatus, ValidationStatus
 from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.bbi import BBI, BBIResult
 from app.db.models.governance_area import ChecklistItem, GovernanceArea, Indicator
+
+# BBI metadata configuration - maps indicator codes to BBI details
+BBI_CONFIG = {
+    "2.1": {
+        "abbreviation": "BDRRMC",
+        "name": "Barangay Disaster Risk Reduction and Management Committee",
+    },
+    "3.1": {
+        "abbreviation": "BADAC",
+        "name": "Barangay Anti-Drug Abuse Council",
+    },
+    "3.2": {
+        "abbreviation": "BPOC",
+        "name": "Barangay Peace and Order Committee",
+    },
+    "4.1": {
+        "abbreviation": "VAW Desk",
+        "name": "Barangay Violence Against Women Desk",
+    },
+    "4.3": {
+        "abbreviation": "BDC",
+        "name": "Barangay Development Council",
+    },
+    "4.5": {
+        "abbreviation": "BCPC",
+        "name": "Barangay Council for the Protection of Children",
+    },
+    "6.1": {
+        "abbreviation": "BESWMC",
+        "name": "Barangay Ecological Solid Waste Management Committee",
+    },
+}
 
 
 class BBIService:
@@ -336,9 +372,10 @@ class BBIService:
             passed = response and response.validation_status == ValidationStatus.PASS
             return {
                 "compliance_percentage": 100.0 if passed else 0.0,
+                # 0% is NON_FUNCTIONAL per DILG MC 2024-417 (not LOW_FUNCTIONAL)
                 "compliance_rating": BBIStatus.HIGHLY_FUNCTIONAL.value
                 if passed
-                else BBIStatus.LOW_FUNCTIONAL.value,
+                else BBIStatus.NON_FUNCTIONAL.value,
                 "sub_indicators_passed": 1 if passed else 0,
                 "sub_indicators_total": 1,
                 "sub_indicator_results": [
@@ -526,7 +563,14 @@ class BBIService:
 
     def _get_compliance_rating(self, percentage: float) -> BBIStatus:
         """
-        Map compliance percentage to 3-tier rating per DILG MC 2024-417.
+        Map compliance percentage to 4-tier rating per DILG MC 2024-417.
+
+        | Compliance Rate | Rating               |
+        |-----------------|----------------------|
+        | 75% - 100%      | HIGHLY_FUNCTIONAL    |
+        | 50% - 74%       | MODERATELY_FUNCTIONAL|
+        | 1% - 49%        | LOW_FUNCTIONAL       |
+        | 0%              | NON_FUNCTIONAL       |
 
         Args:
             percentage: Compliance percentage (0-100)
@@ -538,31 +582,39 @@ class BBIService:
             return BBIStatus.HIGHLY_FUNCTIONAL
         elif percentage >= 50:
             return BBIStatus.MODERATELY_FUNCTIONAL
-        else:
+        elif percentage > 0:
             return BBIStatus.LOW_FUNCTIONAL
+        else:
+            return BBIStatus.NON_FUNCTIONAL
 
-    def calculate_all_bbi_compliance(self, db: Session, assessment_id: int) -> list[BBIResult]:
+    def calculate_all_bbi_compliance(
+        self, db: Session, assessment: Assessment
+    ) -> list[BBIResult]:
         """
         Calculate compliance for all BBI indicators for an assessment.
 
-        This method should be called when an assessment is finalized.
+        This method should be called when an assessment reaches COMPLETED status.
         It finds all indicators marked as BBIs (is_bbi=True), calculates
-        their compliance rates, and stores the results.
+        their compliance rates, and stores/updates the results.
+
+        Source of truth: AssessmentResponse.validation_status (validator decisions)
 
         Args:
             db: Database session
-            assessment_id: Assessment ID
+            assessment: Assessment instance (must have blgu_user loaded)
 
         Returns:
-            List of created BBIResult instances
+            List of created/updated BBIResult instances
         """
-        # Get assessment
-        assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
-        if not assessment:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Assessment with ID {assessment_id} not found",
+        # Get barangay_id from the assessment's BLGU user
+        if not assessment.blgu_user or not assessment.blgu_user.barangay_id:
+            logger.error(
+                f"Assessment {assessment.id} has no associated barangay. Skipping BBI calculation."
             )
+            return []
+
+        barangay_id = assessment.blgu_user.barangay_id
+        assessment_year = assessment.assessment_year
 
         # Find all BBI indicators (is_bbi=True)
         bbi_indicators = (
@@ -577,10 +629,11 @@ class BBIService:
             .all()
         )
 
-        logger.info(f"Found {len(bbi_indicators)} BBI indicators for assessment {assessment_id}")
-
-        # Delete existing BBI results for this assessment (recalculation)
-        db.query(BBIResult).filter(BBIResult.assessment_id == assessment_id).delete()
+        logger.info(
+            f"Calculating BBI compliance for assessment {assessment.id} "
+            f"(barangay_id={barangay_id}, year={assessment_year}): "
+            f"found {len(bbi_indicators)} BBI indicators"
+        )
 
         # Calculate compliance for each BBI indicator
         bbi_results = []
@@ -589,34 +642,56 @@ class BBIService:
                 # Get or create BBI record for this indicator
                 bbi = self._get_or_create_bbi_for_indicator(db, bbi_indicator)
 
-                # Calculate compliance
-                compliance = self.calculate_bbi_compliance(db, assessment_id, bbi_indicator)
+                # Calculate compliance based on validator decisions
+                compliance = self.calculate_bbi_compliance(db, assessment.id, bbi_indicator)
 
-                # Create BBIResult with compliance data
-                bbi_result = BBIResult(
-                    bbi_id=bbi.id,
-                    assessment_id=assessment_id,
-                    status=BBIStatus(compliance["compliance_rating"]),
-                    compliance_percentage=compliance["compliance_percentage"],
-                    compliance_rating=compliance["compliance_rating"],
-                    sub_indicators_passed=compliance["sub_indicators_passed"],
-                    sub_indicators_total=compliance["sub_indicators_total"],
-                    sub_indicator_results=compliance["sub_indicator_results"],
-                    calculation_details={
-                        "indicator_code": bbi_indicator.indicator_code,
-                        "indicator_name": bbi_indicator.name,
-                        "calculation_method": "percentage_based",
-                        "calculated_at": datetime.utcnow().isoformat(),
-                    },
+                # Upsert BBIResult (update if exists, create if not)
+                bbi_result = (
+                    db.query(BBIResult)
+                    .filter(
+                        BBIResult.barangay_id == barangay_id,
+                        BBIResult.assessment_year == assessment_year,
+                        BBIResult.bbi_id == bbi.id,
+                    )
+                    .first()
                 )
-                db.add(bbi_result)
+
+                if bbi_result:
+                    # Update existing
+                    bbi_result.assessment_id = assessment.id
+                    bbi_result.indicator_id = bbi_indicator.id
+                    bbi_result.compliance_percentage = compliance["compliance_percentage"]
+                    bbi_result.compliance_rating = compliance["compliance_rating"]
+                    bbi_result.sub_indicators_passed = compliance["sub_indicators_passed"]
+                    bbi_result.sub_indicators_total = compliance["sub_indicators_total"]
+                    bbi_result.sub_indicator_results = compliance["sub_indicator_results"]
+                    bbi_result.calculated_at = datetime.utcnow()
+                    logger.info(
+                        f"Updated BBI result for {bbi_indicator.indicator_code}: "
+                        f"{compliance['compliance_percentage']}% = {compliance['compliance_rating']}"
+                    )
+                else:
+                    # Create new
+                    bbi_result = BBIResult(
+                        barangay_id=barangay_id,
+                        assessment_year=assessment_year,
+                        assessment_id=assessment.id,
+                        bbi_id=bbi.id,
+                        indicator_id=bbi_indicator.id,
+                        compliance_percentage=compliance["compliance_percentage"],
+                        compliance_rating=compliance["compliance_rating"],
+                        sub_indicators_passed=compliance["sub_indicators_passed"],
+                        sub_indicators_total=compliance["sub_indicators_total"],
+                        sub_indicator_results=compliance["sub_indicator_results"],
+                    )
+                    db.add(bbi_result)
+                    logger.info(
+                        f"Created BBI result for {bbi_indicator.indicator_code}: "
+                        f"{compliance['compliance_percentage']}% = {compliance['compliance_rating']}"
+                    )
+
                 bbi_results.append(bbi_result)
 
-                logger.info(
-                    f"Calculated BBI compliance for {bbi_indicator.indicator_code} "
-                    f"({bbi_indicator.name}): {compliance['compliance_percentage']}% "
-                    f"= {compliance['compliance_rating']}"
-                )
             except Exception as e:
                 logger.error(
                     f"Error calculating BBI compliance for indicator "
@@ -624,12 +699,15 @@ class BBIService:
                 )
                 # Continue with other BBIs even if one fails
 
-        db.commit()
+        db.flush()
         return bbi_results
 
     def _get_or_create_bbi_for_indicator(self, db: Session, indicator: Indicator) -> BBI:
         """
         Get or create a BBI record for a given BBI indicator.
+
+        Uses BBI_CONFIG to get the proper abbreviation and name for the BBI.
+        Falls back to indicator data if not found in config.
 
         Args:
             db: Database session
@@ -638,23 +716,28 @@ class BBIService:
         Returns:
             BBI instance
         """
-        # Try to find existing BBI by name/abbreviation
+        # Get BBI config or use indicator data as fallback
+        bbi_config = BBI_CONFIG.get(indicator.indicator_code, {})
+        abbreviation = bbi_config.get("abbreviation", indicator.indicator_code)
+        name = bbi_config.get("name", indicator.name)
+
+        # Try to find existing BBI by abbreviation in the same governance area
         bbi = (
             db.query(BBI)
             .filter(
                 and_(
                     BBI.governance_area_id == indicator.governance_area_id,
-                    BBI.abbreviation == indicator.indicator_code,
+                    BBI.abbreviation == abbreviation,
                 )
             )
             .first()
         )
 
         if not bbi:
-            # Create new BBI
+            # Create new BBI using config data
             bbi = BBI(
-                name=indicator.name,
-                abbreviation=indicator.indicator_code,
+                name=name,
+                abbreviation=abbreviation,
                 description=indicator.description,
                 governance_area_id=indicator.governance_area_id,
                 is_active=True,
@@ -662,7 +745,7 @@ class BBIService:
             )
             db.add(bbi)
             db.flush()  # Get the ID without committing
-            logger.info(f"Created BBI for indicator {indicator.indicator_code}: {indicator.name}")
+            logger.info(f"Created BBI for indicator {indicator.indicator_code}: {abbreviation} ({name})")
 
         return bbi
 
@@ -682,13 +765,16 @@ class BBIService:
         This method evaluates the BBI's mapping_rules against the indicator
         statuses in the assessment to determine if the BBI is functional.
 
+        Note: This is a legacy method. The new 4-tier system uses calculate_bbi_compliance.
+        Returns HIGHLY_FUNCTIONAL for functional BBIs (backward compatibility).
+
         Args:
             db: Database session
             bbi_id: BBI ID
             assessment_id: Assessment ID
 
         Returns:
-            BBIStatus (FUNCTIONAL or NON_FUNCTIONAL)
+            BBIStatus (HIGHLY_FUNCTIONAL if functional, NON_FUNCTIONAL otherwise)
 
         Raises:
             HTTPException: If BBI or assessment not found
@@ -719,7 +805,8 @@ class BBIService:
         # Evaluate mapping rules
         try:
             is_functional = self._evaluate_mapping_rules(bbi.mapping_rules, indicator_statuses)
-            return BBIStatus.FUNCTIONAL if is_functional else BBIStatus.NON_FUNCTIONAL
+            # Use HIGHLY_FUNCTIONAL for backward compatibility (replaces old FUNCTIONAL)
+            return BBIStatus.HIGHLY_FUNCTIONAL if is_functional else BBIStatus.NON_FUNCTIONAL
         except Exception as e:
             logger.error(f"Error evaluating BBI mapping rules: {str(e)}")
             return BBIStatus.NON_FUNCTIONAL
@@ -803,10 +890,10 @@ class BBIService:
 
     def calculate_all_bbi_statuses(self, db: Session, assessment_id: int) -> list[BBIResult]:
         """
-        Calculate all BBI statuses for a finalized assessment.
+        DEPRECATED: Use calculate_all_bbi_compliance instead.
 
-        This method should be called when an assessment is finalized.
-        It calculates the status of all active BBIs and stores the results.
+        This legacy method is kept for backward compatibility but redirects
+        to the new 4-tier compliance calculation method.
 
         Args:
             db: Database session
@@ -815,46 +902,17 @@ class BBIService:
         Returns:
             List of created BBIResult instances
         """
-        # Get assessment
+        logger.warning(
+            "calculate_all_bbi_statuses is deprecated. Use calculate_all_bbi_compliance instead."
+        )
+        # Get assessment and delegate to new method
         assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
         if not assessment:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Assessment with ID {assessment_id} not found",
             )
-
-        # Get all active BBIs (we can calculate for all areas, or filter by assessment's relevant areas)
-        bbis = db.query(BBI).filter(BBI.is_active == True).all()
-
-        # Calculate status for each BBI
-        bbi_results = []
-        for bbi in bbis:
-            try:
-                # Calculate BBI status
-                bbi_status = self.calculate_bbi_status(db, bbi.id, assessment_id)
-
-                # Store result
-                bbi_result = BBIResult(
-                    bbi_id=bbi.id,
-                    assessment_id=assessment_id,
-                    status=bbi_status,
-                    calculation_details={
-                        "mapping_rules": bbi.mapping_rules,
-                        "calculated_at": datetime.utcnow().isoformat(),
-                    },
-                )
-                db.add(bbi_result)
-                bbi_results.append(bbi_result)
-
-                logger.info(
-                    f"Calculated BBI status for BBI {bbi.id} ({bbi.name}): {bbi_status.value}"
-                )
-            except Exception as e:
-                logger.error(f"Error calculating BBI status for BBI {bbi.id}: {str(e)}")
-                # Continue with other BBIs even if one fails
-
-        db.commit()
-        return bbi_results
+        return self.calculate_all_bbi_compliance(db, assessment)
 
     # ========================================================================
     # BBI Results
@@ -873,10 +931,97 @@ class BBIService:
         """
         return (
             db.query(BBIResult)
-            .options(joinedload(BBIResult.bbi))
+            .options(joinedload(BBIResult.bbi), joinedload(BBIResult.barangay))
             .filter(BBIResult.assessment_id == assessment_id)
             .all()
         )
+
+    def get_bbi_results_by_barangay(
+        self,
+        db: Session,
+        barangay_id: int,
+        year: int | None = None,
+    ) -> list[BBIResult]:
+        """
+        Get all BBI results for a specific barangay.
+
+        Args:
+            db: Database session
+            barangay_id: Barangay ID
+            year: Optional assessment year filter
+
+        Returns:
+            List of BBIResult instances
+        """
+        query = (
+            db.query(BBIResult)
+            .options(joinedload(BBIResult.bbi), joinedload(BBIResult.indicator))
+            .filter(BBIResult.barangay_id == barangay_id)
+        )
+
+        if year is not None:
+            query = query.filter(BBIResult.assessment_year == year)
+
+        return query.order_by(BBIResult.assessment_year.desc()).all()
+
+    def get_bbi_compliance_summary(
+        self,
+        db: Session,
+        barangay_id: int,
+        year: int,
+    ) -> dict[str, Any]:
+        """
+        Get a summary of BBI compliance for a barangay in a specific year.
+
+        Args:
+            db: Database session
+            barangay_id: Barangay ID
+            year: Assessment year
+
+        Returns:
+            Dictionary with compliance summary for all BBIs
+        """
+        results = self.get_bbi_results_by_barangay(db, barangay_id, year)
+
+        summary = {
+            "barangay_id": barangay_id,
+            "assessment_year": year,
+            "total_bbis": len(results),
+            "highly_functional_count": 0,
+            "moderately_functional_count": 0,
+            "low_functional_count": 0,
+            "non_functional_count": 0,
+            "bbi_results": [],
+        }
+
+        for result in results:
+            rating = result.compliance_rating
+            if rating == BBIStatus.HIGHLY_FUNCTIONAL.value:
+                summary["highly_functional_count"] += 1
+            elif rating == BBIStatus.MODERATELY_FUNCTIONAL.value:
+                summary["moderately_functional_count"] += 1
+            elif rating == BBIStatus.LOW_FUNCTIONAL.value:
+                summary["low_functional_count"] += 1
+            elif rating == BBIStatus.NON_FUNCTIONAL.value:
+                summary["non_functional_count"] += 1
+
+            summary["bbi_results"].append(
+                {
+                    "bbi_id": result.bbi_id,
+                    "bbi_name": result.bbi.name if result.bbi else None,
+                    "bbi_abbreviation": result.bbi.abbreviation if result.bbi else None,
+                    "indicator_code": result.indicator.indicator_code if result.indicator else None,
+                    "compliance_percentage": result.compliance_percentage,
+                    "compliance_rating": result.compliance_rating,
+                    "sub_indicators_passed": result.sub_indicators_passed,
+                    "sub_indicators_total": result.sub_indicators_total,
+                    "calculated_at": result.calculated_at.isoformat()
+                    if result.calculated_at
+                    else None,
+                }
+            )
+
+        return summary
 
 
 # Singleton instance

@@ -1,16 +1,22 @@
 # 🏛️ BBI API Routes
 # Endpoints for BBI (Barangay-based Institutions) management
+# Updated: 4-tier compliance rating system (DILG MC 2024-417)
 
 import math
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.api import deps
+from app.db.enums import BBIStatus
+from app.db.models.assessment import Assessment
+from app.db.models.barangay import Barangay
 from app.db.models.user import User
 from app.schemas.bbi import (
     AssessmentBBIComplianceResponse,
+    BarangayBBIComplianceResponse,
     BBIComplianceResult,
     BBIComplianceSummary,
     BBICreate,
@@ -224,7 +230,8 @@ async def test_bbi_calculation(
 
         from app.db.enums import BBIStatus
 
-        predicted_status = BBIStatus.FUNCTIONAL if is_functional else BBIStatus.NON_FUNCTIONAL
+        # Use HIGHLY_FUNCTIONAL for backward compatibility (replaces old FUNCTIONAL in 4-tier system)
+        predicted_status = BBIStatus.HIGHLY_FUNCTIONAL if is_functional else BBIStatus.NON_FUNCTIONAL
 
         # Build evaluation details
         operator = request.mapping_rules.get("operator", "AND")
@@ -314,20 +321,21 @@ async def get_assessment_bbi_compliance(
 
     Accessible by all authenticated users.
 
-    Returns the compliance rate and 3-tier rating for all BBI indicators:
+    Returns the compliance rate and 4-tier rating for all BBI indicators:
     - HIGHLY_FUNCTIONAL: 75% - 100% compliance
     - MODERATELY_FUNCTIONAL: 50% - 74% compliance
-    - LOW_FUNCTIONAL: Below 50% compliance
+    - LOW_FUNCTIONAL: 1% - 49% compliance
+    - NON_FUNCTIONAL: 0% compliance
 
     Includes detailed sub-indicator pass/fail breakdown for each BBI.
     """
-    from datetime import datetime
-
-    from app.db.models.assessment import Assessment
-    from app.db.models.barangay import Barangay
-
     # Get assessment with barangay info
-    assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+    assessment = (
+        db.query(Assessment)
+        .options(joinedload(Assessment.blgu_user).joinedload(User.barangay))
+        .filter(Assessment.id == assessment_id)
+        .first()
+    )
     if not assessment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -335,35 +343,33 @@ async def get_assessment_bbi_compliance(
         )
 
     # Get barangay info
-    barangay = None
     barangay_name = None
     barangay_id = None
     if assessment.blgu_user and assessment.blgu_user.barangay_id:
-        barangay = (
-            db.query(Barangay).filter(Barangay.id == assessment.blgu_user.barangay_id).first()
-        )
-        if barangay:
-            barangay_name = barangay.name
-            barangay_id = barangay.id
+        barangay_id = assessment.blgu_user.barangay_id
+        if assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
 
     # Get existing BBI results
     bbi_results = bbi_service.get_bbi_results(db, assessment_id)
 
     if not bbi_results:
         # Calculate compliance if not yet done
-        bbi_results = bbi_service.calculate_all_bbi_compliance(db, assessment_id)
+        bbi_results = bbi_service.calculate_all_bbi_compliance(db, assessment)
 
     # Transform results to compliance response format
     compliance_results = []
     highly_functional_count = 0
     moderately_functional_count = 0
     low_functional_count = 0
+    non_functional_count = 0
     total_percentage = 0.0
 
     for result in bbi_results:
         # Get BBI and governance area info
         bbi = result.bbi
         governance_area_name = bbi.governance_area.name if bbi.governance_area else None
+        indicator_code = result.indicator.indicator_code if result.indicator else None
 
         # Parse sub_indicator_results
         sub_results = []
@@ -383,28 +389,33 @@ async def get_assessment_bbi_compliance(
             bbi_id=result.bbi_id,
             bbi_name=bbi.name,
             bbi_abbreviation=bbi.abbreviation,
+            indicator_code=indicator_code,
             governance_area_id=bbi.governance_area_id,
             governance_area_name=governance_area_name,
             assessment_id=assessment_id,
-            compliance_percentage=result.compliance_percentage or 0.0,
-            compliance_rating=result.compliance_rating or result.status.value,
-            sub_indicators_passed=result.sub_indicators_passed or 0,
-            sub_indicators_total=result.sub_indicators_total or 0,
+            barangay_id=result.barangay_id,
+            assessment_year=result.assessment_year,
+            compliance_percentage=result.compliance_percentage,
+            compliance_rating=result.compliance_rating,
+            sub_indicators_passed=result.sub_indicators_passed,
+            sub_indicators_total=result.sub_indicators_total,
             sub_indicator_results=sub_results,
-            calculation_date=result.calculation_date,
+            calculated_at=result.calculated_at,
         )
         compliance_results.append(compliance_result)
 
-        # Update counts
-        rating = result.compliance_rating or result.status.value
-        if rating == "HIGHLY_FUNCTIONAL" or rating == "FUNCTIONAL":
+        # Update counts based on 4-tier rating
+        rating = result.compliance_rating
+        if rating == BBIStatus.HIGHLY_FUNCTIONAL.value:
             highly_functional_count += 1
-        elif rating == "MODERATELY_FUNCTIONAL":
+        elif rating == BBIStatus.MODERATELY_FUNCTIONAL.value:
             moderately_functional_count += 1
-        else:
+        elif rating == BBIStatus.LOW_FUNCTIONAL.value:
             low_functional_count += 1
+        elif rating == BBIStatus.NON_FUNCTIONAL.value:
+            non_functional_count += 1
 
-        total_percentage += result.compliance_percentage or 0.0
+        total_percentage += result.compliance_percentage
 
     # Calculate summary
     total_bbis = len(compliance_results)
@@ -415,16 +426,24 @@ async def get_assessment_bbi_compliance(
         highly_functional_count=highly_functional_count,
         moderately_functional_count=moderately_functional_count,
         low_functional_count=low_functional_count,
+        non_functional_count=non_functional_count,
         average_compliance_percentage=round(avg_percentage, 2),
+    )
+
+    # Use the most recent calculated_at from results
+    latest_calculated_at = max(
+        (r.calculated_at for r in bbi_results if r.calculated_at),
+        default=datetime.utcnow(),
     )
 
     return AssessmentBBIComplianceResponse(
         assessment_id=assessment_id,
-        barangay_id=barangay_id,
+        barangay_id=barangay_id or 0,
         barangay_name=barangay_name,
+        assessment_year=assessment.assessment_year,
         bbi_results=compliance_results,
         summary=summary,
-        calculated_at=datetime.utcnow(),
+        calculated_at=latest_calculated_at,
     )
 
 
@@ -444,19 +463,26 @@ async def calculate_assessment_bbi_compliance(
     Requires admin privileges (MLGOO_DILG role).
 
     This endpoint calculates compliance rates for all BBI indicators based on
-    sub-indicator checklist results and stores the results in the database.
+    validator decisions (AssessmentResponse.validation_status) and stores
+    the results in the database.
+
+    4-tier rating system (DILG MC 2024-417):
+    - HIGHLY_FUNCTIONAL: 75% - 100% compliance
+    - MODERATELY_FUNCTIONAL: 50% - 74% compliance
+    - LOW_FUNCTIONAL: 1% - 49% compliance
+    - NON_FUNCTIONAL: 0% compliance
 
     Use this endpoint to:
     - Calculate compliance for a newly finalized assessment
-    - Recalculate compliance if sub-indicator data has changed
+    - Recalculate compliance if validator decisions have changed
     """
-    from datetime import datetime
-
-    from app.db.models.assessment import Assessment
-    from app.db.models.barangay import Barangay
-
-    # Get assessment
-    assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+    # Get assessment with BLGU user info
+    assessment = (
+        db.query(Assessment)
+        .options(joinedload(Assessment.blgu_user).joinedload(User.barangay))
+        .filter(Assessment.id == assessment_id)
+        .first()
+    )
     if not assessment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -464,29 +490,29 @@ async def calculate_assessment_bbi_compliance(
         )
 
     # Calculate compliance
-    bbi_results = bbi_service.calculate_all_bbi_compliance(db, assessment_id)
+    bbi_results = bbi_service.calculate_all_bbi_compliance(db, assessment)
+    db.commit()  # Commit after calculation
 
     # Get barangay info
     barangay_name = None
     barangay_id = None
     if assessment.blgu_user and assessment.blgu_user.barangay_id:
-        barangay = (
-            db.query(Barangay).filter(Barangay.id == assessment.blgu_user.barangay_id).first()
-        )
-        if barangay:
-            barangay_name = barangay.name
-            barangay_id = barangay.id
+        barangay_id = assessment.blgu_user.barangay_id
+        if assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
 
     # Transform results
     compliance_results = []
     highly_functional_count = 0
     moderately_functional_count = 0
     low_functional_count = 0
+    non_functional_count = 0
     total_percentage = 0.0
 
     for result in bbi_results:
         bbi = result.bbi
         governance_area_name = bbi.governance_area.name if bbi.governance_area else None
+        indicator_code = result.indicator.indicator_code if result.indicator else None
 
         sub_results = []
         if result.sub_indicator_results:
@@ -505,27 +531,33 @@ async def calculate_assessment_bbi_compliance(
             bbi_id=result.bbi_id,
             bbi_name=bbi.name,
             bbi_abbreviation=bbi.abbreviation,
+            indicator_code=indicator_code,
             governance_area_id=bbi.governance_area_id,
             governance_area_name=governance_area_name,
             assessment_id=assessment_id,
-            compliance_percentage=result.compliance_percentage or 0.0,
-            compliance_rating=result.compliance_rating or result.status.value,
-            sub_indicators_passed=result.sub_indicators_passed or 0,
-            sub_indicators_total=result.sub_indicators_total or 0,
+            barangay_id=result.barangay_id,
+            assessment_year=result.assessment_year,
+            compliance_percentage=result.compliance_percentage,
+            compliance_rating=result.compliance_rating,
+            sub_indicators_passed=result.sub_indicators_passed,
+            sub_indicators_total=result.sub_indicators_total,
             sub_indicator_results=sub_results,
-            calculation_date=result.calculation_date,
+            calculated_at=result.calculated_at,
         )
         compliance_results.append(compliance_result)
 
-        rating = result.compliance_rating or result.status.value
-        if rating == "HIGHLY_FUNCTIONAL" or rating == "FUNCTIONAL":
+        # Update counts based on 4-tier rating
+        rating = result.compliance_rating
+        if rating == BBIStatus.HIGHLY_FUNCTIONAL.value:
             highly_functional_count += 1
-        elif rating == "MODERATELY_FUNCTIONAL":
+        elif rating == BBIStatus.MODERATELY_FUNCTIONAL.value:
             moderately_functional_count += 1
-        else:
+        elif rating == BBIStatus.LOW_FUNCTIONAL.value:
             low_functional_count += 1
+        elif rating == BBIStatus.NON_FUNCTIONAL.value:
+            non_functional_count += 1
 
-        total_percentage += result.compliance_percentage or 0.0
+        total_percentage += result.compliance_percentage
 
     total_bbis = len(compliance_results)
     avg_percentage = (total_percentage / total_bbis) if total_bbis > 0 else 0.0
@@ -535,14 +567,80 @@ async def calculate_assessment_bbi_compliance(
         highly_functional_count=highly_functional_count,
         moderately_functional_count=moderately_functional_count,
         low_functional_count=low_functional_count,
+        non_functional_count=non_functional_count,
         average_compliance_percentage=round(avg_percentage, 2),
+    )
+
+    # Use the most recent calculated_at from results
+    latest_calculated_at = max(
+        (r.calculated_at for r in bbi_results if r.calculated_at),
+        default=datetime.utcnow(),
     )
 
     return AssessmentBBIComplianceResponse(
         assessment_id=assessment_id,
-        barangay_id=barangay_id,
+        barangay_id=barangay_id or 0,
         barangay_name=barangay_name,
+        assessment_year=assessment.assessment_year,
         bbi_results=compliance_results,
         summary=summary,
-        calculated_at=datetime.utcnow(),
+        calculated_at=latest_calculated_at,
+    )
+
+
+@router.get(
+    "/compliance/barangay/{barangay_id}",
+    response_model=BarangayBBIComplianceResponse,
+    tags=["bbis"],
+)
+async def get_barangay_bbi_compliance(
+    barangay_id: int,
+    year: int = Query(..., description="Assessment year"),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """
+    Get BBI compliance data for a specific barangay and year.
+
+    Accessible by all authenticated users.
+
+    Returns the compliance rate and 4-tier rating for all BBI indicators:
+    - HIGHLY_FUNCTIONAL: 75% - 100% compliance
+    - MODERATELY_FUNCTIONAL: 50% - 74% compliance
+    - LOW_FUNCTIONAL: 1% - 49% compliance
+    - NON_FUNCTIONAL: 0% compliance
+    """
+    # Get barangay info
+    barangay = db.query(Barangay).filter(Barangay.id == barangay_id).first()
+    if not barangay:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Barangay with ID {barangay_id} not found",
+        )
+
+    # Get BBI compliance summary
+    summary_data = bbi_service.get_bbi_compliance_summary(db, barangay_id, year)
+
+    # Build summary
+    summary = BBIComplianceSummary(
+        total_bbis=summary_data["total_bbis"],
+        highly_functional_count=summary_data["highly_functional_count"],
+        moderately_functional_count=summary_data["moderately_functional_count"],
+        low_functional_count=summary_data["low_functional_count"],
+        non_functional_count=summary_data["non_functional_count"],
+        average_compliance_percentage=round(
+            sum(r.get("compliance_percentage", 0) for r in summary_data["bbi_results"])
+            / len(summary_data["bbi_results"])
+            if summary_data["bbi_results"]
+            else 0.0,
+            2,
+        ),
+    )
+
+    return BarangayBBIComplianceResponse(
+        barangay_id=barangay_id,
+        barangay_name=barangay.name,
+        assessment_year=year,
+        bbi_results=summary_data["bbi_results"],
+        summary=summary,
     )

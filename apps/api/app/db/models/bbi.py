@@ -7,18 +7,17 @@ from sqlalchemy import (
     JSON,
     Boolean,
     DateTime,
-    Enum,
     Float,
     ForeignKey,
     Integer,
     String,
     Text,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
-from app.db.enums import BBIStatus
 
 
 class BBI(Base):
@@ -67,13 +66,16 @@ class BBI(Base):
 
 class BBIResult(Base):
     """
-    BBIResult table model for database storage.
+    BBIResult stores the calculated BBI functionality for a specific barangay and year.
 
-    Stores the calculated compliance status of a BBI for a specific assessment.
     Per DILG MC 2024-417, BBI functionality is based on compliance rate:
     - 75-100%: HIGHLY_FUNCTIONAL
     - 50-74%: MODERATELY_FUNCTIONAL
-    - <50%: LOW_FUNCTIONAL
+    - 1-49%: LOW_FUNCTIONAL
+    - 0%: NON_FUNCTIONAL
+
+    Compliance is calculated based on validator decisions (AssessmentResponse.validation_status)
+    for sub-indicators of each BBI indicator.
 
     Compliance rate = (Passed Sub-Indicators / Total Sub-Indicators) × 100%
     """
@@ -83,43 +85,59 @@ class BBIResult(Base):
     # Primary key
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
 
-    # Legacy BBI status result (kept for backward compatibility)
-    status: Mapped[BBIStatus] = mapped_column(
-        Enum(BBIStatus, name="bbi_status_enum", create_constraint=True),
-        nullable=False,
+    # Direct links for efficient queries
+    barangay_id: Mapped[int] = mapped_column(
+        ForeignKey("barangays.id"), nullable=False, index=True
+    )
+    assessment_year: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+
+    # Reference to the assessment that triggered this calculation
+    assessment_id: Mapped[int] = mapped_column(
+        ForeignKey("assessments.id"), nullable=False, index=True
     )
 
-    # New compliance fields (DILG MC 2024-417)
-    compliance_percentage: Mapped[float | None] = mapped_column(
-        Float, nullable=True, comment="Compliance rate 0-100%"
+    # BBI type (e.g., BDRRMC, BADAC, etc.)
+    bbi_id: Mapped[int] = mapped_column(ForeignKey("bbis.id"), nullable=False, index=True)
+
+    # Parent BBI indicator (e.g., 2.1, 3.1, etc.) - for audit trail
+    indicator_id: Mapped[int] = mapped_column(
+        ForeignKey("indicators.id"), nullable=False, index=True
     )
-    compliance_rating: Mapped[str | None] = mapped_column(
+
+    # Compliance data (4-tier system)
+    compliance_percentage: Mapped[float] = mapped_column(
+        Float, nullable=False, comment="Compliance rate 0-100%"
+    )
+    compliance_rating: Mapped[str] = mapped_column(
         String(30),
-        nullable=True,
-        comment="3-tier rating: HIGHLY_FUNCTIONAL, MODERATELY_FUNCTIONAL, LOW_FUNCTIONAL",
+        nullable=False,
+        comment="4-tier rating: HIGHLY_FUNCTIONAL, MODERATELY_FUNCTIONAL, LOW_FUNCTIONAL, NON_FUNCTIONAL",
     )
-    sub_indicators_passed: Mapped[int | None] = mapped_column(
-        Integer, nullable=True, comment="Number of sub-indicators that passed"
+    sub_indicators_passed: Mapped[int] = mapped_column(
+        Integer, nullable=False, comment="Number of sub-indicators that passed"
     )
-    sub_indicators_total: Mapped[int | None] = mapped_column(
-        Integer, nullable=True, comment="Total number of sub-indicators evaluated"
+    sub_indicators_total: Mapped[int] = mapped_column(
+        Integer, nullable=False, comment="Total number of sub-indicators evaluated"
     )
     sub_indicator_results: Mapped[dict | None] = mapped_column(
         JSON, nullable=True, comment="Detailed pass/fail results for each sub-indicator"
     )
 
-    # Calculation details (optional JSON field for debugging/audit trail)
-    calculation_details: Mapped[dict | None] = mapped_column(JSON, nullable=True)
-
-    # Foreign keys
-    assessment_id: Mapped[int] = mapped_column(
-        ForeignKey("assessments.id"), nullable=False, index=True
-    )
-    bbi_id: Mapped[int] = mapped_column(ForeignKey("bbis.id"), nullable=False, index=True)
-
     # Timestamps
-    calculation_date: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=func.now())
+    calculated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=func.now())
 
     # Relationships
+    barangay = relationship("Barangay", back_populates="bbi_results")
     assessment = relationship("Assessment", back_populates="bbi_results")
     bbi = relationship("BBI", back_populates="bbi_results")
+    indicator = relationship("Indicator")
+
+    # Unique constraint: One result per barangay + year + BBI type
+    __table_args__ = (
+        UniqueConstraint(
+            "barangay_id",
+            "assessment_year",
+            "bbi_id",
+            name="uq_bbi_result_per_barangay_year_bbi",
+        ),
+    )
