@@ -584,9 +584,9 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
             ) : null}
             <Button
               asChild
-              variant="ghost"
+              variant="default"
               size="sm"
-              className="gap-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
             >
               <Link href={`/validator/submissions/${assessmentId}/compliance`}>
                 <ClipboardCheck className="h-4 w-4" />
