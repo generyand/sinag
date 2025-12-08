@@ -1633,10 +1633,19 @@ def submit_for_calibration_review(
             )
 
             if not validation.get("is_complete", False):
+                # Resolve year placeholders in indicator name
+                from app.core.year_resolver import get_year_resolver
+
+                try:
+                    year_resolver = get_year_resolver(db, year=assessment.assessment_year)
+                    indicator_name = year_resolver.resolve_string(indicator.name) or indicator.name
+                except ValueError:
+                    indicator_name = indicator.name
+
                 incomplete_indicators.append(
                     {
                         "indicator_id": response.indicator_id,
-                        "indicator_name": indicator.name,
+                        "indicator_name": indicator_name,
                         "missing_fields": validation.get("missing_fields", []),
                     }
                 )

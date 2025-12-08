@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ClipboardList, X } from 'lucide-react';
-import React, { useState } from 'react';
-import { BARANGAY_PATHS } from './sulop-barangay-paths';
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ClipboardList, X } from "lucide-react";
+import React, { useState } from "react";
+import { BARANGAY_PATHS } from "./sulop-barangay-paths";
 
 /**
  * Barangay data structure
@@ -12,7 +12,7 @@ import { BARANGAY_PATHS } from './sulop-barangay-paths';
 interface BarangayData {
   id: string; // e.g., "1katipunan", "2tanwalang"
   name: string; // Display name
-  status: 'pass' | 'fail' | 'in_progress' | 'not_started';
+  status: "pass" | "fail" | "in_progress" | "not_started";
   compliance_rate?: number;
   submission_count?: number;
 }
@@ -28,27 +28,27 @@ interface SulopBarangayMapProps {
  * Color scheme for barangay status
  */
 const STATUS_COLORS = {
-  pass: '#22c55e', // Green
-  fail: '#ef4444', // Red
-  in_progress: '#f59e0b', // Orange
-  not_started: '#94a3b8', // Gray
+  pass: "#22c55e", // Green
+  fail: "#ef4444", // Red
+  in_progress: "#f59e0b", // Orange
+  not_started: "#94a3b8", // Gray
 } as const;
 
 /**
  * Darker stroke colors for selected state - same hue but darker shade
  */
 const STATUS_STROKE_COLORS = {
-  pass: '#15803d', // Darker green
-  fail: '#b91c1c', // Darker red
-  in_progress: '#b45309', // Darker orange
-  not_started: '#475569', // Darker gray
+  pass: "#15803d", // Darker green
+  fail: "#b91c1c", // Darker red
+  in_progress: "#b45309", // Darker orange
+  not_started: "#475569", // Darker gray
 } as const;
 
 const STATUS_LABELS = {
-  pass: 'Pass',
-  fail: 'Fail',
-  in_progress: 'In Progress',
-  not_started: 'Not Started',
+  pass: "Pass",
+  fail: "Fail",
+  in_progress: "In Progress",
+  not_started: "Not Started",
 } as const;
 
 /**
@@ -56,38 +56,38 @@ const STATUS_LABELS = {
  * This allows matching API data (which uses barangay names) to SVG paths (which use IDs)
  */
 const SVG_ID_TO_NAME_VARIATIONS: Record<string, string[]> = {
-  '1katipunan': ['katipunan'],
-  '2tanwalang': ['tanwalang'],
-  '3solongvale': ['solongvale', 'solong vale', 'solong-vale'],
-  '4tala-o': ['tala-o', 'talao', 'tala o'],
-  '5balasinon': ['balasinon'],
-  '6haradabutai': ['harada-butai', 'haradabutai', 'harada butai'],
-  '7roxas': ['roxas'],
-  '8newcebu': ['new cebu', 'newcebu', 'new-cebu'],
-  '9palili': ['palili'],
-  '10talas': ['talas'],
-  '11carre': ['carre'],
-  '12buguis': ['buguis'],
-  '13mckinley': ['mckinley', 'mc kinley', 'mc-kinley'],
-  '14kiblagon': ['kiblagon'],
-  '15laperas': ['laperas'],
-  '16clib': ['clib'],
-  '17osmena': ['osmena', 'osmeña'],
-  '18luparan': ['luparan'],
-  '19poblacion': ['poblacion'],
-  '20tagolilong': ['tagolilong'],
-  '21lapla': ['lapla'],
-  '22litos': ['litos'],
-  '23parame': ['parame'],
-  '24labon': ['labon'],
-  '25waterfall': ['waterfall'],
+  "1katipunan": ["katipunan"],
+  "2tanwalang": ["tanwalang"],
+  "3solongvale": ["solongvale", "solong vale", "solong-vale"],
+  "4tala-o": ["tala-o", "talao", "tala o"],
+  "5balasinon": ["balasinon"],
+  "6haradabutai": ["harada-butai", "haradabutai", "harada butai"],
+  "7roxas": ["roxas"],
+  "8newcebu": ["new cebu", "newcebu", "new-cebu"],
+  "9palili": ["palili"],
+  "10talas": ["talas"],
+  "11carre": ["carre"],
+  "12buguis": ["buguis"],
+  "13mckinley": ["mckinley", "mc kinley", "mc-kinley"],
+  "14kiblagon": ["kiblagon"],
+  "15laperas": ["laperas"],
+  "16clib": ["clib"],
+  "17osmena": ["osmena", "osmeña"],
+  "18luparan": ["luparan"],
+  "19poblacion": ["poblacion"],
+  "20tagolilong": ["tagolilong"],
+  "21lapla": ["lapla"],
+  "22litos": ["litos"],
+  "23parame": ["parame"],
+  "24labon": ["labon"],
+  "25waterfall": ["waterfall"],
 };
 
 /**
  * Normalizes a name for comparison (lowercase, no special chars except alphanumeric)
  */
 const normalizeName = (name: string): string => {
-  return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return name.toLowerCase().replace(/[^a-z0-9]/g, "");
 };
 
 /**
@@ -109,7 +109,10 @@ const findSvgIdFromBarangay = (barangayId: string, barangayName: string): string
   for (const [svgId, variations] of Object.entries(SVG_ID_TO_NAME_VARIATIONS)) {
     for (const variation of variations) {
       const normalizedVariation = normalizeName(variation);
-      if (normalizedName.includes(normalizedVariation) || normalizedVariation.includes(normalizedName)) {
+      if (
+        normalizedName.includes(normalizedVariation) ||
+        normalizedVariation.includes(normalizedName)
+      ) {
         return svgId;
       }
     }
@@ -135,8 +138,8 @@ const findSvgIdFromBarangay = (barangayId: string, barangayName: string): string
 export function SulopBarangayMapIntegrated({
   barangays,
   onBarangayClick,
-  title = 'Sulop Barangay Assessment Status',
-  description = 'Interactive map showing assessment status for each barangay in Sulop',
+  title = "Sulop Barangay Assessment Status",
+  description = "Interactive map showing assessment status for each barangay in Sulop",
 }: SulopBarangayMapProps) {
   const [hoveredBarangay, setHoveredBarangay] = useState<string | null>(null);
   const [selectedBarangay, setSelectedBarangay] = useState<string | null>(null);
@@ -179,7 +182,7 @@ export function SulopBarangayMapIntegrated({
       return variations[0]
         .split(/[-\s]/)
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
+        .join(" ");
     }
     return svgId;
   };
@@ -195,7 +198,7 @@ export function SulopBarangayMapIntegrated({
       const placeholderBarangay: BarangayData = {
         id: svgId,
         name: getDisplayName(svgId),
-        status: 'not_started',
+        status: "not_started",
       };
       onBarangayClick?.(placeholderBarangay);
     }
@@ -213,7 +216,7 @@ export function SulopBarangayMapIntegrated({
     return {
       id: targetId,
       name: getDisplayName(targetId),
-      status: 'not_started',
+      status: "not_started",
     };
   };
 
@@ -243,7 +246,11 @@ export function SulopBarangayMapIntegrated({
         <CardDescription>{description}</CardDescription>
 
         {/* Status Legend */}
-        <div className="flex flex-wrap gap-2 pt-2" role="list" aria-label="Assessment status legend">
+        <div
+          className="flex flex-wrap gap-2 pt-2"
+          role="list"
+          aria-label="Assessment status legend"
+        >
           {Object.entries(STATUS_COLORS).map(([status, color]) => (
             <Badge
               key={status}
@@ -266,11 +273,11 @@ export function SulopBarangayMapIntegrated({
       </CardHeader>
 
       <CardContent>
-        <div className="flex gap-4">
+        <div className="flex flex-col md:flex-row gap-4">
           {/* Map Container - Expands/Shrinks based on selection */}
           <div
-            className={`transition-all duration-500 ease-in-out ${
-              showDetailsPanel ? 'w-2/3' : 'w-full'
+            className={`transition-all duration-500 ease-in-out w-full ${
+              showDetailsPanel ? "md:w-2/3" : "md:w-full"
             }`}
           >
             <div className="relative w-full aspect-[2.15/1] bg-gray-50 dark:bg-gray-900 rounded-sm overflow-hidden border-2 border-gray-200 dark:border-gray-700 shadow-sm">
@@ -282,7 +289,11 @@ export function SulopBarangayMapIntegrated({
                 aria-label="Interactive map of Sulop barangays showing assessment status. Click on a barangay to view details."
               >
                 <title>Sulop Barangay Assessment Map</title>
-                <desc>Interactive map showing the assessment status of all 25 barangays in Sulop, Davao del Sur. Colors indicate: green for passed, red for failed, orange for in progress, and gray for not started.</desc>
+                <desc>
+                  Interactive map showing the assessment status of all 25 barangays in Sulop, Davao
+                  del Sur. Colors indicate: green for passed, red for failed, orange for in
+                  progress, and gray for not started.
+                </desc>
 
                 {/* Background - Click to close details panel */}
                 <rect
@@ -308,24 +319,24 @@ export function SulopBarangayMapIntegrated({
                 {Object.entries(BARANGAY_PATHS).map(([svgId, pathData]) => {
                   const brgy = svgIdToBarangayMap.get(svgId);
                   const displayName = brgy?.name || getDisplayName(svgId);
-                  const statusLabel = brgy ? STATUS_LABELS[brgy.status] : 'Not Started';
+                  const statusLabel = brgy ? STATUS_LABELS[brgy.status] : "Not Started";
                   return (
                     <path
                       key={svgId}
                       id={svgId}
                       d={pathData}
                       fill={getBarangayColor(svgId)}
-                      stroke={selectedBarangay === svgId ? getBarangayStrokeColor(svgId) : 'none'}
+                      stroke={selectedBarangay === svgId ? getBarangayStrokeColor(svgId) : "none"}
                       strokeWidth={selectedBarangay === svgId ? 4 : 0}
-                      className="cursor-pointer transition-all duration-200 hover:brightness-110"
+                      className="cursor-pointer transition-all duration-200 hover:brightness-110 focus:outline-none"
                       onClick={() => handleBarangayClick(svgId)}
                       onMouseEnter={() => setHoveredBarangay(svgId)}
                       onMouseLeave={() => setHoveredBarangay(null)}
                       role="button"
                       tabIndex={0}
-                      aria-label={`${displayName}: ${statusLabel}${brgy?.compliance_rate !== undefined ? `, ${brgy.compliance_rate.toFixed(1)}% compliance` : ''}`}
+                      aria-label={`${displayName}: ${statusLabel}${brgy?.compliance_rate !== undefined ? `, ${brgy.compliance_rate.toFixed(1)}% compliance` : ""}`}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
+                        if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();
                           handleBarangayClick(svgId);
                         }
@@ -337,10 +348,14 @@ export function SulopBarangayMapIntegrated({
 
               {/* Hover Tooltip */}
               {hoveredBarangay && displayedBarangay && !showDetailsPanel && (
-                <div className="absolute top-2 left-2 bg-white shadow-lg rounded-sm p-3 border pointer-events-none z-10" role="tooltip" aria-live="polite">
+                <div
+                  className="absolute top-2 left-2 bg-white shadow-lg rounded-sm p-3 border pointer-events-none z-10"
+                  role="tooltip"
+                  aria-live="polite"
+                >
                   <div className="text-sm font-semibold">{displayedBarangay.name}</div>
                   <div className="text-xs text-gray-600 mt-1">
-                    Status:{' '}
+                    Status:{" "}
                     <span
                       className="font-medium"
                       style={{ color: STATUS_COLORS[displayedBarangay.status] }}
@@ -361,15 +376,17 @@ export function SulopBarangayMapIntegrated({
 
           {/* Details Panel - Slides in from right when barangay is selected */}
           <aside
-            className={`transition-all duration-500 ease-in-out overflow-hidden ${
-              showDetailsPanel ? 'w-1/3 opacity-100' : 'w-0 opacity-0'
+            className={`transition-all duration-500 ease-in-out overflow-hidden w-full ${
+              showDetailsPanel ? "h-auto opacity-100 md:w-1/3" : "h-0 opacity-0 md:w-0"
             }`}
             aria-label="Barangay details panel"
             aria-hidden={!showDetailsPanel}
           >
             <div className="bg-gray-50 rounded-sm p-4 border-2 border-gray-200 shadow-sm h-full min-w-[280px]">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold" id="details-panel-heading">Barangay Details</h3>
+                <h3 className="text-sm font-semibold" id="details-panel-heading">
+                  Barangay Details
+                </h3>
                 <button
                   onClick={() => setSelectedBarangay(null)}
                   className="p-1 hover:bg-gray-200 rounded-full transition-colors"
@@ -380,10 +397,13 @@ export function SulopBarangayMapIntegrated({
               </div>
 
               {displayedBarangay ? (
-                displayedBarangay.status === 'not_started' ? (
+                displayedBarangay.status === "not_started" ? (
                   /* Empty state for barangays without assessment */
                   <div className="flex flex-col items-center justify-center py-6 text-center">
-                    <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4" aria-hidden="true">
+                    <div
+                      className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4"
+                      aria-hidden="true"
+                    >
                       <ClipboardList className="w-8 h-8 text-gray-400" aria-hidden="true" />
                     </div>
                     <div className="text-lg font-bold text-gray-900 mb-1">
@@ -415,7 +435,7 @@ export function SulopBarangayMapIntegrated({
                         <Badge
                           style={{
                             backgroundColor: STATUS_COLORS[displayedBarangay.status],
-                            color: 'white',
+                            color: "white",
                           }}
                         >
                           {STATUS_LABELS[displayedBarangay.status]}
