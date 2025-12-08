@@ -1,14 +1,14 @@
 # BBI Feature Fix Plan
 
-> **Created:** 2025-12-08
-> **Status:** Implementation Complete - Pending Testing
-> **Branch:** `fix/bbi-fixes`
+> **Created:** 2025-12-08 **Status:** Implementation Complete - Pending Testing **Branch:**
+> `fix/bbi-fixes`
 
 ---
 
 ## Progress Tracker
 
 ### Phase 1: Schema Changes
+
 - [x] 1.1 Update `BBIResult` model in `apps/api/app/db/models/bbi.py`
   - [x] Add `barangay_id` field (FK to barangays)
   - [x] Add `assessment_year` field (Integer)
@@ -25,6 +25,7 @@
 - [x] 1.5 Run migration and verify
 
 ### Phase 2: Service Layer Changes
+
 - [x] 2.1 Add `BBI_CONFIG` dictionary to `bbi_service.py`
 - [x] 2.2 Update `_get_compliance_rating` method (add 0% = NON_FUNCTIONAL)
 - [x] 2.3 Rewrite `calculate_bbi_compliance` method
@@ -37,33 +38,39 @@
 - [x] 2.5 Update `_get_or_create_bbi_for_indicator` to use BBI_CONFIG
 
 ### Phase 3: Trigger Integration
+
 - [x] 3.1 Find where assessment status changes to COMPLETED
 - [x] 3.2 Add BBI calculation trigger in `mlgoo_service.py`
 - [ ] 3.3 Test trigger fires correctly
 
 ### Phase 4: Schema Updates (Pydantic)
+
 - [x] 4.1 Update `BBIResultResponse` schema
 - [x] 4.2 Update `BBIComplianceResult` schema
 - [x] 4.3 Add new endpoint schemas if needed
 
 ### Phase 5: API Endpoints
+
 - [x] 5.1 Update existing BBI endpoints
 - [x] 5.2 Add `GET /api/v1/bbis/compliance/barangay/{barangay_id}` endpoint
 - [x] 5.3 Add year filter to endpoints
 
 ### Phase 6: Frontend Updates
+
 - [x] 6.1 Update `BBIPreviewPanel.tsx`
 - [x] 6.2 Update `BBIComplianceSection.tsx`
 - [x] 6.3 Update `BBIComplianceCard.tsx`
 - [ ] 6.4 Regenerate types with `pnpm generate-types` (run when API is live)
 
 ### Phase 7: Testing
+
 - [x] 7.1 Write unit tests for rating calculation
 - [x] 7.2 Write unit tests for sub-indicator counting
 - [ ] 7.3 Write integration tests for full flow
 - [ ] 7.4 Manual testing
 
 ### Phase 8: Cleanup
+
 - [ ] 8.1 Remove unused code/methods
 - [ ] 8.2 Update documentation
 - [ ] 8.3 Code review
@@ -84,15 +91,15 @@ The BBI (Barangay-based Institutions) feature has multiple issues:
 
 ## Official BBI Mapping
 
-| BBI | Indicator | Sub-indicators | Area |
-|-----|-----------|----------------|------|
-| BDRRMC | 2.1 | 4 | Core 2 |
-| BADAC | 3.1 | 10 | Core 3 |
-| BPOC | 3.2 | 3 | Core 3 |
-| VAW Desk | 4.1 | 7 | Essential 1 |
-| BDC | 4.3 | 4 | Essential 1 |
-| BCPC | 4.5 | 6 | Essential 1 |
-| BESWMC | 6.1 | 4 | Essential 3 |
+| BBI      | Indicator | Sub-indicators | Area        |
+| -------- | --------- | -------------- | ----------- |
+| BDRRMC   | 2.1       | 4              | Core 2      |
+| BADAC    | 3.1       | 10             | Core 3      |
+| BPOC     | 3.2       | 3              | Core 3      |
+| VAW Desk | 4.1       | 7              | Essential 1 |
+| BDC      | 4.3       | 4              | Essential 1 |
+| BCPC     | 4.5       | 6              | Essential 1 |
+| BESWMC   | 6.1       | 4              | Essential 3 |
 
 **Total: 7 BBIs**
 
@@ -100,16 +107,17 @@ The BBI (Barangay-based Institutions) feature has multiple issues:
 
 ## Uniform Percentage-Based Rating System
 
-| Compliance Rate | Adjectival Rating |
-|-----------------|-------------------|
-| 75% - 100% | Highly Functional |
-| 50% - 74% | Moderately Functional |
-| 1% - 49% | Low Functional |
-| 0% | Non Functional |
+| Compliance Rate | Adjectival Rating     |
+| --------------- | --------------------- |
+| 75% - 100%      | Highly Functional     |
+| 50% - 74%       | Moderately Functional |
+| 1% - 49%        | Low Functional        |
+| 0%              | Non Functional        |
 
 **Calculation:** `(Passed Sub-indicators / Total Sub-indicators) × 100%`
 
-**Source of Truth:** `AssessmentResponse.validation_status` for each sub-indicator (set by validators)
+**Source of Truth:** `AssessmentResponse.validation_status` for each sub-indicator (set by
+validators)
 
 **Trigger:** Calculate when Assessment reaches `COMPLETED` status
 
@@ -122,6 +130,7 @@ The BBI (Barangay-based Institutions) feature has multiple issues:
 **File:** `apps/api/app/db/models/bbi.py`
 
 **Changes:**
+
 - Add `barangay_id` (FK to barangays)
 - Add `assessment_year` (Integer)
 - Add `indicator_id` (FK to indicators - the parent BBI indicator)
@@ -228,6 +237,7 @@ class BBIStatus(str, enum.Enum):
 **File:** `apps/api/app/db/models/barangay.py`
 
 **Add:**
+
 ```python
 bbi_results = relationship("BBIResult", back_populates="barangay", cascade="all, delete-orphan")
 ```
@@ -290,6 +300,7 @@ def _get_compliance_rating(self, percentage: float) -> BBIStatus:
 #### C. Update `calculate_bbi_compliance` Method
 
 **Key changes:**
+
 1. Get sub-indicator pass/fail from `AssessmentResponse.validation_status`
 2. Calculate percentage: `(passed / total) × 100`
 3. Store result with `barangay_id` and `assessment_year`
@@ -414,16 +425,16 @@ bbi_service.calculate_all_bbi_compliance(db, assessment)
 
 ## Files to Modify
 
-| File | Changes |
-|------|---------|
-| `apps/api/app/db/models/bbi.py` | Update BBIResult schema |
-| `apps/api/app/db/models/barangay.py` | Add bbi_results relationship |
-| `apps/api/app/db/enums.py` | Update BBIStatus enum (remove legacy) |
-| `apps/api/app/services/bbi_service.py` | Update calculation logic |
-| `apps/api/app/services/mlgoo_service.py` | Trigger BBI calc on COMPLETED |
-| `apps/api/app/schemas/bbi.py` | Update response schemas |
-| `apps/api/app/api/v1/bbis.py` | Update endpoints if needed |
-| `apps/api/alembic/versions/` | New migration file |
+| File                                     | Changes                               |
+| ---------------------------------------- | ------------------------------------- |
+| `apps/api/app/db/models/bbi.py`          | Update BBIResult schema               |
+| `apps/api/app/db/models/barangay.py`     | Add bbi_results relationship          |
+| `apps/api/app/db/enums.py`               | Update BBIStatus enum (remove legacy) |
+| `apps/api/app/services/bbi_service.py`   | Update calculation logic              |
+| `apps/api/app/services/mlgoo_service.py` | Trigger BBI calc on COMPLETED         |
+| `apps/api/app/schemas/bbi.py`            | Update response schemas               |
+| `apps/api/app/api/v1/bbis.py`            | Update endpoints if needed            |
+| `apps/api/alembic/versions/`             | New migration file                    |
 
 ---
 
@@ -457,12 +468,12 @@ bbi_service.calculate_all_bbi_compliance(db, assessment)
 
 ## Summary of Changes
 
-| Change | Impact |
-|--------|--------|
-| Add `barangay_id` to BBIResult | Direct barangay lookup |
-| Add `assessment_year` to BBIResult | Year-over-year tracking |
-| Add `indicator_id` to BBIResult | Audit trail |
-| Remove legacy `status` field | Clean 4-tier system |
-| Fix 0% = NON_FUNCTIONAL | Correct rating |
-| Source from validation_status | Validator decisions as truth |
-| Trigger on COMPLETED | Automatic calculation |
+| Change                             | Impact                       |
+| ---------------------------------- | ---------------------------- |
+| Add `barangay_id` to BBIResult     | Direct barangay lookup       |
+| Add `assessment_year` to BBIResult | Year-over-year tracking      |
+| Add `indicator_id` to BBIResult    | Audit trail                  |
+| Remove legacy `status` field       | Clean 4-tier system          |
+| Fix 0% = NON_FUNCTIONAL            | Correct rating               |
+| Source from validation_status      | Validator decisions as truth |
+| Trigger on COMPLETED               | Automatic calculation        |
