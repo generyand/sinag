@@ -56,9 +56,7 @@ class AssessmentYear(Base):
     assessment_period_start: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
-    assessment_period_end: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    assessment_period_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     # Phase deadlines (from AssessmentCycle, stored in UTC)
     phase1_deadline: Mapped[datetime | None] = mapped_column(
@@ -75,9 +73,7 @@ class AssessmentYear(Base):
     )  # Calibration/validation deadline
 
     # Status flags
-    is_active: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False, index=True
-    )
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, index=True)
     is_published: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
     )  # Visible to Katuparan Center users
@@ -94,15 +90,11 @@ class AssessmentYear(Base):
     )
 
     # Activation tracking
-    activated_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    activated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     activated_by_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
-    deactivated_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    deactivated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     deactivated_by_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )

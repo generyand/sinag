@@ -362,9 +362,7 @@ class AnalyticsService:
 
         # Filter by assessment year via Assessment join
         if assessment_year is not None:
-            query = query.join(Assessment).filter(
-                Assessment.assessment_year == assessment_year
-            )
+            query = query.join(Assessment).filter(Assessment.assessment_year == assessment_year)
 
         # Group by indicator, order by count descending, limit to 5
         results = (

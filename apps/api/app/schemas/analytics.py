@@ -289,7 +289,9 @@ class ReportMetadata(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     generated_at: datetime = Field(..., description="Timestamp when the report was generated")
-    assessment_year: int | None = Field(None, description="Filter: Assessment year (e.g., 2024, 2025)")
+    assessment_year: int | None = Field(
+        None, description="Filter: Assessment year (e.g., 2024, 2025)"
+    )
     start_date: datetime | None = Field(None, description="Filter: Start date")
     end_date: datetime | None = Field(None, description="Filter: End date")
     governance_areas: list[str] | None = Field(None, description="Filter: Governance area codes")

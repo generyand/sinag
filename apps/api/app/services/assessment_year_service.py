@@ -58,8 +58,7 @@ class AssessmentYearService:
         year_record = self.get_active_year(db)
         if not year_record:
             raise ValueError(
-                "No active assessment year found. "
-                "Please configure and activate an assessment year."
+                "No active assessment year found. Please configure and activate an assessment year."
             )
         return year_record.year
 
@@ -89,9 +88,7 @@ class AssessmentYearService:
         """
         return db.query(AssessmentYear).filter(AssessmentYear.id == year_id).first()
 
-    def get_all_years(
-        self, db: Session, include_unpublished: bool = False
-    ) -> list[AssessmentYear]:
+    def get_all_years(self, db: Session, include_unpublished: bool = False) -> list[AssessmentYear]:
         """
         Get all assessment year configurations.
 
@@ -107,7 +104,9 @@ class AssessmentYearService:
             query = query.filter(AssessmentYear.is_published == True)
         return query.order_by(AssessmentYear.year.desc()).all()
 
-    def list_years(self, db: Session, include_unpublished: bool = True) -> AssessmentYearListResponse:
+    def list_years(
+        self, db: Session, include_unpublished: bool = True
+    ) -> AssessmentYearListResponse:
         """
         Get all years as a list response with active year info.
 
@@ -241,8 +240,7 @@ class AssessmentYearService:
         existing = self.get_year_by_number(db, data.year)
         if existing:
             raise ValueError(
-                f"Assessment year {data.year} already exists. "
-                "Use update methods instead."
+                f"Assessment year {data.year} already exists. Use update methods instead."
             )
 
         year_record = AssessmentYear(
@@ -330,18 +328,12 @@ class AssessmentYearService:
             raise ValueError(f"Assessment year {year} not found.")
 
         if year_record.is_active:
-            raise ValueError(
-                f"Cannot delete active year {year}. Deactivate it first."
-            )
+            raise ValueError(f"Cannot delete active year {year}. Deactivate it first.")
 
         # Check for linked assessments
         from app.db.models.assessment import Assessment
 
-        assessment_count = (
-            db.query(Assessment)
-            .filter(Assessment.assessment_year == year)
-            .count()
-        )
+        assessment_count = db.query(Assessment).filter(Assessment.assessment_year == year).count()
         if assessment_count > 0:
             raise ValueError(
                 f"Cannot delete year {year}. "
@@ -388,10 +380,7 @@ class AssessmentYearService:
         """
         # Lock the target year record to prevent concurrent modifications
         year_record = (
-            db.query(AssessmentYear)
-            .filter(AssessmentYear.year == year)
-            .with_for_update()
-            .first()
+            db.query(AssessmentYear).filter(AssessmentYear.year == year).with_for_update().first()
         )
         if not year_record:
             raise ValueError(f"Assessment year {year} not found.")
