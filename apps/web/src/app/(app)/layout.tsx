@@ -1,25 +1,25 @@
 "use client";
 
-import UserNav from "@/components/shared/UserNav";
 import { NotificationBell } from "@/components/features/notifications";
+import UserNav from "@/components/shared/UserNav";
 import { useAssessorGovernanceArea } from "@/hooks/useAssessorGovernanceArea";
 import { useAuthStore } from "@/store/useAuthStore";
 import {
-  X,
+  BarChart3,
+  Building2,
+  Calendar,
   ChevronLeft,
   ChevronRight,
-  Home,
   ClipboardList,
-  BarChart3,
-  Users,
-  User,
-  Settings,
-  ListTodo,
-  Layers,
-  Calendar,
-  Building2,
   Clock,
+  Home,
+  Layers,
+  ListTodo,
   Menu,
+  Settings,
+  User,
+  Users,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import Image from "next/image";
@@ -385,15 +385,28 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           sidebarCollapsed ? "md:pl-20" : "md:pl-64"
         }`}
       >
-        <div className="sticky top-0 z-10 md:hidden pl-1 pt-1 sm:pl-3 sm:pt-3 bg-[var(--background)] transition-colors duration-300">
+        <div className="sticky top-0 z-40 md:hidden bg-[var(--card)] border-b border-[var(--border)] flex items-center px-4 py-3 gap-3 transition-colors duration-300 shadow-sm">
           <button
             aria-label="Open navigation menu"
             aria-expanded={sidebarOpen}
-            className="-ml-0.5 -mt-0.5 h-12 w-12 inline-flex items-center justify-center rounded-md text-[var(--icon-default)] hover:text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--cityscape-yellow)] transition-colors duration-200"
+            className="p-2 -ml-2 rounded-md text-[var(--icon-default)] hover:text-[var(--foreground)] hover:bg-[var(--hover)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--cityscape-yellow)] transition-colors duration-200"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="h-6 w-6" aria-hidden="true" />
           </button>
+
+          <div className="flex items-center gap-2">
+            <Image
+              src="/logo/logo.webp" // Correct path relative to public folder
+              alt="SINAG Logo"
+              width={28}
+              height={28}
+              className="w-7 h-7 object-contain flex-shrink-0"
+              unoptimized
+              priority
+            />
+            <span className="text-lg font-bold text-[var(--foreground)]">SINAG</span>
+          </div>
         </div>
 
         {/* Header */}
@@ -509,7 +522,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 {/* Profile dropdown */}
                 <div className="relative">
                   <button
-                    className="flex items-center space-x-2 p-2 rounded-full text-[var(--icon-default)] hover:text-[var(--cityscape-yellow)] hover:bg-[var(--hover)] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--cityscape-yellow)] focus:ring-offset-2"
+                    className="flex items-center justify-center space-x-0 sm:space-x-2 p-2 rounded-full text-[var(--icon-default)] hover:text-[var(--cityscape-yellow)] hover:bg-[var(--hover)] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--cityscape-yellow)] focus:ring-offset-2 aspect-square sm:aspect-auto"
                     onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                   >
                     <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] flex items-center justify-center text-[var(--cityscape-accent-foreground)] font-semibold text-sm">

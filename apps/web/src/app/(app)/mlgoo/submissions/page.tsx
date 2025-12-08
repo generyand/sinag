@@ -1,19 +1,19 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/store/useAuthStore";
-import { useEffectiveYear } from "@/store/useAssessmentYearStore";
 import { YearSelector } from "@/components/features/assessment-year/YearSelector";
 import {
-  Filter,
-  Search,
-  ChevronDown,
-  ChevronUp,
-  Eye,
-  Send,
-  AlertTriangle,
-  XCircle,
-} from "lucide-react";
+  ActiveFilterPills,
+  STATUS_FILTER_OPTIONS,
+  SubmissionsEmptyState,
+  SubmissionsMobileList,
+  SubmissionsSkeleton,
+  getProgressBarColor,
+  getStatusConfig,
+  useSubmissionsData,
+  useSubmissionsFilters,
+  type SortableColumn,
+  type SubmissionUIModel,
+} from "@/components/features/submissions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -23,20 +23,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
+import { useEffectiveYear } from "@/store/useAssessmentYearStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import {
-  SubmissionsSkeleton,
-  SubmissionsEmptyState,
-  ActiveFilterPills,
-  SubmissionsMobileList,
-  useSubmissionsData,
-  useSubmissionsFilters,
-  getStatusConfig,
-  getProgressBarColor,
-  STATUS_FILTER_OPTIONS,
-  type SubmissionUIModel,
-  type SortableColumn,
-} from "@/components/features/submissions";
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  Eye,
+  Filter,
+  Search,
+  Send,
+  XCircle,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function AdminSubmissionsPage() {
   const { isAuthenticated } = useAuthStore();
@@ -150,7 +150,7 @@ export default function AdminSubmissionsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="space-y-6">
           {/* Header Section */}
-          <div className="relative overflow-hidden bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-8">
+          <div className="relative overflow-hidden bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-6 sm:p-8">
             {/* Decorative background elements */}
             <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-blue-100/20 to-indigo-100/10 rounded-full -translate-y-20 translate-x-20"></div>
             <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-purple-100/15 to-pink-100/10 rounded-full translate-y-16 -translate-x-16"></div>
@@ -158,7 +158,7 @@ export default function AdminSubmissionsPage() {
             <div className="relative z-10">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                 <div>
-                  <h1 className="text-3xl font-bold text-[var(--foreground)]">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)]">
                     Assessment{" "}
                     <span className="bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] bg-clip-text text-transparent">
                       Submissions
@@ -167,18 +167,26 @@ export default function AdminSubmissionsPage() {
                 </div>
 
                 {/* Year Selector + Quick Stats */}
-                <div className="flex items-center gap-4 sm:gap-6">
-                  <YearSelector showLabel showIcon />
-                  <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)] min-w-[100px]">
-                    <div className="text-3xl font-bold text-[var(--foreground)]">{totalCount}</div>
-                    <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
-                      Submissions
-                    </div>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 sm:gap-6">
+                  <div className="w-full sm:w-auto">
+                    <YearSelector showLabel showIcon />
                   </div>
-                  <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)] min-w-[100px]">
-                    <div className="text-3xl font-bold text-green-600">{completedCount}</div>
-                    <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
-                      Completed
+                  <div className="flex gap-4 sm:contents">
+                    <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)] flex-1 sm:flex-none sm:min-w-[100px]">
+                      <div className="text-2xl sm:text-3xl font-bold text-[var(--foreground)]">
+                        {totalCount}
+                      </div>
+                      <div className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
+                        Submissions
+                      </div>
+                    </div>
+                    <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)] flex-1 sm:flex-none sm:min-w-[100px]">
+                      <div className="text-2xl sm:text-3xl font-bold text-green-600">
+                        {completedCount}
+                      </div>
+                      <div className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
+                        Completed
+                      </div>
                     </div>
                   </div>
                 </div>

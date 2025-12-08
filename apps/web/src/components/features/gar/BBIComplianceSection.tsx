@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * BBIComplianceSection Component
@@ -16,7 +16,7 @@
  * Per DILG MC 2024-417 guidelines.
  */
 
-import { Building2 } from 'lucide-react';
+import { Building2 } from "lucide-react";
 
 // BBI compliance types (matching backend schema)
 export interface SubIndicatorResult {
@@ -71,30 +71,30 @@ interface BBIComplianceSectionProps {
 // Get rating color for the result bar (4-tier system)
 function getRatingColor(rating: string): string {
   switch (rating) {
-    case 'HIGHLY_FUNCTIONAL':
-      return 'bg-green-500';
-    case 'MODERATELY_FUNCTIONAL':
-      return 'bg-yellow-400';
-    case 'LOW_FUNCTIONAL':
-      return 'bg-orange-500';
-    case 'NON_FUNCTIONAL':
+    case "HIGHLY_FUNCTIONAL":
+      return "bg-green-500";
+    case "MODERATELY_FUNCTIONAL":
+      return "bg-yellow-400";
+    case "LOW_FUNCTIONAL":
+      return "bg-orange-500";
+    case "NON_FUNCTIONAL":
     default:
-      return 'bg-red-500';
+      return "bg-red-500";
   }
 }
 
 // Get rating label for display
 function getRatingLabel(rating: string): string {
   switch (rating) {
-    case 'HIGHLY_FUNCTIONAL':
-      return 'Highly Functional';
-    case 'MODERATELY_FUNCTIONAL':
-      return 'Moderately Functional';
-    case 'LOW_FUNCTIONAL':
-      return 'Low Functional';
-    case 'NON_FUNCTIONAL':
+    case "HIGHLY_FUNCTIONAL":
+      return "Highly Functional";
+    case "MODERATELY_FUNCTIONAL":
+      return "Moderately Functional";
+    case "LOW_FUNCTIONAL":
+      return "Low Functional";
+    case "NON_FUNCTIONAL":
     default:
-      return 'Non Functional';
+      return "Non Functional";
   }
 }
 
@@ -117,79 +117,80 @@ export function BBIComplianceSection({ data }: BBIComplianceSectionProps) {
       </div>
 
       {/* BBI Table */}
-      <table className="w-full">
-        <thead>
-          <tr className="bg-[var(--muted)]/30">
-            <th className="text-left px-4 py-2 font-semibold text-[var(--foreground)] border-b border-[var(--border)]">
-              BBI
-            </th>
-            <th className="text-center px-4 py-2 font-semibold text-[var(--foreground)] border-b border-[var(--border)] w-28">
-              COMPLIANCE
-            </th>
-            <th className="text-center px-4 py-2 font-semibold text-[var(--foreground)] border-b border-[var(--border)] w-36">
-              RATING
-              <br />
-              <span className="text-xs font-normal">
-                (<span className="text-green-600">high</span>,{' '}
-                <span className="text-yellow-600">mod</span>,{' '}
-                <span className="text-orange-600">low</span>,{' '}
-                <span className="text-red-600">non</span>)
-              </span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.bbi_results.map((bbi) => (
-            <tr key={bbi.bbi_id} className="border-b border-[var(--border)]">
-              <td className="px-4 py-2">
-                <div>
-                  <span className="font-medium text-[var(--foreground)]">
-                    {bbi.bbi_abbreviation}
-                  </span>
-                  <p className="text-xs text-[var(--muted-foreground)]">{bbi.bbi_name}</p>
-                </div>
-              </td>
-              <td className="px-4 py-2 text-center">
-                <span className="font-semibold text-[var(--foreground)]">
-                  {Math.round(bbi.compliance_percentage)}%
+      {/* BBI Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[600px]">
+          <thead>
+            <tr className="bg-[var(--muted)]/30">
+              <th className="text-left px-4 py-2 font-semibold text-[var(--foreground)] border-b border-[var(--border)]">
+                BBI
+              </th>
+              <th className="text-center px-4 py-2 font-semibold text-[var(--foreground)] border-b border-[var(--border)] w-28">
+                COMPLIANCE
+              </th>
+              <th className="text-center px-4 py-2 font-semibold text-[var(--foreground)] border-b border-[var(--border)] w-36">
+                RATING
+                <br />
+                <span className="text-xs font-normal">
+                  (<span className="text-green-600">high</span>,{" "}
+                  <span className="text-yellow-600">mod</span>,{" "}
+                  <span className="text-orange-600">low</span>,{" "}
+                  <span className="text-red-600">non</span>)
                 </span>
-                <p className="text-xs text-[var(--muted-foreground)]">
-                  ({bbi.sub_indicators_passed}/{bbi.sub_indicators_total})
-                </p>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.bbi_results.map((bbi) => (
+              <tr key={bbi.bbi_id} className="border-b border-[var(--border)]">
+                <td className="px-4 py-2">
+                  <div>
+                    <span className="font-medium text-[var(--foreground)]">
+                      {bbi.bbi_abbreviation}
+                    </span>
+                    <p className="text-xs text-[var(--muted-foreground)]">{bbi.bbi_name}</p>
+                  </div>
+                </td>
+                <td className="px-4 py-2 text-center">
+                  <span className="font-semibold text-[var(--foreground)]">
+                    {Math.round(bbi.compliance_percentage)}%
+                  </span>
+                  <p className="text-xs text-[var(--muted-foreground)]">
+                    ({bbi.sub_indicators_passed}/{bbi.sub_indicators_total})
+                  </p>
+                </td>
+                <td className="px-4 py-2">
+                  <div
+                    className={`h-6 w-full rounded-sm ${getRatingColor(bbi.compliance_rating)}`}
+                    title={getRatingLabel(bbi.compliance_rating)}
+                  />
+                </td>
+              </tr>
+            ))}
+
+            {/* Overall BBI Result Row */}
+            <tr className="bg-blue-100 dark:bg-blue-900/30 border-t-2 border-blue-500">
+              <td className="px-4 py-3 font-bold text-[var(--foreground)]">AVERAGE COMPLIANCE</td>
+              <td className="px-4 py-3 text-center font-bold text-[var(--foreground)]">
+                {Math.round(data.summary.average_compliance_percentage)}%
               </td>
-              <td className="px-4 py-2">
+              <td className="px-4 py-3">
                 <div
-                  className={`h-6 w-full rounded-sm ${getRatingColor(bbi.compliance_rating)}`}
-                  title={getRatingLabel(bbi.compliance_rating)}
+                  className={`h-8 w-full rounded-sm ${
+                    data.summary.average_compliance_percentage >= 75
+                      ? "bg-green-500"
+                      : data.summary.average_compliance_percentage >= 50
+                        ? "bg-yellow-400"
+                        : data.summary.average_compliance_percentage > 0
+                          ? "bg-orange-500"
+                          : "bg-red-500"
+                  }`}
                 />
               </td>
             </tr>
-          ))}
-
-          {/* Overall BBI Result Row */}
-          <tr className="bg-blue-100 dark:bg-blue-900/30 border-t-2 border-blue-500">
-            <td className="px-4 py-3 font-bold text-[var(--foreground)]">
-              AVERAGE COMPLIANCE
-            </td>
-            <td className="px-4 py-3 text-center font-bold text-[var(--foreground)]">
-              {Math.round(data.summary.average_compliance_percentage)}%
-            </td>
-            <td className="px-4 py-3">
-              <div
-                className={`h-8 w-full rounded-sm ${
-                  data.summary.average_compliance_percentage >= 75
-                    ? 'bg-green-500'
-                    : data.summary.average_compliance_percentage >= 50
-                    ? 'bg-yellow-400'
-                    : data.summary.average_compliance_percentage > 0
-                    ? 'bg-orange-500'
-                    : 'bg-red-500'
-                }`}
-              />
-            </td>
-          </tr>
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      </div>
 
       {/* BBI Stats */}
       <div className="px-4 py-3 bg-[var(--muted)]/10 flex flex-wrap items-center gap-4 text-sm border-t border-[var(--border)]">

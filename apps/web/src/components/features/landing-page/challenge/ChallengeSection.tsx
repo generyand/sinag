@@ -96,18 +96,14 @@ export function ChallengeSection() {
   return (
     <section
       ref={challengeAnimation.elementRef}
-      className={`w-full max-w-7xl mx-auto min-h-screen px-8 py-12 flex flex-col justify-center transition-all duration-1000 ${
-        challengeAnimation.isVisible
-          ? "opacity-100 translate-y-0"
-          : "opacity-0 translate-y-8"
+      className={`w-full max-w-7xl mx-auto min-h-[50vh] lg:min-h-screen px-4 md:px-8 py-12 md:py-20 flex flex-col justify-center transition-all duration-1000 ${
+        challengeAnimation.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
       }`}
       aria-labelledby="challenges-heading"
     >
       <div
         className={`text-left mb-8 transition-all duration-1000 delay-200 ${
-          challengeAnimation.isVisible
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 translate-y-4"
+          challengeAnimation.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
         }`}
       >
         <h2
@@ -126,9 +122,7 @@ export function ChallengeSection() {
           <article
             key={card.id}
             className={`group bg-white rounded-2xl shadow-lg p-8 flex flex-col items-start text-left border border-gray-100 transition-all duration-300 relative overflow-hidden ${
-              challengeAnimation.isVisible
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 translate-y-8"
+              challengeAnimation.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             }`}
             role="listitem"
             aria-labelledby={`challenge-${card.id}-title`}
@@ -154,18 +148,13 @@ export function ChallengeSection() {
               </div>
             </div>
 
-            <h3
-              id={`challenge-${card.id}-title`}
-              className="text-xl font-bold text-black mb-4"
-            >
+            <h3 id={`challenge-${card.id}-title`} className="text-xl font-bold text-black mb-4">
               {card.title}
             </h3>
 
             {/* Removed percentage/statistics pill for cleaner layout */}
 
-            <p className="text-gray-600 leading-relaxed mb-4">
-              {card.description}
-            </p>
+            <p className="text-gray-600 leading-relaxed mb-4">{card.description}</p>
 
             {/* Solution Preview (subtle, descriptive outcome) */}
             <div className="mt-auto pt-4 border-t border-gray-100 w-full">

@@ -1,22 +1,14 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
-import { useUsers } from "@/hooks/useUsers";
-import type { UserListResponse, User } from "@sinag/shared";
-import UserManagementTable from "./UserManagementTable";
-import { UserForm } from "./UserForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Plus,
-  Users,
-  UserCheck,
-  Building,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { useUsers } from "@/hooks/useUsers";
+import type { User, UserListResponse } from "@sinag/shared";
+import { ChevronLeft, ChevronRight, Plus, Search } from "lucide-react";
+import React, { useCallback, useMemo, useState } from "react";
+import { UserForm } from "./UserForm";
 import { UserManagementSkeleton } from "./UserManagementSkeleton";
+import UserManagementTable from "./UserManagementTable";
 
 export default function UserListSection() {
   const [isFormOpen, setIsFormOpen] = React.useState(false);
@@ -59,10 +51,7 @@ export default function UserListSection() {
     // Calculate pagination
     const totalPages = Math.ceil(filtered.length / usersPerPage);
     const startIndex = (currentPage - 1) * usersPerPage;
-    const paginatedUsers = filtered.slice(
-      startIndex,
-      startIndex + usersPerPage
-    );
+    const paginatedUsers = filtered.slice(startIndex, startIndex + usersPerPage);
 
     return {
       users: paginatedUsers,
@@ -102,19 +91,29 @@ export default function UserListSection() {
     return <UserManagementSkeleton />;
   }
   if (error) {
-    console.error('User loading error:', error);
+    console.error("User loading error:", error);
     return (
       <div className="text-center py-8">
         <div className="text-red-500 mb-4">
-          <svg className="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          <svg
+            className="w-12 h-12 mx-auto mb-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+            />
           </svg>
           <h3 className="text-lg font-semibold mb-2">Error Loading Users</h3>
           <p className="text-sm text-[var(--muted-foreground)] mb-4">
             Unable to fetch user data. Please check your connection and try again.
           </p>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors"
           >
             Retry
@@ -130,15 +129,15 @@ export default function UserListSection() {
   return (
     <div className="space-y-8" role="main" aria-label="User management">
       {/* Enhanced Header Section */}
-      <header className="relative overflow-hidden bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-8">
+      <header className="relative overflow-hidden bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-6 sm:p-8">
         {/* Decorative background elements */}
         <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-blue-100/40 to-indigo-100/20 rounded-full -translate-y-20 translate-x-20"></div>
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-purple-100/30 to-pink-100/20 rounded-full translate-y-16 -translate-x-16"></div>
 
         <div className="relative z-10">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div className="space-y-3">
-              <h1 className="text-3xl font-bold text-[var(--foreground)]">
+            <div className="space-y-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)]">
                 User{" "}
                 <span className="bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] bg-clip-text text-transparent">
                   Management
@@ -150,28 +149,30 @@ export default function UserListSection() {
             </div>
 
             {/* Enhanced Quick Stats */}
-            <div className="flex items-center gap-6">
-              <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)]">
-                <div className="text-3xl font-bold text-[var(--foreground)]">
-                  {stats.total}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 sm:gap-6">
+              <div className="flex gap-4 sm:contents">
+                <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)] flex-1 sm:flex-none sm:min-w-[100px]">
+                  <div className="text-2xl sm:text-3xl font-bold text-[var(--foreground)]">
+                    {stats.total}
+                  </div>
+                  <div className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
+                    Total
+                  </div>
                 </div>
-                <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
-                  Total
+                <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)] flex-1 sm:flex-none sm:min-w-[100px]">
+                  <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                    {stats.active}
+                  </div>
+                  <div className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
+                    Active
+                  </div>
                 </div>
               </div>
-              <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)]">
-                <div className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                  {stats.active}
-                </div>
-                <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
-                  Active
-                </div>
-              </div>
-              <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)]">
-                <div className="text-3xl font-bold bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] bg-clip-text text-transparent">
+              <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)] min-w-[100px]">
+                <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] bg-clip-text text-transparent">
                   {stats.blgu}
                 </div>
-                <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
+                <div className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
                   BLGU
                 </div>
               </div>
@@ -181,7 +182,10 @@ export default function UserListSection() {
       </header>
 
       {/* Enhanced User Table with Search and Pagination */}
-      <section className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg overflow-hidden" aria-labelledby="user-accounts-heading">
+      <section
+        className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg overflow-hidden"
+        aria-labelledby="user-accounts-heading"
+      >
         <div className="p-6 border-b border-[var(--border)]">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
@@ -189,7 +193,11 @@ export default function UserListSection() {
                 User Accounts
               </h2>
               <p className="text-[var(--text-secondary)] mt-1 text-sm">
-                {filteredAndPaginatedUsers.allFilteredUsers?.length || data.users.length} user{(filteredAndPaginatedUsers.allFilteredUsers?.length || data.users.length) !== 1 ? 's' : ''} registered
+                {filteredAndPaginatedUsers.allFilteredUsers?.length || data.users.length} user
+                {(filteredAndPaginatedUsers.allFilteredUsers?.length || data.users.length) !== 1
+                  ? "s"
+                  : ""}{" "}
+                registered
               </p>
             </div>
 
@@ -212,8 +220,9 @@ export default function UserListSection() {
                 onClick={() => setIsFormOpen(true)}
                 className="px-6 py-2.5 font-semibold hover:shadow-lg transition-all duration-200"
                 style={{
-                  background: 'linear-gradient(to bottom right, var(--cityscape-yellow), var(--cityscape-yellow-dark))',
-                  color: 'var(--foreground)',
+                  background:
+                    "linear-gradient(to bottom right, var(--cityscape-yellow), var(--cityscape-yellow-dark))",
+                  color: "var(--foreground)",
                 }}
               >
                 <Plus className="h-5 w-5 mr-2" />
@@ -262,9 +271,7 @@ export default function UserListSection() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
                   className="flex items-center gap-2 bg-[var(--background)] hover:bg-[var(--muted)]/20 border-[var(--border)] rounded-sm transition-colors"
                 >
@@ -318,7 +325,8 @@ export default function UserListSection() {
                         style={
                           currentPage === pageNum
                             ? {
-                                background: 'linear-gradient(to bottom right, var(--cityscape-yellow), var(--cityscape-yellow-dark))',
+                                background:
+                                  "linear-gradient(to bottom right, var(--cityscape-yellow), var(--cityscape-yellow-dark))",
                               }
                             : undefined
                         }
@@ -337,9 +345,7 @@ export default function UserListSection() {
                       Math.min(prev + 1, filteredAndPaginatedUsers.totalPages)
                     )
                   }
-                  disabled={
-                    currentPage === filteredAndPaginatedUsers.totalPages
-                  }
+                  disabled={currentPage === filteredAndPaginatedUsers.totalPages}
                   className="flex items-center gap-2 bg-[var(--background)] hover:bg-[var(--muted)]/20 border-[var(--border)] rounded-sm transition-colors"
                 >
                   Next
@@ -359,15 +365,16 @@ export default function UserListSection() {
                 No users found
               </h3>
               <p className="text-[var(--text-secondary)] mb-4">
-                No users match your search for &quot;{searchQuery}&quot;. Try
-                adjusting your search terms.
+                No users match your search for &quot;{searchQuery}&quot;. Try adjusting your search
+                terms.
               </p>
               <button
                 onClick={() => setSearchQuery("")}
                 className="px-4 py-2 rounded-sm font-medium hover:shadow-lg transition-all duration-200"
                 style={{
-                  background: 'linear-gradient(to bottom right, var(--cityscape-yellow), var(--cityscape-yellow-dark))',
-                  color: 'var(--foreground)',
+                  background:
+                    "linear-gradient(to bottom right, var(--cityscape-yellow), var(--cityscape-yellow-dark))",
+                  color: "var(--foreground)",
                 }}
               >
                 Clear search

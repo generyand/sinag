@@ -46,9 +46,7 @@ export function HeroSection() {
             {/* Trust Badge */}
             <div
               className={`inline-flex items-center gap-2 bg-[#1A3A6D]/5 text-[#1A3A6D] px-4 py-2 rounded-full text-sm font-medium transition-all duration-700 ${
-                isVisible
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-4"
+                isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
               }`}
             >
               <CheckCircle2 className="w-4 h-4" />
@@ -59,38 +57,28 @@ export function HeroSection() {
             <div>
               <h1
                 className={`text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-extrabold tracking-tight text-black mb-4 transition-all duration-1000 delay-200 ${
-                  isVisible
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 translate-y-8"
+                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                 }`}
               >
+                <span className="whitespace-nowrap block leading-tight">Empowering Barangays</span>
                 <span className="whitespace-nowrap block leading-tight">
-                  Empowering Barangays
-                </span>
-                <span className="whitespace-nowrap block leading-tight">
-                  for SGLGB{" "}
-                  <span className="text-[#fbbf24] animate-pulse">Success</span>
+                  for SGLGB <span className="text-[#fbbf24] animate-pulse">Success</span>
                 </span>
               </h1>
               <p
                 className={`text-lg text-gray-600 max-w-2xl transition-all duration-1000 delay-400 ${
-                  isVisible
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 translate-y-4"
+                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
                 }`}
               >
-                The official pre-assessment and analytics web application for
-                the SGLGB. A guided, transparent, and efficient digital workflow
-                for the Barangays of Sulop.
+                The official pre-assessment and analytics web application for the SGLGB. A guided,
+                transparent, and efficient digital workflow for the Barangays of Sulop.
               </p>
             </div>
 
             {/* Feature Pills Grid */}
             <ul
               className={`space-y-3 transition-all duration-1000 delay-600 ${
-                isVisible
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-4"
+                isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
               }`}
             >
               <li className="flex items-start gap-3 group">
@@ -122,17 +110,13 @@ export function HeroSection() {
             {/* CTA Buttons */}
             <div
               className={`flex flex-col sm:flex-row gap-4 transition-all duration-1000 delay-800 ${
-                isVisible
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-4"
+                isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
               }`}
             >
               <Button
                 onClick={handleCTAClick}
                 className={`group bg-[#fbbf24] text-black hover:bg-[#fbbf24]/90 transition-all duration-300 font-medium px-8 py-4 text-lg rounded-lg border-0 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 ${
-                  showDemo
-                    ? "animate-pulse bg-green-500 hover:bg-green-600"
-                    : ""
+                  showDemo ? "animate-pulse bg-green-500 hover:bg-green-600" : ""
                 }`}
               >
                 {showDemo ? (
@@ -167,9 +151,7 @@ export function HeroSection() {
           {/* Right Column - Visual */}
           <div
             className={`relative lg:pl-8 xl:pl-12 transition-all duration-1000 delay-1000 ${
-              isVisible
-                ? "opacity-100 translate-x-0"
-                : "opacity-0 translate-x-8"
+              isVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-8"
             }`}
           >
             {/* Main Monitor Visual */}
@@ -186,45 +168,39 @@ export function HeroSection() {
             {/* Floating Data Cards - Spread Positioning with enhanced animations */}
             {/* Top Left Badge */}
             <div
-              className={`absolute -top-14 -left-8 md:-top-16 md:-left-10 bg-white/95 rounded-full shadow-lg border border-gray-100 px-4 py-2 flex items-center gap-2 w-max transform rotate-2 hover:-translate-y-1 hover:scale-105 transition-all duration-300 animate-float-slow ${
-                isVisible
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 -translate-y-4"
+              className={`absolute -top-6 -left-2 md:-top-16 md:-left-10 bg-white/95 rounded-full shadow-lg border border-gray-100 px-3 py-1.5 md:px-4 md:py-2 flex items-center gap-2 w-max transform rotate-2 hover:-translate-y-1 hover:scale-105 transition-all duration-300 animate-float-slow z-20 ${
+                isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
               }`}
               style={{ animationDelay: "1.2s" }}
             >
-              <CheckCircle2 className="w-4 h-4 text-green-600 animate-pulse" />
-              <span className="text-sm font-semibold text-gray-800">
+              <CheckCircle2 className="w-3 h-3 md:w-4 md:h-4 text-green-600 animate-pulse" />
+              <span className="text-xs md:text-sm font-semibold text-gray-800">
                 Validated Submission
               </span>
             </div>
 
             {/* Top Right Badge */}
             <div
-              className={`absolute -top-6 -right-6 md:-top-8 md:-right-8 bg-white/95 rounded-full shadow-lg border border-gray-100 px-4 py-2 flex items-center gap-2 w-max transform rotate-2 hover:-translate-x-1 hover:scale-105 transition-all duration-300 animate-float-slow ${
-                isVisible
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 -translate-y-4"
+              className={`absolute -top-4 -right-2 md:-top-8 md:-right-8 bg-white/95 rounded-full shadow-lg border border-gray-100 px-3 py-1.5 md:px-4 md:py-2 flex items-center gap-2 w-max transform rotate-2 hover:-translate-x-1 hover:scale-105 transition-all duration-300 animate-float-slow z-20 ${
+                isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
               }`}
               style={{ animationDelay: "1.4s" }}
             >
-              <Users className="w-4 h-4 text-blue-600 animate-pulse" />
-              <span className="text-sm font-semibold text-gray-800">
+              <Users className="w-3 h-3 md:w-4 md:h-4 text-blue-600 animate-pulse" />
+              <span className="text-xs md:text-sm font-semibold text-gray-800">
                 25 Barangays Connected
               </span>
             </div>
 
             {/* Bottom Right Badge */}
             <div
-              className={`absolute -bottom-8 -right-6 md:-bottom-10 md:-right-8 bg-white/95 rounded-full shadow-lg border border-gray-100 px-4 py-2 flex items-center gap-2 w-max transform rotate-2 hover:translate-y-1 hover:scale-105 transition-all duration-300 animate-float-slow ${
-                isVisible
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-4"
+              className={`absolute -bottom-6 -right-2 md:-bottom-10 md:-right-8 bg-white/95 rounded-full shadow-lg border border-gray-100 px-3 py-1.5 md:px-4 md:py-2 flex items-center gap-2 w-max transform rotate-2 hover:translate-y-1 hover:scale-105 transition-all duration-300 animate-float-slow z-20 ${
+                isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
               }`}
               style={{ animationDelay: "1.6s" }}
             >
-              <BarChart3 className="w-4 h-4 text-purple-600 animate-pulse" />
-              <span className="text-sm font-semibold text-gray-800">
+              <BarChart3 className="w-3 h-3 md:w-4 md:h-4 text-purple-600 animate-pulse" />
+              <span className="text-xs md:text-sm font-semibold text-gray-800">
                 95% Compliance Rate
               </span>
             </div>

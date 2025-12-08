@@ -7,24 +7,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Building2, Calendar, BarChart3, Loader2 } from "lucide-react";
-import { useYearSelector, useIsActiveYear } from "@/hooks/useAssessmentYear";
+import { useIsActiveYear, useYearSelector } from "@/hooks/useAssessmentYear";
 import { cn } from "@/lib/utils";
+import { BarChart3, Building2, Calendar, Loader2 } from "lucide-react";
 
 interface DashboardHeaderProps {
   municipality: string;
   performanceYear: string;
 }
 
-export function DashboardHeader({
-  municipality,
-  performanceYear,
-}: DashboardHeaderProps) {
+export function DashboardHeader({ municipality, performanceYear }: DashboardHeaderProps) {
   const { options, value, onChange, isLoading, hasMultipleYears } = useYearSelector();
   const isActiveYear = useIsActiveYear();
 
   return (
-    <div className="relative overflow-hidden bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg p-8">
+    <div className="relative overflow-hidden bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg p-6 sm:p-8">
       {/* Decorative background elements */}
       <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-blue-100/40 to-indigo-100/20 rounded-full -translate-y-20 translate-x-20"></div>
       <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-purple-100/30 to-pink-100/20 rounded-full translate-y-16 -translate-x-16"></div>
@@ -32,9 +29,9 @@ export function DashboardHeader({
       <div className="relative z-10">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           {/* Left side - Title and Municipality */}
-          <div className="space-y-3">
+          <div className="space-y-4 sm:space-y-3">
             <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold text-[var(--foreground)]">
+              <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)]">
                 Municipal{" "}
                 <span className="bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] bg-clip-text text-transparent">
                   SGLGB
@@ -47,24 +44,16 @@ export function DashboardHeader({
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-6 text-sm">
-              <div className="flex items-center gap-2 bg-[var(--card)]/60 backdrop-blur-sm px-3 py-1.5 rounded-sm border border-[var(--border)]">
-                <Building2 className="h-4 w-4" style={{ color: 'var(--cityscape-yellow)' }} />
-                <span className="font-medium text-[var(--text-secondary)]">
-                  Municipality:
-                </span>
-                <span className="font-semibold text-[var(--foreground)]">
-                  {municipality}
-                </span>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 text-sm">
+              <div className="flex items-center justify-center sm:justify-start gap-2 bg-[var(--card)]/60 backdrop-blur-sm px-3 py-2 sm:py-1.5 rounded-sm border border-[var(--border)] w-full sm:w-auto">
+                <Building2 className="h-4 w-4" style={{ color: "var(--cityscape-yellow)" }} />
+                <span className="font-medium text-[var(--text-secondary)]">Municipality:</span>
+                <span className="font-semibold text-[var(--foreground)]">{municipality}</span>
               </div>
-              <div className="flex items-center gap-2 bg-[var(--card)]/60 backdrop-blur-sm px-3 py-1.5 rounded-sm border border-[var(--border)]">
-                <BarChart3 className="h-4 w-4" style={{ color: 'var(--cityscape-yellow)' }} />
-                <span className="font-medium text-[var(--text-secondary)]">
-                  Performance Year:
-                </span>
-                <span className="font-semibold text-[var(--foreground)]">
-                  {performanceYear}
-                </span>
+              <div className="flex items-center justify-center sm:justify-start gap-2 bg-[var(--card)]/60 backdrop-blur-sm px-3 py-2 sm:py-1.5 rounded-sm border border-[var(--border)] w-full sm:w-auto">
+                <BarChart3 className="h-4 w-4" style={{ color: "var(--cityscape-yellow)" }} />
+                <span className="font-medium text-[var(--text-secondary)]">Performance Year:</span>
+                <span className="font-semibold text-[var(--foreground)]">{performanceYear}</span>
               </div>
             </div>
           </div>
@@ -73,7 +62,7 @@ export function DashboardHeader({
           <div className="flex items-center gap-4">
             <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 shadow-sm border border-[var(--border)]">
               <div className="flex items-center gap-3">
-                <Calendar className="h-5 w-5" style={{ color: 'var(--cityscape-yellow)' }} />
+                <Calendar className="h-5 w-5" style={{ color: "var(--cityscape-yellow)" }} />
                 <div className="flex flex-col">
                   <span className="text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wide">
                     Assessment Year

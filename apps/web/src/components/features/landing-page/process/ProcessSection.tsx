@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  ChevronRight,
-  ClipboardCheck,
-  FileText,
-  LineChart,
-} from "lucide-react";
+import { ChevronRight, ClipboardCheck, FileText, LineChart } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
@@ -117,9 +112,7 @@ export function ProcessSection() {
     <section
       ref={processAnimation.elementRef}
       className={`w-full max-w-7xl mx-auto min-h-screen px-8 py-12 flex flex-col justify-center transition-all duration-1000 ${
-        processAnimation.isVisible
-          ? "opacity-100 translate-y-0"
-          : "opacity-0 translate-y-8"
+        processAnimation.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
       }`}
       aria-labelledby="process-heading"
     >
@@ -132,8 +125,7 @@ export function ProcessSection() {
           How SINAG Works
         </h2>
         <p className="text-sm md:text-base text-gray-500 max-w-3xl font-normal">
-          A clear, three-step process for efficient SGLGB preparation and
-          validation.
+          A clear, three-step process for efficient SGLGB preparation and validation.
         </p>
       </div>
 
@@ -154,8 +146,8 @@ export function ProcessSection() {
                       idx === activeStep
                         ? `${steps[idx].color} scale-125 shadow-lg`
                         : idx < activeStep
-                        ? `${steps[idx].color}`
-                        : "bg-[#E9ECEF]" // Light gray for inactive
+                          ? `${steps[idx].color}`
+                          : "bg-[#E9ECEF]" // Light gray for inactive
                     }`}
                   />
                 ))}
@@ -169,8 +161,8 @@ export function ProcessSection() {
                   activeStep === 0
                     ? "bg-[#fbbf24]"
                     : activeStep === 1
-                    ? "bg-[#1A3A6D]"
-                    : "bg-[#28A745]"
+                      ? "bg-[#1A3A6D]"
+                      : "bg-[#28A745]"
                 }`}
                 style={{ width: `${((activeStep + 1) / steps.length) * 100}%` }}
               ></div>
@@ -183,15 +175,13 @@ export function ProcessSection() {
                   activeStep === 0
                     ? "text-[#fbbf24]"
                     : activeStep === 1
-                    ? "text-[#1A3A6D]"
-                    : "text-[#28A745]"
+                      ? "text-[#1A3A6D]"
+                      : "text-[#28A745]"
                 }`}
               >
                 {steps[activeStep].duration}
               </div>
-              <div className="text-sm text-gray-600">
-                {steps[activeStep].benefit}
-              </div>
+              <div className="text-sm text-gray-600">{steps[activeStep].benefit}</div>
             </div>
           </div>
 
@@ -223,9 +213,7 @@ export function ProcessSection() {
                 <div
                   className={`flex items-center justify-center w-12 h-12 rounded-full font-bold text-lg mr-4 transition-all duration-300 ${
                     activeStep === idx
-                      ? `${step.color} shadow-lg ${
-                          idx === 0 ? "text-black" : "text-white"
-                        }`
+                      ? `${step.color} shadow-lg ${idx === 0 ? "text-black" : "text-white"}`
                       : `${step.color} opacity-70 group-hover:opacity-100 ${
                           idx === 0 ? "text-black" : "text-white"
                         }`
@@ -246,18 +234,14 @@ export function ProcessSection() {
                     </span>
                     <div
                       style={{
-                        color:
-                          activeStep === idx ? step.activeColor : "#374151",
+                        color: activeStep === idx ? step.activeColor : "#374151",
                       }}
                       className="font-bold text-lg transition-colors duration-300"
                     >
                       {step.label}
                     </div>
                     {activeStep === idx && (
-                      <ChevronRight
-                        className="w-4 h-4 ml-1"
-                        style={{ color: step.activeColor }}
-                      />
+                      <ChevronRight className="w-4 h-4 ml-1" style={{ color: step.activeColor }} />
                     )}
                   </div>
                   <div className="text-sm text-gray-600 mt-1">
@@ -265,9 +249,7 @@ export function ProcessSection() {
                   </div>
                 </div>
                 {activeStep === idx && (
-                  <div
-                    className={`w-2 h-2 rounded-full animate-pulse ${step.color}`}
-                  ></div>
+                  <div className={`w-2 h-2 rounded-full animate-pulse ${step.color}`}></div>
                 )}
               </button>
             ))}
@@ -278,10 +260,9 @@ export function ProcessSection() {
         <div className="flex-1 lg:w-1/2 order-1 lg:order-2">
           <div
             key={activeStep}
-            className={`relative bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden transition-all duration-500 ${
+            className={`relative bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden transition-all duration-500 min-h-[400px] lg:min-h-[500px] ${
               fade ? "opacity-0 scale-95" : "opacity-100 scale-100"
             }`}
-            style={{ minHeight: 500 }}
           >
             {/* Background Media */}
             <div
@@ -314,9 +295,7 @@ export function ProcessSection() {
               ) : (
                 <Image
                   src={steps[activeStep].backgroundImage}
-                  alt={`Step ${activeStep + 1}: ${
-                    steps[activeStep].label
-                  } process illustration`}
+                  alt={`Step ${activeStep + 1}: ${steps[activeStep].label} process illustration`}
                   fill
                   className={`w-full h-full object-contain rounded-xl ${
                     activeStep === 0 ? "-mt-4" : "mt-2"
@@ -337,9 +316,7 @@ export function ProcessSection() {
                     steps[activeStep].color
                   } ${activeStep === 0 ? "text-black" : "text-white"}`}
                 >
-                  <span className="flex items-center justify-center">
-                    {steps[activeStep].icon}
-                  </span>
+                  <span className="flex items-center justify-center">{steps[activeStep].icon}</span>
                   Step {activeStep + 1}: {steps[activeStep].label}
                 </span>
               </div>
@@ -358,18 +335,14 @@ export function ProcessSection() {
                 {/* Step Metrics */}
                 <div className="flex items-center gap-4 text-sm">
                   <div className="flex items-center gap-2">
-                    <div
-                      className={`w-2 h-2 rounded-full ${steps[activeStep].color}`}
-                    ></div>
+                    <div className={`w-2 h-2 rounded-full ${steps[activeStep].color}`}></div>
                     <span className="font-medium text-gray-700">
                       Duration: {steps[activeStep].duration}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="font-medium text-gray-700">
-                      {steps[activeStep].benefit}
-                    </span>
+                    <span className="font-medium text-gray-700">{steps[activeStep].benefit}</span>
                   </div>
                 </div>
               </div>
@@ -379,20 +352,14 @@ export function ProcessSection() {
             <div className="absolute top-1/2 left-4 right-4 flex justify-between transform -translate-y-1/2 pointer-events-none">
               <button
                 onClick={() => {
-                  const prevStep =
-                    activeStep === 0 ? steps.length - 1 : activeStep - 1;
+                  const prevStep = activeStep === 0 ? steps.length - 1 : activeStep - 1;
                   setActiveStep(prevStep);
                   if (timerRef.current) clearInterval(timerRef.current);
                 }}
                 className="w-12 h-12 bg-white/90 hover:bg-white shadow-lg hover:shadow-xl rounded-full flex items-center justify-center text-gray-700 hover:text-gray-900 transition-all duration-300 hover:scale-110 pointer-events-auto focus:outline-none focus:ring-2 focus:ring-gray-300 border border-gray-200"
                 aria-label="Previous step"
               >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -403,20 +370,14 @@ export function ProcessSection() {
               </button>
               <button
                 onClick={() => {
-                  const nextStep =
-                    activeStep === steps.length - 1 ? 0 : activeStep + 1;
+                  const nextStep = activeStep === steps.length - 1 ? 0 : activeStep + 1;
                   setActiveStep(nextStep);
                   if (timerRef.current) clearInterval(timerRef.current);
                 }}
                 className="w-12 h-12 bg-white/90 hover:bg-white shadow-lg hover:shadow-xl rounded-full flex items-center justify-center text-gray-700 hover:text-gray-900 transition-all duration-300 hover:scale-110 pointer-events-auto focus:outline-none focus:ring-2 focus:ring-gray-300 border border-gray-200"
                 aria-label="Next step"
               >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"

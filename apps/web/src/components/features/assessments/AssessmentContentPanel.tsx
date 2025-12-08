@@ -57,7 +57,8 @@ export function AssessmentContentPanel({
             Select an Indicator
           </h3>
           <p className="text-[var(--text-secondary)] leading-relaxed">
-            Choose an indicator from the navigation panel on the left to view its details and complete the assessment requirements.
+            Choose an indicator from the navigation panel on the left to view its details and
+            complete the assessment requirements.
           </p>
         </div>
       </div>
@@ -66,8 +67,7 @@ export function AssessmentContentPanel({
 
   // Check if indicator needs rework
   const indicatorLocked =
-    isLocked ||
-    (assessment.status === "Needs Rework" && !selectedIndicator.requiresRework);
+    isLocked || (assessment.status === "Needs Rework" && !selectedIndicator.requiresRework);
 
   // Get MOV annotations for the selected indicator
   const indicatorAnnotations = selectedIndicator
@@ -78,10 +78,10 @@ export function AssessmentContentPanel({
     <div className="h-full flex flex-col bg-[var(--background)]">
       {/* Scrollable Content */}
       <div ref={contentRef} className="flex-1 overflow-y-auto">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-[var(--card)] rounded-xl shadow-sm border border-[var(--border)] overflow-hidden">
+        <div className="max-w-5xl mx-auto px-0 sm:px-6 lg:px-8 py-0 sm:py-8">
+          <div className="bg-[var(--background)] sm:bg-[var(--card)] sm:rounded-xl sm:shadow-sm sm:border sm:border-[var(--border)] overflow-hidden min-h-screen sm:min-h-0">
             {/* Form Content */}
-            <div className="p-6 sm:p-8">
+            <div className="p-2 sm:p-8">
               <RecursiveIndicator
                 indicator={selectedIndicator}
                 isLocked={indicatorLocked}
