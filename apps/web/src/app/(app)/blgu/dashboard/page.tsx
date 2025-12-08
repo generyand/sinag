@@ -27,13 +27,14 @@ import { useGetBlguDashboardAssessmentId, useGetAssessmentsMyAssessment } from "
 import { useAuthStore } from "@/store/useAuthStore";
 import { Loader2, AlertCircle } from "lucide-react";
 import { YearSelector } from "@/components/features/assessment-year/YearSelector";
-import { useEffectiveYear, useIsActiveYear } from "@/hooks/useAssessmentYear";
+import { useEffectiveYear, useIsActiveYear, useAccessibleYears } from "@/hooks/useAssessmentYear";
 
 export default function BLGUDashboardPage() {
   const { user } = useAuthStore();
   const router = useRouter();
 
-  // Year state from global store
+  // Year state from global store - useAccessibleYears fetches and initializes the store
+  const { isLoading: isLoadingYears } = useAccessibleYears();
   const effectiveYear = useEffectiveYear();
   const isActiveYear = useIsActiveYear();
 
@@ -111,7 +112,7 @@ export default function BLGUDashboardPage() {
     // The query will automatically refetch due to the language parameter change
   }, []);
 
-  const isLoading = isLoadingAssessment || isLoadingDashboard;
+  const isLoading = isLoadingYears || isLoadingAssessment || isLoadingDashboard;
   const error = assessmentError || dashboardError;
 
   // Non-BLGU users: show redirect message while useEffect redirects them

@@ -169,6 +169,7 @@ class AssessmentYearService:
 
         elif user.role == UserRole.BLGU_USER:
             # BLGU users see all years they have assessments for
+            # PLUS the active year (so they can create their first assessment)
             from app.db.models.assessment import Assessment
 
             user_years = (
@@ -178,9 +179,14 @@ class AssessmentYearService:
                 .all()
             )
             years_list = sorted([y[0] for y in user_years], reverse=True)
+
+            # Always include active year so BLGU can create their first assessment
+            if active_year_num and active_year_num not in years_list:
+                years_list = sorted([active_year_num] + years_list, reverse=True)
+
             return AccessibleYearsResponse(
                 years=years_list,
-                active_year=active_year_num if active_year_num in years_list else None,
+                active_year=active_year_num,
                 role=user.role.value,
             )
 

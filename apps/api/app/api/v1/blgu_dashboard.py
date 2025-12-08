@@ -503,10 +503,13 @@ def get_blgu_dashboard(
                         )
 
                     for ind_sum in lang_summary.get("indicator_summaries", []):
+                        indicator_name = ind_sum.get("indicator_name", "")
+                        if year_resolver:
+                            indicator_name = year_resolver.resolve_string(indicator_name)
                         combined_indicator_summaries.append(
                             AISummaryIndicator(
                                 indicator_id=ind_sum.get("indicator_id", 0),
-                                indicator_name=ind_sum.get("indicator_name", ""),
+                                indicator_name=indicator_name,
                                 key_issues=ind_sum.get("key_issues", []),
                                 suggested_actions=ind_sum.get("suggested_actions", []),
                                 affected_movs=ind_sum.get("affected_movs", []),
@@ -563,10 +566,13 @@ def get_blgu_dashboard(
                 if lang_summary:
                     indicator_summaries = []
                     for ind_sum in lang_summary.get("indicator_summaries", []):
+                        indicator_name = ind_sum.get("indicator_name", "")
+                        if year_resolver:
+                            indicator_name = year_resolver.resolve_string(indicator_name)
                         indicator_summaries.append(
                             AISummaryIndicator(
                                 indicator_id=ind_sum.get("indicator_id", 0),
-                                indicator_name=ind_sum.get("indicator_name", ""),
+                                indicator_name=indicator_name,
                                 key_issues=ind_sum.get("key_issues", []),
                                 suggested_actions=ind_sum.get("suggested_actions", []),
                                 affected_movs=ind_sum.get("affected_movs", []),
@@ -624,10 +630,13 @@ def get_blgu_dashboard(
                 if lang_summary:
                     indicator_summaries = []
                     for ind_sum in lang_summary.get("indicator_summaries", []):
+                        indicator_name = ind_sum.get("indicator_name", "")
+                        if year_resolver:
+                            indicator_name = year_resolver.resolve_string(indicator_name)
                         indicator_summaries.append(
                             AISummaryIndicator(
                                 indicator_id=ind_sum.get("indicator_id", 0),
-                                indicator_name=ind_sum.get("indicator_name", ""),
+                                indicator_name=indicator_name,
                                 key_issues=ind_sum.get("key_issues", []),
                                 suggested_actions=ind_sum.get("suggested_actions", []),
                                 affected_movs=ind_sum.get("affected_movs", []),
