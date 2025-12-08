@@ -40,14 +40,14 @@ class MunicipalAnalyticsService:
     def get_compliance_summary(
         self,
         db: Session,
-        assessment_cycle: str | None = None,
+        year: int | None = None,
     ) -> MunicipalComplianceSummary:
         """
         Get municipal-wide compliance summary statistics.
 
         Args:
             db: Database session
-            assessment_cycle: Optional cycle filter
+            year: Optional year filter (e.g., 2024, 2025)
 
         Returns:
             MunicipalComplianceSummary with compliance statistics
@@ -57,6 +57,10 @@ class MunicipalAnalyticsService:
 
         # Base query for completed assessments
         base_query = db.query(Assessment).filter(Assessment.status == AssessmentStatus.COMPLETED)
+
+        # Filter by year if provided
+        if year is not None:
+            base_query = base_query.filter(Assessment.assessment_year == year)
 
         # Get completed assessments with compliance status
         completed_assessments = base_query.all()
@@ -70,12 +74,12 @@ class MunicipalAnalyticsService:
         assessed_count = len(completed_assessments)
 
         # Count pending MLGOO approval
-        pending_mlgoo = (
-            db.query(func.count(Assessment.id))
-            .filter(Assessment.status == AssessmentStatus.AWAITING_MLGOO_APPROVAL)
-            .scalar()
-            or 0
+        pending_mlgoo_query = db.query(func.count(Assessment.id)).filter(
+            Assessment.status == AssessmentStatus.AWAITING_MLGOO_APPROVAL
         )
+        if year is not None:
+            pending_mlgoo_query = pending_mlgoo_query.filter(Assessment.assessment_year == year)
+        pending_mlgoo = pending_mlgoo_query.scalar() or 0
 
         # Count in-progress (draft, submitted, rework, etc.)
         in_progress_statuses = [
@@ -85,12 +89,12 @@ class MunicipalAnalyticsService:
             AssessmentStatus.REWORK,
             AssessmentStatus.AWAITING_FINAL_VALIDATION,
         ]
-        in_progress = (
-            db.query(func.count(Assessment.id))
-            .filter(Assessment.status.in_(in_progress_statuses))
-            .scalar()
-            or 0
+        in_progress_query = db.query(func.count(Assessment.id)).filter(
+            Assessment.status.in_(in_progress_statuses)
         )
+        if year is not None:
+            in_progress_query = in_progress_query.filter(Assessment.assessment_year == year)
+        in_progress = in_progress_query.scalar() or 0
 
         # Calculate rates
         compliance_rate = (passed_count / assessed_count * 100) if assessed_count > 0 else 0.0
@@ -110,14 +114,14 @@ class MunicipalAnalyticsService:
     def get_governance_area_performance(
         self,
         db: Session,
-        assessment_cycle: str | None = None,
+        year: int | None = None,
     ) -> GovernanceAreaPerformanceList:
         """
         Get performance breakdown by governance area.
 
         Args:
             db: Database session
-            assessment_cycle: Optional cycle filter
+            year: Optional year filter (e.g., 2024, 2025)
 
         Returns:
             GovernanceAreaPerformanceList with area-by-area performance
@@ -126,9 +130,12 @@ class MunicipalAnalyticsService:
         governance_areas = db.query(GovernanceArea).order_by(GovernanceArea.id).all()
 
         # Get completed assessments
-        completed_assessments = (
-            db.query(Assessment).filter(Assessment.status == AssessmentStatus.COMPLETED).all()
+        completed_query = db.query(Assessment).filter(
+            Assessment.status == AssessmentStatus.COMPLETED
         )
+        if year is not None:
+            completed_query = completed_query.filter(Assessment.assessment_year == year)
+        completed_assessments = completed_query.all()
 
         if not completed_assessments:
             # Return empty performance if no completed assessments
@@ -253,7 +260,7 @@ class MunicipalAnalyticsService:
         self,
         db: Session,
         limit: int = 10,
-        assessment_cycle: str | None = None,
+        year: int | None = None,
     ) -> TopFailingIndicatorsList:
         """
         Get the most frequently failed indicators.
@@ -261,11 +268,16 @@ class MunicipalAnalyticsService:
         Args:
             db: Database session
             limit: Maximum number of indicators to return
-            assessment_cycle: Optional cycle filter
+            year: Optional year filter (e.g., 2024, 2025)
 
         Returns:
             TopFailingIndicatorsList with top failing indicators
         """
+        # Build base filter conditions
+        filter_conditions = [Assessment.status == AssessmentStatus.COMPLETED]
+        if year is not None:
+            filter_conditions.append(Assessment.assessment_year == year)
+
         # Query for fail counts per indicator
         fail_counts = (
             db.query(
@@ -282,7 +294,7 @@ class MunicipalAnalyticsService:
                 func.count(AssessmentResponse.id).label("total_count"),
             )
             .join(Assessment, Assessment.id == AssessmentResponse.assessment_id)
-            .filter(Assessment.status == AssessmentStatus.COMPLETED)
+            .filter(and_(*filter_conditions))
             .group_by(AssessmentResponse.indicator_id)
             .having(
                 func.count(
@@ -312,13 +324,12 @@ class MunicipalAnalyticsService:
         )
 
         failing_indicators = []
-        total_unique_indicators = (
+        total_unique_query = (
             db.query(func.count(func.distinct(AssessmentResponse.indicator_id)))
             .join(Assessment, Assessment.id == AssessmentResponse.assessment_id)
-            .filter(Assessment.status == AssessmentStatus.COMPLETED)
-            .scalar()
-            or 0
+            .filter(and_(*filter_conditions))
         )
+        total_unique_indicators = total_unique_query.scalar() or 0
 
         for indicator_id, fail_count, total_count in fail_counts:
             # Get indicator details
@@ -388,30 +399,29 @@ class MunicipalAnalyticsService:
     def get_aggregated_capdev_summary(
         self,
         db: Session,
-        assessment_cycle: str | None = None,
+        year: int | None = None,
     ) -> AggregatedCapDevSummary:
         """
         Get aggregated capacity development summary across all completed assessments.
 
         Args:
             db: Database session
-            assessment_cycle: Optional cycle filter
+            year: Optional year filter (e.g., 2024, 2025)
 
         Returns:
             AggregatedCapDevSummary with aggregated CapDev data
         """
+        # Build filter conditions
+        filter_conditions = [
+            Assessment.status == AssessmentStatus.COMPLETED,
+            Assessment.capdev_insights.isnot(None),
+            Assessment.capdev_insights_status == "completed",
+        ]
+        if year is not None:
+            filter_conditions.append(Assessment.assessment_year == year)
+
         # Get assessments with CapDev insights
-        assessments_with_capdev = (
-            db.query(Assessment)
-            .filter(
-                and_(
-                    Assessment.status == AssessmentStatus.COMPLETED,
-                    Assessment.capdev_insights.isnot(None),
-                    Assessment.capdev_insights_status == "completed",
-                )
-            )
-            .all()
-        )
+        assessments_with_capdev = db.query(Assessment).filter(and_(*filter_conditions)).all()
 
         total_with_capdev = len(assessments_with_capdev)
 
@@ -519,6 +529,7 @@ class MunicipalAnalyticsService:
         self,
         db: Session,
         include_draft: bool = False,
+        year: int | None = None,
     ) -> BarangayStatusList:
         """
         Get assessment status for all barangays.
@@ -526,6 +537,7 @@ class MunicipalAnalyticsService:
         Args:
             db: Database session
             include_draft: Whether to include draft assessments
+            year: Optional year filter (e.g., 2024, 2025)
 
         Returns:
             BarangayStatusList with status of each barangay
@@ -558,12 +570,14 @@ class MunicipalAnalyticsService:
                 )
                 continue
 
-            # Get the latest assessment for this BLGU user
-            query = (
-                db.query(Assessment)
-                .filter(Assessment.blgu_user_id == blgu_user.id)
-                .order_by(Assessment.created_at.desc())
-            )
+            # Get the assessment for this BLGU user (filtered by year if specified)
+            query = db.query(Assessment).filter(Assessment.blgu_user_id == blgu_user.id)
+
+            # Filter by year if provided
+            if year is not None:
+                query = query.filter(Assessment.assessment_year == year)
+
+            query = query.order_by(Assessment.created_at.desc())
 
             if not include_draft:
                 # Exclude drafts unless requested
@@ -627,7 +641,7 @@ class MunicipalAnalyticsService:
     def get_municipal_overview_dashboard(
         self,
         db: Session,
-        assessment_cycle: str | None = None,
+        year: int | None = None,
         include_draft: bool = False,
     ) -> MunicipalOverviewDashboard:
         """
@@ -635,24 +649,20 @@ class MunicipalAnalyticsService:
 
         Args:
             db: Database session
-            assessment_cycle: Optional cycle filter
+            year: Optional year filter (e.g., 2024, 2025)
             include_draft: Whether to include draft assessments
 
         Returns:
             MunicipalOverviewDashboard with all dashboard sections
         """
-        logger.info(
-            f"Generating municipal overview dashboard (cycle: {assessment_cycle or 'latest'})"
-        )
+        logger.info(f"Generating municipal overview dashboard (year: {year or 'latest'})")
 
         # Gather all dashboard sections
-        compliance_summary = self.get_compliance_summary(db, assessment_cycle)
-        governance_area_performance = self.get_governance_area_performance(db, assessment_cycle)
-        top_failing_indicators = self.get_top_failing_indicators(
-            db, limit=10, assessment_cycle=assessment_cycle
-        )
-        capdev_summary = self.get_aggregated_capdev_summary(db, assessment_cycle)
-        barangay_statuses = self.get_barangay_status_list(db, include_draft)
+        compliance_summary = self.get_compliance_summary(db, year)
+        governance_area_performance = self.get_governance_area_performance(db, year)
+        top_failing_indicators = self.get_top_failing_indicators(db, limit=10, year=year)
+        capdev_summary = self.get_aggregated_capdev_summary(db, year)
+        barangay_statuses = self.get_barangay_status_list(db, include_draft, year)
 
         return MunicipalOverviewDashboard(
             compliance_summary=compliance_summary,
@@ -661,7 +671,7 @@ class MunicipalAnalyticsService:
             capdev_summary=capdev_summary,
             barangay_statuses=barangay_statuses,
             generated_at=datetime.now(UTC),
-            assessment_cycle=assessment_cycle,
+            assessment_cycle=str(year) if year else None,
         )
 
 

@@ -685,6 +685,10 @@ export type GetMunicipalOverviewBarangayStatusesParams = {
  * Include draft assessments
  */
 include_draft?: boolean;
+/**
+ * Assessment year filter (e.g., 2024, 2025). Defaults to active year.
+ */
+year?: number | null;
 };
 
 
@@ -693,9 +697,9 @@ include_draft?: boolean;
  */
 export type GetMunicipalOverviewComplianceSummaryParams = {
 /**
- * Assessment cycle filter
+ * Assessment year filter (e.g., 2024, 2025). Defaults to active year.
  */
-assessment_cycle?: string | null;
+year?: number | null;
 };
 
 
@@ -704,9 +708,9 @@ assessment_cycle?: string | null;
  */
 export type GetMunicipalOverviewDashboardParams = {
 /**
- * Assessment cycle filter (defaults to most recent)
+ * Assessment year filter (e.g., 2024, 2025). Defaults to active year if not provided.
  */
-assessment_cycle?: string | null;
+year?: number | null;
 /**
  * Whether to include draft assessments in barangay list
  */
@@ -719,9 +723,9 @@ include_draft?: boolean;
  */
 export type GetMunicipalOverviewGovernanceAreasParams = {
 /**
- * Assessment cycle filter
+ * Assessment year filter (e.g., 2024, 2025). Defaults to active year.
  */
-assessment_cycle?: string | null;
+year?: number | null;
 };
 
 

@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
-import { useGetUsersMe, useGetAnalyticsReports, useGetMunicipalOverviewDashboard } from "@sinag/shared";
+import {
+  useGetUsersMe,
+  useGetAnalyticsReports,
+  useGetMunicipalOverviewDashboard,
+} from "@sinag/shared";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -14,12 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  AlertCircle,
-  RefreshCw,
-  Filter,
-  BarChart3,
-} from "lucide-react";
+import { AlertCircle, RefreshCw, Filter, BarChart3 } from "lucide-react";
 import { YearSelector } from "@/components/features/assessment-year/YearSelector";
 import { useDashboardAnalytics } from "@/hooks/useDashboardAnalytics";
 import {
@@ -29,10 +28,7 @@ import {
   TopFailedIndicatorsCard,
   BBIFunctionalityWidget,
 } from "@/components/features/dashboard-analytics";
-import {
-  VisualizationGrid,
-  ExportControls,
-} from "@/components/features/reports";
+import { VisualizationGrid, ExportControls } from "@/components/features/reports";
 import {
   ComplianceSummaryCard,
   GovernanceAreaPerformanceCard,
@@ -94,12 +90,14 @@ export default function AnalyticsPage() {
     page_size: filters.page_size,
   });
 
-  // Municipal Overview data hook
+  // Municipal Overview data hook (now using year filter)
   const {
     data: municipalData,
     isLoading: isMunicipalLoading,
     error: municipalError,
-  } = useGetMunicipalOverviewDashboard();
+  } = useGetMunicipalOverviewDashboard({
+    year: selectedYear ?? undefined,
+  });
 
   // Handler for viewing CapDev insights - navigates to submissions detail page
   const handleViewCapDev = (assessmentId: number) => {
@@ -154,8 +152,8 @@ export default function AnalyticsPage() {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Access Denied</AlertTitle>
             <AlertDescription>
-              You do not have permission to access this page. Only MLGOO-DILG
-              users can view the analytics dashboard.
+              You do not have permission to access this page. Only MLGOO-DILG users can view the
+              analytics dashboard.
             </AlertDescription>
           </Alert>
         </div>
@@ -283,10 +281,12 @@ export default function AnalyticsPage() {
           {/* Global Filters */}
           <div className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-6">
             <div className="flex items-center gap-3 mb-4">
-              <Filter className="h-5 w-5" style={{ color: "var(--cityscape-yellow)" }} aria-hidden="true" />
-              <h2 className="text-lg font-semibold text-[var(--foreground)]">
-                Global Filters
-              </h2>
+              <Filter
+                className="h-5 w-5"
+                style={{ color: "var(--cityscape-yellow)" }}
+                aria-hidden="true"
+              />
+              <h2 className="text-lg font-semibold text-[var(--foreground)]">Global Filters</h2>
             </div>
 
             {/* Filters Row */}

@@ -278,7 +278,9 @@ def get_blgu_dashboard(
     # Note: Also check legacy NEEDS_REWORK for backward compatibility
     rework_comments = None
     mov_annotations_by_indicator = None
-    addressed_indicator_ids = None  # Indicators with feedback that have been re-addressed with new uploads
+    addressed_indicator_ids = (
+        None  # Indicators with feedback that have been re-addressed with new uploads
+    )
     if assessment.status in [AssessmentStatus.REWORK, AssessmentStatus.NEEDS_REWORK]:
         # Collect all feedback comments from all responses (excluding internal notes)
         comments_list = []

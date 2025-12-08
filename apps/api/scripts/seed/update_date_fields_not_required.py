@@ -36,14 +36,17 @@ def main():
     # List of indicator codes that have date_input fields
     # These are the sub-indicators that need updating
     affected_indicators = [
-        "1.3.1",   # indicator_1_3.py
-        "1.4.1",   # indicator_1_4.py
-        "2.1.1",   # indicator_2_1.py
-        "3.1.1", "3.1.2", "3.1.3", "3.1.4",  # indicator_3_1.py
-        "3.2.1",   # indicator_3_2.py
-        "4.6.1",   # indicator_4_6.py
-        "6.1.1",   # indicator_6_1.py
-        "6.3.1",   # indicator_6_3.py
+        "1.3.1",  # indicator_1_3.py
+        "1.4.1",  # indicator_1_4.py
+        "2.1.1",  # indicator_2_1.py
+        "3.1.1",
+        "3.1.2",
+        "3.1.3",
+        "3.1.4",  # indicator_3_1.py
+        "3.2.1",  # indicator_3_2.py
+        "4.6.1",  # indicator_4_6.py
+        "6.1.1",  # indicator_6_1.py
+        "6.3.1",  # indicator_6_3.py
     ]
 
     try:
@@ -59,9 +62,7 @@ def main():
 
         for code in affected_indicators:
             # Find the indicator in the database
-            db_indicator = db.query(Indicator).filter(
-                Indicator.indicator_code == code
-            ).first()
+            db_indicator = db.query(Indicator).filter(Indicator.indicator_code == code).first()
 
             if not db_indicator:
                 print(f"⚠️  Indicator {code} not found in database")
@@ -94,6 +95,7 @@ def main():
     except Exception as e:
         print(f"❌ Error: {str(e)}")
         import traceback
+
         traceback.print_exc()
         db.rollback()
     finally:

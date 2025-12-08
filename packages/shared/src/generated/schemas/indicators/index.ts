@@ -286,9 +286,9 @@ export type GetMunicipalOverviewTopFailingIndicatorsParams = {
  */
 limit?: number;
 /**
- * Assessment cycle filter
+ * Assessment year filter (e.g., 2024, 2025). Defaults to active year.
  */
-assessment_cycle?: string | null;
+year?: number | null;
 };
 
 
