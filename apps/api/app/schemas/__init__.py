@@ -13,19 +13,6 @@ from .analytics import (
     StatusDistributionItem,
     TrendData,
 )
-from .assessment_year import (
-    AccessibleYearsResponse,
-    ActivateYearRequest,
-    ActivateYearResponse,
-    AssessmentYearBase,
-    AssessmentYearCreate,
-    AssessmentYearListResponse,
-    AssessmentYearResponse,
-    AssessmentYearSimple,
-    AssessmentYearUpdate,
-    PublishYearRequest,
-    PublishYearResponse,
-)
 from .assessment import (
     MOV,
     Assessment,
@@ -54,6 +41,19 @@ from .assessment import (
     MOVListResponse,
     MOVUpdate,
     ReworkSummaryResponse,
+)
+from .assessment_year import (
+    AccessibleYearsResponse,
+    ActivateYearRequest,
+    ActivateYearResponse,
+    AssessmentYearBase,
+    AssessmentYearCreate,
+    AssessmentYearListResponse,
+    AssessmentYearResponse,
+    AssessmentYearSimple,
+    AssessmentYearUpdate,
+    PublishYearRequest,
+    PublishYearResponse,
 )
 from .assessor import (
     AnnotationCreate,

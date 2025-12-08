@@ -15,14 +15,16 @@ Changes:
 
 The new structure uses Option 1, Option 2, Option 3 with section headers and
 OR separators. Only ONE option needs to be completed (ANY_OPTION_GROUP_REQUIRED).
+
+NOTE: This migration uses raw SQL instead of ORM to avoid compatibility issues
+with model columns that may be added by later migrations.
 """
 
-from typing import Sequence, Union, Any
+from typing import Sequence, Union
 import json
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.orm import Session
 
 
 # revision identifiers, used by Alembic.
@@ -46,171 +48,341 @@ FIELD_ID_MAPPING = {
     "1_6_1_3_b": "1_6_1_opt3_b",
 }
 
+# New consolidated form schema for 1.6.1
+NEW_FORM_SCHEMA = {
+    "fields": [
+        {
+            "id": "1_6_1_opt1_header",
+            "label": "Option 1: Trust Fund Agreement with BLGF",
+            "type": "section_header",
+            "option_group": 1,
+        },
+        {
+            "id": "1_6_1_opt1_a",
+            "label": "Approved Trust Fund Agreement",
+            "type": "upload",
+            "mov_description": "Copy of Trust Fund Agreement signed by the Punong Barangay and LBP",
+            "required": True,
+            "option_group": 1,
+        },
+        {
+            "id": "1_6_1_opt1_b",
+            "label": "Active Trust Fund Account",
+            "type": "upload",
+            "mov_description": "Any of the following: Bank Statement, Certificate of Deposit, Passbook with recent entry",
+            "required": True,
+            "option_group": 1,
+        },
+        {
+            "id": "or_separator_1",
+            "type": "or_separator",
+        },
+        {
+            "id": "1_6_1_opt2_header",
+            "label": "Option 2: Time Deposit with LBP",
+            "type": "section_header",
+            "option_group": 2,
+        },
+        {
+            "id": "1_6_1_opt2_deposit",
+            "label": "Time Deposit Certificate",
+            "type": "upload",
+            "mov_description": "Copy of Time Deposit Certificate or Bank Statement showing time deposit",
+            "required": True,
+            "option_group": 2,
+        },
+        {
+            "id": "or_separator_2",
+            "type": "or_separator",
+        },
+        {
+            "id": "1_6_1_opt3_header",
+            "label": "Option 3: Regular Savings Account with LBP",
+            "type": "section_header",
+            "option_group": 3,
+        },
+        {
+            "id": "1_6_1_opt3_a",
+            "label": "Savings Account Documentation",
+            "type": "upload",
+            "mov_description": "Copy of Passbook or Bank Statement",
+            "required": True,
+            "option_group": 3,
+        },
+        {
+            "id": "1_6_1_opt3_b",
+            "label": "Account Balance Proof",
+            "type": "upload",
+            "mov_description": "Certificate of Account Balance or latest Bank Statement",
+            "required": True,
+            "option_group": 3,
+        },
+    ],
+    "validation_rule": "ANY_OPTION_GROUP_REQUIRED",
+}
+
+NEW_CHECKLIST_ITEMS = [
+    {
+        "item_id": "1_6_1_opt1_header",
+        "label": "Option 1: Trust Fund Agreement with BLGF",
+        "item_type": "section_header",
+        "mov_description": None,
+        "required": False,
+        "display_order": 1,
+        "option_group": 1,
+    },
+    {
+        "item_id": "1_6_1_opt1_a",
+        "label": "Approved Trust Fund Agreement",
+        "item_type": "upload",
+        "mov_description": "Copy of Trust Fund Agreement signed by the Punong Barangay and LBP",
+        "required": True,
+        "display_order": 2,
+        "option_group": 1,
+    },
+    {
+        "item_id": "1_6_1_opt1_b",
+        "label": "Active Trust Fund Account",
+        "item_type": "upload",
+        "mov_description": "Any of the following: Bank Statement, Certificate of Deposit, Passbook with recent entry",
+        "required": True,
+        "display_order": 3,
+        "option_group": 1,
+    },
+    {
+        "item_id": "or_separator_1",
+        "label": "OR",
+        "item_type": "or_separator",
+        "mov_description": None,
+        "required": False,
+        "display_order": 4,
+        "option_group": None,
+    },
+    {
+        "item_id": "1_6_1_opt2_header",
+        "label": "Option 2: Time Deposit with LBP",
+        "item_type": "section_header",
+        "mov_description": None,
+        "required": False,
+        "display_order": 5,
+        "option_group": 2,
+    },
+    {
+        "item_id": "1_6_1_opt2_deposit",
+        "label": "Time Deposit Certificate",
+        "item_type": "upload",
+        "mov_description": "Copy of Time Deposit Certificate or Bank Statement showing time deposit",
+        "required": True,
+        "display_order": 6,
+        "option_group": 2,
+    },
+    {
+        "item_id": "or_separator_2",
+        "label": "OR",
+        "item_type": "or_separator",
+        "mov_description": None,
+        "required": False,
+        "display_order": 7,
+        "option_group": None,
+    },
+    {
+        "item_id": "1_6_1_opt3_header",
+        "label": "Option 3: Regular Savings Account with LBP",
+        "item_type": "section_header",
+        "mov_description": None,
+        "required": False,
+        "display_order": 8,
+        "option_group": 3,
+    },
+    {
+        "item_id": "1_6_1_opt3_a",
+        "label": "Savings Account Documentation",
+        "item_type": "upload",
+        "mov_description": "Copy of Passbook or Bank Statement",
+        "required": True,
+        "display_order": 9,
+        "option_group": 3,
+    },
+    {
+        "item_id": "1_6_1_opt3_b",
+        "label": "Account Balance Proof",
+        "item_type": "upload",
+        "mov_description": "Certificate of Account Balance or latest Bank Statement",
+        "required": True,
+        "display_order": 10,
+        "option_group": 3,
+    },
+]
+
+NEW_INDICATOR_NAME = "Presence of Trust Fund Agreement/Time Deposit/Regular Savings Account with Land Bank of the Philippines (LBP)"
+
 
 def upgrade() -> None:
-    """Consolidate indicator 1.6.1 into a single indicator with OR logic."""
-    from app.db.models.governance_area import Indicator, ChecklistItem as ChecklistItemModel
-    from app.indicators.definitions.indicator_1_6 import INDICATOR_1_6
-    from app.indicators.seeder import _generate_form_schema_from_checklist
+    """Consolidate indicator 1.6.1 into a single indicator with OR logic using raw SQL."""
+    conn = op.get_bind()
 
-    bind = op.get_bind()
-    session = Session(bind=bind)
+    print("=" * 60)
+    print("Consolidating indicator 1.6.1 with OR logic...")
+    print("=" * 60)
 
-    try:
-        print("=" * 60)
-        print("Consolidating indicator 1.6.1 with OR logic...")
-        print("=" * 60)
-
-        # 1. Get the parent indicator 1.6.1
-        parent_indicator = (
-            session.query(Indicator).filter(Indicator.indicator_code == "1.6.1").first()
-        )
-
-        if not parent_indicator:
-            print("Parent indicator 1.6.1 not found, skipping migration...")
-            return
-
-        print(f"Found parent indicator: {parent_indicator.id} - {parent_indicator.indicator_code}")
-
-        # 2. Get child indicators (1.6.1.1, 1.6.1.2, 1.6.1.3)
-        child_indicators = (
-            session.query(Indicator).filter(Indicator.parent_id == parent_indicator.id).all()
-        )
-
-        child_codes = [c.indicator_code for c in child_indicators]
-        print(f"Found {len(child_indicators)} child indicators: {child_codes}")
-
-        # 3. Migrate assessment responses from children to parent
-        for child in child_indicators:
-            _migrate_responses(session, child, parent_indicator)
-
-        # 4. Delete checklist items from children
-        for child in child_indicators:
-            deleted_count = (
-                session.query(ChecklistItemModel)
-                .filter(ChecklistItemModel.indicator_id == child.id)
-                .delete()
-            )
-            print(f"  Deleted {deleted_count} checklist items from {child.indicator_code}")
-
-        # 5. Delete child indicators
-        for child in child_indicators:
-            session.delete(child)
-            print(f"  Deleted child indicator: {child.indicator_code}")
-
-        # 6. Delete existing checklist items from parent
-        deleted_count = (
-            session.query(ChecklistItemModel)
-            .filter(ChecklistItemModel.indicator_id == parent_indicator.id)
-            .delete()
-        )
-        print(f"Deleted {deleted_count} existing checklist items from parent 1.6.1")
-
-        # 7. Create new checklist items from the updated definition
-        sub_161 = INDICATOR_1_6.children[0]  # Get 1.6.1 sub-indicator definition
-        new_items = []
-        for item_def in sub_161.checklist_items:
-            new_item = ChecklistItemModel(
-                indicator_id=parent_indicator.id,
-                item_id=item_def.id,
-                label=item_def.label,
-                item_type=item_def.item_type,
-                mov_description=item_def.mov_description,
-                required=item_def.required,
-                display_order=item_def.display_order,
-                option_group=item_def.option_group,
-            )
-            new_items.append(new_item)
-            session.add(new_item)
-
-        print(f"Created {len(new_items)} new checklist items for 1.6.1")
-
-        # 8. Update parent indicator with new configuration
-        parent_indicator.name = sub_161.name
-        parent_indicator.upload_instructions = sub_161.upload_instructions
-        parent_indicator.validation_rule = sub_161.validation_rule
-
-        # 9. Generate and update form_schema
-        form_schema = _generate_form_schema_from_checklist(
-            sub_161.checklist_items,
-            sub_161.upload_instructions,
-            sub_161.validation_rule,
-            sub_161.notes,
-        )
-        parent_indicator.form_schema = form_schema
-        print(f"Updated form_schema with {len(form_schema.get('fields', []))} fields")
-
-        session.commit()
-        print("=" * 60)
-        print("Migration completed successfully!")
-        print("=" * 60)
-
-    except Exception as e:
-        session.rollback()
-        print(f"Error during migration: {e}")
-        raise
-    finally:
-        session.close()
-
-
-def _migrate_responses(session: Session, old_indicator: Any, new_indicator: Any) -> None:
-    """Migrate assessment responses from old child indicator to new parent indicator."""
-    from app.db.models.assessment import AssessmentResponse, MOVFile
-
-    # Get responses for the old indicator
-    responses = (
-        session.query(AssessmentResponse)
-        .filter(AssessmentResponse.indicator_id == old_indicator.id)
-        .all()
+    # 1. Get the parent indicator 1.6.1
+    result = conn.execute(
+        sa.text("SELECT id, indicator_code FROM indicators WHERE indicator_code = '1.6.1'")
     )
+    parent = result.fetchone()
 
-    print(f"  Migrating {len(responses)} responses from {old_indicator.indicator_code}...")
-
-    for response in responses:
-        # Check if there's already a response for the parent indicator in this assessment
-        existing_parent_response = (
-            session.query(AssessmentResponse)
-            .filter(
-                AssessmentResponse.assessment_id == response.assessment_id,
-                AssessmentResponse.indicator_id == new_indicator.id,
-            )
-            .first()
-        )
-
-        if existing_parent_response:
-            # Merge response data into existing parent response
-            _merge_response_data(existing_parent_response, response, old_indicator.indicator_code)
-            # Migrate MOV files to point to new indicator
-            _migrate_mov_files(session, old_indicator, new_indicator, response.assessment_id)
-            # Delete the old response
-            session.delete(response)
-        else:
-            # Update the response to point to the parent indicator
-            response.indicator_id = new_indicator.id
-            # Update field IDs in response_data
-            if response.response_data:
-                response.response_data = _remap_field_ids(
-                    response.response_data, old_indicator.indicator_code
-                )
-            # Update MOV files to point to new indicator
-            _migrate_mov_files(session, old_indicator, new_indicator, response.assessment_id)
-
-
-def _merge_response_data(parent_response: Any, child_response: Any, child_code: str) -> None:
-    """Merge response data from child into parent response."""
-    if not child_response.response_data:
+    if not parent:
+        print("Parent indicator 1.6.1 not found, skipping migration...")
         return
 
-    if parent_response.response_data is None:
-        parent_response.response_data = {}
+    parent_id = parent[0]
+    print(f"Found parent indicator: {parent_id} - {parent[1]}")
 
-    # Remap field IDs and merge
-    remapped_data = _remap_field_ids(child_response.response_data, child_code)
-    parent_response.response_data.update(remapped_data)
+    # 2. Get child indicators (1.6.1.1, 1.6.1.2, 1.6.1.3)
+    result = conn.execute(
+        sa.text("SELECT id, indicator_code FROM indicators WHERE parent_id = :parent_id"),
+        {"parent_id": parent_id},
+    )
+    children = result.fetchall()
+    child_ids = [c[0] for c in children]
+    child_codes = [c[1] for c in children]
+    print(f"Found {len(children)} child indicators: {child_codes}")
+
+    # 3. Migrate assessment responses from children to parent
+    for child_id, child_code in zip(child_ids, child_codes):
+        _migrate_responses_raw(conn, child_id, child_code, parent_id)
+
+    # 4. Delete checklist items from children
+    for child_id, child_code in zip(child_ids, child_codes):
+        result = conn.execute(
+            sa.text("DELETE FROM checklist_items WHERE indicator_id = :indicator_id"),
+            {"indicator_id": child_id},
+        )
+        print(f"  Deleted checklist items from {child_code}")
+
+    # 5. Delete child indicators
+    for child_id, child_code in zip(child_ids, child_codes):
+        conn.execute(
+            sa.text("DELETE FROM indicators WHERE id = :id"),
+            {"id": child_id},
+        )
+        print(f"  Deleted child indicator: {child_code}")
+
+    # 6. Delete existing checklist items from parent
+    conn.execute(
+        sa.text("DELETE FROM checklist_items WHERE indicator_id = :indicator_id"),
+        {"indicator_id": parent_id},
+    )
+    print("Deleted existing checklist items from parent 1.6.1")
+
+    # 7. Create new checklist items
+    for item in NEW_CHECKLIST_ITEMS:
+        conn.execute(
+            sa.text("""
+                INSERT INTO checklist_items
+                (indicator_id, item_id, label, item_type, mov_description, required, display_order, option_group)
+                VALUES (:indicator_id, :item_id, :label, :item_type, :mov_description, :required, :display_order, :option_group)
+            """),
+            {
+                "indicator_id": parent_id,
+                "item_id": item["item_id"],
+                "label": item["label"],
+                "item_type": item["item_type"],
+                "mov_description": item["mov_description"],
+                "required": item["required"],
+                "display_order": item["display_order"],
+                "option_group": item["option_group"],
+            },
+        )
+    print(f"Created {len(NEW_CHECKLIST_ITEMS)} new checklist items for 1.6.1")
+
+    # 8. Update parent indicator with new configuration
+    conn.execute(
+        sa.text("""
+            UPDATE indicators
+            SET name = :name,
+                validation_rule = :validation_rule,
+                form_schema = :form_schema
+            WHERE id = :id
+        """),
+        {
+            "id": parent_id,
+            "name": NEW_INDICATOR_NAME,
+            "validation_rule": "ANY_OPTION_GROUP_REQUIRED",
+            "form_schema": json.dumps(NEW_FORM_SCHEMA),
+        },
+    )
+    print("Updated parent indicator configuration")
+
+    print("=" * 60)
+    print("Migration completed successfully!")
+    print("=" * 60)
 
 
-def _remap_field_ids(response_data: dict[str, Any], child_code: str) -> dict[str, Any]:
-    """Remap old field IDs to new field IDs based on the indicator code."""
+def _migrate_responses_raw(conn, old_indicator_id: int, old_code: str, new_indicator_id: int) -> None:
+    """Migrate assessment responses from old child indicator to new parent indicator using raw SQL."""
+    # Get responses for the old indicator
+    result = conn.execute(
+        sa.text("""
+            SELECT id, assessment_id, response_data
+            FROM assessment_responses
+            WHERE indicator_id = :indicator_id
+        """),
+        {"indicator_id": old_indicator_id},
+    )
+    responses = result.fetchall()
+
+    print(f"  Migrating {len(responses)} responses from {old_code}...")
+
+    for response_id, assessment_id, response_data in responses:
+        # Check if there's already a response for the parent indicator
+        result = conn.execute(
+            sa.text("""
+                SELECT id, response_data FROM assessment_responses
+                WHERE assessment_id = :assessment_id AND indicator_id = :indicator_id
+            """),
+            {"assessment_id": assessment_id, "indicator_id": new_indicator_id},
+        )
+        existing = result.fetchone()
+
+        if existing:
+            # Merge response data
+            existing_data = existing[1] or {}
+            if response_data:
+                remapped = _remap_field_ids(response_data, old_code)
+                existing_data.update(remapped)
+                conn.execute(
+                    sa.text("UPDATE assessment_responses SET response_data = :data WHERE id = :id"),
+                    {"data": json.dumps(existing_data), "id": existing[0]},
+                )
+            # Migrate MOV files
+            _migrate_mov_files_raw(conn, old_indicator_id, new_indicator_id, assessment_id)
+            # Delete old response
+            conn.execute(
+                sa.text("DELETE FROM assessment_responses WHERE id = :id"),
+                {"id": response_id},
+            )
+        else:
+            # Update response to point to parent
+            remapped_data = _remap_field_ids(response_data, old_code) if response_data else None
+            conn.execute(
+                sa.text("""
+                    UPDATE assessment_responses
+                    SET indicator_id = :new_id, response_data = :data
+                    WHERE id = :id
+                """),
+                {
+                    "id": response_id,
+                    "new_id": new_indicator_id,
+                    "data": json.dumps(remapped_data) if remapped_data else None,
+                },
+            )
+            # Migrate MOV files
+            _migrate_mov_files_raw(conn, old_indicator_id, new_indicator_id, assessment_id)
+
+
+def _remap_field_ids(response_data: dict, child_code: str) -> dict:
+    """Remap old field IDs to new field IDs."""
     if not response_data:
         return {}
 
@@ -222,30 +394,31 @@ def _remap_field_ids(response_data: dict[str, Any], child_code: str) -> dict[str
     return remapped
 
 
-def _migrate_mov_files(
-    session: Session, old_indicator: Any, new_indicator: Any, assessment_id: int
-) -> None:
-    """Migrate MOV files from old indicator to new indicator and update field IDs."""
-    from app.db.models.assessment import MOVFile
-
-    # Get MOV files for the old indicator in this assessment
-    movs = (
-        session.query(MOVFile)
-        .filter(MOVFile.indicator_id == old_indicator.id, MOVFile.assessment_id == assessment_id)
-        .all()
+def _migrate_mov_files_raw(conn, old_indicator_id: int, new_indicator_id: int, assessment_id: int) -> None:
+    """Migrate MOV files using raw SQL."""
+    # Get MOV files for the old indicator
+    result = conn.execute(
+        sa.text("""
+            SELECT id, field_id FROM mov_files
+            WHERE indicator_id = :old_id AND assessment_id = :assessment_id
+        """),
+        {"old_id": old_indicator_id, "assessment_id": assessment_id},
     )
+    movs = result.fetchall()
 
-    for mov in movs:
-        # Update indicator reference to point to new parent indicator
-        mov.indicator_id = new_indicator.id
-        # Update field_id mapping
-        if mov.field_id:
-            mov.field_id = FIELD_ID_MAPPING.get(mov.field_id, mov.field_id)
+    for mov_id, field_id in movs:
+        new_field_id = FIELD_ID_MAPPING.get(field_id, field_id) if field_id else field_id
+        conn.execute(
+            sa.text("""
+                UPDATE mov_files
+                SET indicator_id = :new_id, field_id = :field_id
+                WHERE id = :id
+            """),
+            {"id": mov_id, "new_id": new_indicator_id, "field_id": new_field_id},
+        )
 
 
 def downgrade() -> None:
     """Revert the consolidation (not fully reversible - data may be lost)."""
-    # Note: Full downgrade is complex and may result in data loss.
-    # This is intentionally left as a pass - manual intervention required.
     print("Downgrade not implemented. Manual intervention required to restore child indicators.")
     pass

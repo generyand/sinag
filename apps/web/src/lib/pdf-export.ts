@@ -3,7 +3,7 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
 export interface FilterState {
-  cycle_id?: number;
+  year?: number;
   start_date?: string;
   end_date?: string;
   governance_area?: string[];
@@ -133,8 +133,8 @@ export async function exportReportToPDF(
     if (filters.status) {
       filterLines.push(`• Status: ${filters.status}`);
     }
-    if (filters.cycle_id) {
-      filterLines.push(`• Cycle ID: ${filters.cycle_id}`);
+    if (filters.year) {
+      filterLines.push(`• Assessment Year: ${filters.year}`);
     }
     if (filters.governance_area && filters.governance_area.length > 0) {
       filterLines.push(`• Governance Areas: ${filters.governance_area.join(", ")}`);

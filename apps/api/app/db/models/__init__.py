@@ -3,7 +3,7 @@
 
 # Import Base for migrations and table creation
 from ..base import Base
-from .admin import AuditLog, AssessmentCycle, DeadlineOverride
+from .admin import AssessmentCycle, AuditLog, DeadlineOverride
 from .assessment import MOV, Assessment, AssessmentResponse, FeedbackComment, MOVFile
 from .barangay import Barangay
 from .bbi import BBI, BBIResult

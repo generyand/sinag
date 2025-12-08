@@ -9,7 +9,6 @@ import logging
 from typing import Any
 
 from celery.exceptions import MaxRetriesExceededError
-from sqlalchemy import and_
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 from sqlalchemy.orm import Session
 

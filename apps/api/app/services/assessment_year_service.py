@@ -1,9 +1,8 @@
 # 📅 Assessment Year Service
 # Service layer for managing unified assessment year configurations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
 from app.core.year_resolver import YearPlaceholderResolver
@@ -410,12 +409,12 @@ class AssessmentYearService:
         if current_active:
             previous_active_year = current_active.year
             current_active.is_active = False
-            current_active.deactivated_at = datetime.now(timezone.utc)
+            current_active.deactivated_at = datetime.now(UTC)
             current_active.deactivated_by_id = activated_by_id
 
         # Activate the new year
         year_record.is_active = True
-        year_record.activated_at = datetime.now(timezone.utc)
+        year_record.activated_at = datetime.now(UTC)
         year_record.activated_by_id = activated_by_id
 
         db.commit()
@@ -469,7 +468,7 @@ class AssessmentYearService:
             raise ValueError(f"Assessment year {year} is not active.")
 
         year_record.is_active = False
-        year_record.deactivated_at = datetime.now(timezone.utc)
+        year_record.deactivated_at = datetime.now(UTC)
         year_record.deactivated_by_id = deactivated_by_id
 
         db.commit()
@@ -596,7 +595,7 @@ class AssessmentYearService:
             return False
 
         if check_time is None:
-            check_time = datetime.now(timezone.utc)
+            check_time = datetime.now(UTC)
 
         return (
             year_record.assessment_period_start <= check_time
@@ -630,7 +629,7 @@ class AssessmentYearService:
             return "unknown"
 
         if check_time is None:
-            check_time = datetime.now(timezone.utc)
+            check_time = datetime.now(UTC)
 
         # Before assessment period
         if check_time < year_record.assessment_period_start:

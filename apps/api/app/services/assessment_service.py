@@ -2563,10 +2563,9 @@ class AssessmentService:
         Returns:
             AssessmentDashboardResponse with dashboard data or None if not found
         """
-        from app.services.assessment_year_service import assessment_year_service
-
         # Get user information to access barangay name
         from app.db.models.user import User
+        from app.services.assessment_year_service import assessment_year_service
 
         user = (
             db.query(User)
