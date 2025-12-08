@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 from app.db.enums import (
     AssessmentStatus,
-    BBIStatus,
     ComplianceStatus,
     UserRole,
     ValidationStatus,
@@ -674,12 +673,12 @@ class AnalyticsService:
             bbi = data["bbi"]
             results = data["results"]
 
-            # Count by tier
-            highly_count = sum(1 for r in results if r.status == BBIStatus.HIGHLY_FUNCTIONAL)
+            # Count by tier (using compliance_rating string field)
+            highly_count = sum(1 for r in results if r.compliance_rating == "HIGHLY_FUNCTIONAL")
             moderately_count = sum(
-                1 for r in results if r.status == BBIStatus.MODERATELY_FUNCTIONAL
+                1 for r in results if r.compliance_rating == "MODERATELY_FUNCTIONAL"
             )
-            low_count = sum(1 for r in results if r.status == BBIStatus.LOW_FUNCTIONAL)
+            low_count = sum(1 for r in results if r.compliance_rating == "LOW_FUNCTIONAL")
 
             # Calculate average compliance for this BBI
             compliance_values = [
