@@ -27,6 +27,8 @@ import type {
   BBIResultResponse,
   BBIUpdate,
   BBIWithGovernanceArea,
+  BarangayBBIComplianceResponse,
+  GetBbisComplianceBarangayBarangayIdParams,
   GetBbisParams,
   HTTPValidationError,
   TestBBICalculationRequest,
@@ -560,10 +562,11 @@ export function useGetBbisResultsAssessmentAssessmentId<TData = Awaited<ReturnTy
 
 Accessible by all authenticated users.
 
-Returns the compliance rate and 3-tier rating for all BBI indicators:
+Returns the compliance rate and 4-tier rating for all BBI indicators:
 - HIGHLY_FUNCTIONAL: 75% - 100% compliance
 - MODERATELY_FUNCTIONAL: 50% - 74% compliance
-- LOW_FUNCTIONAL: Below 50% compliance
+- LOW_FUNCTIONAL: 1% - 49% compliance
+- NON_FUNCTIONAL: 0% compliance
 
 Includes detailed sub-indicator pass/fail breakdown for each BBI.
  * @summary Get Assessment Bbi Compliance
@@ -639,11 +642,18 @@ export function useGetBbisComplianceAssessmentAssessmentId<TData = Awaited<Retur
 Requires admin privileges (MLGOO_DILG role).
 
 This endpoint calculates compliance rates for all BBI indicators based on
-sub-indicator checklist results and stores the results in the database.
+validator decisions (AssessmentResponse.validation_status) and stores
+the results in the database.
+
+4-tier rating system (DILG MC 2024-417):
+- HIGHLY_FUNCTIONAL: 75% - 100% compliance
+- MODERATELY_FUNCTIONAL: 50% - 74% compliance
+- LOW_FUNCTIONAL: 1% - 49% compliance
+- NON_FUNCTIONAL: 0% compliance
 
 Use this endpoint to:
 - Calculate compliance for a newly finalized assessment
-- Recalculate compliance if sub-indicator data has changed
+- Recalculate compliance if validator decisions have changed
  * @summary Calculate Assessment Bbi Compliance
  */
 export const postBbisComplianceCalculate$AssessmentId = (
@@ -705,4 +715,85 @@ export const usePostBbisComplianceCalculateAssessmentId = <TError = HTTPValidati
 
       return useMutation(mutationOptions);
     }
+    /**
+ * Get BBI compliance data for a specific barangay and year.
+
+Accessible by all authenticated users.
+
+Returns the compliance rate and 4-tier rating for all BBI indicators:
+- HIGHLY_FUNCTIONAL: 75% - 100% compliance
+- MODERATELY_FUNCTIONAL: 50% - 74% compliance
+- LOW_FUNCTIONAL: 1% - 49% compliance
+- NON_FUNCTIONAL: 0% compliance
+ * @summary Get Barangay Bbi Compliance
+ */
+export const getBbisComplianceBarangay$BarangayId = (
+    barangayId: number,
+    params: GetBbisComplianceBarangayBarangayIdParams,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<BarangayBBIComplianceResponse>(
+      {url: `/api/v1/bbis/compliance/barangay/${barangayId}`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetBbisComplianceBarangayBarangayIdQueryKey = (barangayId?: number,
+    params?: GetBbisComplianceBarangayBarangayIdParams,) => {
+    return [
+    `/api/v1/bbis/compliance/barangay/${barangayId}`, ...(params ? [params]: [])
+    ] as const;
+    }
+
     
+export const getGetBbisComplianceBarangayBarangayIdQueryOptions = <TData = Awaited<ReturnType<typeof getBbisComplianceBarangay$BarangayId>>, TError = HTTPValidationError>(barangayId: number,
+    params: GetBbisComplianceBarangayBarangayIdParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBbisComplianceBarangay$BarangayId>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBbisComplianceBarangayBarangayIdQueryKey(barangayId,params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBbisComplianceBarangay$BarangayId>>> = ({ signal }) => getBbisComplianceBarangay$BarangayId(barangayId,params, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(barangayId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBbisComplianceBarangay$BarangayId>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBbisComplianceBarangayBarangayIdQueryResult = NonNullable<Awaited<ReturnType<typeof getBbisComplianceBarangay$BarangayId>>>
+export type GetBbisComplianceBarangayBarangayIdQueryError = HTTPValidationError
+
+
+/**
+ * @summary Get Barangay Bbi Compliance
+ */
+
+export function useGetBbisComplianceBarangayBarangayId<TData = Awaited<ReturnType<typeof getBbisComplianceBarangay$BarangayId>>, TError = HTTPValidationError>(
+ barangayId: number,
+    params: GetBbisComplianceBarangayBarangayIdParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBbisComplianceBarangay$BarangayId>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBbisComplianceBarangayBarangayIdQueryOptions(barangayId,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+

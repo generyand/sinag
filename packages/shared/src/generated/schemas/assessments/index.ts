@@ -64,9 +64,11 @@ export interface AssessmentBBIComplianceResponse {
   /** Assessment ID */
   assessment_id: number;
   /** Barangay ID */
-  barangay_id?: AssessmentBBIComplianceResponseBarangayId;
+  barangay_id: number;
   /** Barangay name */
   barangay_name?: AssessmentBBIComplianceResponseBarangayName;
+  /** Assessment year */
+  assessment_year: number;
   /** Compliance results for each BBI */
   bbi_results: AppSchemasBbiBBIComplianceResult[];
   /** Summary statistics for BBI compliance */
@@ -74,12 +76,6 @@ export interface AssessmentBBIComplianceResponse {
   /** When the compliance was calculated */
   calculated_at: string;
 }
-
-
-/**
- * AssessmentBBIComplianceResponseBarangayId
- */
-export type AssessmentBBIComplianceResponseBarangayId = number | null;
 
 
 /**

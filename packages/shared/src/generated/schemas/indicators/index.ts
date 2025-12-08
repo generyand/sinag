@@ -32,6 +32,12 @@ export interface AISummaryIndicator {
 
 
 /**
+ * AppSchemasBbiBBIComplianceResultIndicatorCode
+ */
+export type AppSchemasBbiBBIComplianceResultIndicatorCode = string | null;
+
+
+/**
  * AppSchemasBbiSubIndicatorResult
  */
 export interface AppSchemasBbiSubIndicatorResult {
@@ -102,6 +108,12 @@ export type AppSchemasBlguDashboardSubIndicatorResultValidationRule = string | n
 
 
 /**
+ * BBIResultResponseIndicatorId
+ */
+export type BBIResultResponseIndicatorId = number | null;
+
+
+/**
  * BBIResultResponseSubIndicatorResults
  */
 export type BBIResultResponseSubIndicatorResults = BBIResultResponseSubIndicatorResultsAnyOfItem[] | null;
@@ -111,18 +123,6 @@ export type BBIResultResponseSubIndicatorResults = BBIResultResponseSubIndicator
  * BBIResultResponseSubIndicatorResultsAnyOfItem
  */
 export type BBIResultResponseSubIndicatorResultsAnyOfItem = { [key: string]: unknown };
-
-
-/**
- * BBIResultResponseSubIndicatorsPassed
- */
-export type BBIResultResponseSubIndicatorsPassed = number | null;
-
-
-/**
- * BBIResultResponseSubIndicatorsTotal
- */
-export type BBIResultResponseSubIndicatorsTotal = number | null;
 
 
 /**

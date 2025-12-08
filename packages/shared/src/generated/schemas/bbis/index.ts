@@ -3,10 +3,10 @@
 // 📁 Bbis-related types
 // 🏷️  Based on FastAPI tag: "bbis"
 
+import type { AppSchemasBbiBBIComplianceResultIndicatorCode } from '../indicators';
 import type { AppSchemasBbiSubIndicatorResult } from '../indicators';
 import type { AppSchemasBlguDashboardSubIndicatorResult } from '../indicators';
-import type { BBIResultResponseSubIndicatorsPassed } from '../indicators';
-import type { BBIResultResponseSubIndicatorsTotal } from '../indicators';
+import type { BBIResultResponseIndicatorId } from '../indicators';
 import type { BBIResultResponseSubIndicatorResults } from '../indicators';
 import type { GovernanceAreaSummary } from '../governancearea';
 import type { AssessmentBBIComplianceResponse } from '../assessments';
@@ -22,15 +22,21 @@ export interface AppSchemasBbiBBIComplianceResult {
   bbi_name: string;
   /** BBI abbreviation (indicator code) */
   bbi_abbreviation: string;
+  /** Original indicator code (e.g., 2.1) */
+  indicator_code?: AppSchemasBbiBBIComplianceResultIndicatorCode;
   /** Governance area ID */
   governance_area_id: number;
   /** Governance area name */
   governance_area_name?: AppSchemasBbiBBIComplianceResultGovernanceAreaName;
   /** Assessment ID */
   assessment_id: number;
+  /** Barangay ID */
+  barangay_id: number;
+  /** Assessment year */
+  assessment_year: number;
   /** Compliance rate 0-100% */
   compliance_percentage: number;
-  /** 3-tier rating: HIGHLY_FUNCTIONAL, MODERATELY_FUNCTIONAL, LOW_FUNCTIONAL */
+  /** 4-tier rating: HIGHLY_FUNCTIONAL, MODERATELY_FUNCTIONAL, LOW_FUNCTIONAL, NON_FUNCTIONAL */
   compliance_rating: string;
   /** Number of sub-indicators that passed */
   sub_indicators_passed: number;
@@ -38,7 +44,8 @@ export interface AppSchemasBbiBBIComplianceResult {
   sub_indicators_total: number;
   /** Detailed pass/fail results for each sub-indicator */
   sub_indicator_results: AppSchemasBbiSubIndicatorResult[];
-  calculation_date: string;
+  /** When the compliance was calculated */
+  calculated_at: string;
 }
 
 
@@ -54,12 +61,14 @@ export type AppSchemasBbiBBIComplianceResultGovernanceAreaName = string | null;
 export interface AppSchemasBbiBBIComplianceSummary {
   /** Total number of BBIs evaluated */
   total_bbis: number;
-  /** Number of BBIs with HIGHLY_FUNCTIONAL rating */
+  /** Number of BBIs with HIGHLY_FUNCTIONAL rating (75-100%) */
   highly_functional_count: number;
-  /** Number of BBIs with MODERATELY_FUNCTIONAL rating */
+  /** Number of BBIs with MODERATELY_FUNCTIONAL rating (50-74%) */
   moderately_functional_count: number;
-  /** Number of BBIs with LOW_FUNCTIONAL rating */
+  /** Number of BBIs with LOW_FUNCTIONAL rating (1-49%) */
   low_functional_count: number;
+  /** Number of BBIs with NON_FUNCTIONAL rating (0%) */
+  non_functional_count?: number;
   /** Average compliance percentage across all BBIs */
   average_compliance_percentage: number;
 }
@@ -279,46 +288,26 @@ export interface BBIResultResponse {
   bbi_id: number;
   /** Assessment ID */
   assessment_id: number;
-  /** BBI status (legacy: Functional/Non-Functional) */
-  status: BBIStatus;
   id: number;
+  /** Barangay ID */
+  barangay_id: number;
+  /** Assessment year */
+  assessment_year: number;
+  /** Parent BBI indicator ID */
+  indicator_id?: BBIResultResponseIndicatorId;
   /** Compliance rate 0-100% */
-  compliance_percentage?: BBIResultResponseCompliancePercentage;
-  /** 3-tier rating: HIGHLY_FUNCTIONAL, MODERATELY_FUNCTIONAL, LOW_FUNCTIONAL */
-  compliance_rating?: BBIResultResponseComplianceRating;
+  compliance_percentage: number;
+  /** 4-tier rating: HIGHLY_FUNCTIONAL, MODERATELY_FUNCTIONAL, LOW_FUNCTIONAL, NON_FUNCTIONAL */
+  compliance_rating: string;
   /** Number of sub-indicators that passed */
-  sub_indicators_passed?: BBIResultResponseSubIndicatorsPassed;
+  sub_indicators_passed: number;
   /** Total number of sub-indicators evaluated */
-  sub_indicators_total?: BBIResultResponseSubIndicatorsTotal;
+  sub_indicators_total: number;
   /** Detailed pass/fail results for each sub-indicator */
   sub_indicator_results?: BBIResultResponseSubIndicatorResults;
-  calculation_details?: BBIResultResponseCalculationDetails;
-  calculation_date: string;
+  /** When the compliance was calculated */
+  calculated_at: string;
 }
-
-
-/**
- * BBIResultResponseCalculationDetails
- */
-export type BBIResultResponseCalculationDetails = BBIResultResponseCalculationDetailsAnyOf | null;
-
-
-/**
- * BBIResultResponseCalculationDetailsAnyOf
- */
-export type BBIResultResponseCalculationDetailsAnyOf = { [key: string]: unknown };
-
-
-/**
- * BBIResultResponseCompliancePercentage
- */
-export type BBIResultResponseCompliancePercentage = number | null;
-
-
-/**
- * BBIResultResponseComplianceRating
- */
-export type BBIResultResponseComplianceRating = string | null;
 
 
 /**
@@ -332,7 +321,6 @@ export const BBIStatus = {
   HIGHLY_FUNCTIONAL: 'HIGHLY_FUNCTIONAL',
   MODERATELY_FUNCTIONAL: 'MODERATELY_FUNCTIONAL',
   LOW_FUNCTIONAL: 'LOW_FUNCTIONAL',
-  FUNCTIONAL: 'FUNCTIONAL',
   NON_FUNCTIONAL: 'NON_FUNCTIONAL',
 } as const;
 
@@ -428,9 +416,49 @@ export type BLGUDashboardResponseBbiCompliance = BBIComplianceData | null;
 
 
 /**
+ * BarangayBBIComplianceResponse
+ */
+export interface BarangayBBIComplianceResponse {
+  /** Barangay ID */
+  barangay_id: number;
+  /** Barangay name */
+  barangay_name?: BarangayBBIComplianceResponseBarangayName;
+  /** Assessment year */
+  assessment_year: number;
+  /** Compliance results for each BBI */
+  bbi_results: BarangayBBIComplianceResponseBbiResultsItem[];
+  /** Summary statistics for BBI compliance */
+  summary: AppSchemasBbiBBIComplianceSummary;
+}
+
+
+/**
+ * BarangayBBIComplianceResponseBarangayName
+ */
+export type BarangayBBIComplianceResponseBarangayName = string | null;
+
+
+/**
+ * BarangayBBIComplianceResponseBbiResultsItem
+ */
+export type BarangayBBIComplianceResponseBbiResultsItem = { [key: string]: unknown };
+
+
+/**
  * GARResponseBbiCompliance
  */
 export type GARResponseBbiCompliance = AssessmentBBIComplianceResponse | null;
+
+
+/**
+ * GetBbisComplianceBarangayBarangayIdParams
+ */
+export type GetBbisComplianceBarangayBarangayIdParams = {
+/**
+ * Assessment year
+ */
+year: number;
+};
 
 
 /**
