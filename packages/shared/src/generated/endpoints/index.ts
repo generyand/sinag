@@ -11,6 +11,7 @@ export * from './auth';
 export * from './bbis';
 export * from './blgu-dashboard';
 export * from './capdev';
+export * from './compliance';
 export * from './default';
 export * from './external-analytics';
 export * from './gar';

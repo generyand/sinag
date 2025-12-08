@@ -1,5 +1,5 @@
 import React from 'react';
-import type { User } from '@sinag/shared/src/generated/schemas/users';
+import type { User } from '@sinag/shared';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Edit, Building, Users, Phone, Shield, KeyRound } from 'lucide-react';

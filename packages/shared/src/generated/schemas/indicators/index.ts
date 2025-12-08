@@ -792,6 +792,44 @@ export type IndicatorValidationUpdateRemarks = string | null;
 
 
 /**
+ * ParentIndicatorCompliance
+ */
+export interface ParentIndicatorCompliance {
+  indicator_id: number;
+  indicator_code: string;
+  name: string;
+  is_bbi: boolean;
+  sub_indicators_total: number;
+  sub_indicators_passed: number;
+  sub_indicators_failed: number;
+  sub_indicators_pending: number;
+  bbi_functionality_level?: ParentIndicatorComplianceBbiFunctionalityLevel;
+  bbi_abbreviation?: ParentIndicatorComplianceBbiAbbreviation;
+  compliance_status?: ParentIndicatorComplianceComplianceStatus;
+  all_validated: boolean;
+  sub_indicators: SubIndicatorStatus[];
+}
+
+
+/**
+ * ParentIndicatorComplianceBbiAbbreviation
+ */
+export type ParentIndicatorComplianceBbiAbbreviation = string | null;
+
+
+/**
+ * ParentIndicatorComplianceBbiFunctionalityLevel
+ */
+export type ParentIndicatorComplianceBbiFunctionalityLevel = string | null;
+
+
+/**
+ * ParentIndicatorComplianceComplianceStatus
+ */
+export type ParentIndicatorComplianceComplianceStatus = 'MET' | 'UNMET' | null;
+
+
+/**
  * PostIndicatorsTestCalculation200
  */
 export type PostIndicatorsTestCalculation200 = { [key: string]: unknown };
@@ -849,6 +887,38 @@ export type SimplifiedIndicatorResponseGovernanceArea = GovernanceAreaNested | n
  * SimplifiedIndicatorResponseParentId
  */
 export type SimplifiedIndicatorResponseParentId = number | null;
+
+
+/**
+ * SubIndicatorStatus
+ */
+export interface SubIndicatorStatus {
+  indicator_id: number;
+  indicator_code: string;
+  name: string;
+  response_id?: SubIndicatorStatusResponseId;
+  validation_status?: SubIndicatorStatusValidationStatus;
+  recommended_status?: SubIndicatorStatusRecommendedStatus;
+  has_checklist_data?: boolean;
+}
+
+
+/**
+ * SubIndicatorStatusRecommendedStatus
+ */
+export type SubIndicatorStatusRecommendedStatus = 'PASS' | 'FAIL' | null;
+
+
+/**
+ * SubIndicatorStatusResponseId
+ */
+export type SubIndicatorStatusResponseId = number | null;
+
+
+/**
+ * SubIndicatorStatusValidationStatus
+ */
+export type SubIndicatorStatusValidationStatus = 'PASS' | 'FAIL' | 'CONDITIONAL' | null;
 
 
 /**

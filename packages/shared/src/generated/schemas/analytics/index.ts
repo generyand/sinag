@@ -3,7 +3,7 @@
 // 📁 Analytics-related types
 // 🏷️  Based on FastAPI tag: "analytics"
 
-import type { OverallComplianceResponse } from '../system';
+import type { OverallComplianceResponse } from '../compliance';
 import type { GovernanceAreaPerformanceResponse } from '../governanceareaperformance';
 import type { TopFailingIndicatorsResponse } from '../indicators';
 import type { AnonymizedAIInsightsResponse } from '../system';

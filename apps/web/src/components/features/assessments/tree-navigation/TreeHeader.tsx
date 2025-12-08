@@ -32,10 +32,10 @@ export function TreeHeader({
   }
 
   return (
-    <div className="sticky top-0 z-10 bg-muted/5 border-b border-[var(--border)] h-14 flex items-center px-3 shrink-0">
+    <div className="sticky top-0 z-10 bg-slate-100/50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 h-14 flex items-center px-3 shrink-0">
       <div className="flex items-center gap-2">
-        <Target className="h-4 w-4 text-muted-foreground" />
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-foreground">
+        <Target className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-900 dark:text-slate-100">
           Assessment Progress
         </h2>
       </div>

@@ -52,8 +52,22 @@ export function ReworkIndicatorsPanel({
 
   // Check if this is a calibration rework (from Validator, not Assessor)
   const isCalibration = dashboardData.is_calibration_rework === true;
-  const calibrationAreaId = (dashboardData as any).calibration_governance_area_id;
-  const calibrationAreaName = (dashboardData as any).calibration_governance_area_name;
+  // Support multiple calibration areas (parallel calibration from different validators)
+  const calibrationGovernanceAreas: Array<{ governance_area_id: number; governance_area_name: string }> = 
+    (dashboardData as any).calibration_governance_areas || [];
+  // Legacy single area support (fallback)
+  const legacyCalibrationAreaId = (dashboardData as any).calibration_governance_area_id;
+  const legacyCalibrationAreaName = (dashboardData as any).calibration_governance_area_name;
+  // Build set of all calibration area IDs
+  const calibrationAreaIds = new Set<number>(
+    calibrationGovernanceAreas.length > 0
+      ? calibrationGovernanceAreas.map(a => a.governance_area_id)
+      : legacyCalibrationAreaId ? [legacyCalibrationAreaId] : []
+  );
+  // Get area names for display
+  const calibrationAreaNames = calibrationGovernanceAreas.length > 0
+    ? calibrationGovernanceAreas.map(a => a.governance_area_name)
+    : legacyCalibrationAreaName ? [legacyCalibrationAreaName] : [];
 
   // Check if this is an MLGOO RE-calibration (distinct from Validator calibration)
   // MLGOO RE-calibration targets specific indicators, not entire governance areas
@@ -138,15 +152,15 @@ export function ReworkIndicatorsPanel({
         }
       );
     }
-    // For CALIBRATION: Get all incomplete indicators in the calibrated governance area
-    else if (isCalibration && calibrationAreaId) {
-      // Find the calibrated governance area
-      const calibratedArea = dashboardData.governance_areas.find(
-        (area) => area.governance_area_id === calibrationAreaId
+    // For CALIBRATION: Get all incomplete indicators from ALL calibrated governance areas
+    else if (isCalibration && calibrationAreaIds.size > 0) {
+      // Find ALL calibrated governance areas
+      const calibratedAreas = dashboardData.governance_areas.filter(
+        (area) => calibrationAreaIds.has(area.governance_area_id)
       );
 
-      if (calibratedArea) {
-        // Add all INCOMPLETE indicators from this area
+      // Add all INCOMPLETE indicators from ALL calibrated areas
+      calibratedAreas.forEach((calibratedArea) => {
         calibratedArea.indicators.forEach((indicator: any) => {
           // Only show indicators that are NOT complete (need to be fixed)
           if (!indicator.is_complete) {
@@ -165,16 +179,16 @@ export function ReworkIndicatorsPanel({
             });
           }
         });
-      }
+      });
 
-      // Also add any annotations that are in the calibrated area
+      // Also add any annotations that are in ANY of the calibrated areas
       Object.entries(dashboardData.mov_annotations_by_indicator || {}).forEach(
         ([indicatorIdStr, annotations]: [string, any]) => {
           const indicatorId = Number(indicatorIdStr);
           const indicator = findIndicator(indicatorId);
 
-          // Only include if it's in the calibrated area
-          if (indicator && indicator.governance_area_id === calibrationAreaId) {
+          // Only include if it's in one of the calibrated areas
+          if (indicator && calibrationAreaIds.has(indicator.governance_area_id)) {
             if (!indicatorMap.has(indicatorId)) {
               indicatorMap.set(indicatorId, {
                 indicator_id: indicatorId,
@@ -263,7 +277,7 @@ export function ReworkIndicatorsPanel({
       has_mov_issues: failed.annotations.length > 0,
       has_field_issues: failed.comments.length > 0,
     }));
-  }, [dashboardData, assessmentId, isCalibration, calibrationAreaId, isMlgooRecalibration, mlgooRecalibrationIndicatorIds]);
+  }, [dashboardData, assessmentId, isCalibration, calibrationAreaIds, isMlgooRecalibration, mlgooRecalibrationIndicatorIds]);
 
   // Compute progress
   const progress = useMemo(() => {
@@ -391,9 +405,9 @@ export function ReworkIndicatorsPanel({
                     Please address <span className="font-semibold">{progress.remaining}</span> of{" "}
                     <span className="font-semibold">{progress.total}</span> to proceed.
                   </>
-                ) : isCalibration && calibrationAreaName ? (
+                ) : isCalibration && calibrationAreaNames.length > 0 ? (
                   <>
-                    Your <span className="font-semibold">{calibrationAreaName}</span> assessment requires calibration.
+                    Your <span className="font-semibold">{calibrationAreaNames.join(", ")}</span> assessment{calibrationAreaNames.length > 1 ? "s require" : " requires"} calibration.
                     Please review and update <span className="font-semibold">{progress.remaining}</span> of{" "}
                     <span className="font-semibold">{progress.total}</span> indicators to proceed.
                   </>

@@ -6,7 +6,7 @@
  */
 
 import { useQueryClient } from '@tanstack/react-query';
-import { usePostAssessmentsIdGenerateInsights } from '@sinag/shared/src/generated/endpoints/assessments';
+import { usePostAssessmentsIdGenerateInsights } from '@sinag/shared';
 import { useEffect, useRef } from 'react';
 
 interface UseIntelligenceResult {

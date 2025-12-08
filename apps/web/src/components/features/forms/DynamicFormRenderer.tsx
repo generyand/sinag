@@ -726,13 +726,17 @@ function SectionRenderer({
     return groupFieldsByOptionGroup(visibleFields);
   }, [visibleFields]);
 
+  // Check if accordion UI should be used (can be disabled via form_schema)
+  // Default is true if option groups exist, but can be overridden by use_accordion_ui: false
+  const useAccordionUI = (formSchema as any)?.use_accordion_ui !== false;
+
   // Don't render empty sections
   if (visibleFields.length === 0) {
     return null;
   }
 
-  // Render with accordion if option groups detected
-  if (optionGroups && optionGroups.length > 0) {
+  // Render with accordion if option groups detected AND accordion UI is enabled
+  if (optionGroups && optionGroups.length > 0 && useAccordionUI) {
     // Calculate overall completion: need at least 1 option group complete
     // Use completionValidFiles which is filtered by rework timestamp during rework status
     const completedGroups = optionGroups.filter((group) =>

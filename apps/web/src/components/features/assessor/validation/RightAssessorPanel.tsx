@@ -254,7 +254,7 @@ function AssessorChecklistHistoryModal({ response, indicator }: AssessorChecklis
           View Assessor's History
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col bg-white dark:bg-gray-900 rounded-sm">
+      <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-sm">
         <DialogHeader>
           <DialogTitle>Assessor's Checklist History</DialogTitle>
           <div className="text-sm text-muted-foreground">
@@ -403,7 +403,7 @@ function ChecklistItemHistory({ item, responseData }: ChecklistItemHistoryProps)
   }
 
   return (
-    <div className="border border-border rounded-sm p-3 bg-muted/5">
+    <div className="border border-slate-200 dark:border-slate-700 rounded-sm p-3 bg-slate-50 dark:bg-slate-900/50">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
           <div className="text-sm font-medium text-foreground">
@@ -474,13 +474,27 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
     for (const r of responses) {
       const key = String(r.id);
 
-      // CRITICAL: For indicators requiring rework, do NOT load old comments from first review cycle
-      // Only load comments if NOT requiring rework
+      // Load public comment from feedback_comments
+      // For ASSESSORS: Skip loading old comments for indicators requiring rework (first review cycle)
+      // For VALIDATORS: Always load comments - they're reviewing after BLGU rework
+      // IMPORTANT: Only load comments made by users of the same role (validators see validator comments, assessors see assessor comments)
       let publicComment = '';
-      if (!(r as AnyRecord).requires_rework) {
+      const shouldLoadComments = isValidator || !(r as AnyRecord).requires_rework;
+      if (shouldLoadComments) {
         // Load public comment from feedback_comments array (get LATEST comment, not first)
         const feedbackComments = (r as AnyRecord).feedback_comments || [];
-        const validationComments = feedbackComments.filter((fc: any) => fc.comment_type === 'validation' && !fc.is_internal_note);
+        // Filter by comment_type, not internal note, AND by role
+        // Validators should only see validator comments, assessors should only see assessor comments
+        const validationComments = feedbackComments.filter((fc: any) => {
+          if (fc.comment_type !== 'validation' || fc.is_internal_note) return false;
+          // Filter by role - validators see validator comments, assessors see assessor comments
+          const commenterRole = fc.assessor?.role?.toLowerCase() || '';
+          if (isValidator) {
+            return commenterRole === 'validator';
+          } else {
+            return commenterRole === 'assessor';
+          }
+        });
         // Sort by created_at DESC to get the latest comment
         validationComments.sort((a: any, b: any) => {
           const dateA = new Date(a.created_at || 0).getTime();
@@ -572,7 +586,7 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
 
     return obj as ResponsesForm;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [responses, isValidator, JSON.stringify(responses.map(r => (r as AnyRecord).response_data))]);
+  }, [responses, isValidator, JSON.stringify(responses.map(r => (r as AnyRecord).response_data)), JSON.stringify(responses.map(r => (r as AnyRecord).feedback_comments))]);
 
   const { control, register, formState, setValue, reset } = useForm<ResponsesForm>({
     resolver: zodResolver(ResponsesSchema),
@@ -774,25 +788,25 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
   // }, [watched, expandedId, isValidator, manualOverrides]);
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="h-14 flex items-center px-3 border-b border-[var(--border)] bg-muted/5 shrink-0">
+    <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950">
+      <div className="h-14 flex items-center px-3 border-b border-slate-200 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-900/50 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <FileTextIcon className="h-4 w-4 text-muted-foreground shrink-0" />
-          <div className="text-xs font-semibold uppercase tracking-wide text-foreground truncate">
+          <FileTextIcon className="h-4 w-4 text-slate-500 dark:text-slate-400 shrink-0" />
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-900 dark:text-slate-100 truncate">
             {isValidator ? 'Validator Controls' : 'Assessor Controls'}
           </div>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 bg-slate-50 dark:bg-slate-950">
         <div className="space-y-4">
         {responses.length === 0 ? (
-          <div className="text-sm text-muted-foreground">No indicators found.</div>
+          <div className="text-sm text-slate-500 dark:text-slate-400">No indicators found.</div>
         ) : expandedId == null ? (
-          <div className="flex flex-col items-center justify-center h-full text-center p-6 text-muted-foreground/60 min-h-[400px]">
-            <div className="bg-muted/10 p-4 rounded-full mb-4">
+          <div className="flex flex-col items-center justify-center h-full text-center p-6 text-slate-400 dark:text-slate-500 min-h-[400px]">
+            <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-full mb-4">
               <FileTextIcon className="h-8 w-8 opacity-50" />
             </div>
-            <p className="text-sm font-medium text-foreground/80 mb-1">No Indicator Selected</p>
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">No Indicator Selected</p>
             <p className="text-xs max-w-[200px]">
               Select an indicator from the left panel to begin validation
             </p>
@@ -813,17 +827,16 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
             const errorsFor = (formState.errors as AnyRecord)?.[key]?.publicComment;
 
             return (
-              <div key={r.id ?? idx} className="rounded-sm bg-card shadow-md border border-black/5 overflow-hidden" data-right-item-id={r.id}>
-                <div className="px-3 py-3 text-lg font-semibold rounded-t-sm"
-                  style={{ background: 'var(--cityscape-yellow)', color: 'var(--cityscape-accent-foreground)' }}>
+              <div key={r.id ?? idx} className="rounded-sm bg-white dark:bg-slate-900 shadow-md border border-slate-200 dark:border-slate-800 overflow-hidden" data-right-item-id={r.id}>
+                <div className="px-3 py-3 text-lg font-semibold rounded-t-sm bg-amber-400 dark:bg-amber-500 text-slate-900">
                   {indicatorLabel}
                 </div>
                 {/* Content is always visible when indicator is selected */}
                 {(
                 <div className="p-3 space-y-4">
                   {techNotes ? (
-                    <div className="text-xs text-muted-foreground bg-muted/30 rounded-sm p-2">
-                      <div className="font-medium mb-1">Technical Notes</div>
+                    <div className="text-xs text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700/50 rounded-sm p-2">
+                      <div className="font-medium mb-1 text-slate-700 dark:text-slate-200">Technical Notes</div>
                       <div className="whitespace-pre-wrap">{String(techNotes)}</div>
                     </div>
                   ) : null}
@@ -1234,8 +1247,8 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                     const optionGroups = groupedByOptionGroup();
 
                     return (
-                      <div className="border border-[var(--border)] rounded-sm bg-card">
-                        <div className="px-3 py-2 border-b border-[var(--border)] bg-muted/5">
+                      <div className="border border-slate-200 dark:border-slate-800 rounded-sm bg-white dark:bg-slate-900">
+                        <div className="px-3 py-2 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
                           <div className="flex items-center justify-between">
                             <div className="text-xs font-semibold uppercase tracking-wide text-foreground">
                               Validation Checklist
@@ -1271,9 +1284,9 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                                   <AccordionItem
                                     key={group.name}
                                     value={group.name}
-                                    className="border border-gray-200 rounded-lg overflow-hidden bg-card"
+                                    className="border border-slate-200 dark:border-slate-700 rounded-sm overflow-hidden bg-white dark:bg-slate-900"
                                   >
-                                    <AccordionTrigger className="px-3 py-2.5 hover:no-underline hover:bg-muted/50 [&[data-state=open]]:bg-muted/30">
+                                    <AccordionTrigger className="px-3 py-2.5 hover:no-underline hover:bg-slate-100 dark:hover:bg-slate-800 [&[data-state=open]]:bg-slate-100 dark:[&[data-state=open]]:bg-slate-800">
                                       <span className="font-medium text-sm text-left">{group.label}</span>
                                     </AccordionTrigger>
                                     <AccordionContent className="px-3 pt-3 pb-4">
@@ -1295,159 +1308,6 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                     );
                   })()}
 
-                  {/* Processing of Results Section (Validators Only) */}
-                  {isValidator && (() => {
-                    // Check if indicator has consideration condition
-                    const indicator = (r as AnyRecord).indicator as AnyRecord | undefined;
-                    const remarkSchema = indicator?.remark_schema as AnyRecord | undefined;
-                    const conditionalRemarks = (remarkSchema?.conditional_remarks as AnyRecord[]) || [];
-                    const hasConsideration = conditionalRemarks.some(
-                      (cr) => cr.condition?.toLowerCase() === 'considered' || cr.condition?.toLowerCase() === 'conditional'
-                    );
-
-                    // Calculate automatic status based on checklist completion
-                    // ENABLED for validators: shows suggestion with lighter colors, but requires click to confirm
-                    const checklistData = watched || {};
-                    const autoStatus = calculateAutomaticStatus(r.id, checklistData);
-                    const isManualOverride = manualOverrides[r.id] || false;
-                    const currentStatus = form[r.id]?.status;
-                    // For validators: suggestion is shown with lighter color until they click to confirm
-                    const hasSuggestion = isValidator && autoStatus && !currentStatus;
-
-                    // Validators use Met/Unmet/Considered
-                    const statuses: Array<{value: LocalStatus; label: string}> = [
-                      { value: 'Pass', label: 'Met' },
-                      { value: 'Fail', label: 'Unmet' },
-                    ];
-
-                    // Only add "Considered" if indicator has consideration condition
-                    if (hasConsideration) {
-                      statuses.push({ value: 'Conditional', label: 'Considered' });
-                    }
-
-                    return (
-                      <div className="border border-black/10 rounded-sm bg-muted/10 p-3 space-y-3">
-                        <div className="text-xs font-semibold uppercase tracking-wide bg-purple-100 dark:bg-purple-950/30 text-purple-900 dark:text-purple-200 px-3 py-2 rounded border border-purple-200 dark:border-purple-800">
-                          PHASE 2: FINAL VALIDATION
-                        </div>
-
-                        {/* Automatic Result Display */}
-                        {autoStatus && (
-                          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-sm p-3 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <div className="text-xs font-medium text-blue-900 dark:text-blue-200">
-                                Automatic Result:
-                              </div>
-                              <div className={`text-xs font-semibold px-2 py-1 rounded ${
-                                autoStatus === 'Pass'
-                                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                  : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                              }`}>
-                                {autoStatus === 'Pass' ? 'Met' : 'Unmet'}
-                              </div>
-                            </div>
-                            <div className="text-[11px] text-blue-700 dark:text-blue-300 italic">
-                              Based on checklist validation. You can override this result below if needed.
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="space-y-2">
-                          <div className="text-xs font-medium">
-                            {isManualOverride && !isValidator && (
-                              <span className="text-orange-600 dark:text-orange-400 mr-1">⚠️ Manual Override: </span>
-                            )}
-                            Met all the minimum requirements on {indicatorLabel}?
-                          </div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {statuses.map(({ value, label }) => {
-                              const active = currentStatus === value;
-                              const isSuggested = hasSuggestion && autoStatus === value;
-                              const isAutoRecommended = autoStatus === value && !isManualOverride && currentStatus;
-
-                              // Determine button style based on state:
-                              // 1. Active (clicked): Full color
-                              // 2. Suggested (not clicked yet): Light color to hint recommendation
-                              // 3. Default: Outline
-                              let cls = '';
-                              let style: React.CSSProperties | undefined = undefined;
-                              let variant: 'default' | 'outline' = 'outline';
-
-                              if (active) {
-                                // Full color when actively selected
-                                variant = 'default';
-                                cls = value === 'Pass' || value === 'Fail'
-                                  ? 'text-white hover:opacity-90'
-                                  : 'text-[var(--cityscape-accent-foreground)] hover:opacity-90';
-                                style = value === 'Pass'
-                                  ? { background: 'var(--success)' }
-                                  : value === 'Fail'
-                                    ? { background: 'var(--destructive, #ef4444)' }
-                                    : { background: 'var(--cityscape-yellow)' };
-                              } else if (isSuggested) {
-                                // Light color for suggestion (validator hasn't clicked yet)
-                                variant = 'outline';
-                                cls = value === 'Pass'
-                                  ? 'border-green-400 bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-700'
-                                  : value === 'Fail'
-                                    ? 'border-red-400 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-700'
-                                    : 'border-yellow-400 bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-950/30 dark:text-yellow-400 dark:border-yellow-700';
-                              }
-
-                              return (
-                                <Button
-                                  key={value}
-                                  type="button"
-                                  variant={variant}
-                                  size="sm"
-                                  className={cls}
-                                  style={style}
-                                  onClick={() => {
-                                    setField(r.id, 'status', value as string);
-                                    // Mark as manual override if different from auto status
-                                    if (value !== autoStatus) {
-                                      setManualOverrides(prev => ({ ...prev, [r.id]: true }));
-                                    } else {
-                                      setManualOverrides(prev => ({ ...prev, [r.id]: false }));
-                                    }
-                                  }}
-                                >
-                                  {label}
-                                  {isSuggested && <span className="ml-1 text-xs">(suggested)</span>}
-                                  {isAutoRecommended && <span className="ml-1">✓</span>}
-                                </Button>
-                              );
-                            })}
-                          </div>
-                          {hasSuggestion && (
-                            <div className="text-[11px] text-muted-foreground italic mt-1">
-                              Suggestion based on checklist. Click to confirm or choose a different option.
-                            </div>
-                          )}
-                          {isManualOverride && !isValidator && (
-                            <div className="text-[11px] text-orange-600 dark:text-orange-400 flex items-center gap-1">
-                              <span>You have manually overridden the automatic result.</span>
-                              <Button
-                                type="button"
-                                variant="link"
-                                size="sm"
-                                className="h-auto p-0 text-[11px] text-blue-600 dark:text-blue-400 underline"
-                                onClick={() => {
-                                  if (autoStatus) {
-                                    setField(r.id, 'status', autoStatus);
-                                    setManualOverrides(prev => ({ ...prev, [r.id]: false }));
-                                  }
-                                }}
-                              >
-                                Reset to automatic
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })()}
-
                   {/* Role-Specific Information Message */}
                   {isAssessor ? (
                     <div className="border border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800 rounded-sm p-3">
@@ -1460,7 +1320,7 @@ export function RightAssessorPanel({ assessment, form, setField, expandedId, onT
                     <div className="border border-purple-200 bg-purple-50 dark:bg-purple-950/20 dark:border-purple-800 rounded-sm p-3">
                       <div className="text-xs text-purple-800 dark:text-purple-300">
                         <div className="font-semibold mb-1">ℹ️ Phase 2: Table Validation</div>
-                        <div>Review checklists and assessor notes, then set final Met/Unmet/Considered status. This is the authoritative validation result that determines compliance.</div>
+                        <div>Review checklists and assessor notes. Final compliance status (Met/Unmet) will be determined in the Compliance Overview based on all sub-indicator results.</div>
                       </div>
                     </div>
                   )}

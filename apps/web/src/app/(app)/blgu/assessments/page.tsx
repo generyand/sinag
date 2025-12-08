@@ -221,6 +221,7 @@ export default function BLGUAssessmentsPage() {
             validation={validation}
             isCalibrationRework={dashboardData?.is_calibration_rework === true}
             calibrationGovernanceAreaName={(dashboardData as any)?.calibration_governance_area_name}
+            calibrationGovernanceAreaNames={((dashboardData as any)?.calibration_governance_areas || []).map((a: any) => a.governance_area_name)}
           />
         </div>
       </header>

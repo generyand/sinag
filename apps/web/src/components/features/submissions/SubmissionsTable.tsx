@@ -67,6 +67,7 @@ export function SubmissionsTable({ submissions, onSubmissionClick }: Submissions
   const getActionButton = (submission: BarangaySubmission) => {
     const { areaStatus } = submission;
 
+    // Awaiting review - Show prominent "Start Review" button
     if (areaStatus === 'awaiting_review') {
       return (
         <Button
@@ -84,6 +85,7 @@ export function SubmissionsTable({ submissions, onSubmissionClick }: Submissions
       );
     }
 
+    // In progress - Show "Continue Review" button
     if (areaStatus === 'in_progress') {
       return (
         <Button
@@ -102,6 +104,25 @@ export function SubmissionsTable({ submissions, onSubmissionClick }: Submissions
       );
     }
 
+    // Needs rework - BLGU has resubmitted after calibration, validator should re-review
+    if (areaStatus === 'needs_rework') {
+      return (
+        <Button
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            onSubmissionClick(submission);
+          }}
+          className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 rounded-sm"
+          aria-label={`Re-review submission for ${submission.barangayName}`}
+        >
+          <Play className="h-4 w-4 mr-2" aria-hidden="true" />
+          Re-Review
+        </Button>
+      );
+    }
+
+    // Validated or other status - Show "View Submission"
     return (
       <Button
         size="sm"

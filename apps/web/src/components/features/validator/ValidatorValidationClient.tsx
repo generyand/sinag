@@ -9,7 +9,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useGetAssessorAssessmentsAssessmentId, usePostAssessorAssessmentResponsesResponseIdValidate, usePostAssessorAssessmentsAssessmentIdCalibrate, usePostAssessorAssessmentsAssessmentIdFinalize } from '@sinag/shared';
 import { useQueryClient } from '@tanstack/react-query';
 import { classifyError } from '@/lib/error-utils';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, ClipboardCheck } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -101,10 +101,15 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
             : upperStatus === 'CONDITIONAL' ? 'Conditional'
             : undefined;
 
-          // Load public comment from feedback_comments (latest validation comment)
+          // Load public comment from feedback_comments (latest validation comment from validators only)
           const feedbackComments = resp.feedback_comments || [];
           const validationComments = feedbackComments.filter(
-            (fc: any) => fc.comment_type === 'validation' && !fc.is_internal_note
+            (fc: any) => {
+              if (fc.comment_type !== 'validation' || fc.is_internal_note) return false;
+              // Only load comments from validators, not assessors
+              const commenterRole = fc.assessor?.role?.toLowerCase() || '';
+              return commenterRole === 'validator';
+            }
           );
           validationComments.sort((a: any, b: any) => {
             const dateA = new Date(a.created_at || 0).getTime();
@@ -113,7 +118,8 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
           });
           const publicComment = validationComments[0]?.comment || '';
 
-          if (status) {
+          // Load entry if we have status OR comment (comment can be saved without status)
+          if (status || publicComment) {
             initialForm[resp.id] = { status, publicComment };
           }
         }
@@ -206,10 +212,17 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   // Default label (MiddleMovFilesPanel will override based on indicator context)
   const separationLabel = calibrationRequestedAt ? "After Calibration" : "After Rework";
 
+  // Helper: Check if a response has any checklist items checked by the validator
+  const hasChecklistItemsChecked = (responseId: number): boolean => {
+    return Object.keys(checklistState).some(key =>
+      key.startsWith(`checklist_${responseId}_`) && checklistState[key] === true
+    );
+  };
+
   // Transform to match BLGU assessment structure for TreeNavigator
   const transformedAssessment = {
     id: assessmentId,
-    completedIndicators: responses.filter((r: any) => !!form[r.id]?.status).length,
+    completedIndicators: responses.filter((r: any) => hasChecklistItemsChecked(r.id)).length,
     totalIndicators: responses.length,
     governanceAreas: responses.reduce((acc: any[], resp: any) => {
       const indicator = resp.indicator || {};
@@ -234,9 +247,8 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
         id: String(resp.id),
         code: indicator.indicator_code || indicator.code || String(resp.id),
         name: indicator.name || 'Unnamed Indicator',
-        // For validators: ONLY show completed if validator has made a decision in form state
-        // Don't use database validation_status because that's the assessor's decision, not the validator's
-        status: form[resp.id]?.status ? 'completed' : 'not_started',
+        // For validators: Show completed if any checklist items have been checked
+        status: hasChecklistItemsChecked(resp.id) ? 'completed' : 'not_started',
       });
 
       // Sort indicators by code after adding
@@ -247,18 +259,10 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   };
 
   const total = responses.length;
-  const reviewed = responses.filter((r) => !!form[r.id]?.status).length;
+  // For validators: "reviewed" means checklist items have been checked
+  const reviewed = responses.filter((r) => hasChecklistItemsChecked(r.id as number)).length;
   const allReviewed = total > 0 && reviewed === total;
   const progressPct = total > 0 ? Math.round((reviewed / total) * 100) : 0;
-
-  const missingRequiredComments = responses.filter((r) => {
-    const v = form[r.id];
-    if (!v?.status) return false;
-    if (v.status === 'Fail' || v.status === 'Conditional') {
-      return !(v.publicComment && v.publicComment.trim().length > 0);
-    }
-    return false;
-  }).length;
 
   const onSaveDraft = async () => {
     // Build payloads that include both validation status AND checklist data
@@ -280,9 +284,10 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
 
         const hasStatus = formData && formData.status;
         const hasChecklistData = Object.keys(responseChecklistData).length > 0;
+        const hasComment = formData && formData.publicComment && formData.publicComment.trim().length > 0;
 
-        // Include in payload if has status OR has checklist data
-        if (hasStatus || hasChecklistData) {
+        // Include in payload if has status OR has checklist data OR has comment
+        if (hasStatus || hasChecklistData || hasComment) {
           return {
             id: responseId,
             v: formData,
@@ -495,34 +500,40 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   return (
     <div className="min-h-screen bg-[var(--background)] flex flex-col">
       {/* Header */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
-        <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      <div className="sticky top-0 z-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b border-slate-200 dark:border-slate-800">
+        <div className="max-w-[1920px] mx-auto px-6 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4 min-w-0">
-            <Button asChild variant="ghost" size="sm" className="shrink-0 gap-1 text-muted-foreground hover:text-foreground px-2">
+            <Button asChild variant="ghost" size="sm" className="shrink-0 gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">
               <Link href="/validator/submissions">
                 <ChevronLeft className="h-4 w-4" />
                 <span className="font-medium">Queue</span>
               </Link>
             </Button>
-            <div className="h-8 w-px bg-border shrink-0" />
+            <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 shrink-0" />
             <div className="min-w-0 flex flex-col justify-center">
-              <div className="text-sm font-bold text-foreground truncate leading-tight">
-                {barangayName} <span className="text-muted-foreground font-medium mx-1">/</span> {governanceArea}
+              <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate leading-tight">
+                {barangayName} <span className="text-slate-400 dark:text-slate-500 font-normal mx-1">/</span> <span className="text-slate-700 dark:text-slate-300">{governanceArea}</span>
               </div>
-              <div className="text-xs text-muted-foreground truncate leading-tight mt-0.5">
-                Validator Assessment Review {cycleYear ? `• CY ${cycleYear}` : ''}
+              <div className="text-xs text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                Validator Assessment Review {cycleYear ? `· CY ${cycleYear}` : ''}
               </div>
             </div>
           </div>
           <div className="flex items-center gap-3">
             {statusText ? <div className="scale-90 origin-right"><StatusBadge status={statusText} /></div> : null}
+            <Button asChild variant="ghost" size="sm" className="gap-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800">
+              <Link href={`/validator/submissions/${assessmentId}/compliance`}>
+                <ClipboardCheck className="h-4 w-4" />
+                Compliance Overview
+              </Link>
+            </Button>
             <Button
               variant="outline"
               size="sm"
               type="button"
               onClick={onSaveDraft}
               disabled={validateMut.isPending}
-              className="ml-2"
+              className="border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
             >
               Save as Draft
             </Button>
@@ -533,9 +544,9 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       {/* Three-Column Layout */}
       <div className="flex-1 overflow-hidden">
         <div className="h-full max-w-[1920px] mx-auto">
-          <div className="flex flex-row h-[calc(100vh-125px)] bg-white border-b border-[var(--border)]">
+          <div className="flex flex-row h-[calc(100vh-125px)] bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
             {/* Left Panel - Indicator Tree Navigation */}
-            <div className="w-[280px] flex-shrink-0 border-r border-[var(--border)] overflow-hidden flex flex-col bg-muted/5">
+            <div className="w-[280px] flex-shrink-0 border-r border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col bg-slate-50 dark:bg-slate-950">
               <div className="flex-1 overflow-y-auto">
                 <TreeNavigator
                   assessment={transformedAssessment as any}
@@ -546,7 +557,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
             </div>
 
             {/* Middle Panel - MOV Files */}
-            <div className="w-[320px] flex-shrink-0 border-r border-[var(--border)] overflow-hidden flex flex-col bg-white">
+            <div className="w-[320px] flex-shrink-0 border-r border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col bg-slate-50 dark:bg-slate-950">
               <MiddleMovFilesPanel
                 assessment={data as any}
                 expandedId={expandedId ?? undefined}
@@ -557,7 +568,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
             </div>
 
             {/* Right Panel - MOV Checklist/Validation */}
-            <div className="flex-1 overflow-hidden flex flex-col bg-white">
+            <div className="flex-1 overflow-hidden flex flex-col bg-slate-50 dark:bg-slate-950">
               <div className="flex-1 overflow-y-auto">
                 <RightAssessorPanel
                   assessment={data as any}
@@ -608,7 +619,6 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
           </div>
           <div className="text-xs text-muted-foreground">
             Indicators Reviewed: {reviewed}/{total}
-            {missingRequiredComments > 0 ? ` • Missing required comments: ${missingRequiredComments}` : ''}
           </div>
           <div className="flex flex-col sm:flex-row w-full sm:w-auto items-stretch sm:items-center gap-2 sm:gap-3">
             <Button
@@ -660,7 +670,6 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
               onClick={onFinalize}
               disabled={
                 !allReviewed ||
-                missingRequiredComments > 0 ||
                 finalizeMut.isPending
               }
               className="w-full sm:w-auto text-white hover:opacity-90"

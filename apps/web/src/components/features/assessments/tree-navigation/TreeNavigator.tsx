@@ -92,7 +92,7 @@ export function TreeNavigator({
     <div
       role="tree"
       aria-label="Assessment navigation"
-      className="h-full flex flex-col bg-[var(--card)] border-r border-[var(--border)]"
+      className="h-full flex flex-col bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800"
       onKeyDown={handleKeyDown}
     >
       {/* Sticky Header */}
@@ -147,7 +147,7 @@ export function TreeNavigator({
                 {isExpanded && (
                   <div className="relative">
                     {/* Vertical line for hierarchy */}
-                    <div className="absolute left-[1.125rem] top-0 bottom-0 w-px bg-[var(--border)]" />
+                    <div className="absolute left-[1.125rem] top-0 bottom-0 w-px bg-slate-200 dark:bg-slate-700" />
                     {renderIndicatorTree(area.indicators, 1)}
                   </div>
                 )}

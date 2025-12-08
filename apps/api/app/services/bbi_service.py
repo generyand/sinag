@@ -31,36 +31,114 @@ from app.db.models.bbi import BBI, BBIResult
 from app.db.models.governance_area import ChecklistItem, GovernanceArea, Indicator
 
 # BBI metadata configuration - maps indicator codes to BBI details
+# Includes count-based thresholds for functionality levels per DILG specifications
 BBI_CONFIG = {
     "2.1": {
         "abbreviation": "BDRRMC",
         "name": "Barangay Disaster Risk Reduction and Management Committee",
+        "thresholds": {
+            "highly_functional": {"min": 3, "max": 4},
+            "moderately_functional": {"min": 2, "max": 2},
+            "low_functional": {"min": 1, "max": 1},
+            "non_functional": {"min": 0, "max": 0},
+        },
     },
     "3.1": {
         "abbreviation": "BADAC",
         "name": "Barangay Anti-Drug Abuse Council",
+        "thresholds": {
+            "highly_functional": {"min": 7, "max": 10},
+            "moderately_functional": {"min": 5, "max": 6},
+            "low_functional": {"min": 1, "max": 4},
+            "non_functional": {"min": 0, "max": 0},
+        },
     },
     "3.2": {
         "abbreviation": "BPOC",
         "name": "Barangay Peace and Order Committee",
+        "thresholds": {
+            "highly_functional": {"min": 3, "max": 3},
+            "moderately_functional": {"min": 2, "max": 2},
+            "low_functional": {"min": 1, "max": 1},
+            "non_functional": {"min": 0, "max": 0},
+        },
     },
     "4.1": {
         "abbreviation": "VAW Desk",
         "name": "Barangay Violence Against Women Desk",
+        "thresholds": {
+            "highly_functional": {"min": 5, "max": 7},
+            "moderately_functional": {"min": 3, "max": 4},
+            "low_functional": {"min": 1, "max": 2},
+            "non_functional": {"min": 0, "max": 0},
+        },
     },
     "4.3": {
         "abbreviation": "BDC",
         "name": "Barangay Development Council",
+        "thresholds": {
+            "highly_functional": {"min": 3, "max": 4},
+            "moderately_functional": {"min": 2, "max": 2},
+            "low_functional": {"min": 1, "max": 1},
+            "non_functional": {"min": 0, "max": 0},
+        },
     },
     "4.5": {
         "abbreviation": "BCPC",
         "name": "Barangay Council for the Protection of Children",
+        "thresholds": {
+            "highly_functional": {"min": 4, "max": 6},
+            "moderately_functional": {"min": 3, "max": 3},
+            "low_functional": {"min": 1, "max": 2},
+            "non_functional": {"min": 0, "max": 0},
+        },
     },
     "6.1": {
         "abbreviation": "BESWMC",
         "name": "Barangay Ecological Solid Waste Management Committee",
+        "thresholds": {
+            "highly_functional": {"min": 3, "max": 4},
+            "moderately_functional": {"min": 2, "max": 2},
+            "low_functional": {"min": 1, "max": 1},
+            "non_functional": {"min": 0, "max": 0},
+        },
     },
 }
+
+
+def get_bbi_rating_by_count(indicator_code: str, passed_count: int) -> BBIStatus:
+    """
+    Get BBI rating based on count thresholds (not percentage).
+
+    Uses the count-based thresholds from BBI_CONFIG.
+
+    Args:
+        indicator_code: The indicator code (e.g., "2.1", "3.1")
+        passed_count: Number of sub-indicators that passed
+
+    Returns:
+        BBIStatus enum value
+    """
+    config = BBI_CONFIG.get(indicator_code)
+    if not config or "thresholds" not in config:
+        # Fallback for unmapped BBIs
+        if passed_count >= 3:
+            return BBIStatus.HIGHLY_FUNCTIONAL
+        elif passed_count >= 2:
+            return BBIStatus.MODERATELY_FUNCTIONAL
+        elif passed_count >= 1:
+            return BBIStatus.LOW_FUNCTIONAL
+        return BBIStatus.NON_FUNCTIONAL
+
+    thresholds = config["thresholds"]
+
+    if thresholds["highly_functional"]["min"] <= passed_count <= thresholds["highly_functional"]["max"]:
+        return BBIStatus.HIGHLY_FUNCTIONAL
+    elif thresholds["moderately_functional"]["min"] <= passed_count <= thresholds["moderately_functional"]["max"]:
+        return BBIStatus.MODERATELY_FUNCTIONAL
+    elif thresholds["low_functional"]["min"] <= passed_count <= thresholds["low_functional"]["max"]:
+        return BBIStatus.LOW_FUNCTIONAL
+    return BBIStatus.NON_FUNCTIONAL
 
 
 class BBIService:

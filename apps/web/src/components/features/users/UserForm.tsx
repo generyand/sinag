@@ -21,9 +21,7 @@ import {
 import { useGovernanceAreas } from '@/hooks/useGovernanceAreas';
 import { useBarangays } from '@/hooks/useBarangays';
 import { useToast } from '@/hooks/use-toast';
-import { UserRole, UserAdminCreate, UserAdminUpdate, Barangay, GovernanceArea, UserRoleOption } from '@sinag/shared';
-import { usePostUsers, usePutUsersUserId, getGetUsersQueryKey } from '@sinag/shared/src/generated/endpoints/users';
-import { useGetLookupsRoles } from '@sinag/shared/src/generated/endpoints/lookups';
+import { UserRole, UserAdminCreate, UserAdminUpdate, Barangay, GovernanceArea, UserRoleOption, usePostUsers, usePutUsersUserId, getGetUsersQueryKey, useGetLookupsRoles } from '@sinag/shared';
 import { useQueryClient } from '@tanstack/react-query';
 import { classifyError } from '@/lib/error-utils';
 

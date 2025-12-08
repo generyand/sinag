@@ -17,6 +17,7 @@ from . import (
     bbis,
     blgu_dashboard,
     capdev,
+    compliance,
     external_analytics,
     gar,
     indicators,
@@ -45,6 +46,7 @@ api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
 api_router.include_router(indicators.router, prefix="/indicators", tags=["indicators"])
 api_router.include_router(bbis.router, prefix="/bbis", tags=["bbis"])
 api_router.include_router(blgu_dashboard.router, prefix="/blgu-dashboard", tags=["blgu-dashboard"])
+api_router.include_router(compliance.router, prefix="/compliance", tags=["compliance"])
 api_router.include_router(movs.router, prefix="/movs", tags=["movs"])
 api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
 api_router.include_router(external_analytics.router)  # Prefix already included in router definition

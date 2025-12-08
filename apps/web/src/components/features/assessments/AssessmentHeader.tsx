@@ -28,6 +28,7 @@ interface AssessmentHeaderProps {
   validation: AssessmentValidation;
   isCalibrationRework?: boolean;
   calibrationGovernanceAreaName?: string;
+  calibrationGovernanceAreaNames?: string[]; // Support multiple areas
 }
 
 export function AssessmentHeader({
@@ -35,7 +36,12 @@ export function AssessmentHeader({
   validation,
   isCalibrationRework = false,
   calibrationGovernanceAreaName,
+  calibrationGovernanceAreaNames = [],
 }: AssessmentHeaderProps) {
+  // Combine legacy single name with new multiple names array
+  const allCalibrationAreaNames = calibrationGovernanceAreaNames.length > 0
+    ? calibrationGovernanceAreaNames
+    : calibrationGovernanceAreaName ? [calibrationGovernanceAreaName] : [];
   const { toast } = useToast();
 
   // Use Epic 5.0 submit endpoint (POST /assessments/{id}/submit)
@@ -292,17 +298,20 @@ export function AssessmentHeader({
 
       <div className="relative z-10 max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Calibration Notice Banner */}
-        {isCalibrationRework && calibrationGovernanceAreaName && (
+        {isCalibrationRework && allCalibrationAreaNames.length > 0 && (
           <div className="mb-8 p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg shadow-sm">
             <div className="flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
               <div>
                 <h3 className="font-semibold text-orange-800 dark:text-orange-300">
-                  Calibration Required - {calibrationGovernanceAreaName}
+                  Calibration Required - {allCalibrationAreaNames.join(", ")}
                 </h3>
                 <p className="text-sm text-orange-700 dark:text-orange-400 mt-1">
-                  The Validator has requested calibration for indicators in <strong>{calibrationGovernanceAreaName}</strong>.
-                  Please review and update the affected indicators, then submit for calibration review.
+                  {allCalibrationAreaNames.length > 1 
+                    ? <>Validators have requested calibration for indicators in <strong>{allCalibrationAreaNames.join(", ")}</strong>.</>
+                    : <>The Validator has requested calibration for indicators in <strong>{allCalibrationAreaNames[0]}</strong>.</>
+                  }
+                  {" "}Please review and update the affected indicators, then submit for calibration review.
                 </p>
               </div>
             </div>
