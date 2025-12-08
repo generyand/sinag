@@ -5,12 +5,12 @@ import {
   AssessmentStatus,
   MOVCreate,
   deleteAssessmentsMovs$MovId,
+  getGetAssessmentsMyAssessmentQueryKey,
   postAssessmentsResponses$ResponseIdMovs,
   postAssessmentsSubmit,
   putAssessmentsResponses$ResponseId,
   useGetAssessmentsMyAssessment,
 } from "@sinag/shared";
-import { getGetAssessmentsMyAssessmentQueryKey } from "@sinag/shared/src/generated/endpoints/assessments";
 import { useEffect, useMemo, useState } from "react";
 // Custom debounce implementation
 function debounce<TArgs extends unknown[], TReturn>(
@@ -85,13 +85,13 @@ export function useCurrentAssessment() {
     refetch,
   } = useGetAssessmentsMyAssessment({
     query: {
-      // Use reasonable staleTime - data is fresh for 2 minutes
-      // Invalidations will trigger refetch when needed
-      staleTime: 2 * 60 * 1000, // 2 minutes
+      // Shorter staleTime for faster updates after file uploads
+      // Invalidations will trigger immediate refetch when data is stale
+      staleTime: 30 * 1000, // 30 seconds - faster updates for file uploads
       gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
-      // Only refetch when explicitly invalidated, not on window focus
-      refetchOnWindowFocus: false,
-      refetchOnMount: false,
+      // Refetch on window focus to catch any missed updates
+      refetchOnWindowFocus: true,
+      refetchOnMount: true,
     },
   } as any);
 

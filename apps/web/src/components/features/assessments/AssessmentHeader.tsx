@@ -1,33 +1,23 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { Assessment, AssessmentValidation } from "@/types/assessment";
 import {
-    usePostAssessmentsAssessmentIdSubmit,
-    usePostAssessmentsAssessmentIdResubmit,
-    usePostAssessmentsAssessmentIdSubmitForCalibration,
+  usePostAssessmentsAssessmentIdSubmit,
+  usePostAssessmentsAssessmentIdResubmit,
+  usePostAssessmentsAssessmentIdSubmitForCalibration,
 } from "@sinag/shared";
 import { classifyError } from "@/lib/error-utils";
-import {
-    AlertCircle,
-    CheckCircle,
-    Clock,
-    Info,
-    Send
-} from "lucide-react";
+import { AlertCircle, CheckCircle, Clock, Info, Send } from "lucide-react";
 
 interface AssessmentHeaderProps {
   assessment: Assessment;
   validation: AssessmentValidation;
   isCalibrationRework?: boolean;
   calibrationGovernanceAreaName?: string;
+  calibrationGovernanceAreaNames?: string[]; // Support multiple areas
 }
 
 export function AssessmentHeader({
@@ -35,7 +25,15 @@ export function AssessmentHeader({
   validation,
   isCalibrationRework = false,
   calibrationGovernanceAreaName,
+  calibrationGovernanceAreaNames = [],
 }: AssessmentHeaderProps) {
+  // Combine legacy single name with new multiple names array
+  const allCalibrationAreaNames =
+    calibrationGovernanceAreaNames.length > 0
+      ? calibrationGovernanceAreaNames
+      : calibrationGovernanceAreaName
+        ? [calibrationGovernanceAreaName]
+        : [];
   const { toast } = useToast();
 
   // Use Epic 5.0 submit endpoint (POST /assessments/{id}/submit)
@@ -162,8 +160,9 @@ export function AssessmentHeader({
     },
   });
 
-  const isReworkStatus = assessment.status.toLowerCase() === "rework" ||
-                         assessment.status.toLowerCase() === "needs-rework";
+  const isReworkStatus =
+    assessment.status.toLowerCase() === "rework" ||
+    assessment.status.toLowerCase() === "needs-rework";
 
   const getStatusIcon = () => {
     switch (assessment.status.toLowerCase()) {
@@ -215,11 +214,9 @@ export function AssessmentHeader({
         <div>
           <p className="font-medium mb-2">Missing indicator responses:</p>
           <ul className="text-sm space-y-1">
-            {validation.missingIndicators
-              .slice(0, 3)
-              .map((indicator, index) => (
-                <li key={index}>• {indicator}</li>
-              ))}
+            {validation.missingIndicators.slice(0, 3).map((indicator, index) => (
+              <li key={index}>• {indicator}</li>
+            ))}
             {validation.missingIndicators.length > 3 && (
               <li>• ... and {validation.missingIndicators.length - 3} more</li>
             )}
@@ -292,17 +289,28 @@ export function AssessmentHeader({
 
       <div className="relative z-10 max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Calibration Notice Banner */}
-        {isCalibrationRework && calibrationGovernanceAreaName && (
+        {isCalibrationRework && allCalibrationAreaNames.length > 0 && (
           <div className="mb-8 p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg shadow-sm">
             <div className="flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
               <div>
                 <h3 className="font-semibold text-orange-800 dark:text-orange-300">
-                  Calibration Required - {calibrationGovernanceAreaName}
+                  Calibration Required - {allCalibrationAreaNames.join(", ")}
                 </h3>
                 <p className="text-sm text-orange-700 dark:text-orange-400 mt-1">
-                  The Validator has requested calibration for indicators in <strong>{calibrationGovernanceAreaName}</strong>.
-                  Please review and update the affected indicators, then submit for calibration review.
+                  {allCalibrationAreaNames.length > 1 ? (
+                    <>
+                      Validators have requested calibration for indicators in{" "}
+                      <strong>{allCalibrationAreaNames.join(", ")}</strong>.
+                    </>
+                  ) : (
+                    <>
+                      The Validator has requested calibration for indicators in{" "}
+                      <strong>{allCalibrationAreaNames[0]}</strong>.
+                    </>
+                  )}{" "}
+                  Please review and update the affected indicators, then submit for calibration
+                  review.
                 </p>
               </div>
             </div>
@@ -314,7 +322,9 @@ export function AssessmentHeader({
           <div className="space-y-6 max-w-3xl">
             <div>
               <div className="flex items-center gap-3 mb-3">
-                <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-medium ${statusConfig.badgeClass}`}>
+                <div
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-medium ${statusConfig.badgeClass}`}
+                >
                   <span className={statusConfig.iconColor}>{getStatusIcon()}</span>
                   {getStatusText()}
                 </div>
@@ -322,7 +332,7 @@ export function AssessmentHeader({
                   • {new Date(assessment.createdAt).getFullYear()} Assessment
                 </span>
               </div>
-              
+
               <h1 className="text-3xl sm:text-4xl font-bold text-[var(--foreground)] tracking-tight leading-tight">
                 SGLGB Pre-Assessment for{" "}
                 <span className="text-[var(--cityscape-yellow-dark)]">
@@ -342,15 +352,17 @@ export function AssessmentHeader({
               <div className="text-center">
                 <div className="text-3xl font-bold text-[var(--foreground)] tabular-nums">
                   {assessment.completedIndicators}
-                  <span className="text-lg text-[var(--text-secondary)] font-medium">/{assessment.totalIndicators}</span>
+                  <span className="text-lg text-[var(--text-secondary)] font-medium">
+                    /{assessment.totalIndicators}
+                  </span>
                 </div>
                 <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mt-1">
                   Indicators
                 </div>
               </div>
-              
+
               <div className="w-px h-12 bg-[var(--border)]"></div>
-              
+
               <div className="text-center">
                 <div className="text-3xl font-bold text-[var(--cityscape-yellow-dark)] tabular-nums">
                   {progressPercentage}%
@@ -391,7 +403,9 @@ export function AssessmentHeader({
                     }
                     className="h-14 px-8 text-base font-semibold bg-[var(--foreground)] hover:bg-[var(--foreground)]/90 text-[var(--background)] rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 min-w-[200px]"
                   >
-                    {submitMutation.isPending || resubmitMutation.isPending || calibrationMutation.isPending ? (
+                    {submitMutation.isPending ||
+                    resubmitMutation.isPending ||
+                    calibrationMutation.isPending ? (
                       <>
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current mr-3" />
                         Processing...
@@ -400,7 +414,9 @@ export function AssessmentHeader({
                       <>
                         <Send className="h-5 w-5 mr-3" />
                         {isReworkStatus
-                          ? (isCalibrationRework ? "Submit Calibration" : "Resubmit")
+                          ? isCalibrationRework
+                            ? "Submit Calibration"
+                            : "Resubmit"
                           : "Submit Assessment"}
                       </>
                     )}
@@ -431,15 +447,15 @@ export function AssessmentHeader({
               style={{ width: `${progressPercentage}%` }}
             />
           </div>
-          
+
           {/* Validation Info */}
           {!validation.canSubmit &&
-            (validation.missingIndicators.length > 0 ||
-              validation.missingMOVs.length > 0) && (
+            (validation.missingIndicators.length > 0 || validation.missingMOVs.length > 0) && (
               <div className="mt-4 flex items-start gap-2 text-sm text-amber-600 bg-amber-50 p-3 rounded-md border border-amber-100">
                 <Info className="h-5 w-5 flex-shrink-0" />
                 <span>
-                  You have {validation.missingIndicators.length} missing responses and {validation.missingMOVs.length} missing required files.
+                  You have {validation.missingIndicators.length} missing responses and{" "}
+                  {validation.missingMOVs.length} missing required files.
                 </span>
               </div>
             )}

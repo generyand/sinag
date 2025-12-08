@@ -10,24 +10,24 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { classifyError } from "@/lib/error-utils";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useUploadStore } from "@/store/useUploadStore";
 import type { FileUploadField } from "@sinag/shared";
 import {
+  getGetAssessmentsMyAssessmentQueryKey,
+  getGetBlguDashboardAssessmentIdQueryKey,
+  getGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFilesQueryKey,
   MOVFileResponse,
   useGetAssessmentsMyAssessment,
   useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles,
   usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload,
-  getGetAssessmentsMyAssessmentQueryKey,
-  getGetBlguDashboardAssessmentIdQueryKey,
-  getGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFilesQueryKey,
 } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, CheckCircle2, FileIcon, Info, Loader2, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useState, useRef, useEffect } from "react";
 import toast from "react-hot-toast";
-import { classifyError } from "@/lib/error-utils";
 
 // Dynamically import annotators to avoid SSR issues
 const PdfAnnotator = dynamic(() => import("@/components/shared/PdfAnnotator"), {
@@ -224,6 +224,45 @@ export function FileFieldComponent({
         queryClient.invalidateQueries({
           queryKey: getGetBlguDashboardAssessmentIdQueryKey(assessmentId),
           refetchType: "active",
+        });
+
+        // Optimistically mark this indicator as completed in cached assessment data
+        // CRITICAL: Update BOTH flat responses array AND nested governance_areas structure
+        queryClient.setQueryData(getGetAssessmentsMyAssessmentQueryKey(), (old: any) => {
+          if (!old) return old;
+          const updated = { ...old };
+
+          // Update flat responses array if it exists
+          if (updated.assessment?.responses) {
+            updated.assessment = { ...updated.assessment };
+            updated.assessment.responses = updated.assessment.responses.map((resp: any) => {
+              if (resp.indicator_id === indicatorId) {
+                return { ...resp, is_completed: true, requires_rework: false };
+              }
+              return resp;
+            });
+          }
+
+          // Update nested governance_areas structure (this is what TreeNavigator uses)
+          if (updated.governance_areas) {
+            updated.governance_areas = updated.governance_areas.map((area: any) => ({
+              ...area,
+              indicators:
+                area.indicators?.map((ind: any) => {
+                  if (ind.id === indicatorId || ind.response?.indicator_id === indicatorId) {
+                    return {
+                      ...ind,
+                      response: ind.response
+                        ? { ...ind.response, is_completed: true, requires_rework: false }
+                        : { is_completed: true, requires_rework: false },
+                    };
+                  }
+                  return ind;
+                }) || [],
+            }));
+          }
+
+          return updated;
         });
 
         // Reset UI state after a brief success display
@@ -640,6 +679,9 @@ export function FileFieldComponent({
             onDeleteSuccess={handleDeleteSuccess}
             movAnnotations={movAnnotations}
             hideHeader={true}
+            assessmentId={assessmentId}
+            indicatorId={indicatorId}
+            requiredFileCount={field.required ? 1 : 0}
           />
         </section>
       )}

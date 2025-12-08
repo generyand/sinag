@@ -924,6 +924,7 @@ class AssessorService:
                             "id": comment.assessor.id,
                             "name": comment.assessor.name,
                             "email": comment.assessor.email,
+                            "role": comment.assessor.role.value if comment.assessor.role else None,
                         }
                         if comment.assessor
                         else None,

@@ -5,10 +5,10 @@ import { ReactElement, useEffect, useState } from "react";
 import { AssessmentTreeNode } from "./AssessmentTreeNode";
 import { TreeHeader } from "./TreeHeader";
 import {
-    calculateAreaProgress,
-    getInitialExpandedAreas,
-    loadExpandedState,
-    saveExpandedState,
+  calculateAreaProgress,
+  getInitialExpandedAreas,
+  loadExpandedState,
+  saveExpandedState,
 } from "./tree-utils";
 
 interface TreeNavigatorProps {
@@ -58,11 +58,7 @@ export function TreeNavigator({
       // Parent containers with children are just organizational and shouldn't be clickable
       if (hasChildren) {
         // This is a parent container - recursively render its children
-        return (
-          <div key={indicator.id}>
-            {renderIndicatorTree(indicator.children, level)}
-          </div>
-        );
+        return <div key={indicator.id}>{renderIndicatorTree(indicator.children, level)}</div>;
       }
 
       // This is a leaf indicator - render it normally
@@ -92,7 +88,7 @@ export function TreeNavigator({
     <div
       role="tree"
       aria-label="Assessment navigation"
-      className="h-full flex flex-col bg-[var(--card)] border-r border-[var(--border)]"
+      className="h-full flex flex-col bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800"
       onKeyDown={handleKeyDown}
     >
       {/* Sticky Header */}
@@ -147,7 +143,7 @@ export function TreeNavigator({
                 {isExpanded && (
                   <div className="relative">
                     {/* Vertical line for hierarchy */}
-                    <div className="absolute left-[1.125rem] top-0 bottom-0 w-px bg-[var(--border)]" />
+                    <div className="absolute left-[1.125rem] top-0 bottom-0 w-px bg-slate-200 dark:bg-slate-700" />
                     {renderIndicatorTree(area.indicators, 1)}
                   </div>
                 )}

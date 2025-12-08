@@ -1,13 +1,13 @@
 /**
  * Hook for AI-powered insights generation with polling support
- * 
+ *
  * Handles asynchronous insights generation with automatic polling
  * to detect when insights are ready.
  */
 
-import { useQueryClient } from '@tanstack/react-query';
-import { usePostAssessmentsIdGenerateInsights } from '@sinag/shared/src/generated/endpoints/assessments';
-import { useEffect, useRef } from 'react';
+import { useQueryClient } from "@tanstack/react-query";
+import { usePostAssessmentsIdGenerateInsights } from "@sinag/shared";
+import { useEffect, useRef } from "react";
 
 interface UseIntelligenceResult {
   generateInsights: (assessmentId: number) => Promise<void>;
@@ -17,19 +17,19 @@ interface UseIntelligenceResult {
 
 /**
  * Hook for generating AI-powered insights with polling
- * 
+ *
  * This hook provides a `generateInsights` function that:
  * 1. Dispatches a Celery task via POST /api/v1/assessments/{id}/generate-insights
  * 2. Expects a 202 Accepted response
  * 3. Initiates polling every 5 seconds to check for ai_recommendations field
  * 4. Automatically stops polling when data appears
- * 
+ *
  * @returns Object with generateInsights function, isGenerating state, and error
  */
 export function useIntelligence(): UseIntelligenceResult {
   const queryClient = useQueryClient();
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   const {
     mutate: generateInsightsMutation,
     isPending: isGenerating,
@@ -58,13 +58,11 @@ export function useIntelligence(): UseIntelligenceResult {
               try {
                 // Refetch the assessment data to check for ai_recommendations
                 await queryClient.refetchQueries({
-                  queryKey: ['getAssessmentsMyAssessment'],
+                  queryKey: ["getAssessmentsMyAssessment"],
                 });
 
                 // Check if ai_recommendations exists by looking at the cached data
-                const cachedData = queryClient.getQueryData([
-                  'getAssessmentsMyAssessment',
-                ]);
+                const cachedData = queryClient.getQueryData(["getAssessmentsMyAssessment"]);
 
                 // The exact structure depends on the API response
                 // This is a simplified check - in real usage, you'd check the actual structure
@@ -103,4 +101,3 @@ export function useIntelligence(): UseIntelligenceResult {
     error,
   };
 }
-

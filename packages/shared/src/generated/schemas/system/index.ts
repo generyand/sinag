@@ -13,13 +13,14 @@ import type { GovernanceAreaGroup } from '../common';
 import type { BLGUDashboardResponseMovAnnotationsByIndicator } from '../indicators';
 import type { BLGUDashboardResponseMlgooRecalibrationIndicatorIds } from '../indicators';
 import type { BLGUDashboardResponseMlgooRecalibrationComments } from '../mlgoo';
+import type { BLGUDashboardResponseFinalComplianceStatus } from '../compliance';
 import type { BLGUDashboardResponseBbiCompliance } from '../bbis';
 import type { AISummary } from '../common';
 import type { ReworkComment } from '../common';
 import type { IndicatorSummary } from '../indicators';
 import type { ChecklistItemResponseMovDescription } from '../movs';
 import type { IncompleteIndicatorDetail } from '../indicators';
-import type { ComplianceRate } from '../common';
+import type { ComplianceRate } from '../compliance';
 import type { AreaBreakdown } from '../common';
 import type { FailedIndicator } from '../indicators';
 import type { TrendData } from '../common';
@@ -28,7 +29,6 @@ import type { StatusDistributionItem } from '../common';
 import type { ReworkStats } from '../common';
 import type { DashboardKPIResponseBbiAnalytics } from '../analytics';
 import type { DeadlineOverrideResponse } from '../deadlineoverride';
-import type { OverallComplianceResponseAssessmentCycle } from '../assessments';
 import type { ReportMetadataAssessmentYear } from '../assessments';
 import type { ChartData } from '../common';
 import type { MapData } from '../common';
@@ -349,12 +349,6 @@ export type BLGUDashboardResponseCalibrationValidatorId = number | null;
 
 
 /**
- * BLGUDashboardResponseFinalComplianceStatus
- */
-export type BLGUDashboardResponseFinalComplianceStatus = string | null;
-
-
-/**
  * BLGUDashboardResponseReworkComments
  */
 export type BLGUDashboardResponseReworkComments = ReworkComment[] | null;
@@ -663,25 +657,6 @@ export type HealthCheckChecks = { [key: string]: unknown };
  * HealthCheckConnections
  */
 export type HealthCheckConnections = { [key: string]: unknown };
-
-
-/**
- * OverallComplianceResponse
- */
-export interface OverallComplianceResponse {
-  /** Total number of barangays assessed */
-  total_barangays: number;
-  /** Number of barangays that passed SGLGB */
-  passed_count: number;
-  /** Number of barangays that failed SGLGB */
-  failed_count: number;
-  /** Percentage of barangays that passed (0-100) */
-  pass_percentage: number;
-  /** Percentage of barangays that failed (0-100) */
-  fail_percentage: number;
-  /** Assessment cycle identifier */
-  assessment_cycle?: OverallComplianceResponseAssessmentCycle;
-}
 
 
 /**

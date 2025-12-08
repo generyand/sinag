@@ -29,7 +29,7 @@ import {
   ArrowRight,
   MessageSquare,
   FileText,
-  Clock
+  Clock,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -43,23 +43,43 @@ interface ReworkIndicatorsPanelProps {
   assessmentId: number;
 }
 
-export function ReworkIndicatorsPanel({
-  dashboardData,
-  assessmentId,
-}: ReworkIndicatorsPanelProps) {
+export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkIndicatorsPanelProps) {
   const router = useRouter();
   const [expandedAreas, setExpandedAreas] = useState<Set<number>>(new Set());
 
   // Check if this is a calibration rework (from Validator, not Assessor)
   const isCalibration = dashboardData.is_calibration_rework === true;
-  const calibrationAreaId = (dashboardData as any).calibration_governance_area_id;
-  const calibrationAreaName = (dashboardData as any).calibration_governance_area_name;
+  // Support multiple calibration areas (parallel calibration from different validators)
+  const calibrationGovernanceAreas: Array<{
+    governance_area_id: number;
+    governance_area_name: string;
+  }> = (dashboardData as any).calibration_governance_areas || [];
+  // Legacy single area support (fallback)
+  const legacyCalibrationAreaId = (dashboardData as any).calibration_governance_area_id;
+  const legacyCalibrationAreaName = (dashboardData as any).calibration_governance_area_name;
+  // Build set of all calibration area IDs
+  const calibrationAreaIds = new Set<number>(
+    calibrationGovernanceAreas.length > 0
+      ? calibrationGovernanceAreas.map((a) => a.governance_area_id)
+      : legacyCalibrationAreaId
+        ? [legacyCalibrationAreaId]
+        : []
+  );
+  // Get area names for display
+  const calibrationAreaNames =
+    calibrationGovernanceAreas.length > 0
+      ? calibrationGovernanceAreas.map((a) => a.governance_area_name)
+      : legacyCalibrationAreaName
+        ? [legacyCalibrationAreaName]
+        : [];
 
   // Check if this is an MLGOO RE-calibration (distinct from Validator calibration)
   // MLGOO RE-calibration targets specific indicators, not entire governance areas
   const isMlgooRecalibration = (dashboardData as any).is_mlgoo_recalibration === true;
-  const mlgooRecalibrationIndicatorIds: number[] = (dashboardData as any).mlgoo_recalibration_indicator_ids || [];
-  const mlgooRecalibrationComments: string | null = (dashboardData as any).mlgoo_recalibration_comments || null;
+  const mlgooRecalibrationIndicatorIds: number[] =
+    (dashboardData as any).mlgoo_recalibration_indicator_ids || [];
+  const mlgooRecalibrationComments: string | null =
+    (dashboardData as any).mlgoo_recalibration_comments || null;
 
   // Compute failed indicators based on calibration mode or assessor feedback
   // For MLGOO RE-CALIBRATION: Show ONLY the specific indicators selected by MLGOO
@@ -71,7 +91,11 @@ export function ReworkIndicatorsPanel({
     // Helper function to find indicator in governance areas (including children)
     const findIndicator = (indicatorId: number) => {
       // Recursive search through indicator tree
-      const searchIndicators = (indicators: any[], areaId: number, areaName: string): any | null => {
+      const searchIndicators = (
+        indicators: any[],
+        areaId: number,
+        areaName: string
+      ): any | null => {
         for (const indicator of indicators) {
           if (indicator.indicator_id === indicatorId) {
             return {
@@ -138,15 +162,15 @@ export function ReworkIndicatorsPanel({
         }
       );
     }
-    // For CALIBRATION: Get all incomplete indicators in the calibrated governance area
-    else if (isCalibration && calibrationAreaId) {
-      // Find the calibrated governance area
-      const calibratedArea = dashboardData.governance_areas.find(
-        (area) => area.governance_area_id === calibrationAreaId
+    // For CALIBRATION: Get all incomplete indicators from ALL calibrated governance areas
+    else if (isCalibration && calibrationAreaIds.size > 0) {
+      // Find ALL calibrated governance areas
+      const calibratedAreas = dashboardData.governance_areas.filter((area) =>
+        calibrationAreaIds.has(area.governance_area_id)
       );
 
-      if (calibratedArea) {
-        // Add all INCOMPLETE indicators from this area
+      // Add all INCOMPLETE indicators from ALL calibrated areas
+      calibratedAreas.forEach((calibratedArea) => {
         calibratedArea.indicators.forEach((indicator: any) => {
           // Only show indicators that are NOT complete (need to be fixed)
           if (!indicator.is_complete) {
@@ -165,16 +189,16 @@ export function ReworkIndicatorsPanel({
             });
           }
         });
-      }
+      });
 
-      // Also add any annotations that are in the calibrated area
+      // Also add any annotations that are in ANY of the calibrated areas
       Object.entries(dashboardData.mov_annotations_by_indicator || {}).forEach(
         ([indicatorIdStr, annotations]: [string, any]) => {
           const indicatorId = Number(indicatorIdStr);
           const indicator = findIndicator(indicatorId);
 
-          // Only include if it's in the calibrated area
-          if (indicator && indicator.governance_area_id === calibrationAreaId) {
+          // Only include if it's in one of the calibrated areas
+          if (indicator && calibrationAreaIds.has(indicator.governance_area_id)) {
             if (!indicatorMap.has(indicatorId)) {
               indicatorMap.set(indicatorId, {
                 indicator_id: indicatorId,
@@ -263,7 +287,14 @@ export function ReworkIndicatorsPanel({
       has_mov_issues: failed.annotations.length > 0,
       has_field_issues: failed.comments.length > 0,
     }));
-  }, [dashboardData, assessmentId, isCalibration, calibrationAreaId, isMlgooRecalibration, mlgooRecalibrationIndicatorIds]);
+  }, [
+    dashboardData,
+    assessmentId,
+    isCalibration,
+    calibrationAreaIds,
+    isMlgooRecalibration,
+    mlgooRecalibrationIndicatorIds,
+  ]);
 
   // Compute progress
   const progress = useMemo(() => {
@@ -305,12 +336,12 @@ export function ReworkIndicatorsPanel({
   // Auto-expand all governance areas on mount for better UX
   // Use a stable dependency (stringified area IDs) to prevent infinite loops
   const areaIdsKey = useMemo(() => {
-    return Array.from(failedByArea.keys()).sort().join(',');
+    return Array.from(failedByArea.keys()).sort().join(",");
   }, [failedByArea]);
 
   useEffect(() => {
     if (areaIdsKey) {
-      const allAreaIds = areaIdsKey.split(',').filter(Boolean).map(Number);
+      const allAreaIds = areaIdsKey.split(",").filter(Boolean).map(Number);
       if (allAreaIds.length > 0) {
         setExpandedAreas(new Set(allAreaIds));
       }
@@ -380,27 +411,31 @@ export function ReworkIndicatorsPanel({
                   {isMlgooRecalibration
                     ? "MLGOO RE-Calibration Required"
                     : isCalibration
-                    ? "Indicators Requiring Calibration"
-                    : "Action Required: Address Assessor Feedback"}
+                      ? "Indicators Requiring Calibration"
+                      : "Action Required: Address Assessor Feedback"}
                 </h2>
               </div>
               <p className="text-white/90 text-base leading-relaxed mb-3">
                 {isMlgooRecalibration ? (
                   <>
-                    The MLGOO has requested RE-calibration for <span className="font-semibold">{progress.total}</span> specific indicator{progress.total !== 1 ? "s" : ""}.
-                    Please address <span className="font-semibold">{progress.remaining}</span> of{" "}
+                    The MLGOO has requested RE-calibration for{" "}
+                    <span className="font-semibold">{progress.total}</span> specific indicator
+                    {progress.total !== 1 ? "s" : ""}. Please address{" "}
+                    <span className="font-semibold">{progress.remaining}</span> of{" "}
                     <span className="font-semibold">{progress.total}</span> to proceed.
                   </>
-                ) : isCalibration && calibrationAreaName ? (
+                ) : isCalibration && calibrationAreaNames.length > 0 ? (
                   <>
-                    Your <span className="font-semibold">{calibrationAreaName}</span> assessment requires calibration.
-                    Please review and update <span className="font-semibold">{progress.remaining}</span> of{" "}
+                    Your <span className="font-semibold">{calibrationAreaNames.join(", ")}</span>{" "}
+                    assessment{calibrationAreaNames.length > 1 ? "s require" : " requires"}{" "}
+                    calibration. Please review and update{" "}
+                    <span className="font-semibold">{progress.remaining}</span> of{" "}
                     <span className="font-semibold">{progress.total}</span> indicators to proceed.
                   </>
                 ) : (
                   <>
-                    The assessor has identified areas needing improvement in your submission.
-                    Please address <span className="font-semibold">{progress.remaining}</span> of{" "}
+                    The assessor has identified areas needing improvement in your submission. Please
+                    address <span className="font-semibold">{progress.remaining}</span> of{" "}
                     <span className="font-semibold">{progress.total}</span> indicators to resubmit.
                   </>
                 )}
@@ -409,7 +444,8 @@ export function ReworkIndicatorsPanel({
               {isMlgooRecalibration && mlgooRecalibrationComments && (
                 <div className="bg-white/10 border border-white/20 rounded-sm p-3 mb-3">
                   <p className="text-sm text-white/90 italic">
-                    <span className="font-semibold not-italic">MLGOO&apos;s Note:</span> {mlgooRecalibrationComments}
+                    <span className="font-semibold not-italic">MLGOO&apos;s Note:</span>{" "}
+                    {mlgooRecalibrationComments}
                   </p>
                 </div>
               )}
@@ -419,13 +455,19 @@ export function ReworkIndicatorsPanel({
                 {feedbackSummary.totalComments > 0 && (
                   <div className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-sm">
                     <MessageSquare className="w-4 h-4" />
-                    <span>{feedbackSummary.totalComments} comment{feedbackSummary.totalComments !== 1 ? "s" : ""}</span>
+                    <span>
+                      {feedbackSummary.totalComments} comment
+                      {feedbackSummary.totalComments !== 1 ? "s" : ""}
+                    </span>
                   </div>
                 )}
                 {feedbackSummary.totalAnnotations > 0 && (
                   <div className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-sm">
                     <FileText className="w-4 h-4" />
-                    <span>{feedbackSummary.totalAnnotations} annotation{feedbackSummary.totalAnnotations !== 1 ? "s" : ""}</span>
+                    <span>
+                      {feedbackSummary.totalAnnotations} annotation
+                      {feedbackSummary.totalAnnotations !== 1 ? "s" : ""}
+                    </span>
                   </div>
                 )}
                 {progress.remaining > 0 && (
@@ -471,15 +513,15 @@ export function ReworkIndicatorsPanel({
           <strong>What to do next:</strong>{" "}
           {isMlgooRecalibration ? (
             <>
-              The MLGOO has unlocked specific indicators for you to update. Review each indicator below,
-              make the necessary corrections, then resubmit your assessment. Only the indicators listed
-              below need to be addressed.
+              The MLGOO has unlocked specific indicators for you to update. Review each indicator
+              below, make the necessary corrections, then resubmit your assessment. Only the
+              indicators listed below need to be addressed.
             </>
           ) : (
             <>
-              Review each indicator below to see the assessor&apos;s feedback.
-              Address all comments and annotations, then resubmit your assessment for review. You can track
-              your progress as you complete each indicator.
+              Review each indicator below to see the assessor&apos;s feedback. Address all comments
+              and annotations, then resubmit your assessment for review. You can track your progress
+              as you complete each indicator.
             </>
           )}
         </p>

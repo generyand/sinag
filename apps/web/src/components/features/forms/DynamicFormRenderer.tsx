@@ -143,19 +143,25 @@ export function DynamicFormRenderer({
     // Check reworkComments prop (from dashboard API - most reliable source)
     // The dashboard API correctly returns rework_comments for this indicator
     if (reworkComments && reworkComments.length > 0) {
-      console.log(`[REWORK DEBUG] Indicator ${indicatorId} has ${reworkComments.length} rework comments from dashboard - REQUIRES REWORK`);
+      console.log(
+        `[REWORK DEBUG] Indicator ${indicatorId} has ${reworkComments.length} rework comments from dashboard - REQUIRES REWORK`
+      );
       return true;
     }
 
     // Check MOV annotations passed as prop
     // movAnnotations prop contains annotations specifically for this indicator
     if (movAnnotations && movAnnotations.length > 0) {
-      console.log(`[REWORK DEBUG] Indicator ${indicatorId} has ${movAnnotations.length} MOV annotations - REQUIRES REWORK`);
+      console.log(
+        `[REWORK DEBUG] Indicator ${indicatorId} has ${movAnnotations.length} MOV annotations - REQUIRES REWORK`
+      );
       return true;
     }
 
     // No feedback found - this indicator doesn't require rework
-    console.log(`[REWORK DEBUG] Indicator ${indicatorId} has NO feedback (0 comments, 0 annotations) - keeping original completion status`);
+    console.log(
+      `[REWORK DEBUG] Indicator ${indicatorId} has NO feedback (0 comments, 0 annotations) - keeping original completion status`
+    );
     return false;
   }, [indicatorId, movAnnotations, reworkComments]);
 
@@ -351,7 +357,13 @@ export function DynamicFormRenderer({
       }
       return true; // Non-file fields are handled by form validation
     });
-  }, [formSchema, completionValidFiles, isReworkStatus, indicatorRequiresRework, backendIsCompleted]);
+  }, [
+    formSchema,
+    completionValidFiles,
+    isReworkStatus,
+    indicatorRequiresRework,
+    backendIsCompleted,
+  ]);
 
   // Track previous completion status to avoid infinite loops
   const prevCompleteRef = useRef<boolean | null>(null);
@@ -726,13 +738,17 @@ function SectionRenderer({
     return groupFieldsByOptionGroup(visibleFields);
   }, [visibleFields]);
 
+  // Check if accordion UI should be used (can be disabled via form_schema)
+  // Default is true if option groups exist, but can be overridden by use_accordion_ui: false
+  const useAccordionUI = (formSchema as any)?.use_accordion_ui !== false;
+
   // Don't render empty sections
   if (visibleFields.length === 0) {
     return null;
   }
 
-  // Render with accordion if option groups detected
-  if (optionGroups && optionGroups.length > 0) {
+  // Render with accordion if option groups detected AND accordion UI is enabled
+  if (optionGroups && optionGroups.length > 0 && useAccordionUI) {
     // Calculate overall completion: need at least 1 option group complete
     // Use completionValidFiles which is filtered by rework timestamp during rework status
     const completedGroups = optionGroups.filter((group) =>

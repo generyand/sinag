@@ -11,6 +11,7 @@ import type { CountThresholdRule } from '../countthresholdrule';
 import type { MatchValueRule } from '../matchvaluerule';
 import type { BBIFunctionalityCheckRule } from '../bbis';
 import type { ApprovalQueueItemBlguUserId } from '../users';
+import type { ApprovalQueueItemComplianceStatus } from '../compliance';
 import type { ApprovalQueueItemOverallScore } from '../movs';
 import type { BarangayAssessmentStatus } from '../assessments';
 import type { FileUploadFieldConditionalMovRequirement } from '../movs';
@@ -18,6 +19,7 @@ import type { SectionHeaderField } from '../sectionheaderfield';
 import type { InfoTextField } from '../infotextfield';
 import type { IndicatorDetailItem } from '../indicators';
 import type { IndicatorItem } from '../indicators';
+import type { MunicipalComplianceSummary } from '../compliance';
 import type { GovernanceAreaPerformanceList } from '../governanceareaperformance';
 import type { TopFailingIndicatorsList } from '../indicators';
 import type { AggregatedCapDevSummary } from '../capdev';
@@ -179,12 +181,6 @@ export interface ApprovalQueueItem {
   mlgoo_recalibration_count: number;
   is_mlgoo_recalibration: boolean;
 }
-
-
-/**
- * ApprovalQueueItemComplianceStatus
- */
-export type ApprovalQueueItemComplianceStatus = string | null;
 
 
 /**
@@ -435,25 +431,6 @@ export type CheckboxGroupFieldHelpText = string | null;
 
 
 /**
- * ComplianceRate
- */
-export interface ComplianceRate {
-  /** Total number of barangays assessed */
-  total_barangays: number;
-  /** Number of barangays that passed */
-  passed: number;
-  /** Number of barangays that failed */
-  failed: number;
-  /**
-   * Percentage of barangays that passed
-   * @minimum 0
-   * @maximum 100
-   */
-  pass_percentage: number;
-}
-
-
-/**
  * ConditionGroup
  */
 export interface ConditionGroup {
@@ -693,17 +670,6 @@ year?: number | null;
 
 
 /**
- * GetMunicipalOverviewComplianceSummaryParams
- */
-export type GetMunicipalOverviewComplianceSummaryParams = {
-/**
- * Assessment year filter (e.g., 2024, 2025). Defaults to active year.
- */
-year?: number | null;
-};
-
-
-/**
  * GetMunicipalOverviewDashboardParams
  */
 export type GetMunicipalOverviewDashboardParams = {
@@ -814,29 +780,6 @@ export const MatchValueRuleOperator = {
   contains: 'contains',
   not_contains: 'not_contains',
 } as const;
-
-
-/**
- * MunicipalComplianceSummary
- */
-export interface MunicipalComplianceSummary {
-  /** Total number of barangays in the municipality */
-  total_barangays: number;
-  /** Number of barangays with completed assessments */
-  assessed_barangays: number;
-  /** Number of barangays that passed SGLGB */
-  passed_barangays: number;
-  /** Number of barangays that failed SGLGB */
-  failed_barangays: number;
-  /** Percentage of assessed barangays that passed (0-100) */
-  compliance_rate: number;
-  /** Percentage of barangays that have been assessed (0-100) */
-  assessment_rate: number;
-  /** Number of assessments awaiting MLGOO approval */
-  pending_mlgoo_approval: number;
-  /** Number of assessments in progress (draft/submitted/rework) */
-  in_progress: number;
-}
 
 
 /**

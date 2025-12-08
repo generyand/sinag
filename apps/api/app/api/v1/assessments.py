@@ -1549,23 +1549,50 @@ def submit_for_calibration_review(
             detail="This assessment was not sent for calibration. Use the regular 'resubmit' endpoint instead.",
         )
 
-    # Validate only the indicators that were marked for calibration
-    # Get all responses that have requires_rework=True
-    rework_responses = [r for r in assessment.responses if r.requires_rework]
+    # Validate only the indicators that were marked for calibration AND are in calibrated areas
+    # This is important because requires_rework might be True from previous assessor rework
+    # but we only want to validate indicators in the CALIBRATED governance areas
+    calibrated_area_ids = set(assessment.calibrated_area_ids or [])
+
+    # Get all responses that have requires_rework=True AND are in calibrated areas
+    rework_responses = [
+        r
+        for r in assessment.responses
+        if r.requires_rework
+        and r.indicator
+        and r.indicator.governance_area_id in calibrated_area_ids
+    ]
 
     if not rework_responses:
-        # No indicators need rework - this shouldn't happen normally
-        # but just in case, allow the submission
+        # No indicators need rework in calibrated areas - allow the submission
         pass
     else:
-        # Validate only the rework indicators using completeness check
+        # Validate only the rework indicators in calibrated areas using completeness check
         from app.db.models.assessment import MOVAnnotation, MOVFile
         from app.services.completeness_validation_service import (
             completeness_validation_service,
         )
 
-        # Get calibration timestamp for filtering MOVs (same logic as storage_service)
-        calibration_requested_at = (
+        # Build a map of governance_area_id -> calibration timestamp from pending_calibrations
+        # This allows per-area calibration timestamps for parallel calibration
+        pending_calibrations = assessment.pending_calibrations or []
+        calibration_timestamps_by_area: dict[int, datetime] = {}
+        for pc in pending_calibrations:
+            area_id = pc.get("governance_area_id")
+            requested_at_str = pc.get("requested_at")
+            if area_id and requested_at_str:
+                # Parse the ISO format timestamp
+                try:
+                    cal_time = datetime.fromisoformat(requested_at_str.replace("Z", "+00:00"))
+                    # Remove timezone info for comparison with naive datetimes
+                    if cal_time.tzinfo is not None:
+                        cal_time = cal_time.replace(tzinfo=None)
+                    calibration_timestamps_by_area[area_id] = cal_time
+                except (ValueError, AttributeError):
+                    pass
+
+        # Fallback to single calibration timestamp if no per-area timestamps
+        default_calibration_time = (
             assessment.calibration_requested_at or assessment.rework_requested_at
         )
 
@@ -1577,9 +1604,14 @@ def submit_for_calibration_review(
                 continue
 
             form_schema = indicator.form_schema
+            area_id = indicator.governance_area_id
+
+            # Get area-specific calibration timestamp, fallback to default
+            area_calibration_time = calibration_timestamps_by_area.get(
+                area_id, default_calibration_time
+            )
 
             # Get MOVs for this indicator - MUST filter out soft-deleted files
-            # Query directly to ensure we get fresh data and proper filtering
             indicator_movs = (
                 db.query(MOVFile)
                 .filter(
@@ -1590,39 +1622,43 @@ def submit_for_calibration_review(
                 .all()
             )
 
-            # Apply timestamp filtering only if indicator has feedback
-            # This matches the logic in storage_service.py for consistency
-            if calibration_requested_at and indicator_movs:
-                # Check for feedback comments (non-internal)
-                feedback_count = (
+            # Check for feedback comments that were added DURING this calibration cycle
+            # Only comments added AFTER the area's calibration timestamp should require new MOVs
+            if area_calibration_time and indicator_movs:
+                # Check for feedback comments added AFTER calibration was requested
+                feedback_after_calibration = (
                     db.query(FeedbackComment)
                     .filter(
                         FeedbackComment.response_id == response.id,
                         FeedbackComment.is_internal_note == False,
+                        FeedbackComment.created_at >= area_calibration_time,
                     )
                     .count()
                 )
 
-                # Check for MOV annotations
-                annotation_count = (
+                # Check for MOV annotations added AFTER calibration
+                annotation_after_calibration = (
                     db.query(MOVAnnotation)
                     .join(MOVFile)
                     .filter(
                         MOVFile.assessment_id == assessment_id,
                         MOVFile.indicator_id == response.indicator_id,
+                        MOVAnnotation.created_at >= area_calibration_time,
                     )
                     .count()
                 )
 
-                has_feedback = feedback_count > 0 or annotation_count > 0
+                has_calibration_feedback = (
+                    feedback_after_calibration > 0 or annotation_after_calibration > 0
+                )
 
-                # Only filter MOVs by timestamp if indicator has assessor feedback
-                # Indicators without feedback keep their old files (old files still valid)
-                if has_feedback:
+                # Only filter MOVs by timestamp if indicator has feedback FROM THIS CALIBRATION CYCLE
+                # Indicators with only old feedback (from assessor rework) keep their old files
+                if has_calibration_feedback:
                     indicator_movs = [
                         mf
                         for mf in indicator_movs
-                        if mf.uploaded_at and mf.uploaded_at >= calibration_requested_at
+                        if mf.uploaded_at and mf.uploaded_at >= area_calibration_time
                     ]
 
             # Validate using the completeness service
