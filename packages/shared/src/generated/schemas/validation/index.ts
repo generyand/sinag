@@ -28,4 +28,5 @@ export interface ValidationResponse {
   message: string;
   assessment_response_id: number;
   validation_status?: ValidationResponseValidationStatus;
+  has_mov_annotations?: boolean;
 }

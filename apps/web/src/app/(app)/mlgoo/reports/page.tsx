@@ -1,7 +1,11 @@
 "use client";
 
 import { YearSelector } from "@/components/features/assessment-year/YearSelector";
-import { ComplianceBadge } from "@/components/features/reports";
+import {
+  BBIStatusTab,
+  ComplianceBadge,
+  type MunicipalityBBIAnalyticsData,
+} from "@/components/features/reports";
 import { ReportsSkeleton } from "@/components/features/reports/ReportsSkeleton";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,23 +15,48 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffectiveYear } from "@/store/useAssessmentYearStore";
 import {
   AssessmentStatus,
   useGetAssessmentsList,
   type GetAssessmentsListQueryResult,
 } from "@sinag/shared";
-import { Activity, Brain, Target, Zap } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { Activity, AlertCircle, Brain, Building2, LayoutDashboard, Target, Zap } from "lucide-react";
 import { useState } from "react";
+
+// Municipality name - TODO: fetch from user context or configuration when multi-municipality support is added
+const MUNICIPALITY_NAME = "Sulop";
 
 export default function ReportsPage() {
   const [selectedBarangay, setSelectedBarangay] = useState("");
+  const [activeTab, setActiveTab] = useState("overview");
   const effectiveYear = useEffectiveYear();
 
   // Fetch validated assessments with compliance data for the selected year
   const { data: assessments, isLoading } = useGetAssessmentsList<GetAssessmentsListQueryResult>({
     assessment_status: AssessmentStatus.VALIDATED,
     year: effectiveYear ?? undefined,
+  });
+
+  // Fetch BBI analytics for the selected year using manual query
+  // (will use generated hook after API endpoint is available and types are regenerated)
+  const {
+    data: bbiAnalytics,
+    isLoading: isBBILoading,
+    isError: isBBIError,
+    error: bbiError,
+  } = useQuery({
+    queryKey: ["bbis", "analytics", "municipality", effectiveYear],
+    queryFn: async () => {
+      const response = await api.get(`/bbis/analytics/municipality`, {
+        params: { year: effectiveYear },
+      });
+      return response.data as MunicipalityBBIAnalyticsData;
+    },
+    enabled: !!effectiveYear,
   });
 
   // Ensure we only render arrays in JSX to avoid unknown -> ReactNode errors
@@ -220,6 +249,47 @@ export default function ReportsPage() {
             </div>
           </div>
 
+          {/* Tabs for different views */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
+              <TabsTrigger value="overview" className="flex items-center gap-2">
+                <LayoutDashboard className="h-4 w-4" />
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="bbi-status" className="flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                BBI Status
+              </TabsTrigger>
+            </TabsList>
+
+            {/* BBI Status Tab */}
+            <TabsContent value="bbi-status" className="space-y-6">
+              <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg p-6">
+                {isBBIError ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                      <AlertCircle className="w-8 h-8 text-red-500" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">
+                      Failed to Load BBI Analytics
+                    </h3>
+                    <p className="text-sm text-[var(--muted-foreground)] max-w-md">
+                      {(bbiError as Error)?.message ||
+                        "An error occurred while fetching BBI analytics data. Please try again later."}
+                    </p>
+                  </div>
+                ) : (
+                  <BBIStatusTab
+                    data={bbiAnalytics as MunicipalityBBIAnalyticsData | null}
+                    isLoading={isBBILoading}
+                    municipalityName={MUNICIPALITY_NAME}
+                  />
+                )}
+              </div>
+            </TabsContent>
+
+            {/* Overview Tab */}
+            <TabsContent value="overview" className="space-y-8">
           {/* Main Analytics Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Official SGLGB Performance - 2 columns */}
@@ -647,6 +717,8 @@ export default function ReportsPage() {
               </div>
             </div>
           </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
