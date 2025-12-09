@@ -29,15 +29,13 @@ export function SubmissionsEmptyState({
         )}
       </div>
 
-      <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">
-        No submissions found
-      </h3>
+      <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">No submissions found</h3>
 
       <p className="text-sm text-[var(--muted-foreground)] text-center max-w-md mb-6">
         {isSearching ? (
           <>
-            No results for &ldquo;<span className="font-medium">{searchQuery}</span>&rdquo;.
-            Try adjusting your search term.
+            No results for &ldquo;<span className="font-medium">{searchQuery}</span>&rdquo;. Try
+            adjusting your search term.
           </>
         ) : hasActiveFilters ? (
           "No submissions match your current filters. Try adjusting or clearing your filters to see more results."

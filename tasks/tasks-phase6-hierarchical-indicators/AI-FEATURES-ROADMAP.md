@@ -1,32 +1,37 @@
 # AI Features Roadmap - Hierarchical Indicator Creation
 
-**Created:** November 9, 2025
-**Status:** Future Enhancement (Post-MVP)
-**Dependencies:** MVP Phase 1 & 2 must be complete and stable
+**Created:** November 9, 2025 **Status:** Future Enhancement (Post-MVP) **Dependencies:** MVP Phase
+1 & 2 must be complete and stable
 
 ---
 
 ## Overview
 
-This document outlines the plan for integrating AI-assisted features into the Hierarchical Indicator Creation Wizard after the MVP has been deployed and validated with real users.
+This document outlines the plan for integrating AI-assisted features into the Hierarchical Indicator
+Creation Wizard after the MVP has been deployed and validated with real users.
 
 ### Why Add AI Features?
 
-Based on the system architect and AI architect recommendations, AI can significantly reduce indicator creation time:
+Based on the system architect and AI architect recommendations, AI can significantly reduce
+indicator creation time:
+
 - **Time Savings**: 60% faster creation (from 120 minutes → 45 minutes for 12 indicators)
 - **Reduced Errors**: AI-generated schemas validated before user edits
 - **Consistency**: Templates based on DILG SGLGB standards
-- **Lower Barrier to Entry**: Non-technical MLGOO users can create complex schemas without JSON knowledge
+- **Lower Barrier to Entry**: Non-technical MLGOO users can create complex schemas without JSON
+  knowledge
 
 ### Prerequisites Before Starting
 
 **Must Have:**
+
 - ✅ MVP deployed and tested with real MLGOO users
 - ✅ At least 20+ indicators created manually (provides training data/examples)
 - ✅ User feedback collected on pain points and desired features
 - ✅ Budget allocated for Gemini API usage (~₱100/governance area)
 
 **Should Have:**
+
 - ✅ Performance baseline established (current creation time per indicator)
 - ✅ Cost tracking system for API usage
 - ✅ Error monitoring for AI-generated content
@@ -37,13 +42,16 @@ Based on the system architect and AI architect recommendations, AI can significa
 ## Phase 3: AI Template Generation (Week 4)
 
 ### Goal
-Enable MLGOO users to generate complete indicator structures from governance area names using Gemini AI.
+
+Enable MLGOO users to generate complete indicator structures from governance area names using Gemini
+AI.
 
 ### Features to Implement
 
 #### Feature 3.1: AI-Powered Template Suggestion
 
 **User Flow:**
+
 1. User selects governance area (e.g., "Financial Administration and Sustainability")
 2. System shows 3 options:
    - **SGLGB Standard Template** (pre-built, no AI)
@@ -214,6 +222,7 @@ export function AITemplateSelector({ governanceAreaId, onSelect }: Props) {
 ```
 
 **Tasks:**
+
 - [ ] Add Gemini API credentials to backend `.env`
 - [ ] Create `IndicatorTemplateResponse` Pydantic schema
 - [ ] Implement `generate_indicator_template()` in intelligence_service
@@ -229,13 +238,16 @@ export function AITemplateSelector({ governanceAreaId, onSelect }: Props) {
 ## Phase 4: AI Schema Generation (Week 5)
 
 ### Goal
-Enable MLGOO users to generate form_schema and calculation_schema from natural language descriptions.
+
+Enable MLGOO users to generate form_schema and calculation_schema from natural language
+descriptions.
 
 ### Features to Implement
 
 #### Feature 4.1: Form Schema AI Generator
 
 **User Flow:**
+
 1. User selects an indicator in the tree
 2. In Form Schema Builder tab, clicks "AI Generate" button
 3. Modal appears: "Describe what data this indicator should collect"
@@ -451,10 +463,11 @@ export function FormSchemaBuilder({ indicator, onChange }: Props) {
 
 Similar to form schema, but generates conditional logic from natural language scoring rules.
 
-**Example User Input:**
-"100 points if all documents posted, 50 points if at least 5 documents, 0 otherwise"
+**Example User Input:** "100 points if all documents posted, 50 points if at least 5 documents, 0
+otherwise"
 
 **AI Output:**
+
 ```json
 {
   "type": "conditional",
@@ -473,6 +486,7 @@ Similar to form schema, but generates conditional logic from natural language sc
 ```
 
 **Tasks:**
+
 - [ ] Implement `generate_form_schema()` with few-shot prompting
 - [ ] Implement `generate_calculation_schema()`
 - [ ] Add `POST /api/v1/indicators/generate-form-schema` endpoint
@@ -488,6 +502,7 @@ Similar to form schema, but generates conditional logic from natural language sc
 ## Phase 5: AI Validation & Suggestions (Week 6)
 
 ### Goal
+
 Use AI to detect issues and suggest improvements across the entire indicator set.
 
 ### Features to Implement
@@ -495,6 +510,7 @@ Use AI to detect issues and suggest improvements across the entire indicator set
 #### Feature 5.1: Cross-Indicator AI Validation
 
 **User Flow:**
+
 1. User completes all indicators in wizard
 2. In Step 4 (Review), clicks "AI Validate" button
 3. AI analyzes entire indicator set for:
@@ -620,6 +636,7 @@ export function ValidationSummary({ indicators }: Props) {
 ```
 
 **Tasks:**
+
 - [ ] Implement `validate_indicator_set_ai()` service
 - [ ] Add `POST /api/v1/indicators/validate-ai` endpoint
 - [ ] Create AI validation UI component
@@ -715,6 +732,7 @@ gemini_service = GeminiService()
 ### 2. Prompt Engineering Best Practices
 
 **Key Principles:**
+
 1. **Use Structured Output**: Always set `response_mime_type: "application/json"`
 2. **Few-Shot Examples**: Include 2-3 examples in every domain-specific prompt
 3. **Temperature Settings**:
@@ -804,6 +822,7 @@ async def safe_ai_generation(
 ### 4. Monitoring & Analytics
 
 **Metrics to Track:**
+
 - AI generation success rate (%)
 - Average response time (ms)
 - Cost per generation (PHP)
@@ -845,12 +864,14 @@ class AIUsageTracker:
 ### Estimated Costs (Gemini 2.0 Flash)
 
 **Per Operation:**
+
 - Template generation (12 indicators): ~2000 input tokens, ~1500 output tokens = ₱0.06
 - Form schema generation: ~500 input tokens, ~300 output tokens = ₱0.015
 - Calculation schema generation: ~400 input tokens, ~200 output tokens = ₱0.01
 - AI validation (full set): ~3000 input tokens, ~1000 output tokens = ₱0.08
 
 **Per Governance Area (Complete Creation with AI):**
+
 - 1 template generation: ₱0.06
 - 12 form schemas: ₱0.18
 - 12 calculation schemas: ₱0.12
@@ -858,6 +879,7 @@ class AIUsageTracker:
 - **Total: ~₱0.44 per governance area**
 
 **Monthly Estimates:**
+
 - 10 governance areas created/month: ₱4.40
 - 50 schema regenerations/month: ₱0.75
 - 20 AI validations/month: ₱1.60
@@ -882,12 +904,14 @@ class AIUsageTracker:
 ### 1. Prompt Quality Testing
 
 **Test Cases:**
+
 - [ ] Generate templates for all 10 SGLGB governance areas
 - [ ] Verify hierarchical structure correctness (no circular refs, proper numbering)
 - [ ] Check confidence scores are realistic (0.7-0.95 range)
 - [ ] Validate JSON structure matches Pydantic schema
 
 **Success Criteria:**
+
 - 90%+ of templates require no manual restructuring
 - All templates pass backend validation
 - Confidence scores correlate with user satisfaction
@@ -895,12 +919,14 @@ class AIUsageTracker:
 ### 2. Schema Generation Testing
 
 **Test Cases:**
+
 - [ ] Test with 20+ different user descriptions
 - [ ] Verify generated fields have appropriate types
 - [ ] Check MOV field is always included
 - [ ] Test edge cases (vague descriptions, conflicting requirements)
 
 **Success Criteria:**
+
 - 80%+ of schemas usable with minor edits only
 - All schemas pass form_schema validation
 - Field names follow snake_case convention
@@ -908,12 +934,14 @@ class AIUsageTracker:
 ### 3. Validation Accuracy Testing
 
 **Test Cases:**
+
 - [ ] Create indicator sets with known issues (missing fields, circular refs, etc.)
 - [ ] Verify AI detects all seeded issues
 - [ ] Check false positive rate (< 10%)
 - [ ] Test with valid indicator sets (should return no issues)
 
 **Success Criteria:**
+
 - 95%+ issue detection rate
 - < 10% false positive rate
 - All critical errors (calculation refs) caught
@@ -921,12 +949,14 @@ class AIUsageTracker:
 ### 4. Performance Testing
 
 **Test Cases:**
+
 - [ ] Measure P50, P95, P99 response times
 - [ ] Test concurrent AI requests (10 users simultaneously)
 - [ ] Verify timeout handling (> 30 seconds)
 - [ ] Test with rate limiting active
 
 **Success Criteria:**
+
 - P95 response time < 5 seconds
 - No 500 errors under load
 - Graceful degradation when API unavailable
@@ -936,24 +966,28 @@ class AIUsageTracker:
 ## Rollout Plan
 
 ### Phase 1: Internal Testing (Week 4)
+
 - [ ] Deploy AI features to staging environment
 - [ ] SINAG dev team tests with real data
 - [ ] Collect feedback on AI quality
 - [ ] Fix critical bugs
 
 ### Phase 2: Beta Testing (Week 5)
+
 - [ ] Enable AI features for 2-3 MLGOO users (feature flag)
 - [ ] Monitor usage metrics and costs
 - [ ] Collect user feedback surveys
 - [ ] Iterate on prompts based on feedback
 
 ### Phase 3: Limited Release (Week 6)
+
 - [ ] Enable AI for 50% of MLGOO users (A/B test)
 - [ ] Compare creation time: AI-assisted vs. manual
 - [ ] Measure error rates and user satisfaction
 - [ ] Adjust quotas/budgets based on usage
 
 ### Phase 4: General Availability (Week 7)
+
 - [ ] Enable AI for all MLGOO users
 - [ ] Add AI usage to onboarding/tutorials
 - [ ] Monitor costs and performance
@@ -964,6 +998,7 @@ class AIUsageTracker:
 ## Decision Criteria: When to Add AI Features
 
 **Go Ahead if:**
+
 - ✅ MVP has been live for 30+ days
 - ✅ At least 50 indicators created manually (provides examples)
 - ✅ User feedback indicates schema creation is a pain point
@@ -971,6 +1006,7 @@ class AIUsageTracker:
 - ✅ Development team has bandwidth for 3 weeks of work
 
 **Hold Off if:**
+
 - ❌ MVP still has critical bugs or performance issues
 - ❌ Users completing indicator creation in < 30 minutes already
 - ❌ Budget constraints prevent AI API spending
@@ -981,23 +1017,28 @@ class AIUsageTracker:
 ## Future AI Enhancements (Post-Phase 5)
 
 ### 1. Learning from User Edits
+
 - Track which AI-generated schemas get edited
 - Fine-tune prompts based on common corrections
 - Build custom templates from frequently used patterns
 
 ### 2. Intelligent Auto-Complete
+
 - As user types in form builder, suggest next field based on context
 - Pre-fill field properties (label, type) using AI
 
 ### 3. Natural Language Calculation Builder
+
 - "If completion rate is above 80% and all documents submitted, then Pass"
 - AI converts to structured calculation_schema
 
 ### 4. Cross-Language Support
+
 - Generate indicators in English and Filipino
 - Translate existing indicators using AI
 
 ### 5. MOV Requirement Generator
+
 - AI suggests appropriate MOVs based on indicator type
 - Auto-generate photo requirements, document checklists
 
@@ -1006,6 +1047,7 @@ class AIUsageTracker:
 ## Key Files & Endpoints (AI Features)
 
 ### Backend Files
+
 ```
 apps/api/app/
 ├── core/
@@ -1021,6 +1063,7 @@ apps/api/app/
 ```
 
 ### New API Endpoints
+
 ```
 POST /api/v1/indicators/generate-template
   Request: { governance_area_id: int }
@@ -1040,6 +1083,7 @@ POST /api/v1/indicators/validate-ai
 ```
 
 ### Frontend Files
+
 ```
 apps/web/src/
 ├── components/features/indicators/builder/
@@ -1057,6 +1101,7 @@ apps/web/src/
 ## Summary Checklist
 
 **Before Starting AI Implementation:**
+
 - [ ] MVP deployed and stable
 - [ ] User feedback collected
 - [ ] Budget approved (₱50-100/month)
@@ -1064,24 +1109,28 @@ apps/web/src/
 - [ ] Development team allocated (3 weeks)
 
 **Phase 3 (Week 4): Template Generation**
+
 - [ ] Backend: intelligence_service.py with generate_indicator_template()
 - [ ] Backend: POST /api/v1/indicators/generate-template endpoint
 - [ ] Frontend: AITemplateSelector component
 - [ ] Testing: 10 governance areas, measure accuracy
 
 **Phase 4 (Week 5): Schema Generation**
+
 - [ ] Backend: generate_form_schema(), generate_calculation_schema()
 - [ ] Backend: Schema generation endpoints
 - [ ] Frontend: AI Generate buttons in schema builders
 - [ ] Testing: 20+ descriptions, measure edit rate
 
 **Phase 5 (Week 6): AI Validation**
+
 - [ ] Backend: validate_indicator_set_ai()
 - [ ] Backend: POST /api/v1/indicators/validate-ai endpoint
 - [ ] Frontend: AI Validate button in review step
 - [ ] Testing: Seeded issues, false positive rate
 
 **Rollout:**
+
 - [ ] Internal testing (dev team)
 - [ ] Beta testing (2-3 users)
 - [ ] A/B testing (50% rollout)
@@ -1089,6 +1138,5 @@ apps/web/src/
 
 ---
 
-**Last Updated:** November 9, 2025
-**Estimated Timeline:** 3 weeks (after MVP completion)
+**Last Updated:** November 9, 2025 **Estimated Timeline:** 3 weeks (after MVP completion)
 **Estimated Budget:** ₱50-100/month ongoing

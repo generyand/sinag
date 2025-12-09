@@ -1,4 +1,4 @@
-import { useGetLookupsBarangays } from '@sinag/shared';
+import { useGetLookupsBarangays } from "@sinag/shared";
 
 /**
  * Custom hook to fetch barangays for the user management interface.
@@ -8,4 +8,4 @@ import { useGetLookupsBarangays } from '@sinag/shared';
  */
 export function useBarangays(options?: Parameters<typeof useGetLookupsBarangays>[0]) {
   return useGetLookupsBarangays(options);
-} 
+}

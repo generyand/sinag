@@ -10,9 +10,7 @@ export function StudentWorkflowSection() {
           {/* Left Content - Steps */}
           <div className="space-y-8">
             <div className="inline-flex items-center space-x-2 bg-[#fbbf24]/10 px-4 py-2 rounded-full border border-[#fbbf24]/20">
-              <span className="text-sm font-medium text-gray-700">
-                For Students
-              </span>
+              <span className="text-sm font-medium text-gray-700">For Students</span>
             </div>
 
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900">
@@ -30,8 +28,8 @@ export function StudentWorkflowSection() {
                     1. Register & Save QR Code
                   </h3>
                   <p className="text-gray-600">
-                    Complete your registration and save your unique QR code to
-                    your device for quick access.
+                    Complete your registration and save your unique QR code to your device for quick
+                    access.
                   </p>
                 </div>
               </div>
@@ -46,8 +44,7 @@ export function StudentWorkflowSection() {
                     2. Present Your QR Code
                   </h3>
                   <p className="text-gray-600">
-                    Show your QR code to the event scanner for instant
-                    attendance recording.
+                    Show your QR code to the event scanner for instant attendance recording.
                   </p>
                 </div>
               </div>
@@ -58,12 +55,10 @@ export function StudentWorkflowSection() {
                   <User className="w-6 h-6 text-black" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    3. Enjoy the Event
-                  </h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">3. Enjoy the Event</h3>
                   <p className="text-gray-600">
-                    Relax and enjoy the event knowing your attendance has been
-                    automatically recorded.
+                    Relax and enjoy the event knowing your attendance has been automatically
+                    recorded.
                   </p>
                 </div>
               </div>
@@ -74,9 +69,7 @@ export function StudentWorkflowSection() {
           <div className="relative">
             <div className="bg-white rounded-2xl shadow-2xl p-8 border border-gray-200">
               <div className="text-center mb-6">
-                <h3 className="text-xl font-semibold text-gray-900">
-                  Student View
-                </h3>
+                <h3 className="text-xl font-semibold text-gray-900">Student View</h3>
               </div>
 
               <div className="space-y-6">
@@ -84,13 +77,11 @@ export function StudentWorkflowSection() {
                 <div className="bg-[#fbbf24]/10 rounded-xl p-4 border border-[#fbbf24]/20">
                   <div className="flex items-center space-x-3 mb-2">
                     <QrCode className="w-5 h-5 text-[#fbbf24]" />
-                    <span className="font-semibold text-gray-900">
-                      1. Register & Save QR Code
-                    </span>
+                    <span className="font-semibold text-gray-900">1. Register & Save QR Code</span>
                   </div>
                   <p className="text-sm text-gray-600">
-                    Complete your registration and save your unique QR code to
-                    your device for quick access.
+                    Complete your registration and save your unique QR code to your device for quick
+                    access.
                   </p>
                 </div>
 
@@ -98,13 +89,10 @@ export function StudentWorkflowSection() {
                 <div className="bg-[#fbbf24]/10 rounded-xl p-4 border border-[#fbbf24]/20">
                   <div className="flex items-center space-x-3 mb-2">
                     <Smartphone className="w-5 h-5 text-[#fbbf24]" />
-                    <span className="font-semibold text-gray-900">
-                      2. Present Your QR Code
-                    </span>
+                    <span className="font-semibold text-gray-900">2. Present Your QR Code</span>
                   </div>
                   <p className="text-sm text-gray-600">
-                    Show your QR code to the event scanner for instant
-                    attendance recording.
+                    Show your QR code to the event scanner for instant attendance recording.
                   </p>
                 </div>
 
@@ -112,13 +100,11 @@ export function StudentWorkflowSection() {
                 <div className="bg-[#fbbf24]/10 rounded-xl p-4 border border-[#fbbf24]/20">
                   <div className="flex items-center space-x-3 mb-2">
                     <User className="w-5 h-5 text-[#fbbf24]" />
-                    <span className="font-semibold text-gray-900">
-                      3. Enjoy the Event
-                    </span>
+                    <span className="font-semibold text-gray-900">3. Enjoy the Event</span>
                   </div>
                   <p className="text-sm text-gray-600">
-                    Relax and enjoy the event knowing your attendance has been
-                    automatically recorded.
+                    Relax and enjoy the event knowing your attendance has been automatically
+                    recorded.
                   </p>
                 </div>
               </div>

@@ -1,10 +1,7 @@
 # Epic 1.0: Indicator Management - Core CRUD & Versioning System ✅ COMPLETE
 
-**PRD Reference:** FR-4.1.1, FR-4.4.2
-**Duration:** 5-7 days
-**Status:** ✅ **COMPLETED** - All 5 stories complete with 37 tasks
-**Completion Date:** November 7, 2025
-**Dependencies:** None
+**PRD Reference:** FR-4.1.1, FR-4.4.2 **Duration:** 5-7 days **Status:** ✅ **COMPLETED** - All 5
+stories complete with 37 tasks **Completion Date:** November 7, 2025 **Dependencies:** None
 
 ---
 
@@ -50,7 +47,8 @@
     - `apps/api/app/db/enums.py`
   - **Dependencies:** None
   - **Acceptance Criteria:**
-    - Create `RuleType` enum with values: AND_ALL, OR_ANY, PERCENTAGE_THRESHOLD, COUNT_THRESHOLD, MATCH_VALUE, BBI_FUNCTIONALITY_CHECK
+    - Create `RuleType` enum with values: AND_ALL, OR_ANY, PERCENTAGE_THRESHOLD, COUNT_THRESHOLD,
+      MATCH_VALUE, BBI_FUNCTIONALITY_CHECK
     - Create `BBIStatus` enum with values: FUNCTIONAL, NON_FUNCTIONAL
     - Enums properly inherit from str and enum.Enum for SQLAlchemy compatibility
   - **Tech:** Python enum, SQLAlchemy
@@ -88,8 +86,7 @@
 
 ## Story 1.2: Backend Indicator Service Layer with Versioning Logic
 
-**Duration:** 2 days
-**Dependencies:** 1.1 (Database schema must exist)
+**Duration:** 2 days **Dependencies:** 1.1 (Database schema must exist)
 
 ### Atomic Tasks
 
@@ -112,7 +109,8 @@
     - `apps/api/app/services/indicator_service.py`
   - **Dependencies:** 1.2.1
   - **Acceptance Criteria:**
-    - Method signature: `create_indicator(db: Session, data: IndicatorCreate, user_id: int) -> Indicator`
+    - Method signature:
+      `create_indicator(db: Session, data: IndicatorCreate, user_id: int) -> Indicator`
     - Validate governance_area_id exists
     - Validate parent_id exists if provided
     - Prevent circular parent relationships
@@ -143,7 +141,8 @@
     - `apps/api/app/services/indicator_service.py`
   - **Dependencies:** 1.2.1
   - **Acceptance Criteria:**
-    - Method signature: `list_indicators(db: Session, governance_area_id: int | None = None, is_active: bool | None = None, search: str | None = None, skip: int = 0, limit: int = 100) -> list[Indicator]`
+    - Method signature:
+      `list_indicators(db: Session, governance_area_id: int | None = None, is_active: bool | None = None, search: str | None = None, skip: int = 0, limit: int = 100) -> list[Indicator]`
     - Filter by governance_area_id if provided
     - Filter by is_active if provided
     - Search by name (case-insensitive) if search term provided
@@ -158,7 +157,8 @@
     - `apps/api/app/services/indicator_service.py`
   - **Dependencies:** 1.2.1, 1.2.3
   - **Acceptance Criteria:**
-    - Method signature: `update_indicator(db: Session, indicator_id: int, data: IndicatorUpdate, user_id: int) -> Indicator`
+    - Method signature:
+      `update_indicator(db: Session, indicator_id: int, data: IndicatorUpdate, user_id: int) -> Indicator`
     - Fetch existing indicator
     - If form_schema, calculation_schema, or remark_schema changed:
       - Archive current version to indicators_history
@@ -177,7 +177,8 @@
     - `apps/api/app/services/indicator_service.py`
   - **Dependencies:** 1.2.1, 1.2.3
   - **Acceptance Criteria:**
-    - Method signature: `deactivate_indicator(db: Session, indicator_id: int, user_id: int) -> Indicator`
+    - Method signature:
+      `deactivate_indicator(db: Session, indicator_id: int, user_id: int) -> Indicator`
     - Fetch indicator
     - Set is_active to False (soft delete)
     - Do NOT delete from database
@@ -192,7 +193,8 @@
     - `apps/api/app/services/indicator_service.py`
   - **Dependencies:** 1.2.1
   - **Acceptance Criteria:**
-    - Method signature: `get_indicator_history(db: Session, indicator_id: int) -> list[IndicatorHistory]`
+    - Method signature:
+      `get_indicator_history(db: Session, indicator_id: int) -> list[IndicatorHistory]`
     - Fetch all versions from indicators_history for given indicator_id
     - Include current version from indicators table
     - Order by version DESC (newest first)
@@ -206,7 +208,8 @@
     - `apps/api/app/services/indicator_service.py`
   - **Dependencies:** 1.2.1
   - **Acceptance Criteria:**
-    - Helper function: `_check_circular_parent(db: Session, indicator_id: int, parent_id: int) -> bool`
+    - Helper function:
+      `_check_circular_parent(db: Session, indicator_id: int, parent_id: int) -> bool`
     - Recursively check if parent_id eventually leads back to indicator_id
     - Return True if circular relationship detected
     - Raise ValueError with clear message if circular detected
@@ -218,8 +221,7 @@
 
 ## Story 1.3: Backend Indicator API Endpoints
 
-**Duration:** 1 day
-**Dependencies:** 1.2 (Service layer must exist)
+**Duration:** 1 day **Dependencies:** 1.2 (Service layer must exist)
 
 ### Atomic Tasks
 
@@ -228,10 +230,12 @@
     - `apps/api/app/schemas/indicator.py`
   - **Dependencies:** None
   - **Acceptance Criteria:**
-    - `IndicatorBase` schema with common fields (name, description, governance_area_id, parent_id, is_active, is_profiling_only, is_auto_calculable, technical_notes_text)
+    - `IndicatorBase` schema with common fields (name, description, governance_area_id, parent_id,
+      is_active, is_profiling_only, is_auto_calculable, technical_notes_text)
     - `IndicatorCreate` schema inheriting from IndicatorBase
     - `IndicatorUpdate` schema with all fields optional
-    - `IndicatorResponse` schema including id, version, created_at, updated_at, and nested governance_area/parent
+    - `IndicatorResponse` schema including id, version, created_at, updated_at, and nested
+      governance_area/parent
     - `IndicatorHistoryResponse` schema for version history
     - Proper type hints (int, str, bool, JSONB as dict)
     - Validation: name required, min length 3 characters
@@ -273,7 +277,8 @@
   - **Acceptance Criteria:**
     - Endpoint: `@router.get("/", response_model=list[IndicatorResponse])`
     - Requires MLGOO_DILG role
-    - Query parameters: governance_area_id (optional), is_active (optional), search (optional), skip (default 0), limit (default 100)
+    - Query parameters: governance_area_id (optional), is_active (optional), search (optional), skip
+      (default 0), limit (default 100)
     - Calls indicator_service.list_indicators()
     - Returns list of indicators
     - Returns empty list if no results
@@ -330,7 +335,8 @@
     - `apps/api/app/api/v1/indicators.py`
   - **Dependencies:** 1.3.2
   - **Acceptance Criteria:**
-    - Endpoint: `@router.get("/{indicator_id}/history", response_model=list[IndicatorHistoryResponse])`
+    - Endpoint:
+      `@router.get("/{indicator_id}/history", response_model=list[IndicatorHistoryResponse])`
     - Requires MLGOO_DILG role
     - Path parameter: indicator_id (int)
     - Calls indicator_service.get_indicator_history()
@@ -356,8 +362,7 @@
 
 ## Story 1.4: Frontend Indicator List & Detail Views
 
-**Duration:** 2 days
-**Dependencies:** 1.3 (API endpoints must exist), `pnpm generate-types`
+**Duration:** 2 days **Dependencies:** 1.3 (API endpoints must exist), `pnpm generate-types`
 
 ### Atomic Tasks
 
@@ -416,7 +421,8 @@
     - Uses useIndicators() hook to fetch data
     - Displays loading state (Skeleton or Spinner)
     - Displays error state with user-friendly message
-    - Renders table with columns: Name, Governance Area, Active Status, Auto-Calculable, Version, Actions
+    - Renders table with columns: Name, Governance Area, Active Status, Auto-Calculable, Version,
+      Actions
     - Search input (debounced) to filter by name
     - Filter dropdown for governance area
     - Filter toggle for active/inactive
@@ -519,8 +525,7 @@
 
 ## Story 1.5: Backend & Frontend Testing for Core CRUD
 
-**Duration:** 1 day
-**Dependencies:** 1.2, 1.3, 1.4
+**Duration:** 1 day **Dependencies:** 1.2, 1.3, 1.4
 
 ### Atomic Tasks
 
@@ -625,12 +630,11 @@
 
 ## Summary ✅
 
-**Epic 1.0 Total Atomic Tasks:** 38 tasks
-**Status:** COMPLETE (37/37 tasks - 100%)
-**Completion Date:** November 7, 2025
-**Estimated Total Duration:** 5-7 days
+**Epic 1.0 Total Atomic Tasks:** 38 tasks **Status:** COMPLETE (37/37 tasks - 100%) **Completion
+Date:** November 7, 2025 **Estimated Total Duration:** 5-7 days
 
 ### Task Breakdown by Story:
+
 - Story 1.1 (Database): ✅ 5/5 tasks (9 hours)
 - Story 1.2 (Service Layer): ✅ 8/8 tasks (16 hours)
 - Story 1.3 (API Endpoints): ✅ 9/9 tasks (13.5 hours)
@@ -640,12 +644,10 @@
 **Total: 76 hours across 5 stories - 100% COMPLETE**
 
 ### Implementation Summary:
-✅ Complete indicator CRUD operations with versioning
-✅ Full database schema with versioning and history tracking
-✅ Comprehensive backend service layer with audit logging
-✅ RESTful API endpoints with proper access control
-✅ Frontend indicator list, detail, create, and edit views
-✅ IndicatorTableRow component for table-based display
-✅ Test coverage for backend and frontend
+
+✅ Complete indicator CRUD operations with versioning ✅ Full database schema with versioning and
+history tracking ✅ Comprehensive backend service layer with audit logging ✅ RESTful API endpoints
+with proper access control ✅ Frontend indicator list, detail, create, and edit views ✅
+IndicatorTableRow component for table-based display ✅ Test coverage for backend and frontend
 
 All tasks completed with clear acceptance criteria and file paths.

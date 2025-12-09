@@ -6,64 +6,40 @@ import { LogIn, Menu, Sparkles } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
+const NavLinks = ({
+  mobile = false,
+  scrollToSection,
+}: {
+  mobile?: boolean;
+  scrollToSection: (sectionId: string) => void;
+}) => (
+  <>
+    {[
+      { id: "home", label: "Home" },
+      { id: "problems", label: "The Challenge" },
+      { id: "process", label: "The Workflow" },
+      { id: "coverage", label: "Coverage" },
+    ].map((link) => (
+      <button
+        key={link.id}
+        onClick={() => scrollToSection(link.id)}
+        className={`text-foreground hover:text-[#fbbf24] hover:font-semibold transition-all duration-300 cursor-pointer bg-transparent border-none outline-none rounded-md hover:bg-[#fbbf24]/10 ${
+          mobile
+            ? "block w-full text-left px-4 py-3 text-lg font-medium"
+            : "p-2 transform hover:scale-105"
+        }`}
+      >
+        {link.label}
+      </button>
+    ))}
+  </>
+);
+
 export function Header() {
   const [isVisible, setIsVisible] = useState(false);
   const [isLoginHovered, setIsLoginHovered] = useState(false);
   const [showLoginAnimation, setShowLoginAnimation] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-
-  useEffect(() => {
-    // Trigger header animations on mount
-    const timer = setTimeout(() => {
-      setIsVisible(true);
-    }, 200);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Smooth scroll function with header offset
-  const scrollToSection = (sectionId: string) => {
-    setIsOpen(false); // Close mobile menu if open
-    const element = document.getElementById(sectionId);
-    if (element) {
-      const headerHeight = 64; // Height of the sticky header (h-16 = 64px)
-      const elementPosition = element.offsetTop - headerHeight;
-
-      window.scrollTo({
-        top: elementPosition,
-        behavior: "smooth",
-      });
-    }
-  };
-
-  const handleLoginClick = () => {
-    setShowLoginAnimation(true);
-    setTimeout(() => {
-      window.location.href = "/login";
-    }, 400);
-  };
-
-  const NavLinks = ({ mobile = false }: { mobile?: boolean }) => (
-    <>
-      {[
-        { id: "home", label: "Home" },
-        { id: "problems", label: "The Challenge" },
-        { id: "process", label: "The Workflow" },
-        { id: "coverage", label: "Coverage" },
-      ].map((link) => (
-        <button
-          key={link.id}
-          onClick={() => scrollToSection(link.id)}
-          className={`text-foreground hover:text-[#fbbf24] hover:font-semibold transition-all duration-300 cursor-pointer bg-transparent border-none outline-none rounded-md hover:bg-[#fbbf24]/10 ${
-            mobile
-              ? "block w-full text-left px-4 py-3 text-lg font-medium"
-              : "p-2 transform hover:scale-105"
-          }`}
-        >
-          {link.label}
-        </button>
-      ))}
-    </>
-  );
 
   return (
     <header className="border-b border-gray-200 sticky top-0 z-50 shadow-sm backdrop-blur-md bg-white/80 supports-[backdrop-filter]:bg-white/60">
@@ -105,7 +81,7 @@ export function Header() {
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
             }`}
           >
-            <NavLinks />
+            <NavLinks scrollToSection={scrollToSection} />
           </nav>
 
           {/* Desktop CTA Button */}
@@ -173,7 +149,7 @@ export function Header() {
                 </SheetHeader>
 
                 <nav className="flex flex-col space-y-2">
-                  <NavLinks mobile />
+                  <NavLinks mobile scrollToSection={scrollToSection} />
                 </nav>
 
                 <div className="mt-auto px-4 pb-8">

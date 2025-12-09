@@ -17,7 +17,11 @@ export default function IndicatorDetailPage() {
   const indicatorId = parseInt(params.id as string, 10);
 
   // Fetch indicator and history
-  const { data: indicator, isLoading: isLoadingIndicator, error: indicatorError } = useIndicator(indicatorId);
+  const {
+    data: indicator,
+    isLoading: isLoadingIndicator,
+    error: indicatorError,
+  } = useIndicator(indicatorId);
   const { data: history, isLoading: isLoadingHistory } = useIndicatorHistory(indicatorId);
 
   // Redirect unauthenticated users to login

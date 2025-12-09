@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useCalculationRuleStore } from '@/store/useCalculationRuleStore';
-import type { FormSchema } from '@sinag/shared';
-import { ConditionGroupItem } from './ConditionGroupItem';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
+import { useCalculationRuleStore } from "@/store/useCalculationRuleStore";
+import type { FormSchema } from "@sinag/shared";
+import { ConditionGroupItem } from "./ConditionGroupItem";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 
 interface ConditionGroupListProps {
   /** Form schema for field reference validation */
@@ -40,11 +40,7 @@ export function ConditionGroupList({ formSchema }: ConditionGroupListProps) {
           )}
 
           {/* Condition Group */}
-          <ConditionGroupItem
-            group={group}
-            groupIndex={index}
-            formSchema={formSchema}
-          />
+          <ConditionGroupItem group={group} groupIndex={index} formSchema={formSchema} />
         </div>
       ))}
 

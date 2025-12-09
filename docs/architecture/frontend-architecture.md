@@ -1,6 +1,8 @@
 # Frontend Architecture
 
-This document provides comprehensive visual documentation of the SINAG Next.js frontend architecture, including App Router structure, component organization, state management, data fetching patterns, and authentication flow.
+This document provides comprehensive visual documentation of the SINAG Next.js frontend
+architecture, including App Router structure, component organization, state management, data
+fetching patterns, and authentication flow.
 
 ## Table of Contents
 
@@ -83,8 +85,10 @@ graph TB
 
 **Key Directories:**
 
-- **app/**: Next.js App Router with route groups for public (`(auth)`) and authenticated (`(app)`) pages
-- **components/features/**: Domain-specific components organized by feature (assessments, users, analytics)
+- **app/**: Next.js App Router with route groups for public (`(auth)`) and authenticated (`(app)`)
+  pages
+- **components/features/**: Domain-specific components organized by feature (assessments, users,
+  analytics)
 - **components/shared/**: Reusable cross-feature components (tables, dialogs, file uploaders)
 - **components/ui/**: shadcn/ui primitives (buttons, inputs, modals)
 - **hooks/**: Custom React hooks wrapping auto-generated API clients
@@ -860,16 +864,16 @@ export function BLGUDashboard() {
 
 **Decision Matrix:**
 
-| Feature | Server Component | Client Component |
-|---------|------------------|------------------|
-| Event handlers (onClick, onChange) | ❌ | ✅ |
-| React hooks (useState, useEffect) | ❌ | ✅ |
-| Zustand stores | ❌ | ✅ |
-| TanStack Query | ❌ | ✅ |
-| Server-only code (database, fs) | ✅ | ❌ |
-| SEO metadata | ✅ | ❌ |
-| Automatic code splitting | ✅ | ✅ |
-| Streaming | ✅ | ❌ |
+| Feature                            | Server Component | Client Component |
+| ---------------------------------- | ---------------- | ---------------- |
+| Event handlers (onClick, onChange) | ❌               | ✅               |
+| React hooks (useState, useEffect)  | ❌               | ✅               |
+| Zustand stores                     | ❌               | ✅               |
+| TanStack Query                     | ❌               | ✅               |
+| Server-only code (database, fs)    | ✅               | ❌               |
+| SEO metadata                       | ✅               | ❌               |
+| Automatic code splitting           | ✅               | ✅               |
+| Streaming                          | ✅               | ❌               |
 
 ---
 
@@ -988,7 +992,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 - Server Components optimize initial load performance and SEO
 - shadcn/ui provides accessible, customizable component primitives
 - Tailwind CSS enables rapid UI development with consistent design system
-- Five user roles with dedicated routes: MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER, KATUPARAN_CENTER_USER
+- Five user roles with dedicated routes: MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER,
+  KATUPARAN_CENTER_USER
 - External analytics route provides read-only aggregated data access for research
 
-*Last updated: December 2025*
+_Last updated: December 2025_

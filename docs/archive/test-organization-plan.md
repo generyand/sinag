@@ -1,9 +1,7 @@
 # Test Organization and Coverage Plan
 
-**Created:** 2025-11-04
-**Completed:** 2025-11-04
-**Status:** ✅ Phases 1-3 Complete - All Tests Passing
-**Owner:** Development Team
+**Created:** 2025-11-04 **Completed:** 2025-11-04 **Status:** ✅ Phases 1-3 Complete - All Tests
+Passing **Owner:** Development Team
 
 ## Completion Summary
 
@@ -26,11 +24,11 @@
   - All tests follow dependency override pattern from existing codebase
   - Comprehensive RBAC testing for authentication and authorization
 
-**Final Test Count:** 227 tests (144 original + 83 new)
-**Success Rate:** 100% (all 227 tests passing)
-**Test Execution Time:** ~100 seconds
+**Final Test Count:** 227 tests (144 original + 83 new) **Success Rate:** 100% (all 227 tests
+passing) **Test Execution Time:** ~100 seconds
 
 **Key Technical Achievements:**
+
 - Adopted dependency override pattern instead of JWT token authentication for tests
 - Implemented autouse fixtures to prevent test state leakage
 - Used UUID-based unique email addresses to avoid test conflicts
@@ -41,19 +39,25 @@
 
 ## Overview
 
-This document tracks the comprehensive test reorganization and coverage improvement initiative for the SINAG project. The goal is to ensure all tests follow best practices for organization and placement while filling critical coverage gaps.
+This document tracks the comprehensive test reorganization and coverage improvement initiative for
+the SINAG project. The goal is to ensure all tests follow best practices for organization and
+placement while filling critical coverage gaps.
 
 ---
 
 ## Executive Summary
 
 ### Current State
-- **Misplaced Files:** 2 test files in wrong location (`apps/api/` root instead of `apps/api/tests/`)
-- **Organization Issues:** No subdirectory structure for test types (services, workers, workflows, etc.)
+
+- **Misplaced Files:** 2 test files in wrong location (`apps/api/` root instead of
+  `apps/api/tests/`)
+- **Organization Issues:** No subdirectory structure for test types (services, workers, workflows,
+  etc.)
 - **Coverage Gaps:** Many routers and services lack dedicated tests
 - **Missing Files:** No `__init__.py` files in test directories
 
 ### Target State
+
 - All tests properly organized in `apps/api/tests/` with clear subdirectory structure
 - Comprehensive test coverage for all routers and services
 - Proper Python package structure with `__init__.py` files
@@ -116,12 +120,14 @@ This document tracks the comprehensive test reorganization and coverage improvem
   - [x] `test_assessor_story_4_1.py`
   - [x] `test_assessor_story_4_2.py`
   - [x] `test_assessor_story_4_3.py`
-- [x] Move `tests/test_blg_submission_workflow.py` → `tests/workflows/test_blg_submission_workflow.py`
+- [x] Move `tests/test_blg_submission_workflow.py` →
+      `tests/workflows/test_blg_submission_workflow.py`
 - [x] Create `tests/workflows/__init__.py`
 
 ### Algorithm Tests
 
-- [x] Move `tests/test_classification_algorithm.py` → `tests/algorithms/test_classification_algorithm.py`
+- [x] Move `tests/test_classification_algorithm.py` →
+      `tests/algorithms/test_classification_algorithm.py`
 - [x] Create `tests/algorithms/__init__.py`
 
 ### Integration Tests
@@ -379,22 +385,26 @@ def test_[task_name]_success(db_session, mocker):
 ## Success Criteria
 
 ### Phase 1 Complete When:
+
 - [x] All `__init__.py` files created
 - [x] All subdirectories created
 - [x] All misplaced files moved
 - [x] `pytest` runs successfully with no import errors
 
 ### Phase 2 Complete When:
+
 - [x] All existing tests reorganized into subdirectories
 - [x] All tests pass after reorganization
 - [x] No test files remain in root `tests/` except `conftest.py` and optionally `test_health.py`
 
 ### Phase 3 Complete When:
+
 - [x] Tests created for auth, users, and critical services
 - [x] All new tests pass
 - [x] RBAC properly tested for auth and user endpoints
 
 ### Phase 4 Complete When:
+
 - [ ] All routers have dedicated endpoint tests
 - [ ] All services have unit tests
 - [ ] All workers have tests
@@ -406,18 +416,21 @@ def test_[task_name]_success(db_session, mocker):
 ## Metrics
 
 ### Initial Test Coverage (Before)
+
 - **Router Tests:** 1/7 (14%) - Only analytics had direct router test
 - **Service Tests:** 2/10 (20%) - Only analytics and intelligence
 - **Worker Tests:** 1/3 (33%) - Only intelligence_worker (notifications misplaced)
 - **Total Tests:** 144
 
 ### Final Test Coverage (After)
+
 - **Router Tests:** 3/7 (43%) - Added auth and users ✅
 - **Service Tests:** 3/10 (30%) - Added user_service ✅
 - **Worker Tests:** 2/2 (100%) - Organized and complete ✅
 - **Total Tests:** 227 (83 new tests added) ✅
 
 ### Test Count Tracking
+
 - **Before:** 144 tests in flat structure
 - **After Phase 1-2:** 144 tests reorganized into subdirectories ✅
 - **After Phase 3:** 227 tests (+83 new critical tests) ✅
@@ -428,14 +441,17 @@ def test_[task_name]_success(db_session, mocker):
 ## Notes
 
 ### Decisions Made
+
 - Keep story-based tests in `workflows/` subdirectory (provide good integration coverage)
 - Service tests should exist even if routers are tested via story tests (unit test service logic)
 - `test_health.py` can stay in root or move to `tests/api/v1/test_system.py` later
 
 ### Blockers
+
 - None currently
 
 ### Questions
+
 - Should we add pytest-cov to measure coverage metrics?
 - Should we set up CI/CD test coverage reporting?
 - Should we add performance/load tests now or later?

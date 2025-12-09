@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Info,
   TrendingUp,
@@ -16,8 +16,8 @@ import {
   XCircle,
   BarChart3,
   Target,
-} from 'lucide-react';
-import { useGetExternalAnalyticsDashboard } from '@sinag/shared';
+} from "lucide-react";
+import { useGetExternalAnalyticsDashboard } from "@sinag/shared";
 import {
   BarChart,
   Bar,
@@ -30,10 +30,10 @@ import {
   PieChart,
   Pie,
   Cell,
-} from 'recharts';
-import { AxiosError } from 'axios';
-import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
+} from "recharts";
+import { AxiosError } from "axios";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 
 /**
  * Katuparan Center Dashboard Page
@@ -65,16 +65,16 @@ export default function KatuparanDashboardPage() {
   const axiosError = error as AxiosError<{ detail: string }>;
   const isInsufficientData =
     axiosError?.response?.status === 400 &&
-    axiosError?.response?.data?.detail?.includes('Insufficient data');
+    axiosError?.response?.data?.detail?.includes("Insufficient data");
 
   // Pie chart colors
-  const COLORS = ['#22c55e', '#ef4444'];
+  const COLORS = ["#22c55e", "#ef4444"];
 
   // Prepare pie chart data
   const pieData = data?.overall_compliance
     ? [
-        { name: 'Passed', value: data.overall_compliance.passed_count },
-        { name: 'Failed', value: data.overall_compliance.failed_count },
+        { name: "Passed", value: data.overall_compliance.passed_count },
+        { name: "Failed", value: data.overall_compliance.failed_count },
       ]
     : [];
 
@@ -85,7 +85,8 @@ export default function KatuparanDashboardPage() {
         <ShieldCheck className="h-4 w-4 text-blue-600" />
         <AlertDescription className="text-blue-800">
           <strong>Data Privacy Notice:</strong> All data displayed on this dashboard is aggregated
-          and anonymized. Individual barangay performance cannot be identified from this information.
+          and anonymized. Individual barangay performance cannot be identified from this
+          information.
         </AlertDescription>
       </Alert>
 
@@ -164,9 +165,7 @@ export default function KatuparanDashboardPage() {
                   <Target className="h-5 w-5 text-primary" />
                   <CardTitle>Municipal SGLGB Status</CardTitle>
                 </div>
-                <CardDescription>
-                  CY {new Date().getFullYear()} Assessment Results
-                </CardDescription>
+                <CardDescription>CY {new Date().getFullYear()} Assessment Results</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4 mb-4">
@@ -199,10 +198,8 @@ export default function KatuparanDashboardPage() {
                 </div>
                 <div className="text-center pt-2 border-t">
                   <p className="text-sm text-muted-foreground">
-                    Total Barangays Assessed:{' '}
-                    <span className="font-semibold">
-                      {data.overall_compliance.total_barangays}
-                    </span>
+                    Total Barangays Assessed:{" "}
+                    <span className="font-semibold">{data.overall_compliance.total_barangays}</span>
                   </p>
                 </div>
               </CardContent>
@@ -220,7 +217,9 @@ export default function KatuparanDashboardPage() {
               <CardContent>
                 {/* Accessible data table for screen readers */}
                 <table className="sr-only" aria-label="Compliance distribution data">
-                  <caption>SGLGB compliance distribution showing passed and failed barangays</caption>
+                  <caption>
+                    SGLGB compliance distribution showing passed and failed barangays
+                  </caption>
                   <thead>
                     <tr>
                       <th scope="col">Status</th>
@@ -235,10 +234,10 @@ export default function KatuparanDashboardPage() {
                         <td>{item.value}</td>
                         <td>
                           {data?.overall_compliance
-                            ? item.name === 'Passed'
+                            ? item.name === "Passed"
                               ? `${data.overall_compliance.pass_percentage.toFixed(1)}%`
                               : `${data.overall_compliance.fail_percentage.toFixed(1)}%`
-                            : 'N/A'}
+                            : "N/A"}
                         </td>
                       </tr>
                     ))}
@@ -317,7 +316,7 @@ export default function KatuparanDashboardPage() {
               <div
                 className="h-[350px] mb-6"
                 role="img"
-                aria-label={`Bar chart showing governance area performance. ${data.governance_area_performance.areas.map((a) => `${a.area_name}: ${a.pass_percentage.toFixed(1)}% pass rate`).join(', ')}`}
+                aria-label={`Bar chart showing governance area performance. ${data.governance_area_performance.areas.map((a) => `${a.area_name}: ${a.pass_percentage.toFixed(1)}% pass rate`).join(", ")}`}
               >
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
@@ -345,19 +344,19 @@ export default function KatuparanDashboardPage() {
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {data.governance_area_performance.areas.map((area) => {
                   // Determine if Core or Essential based on area_type field
-                  const isCore = area.area_type === 'Core';
+                  const isCore = area.area_type === "Core";
 
                   return (
                     <div
                       key={area.area_code}
                       className={`rounded-lg border p-4 ${
-                        isCore ? 'border-l-4 border-l-primary' : 'border-l-4 border-l-amber-500'
+                        isCore ? "border-l-4 border-l-primary" : "border-l-4 border-l-amber-500"
                       }`}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <h4 className="font-semibold text-sm">{area.area_name}</h4>
-                        <Badge variant={isCore ? 'default' : 'secondary'} className="text-xs">
-                          {isCore ? 'Core' : 'Essential'}
+                        <Badge variant={isCore ? "default" : "secondary"} className="text-xs">
+                          {isCore ? "Core" : "Essential"}
                         </Badge>
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-sm">
@@ -373,7 +372,7 @@ export default function KatuparanDashboardPage() {
                         </div>
                       </div>
                       <div className="mt-2 pt-2 border-t text-xs text-muted-foreground">
-                        Pass Rate:{' '}
+                        Pass Rate:{" "}
                         <span className="font-medium text-foreground">
                           {area.pass_percentage.toFixed(1)}%
                         </span>
@@ -407,12 +406,12 @@ export default function KatuparanDashboardPage() {
                       <div
                         className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${
                           index === 0
-                            ? 'bg-red-500'
+                            ? "bg-red-500"
                             : index === 1
-                            ? 'bg-red-400'
-                            : index === 2
-                            ? 'bg-orange-400'
-                            : 'bg-orange-300'
+                              ? "bg-red-400"
+                              : index === 2
+                                ? "bg-orange-400"
+                                : "bg-orange-300"
                         }`}
                       >
                         #{index + 1}
@@ -468,18 +467,21 @@ export default function KatuparanDashboardPage() {
               {data.ai_insights.insights.length > 0 ? (
                 <div className="space-y-6">
                   {data.ai_insights.insights.map((insight, index) => (
-                    <div key={index} className="rounded-lg border p-4 bg-gradient-to-r from-amber-50/50 to-transparent">
+                    <div
+                      key={index}
+                      className="rounded-lg border p-4 bg-gradient-to-r from-amber-50/50 to-transparent"
+                    >
                       <div className="flex items-start gap-3">
                         <div
                           className={`px-2.5 py-1 rounded text-xs font-semibold ${
-                            insight.priority === 'high'
-                              ? 'bg-red-100 text-red-800'
-                              : insight.priority === 'medium'
-                              ? 'bg-amber-100 text-amber-800'
-                              : 'bg-blue-100 text-blue-800'
+                            insight.priority === "high"
+                              ? "bg-red-100 text-red-800"
+                              : insight.priority === "medium"
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-blue-100 text-blue-800"
                           }`}
                         >
-                          {(insight.priority || 'low').toUpperCase()} PRIORITY
+                          {(insight.priority || "low").toUpperCase()} PRIORITY
                         </div>
                         <Badge variant="outline" className="text-xs">
                           {insight.governance_area_name}

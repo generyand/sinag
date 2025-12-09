@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TemplateEditor } from './TemplateEditor';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { TemplateEditor } from "./TemplateEditor";
 
 interface DefaultTemplateEditorProps {
   template: string;

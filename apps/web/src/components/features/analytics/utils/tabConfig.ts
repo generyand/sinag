@@ -1,12 +1,4 @@
-import {
-  Building2,
-  BarChart3,
-  PieChart,
-  Map,
-  Table2,
-  Layers,
-  type LucideIcon,
-} from "lucide-react";
+import { Building2, BarChart3, PieChart, Map, Table2, Layers, type LucideIcon } from "lucide-react";
 
 /**
  * Analytics tab configuration.

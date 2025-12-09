@@ -8,33 +8,33 @@
  * - Data is loaded and displayed
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderWithProviders, screen, waitFor, userEvent } from '../test-utils';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { renderWithProviders, screen, waitFor, userEvent } from "../test-utils";
 
-describe('Dashboard to Form Navigation Integration', () => {
+describe("Dashboard to Form Navigation Integration", () => {
   beforeEach(() => {
     // Reset mocks before each test
     vi.clearAllMocks();
   });
 
-  it('should navigate from dashboard to form when clicking indicator', async () => {
+  it("should navigate from dashboard to form when clicking indicator", async () => {
     // This test would require actual dashboard and form components
     // For now, we're creating a skeleton that demonstrates the pattern
 
     // Mock assessment data
     const mockAssessment = {
       assessment_id: 1,
-      status: 'DRAFT',
+      status: "DRAFT",
       total_indicators: 5,
       completed_indicators: 2,
       governance_areas: [
         {
           governance_area_id: 1,
-          governance_area_name: 'Governance Area 1',
+          governance_area_name: "Governance Area 1",
           indicators: [
             {
               indicator_id: 1,
-              indicator_name: 'Test Indicator',
+              indicator_name: "Test Indicator",
               is_complete: false,
               response_id: 1,
             },
@@ -45,7 +45,7 @@ describe('Dashboard to Form Navigation Integration', () => {
 
     // Mock API response
     const mockPush = vi.fn();
-    vi.mock('next/navigation', () => ({
+    vi.mock("next/navigation", () => ({
       useRouter: () => ({ push: mockPush }),
     }));
 
@@ -57,15 +57,13 @@ describe('Dashboard to Form Navigation Integration', () => {
     expect(mockAssessment).toBeDefined();
   });
 
-  it('should load indicator data when form page renders', async () => {
+  it("should load indicator data when form page renders", async () => {
     // Mock form data loading
     const mockIndicator = {
       id: 1,
-      name: 'Test Indicator',
+      name: "Test Indicator",
       form_schema: {
-        fields: [
-          { id: 'field1', label: 'Field 1', type: 'text', required: true },
-        ],
+        fields: [{ id: "field1", label: "Field 1", type: "text", required: true }],
       },
     };
 
@@ -73,7 +71,7 @@ describe('Dashboard to Form Navigation Integration', () => {
     expect(mockIndicator.form_schema.fields).toHaveLength(1);
   });
 
-  it('should preserve state when navigating back to dashboard', async () => {
+  it("should preserve state when navigating back to dashboard", async () => {
     // Test that completed indicator status persists
     const user = userEvent.setup();
 

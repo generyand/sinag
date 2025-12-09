@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { BarChartData, PieChartData, TrendData } from "@sinag/shared";
 import {
@@ -17,7 +17,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { AnalyticsEmptyState } from '@/components/features/analytics';
+import { AnalyticsEmptyState } from "@/components/features/analytics";
 
 // Color constants for consistent theming
 const COLORS = {
@@ -31,7 +31,14 @@ interface AreaBreakdownBarChartProps {
 }
 
 // Custom tooltip component for better formatting
-const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string> & { payload?: Array<{ dataKey?: string; value?: number }>; label?: string }) => {
+const CustomTooltip = ({
+  active,
+  payload,
+  label,
+}: TooltipProps<number, string> & {
+  payload?: Array<{ dataKey?: string; value?: number }>;
+  label?: string;
+}) => {
   if (active && payload && payload.length) {
     const passedData = payload.find((p) => p.dataKey === "passed");
     const failedData = payload.find((p) => p.dataKey === "failed");
@@ -46,17 +53,11 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string> 
         <p className="font-semibold text-sm mb-2">{label}</p>
         <div className="space-y-1 text-xs">
           <div className="flex items-center gap-2">
-            <div
-              className="w-3 h-3 rounded"
-              style={{ backgroundColor: COLORS.passed }}
-            />
+            <div className="w-3 h-3 rounded" style={{ backgroundColor: COLORS.passed }} />
             <span>Passed: {passed}</span>
           </div>
           <div className="flex items-center gap-2">
-            <div
-              className="w-3 h-3 rounded"
-              style={{ backgroundColor: COLORS.failed }}
-            />
+            <div className="w-3 h-3 rounded" style={{ backgroundColor: COLORS.failed }} />
             <span>Failed: {failed}</span>
           </div>
           <div className="pt-1 mt-1">
@@ -74,7 +75,11 @@ export function AreaBreakdownBarChart({ data }: AreaBreakdownBarChartProps) {
   if (!data || data.length === 0) {
     return (
       <div className="h-[300px] flex items-center justify-center">
-        <AnalyticsEmptyState variant="no-assessments" compact description="No assessment data available for chart" />
+        <AnalyticsEmptyState
+          variant="no-assessments"
+          compact
+          description="No assessment data available for chart"
+        />
       </div>
     );
   }
@@ -107,10 +112,7 @@ export function AreaBreakdownBarChart({ data }: AreaBreakdownBarChartProps) {
           aria-label="Number of barangays"
         />
         <Tooltip content={<CustomTooltip />} />
-        <Legend
-          wrapperStyle={{ fontSize: 12 }}
-          iconType="square"
-        />
+        <Legend wrapperStyle={{ fontSize: 12 }} iconType="square" />
         <Bar
           dataKey="passed"
           name="Passed"
@@ -182,7 +184,10 @@ const renderCustomLabel = ({
 };
 
 // Custom tooltip for pie chart
-const PieTooltip = ({ active, payload }: TooltipProps<number, string> & { payload?: Array<{ payload?: PieChartData }> }) => {
+const PieTooltip = ({
+  active,
+  payload,
+}: TooltipProps<number, string> & { payload?: Array<{ payload?: PieChartData }> }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload as PieChartData;
     return (
@@ -203,7 +208,11 @@ export function ComplianceStatusPieChart({ data }: ComplianceStatusPieChartProps
   if (!data || data.length === 0) {
     return (
       <div className="h-[300px] flex items-center justify-center">
-        <AnalyticsEmptyState variant="no-assessments" compact description="No status data available for chart" />
+        <AnalyticsEmptyState
+          variant="no-assessments"
+          compact
+          description="No status data available for chart"
+        />
       </div>
     );
   }
@@ -250,7 +259,10 @@ interface TrendLineChartProps {
 }
 
 // Custom tooltip for line chart
-const TrendTooltip = ({ active, payload }: TooltipProps<number, string> & { payload?: Array<{ payload?: TrendData; value?: number }> }) => {
+const TrendTooltip = ({
+  active,
+  payload,
+}: TooltipProps<number, string> & { payload?: Array<{ payload?: TrendData; value?: number }> }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload as TrendData;
     return (
@@ -258,9 +270,7 @@ const TrendTooltip = ({ active, payload }: TooltipProps<number, string> & { payl
         <p className="font-semibold text-sm mb-1">{data.cycle_name}</p>
         <div className="space-y-1 text-xs">
           <p>Pass Rate: {data.pass_rate.toFixed(1)}%</p>
-          <p className="text-muted-foreground">
-            {new Date(data.date).toLocaleDateString()}
-          </p>
+          <p className="text-muted-foreground">{new Date(data.date).toLocaleDateString()}</p>
         </div>
       </div>
     );
@@ -273,7 +283,11 @@ export function TrendLineChart({ data }: TrendLineChartProps) {
   if (!data || data.length === 0) {
     return (
       <div className="h-[300px] flex items-center justify-center">
-        <AnalyticsEmptyState variant="no-assessments" compact description="No trend data available yet" />
+        <AnalyticsEmptyState
+          variant="no-assessments"
+          compact
+          description="No trend data available yet"
+        />
       </div>
     );
   }
@@ -305,10 +319,7 @@ export function TrendLineChart({ data }: TrendLineChartProps) {
           aria-label="Pass rate percentage"
         />
         <Tooltip content={<TrendTooltip />} />
-        <Legend
-          wrapperStyle={{ fontSize: 12 }}
-          iconType="line"
-        />
+        <Legend wrapperStyle={{ fontSize: 12 }} iconType="line" />
         <Line
           type="monotone"
           dataKey="pass_rate"

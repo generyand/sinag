@@ -5,8 +5,8 @@
  * Provides visual feedback that the system is processing assessor feedback.
  */
 
-import { Loader2 } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Loader2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function ReworkLoadingState() {
   return (
@@ -15,9 +15,7 @@ export function ReworkLoadingState() {
       <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-sm">
         <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
         <div className="flex-1">
-          <p className="text-sm font-medium text-blue-900">
-            Generating AI-powered summary...
-          </p>
+          <p className="text-sm font-medium text-blue-900">Generating AI-powered summary...</p>
           <p className="text-xs text-blue-700 mt-1">
             Analyzing assessor feedback and annotations. This usually takes 5-10 seconds.
           </p>

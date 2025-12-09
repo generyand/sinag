@@ -170,8 +170,8 @@ export function Phase2Section({
               Table Validation Not Yet Started
             </h3>
             <p className="text-[var(--text-secondary)] max-w-md mx-auto">
-              This phase will begin after your initial assessment is reviewed and approved
-              by the assessor. You will be notified when table validation starts.
+              This phase will begin after your initial assessment is reviewed and approved by the
+              assessor. You will be notified when table validation starts.
             </p>
           </div>
         )}
@@ -186,8 +186,8 @@ export function Phase2Section({
               Under Validator Review
             </h3>
             <p className="text-[var(--text-secondary)] max-w-md mx-auto">
-              Your assessment is currently being validated by the DILG validator team.
-              This involves in-person table validation of your submitted documents.
+              Your assessment is currently being validated by the DILG validator team. This involves
+              in-person table validation of your submitted documents.
             </p>
             <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
               <Clock className="w-4 h-4 text-blue-600" />
@@ -211,8 +211,8 @@ export function Phase2Section({
                   </h3>
                   <p className="text-sm text-purple-700 dark:text-purple-300 mt-1">
                     The validator has requested calibration for{" "}
-                    <strong>{dashboardData.calibration_governance_area_name}</strong>.
-                    Please review the feedback below and make the necessary corrections.
+                    <strong>{dashboardData.calibration_governance_area_name}</strong>. Please review
+                    the feedback below and make the necessary corrections.
                   </p>
                 </div>
               </div>

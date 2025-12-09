@@ -5,10 +5,10 @@
  * Shows key issues, suggested actions, and affected MOV files.
  */
 
-import { AlertCircle, CheckCircle2, FileText } from 'lucide-react';
-import { IndicatorSummary } from '@/types/rework-summary';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AlertCircle, CheckCircle2, FileText } from "lucide-react";
+import { IndicatorSummary } from "@/types/rework-summary";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface ReworkSummaryCardProps {
   /** Indicator summary data */
@@ -17,23 +17,16 @@ interface ReworkSummaryCardProps {
   collapsed?: boolean;
 }
 
-export function ReworkSummaryCard({
-  summary,
-  collapsed = false,
-}: ReworkSummaryCardProps) {
+export function ReworkSummaryCard({ summary, collapsed = false }: ReworkSummaryCardProps) {
   if (collapsed) {
     return (
       <div className="p-3 border border-amber-200 bg-amber-50 rounded-sm">
         <div className="flex items-start gap-2">
           <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-amber-900">
-              {summary.indicator_name}
-            </p>
+            <p className="text-sm font-medium text-amber-900">{summary.indicator_name}</p>
             {summary.key_issues.length > 0 && (
-              <p className="text-xs text-amber-700 mt-1 line-clamp-2">
-                {summary.key_issues[0]}
-              </p>
+              <p className="text-xs text-amber-700 mt-1 line-clamp-2">{summary.key_issues[0]}</p>
             )}
           </div>
         </div>
@@ -59,10 +52,7 @@ export function ReworkSummaryCard({
             </h4>
             <ul className="space-y-1.5 pl-6">
               {summary.key_issues.map((issue, index) => (
-                <li
-                  key={index}
-                  className="text-sm text-gray-700 list-disc marker:text-red-500"
-                >
+                <li key={index} className="text-sm text-gray-700 list-disc marker:text-red-500">
                   {issue}
                 </li>
               ))}
@@ -99,11 +89,7 @@ export function ReworkSummaryCard({
             </h4>
             <div className="flex flex-wrap gap-2">
               {summary.affected_movs.map((filename, index) => (
-                <Badge
-                  key={index}
-                  variant="outline"
-                  className="text-xs font-normal"
-                >
+                <Badge key={index} variant="outline" className="text-xs font-normal">
                   {filename}
                 </Badge>
               ))}

@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Plus, Info } from 'lucide-react';
-import { ConditionalRemarkList } from './ConditionalRemarkList';
-import { DefaultTemplateEditor } from './DefaultTemplateEditor';
-import { RemarkPreview } from './RemarkPreview';
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Plus, Info } from "lucide-react";
+import { ConditionalRemarkList } from "./ConditionalRemarkList";
+import { DefaultTemplateEditor } from "./DefaultTemplateEditor";
+import { RemarkPreview } from "./RemarkPreview";
 
 interface RemarkSchema {
   conditional_remarks: ConditionalRemark[];
@@ -47,7 +47,7 @@ export function RemarkSchemaBuilder({ initialSchema, onChange }: RemarkSchemaBui
   const [schema, setSchema] = useState<RemarkSchema>(
     initialSchema || {
       conditional_remarks: [],
-      default_template: '',
+      default_template: "",
     }
   );
   const [isDirty, setIsDirty] = useState(false);
@@ -57,7 +57,7 @@ export function RemarkSchemaBuilder({ initialSchema, onChange }: RemarkSchemaBui
     if (initialSchema) {
       setSchema(initialSchema);
     }
-  }, [initialSchema]);
+  }, [initialSchema, setSchema]);
 
   // Notify parent of changes
   useEffect(() => {
@@ -73,9 +73,9 @@ export function RemarkSchemaBuilder({ initialSchema, onChange }: RemarkSchemaBui
       conditional_remarks: [
         ...prev.conditional_remarks,
         {
-          condition: 'pass',
-          template: '',
-          description: '',
+          condition: "pass",
+          template: "",
+          description: "",
         },
       ],
     }));
@@ -130,7 +130,7 @@ export function RemarkSchemaBuilder({ initialSchema, onChange }: RemarkSchemaBui
             <Info className="h-4 w-4" />
             <AlertDescription>
               Conditional remarks are evaluated based on indicator status (Pass/Fail). If no
-              condition matches, the default template is used. Supports placeholders:{' '}
+              condition matches, the default template is used. Supports placeholders:{" "}
               {`{{ indicator_name }}`}, {`{{ status }}`}, and field values.
             </AlertDescription>
           </Alert>
@@ -144,9 +144,9 @@ export function RemarkSchemaBuilder({ initialSchema, onChange }: RemarkSchemaBui
             <CardTitle>Conditional Remarks</CardTitle>
             <CardDescription>
               {schema.conditional_remarks.length === 0
-                ? 'Add conditional remarks for specific Pass/Fail outcomes'
+                ? "Add conditional remarks for specific Pass/Fail outcomes"
                 : `${schema.conditional_remarks.length} conditional remark${
-                    schema.conditional_remarks.length === 1 ? '' : 's'
+                    schema.conditional_remarks.length === 1 ? "" : "s"
                   } defined`}
             </CardDescription>
           </div>

@@ -125,9 +125,7 @@ describe("RequestReworkForm", () => {
       );
 
       expect(screen.getByLabelText(/Rework Comments/)).toBeInTheDocument();
-      expect(
-        screen.getByPlaceholderText(/Explain what needs to be revised/)
-      ).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/Explain what needs to be revised/)).toBeInTheDocument();
     });
 
     it("should display required indicator (*)", () => {

@@ -52,13 +52,7 @@ describe("TextFieldComponent", () => {
   it("should render text input with label", () => {
     render(
       <TestWrapper>
-        {(control) => (
-          <TextFieldComponent
-            field={baseField}
-            control={control}
-            name="text_field"
-          />
-        )}
+        {(control) => <TextFieldComponent field={baseField} control={control} name="text_field" />}
       </TestWrapper>
     );
 
@@ -72,11 +66,7 @@ describe("TextFieldComponent", () => {
     render(
       <TestWrapper>
         {(control) => (
-          <TextFieldComponent
-            field={requiredField}
-            control={control}
-            name="text_field"
-          />
+          <TextFieldComponent field={requiredField} control={control} name="text_field" />
         )}
       </TestWrapper>
     );
@@ -90,11 +80,7 @@ describe("TextFieldComponent", () => {
     render(
       <TestWrapper>
         {(control) => (
-          <TextFieldComponent
-            field={fieldWithHelp}
-            control={control}
-            name="text_field"
-          />
+          <TextFieldComponent field={fieldWithHelp} control={control} name="text_field" />
         )}
       </TestWrapper>
     );
@@ -125,13 +111,7 @@ describe("TextFieldComponent", () => {
 
     render(
       <TestWrapper>
-        {(control) => (
-          <TextFieldComponent
-            field={baseField}
-            control={control}
-            name="text_field"
-          />
-        )}
+        {(control) => <TextFieldComponent field={baseField} control={control} name="text_field" />}
       </TestWrapper>
     );
 
@@ -147,11 +127,7 @@ describe("TextFieldComponent", () => {
     render(
       <TestWrapper>
         {(control) => (
-          <TextFieldComponent
-            field={fieldWithMaxLength}
-            control={control}
-            name="text_field"
-          />
+          <TextFieldComponent field={fieldWithMaxLength} control={control} name="text_field" />
         )}
       </TestWrapper>
     );
@@ -166,11 +142,7 @@ describe("TextFieldComponent", () => {
     render(
       <TestWrapper>
         {(control) => (
-          <TextFieldComponent
-            field={fieldWithPlaceholder}
-            control={control}
-            name="text_field"
-          />
+          <TextFieldComponent field={fieldWithPlaceholder} control={control} name="text_field" />
         )}
       </TestWrapper>
     );
@@ -195,11 +167,7 @@ describe("TextAreaFieldComponent", () => {
     render(
       <TestWrapper>
         {(control) => (
-          <TextAreaFieldComponent
-            field={baseField}
-            control={control}
-            name="textarea_field"
-          />
+          <TextAreaFieldComponent field={baseField} control={control} name="textarea_field" />
         )}
       </TestWrapper>
     );
@@ -214,11 +182,7 @@ describe("TextAreaFieldComponent", () => {
     render(
       <TestWrapper>
         {(control) => (
-          <TextAreaFieldComponent
-            field={baseField}
-            control={control}
-            name="textarea_field"
-          />
+          <TextAreaFieldComponent field={baseField} control={control} name="textarea_field" />
         )}
       </TestWrapper>
     );
@@ -263,11 +227,7 @@ describe("NumberFieldComponent", () => {
     render(
       <TestWrapper>
         {(control) => (
-          <NumberFieldComponent
-            field={baseField}
-            control={control}
-            name="number_field"
-          />
+          <NumberFieldComponent field={baseField} control={control} name="number_field" />
         )}
       </TestWrapper>
     );
@@ -284,11 +244,7 @@ describe("NumberFieldComponent", () => {
     render(
       <TestWrapper>
         {(control) => (
-          <NumberFieldComponent
-            field={baseField}
-            control={control}
-            name="number_field"
-          />
+          <NumberFieldComponent field={baseField} control={control} name="number_field" />
         )}
       </TestWrapper>
     );
@@ -305,11 +261,7 @@ describe("NumberFieldComponent", () => {
     render(
       <TestWrapper>
         {(control) => (
-          <NumberFieldComponent
-            field={fieldWithMin}
-            control={control}
-            name="number_field"
-          />
+          <NumberFieldComponent field={fieldWithMin} control={control} name="number_field" />
         )}
       </TestWrapper>
     );
@@ -327,11 +279,7 @@ describe("NumberFieldComponent", () => {
     render(
       <TestWrapper>
         {(control) => (
-          <NumberFieldComponent
-            field={fieldWithMax}
-            control={control}
-            name="number_field"
-          />
+          <NumberFieldComponent field={fieldWithMax} control={control} name="number_field" />
         )}
       </TestWrapper>
     );
@@ -361,11 +309,7 @@ describe("NumberFieldComponent", () => {
     render(
       <TestWrapper>
         {(control) => (
-          <NumberFieldComponent
-            field={baseField}
-            control={control}
-            name="number_field"
-          />
+          <NumberFieldComponent field={baseField} control={control} name="number_field" />
         )}
       </TestWrapper>
     );
@@ -390,13 +334,7 @@ describe("DateFieldComponent", () => {
   it("should render date input with label", () => {
     render(
       <TestWrapper>
-        {(control) => (
-          <DateFieldComponent
-            field={baseField}
-            control={control}
-            name="date_field"
-          />
-        )}
+        {(control) => <DateFieldComponent field={baseField} control={control} name="date_field" />}
       </TestWrapper>
     );
 
@@ -409,11 +347,7 @@ describe("DateFieldComponent", () => {
     render(
       <TestWrapper>
         {(control) => (
-          <DateFieldComponent
-            field={requiredField}
-            control={control}
-            name="date_field"
-          />
+          <DateFieldComponent field={requiredField} control={control} name="date_field" />
         )}
       </TestWrapper>
     );
@@ -460,11 +394,7 @@ describe("RadioFieldComponent", () => {
     render(
       <TestWrapper>
         {(control) => (
-          <RadioFieldComponent
-            field={baseField}
-            control={control}
-            name="radio_field"
-          />
+          <RadioFieldComponent field={baseField} control={control} name="radio_field" />
         )}
       </TestWrapper>
     );
@@ -482,11 +412,7 @@ describe("RadioFieldComponent", () => {
     render(
       <TestWrapper>
         {(control) => (
-          <RadioFieldComponent
-            field={baseField}
-            control={control}
-            name="radio_field"
-          />
+          <RadioFieldComponent field={baseField} control={control} name="radio_field" />
         )}
       </TestWrapper>
     );
@@ -503,11 +429,7 @@ describe("RadioFieldComponent", () => {
     render(
       <TestWrapper>
         {(control) => (
-          <RadioFieldComponent
-            field={baseField}
-            control={control}
-            name="radio_field"
-          />
+          <RadioFieldComponent field={baseField} control={control} name="radio_field" />
         )}
       </TestWrapper>
     );
@@ -563,11 +485,7 @@ describe("CheckboxFieldComponent", () => {
     render(
       <TestWrapper>
         {(control) => (
-          <CheckboxFieldComponent
-            field={baseField}
-            control={control}
-            name="checkbox_field"
-          />
+          <CheckboxFieldComponent field={baseField} control={control} name="checkbox_field" />
         )}
       </TestWrapper>
     );
@@ -584,11 +502,7 @@ describe("CheckboxFieldComponent", () => {
     render(
       <TestWrapper>
         {(control) => (
-          <CheckboxFieldComponent
-            field={baseField}
-            control={control}
-            name="checkbox_field"
-          />
+          <CheckboxFieldComponent field={baseField} control={control} name="checkbox_field" />
         )}
       </TestWrapper>
     );
@@ -609,11 +523,7 @@ describe("CheckboxFieldComponent", () => {
     render(
       <TestWrapper>
         {(control) => (
-          <CheckboxFieldComponent
-            field={baseField}
-            control={control}
-            name="checkbox_field"
-          />
+          <CheckboxFieldComponent field={baseField} control={control} name="checkbox_field" />
         )}
       </TestWrapper>
     );
@@ -666,11 +576,7 @@ describe("SelectFieldComponent", () => {
     render(
       <TestWrapper>
         {(control) => (
-          <SelectFieldComponent
-            field={baseField}
-            control={control}
-            name="select_field"
-          />
+          <SelectFieldComponent field={baseField} control={control} name="select_field" />
         )}
       </TestWrapper>
     );
@@ -683,11 +589,7 @@ describe("SelectFieldComponent", () => {
     render(
       <TestWrapper>
         {(control) => (
-          <SelectFieldComponent
-            field={baseField}
-            control={control}
-            name="select_field"
-          />
+          <SelectFieldComponent field={baseField} control={control} name="select_field" />
         )}
       </TestWrapper>
     );
@@ -701,11 +603,7 @@ describe("SelectFieldComponent", () => {
     render(
       <TestWrapper>
         {(control) => (
-          <SelectFieldComponent
-            field={baseField}
-            control={control}
-            name="select_field"
-          />
+          <SelectFieldComponent field={baseField} control={control} name="select_field" />
         )}
       </TestWrapper>
     );

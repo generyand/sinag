@@ -32,9 +32,7 @@ export function SelectFieldComponent<TFieldValues extends FieldValues>({
         {field.required && <span className="text-destructive ml-1">*</span>}
       </Label>
 
-      {field.help_text && (
-        <p className="text-sm text-muted-foreground">{field.help_text}</p>
-      )}
+      {field.help_text && <p className="text-sm text-muted-foreground">{field.help_text}</p>}
 
       <Controller
         name={name}
@@ -43,17 +41,12 @@ export function SelectFieldComponent<TFieldValues extends FieldValues>({
           required: field.required ? `${field.label} is required` : false,
         }}
         render={({ field: controllerField }) => (
-          <Select
-            onValueChange={controllerField.onChange}
-            value={controllerField.value}
-          >
+          <Select onValueChange={controllerField.onChange} value={controllerField.value}>
             <SelectTrigger
               id={field.field_id}
               className={error ? "border-destructive" : ""}
               aria-invalid={error ? "true" : "false"}
-              aria-describedby={
-                error ? `${field.field_id}-error` : undefined
-              }
+              aria-describedby={error ? `${field.field_id}-error` : undefined}
             >
               <SelectValue placeholder="Select an option" />
             </SelectTrigger>
@@ -69,11 +62,7 @@ export function SelectFieldComponent<TFieldValues extends FieldValues>({
       />
 
       {error && (
-        <p
-          id={`${field.field_id}-error`}
-          className="text-sm text-destructive"
-          role="alert"
-        >
+        <p id={`${field.field_id}-error`} className="text-sm text-destructive" role="alert">
           {error}
         </p>
       )}

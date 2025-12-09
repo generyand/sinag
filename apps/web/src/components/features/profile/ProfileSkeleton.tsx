@@ -1,4 +1,4 @@
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function ProfileSkeleton() {
   return (
@@ -15,7 +15,7 @@ export function ProfileSkeleton() {
                   <Skeleton className="h-6 w-32 mb-2" />
                   <Skeleton className="h-4 w-64" />
                 </div>
-                
+
                 {/* Card Content */}
                 <div className="relative z-10 p-6 pt-0 flex flex-col h-full">
                   <div className="space-y-6 flex-1">
@@ -30,7 +30,7 @@ export function ProfileSkeleton() {
                           <Skeleton className="h-5 w-32" />
                         </div>
                       </div>
-                      
+
                       {/* Email Address */}
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
@@ -41,7 +41,7 @@ export function ProfileSkeleton() {
                           <Skeleton className="h-5 w-40" />
                         </div>
                       </div>
-                      
+
                       {/* Mobile Number */}
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
@@ -52,7 +52,7 @@ export function ProfileSkeleton() {
                           <Skeleton className="h-5 w-32" />
                         </div>
                       </div>
-                      
+
                       {/* Role */}
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
@@ -63,7 +63,7 @@ export function ProfileSkeleton() {
                           <Skeleton className="h-5 w-24" />
                         </div>
                       </div>
-                      
+
                       {/* Assigned Barangay (for BLGU users) */}
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
@@ -74,7 +74,7 @@ export function ProfileSkeleton() {
                           <Skeleton className="h-5 w-28" />
                         </div>
                       </div>
-                      
+
                       {/* Assigned Governance Area (for Assessors) */}
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
@@ -87,7 +87,7 @@ export function ProfileSkeleton() {
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Alert */}
                   <div className="bg-[var(--cityscape-yellow)]/10 border-[var(--cityscape-yellow)]/20 backdrop-blur-sm rounded-sm p-4 mt-6">
                     <div className="flex items-start gap-3">
@@ -107,7 +107,7 @@ export function ProfileSkeleton() {
                   <Skeleton className="h-6 w-36 mb-2" />
                   <Skeleton className="h-4 w-56" />
                 </div>
-                
+
                 {/* Card Content */}
                 <div className="relative z-10 p-6 pt-0">
                   <div className="space-y-5">
@@ -127,7 +127,7 @@ export function ProfileSkeleton() {
                         <Skeleton className="h-10 w-full" />
                         <Skeleton className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4" />
                       </div>
-                      
+
                       {/* Password Requirements */}
                       <div className="bg-[var(--hover)] backdrop-blur-sm rounded-sm p-3 border border-[var(--border)]">
                         <Skeleton className="h-3 w-32 mb-2" />
@@ -164,4 +164,4 @@ export function ProfileSkeleton() {
       </div>
     </div>
   );
-} 
+}

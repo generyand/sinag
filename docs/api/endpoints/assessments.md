@@ -1,30 +1,38 @@
 # Assessments API
 
-The Assessments API provides endpoints for BLGU users to manage their self-assessment submissions for the SGLGB (Seal of Good Local Governance for Barangays) process. This API handles the complete lifecycle of barangay assessments from draft creation through submission and validation.
+The Assessments API provides endpoints for BLGU users to manage their self-assessment submissions
+for the SGLGB (Seal of Good Local Governance for Barangays) process. This API handles the complete
+lifecycle of barangay assessments from draft creation through submission and validation.
 
 ## Overview
 
 **Base Path**: `/api/v1/assessments`
 
-**Authentication**: All endpoints require authentication. Most endpoints are restricted to BLGU_USER role unless otherwise specified.
+**Authentication**: All endpoints require authentication. Most endpoints are restricted to BLGU_USER
+role unless otherwise specified.
 
-**Workflow Context**: These endpoints support Stage 1 (Initial BLGU Submission) and Stage 2 (Assessor Review) of the SGLGB workflow.
+**Workflow Context**: These endpoints support Stage 1 (Initial BLGU Submission) and Stage 2
+(Assessor Review) of the SGLGB workflow.
 
-**Type Generation**: After modifying any assessment endpoint or schema, run `pnpm generate-types` to update frontend types.
+**Type Generation**: After modifying any assessment endpoint or schema, run `pnpm generate-types` to
+update frontend types.
 
 ---
 
 ## Multi-Year Assessment Support
 
-As of December 2024, assessment endpoints support multi-year filtering. The following endpoints accept an optional `year` query parameter:
+As of December 2024, assessment endpoints support multi-year filtering. The following endpoints
+accept an optional `year` query parameter:
 
-| Endpoint | Default Behavior |
-|----------|------------------|
-| `GET /dashboard` | Uses active year |
+| Endpoint             | Default Behavior |
+| -------------------- | ---------------- |
+| `GET /dashboard`     | Uses active year |
 | `GET /my-assessment` | Uses active year |
 | `GET /all-validated` | Uses active year |
 
-If no `year` parameter is provided, endpoints default to the currently **active** assessment year. If no year is active, a `400 Bad Request` error is returned with the message "No active assessment year found."
+If no `year` parameter is provided, endpoints default to the currently **active** assessment year.
+If no year is active, a `400 Bad Request` error is returned with the message "No active assessment
+year found."
 
 See also: [Assessment Years API](/docs/api/endpoints/assessment-years.md)
 
@@ -40,17 +48,21 @@ Get dashboard data for the logged-in BLGU user's assessment.
 
 **Workflow Stage**: Stage 1 (BLGU Submission) - Dashboard Overview
 
-**Description**: Returns dashboard-specific data optimized for overview and progress tracking, including progress statistics, governance area summaries, performance metrics, and recent feedback. Automatically creates an assessment if one doesn't exist for the BLGU user (for the active year only).
+**Description**: Returns dashboard-specific data optimized for overview and progress tracking,
+including progress statistics, governance area summaries, performance metrics, and recent feedback.
+Automatically creates an assessment if one doesn't exist for the BLGU user (for the active year
+only).
 
 **Query Parameters**:
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `year` | integer | No | Assessment year (e.g., 2025). Defaults to active year. Must be between 2020-2100. |
+| Parameter | Type    | Required | Description                                                                       |
+| --------- | ------- | -------- | --------------------------------------------------------------------------------- |
+| `year`    | integer | No       | Assessment year (e.g., 2025). Defaults to active year. Must be between 2020-2100. |
 
 **Request Body**: None
 
 **Response** (200 OK):
+
 ```json
 {
   "assessment_id": 123,
@@ -87,6 +99,7 @@ Get dashboard data for the logged-in BLGU user's assessment.
 ```
 
 **Errors**:
+
 - `403 Forbidden`: User does not have BLGU_USER role
 - `500 Internal Server Error`: Failed to retrieve dashboard data
 
@@ -100,17 +113,21 @@ Get the complete assessment data for the logged-in BLGU user.
 
 **Workflow Stage**: Stage 1 (BLGU Submission) - Form Data
 
-**Description**: Returns the full assessment data including assessment status, all governance areas with their indicators, form schemas for each indicator, existing response data, MOVs (Means of Verification), and feedback comments from assessors. Automatically creates an assessment if one doesn't exist (for the active year only).
+**Description**: Returns the full assessment data including assessment status, all governance areas
+with their indicators, form schemas for each indicator, existing response data, MOVs (Means of
+Verification), and feedback comments from assessors. Automatically creates an assessment if one
+doesn't exist (for the active year only).
 
 **Query Parameters**:
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `year` | integer | No | Assessment year (e.g., 2025). Defaults to active year. Must be between 2020-2100. |
+| Parameter | Type    | Required | Description                                                                       |
+| --------- | ------- | -------- | --------------------------------------------------------------------------------- |
+| `year`    | integer | No       | Assessment year (e.g., 2025). Defaults to active year. Must be between 2020-2100. |
 
 **Request Body**: None
 
 **Response** (200 OK):
+
 ```json
 {
   "assessment": {
@@ -140,8 +157,8 @@ Get the complete assessment data for the logged-in BLGU user.
                 "label": "Is the budget published publicly?",
                 "required": true,
                 "options": [
-                  {"id": "yes", "label": "Yes"},
-                  {"id": "no", "label": "No"}
+                  { "id": "yes", "label": "Yes" },
+                  { "id": "no", "label": "No" }
                 ]
               }
             ]
@@ -172,6 +189,7 @@ Get the complete assessment data for the logged-in BLGU user.
 ```
 
 **Errors**:
+
 - `403 Forbidden`: User does not have BLGU_USER role
 - `500 Internal Server Error`: Failed to retrieve assessment data
 
@@ -185,14 +203,18 @@ Get a specific assessment response by ID.
 
 **Workflow Stage**: Stage 1 (BLGU Submission)
 
-**Description**: Returns a single assessment response with all related data including response data (JSON), completion status, MOVs, and feedback comments. The response must belong to the current user's assessment.
+**Description**: Returns a single assessment response with all related data including response data
+(JSON), completion status, MOVs, and feedback comments. The response must belong to the current
+user's assessment.
 
 **Path Parameters**:
+
 - `response_id` (integer, required): The ID of the assessment response
 
 **Request Body**: None
 
 **Response** (200 OK):
+
 ```json
 {
   "id": 789,
@@ -213,6 +235,7 @@ Get a specific assessment response by ID.
 ```
 
 **Errors**:
+
 - `403 Forbidden`: Response does not belong to current user's assessment
 - `404 Not Found`: Assessment response not found
 
@@ -226,18 +249,23 @@ Update an assessment response with validation.
 
 **Workflow Stage**: Stage 1 (BLGU Submission)
 
-**Description**: Updates the response data and validates it against the indicator's form schema. The response data must conform to the JSON schema defined in the indicator's form_schema field. Only responses in DRAFT or NEEDS_REWORK status can be updated.
+**Description**: Updates the response data and validates it against the indicator's form schema. The
+response data must conform to the JSON schema defined in the indicator's form_schema field. Only
+responses in DRAFT or NEEDS_REWORK status can be updated.
 
 **Business Rules**:
+
 - Only responses belonging to the current user's assessment can be updated
 - Response data is validated against the indicator's form schema
 - Completion status is automatically updated based on response data
 - Assessment must be in DRAFT or NEEDS_REWORK status
 
 **Path Parameters**:
+
 - `response_id` (integer, required): The ID of the assessment response
 
 **Request Body**:
+
 ```json
 {
   "response_data": {
@@ -250,6 +278,7 @@ Update an assessment response with validation.
 ```
 
 **Response** (200 OK):
+
 ```json
 {
   "id": 789,
@@ -269,6 +298,7 @@ Update an assessment response with validation.
 ```
 
 **Errors**:
+
 - `400 Bad Request`: Assessment status does not allow updates (must be DRAFT or NEEDS_REWORK)
 - `403 Forbidden`: Response does not belong to current user's assessment
 - `404 Not Found`: Assessment response not found
@@ -284,9 +314,11 @@ Create a new assessment response.
 
 **Workflow Stage**: Stage 1 (BLGU Submission)
 
-**Description**: Creates a new response for a specific indicator in the user's assessment. The response data is validated against the indicator's form schema.
+**Description**: Creates a new response for a specific indicator in the user's assessment. The
+response data is validated against the indicator's form schema.
 
 **Request Body**:
+
 ```json
 {
   "assessment_id": 123,
@@ -300,6 +332,7 @@ Create a new assessment response.
 ```
 
 **Response** (201 Created):
+
 ```json
 {
   "id": 790,
@@ -318,6 +351,7 @@ Create a new assessment response.
 ```
 
 **Errors**:
+
 - `403 Forbidden`: Assessment does not belong to current user
 - `404 Not Found`: Assessment not found for current user
 - `422 Unprocessable Entity`: Response data validation failed
@@ -332,14 +366,18 @@ Submit an assessment for assessor review.
 
 **Workflow Stage**: Stage 1 → Stage 2 Transition (Submission)
 
-**Description**: Submits the assessment for review. Runs a preliminary compliance check before submission to ensure no "YES" answers exist without corresponding MOVs (Means of Verification). Updates assessment status to "SUBMITTED" and sets submission timestamp.
+**Description**: Submits the assessment for review. Runs a preliminary compliance check before
+submission to ensure no "YES" answers exist without corresponding MOVs (Means of Verification).
+Updates assessment status to "SUBMITTED" and sets submission timestamp.
 
 **Path Parameters**:
+
 - `assessment_id` (integer, required): The ID of the assessment to submit
 
 **Request Body**: None
 
 **Response** (200 OK):
+
 ```json
 {
   "success": true,
@@ -350,6 +388,7 @@ Submit an assessment for assessor review.
 ```
 
 **Errors**:
+
 - `400 Bad Request`: Submission failed (YES answers without MOV detected, or incomplete indicators)
 - `403 Forbidden`: Only BLGU users can submit assessments, or assessment doesn't belong to user
 - `404 Not Found`: Assessment not found
@@ -364,19 +403,24 @@ Resubmit an assessment after completing rework.
 
 **Workflow Stage**: Stage 2 (Rework Cycle Completion)
 
-**Description**: Allows a BLGU user to resubmit their assessment after addressing the assessor's rework comments. The assessment must be in REWORK status and pass validation again. No further rework is allowed after resubmission (rework_count = 1).
+**Description**: Allows a BLGU user to resubmit their assessment after addressing the assessor's
+rework comments. The assessment must be in REWORK status and pass validation again. No further
+rework is allowed after resubmission (rework_count = 1).
 
 **Business Rules**:
+
 - Assessment must be in REWORK status
 - Assessment must pass validation (completeness + MOVs)
 - Only one rework cycle is allowed per assessment
 
 **Path Parameters**:
+
 - `assessment_id` (integer, required): The ID of the assessment to resubmit
 
 **Request Body**: None
 
 **Response** (200 OK):
+
 ```json
 {
   "success": true,
@@ -388,6 +432,7 @@ Resubmit an assessment after completing rework.
 ```
 
 **Errors**:
+
 - `400 Bad Request`: Invalid status or validation failed
 - `403 Forbidden`: User not authorized to resubmit
 - `404 Not Found`: Assessment not found
@@ -402,12 +447,15 @@ Upload a MOV (Means of Verification) file for an assessment response.
 
 **Workflow Stage**: Stage 1 (BLGU Submission)
 
-**Description**: Creates a record of the uploaded file in the database. The actual file upload to Supabase Storage should be handled by the frontend before calling this endpoint.
+**Description**: Creates a record of the uploaded file in the database. The actual file upload to
+Supabase Storage should be handled by the frontend before calling this endpoint.
 
 **Path Parameters**:
+
 - `response_id` (integer, required): The ID of the assessment response
 
 **Request Body**:
+
 ```json
 {
   "response_id": 789,
@@ -419,6 +467,7 @@ Upload a MOV (Means of Verification) file for an assessment response.
 ```
 
 **Response** (201 Created):
+
 ```json
 {
   "id": 456,
@@ -434,6 +483,7 @@ Upload a MOV (Means of Verification) file for an assessment response.
 ```
 
 **Errors**:
+
 - `400 Bad Request`: MOV response_id does not match URL parameter
 - `403 Forbidden`: Response does not belong to current user's assessment
 - `404 Not Found`: Assessment response not found
@@ -448,14 +498,17 @@ Delete a MOV (Means of Verification) file.
 
 **Workflow Stage**: Stage 1 (BLGU Submission)
 
-**Description**: Removes the MOV record from the database. The actual file deletion from Supabase Storage should be handled separately by the frontend.
+**Description**: Removes the MOV record from the database. The actual file deletion from Supabase
+Storage should be handled separately by the frontend.
 
 **Path Parameters**:
+
 - `mov_id` (integer, required): The ID of the MOV to delete
 
 **Request Body**: None
 
 **Response** (200 OK):
+
 ```json
 {
   "message": "MOV deleted successfully"
@@ -463,6 +516,7 @@ Delete a MOV (Means of Verification) file.
 ```
 
 **Errors**:
+
 - `403 Forbidden`: MOV does not belong to current user's assessment
 - `404 Not Found`: MOV not found
 
@@ -476,30 +530,36 @@ Save form responses for an assessment.
 
 **Workflow Stage**: Stage 1 (BLGU Submission) or Stage 3 (Table Validation)
 
-**Description**: Saves form field responses for a specific indicator in an assessment. Performs comprehensive field validation against the indicator's form schema.
+**Description**: Saves form field responses for a specific indicator in an assessment. Performs
+comprehensive field validation against the indicator's form schema.
 
 **Permissions**:
+
 - BLGU users can save answers for their own assessments
 - Assessors can save answers for any assessment (for table validation)
 
 **Path Parameters**:
+
 - `assessment_id` (integer, required): The ID of the assessment
 
 **Query Parameters**:
+
 - `indicator_id` (integer, required): The ID of the indicator
 
 **Request Body**:
+
 ```json
 {
   "responses": [
-    {"field_id": "budget_published", "value": "yes"},
-    {"field_id": "budget_amount", "value": 500000},
-    {"field_id": "programs", "value": ["education", "health", "infrastructure"]}
+    { "field_id": "budget_published", "value": "yes" },
+    { "field_id": "budget_amount", "value": 500000 },
+    { "field_id": "programs", "value": ["education", "health", "infrastructure"] }
   ]
 }
 ```
 
 **Field Type Validation**:
+
 - `text/textarea`: value must be string
 - `number`: value must be numeric (int or float)
 - `date`: value must be ISO date string
@@ -507,6 +567,7 @@ Save form responses for an assessment.
 - `checkbox`: value must be array of strings matching the field's option IDs
 
 **Response** (200 OK):
+
 ```json
 {
   "message": "Responses saved successfully",
@@ -517,10 +578,12 @@ Save form responses for an assessment.
 ```
 
 **Errors**:
+
 - `400 Bad Request`: Assessment is locked for editing (status is SUBMITTED or VALIDATED)
 - `403 Forbidden`: User not authorized to modify this assessment
 - `404 Not Found`: Assessment or indicator not found
-- `422 Unprocessable Entity`: Field validation errors (field not found, type mismatch, invalid option)
+- `422 Unprocessable Entity`: Field validation errors (field not found, type mismatch, invalid
+  option)
 
 ---
 
@@ -532,28 +595,33 @@ Retrieve saved form responses for a specific indicator in an assessment.
 
 **Workflow Stage**: Stage 1 (BLGU Submission) or Stage 2 (Assessor Review)
 
-**Description**: Retrieves the saved form field responses for a specific indicator. Returns empty array if no responses saved yet.
+**Description**: Retrieves the saved form field responses for a specific indicator. Returns empty
+array if no responses saved yet.
 
 **Permissions**:
+
 - BLGU users can retrieve answers for their own assessments
 - Assessors can retrieve answers for any assessment
 
 **Path Parameters**:
+
 - `assessment_id` (integer, required): The ID of the assessment
 
 **Query Parameters**:
+
 - `indicator_id` (integer, required): The ID of the indicator
 
 **Request Body**: None
 
 **Response** (200 OK):
+
 ```json
 {
   "assessment_id": 123,
   "indicator_id": 5,
   "responses": [
-    {"field_id": "budget_published", "value": "yes"},
-    {"field_id": "budget_amount", "value": 500000}
+    { "field_id": "budget_published", "value": "yes" },
+    { "field_id": "budget_amount", "value": 500000 }
   ],
   "created_at": "2025-01-08T12:00:00Z",
   "updated_at": "2025-01-08T12:30:00Z"
@@ -561,6 +629,7 @@ Retrieve saved form responses for a specific indicator in an assessment.
 ```
 
 **Errors**:
+
 - `403 Forbidden`: User not authorized to view this assessment
 - `404 Not Found`: Assessment not found
 
@@ -574,14 +643,17 @@ Validate completeness of all indicators in an assessment.
 
 **Workflow Stage**: Stage 1 (Pre-Submission Check)
 
-**Description**: Checks if all required fields are filled for all indicators. Does NOT expose compliance status (Pass/Fail) - only checks completeness.
+**Description**: Checks if all required fields are filled for all indicators. Does NOT expose
+compliance status (Pass/Fail) - only checks completeness.
 
 **Path Parameters**:
+
 - `assessment_id` (integer, required): The ID of the assessment
 
 **Request Body**: None
 
 **Response** (200 OK):
+
 ```json
 {
   "is_complete": false,
@@ -604,6 +676,7 @@ Validate completeness of all indicators in an assessment.
 ```
 
 **Errors**:
+
 - `404 Not Found`: Assessment not found
 
 ---
@@ -616,18 +689,22 @@ Request rework on a submitted assessment (Assessor/Validator action).
 
 **Workflow Stage**: Stage 2 (Assessor Review → Rework Request)
 
-**Description**: Allows an assessor/validator to request changes to a BLGU submission. Only one rework cycle is allowed per assessment (enforced by rework_count check).
+**Description**: Allows an assessor/validator to request changes to a BLGU submission. Only one
+rework cycle is allowed per assessment (enforced by rework_count check).
 
 **Business Rules**:
+
 - Assessment must be in SUBMITTED status
 - rework_count must be less than 1 (only one rework cycle allowed)
 - Comments are required (min 10 characters)
 - Unlocks assessment for BLGU editing
 
 **Path Parameters**:
+
 - `assessment_id` (integer, required): The ID of the assessment
 
 **Request Body**:
+
 ```json
 {
   "comments": "Please provide more detailed documentation for the budget allocation process. The current submission lacks supporting evidence for expenditure categories."
@@ -635,6 +712,7 @@ Request rework on a submitted assessment (Assessor/Validator action).
 ```
 
 **Response** (200 OK):
+
 ```json
 {
   "success": true,
@@ -646,6 +724,7 @@ Request rework on a submitted assessment (Assessor/Validator action).
 ```
 
 **Errors**:
+
 - `400 Bad Request`: Invalid status or rework limit reached
 - `403 Forbidden`: User not authorized (must be assessor/validator)
 - `404 Not Found`: Assessment not found
@@ -660,18 +739,22 @@ Get the submission status of an assessment.
 
 **Workflow Stage**: All stages (Status Check)
 
-**Description**: Provides comprehensive information about an assessment's submission state, including current status, lock state, rework information, and validation results.
+**Description**: Provides comprehensive information about an assessment's submission state,
+including current status, lock state, rework information, and validation results.
 
 **Authorization**:
+
 - BLGU_USER: Can only check their own assessments
 - ASSESSOR/VALIDATOR/MLGOO_DILG: Can check any assessment
 
 **Path Parameters**:
+
 - `assessment_id` (integer, required): The ID of the assessment
 
 **Request Body**: None
 
 **Response** (200 OK):
+
 ```json
 {
   "assessment_id": 123,
@@ -691,6 +774,7 @@ Get the submission status of an assessment.
 ```
 
 **Errors**:
+
 - `403 Forbidden`: BLGU user trying to access another barangay's assessment
 - `404 Not Found`: Assessment not found
 
@@ -704,14 +788,17 @@ Get all validated assessments with compliance status (Admin endpoint).
 
 **Workflow Stage**: Stage 4 (Intelligence & Reporting)
 
-**Description**: Returns a list of all validated assessments with their compliance status, area results, and barangay information. Used for MLGOO reports dashboard.
+**Description**: Returns a list of all validated assessments with their compliance status, area
+results, and barangay information. Used for MLGOO reports dashboard.
 
 **Query Parameters**:
+
 - `status` (AssessmentStatus, optional): Filter by assessment status (defaults to VALIDATED)
 
 **Request Body**: None
 
 **Response** (200 OK):
+
 ```json
 [
   {
@@ -722,8 +809,8 @@ Get all validated assessments with compliance status (Admin endpoint).
     "final_compliance_status": "PASSED",
     "validated_at": "2025-01-15T16:00:00Z",
     "area_results": {
-      "GA-1": {"passed": 4, "failed": 1, "total": 5},
-      "GA-2": {"passed": 5, "failed": 0, "total": 5}
+      "GA-1": { "passed": 4, "failed": 1, "total": 5 },
+      "GA-2": { "passed": 5, "failed": 0, "total": 5 }
     },
     "ai_recommendations": {
       "strengths": ["Strong financial management", "Excellent community programs"],
@@ -734,6 +821,7 @@ Get all validated assessments with compliance status (Admin endpoint).
 ```
 
 **Errors**:
+
 - `403 Forbidden`: User does not have admin privileges
 - `500 Internal Server Error`: Failed to retrieve assessments
 
@@ -747,20 +835,25 @@ Generate AI-powered insights for a validated assessment (Background task).
 
 **Workflow Stage**: Stage 4 (Intelligence Layer)
 
-**Description**: Dispatches a background Celery task to generate AI insights using the Gemini API. The task runs asynchronously with automatic retry logic (max 3 attempts with exponential backoff). Results are stored in the ai_recommendations field.
+**Description**: Dispatches a background Celery task to generate AI insights using the Gemini API.
+The task runs asynchronously with automatic retry logic (max 3 attempts with exponential backoff).
+Results are stored in the ai_recommendations field.
 
 **Business Rules**:
+
 - Only works for assessments with VALIDATED status
 - Returns 202 Accepted immediately (asynchronous processing)
 - Results are cached to avoid duplicate API calls
 - Frontend should poll assessment endpoint to check for ai_recommendations field
 
 **Path Parameters**:
+
 - `id` (integer, required): The ID of the assessment
 
 **Request Body**: None
 
 **Response** (202 Accepted):
+
 ```json
 {
   "message": "AI insight generation started",
@@ -771,6 +864,7 @@ Generate AI-powered insights for a validated assessment (Background task).
 ```
 
 **Response** (200 OK - if insights already cached):
+
 ```json
 {
   "message": "AI insights already generated",
@@ -781,6 +875,7 @@ Generate AI-powered insights for a validated assessment (Background task).
 ```
 
 **Errors**:
+
 - `400 Bad Request`: Assessment must be validated to generate insights
 - `404 Not Found`: Assessment not found
 
@@ -834,21 +929,25 @@ DRAFT → SUBMITTED → IN_REVIEW → VALIDATED
 
 ### Permission Matrix
 
-| Action | BLGU_USER | ASSESSOR | VALIDATOR | MLGOO_DILG |
-|--------|-----------|----------|-----------|------------|
-| View own assessment | ✓ | - | - | - |
-| Submit assessment | ✓ | - | - | - |
-| Resubmit after rework | ✓ | - | - | - |
-| Request rework | - | ✓ | ✓ | ✓ |
-| Save answers | ✓ (own) | ✓ (any) | ✓ (any) | ✓ (any) |
-| View all assessments | - | - | - | ✓ |
-| Generate insights | ✓ | ✓ | ✓ | ✓ |
+| Action                | BLGU_USER | ASSESSOR | VALIDATOR | MLGOO_DILG |
+| --------------------- | --------- | -------- | --------- | ---------- |
+| View own assessment   | ✓         | -        | -         | -          |
+| Submit assessment     | ✓         | -        | -         | -          |
+| Resubmit after rework | ✓         | -        | -         | -          |
+| Request rework        | -         | ✓        | ✓         | ✓          |
+| Save answers          | ✓ (own)   | ✓ (any)  | ✓ (any)   | ✓ (any)    |
+| View all assessments  | -         | -        | -         | ✓          |
+| Generate insights     | ✓         | ✓        | ✓         | ✓          |
 
 ---
 
 ## Notes
 
-- **Type Generation**: Always run `pnpm generate-types` after modifying assessment endpoints or schemas
-- **Celery Tasks**: The AI insights endpoint triggers background jobs - ensure Celery worker is running
-- **MOV Storage**: Frontend handles actual file uploads to Supabase Storage before calling MOV endpoints
-- **Form Validation**: All response data is validated against indicator form_schema for data integrity
+- **Type Generation**: Always run `pnpm generate-types` after modifying assessment endpoints or
+  schemas
+- **Celery Tasks**: The AI insights endpoint triggers background jobs - ensure Celery worker is
+  running
+- **MOV Storage**: Frontend handles actual file uploads to Supabase Storage before calling MOV
+  endpoints
+- **Form Validation**: All response data is validated against indicator form_schema for data
+  integrity

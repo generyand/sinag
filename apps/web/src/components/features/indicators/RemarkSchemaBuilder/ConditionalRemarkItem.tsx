@@ -1,19 +1,19 @@
-'use client';
+"use client";
 
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Trash2 } from 'lucide-react';
-import { TemplateEditor } from './TemplateEditor';
+} from "@/components/ui/select";
+import { Trash2 } from "lucide-react";
+import { TemplateEditor } from "./TemplateEditor";
 
 interface ConditionalRemark {
   condition: string;
@@ -56,7 +56,7 @@ export function ConditionalRemarkItem({
   };
 
   const handleDelete = () => {
-    if (confirm('Are you sure you want to delete this conditional remark?')) {
+    if (confirm("Are you sure you want to delete this conditional remark?")) {
       onDelete();
     }
   };
@@ -124,7 +124,7 @@ export function ConditionalRemarkItem({
               id={`description-${index}`}
               type="text"
               placeholder="Brief description of this remark"
-              value={remark.description || ''}
+              value={remark.description || ""}
               onChange={(e) => handleDescriptionChange(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">

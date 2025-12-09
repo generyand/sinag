@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useCalculationRuleStore } from '@/store/useCalculationRuleStore';
-import type { FormSchema, HTTPValidationError } from '@sinag/shared';
-import { usePostIndicatorsTestCalculation } from '@sinag/shared';
-import { AlertCircle, CheckCircle2, Loader2, Play, XCircle } from 'lucide-react';
-import { useState } from 'react';
-import { DynamicFormInput } from './DynamicFormInput';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useCalculationRuleStore } from "@/store/useCalculationRuleStore";
+import type { FormSchema, HTTPValidationError } from "@sinag/shared";
+import { usePostIndicatorsTestCalculation } from "@sinag/shared";
+import { AlertCircle, CheckCircle2, Loader2, Play, XCircle } from "lucide-react";
+import { useState } from "react";
+import { DynamicFormInput } from "./DynamicFormInput";
 
 interface TestCalculationPanelProps {
   /** Form schema to generate input fields from */
@@ -68,34 +68,38 @@ export function TestCalculationPanel({ formSchema }: TestCalculationPanelProps) 
   // Helper function to extract error message
   const getErrorMessage = (err: unknown): string => {
     // Handle HTTPValidationError (has detail array)
-    if (err && typeof err === 'object' && 'detail' in err) {
+    if (err && typeof err === "object" && "detail" in err) {
       const validationError = err as HTTPValidationError;
-      if (validationError.detail && Array.isArray(validationError.detail) && validationError.detail.length > 0) {
-        return validationError.detail.map((e) => e.msg).join(', ');
+      if (
+        validationError.detail &&
+        Array.isArray(validationError.detail) &&
+        validationError.detail.length > 0
+      ) {
+        return validationError.detail.map((e) => e.msg).join(", ");
       }
     }
-    
+
     // Handle standard Error objects
-    if (err && typeof err === 'object' && 'message' in err) {
+    if (err && typeof err === "object" && "message" in err) {
       return (err as Error).message;
     }
-    
+
     // Fallback
-    return 'An error occurred while testing the calculation';
+    return "An error occurred while testing the calculation";
   };
 
   // Helper function to safely get string value from result
   const getStringValue = (value: unknown): string => {
-    if (value === null || value === undefined) return '';
-    if (typeof value === 'string') return value;
-    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-    return '';
+    if (value === null || value === undefined) return "";
+    if (typeof value === "string") return value;
+    if (typeof value === "number" || typeof value === "boolean") return String(value);
+    return "";
   };
 
   // Helper function to safely get boolean value from result
   const getBooleanValue = (value: unknown): boolean => {
-    if (typeof value === 'boolean') return value;
-    if (typeof value === 'string') return value.toLowerCase() === 'true';
+    if (typeof value === "boolean") return value;
+    if (typeof value === "string") return value.toLowerCase() === "true";
     return false;
   };
 
@@ -196,7 +200,7 @@ export function TestCalculationPanel({ formSchema }: TestCalculationPanelProps) 
               <div className="space-y-1">
                 <h3 className="text-sm font-semibold text-muted-foreground">Test Result</h3>
                 <div className="flex items-center gap-3">
-                  {getStringValue(result.result) === 'Pass' ? (
+                  {getStringValue(result.result) === "Pass" ? (
                     <>
                       <CheckCircle2 className="h-8 w-8 text-green-600" />
                       <div>
@@ -227,7 +231,7 @@ export function TestCalculationPanel({ formSchema }: TestCalculationPanelProps) 
               <div className="text-right">
                 <p className="text-xs text-muted-foreground">Evaluation Result</p>
                 <p className="text-2xl font-bold">
-                  {getBooleanValue(result.evaluation_result) ? 'True' : 'False'}
+                  {getBooleanValue(result.evaluation_result) ? "True" : "False"}
                 </p>
               </div>
             </div>
@@ -241,7 +245,11 @@ export function TestCalculationPanel({ formSchema }: TestCalculationPanelProps) 
                 <div>
                   <span className="text-muted-foreground">If conditions pass:</span>
                   <Badge
-                    variant={getStringValue(result.output_status_on_pass) === 'Pass' ? 'default' : 'destructive'}
+                    variant={
+                      getStringValue(result.output_status_on_pass) === "Pass"
+                        ? "default"
+                        : "destructive"
+                    }
                     className="ml-2"
                   >
                     {getStringValue(result.output_status_on_pass)}
@@ -250,7 +258,11 @@ export function TestCalculationPanel({ formSchema }: TestCalculationPanelProps) 
                 <div>
                   <span className="text-muted-foreground">If conditions fail:</span>
                   <Badge
-                    variant={getStringValue(result.output_status_on_fail) === 'Fail' ? 'destructive' : 'default'}
+                    variant={
+                      getStringValue(result.output_status_on_fail) === "Fail"
+                        ? "destructive"
+                        : "default"
+                    }
                     className="ml-2"
                   >
                     {getStringValue(result.output_status_on_fail)}

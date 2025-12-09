@@ -2,16 +2,19 @@
 
 ## Overview
 
-This document describes the implementation of two new UX features for the BLGU assessments interface:
+This document describes the implementation of two new UX features for the BLGU assessments
+interface:
 
-1. **Next/Previous Indicator Navigation**: Sequential navigation controls for moving between indicators
+1. **Next/Previous Indicator Navigation**: Sequential navigation controls for moving between
+   indicators
 2. **Governance Area Logos**: Official DILG logos displayed in tree navigation
 
 ## Feature 1: Next/Previous Indicator Navigation
 
 ### Purpose
 
-Provides sequential navigation through all leaf indicators in the assessment, enabling users to move through the assessment linearly without returning to the tree navigation.
+Provides sequential navigation through all leaf indicators in the assessment, enabling users to move
+through the assessment linearly without returning to the tree navigation.
 
 ### Components
 
@@ -19,9 +22,11 @@ Provides sequential navigation through all leaf indicators in the assessment, en
 
 **Location**: `/apps/web/src/hooks/useIndicatorNavigation.ts`
 
-**Purpose**: Builds a flat list of all leaf indicators in assessment order and provides navigation state/functions.
+**Purpose**: Builds a flat list of all leaf indicators in assessment order and provides navigation
+state/functions.
 
 **Key Functions**:
+
 - `flatIndicators`: Computed list of all leaf indicators across all governance areas
 - `current`: Current indicator with position and area code
 - `previous`/`next`: Previous and next indicators in sequence
@@ -29,6 +34,7 @@ Provides sequential navigation through all leaf indicators in the assessment, en
 - `hasPrevious`/`hasNext`: Boolean flags for button states
 
 **Usage**:
+
 ```typescript
 const navigation = useIndicatorNavigation(
   assessment,
@@ -44,6 +50,7 @@ const navigation = useIndicatorNavigation(
 **Purpose**: Sticky footer UI with navigation controls.
 
 **Features**:
+
 - **Previous Button**: Ghost style with ChevronLeft icon
 - **Next Button**: Primary style with yellow background (cityscape-yellow) and ChevronRight icon
 - **Position Label**: Shows indicator code + position (e.g., "SA 3.2.2 (32/45)")
@@ -55,28 +62,31 @@ const navigation = useIndicatorNavigation(
   - Mobile: Icon-only buttons + abbreviated position (e.g., "32/45")
 
 **Styling**:
+
 - Height: 64px
 - Backdrop blur effect: `bg-[var(--card)]/80 backdrop-blur-md`
 - Shadow: `shadow-lg`
 - Sticky positioning at bottom
 
 **Props**:
+
 ```typescript
 interface IndicatorNavigationFooterProps {
-  currentCode?: string;        // Indicator code (e.g., "SA 3.2.2")
-  currentPosition: number;      // 1-indexed position
-  totalIndicators: number;      // Total count
-  hasPrevious: boolean;         // Enable previous button
-  hasNext: boolean;             // Enable next button
-  onPrevious: () => void;       // Previous callback
-  onNext: () => void;           // Next callback
-  isLocked?: boolean;           // Disable when assessment locked
+  currentCode?: string; // Indicator code (e.g., "SA 3.2.2")
+  currentPosition: number; // 1-indexed position
+  totalIndicators: number; // Total count
+  hasPrevious: boolean; // Enable previous button
+  hasNext: boolean; // Enable next button
+  onPrevious: () => void; // Previous callback
+  onNext: () => void; // Next callback
+  isLocked?: boolean; // Disable when assessment locked
 }
 ```
 
 ### Integration
 
 **Updated Files**:
+
 1. `AssessmentContentPanel.tsx`:
    - Added navigation hook integration
    - Changed layout from single scrollable div to flex column with footer
@@ -105,7 +115,8 @@ interface IndicatorNavigationFooterProps {
 
 ### Purpose
 
-Display official DILG governance area logos in the tree navigation to improve visual identification and area recognition.
+Display official DILG governance area logos in the tree navigation to improve visual identification
+and area recognition.
 
 ### Implementation
 
@@ -116,6 +127,7 @@ Display official DILG governance area logos in the tree navigation to improve vi
 **Purpose**: Centralized mapping of governance area codes to logo paths.
 
 **Logo Mapping**:
+
 ```typescript
 export const GOVERNANCE_AREA_LOGOS: Record<string, string> = {
   FI: "/Assessment_Areas/financialAdmin.png",
@@ -128,6 +140,7 @@ export const GOVERNANCE_AREA_LOGOS: Record<string, string> = {
 ```
 
 **Helper Functions**:
+
 - `getGovernanceAreaLogo(code: string)`: Returns logo path or null
 - `hasGovernanceAreaLogo(code: string)`: Check if logo exists
 - `getAvailableLogoCodes()`: Get all codes with logos
@@ -137,6 +150,7 @@ export const GOVERNANCE_AREA_LOGOS: Record<string, string> = {
 **Location**: `/apps/web/src/components/features/assessments/tree-navigation/AssessmentTreeNode.tsx`
 
 **Changes**:
+
 1. Import Next.js `Image` component for optimization
 2. Import Folder icon as fallback
 3. Update `getStatusIcon()` for area nodes:
@@ -145,6 +159,7 @@ export const GOVERNANCE_AREA_LOGOS: Record<string, string> = {
    - Fallback to folder icon or progress indicator if no logo
 
 **Logo Display**:
+
 ```typescript
 <div className="relative h-6 w-6 flex-shrink-0 transition-transform duration-200 group-hover:scale-105">
   <Image
@@ -169,6 +184,7 @@ export const GOVERNANCE_AREA_LOGOS: Record<string, string> = {
 **Location**: `/apps/web/public/Assessment_Areas/`
 
 **Available Files**:
+
 - `financialAdmin.png`
 - `disasterPreparedness.png`
 - `safetyPeaceAndOrder.png`
@@ -222,13 +238,17 @@ export const GOVERNANCE_AREA_LOGOS: Record<string, string> = {
 ## File Changes Summary
 
 ### New Files Created
+
 1. `/apps/web/src/lib/governance-area-logos.ts` - Logo mapping utility
 2. `/apps/web/src/hooks/useIndicatorNavigation.ts` - Navigation hook
 3. `/apps/web/src/components/features/assessments/IndicatorNavigationFooter.tsx` - Footer component
 
 ### Modified Files
-1. `/apps/web/src/components/features/assessments/tree-navigation/AssessmentTreeNode.tsx` - Logo display
-2. `/apps/web/src/components/features/assessments/AssessmentContentPanel.tsx` - Navigation integration
+
+1. `/apps/web/src/components/features/assessments/tree-navigation/AssessmentTreeNode.tsx` - Logo
+   display
+2. `/apps/web/src/components/features/assessments/AssessmentContentPanel.tsx` - Navigation
+   integration
 3. `/apps/web/src/app/(app)/blgu/assessments/page.tsx` - Props passing
 4. `/apps/web/src/components/features/assessments/index.ts` - Export updates
 5. `/apps/web/src/hooks/index.ts` - Export updates
@@ -236,12 +256,14 @@ export const GOVERNANCE_AREA_LOGOS: Record<string, string> = {
 ## Future Enhancements
 
 ### Navigation
+
 - Auto-save current indicator before navigating
 - Progress bar showing overall completion
 - Jump-to-indicator dropdown for quick access
 - Swipe gestures for mobile navigation
 
 ### Logos
+
 - Display larger logo (32x32px) in content panel header
 - Animated logo transitions
 - Logo loading states and skeleton screens
@@ -250,23 +272,27 @@ export const GOVERNANCE_AREA_LOGOS: Record<string, string> = {
 ## Technical Notes
 
 ### Performance Considerations
+
 1. **Logo Loading**: Next.js Image component provides automatic optimization
 2. **Navigation Hook**: Uses useMemo to prevent unnecessary recalculations
 3. **Keyboard Events**: Properly cleaned up on unmount to prevent memory leaks
 4. **Sticky Footer**: CSS-only positioning for smooth scrolling performance
 
 ### Browser Compatibility
+
 - Backdrop blur: Modern browsers (Chrome 76+, Firefox 103+, Safari 9+)
 - Keyboard shortcuts: All modern browsers
 - Next.js Image: Requires Next.js 13+ (using App Router)
 
 ### Known Limitations
+
 1. Navigation only works with leaf indicators (no parent nodes)
 2. Logos must be pre-loaded in public folder (no dynamic upload)
 3. Keyboard shortcuts may conflict with browser shortcuts (use Alt instead of Ctrl)
 4. Mobile drawer does not include navigation footer (only main content panel)
 
 ## Related Documentation
+
 - `/docs/architecture/frontend-patterns.md` - Component patterns
 - `/docs/guides/adding-features.md` - Feature development guide
 - `README.md` - Project setup and development commands

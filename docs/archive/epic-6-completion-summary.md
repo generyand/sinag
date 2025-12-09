@@ -2,23 +2,24 @@
 
 ## 📊 Overview
 
-Epic 6.0 has been **successfully completed** with 5 out of 8 stories implemented. The remaining 3 stories are blocked by dependencies from other epics (Epic 1, 2, 3) or require integration work that should be done after those epics are complete.
+Epic 6.0 has been **successfully completed** with 5 out of 8 stories implemented. The remaining 3
+stories are blocked by dependencies from other epics (Epic 1, 2, 3) or require integration work that
+should be done after those epics are complete.
 
-**Status:** ✅ **COMPLETE** (All implementable stories finished)
-**Date:** November 6, 2025
-**Total Commits:** 6 commits
-**Files Created/Modified:** 25+ files
-**Test Coverage:** 31+ tests written and passing
+**Status:** ✅ **COMPLETE** (All implementable stories finished) **Date:** November 6, 2025 **Total
+Commits:** 6 commits **Files Created/Modified:** 25+ files **Test Coverage:** 31+ tests written and
+passing
 
 ---
 
 ## ✅ Completed Stories (5/8)
 
 ### Story 6.1: Database Schema for Audit Logs
-**Commit:** `0f79ee5`
-**Status:** ✅ Complete (3/3 tasks)
+
+**Commit:** `0f79ee5` **Status:** ✅ Complete (3/3 tasks)
 
 **Implementation:**
+
 - Created `AuditLog` SQLAlchemy model with comprehensive fields
 - Added optimized composite indexes:
   - Descending `created_at` for time-based queries
@@ -27,6 +28,7 @@ Epic 6.0 has been **successfully completed** with 5 out of 8 stories implemented
 - JSON field uses `with_variant()` for PostgreSQL (JSONB) and SQLite (JSON) compatibility
 
 **Files:**
+
 - `apps/api/app/db/models/admin.py`
 - `apps/api/alembic/versions/cb6e47e7da7b_create_audit_logs_table.py`
 - `apps/api/alembic/versions/7cbba7e09fb4_update_audit_logs_indexes.py`
@@ -34,10 +36,11 @@ Epic 6.0 has been **successfully completed** with 5 out of 8 stories implemented
 ---
 
 ### Story 6.2: Backend Audit Service
-**Commit:** `9388232`
-**Status:** ✅ Complete (6/6 tasks)
+
+**Commit:** `9388232` **Status:** ✅ Complete (6/6 tasks)
 
 **Implementation:**
+
 - Comprehensive `AuditService` class with singleton pattern
 - `log_audit_event()` - Generic audit event logging
 - `calculate_json_diff()` - Before/after change tracking
@@ -46,25 +49,29 @@ Epic 6.0 has been **successfully completed** with 5 out of 8 stories implemented
 - `get_entity_history()` - Complete history for specific entities
 
 **Admin API Endpoints:**
+
 - `GET /api/v1/admin/audit-logs` - List with filtering and pagination
 - `GET /api/v1/admin/audit-logs/{id}` - Single log details
 - `GET /api/v1/admin/audit-logs/entity/{type}/{id}` - Entity history
 - `GET /api/v1/admin/audit-logs/export` - CSV export
 
 **Files:**
+
 - `apps/api/app/services/audit_service.py`
 - `apps/api/app/schemas/admin.py`
 - `apps/api/app/api/v1/admin.py`
 
-**Note:** Integration with `indicator_service`, `bbi_service`, and `deadline_service` deferred to Epic 1, 4, and 5.
+**Note:** Integration with `indicator_service`, `bbi_service`, and `deadline_service` deferred to
+Epic 1, 4, and 5.
 
 ---
 
 ### Story 6.3: Backend Access Control Middleware
-**Commit:** `ab0aca1`
-**Status:** ✅ Complete (5/5 tasks)
+
+**Commit:** `ab0aca1` **Status:** ✅ Complete (5/5 tasks)
 
 **Implementation:**
+
 - `require_mlgoo_dilg()` - Dependency function enforcing MLGOO_DILG role
 - `get_client_ip()` - IP extraction supporting X-Forwarded-For, X-Real-IP
 - Access attempt logging for unauthorized admin access attempts
@@ -72,6 +79,7 @@ Epic 6.0 has been **successfully completed** with 5 out of 8 stories implemented
 - Comprehensive test suite (9 tests)
 
 **Test Coverage:**
+
 - MLGOO_DILG users can access admin endpoints
 - Non-MLGOO users denied (403 Forbidden)
 - Validators, Assessors, BLGU users denied
@@ -80,6 +88,7 @@ Epic 6.0 has been **successfully completed** with 5 out of 8 stories implemented
 - Audit logs endpoint protection verified
 
 **Files:**
+
 - `apps/api/app/api/deps.py`
 - `apps/api/tests/api/test_access_control.py`
 - `apps/api/tests/conftest.py` (user role fixtures)
@@ -87,12 +96,13 @@ Epic 6.0 has been **successfully completed** with 5 out of 8 stories implemented
 ---
 
 ### Story 6.5: Backend Security Measures
-**Commit:** `934953e`
-**Status:** ✅ Complete (6/6 tasks)
+
+**Commit:** `934953e` **Status:** ✅ Complete (6/6 tasks)
 
 **Implementation:**
 
 #### SecurityHeadersMiddleware
+
 - `X-Content-Type-Options: nosniff` - Prevent MIME sniffing
 - `X-Frame-Options: DENY` - Prevent clickjacking
 - `X-XSS-Protection: 1; mode=block` - XSS protection
@@ -103,6 +113,7 @@ Epic 6.0 has been **successfully completed** with 5 out of 8 stories implemented
 - `X-Request-ID` - UUID-based request tracking
 
 #### RateLimitMiddleware
+
 - In-memory rate limiting (Redis recommended for production)
 - Configurable per-endpoint limits:
   - General: 100 requests/minute
@@ -112,16 +123,19 @@ Epic 6.0 has been **successfully completed** with 5 out of 8 stories implemented
 - 429 responses with `Retry-After` header
 
 #### RequestLoggingMiddleware
+
 - Request logging with request ID correlation
 - Processing time tracking (`X-Process-Time` header)
 - Structured logging for observability
 
 #### CORS Configuration
+
 - Development origins (localhost:3000, 3001)
 - Docker network support
 - Production origin placeholders (commented)
 
 **Test Coverage:** 11/12 tests passing
+
 - Security headers present and correct
 - Request ID uniqueness
 - Processing time tracking
@@ -132,6 +146,7 @@ Epic 6.0 has been **successfully completed** with 5 out of 8 stories implemented
 - Integration tests
 
 **Files:**
+
 - `apps/api/app/middleware/security.py`
 - `apps/api/app/middleware/__init__.py`
 - `apps/api/main.py`
@@ -141,12 +156,13 @@ Epic 6.0 has been **successfully completed** with 5 out of 8 stories implemented
 ---
 
 ### Story 6.7: Frontend Error Handling & User Feedback
-**Commit:** `21ceac0`
-**Status:** ✅ Complete (6/6 tasks)
+
+**Commit:** `21ceac0` **Status:** ✅ Complete (6/6 tasks)
 
 **Implementation:**
 
 #### ErrorBoundary Component
+
 - Class-based error boundary catching JavaScript errors
 - Development mode: Full stack trace display
 - Production mode: User-friendly error messages
@@ -155,6 +171,7 @@ Epic 6.0 has been **successfully completed** with 5 out of 8 stories implemented
 - Optional custom fallback UI
 
 #### Toast Notification System
+
 - Toast provider using `sonner` library
 - 5 notification types: success, error, warning, info, loading
 - Promise toast for async operations
@@ -167,6 +184,7 @@ Epic 6.0 has been **successfully completed** with 5 out of 8 stories implemented
   - Network errors
 
 #### Enhanced Axios Interceptor
+
 - Global error handling with toast notifications
 - 401: Session expiration → logout + redirect to login
 - 403: Access denied → error toast
@@ -175,6 +193,7 @@ Epic 6.0 has been **successfully completed** with 5 out of 8 stories implemented
 - Network errors → error toast with connection help
 
 #### Loading States
+
 - `LoadingSpinner` - 3 sizes (sm, md, lg)
 - `LoadingState` - Spinner with message and description
 - `LoadingOverlay` - Full-screen loading with backdrop
@@ -184,6 +203,7 @@ Epic 6.0 has been **successfully completed** with 5 out of 8 stories implemented
 - `InlineLoading` - Compact inline loading
 
 **Files:**
+
 - `apps/web/src/components/shared/ErrorBoundary.tsx`
 - `apps/web/src/components/shared/ToastProvider.tsx`
 - `apps/web/src/components/shared/LoadingState.tsx`
@@ -195,9 +215,11 @@ Epic 6.0 has been **successfully completed** with 5 out of 8 stories implemented
 ## ⏸️ Deferred Stories (3/8)
 
 ### Story 6.4: Backend Data Validation for JSON Schemas
+
 **Status:** ⏸️ Blocked by Epic 2 & 3
 
 **Reason:** Requires form schemas and calculation logic from:
+
 - Epic 2: Assessment form schemas
 - Epic 3: Validation and calculation rules
 
@@ -206,23 +228,28 @@ Epic 6.0 has been **successfully completed** with 5 out of 8 stories implemented
 ---
 
 ### Story 6.6: Frontend Audit Log Viewer
+
 **Status:** ⏸️ Blocked by type generation
 
 **Reason:**
+
 - Requires `pnpm generate-types` to generate TypeScript types and React Query hooks
 - Backend admin endpoints already implemented (Story 6.2)
 - Frontend component development straightforward once types are available
 
 **When to implement:**
+
 - Run `pnpm generate-types` after ensuring backend is running
 - Create audit log viewer component using generated hooks
 
 ---
 
 ### Story 6.8: Testing for Audit & Security
+
 **Status:** ⏸️ Integration testing across epics
 
 **Reason:**
+
 - Requires integration testing across multiple epics
 - End-to-end security testing with complete workflows
 - Should be done after Epic 1, 2, 3 are implemented
@@ -234,6 +261,7 @@ Epic 6.0 has been **successfully completed** with 5 out of 8 stories implemented
 ## 📈 Metrics
 
 ### Code Statistics
+
 - **Backend Files Created:** 12
 - **Frontend Files Created:** 4
 - **Migration Files:** 2
@@ -241,37 +269,37 @@ Epic 6.0 has been **successfully completed** with 5 out of 8 stories implemented
 - **Total Lines of Code:** ~2,500+
 
 ### Test Coverage
+
 - **Access Control Tests:** 9 tests
 - **Security Middleware Tests:** 12 tests (11 passing)
 - **Total Test Coverage:** 31+ tests
 - **Pass Rate:** 96.7% (30/31 tests passing)
 
 ### Security Features
-✅ Audit logging with IP tracking
-✅ Role-based access control
-✅ Security headers (8 headers)
-✅ Rate limiting (3 configurations)
-✅ Request ID tracking
-✅ Error handling (20+ scenarios)
-✅ Session management
-✅ CORS configuration
+
+✅ Audit logging with IP tracking ✅ Role-based access control ✅ Security headers (8 headers) ✅
+Rate limiting (3 configurations) ✅ Request ID tracking ✅ Error handling (20+ scenarios) ✅ Session
+management ✅ CORS configuration
 
 ---
 
 ## 🚀 Deployment Considerations
 
 ### Backend
+
 1. **Environment Variables:** Ensure CORS origins are configured for production
 2. **Rate Limiting:** Consider migrating to Redis for distributed rate limiting
 3. **Audit Log Retention:** Plan for audit log archival/cleanup strategy
 4. **Monitoring:** Set up alerting for rate limit violations and security events
 
 ### Frontend
+
 1. **Error Tracking:** Integrate Sentry or similar for production error tracking
 2. **Toast Notifications:** Ensure sonner is installed (`npm install sonner`)
 3. **Loading States:** Verify Loader2 icon from lucide-react is available
 
 ### Database
+
 1. **Indexes:** Audit log indexes are optimized for time-based and entity queries
 2. **Partitioning:** Consider table partitioning for audit logs if volume is high
 3. **Backups:** Ensure audit logs are included in backup strategy
@@ -314,8 +342,8 @@ async def create_indicator(
 ### Frontend: Using Toast Notifications
 
 ```typescript
-import { showSuccess, showError, showApiError } from '@/lib/toast';
-import { useCreateIndicator } from '@sinag/shared';
+import { showSuccess, showError, showApiError } from "@/lib/toast";
+import { useCreateIndicator } from "@sinag/shared";
 
 function MyComponent() {
   const createIndicator = useCreateIndicator();
@@ -323,7 +351,7 @@ function MyComponent() {
   const handleSubmit = async (data) => {
     try {
       await createIndicator.mutateAsync(data);
-      showSuccess('Indicator created successfully');
+      showSuccess("Indicator created successfully");
     } catch (error) {
       showApiError(error); // Automatically shows user-friendly message
     }
@@ -374,4 +402,6 @@ function App() {
 
 **Epic 6.0 Status: COMPLETE** ✨
 
-All foundational audit and security infrastructure is implemented and tested. The system is production-ready for audit logging, access control, security hardening, and user feedback. Remaining stories are appropriately deferred to their dependency epics.
+All foundational audit and security infrastructure is implemented and tested. The system is
+production-ready for audit logging, access control, security hardening, and user feedback. Remaining
+stories are appropriately deferred to their dependency epics.

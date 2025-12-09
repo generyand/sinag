@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { FileText } from 'lucide-react';
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { FileText } from "lucide-react";
 
 interface TemplateEditorProps {
   label: string;
@@ -25,9 +25,9 @@ interface TemplateEditorProps {
 export function TemplateEditor({ label, value, onChange, placeholder }: TemplateEditorProps) {
   // Available placeholders
   const placeholders = [
-    { key: 'indicator_name', description: 'Name of the indicator' },
-    { key: 'status', description: 'Pass or Fail status' },
-    { key: 'field_name', description: 'Value from a form field (replace field_name)' },
+    { key: "indicator_name", description: "Name of the indicator" },
+    { key: "status", description: "Pass or Fail status" },
+    { key: "field_name", description: "Value from a form field (replace field_name)" },
   ];
 
   // Insert placeholder at cursor position

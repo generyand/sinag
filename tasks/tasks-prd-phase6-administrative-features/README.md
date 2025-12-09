@@ -1,14 +1,15 @@
 # Phase 6: Administrative Features - Implementation Tasks
 
-**PRD Reference:** `/docs/prds/prd-phase6-administrative-features.md`
-**Status:** Phase 3 - Atomic Task Definition (COMPLETE)
-**Last Updated:** November 6, 2025
+**PRD Reference:** `/docs/prds/prd-phase6-administrative-features.md` **Status:** Phase 3 - Atomic
+Task Definition (COMPLETE) **Last Updated:** November 6, 2025
 
 ---
 
 ## Overview
 
-This task list implements the comprehensive MLGOO-DILG administrative interface that enables independent management of SINAG system configuration, including indicators, BBI mappings, and deadline control. The implementation follows a three-tier Epic → Story → Atomic task structure.
+This task list implements the comprehensive MLGOO-DILG administrative interface that enables
+independent management of SINAG system configuration, including indicators, BBI mappings, and
+deadline control. The implementation follows a three-tier Epic → Story → Atomic task structure.
 
 ---
 
@@ -49,17 +50,20 @@ This implementation will touch the following areas of the codebase:
 ### Backend (`apps/api`)
 
 **Database Models:**
+
 - `apps/api/app/db/models/assessment.py` - Update indicators model, add versioning
 - `apps/api/app/db/models/bbi.py` - New BBI models
 - `apps/api/app/db/models/admin.py` - New admin-specific models (cycles, overrides, audit)
 - `apps/api/app/db/enums.py` - Add new enums for rule types, BBI status
 
 **Pydantic Schemas:**
+
 - `apps/api/app/schemas/admin.py` - Admin-specific request/response schemas
 - `apps/api/app/schemas/indicator.py` - New indicator management schemas
 - `apps/api/app/schemas/bbi.py` - BBI configuration schemas
 
 **Services:**
+
 - `apps/api/app/services/admin_service.py` - Core administrative business logic
 - `apps/api/app/services/indicator_service.py` - Enhanced indicator management
 - `apps/api/app/services/bbi_service.py` - BBI configuration service
@@ -67,21 +71,25 @@ This implementation will touch the following areas of the codebase:
 - `apps/api/app/services/audit_service.py` - Audit trail service
 
 **API Routers:**
+
 - `apps/api/app/api/v1/admin.py` - New admin endpoints router
 - `apps/api/app/api/v1/indicators.py` - Indicator management endpoints
 - `apps/api/app/api/v1/bbis.py` - BBI configuration endpoints
 
 **Migrations:**
+
 - `apps/api/alembic/versions/xxxx_add_indicator_versioning.py`
 - `apps/api/alembic/versions/xxxx_create_bbi_tables.py`
 - `apps/api/alembic/versions/xxxx_create_admin_tables.py`
 
 **Workers:**
+
 - `apps/api/app/workers/admin_notifications.py` - Background tasks for admin notifications
 
 ### Frontend (`apps/web`)
 
 **Pages:**
+
 - `apps/web/src/app/(app)/admin/indicators/page.tsx` - Indicator management list
 - `apps/web/src/app/(app)/admin/indicators/new/page.tsx` - Create indicator
 - `apps/web/src/app/(app)/admin/indicators/[id]/edit/page.tsx` - Edit indicator
@@ -91,6 +99,7 @@ This implementation will touch the following areas of the codebase:
 - `apps/web/src/app/(app)/admin/audit/page.tsx` - Audit log viewer
 
 **Components:**
+
 - `apps/web/src/components/features/admin/indicators/` - Indicator management components
   - `IndicatorList.tsx` - Searchable, filterable list
   - `IndicatorForm.tsx` - Core indicator form
@@ -109,24 +118,28 @@ This implementation will touch the following areas of the codebase:
   - `DeadlineAuditLog.tsx` - Override audit trail
 
 **Hooks:**
+
 - `apps/web/src/hooks/useIndicators.ts` - Indicator CRUD operations
 - `apps/web/src/hooks/useBBIs.ts` - BBI configuration operations
 - `apps/web/src/hooks/useDeadlines.ts` - Deadline management operations
 - `apps/web/src/hooks/useAudit.ts` - Audit log fetching
 
 **Shared Types:**
+
 - `packages/shared/src/generated/schemas/admin/` - Auto-generated from Orval
 - `packages/shared/src/generated/endpoints/admin/` - Auto-generated API hooks
 
 ### Testing
 
 **Backend Tests:**
+
 - `apps/api/tests/api/v1/test_admin.py` - Admin endpoint tests
 - `apps/api/tests/services/test_indicator_service.py` - Indicator service tests
 - `apps/api/tests/services/test_bbi_service.py` - BBI service tests
 - `apps/api/tests/services/test_deadline_service.py` - Deadline service tests
 
 **Frontend Tests:**
+
 - `apps/web/src/components/features/admin/indicators/FormSchemaBuilder.test.tsx`
 - `apps/web/src/components/features/admin/indicators/CalculationRuleBuilder.test.tsx`
 - `apps/web/src/components/features/admin/deadlines/DeadlineOverrideModal.test.tsx`
@@ -136,6 +149,7 @@ This implementation will touch the following areas of the codebase:
 ## Testing Notes
 
 ### Backend Testing
+
 - Place Pytest tests in `apps/api/tests/`
 - Test services and API endpoints separately
 - Mock database interactions for unit tests
@@ -143,6 +157,7 @@ This implementation will touch the following areas of the codebase:
 - Run with `pytest -vv --log-cli-level=DEBUG`
 
 ### Frontend Testing
+
 - Place test files alongside components (`.test.tsx`)
 - Use Vitest and React Testing Library
 - Mock API calls using MSW (Mock Service Worker)
@@ -150,14 +165,18 @@ This implementation will touch the following areas of the codebase:
 - Run with `pnpm test`
 
 ### Type Safety
+
 - Always import auto-generated types from `@sinag/shared`
 - Run `pnpm generate-types` after backend schema changes
 - Verify type consistency between frontend and backend
 
 ### Integration Testing
+
 - Test complete workflows (e.g., create indicator → preview form → save → verify in DB)
-- Test versioning behavior (edit indicator → verify new version created → verify old assessments use old version)
-- Test deadline override flow (select barangay → select indicators → extend deadline → verify notification sent)
+- Test versioning behavior (edit indicator → verify new version created → verify old assessments use
+  old version)
+- Test deadline override flow (select barangay → select indicators → extend deadline → verify
+  notification sent)
 
 ---
 
@@ -168,14 +187,16 @@ This implementation will touch the following areas of the codebase:
 ---
 
 ## Epic 1.0: Indicator Management - Core CRUD & Versioning System
-**PRD Reference:** FR-4.1.1, FR-4.4.2
-**Duration:** 5-7 days
-**Dependencies:** None
 
-**Description:**
-Implement the foundational indicator management system with full CRUD operations, indicator versioning to protect historical data integrity, and the database schema to support metadata-driven form_schema and calculation_schema. This epic establishes the core data model and API layer for all indicator operations.
+**PRD Reference:** FR-4.1.1, FR-4.4.2 **Duration:** 5-7 days **Dependencies:** None
+
+**Description:** Implement the foundational indicator management system with full CRUD operations,
+indicator versioning to protect historical data integrity, and the database schema to support
+metadata-driven form_schema and calculation_schema. This epic establishes the core data model and
+API layer for all indicator operations.
 
 **Key Deliverables:**
+
 - Database schema with versioning support (indicators, indicators_history tables)
 - Core indicator CRUD API endpoints (Create, Read, Update, Deactivate)
 - Indicator versioning logic ensuring changes don't affect existing assessments
@@ -184,6 +205,7 @@ Implement the foundational indicator management system with full CRUD operations
 - Comprehensive test coverage for versioning behavior
 
 **Success Criteria:**
+
 - ✅ MLGOO-DILG can create, edit, view, and deactivate indicators via API
 - ✅ Editing an indicator creates a new version, old assessments reference original version
 - ✅ Indicator history is fully auditable with version tracking
@@ -193,16 +215,19 @@ Implement the foundational indicator management system with full CRUD operations
 ---
 
 ## Epic 2.0: Indicator Management - Form Schema Builder (Visual)
-**PRD Reference:** FR-4.1.2
-**Duration:** 7-10 days
-**Dependencies:** Epic 1.0 (Core CRUD system must exist)
 
-**Description:**
-Build a visual, drag-and-drop form builder interface that allows MLGOO-DILG to define the form_schema (input fields, validation rules, MOV requirements) for indicators without writing JSON. Implements a hybrid approach with visual building and JSON preview for power users.
+**PRD Reference:** FR-4.1.2 **Duration:** 7-10 days **Dependencies:** Epic 1.0 (Core CRUD system
+must exist)
+
+**Description:** Build a visual, drag-and-drop form builder interface that allows MLGOO-DILG to
+define the form_schema (input fields, validation rules, MOV requirements) for indicators without
+writing JSON. Implements a hybrid approach with visual building and JSON preview for power users.
 
 **Key Deliverables:**
+
 - Visual form builder component with drag-and-drop field placement
-- Support for 7 input types (Checkbox Group, Radio Button, Number Input, Text Input, Text Area, Date Picker, File Upload)
+- Support for 7 input types (Checkbox Group, Radio Button, Number Input, Text Input, Text Area, Date
+  Picker, File Upload)
 - Field configuration panel (labels, validation rules, conditional MOV requirements)
 - Live preview of how the form will appear to BLGU users
 - JSON viewer toggle for debugging and verification
@@ -210,7 +235,9 @@ Build a visual, drag-and-drop form builder interface that allows MLGOO-DILG to d
 - Integration with indicator CRUD API
 
 **Success Criteria:**
-- ✅ MLGOO-DILG can build a complete indicator form using only visual tools (no JSON editing required)
+
+- ✅ MLGOO-DILG can build a complete indicator form using only visual tools (no JSON editing
+  required)
 - ✅ All 7 input types are available and configurable
 - ✅ Live preview accurately shows BLGU user experience
 - ✅ "View JSON" toggle displays valid form_schema structure
@@ -220,16 +247,19 @@ Build a visual, drag-and-drop form builder interface that allows MLGOO-DILG to d
 ---
 
 ## Epic 3.0: Indicator Management - Calculation Schema Builder & Remark Builder
-**PRD Reference:** FR-4.1.3, FR-4.1.4
-**Duration:** 8-12 days
-**Dependencies:** Epic 1.0, Epic 2.0 (requires form_schema fields to reference)
 
-**Description:**
-Implement a visual rule builder for defining calculation_schema (automatic Pass/Fail logic) and remark_schema (human-readable status summaries) for indicators. Includes support for 6 rule types and nested condition groups, plus integration with the backend rule engine.
+**PRD Reference:** FR-4.1.3, FR-4.1.4 **Duration:** 8-12 days **Dependencies:** Epic 1.0, Epic 2.0
+(requires form_schema fields to reference)
+
+**Description:** Implement a visual rule builder for defining calculation_schema (automatic
+Pass/Fail logic) and remark_schema (human-readable status summaries) for indicators. Includes
+support for 6 rule types and nested condition groups, plus integration with the backend rule engine.
 
 **Key Deliverables:**
+
 - Visual calculation rule builder with flowchart/decision-tree interface
-- Support for 6 rule types (AND_ALL, OR_ANY, PERCENTAGE_THRESHOLD, COUNT_THRESHOLD, MATCH_VALUE, BBI_FUNCTIONALITY_CHECK)
+- Support for 6 rule types (AND_ALL, OR_ANY, PERCENTAGE_THRESHOLD, COUNT_THRESHOLD, MATCH_VALUE,
+  BBI_FUNCTIONALITY_CHECK)
 - Nested condition group support (e.g., "(A AND B) OR C")
 - Field selector dropdown populated from form_schema
 - "Test Calculation" feature with sample data input
@@ -238,7 +268,9 @@ Implement a visual rule builder for defining calculation_schema (automatic Pass/
 - Integration with `is_auto_calculable` flag
 
 **Success Criteria:**
-- ✅ MLGOO-DILG can define complex calculation rules visually (e.g., "50% physical OR 50% financial")
+
+- ✅ MLGOO-DILG can define complex calculation rules visually (e.g., "50% physical OR 50%
+  financial")
 - ✅ Nested condition groups work correctly (proper AND/OR precedence)
 - ✅ "Test Calculation" accurately predicts Pass/Fail based on sample input
 - ✅ Remark schema generates human-readable status strings
@@ -248,14 +280,16 @@ Implement a visual rule builder for defining calculation_schema (automatic Pass/
 ---
 
 ## Epic 4.0: BBI Configuration System
-**PRD Reference:** FR-4.2.1, FR-4.2.2
-**Duration:** 5-7 days
-**Dependencies:** Epic 1.0, Epic 3.0 (requires indicator calculation logic)
 
-**Description:**
-Implement the BBI (Barangay-based Institutions) configuration system allowing MLGOO-DILG to define BBIs and map indicators to determine BBI "Functional" or "Non-Functional" status. BBI status is automatically calculated based on indicator compliance results.
+**PRD Reference:** FR-4.2.1, FR-4.2.2 **Duration:** 5-7 days **Dependencies:** Epic 1.0, Epic 3.0
+(requires indicator calculation logic)
+
+**Description:** Implement the BBI (Barangay-based Institutions) configuration system allowing
+MLGOO-DILG to define BBIs and map indicators to determine BBI "Functional" or "Non-Functional"
+status. BBI status is automatically calculated based on indicator compliance results.
 
 **Key Deliverables:**
+
 - Database schema for BBIs and indicator-to-BBI mappings
 - BBI definition CRUD interface (Create, Read, Update, Deactivate)
 - BBI rule builder for mapping indicators to functionality determination
@@ -265,8 +299,10 @@ Implement the BBI (Barangay-based Institutions) configuration system allowing ML
 - Integration with indicator calculation results
 
 **Success Criteria:**
+
 - ✅ MLGOO-DILG can create and configure BBIs (e.g., "Lupon", "BADAC")
-- ✅ MLGOO-DILG can define rules like "If Indicator 1.1 = Pass AND 1.2 = Pass, then Lupon = Functional"
+- ✅ MLGOO-DILG can define rules like "If Indicator 1.1 = Pass AND 1.2 = Pass, then Lupon =
+  Functional"
 - ✅ BBI status is automatically calculated when assessment is finalized
 - ✅ "Test BBI Calculation" correctly predicts Functional/Non-Functional status
 - ✅ BBI configuration changes are versioned (only apply to future assessments)
@@ -275,14 +311,16 @@ Implement the BBI (Barangay-based Institutions) configuration system allowing ML
 ---
 
 ## Epic 5.0: Assessment Cycle & Deadline Management System
-**PRD Reference:** FR-4.3.1, FR-4.3.2, FR-4.3.3, FR-4.3.4
-**Duration:** 6-8 days
-**Dependencies:** Epic 1.0 (indicators must exist), Epic 6.0 (audit logging)
 
-**Description:**
-Implement assessment cycle creation with phase-specific deadlines and granular deadline override controls allowing MLGOO-DILG to extend deadlines for specific indicators and barangays. Includes a visual deadline monitoring dashboard and comprehensive audit trail.
+**PRD Reference:** FR-4.3.1, FR-4.3.2, FR-4.3.3, FR-4.3.4 **Duration:** 6-8 days **Dependencies:**
+Epic 1.0 (indicators must exist), Epic 6.0 (audit logging)
+
+**Description:** Implement assessment cycle creation with phase-specific deadlines and granular
+deadline override controls allowing MLGOO-DILG to extend deadlines for specific indicators and
+barangays. Includes a visual deadline monitoring dashboard and comprehensive audit trail.
 
 **Key Deliverables:**
+
 - Database schema for assessment cycles and deadline overrides
 - Assessment cycle creation interface with 4 phase-specific deadlines
 - Deadline Status Dashboard with visual grid (submitted, late, pending)
@@ -292,7 +330,9 @@ Implement assessment cycle creation with phase-specific deadlines and granular d
 - CSV export for audit log
 
 **Success Criteria:**
-- ✅ MLGOO-DILG can create assessment cycles with distinct Phase 1, Rework, Phase 2, Calibration deadlines
+
+- ✅ MLGOO-DILG can create assessment cycles with distinct Phase 1, Rework, Phase 2, Calibration
+  deadlines
 - ✅ Deadline Status Dashboard accurately shows submission status for all barangays
 - ✅ MLGOO-DILG can extend deadlines for specific indicators for specific barangays
 - ✅ Confirmation dialog clearly shows what will change before applying override
@@ -303,23 +343,27 @@ Implement assessment cycle creation with phase-specific deadlines and granular d
 ---
 
 ## Epic 6.0: Audit & Security Infrastructure
-**PRD Reference:** FR-4.4.1, FR-4.4.3, FR-4.5, FR-4.6
-**Duration:** 4-6 days
-**Dependencies:** None (supports all other epics)
 
-**Description:**
-Implement comprehensive audit logging for all administrative actions, access control enforcement for MLGOO_DILG role, and robust data validation and error handling across all administrative features. This is a cross-cutting epic that supports all other epics.
+**PRD Reference:** FR-4.4.1, FR-4.4.3, FR-4.5, FR-4.6 **Duration:** 4-6 days **Dependencies:** None
+(supports all other epics)
+
+**Description:** Implement comprehensive audit logging for all administrative actions, access
+control enforcement for MLGOO_DILG role, and robust data validation and error handling across all
+administrative features. This is a cross-cutting epic that supports all other epics.
 
 **Key Deliverables:**
+
 - Audit trail service that logs all indicator edits, BBI changes, deadline overrides
 - Audit log models with fields: timestamp, user, entity_type, entity_id, action, changes (JSON)
 - MLGOO_DILG role-based access control middleware
-- Comprehensive data validation for all schemas (form_schema, calculation_schema, remark_schema, BBI rules)
+- Comprehensive data validation for all schemas (form_schema, calculation_schema, remark_schema, BBI
+  rules)
 - User-friendly error messages with actionable guidance
 - Security measures: input sanitization, rate limiting, XSS prevention
 - Audit log viewer UI with filtering by date, user, entity type, action
 
 **Success Criteria:**
+
 - ✅ All administrative actions are logged with complete information (who, what, when)
 - ✅ Non-MLGOO_DILG users receive 403 Forbidden on all admin endpoints
 - ✅ Invalid JSON schemas are caught with specific error messages before saving
@@ -332,7 +376,8 @@ Implement comprehensive audit logging for all administrative actions, access con
 
 ### Phase 2: Story-Level Tasks
 
-Breaking down each epic into tech-stack specific implementation areas (Database, Backend, Frontend, Testing).
+Breaking down each epic into tech-stack specific implementation areas (Database, Backend, Frontend,
+Testing).
 
 ---
 
@@ -342,9 +387,12 @@ Breaking down each epic into tech-stack specific implementation areas (Database,
   - **Duration:** 1 day
   - **Dependencies:** None
   - **Tech Stack:** SQLAlchemy, Alembic, PostgreSQL
-  - **Description:** Create database models and migrations for indicators table with versioning support. Add indicators_history table to track all versions. Update existing indicators to use version field.
+  - **Description:** Create database models and migrations for indicators table with versioning
+    support. Add indicators_history table to track all versions. Update existing indicators to use
+    version field.
   - **Deliverables:**
-    - Enhanced `indicators` table with `version`, `is_auto_calculable`, `form_schema`, `calculation_schema`, `remark_schema` (all JSONB)
+    - Enhanced `indicators` table with `version`, `is_auto_calculable`, `form_schema`,
+      `calculation_schema`, `remark_schema` (all JSONB)
     - New `indicators_history` table for version tracking
     - Migration to add new columns to existing indicators
     - Enum updates for rule types and indicator statuses
@@ -353,7 +401,8 @@ Breaking down each epic into tech-stack specific implementation areas (Database,
   - **Duration:** 2 days
   - **Dependencies:** 1.1 (Database schema must exist)
   - **Tech Stack:** FastAPI, SQLAlchemy, Pydantic
-  - **Description:** Implement `indicator_service.py` with all CRUD operations and versioning logic. When an indicator is edited, create a new version and preserve old version in history table.
+  - **Description:** Implement `indicator_service.py` with all CRUD operations and versioning logic.
+    When an indicator is edited, create a new version and preserve old version in history table.
   - **Deliverables:**
     - `create_indicator()` - Create new indicator with version 1
     - `get_indicator(id)` - Retrieve indicator by ID
@@ -367,7 +416,8 @@ Breaking down each epic into tech-stack specific implementation areas (Database,
   - **Duration:** 1 day
   - **Dependencies:** 1.2 (Service layer must exist)
   - **Tech Stack:** FastAPI, Pydantic schemas
-  - **Description:** Create RESTful API endpoints for indicator CRUD operations with MLGOO_DILG role protection.
+  - **Description:** Create RESTful API endpoints for indicator CRUD operations with MLGOO_DILG role
+    protection.
   - **Deliverables:**
     - `POST /api/v1/indicators` - Create indicator
     - `GET /api/v1/indicators` - List indicators with filtering
@@ -382,7 +432,8 @@ Breaking down each epic into tech-stack specific implementation areas (Database,
   - **Duration:** 2 days
   - **Dependencies:** 1.3 (API endpoints must exist), `pnpm generate-types`
   - **Tech Stack:** Next.js, React, TanStack Query, shadcn/ui
-  - **Description:** Create indicator management pages with list view (searchable, filterable) and detail view showing indicator configuration.
+  - **Description:** Create indicator management pages with list view (searchable, filterable) and
+    detail view showing indicator configuration.
   - **Deliverables:**
     - `/admin/indicators/page.tsx` - Indicator list page
     - `IndicatorList.tsx` component with search, filter, pagination
@@ -411,7 +462,8 @@ Breaking down each epic into tech-stack specific implementation areas (Database,
   - **Duration:** 1 day
   - **Dependencies:** Epic 1.0 complete
   - **Tech Stack:** Pydantic, JSON Schema
-  - **Description:** Create Pydantic models defining the structure of form_schema JSON. Implement validation logic to ensure form_schema is valid before saving.
+  - **Description:** Create Pydantic models defining the structure of form_schema JSON. Implement
+    validation logic to ensure form_schema is valid before saving.
   - **Deliverables:**
     - Pydantic models for each input type (CheckboxGroupField, NumberInputField, etc.)
     - FormSchema root model with list of fields
@@ -422,7 +474,8 @@ Breaking down each epic into tech-stack specific implementation areas (Database,
   - **Duration:** 1 day
   - **Dependencies:** 2.1
   - **Tech Stack:** FastAPI, Pydantic
-  - **Description:** Add validation endpoint to test form_schema before saving. Integrate validation into indicator update service.
+  - **Description:** Add validation endpoint to test form_schema before saving. Integrate validation
+    into indicator update service.
   - **Deliverables:**
     - `POST /api/v1/indicators/validate-form-schema` endpoint
     - Integration with `update_indicator()` service method
@@ -433,7 +486,8 @@ Breaking down each epic into tech-stack specific implementation areas (Database,
   - **Duration:** 2 days
   - **Dependencies:** 2.1, 2.2, `pnpm generate-types`
   - **Tech Stack:** React, Zustand, TypeScript
-  - **Description:** Build core form builder architecture with state management for form fields, drag-and-drop zones, and field configuration.
+  - **Description:** Build core form builder architecture with state management for form fields,
+    drag-and-drop zones, and field configuration.
   - **Deliverables:**
     - `FormSchemaBuilder.tsx` main component
     - Zustand store for form builder state
@@ -445,7 +499,8 @@ Breaking down each epic into tech-stack specific implementation areas (Database,
   - **Duration:** 2 days
   - **Dependencies:** 2.3
   - **Tech Stack:** React, shadcn/ui, CVA
-  - **Description:** Create configurable field components for all 7 input types with property panels.
+  - **Description:** Create configurable field components for all 7 input types with property
+    panels.
   - **Deliverables:**
     - `CheckboxGroupField.tsx` - Multi-select with options
     - `RadioButtonField.tsx` - Single-select with options
@@ -461,7 +516,8 @@ Breaking down each epic into tech-stack specific implementation areas (Database,
   - **Duration:** 1 day
   - **Dependencies:** 2.4
   - **Tech Stack:** React, JSON syntax highlighting library
-  - **Description:** Implement live preview showing how form will appear to BLGU users and JSON viewer toggle for debugging.
+  - **Description:** Implement live preview showing how form will appear to BLGU users and JSON
+    viewer toggle for debugging.
   - **Deliverables:**
     - `FormPreview.tsx` component rendering form in BLGU view
     - `JsonViewer.tsx` with syntax highlighting and copy button
@@ -472,7 +528,8 @@ Breaking down each epic into tech-stack specific implementation areas (Database,
   - **Duration:** 1 day
   - **Dependencies:** 2.5
   - **Tech Stack:** React, TanStack Query
-  - **Description:** Wire form builder to indicator create/update API. Handle save, validate, and error states.
+  - **Description:** Wire form builder to indicator create/update API. Handle save, validate, and
+    error states.
   - **Deliverables:**
     - Integration with `POST /api/v1/indicators` and `PUT /api/v1/indicators/{id}`
     - Save button with loading states
@@ -500,7 +557,8 @@ Breaking down each epic into tech-stack specific implementation areas (Database,
   - **Duration:** 2 days
   - **Dependencies:** Epic 1.0 complete
   - **Tech Stack:** Pydantic, SQLAlchemy
-  - **Description:** Create Pydantic models for calculation_schema defining all 6 rule types. Extend rule engine in `intelligence_service.py`.
+  - **Description:** Create Pydantic models for calculation_schema defining all 6 rule types. Extend
+    rule engine in `intelligence_service.py`.
   - **Deliverables:**
     - Pydantic models for rule types (AndAllRule, OrAnyRule, PercentageThresholdRule, etc.)
     - CalculationSchema root model
@@ -523,7 +581,8 @@ Breaking down each epic into tech-stack specific implementation areas (Database,
   - **Duration:** 2 days
   - **Dependencies:** 3.2, Epic 2.0 (needs form_schema fields), `pnpm generate-types`
   - **Tech Stack:** React, Zustand, TypeScript
-  - **Description:** Build visual rule builder with flowchart/decision-tree interface for defining calculation logic.
+  - **Description:** Build visual rule builder with flowchart/decision-tree interface for defining
+    calculation logic.
   - **Deliverables:**
     - `CalculationRuleBuilder.tsx` main component
     - Zustand store for rule builder state
@@ -537,7 +596,8 @@ Breaking down each epic into tech-stack specific implementation areas (Database,
   - **Duration:** 2 days
   - **Dependencies:** 3.3
   - **Tech Stack:** React, shadcn/ui
-  - **Description:** Create UI components for each of the 6 rule types with appropriate configuration options.
+  - **Description:** Create UI components for each of the 6 rule types with appropriate
+    configuration options.
   - **Deliverables:**
     - `AndAllRuleComponent.tsx` - Multiple conditions, all must be true
     - `OrAnyRuleComponent.tsx` - Multiple conditions, at least one true
@@ -551,7 +611,8 @@ Breaking down each epic into tech-stack specific implementation areas (Database,
   - **Duration:** 1 day
   - **Dependencies:** 3.4
   - **Tech Stack:** React, TanStack Query
-  - **Description:** Implement "Test Calculation" feature allowing MLGOO to input sample data and see predicted Pass/Fail result.
+  - **Description:** Implement "Test Calculation" feature allowing MLGOO to input sample data and
+    see predicted Pass/Fail result.
   - **Deliverables:**
     - Test panel with sample data inputs (matching form_schema fields)
     - "Run Test" button
@@ -563,7 +624,8 @@ Breaking down each epic into tech-stack specific implementation areas (Database,
   - **Duration:** 2 days
   - **Dependencies:** 3.1
   - **Tech Stack:** React, shadcn/ui
-  - **Description:** Create remark schema builder for defining conditional text templates based on indicator status.
+  - **Description:** Create remark schema builder for defining conditional text templates based on
+    indicator status.
   - **Deliverables:**
     - `RemarkSchemaBuilder.tsx` component
     - Condition selector (all children pass, any child fail, BBI status)
@@ -603,7 +665,8 @@ Breaking down each epic into tech-stack specific implementation areas (Database,
   - **Duration:** 1 day
   - **Dependencies:** None
   - **Tech Stack:** SQLAlchemy, Alembic, PostgreSQL
-  - **Description:** Create database models for BBIs and indicator-to-BBI mappings with calculation rules.
+  - **Description:** Create database models for BBIs and indicator-to-BBI mappings with calculation
+    rules.
   - **Deliverables:**
     - `bbis` table (id, name, abbreviation, description, governance_area_id, is_active)
     - `bbi_indicator_mappings` table (bbi_id, mapping_rules JSONB)
@@ -653,7 +716,8 @@ Breaking down each epic into tech-stack specific implementation areas (Database,
   - **Duration:** 2 days
   - **Dependencies:** 4.4, Epic 3.3 (reuse rule builder architecture)
   - **Tech Stack:** React, shadcn/ui
-  - **Description:** Create interface for defining indicator-to-BBI mapping rules (reusing calculation rule builder components).
+  - **Description:** Create interface for defining indicator-to-BBI mapping rules (reusing
+    calculation rule builder components).
   - **Deliverables:**
     - `BBIMappingBuilder.tsx` component
     - Indicator selector (multi-select from governance area)
@@ -684,8 +748,10 @@ Breaking down each epic into tech-stack specific implementation areas (Database,
   - **Tech Stack:** SQLAlchemy, Alembic, PostgreSQL
   - **Description:** Create database models for assessment cycles and deadline override tracking.
   - **Deliverables:**
-    - `assessment_cycles` table (id, name, year, phase1_deadline, rework_deadline, phase2_deadline, calibration_deadline, is_active)
-    - `deadline_overrides` table (id, barangay_id, indicator_id, original_deadline, new_deadline, reason, created_by, created_at)
+    - `assessment_cycles` table (id, name, year, phase1_deadline, rework_deadline, phase2_deadline,
+      calibration_deadline, is_active)
+    - `deadline_overrides` table (id, barangay_id, indicator_id, original_deadline, new_deadline,
+      reason, created_by, created_at)
     - Alembic migration
     - Constraints ensuring only one active cycle
 
@@ -734,7 +800,8 @@ Breaking down each epic into tech-stack specific implementation areas (Database,
   - **Duration:** 2 days
   - **Dependencies:** 5.3, `pnpm generate-types`
   - **Tech Stack:** Next.js, React, TanStack Query, Recharts or similar
-  - **Description:** Create visual dashboard showing deadline status for all barangays across all phases.
+  - **Description:** Create visual dashboard showing deadline status for all barangays across all
+    phases.
   - **Deliverables:**
     - `/admin/deadlines/page.tsx` - Deadline monitoring dashboard
     - `DeadlineStatusDashboard.tsx` - Grid/table showing barangays × phases
@@ -775,7 +842,8 @@ Breaking down each epic into tech-stack specific implementation areas (Database,
   - **Duration:** 1 day
   - **Dependencies:** 5.2
   - **Tech Stack:** Celery, Redis, Email service (SendGrid or similar)
-  - **Description:** Implement background task to send email notifications when deadlines are extended.
+  - **Description:** Implement background task to send email notifications when deadlines are
+    extended.
   - **Deliverables:**
     - Celery task in `admin_notifications.py`
     - Email template for deadline extension notification
@@ -838,7 +906,8 @@ Breaking down each epic into tech-stack specific implementation areas (Database,
   - **Duration:** 2 days
   - **Dependencies:** Epic 2.1, Epic 3.1 (Pydantic models must exist)
   - **Tech Stack:** Pydantic, JSON Schema
-  - **Description:** Implement comprehensive validation for form_schema, calculation_schema, remark_schema, and BBI mapping rules.
+  - **Description:** Implement comprehensive validation for form_schema, calculation_schema,
+    remark_schema, and BBI mapping rules.
   - **Deliverables:**
     - Pydantic validators for all schema types
     - Circular dependency detection for hierarchical indicators
@@ -875,7 +944,8 @@ Breaking down each epic into tech-stack specific implementation areas (Database,
   - **Duration:** 1 day
   - **Dependencies:** None
   - **Tech Stack:** React, Zustand, shadcn/ui Toast
-  - **Description:** Implement consistent error handling and user-friendly error messages across all admin features.
+  - **Description:** Implement consistent error handling and user-friendly error messages across all
+    admin features.
   - **Deliverables:**
     - Global error handling in TanStack Query
     - Error message mapping (convert technical errors to user-friendly)
@@ -901,7 +971,9 @@ Breaking down each epic into tech-stack specific implementation areas (Database,
 
 ### Phase 3: Atomic-Level Tasks
 
-Each epic has been broken down into granular, file-specific atomic tasks (2-8 hours each) with exact file paths, acceptance criteria, and dependencies. Tasks are organized in separate files for better manageability:
+Each epic has been broken down into granular, file-specific atomic tasks (2-8 hours each) with exact
+file paths, acceptance criteria, and dependencies. Tasks are organized in separate files for better
+manageability:
 
 **📁 Epic Task Files:**
 
@@ -942,15 +1014,16 @@ Each epic has been broken down into granular, file-specific atomic tasks (2-8 ho
 ### For Developers
 
 **Starting a New Epic:**
-1. Open the corresponding epic-X-*.md file
+
+1. Open the corresponding epic-X-\*.md file
 2. Review all atomic tasks and dependencies
 3. Start with Story 1 (usually database schema)
 4. Complete tasks in order (dependencies must be satisfied)
 5. Check off tasks as completed
 6. Run tests after each story completion
 
-**Task Format:**
-Each atomic task includes:
+**Task Format:** Each atomic task includes:
+
 - ✅ **File paths**: Exact location in monorepo
 - ✅ **Dependencies**: What must be done first
 - ✅ **Acceptance Criteria**: How to know it's complete
@@ -960,12 +1033,14 @@ Each atomic task includes:
 ### For Project Managers
 
 **Progress Tracking:**
+
 - Each epic file contains a summary with total tasks and hours
 - Stories provide logical milestones (1-3 days each)
 - Epics map 1:1 with PRD functional requirements
 - Total estimated duration: **35-50 days** across all epics
 
 **Dependencies:**
+
 - Epic 1 must complete before Epic 2 & Epic 3
 - Epic 3 must complete before Epic 4
 - Epic 6 runs in parallel (cross-cutting concerns)
@@ -978,18 +1053,18 @@ Each atomic task includes:
 **Status: All Phases Complete ✅**
 
 ### ✅ **Completed:**
+
 - **Phase 1:** Epic-Level Tasks (6 epics defined)
 - **Phase 2:** Story-Level Tasks (43 stories defined)
 - **Phase 3:** Atomic Tasks for ALL 6 Epics (264 tasks total)
 
 ### 📊 **Final Statistics:**
 
-**Total Tasks Created:** 264 atomic tasks
-**Total Estimated Hours:** 520 hours (65 days @ 8 hours/day)
-**Total Stories:** 43 stories
-**Total Epics:** 6 epics
+**Total Tasks Created:** 264 atomic tasks **Total Estimated Hours:** 520 hours (65 days @ 8
+hours/day) **Total Stories:** 43 stories **Total Epics:** 6 epics
 
 **Breakdown by Epic:**
+
 - Epic 1 (Indicator CRUD): 38 tasks, 76 hours
 - Epic 2 (Form Builder): 35 tasks, 86.5 hours
 - Epic 3 (Calculation & Remark): 45 tasks, 96 hours
@@ -1000,6 +1075,7 @@ Each atomic task includes:
 ### 🚀 **Ready for Implementation:**
 
 All epics are now ready for development teams to begin implementation. Each task includes:
+
 - ✅ Exact file paths in the monorepo
 - ✅ Clear acceptance criteria
 - ✅ Dependency chains
@@ -1007,6 +1083,7 @@ All epics are now ready for development teams to begin implementation. Each task
 - ✅ Duration estimates (2-8 hours per task)
 
 **Recommended Implementation Order:**
+
 1. Start with **Epic 6** (Audit & Security) - provides foundation for all other epics
 2. Then **Epic 1** (Indicator CRUD & Versioning) - core data model
 3. Then **Epic 2** (Form Builder) - parallel with Epic 3
@@ -1017,6 +1094,7 @@ All epics are now ready for development teams to begin implementation. Each task
 ### 📝 **Documentation Complete:**
 
 All documentation is now in place:
+
 - ✅ Comprehensive PRD with success metrics
 - ✅ Three-tier task breakdown (Epic → Story → Atomic)
 - ✅ PRD traceability matrix

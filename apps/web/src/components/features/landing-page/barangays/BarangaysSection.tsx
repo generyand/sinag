@@ -45,9 +45,7 @@ export function BarangaysSection() {
     <section
       ref={barangaysAnimation.elementRef}
       className={`relative w-full bg-gradient-to-br from-gray-900 via-black to-gray-800 py-16 px-8 transition-all duration-1000 overflow-hidden ${
-        barangaysAnimation.isVisible
-          ? "opacity-100 translate-y-0"
-          : "opacity-0 translate-y-8"
+        barangaysAnimation.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
       }`}
     >
       {/* Background Pattern */}
@@ -61,25 +59,19 @@ export function BarangaysSection() {
         {/* Section Header */}
         <div
           className={`mb-16 transition-all duration-1000 ${
-            barangaysAnimation.isVisible
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-8"
+            barangaysAnimation.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
           }`}
         >
           <h2
             className={`text-4xl md:text-5xl font-bold text-white mb-4 transition-all duration-1000 delay-400 ${
-              barangaysAnimation.isVisible
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 translate-y-4"
+              barangaysAnimation.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
             Serving All Barangays
           </h2>
           <p
             className={`text-xl text-gray-300 max-w-3xl mx-auto transition-all duration-1000 delay-600 ${
-              barangaysAnimation.isVisible
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 translate-y-4"
+              barangaysAnimation.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
             SINAG connects and empowers all 25 barangays of Sulop Municipality
@@ -89,34 +81,20 @@ export function BarangaysSection() {
         {/* Interactive Map Visualization */}
         <div
           className={`relative max-w-5xl mx-auto h-96 md:h-[500px] transition-all duration-700 delay-200 ${
-            barangaysAnimation.isVisible
-              ? "opacity-100 scale-100"
-              : "opacity-0 scale-95"
+            barangaysAnimation.isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"
           }`}
         >
           {/* Connection Lines - Following Sulop's geographic pattern */}
           <svg className="absolute inset-0 w-full h-full" viewBox="0 0 800 400">
             <defs>
               {/* Gradient for connection lines */}
-              <linearGradient
-                id="connectionGradient"
-                x1="0%"
-                y1="0%"
-                x2="100%"
-                y2="0%"
-              >
+              <linearGradient id="connectionGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                 <stop offset="0%" stopColor="rgba(251, 191, 36, 0.1)" />
                 <stop offset="50%" stopColor="rgba(251, 191, 36, 0.4)" />
                 <stop offset="100%" stopColor="rgba(251, 191, 36, 0.1)" />
               </linearGradient>
               {/* Animated gradient for active connections */}
-              <linearGradient
-                id="activeConnectionGradient"
-                x1="0%"
-                y1="0%"
-                x2="100%"
-                y2="0%"
-              >
+              <linearGradient id="activeConnectionGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                 <stop offset="0%" stopColor="rgba(251, 191, 36, 0.8)">
                   <animate
                     attributeName="stop-color"
@@ -311,9 +289,7 @@ export function BarangaysSection() {
                   className={`absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-500 hover:scale-150 cursor-pointer group ${
                     isHighlighted ? "animate-pulse" : ""
                   } ${
-                    barangaysAnimation.isVisible
-                      ? "opacity-100 scale-100"
-                      : "opacity-0 scale-0"
+                    barangaysAnimation.isVisible ? "opacity-100 scale-100" : "opacity-0 scale-0"
                   }`}
                   style={{
                     left: `${pos.x}%`,
@@ -326,9 +302,7 @@ export function BarangaysSection() {
                   <div
                     className={`w-3 h-3 rounded-full transition-all duration-300 ${
                       isHighlighted
-                        ? `${getClusterColor(
-                            pos.cluster
-                          )} shadow-lg shadow-[#fbbf24]/50`
+                        ? `${getClusterColor(pos.cluster)} shadow-lg shadow-[#fbbf24]/50`
                         : `${getClusterColor(
                             pos.cluster
                           )} opacity-80 hover:opacity-100 group-hover:shadow-lg group-hover:shadow-[#fbbf24]/50`
@@ -348,9 +322,7 @@ export function BarangaysSection() {
                   {/* Enhanced Tooltip with cluster info */}
                   <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-black/90 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap shadow-lg">
                     <div className="font-semibold">Barangay {i + 1}</div>
-                    <div className="text-gray-300 capitalize">
-                      {pos.cluster}ern Area
-                    </div>
+                    <div className="text-gray-300 capitalize">{pos.cluster}ern Area</div>
                   </div>
                 </div>
               );
@@ -359,9 +331,7 @@ export function BarangaysSection() {
           {/* Central Hub (Municipal Hall) - Positioned more centrally like in the map */}
           <div
             className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 transition-all duration-1200 delay-3000 ${
-              barangaysAnimation.isVisible
-                ? "opacity-100 scale-100"
-                : "opacity-0 scale-0"
+              barangaysAnimation.isVisible ? "opacity-100 scale-100" : "opacity-0 scale-0"
             }`}
           >
             <div className="relative">
@@ -379,24 +349,18 @@ export function BarangaysSection() {
               {/* Enhanced ripple effects with staggered animations */}
               <div
                 className={`absolute inset-0 bg-[#fbbf24]/30 rounded-full transition-all duration-1000 delay-3200 ${
-                  barangaysAnimation.isVisible
-                    ? "animate-ping opacity-100"
-                    : "opacity-0"
+                  barangaysAnimation.isVisible ? "animate-ping opacity-100" : "opacity-0"
                 }`}
               ></div>
               <div
                 className={`absolute inset-0 bg-[#f59e0b]/20 rounded-full transition-all duration-1000 delay-3400 ${
-                  barangaysAnimation.isVisible
-                    ? "animate-ping opacity-100"
-                    : "opacity-0"
+                  barangaysAnimation.isVisible ? "animate-ping opacity-100" : "opacity-0"
                 }`}
                 style={{ animationDelay: "0.5s" }}
               ></div>
               <div
                 className={`absolute inset-0 bg-[#d97706]/15 rounded-full transition-all duration-1000 delay-3600 ${
-                  barangaysAnimation.isVisible
-                    ? "animate-ping opacity-100"
-                    : "opacity-0"
+                  barangaysAnimation.isVisible ? "animate-ping opacity-100" : "opacity-0"
                 }`}
                 style={{ animationDelay: "1s" }}
               ></div>
@@ -404,9 +368,7 @@ export function BarangaysSection() {
               {/* Rotating orbit effect */}
               <div
                 className={`absolute inset-0 w-16 h-16 -top-2 -left-2 border border-[#fbbf24]/30 rounded-full transition-all duration-1000 delay-3800 ${
-                  barangaysAnimation.isVisible
-                    ? "opacity-100 animate-spin"
-                    : "opacity-0"
+                  barangaysAnimation.isVisible ? "opacity-100 animate-spin" : "opacity-0"
                 }`}
                 style={{ animationDuration: "8s" }}
               >
@@ -438,56 +400,42 @@ export function BarangaysSection() {
         {/* Statistics */}
         <div
           className={`grid grid-cols-1 md:grid-cols-3 gap-8 mt-16 transition-all duration-1000 delay-4500 ${
-            barangaysAnimation.isVisible
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-8"
+            barangaysAnimation.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
           }`}
         >
           <div
             className={`text-center transition-all duration-1000 delay-4700 ${
-              barangaysAnimation.isVisible
-                ? "opacity-100 scale-100"
-                : "opacity-0 scale-95"
+              barangaysAnimation.isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"
             }`}
           >
             <div className="relative group">
               <div className="text-4xl md:text-5xl font-bold text-[#fbbf24] mb-2 transition-all duration-300 group-hover:scale-110">
                 <span
-                  className={`inline-block ${
-                    barangaysAnimation.isVisible ? "animate-pulse" : ""
-                  }`}
+                  className={`inline-block ${barangaysAnimation.isVisible ? "animate-pulse" : ""}`}
                 >
                   25
                 </span>
               </div>
-              <div className="text-gray-300 font-medium">
-                Barangays Connected
-              </div>
+              <div className="text-gray-300 font-medium">Barangays Connected</div>
               {/* Decorative elements */}
               <div className="absolute -top-2 -right-2 w-3 h-3 bg-[#fbbf24]/30 rounded-full animate-ping"></div>
             </div>
           </div>
           <div
             className={`text-center transition-all duration-1000 delay-4900 ${
-              barangaysAnimation.isVisible
-                ? "opacity-100 scale-100"
-                : "opacity-0 scale-95"
+              barangaysAnimation.isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"
             }`}
           >
             <div className="relative group">
               <div className="text-4xl md:text-5xl font-bold text-[#f59e0b] mb-2 transition-all duration-300 group-hover:scale-110">
                 <span
-                  className={`inline-block ${
-                    barangaysAnimation.isVisible ? "animate-pulse" : ""
-                  }`}
+                  className={`inline-block ${barangaysAnimation.isVisible ? "animate-pulse" : ""}`}
                   style={{ animationDelay: "0.5s" }}
                 >
                   100%
                 </span>
               </div>
-              <div className="text-gray-300 font-medium">
-                Coverage Across Sulop
-              </div>
+              <div className="text-gray-300 font-medium">Coverage Across Sulop</div>
               {/* Decorative elements */}
               <div
                 className="absolute -top-2 -right-2 w-3 h-3 bg-[#f59e0b]/30 rounded-full animate-ping"
@@ -497,17 +445,13 @@ export function BarangaysSection() {
           </div>
           <div
             className={`text-center transition-all duration-1000 delay-5100 ${
-              barangaysAnimation.isVisible
-                ? "opacity-100 scale-100"
-                : "opacity-0 scale-95"
+              barangaysAnimation.isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"
             }`}
           >
             <div className="relative group">
               <div className="text-4xl md:text-5xl font-bold text-[#d97706] mb-2 transition-all duration-300 group-hover:scale-110">
                 <span
-                  className={`inline-block ${
-                    barangaysAnimation.isVisible ? "animate-pulse" : ""
-                  }`}
+                  className={`inline-block ${barangaysAnimation.isVisible ? "animate-pulse" : ""}`}
                   style={{ animationDelay: "1s" }}
                 >
                   1

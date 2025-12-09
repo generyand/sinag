@@ -214,10 +214,7 @@ describe("classifyError", () => {
         response: {
           status: 422,
           data: {
-            detail: [
-              { msg: "Field 'email' is required" },
-              { msg: "Field 'password' is required" },
-            ],
+            detail: [{ msg: "Field 'email' is required" }, { msg: "Field 'password' is required" }],
           },
         },
       };

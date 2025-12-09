@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { AlertCircle } from 'lucide-react';
-import { AnalyticsEmptyState } from '@/components/features/analytics';
-import type { TopFailingIndicatorsList, FailingIndicator } from '@sinag/shared';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { AlertCircle } from "lucide-react";
+import { AnalyticsEmptyState } from "@/components/features/analytics";
+import type { TopFailingIndicatorsList, FailingIndicator } from "@sinag/shared";
 
 interface TopFailingIndicatorsCardProps {
   data: TopFailingIndicatorsList | null | undefined;
@@ -17,15 +17,15 @@ interface TopFailingIndicatorsCardProps {
  */
 function getFailRateSeverity(rate: number): { text: string; bg: string; label: string } {
   if (rate >= 70) {
-    return { text: 'text-red-700', bg: 'bg-red-100', label: 'Critical' };
+    return { text: "text-red-700", bg: "bg-red-100", label: "Critical" };
   }
   if (rate >= 50) {
-    return { text: 'text-orange-700', bg: 'bg-orange-100', label: 'High' };
+    return { text: "text-orange-700", bg: "bg-orange-100", label: "High" };
   }
   if (rate >= 30) {
-    return { text: 'text-yellow-700', bg: 'bg-yellow-100', label: 'Moderate' };
+    return { text: "text-yellow-700", bg: "bg-yellow-100", label: "Moderate" };
   }
-  return { text: 'text-gray-700', bg: 'bg-gray-100', label: 'Low' };
+  return { text: "text-gray-700", bg: "bg-gray-100", label: "Low" };
 }
 
 export function TopFailingIndicatorsCard({ data }: TopFailingIndicatorsCardProps) {
@@ -96,7 +96,9 @@ export function TopFailingIndicatorsCard({ data }: TopFailingIndicatorsCardProps
                       </p>
                       <ul className="text-xs text-[var(--muted-foreground)] space-y-1">
                         {indicator.common_issues.slice(0, 2).map((issue: string, i: number) => (
-                          <li key={i} className="truncate">• {issue}</li>
+                          <li key={i} className="truncate">
+                            • {issue}
+                          </li>
                         ))}
                       </ul>
                     </div>

@@ -18,9 +18,11 @@ This guide explains the Nginx reverse proxy configuration for the SINAG platform
 
 ## Overview
 
-SINAG uses Nginx as a reverse proxy to provide a single entry point for all client requests. This architecture offers several benefits:
+SINAG uses Nginx as a reverse proxy to provide a single entry point for all client requests. This
+architecture offers several benefits:
 
-- **Single Entry Point**: All traffic goes through port 80 (HTTP) or 443 (HTTPS when SSL is configured)
+- **Single Entry Point**: All traffic goes through port 80 (HTTP) or 443 (HTTPS when SSL is
+  configured)
 - **Routing Logic**: Intelligent routing between FastAPI backend and Next.js frontend
 - **Load Balancing**: Ready for horizontal scaling with multiple backend/frontend instances
 - **Security**: Additional layer of protection, rate limiting, and security headers
@@ -58,6 +60,7 @@ SINAG uses Nginx as a reverse proxy to provide a single entry point for all clie
 ### Network Topology
 
 **Development (`docker-compose.yml`)**:
+
 - Network: `sinag-network` (172.25.0.0/16)
 - Nginx: 172.25.0.50
 - API: 172.25.0.20
@@ -65,6 +68,7 @@ SINAG uses Nginx as a reverse proxy to provide a single entry point for all clie
 - Redis: 172.25.0.10
 
 **Production (`docker-compose.prod.yml`)**:
+
 - Backend Network: `sinag-backend` (172.26.0.0/24) - Internal only
 - Frontend Network: `sinag-frontend` (172.26.1.0/24)
 - Nginx: 172.26.1.50 (bridges both networks)
@@ -85,6 +89,7 @@ This file defines global Nginx settings:
 - **Rate Limiting**: DDoS protection zones
 
 **Key Settings**:
+
 ```nginx
 worker_processes auto;              # Auto-detect CPU cores
 worker_connections 2048;            # Max connections per worker
@@ -98,24 +103,26 @@ gzip_comp_level 6;                  # Balanced compression
 This file defines routing rules and upstream servers:
 
 **Upstream Definitions**:
+
 - `sinag_api`: FastAPI backend (api:8000)
 - `sinag_web`: Next.js frontend (web:3000)
 
 **Routing Rules**:
 
-| Path | Destination | Purpose |
-|------|-------------|---------|
-| `/api/*` | FastAPI (api:8000) | API endpoints |
-| `/openapi.json` | FastAPI | OpenAPI schema |
-| `/docs` | FastAPI | Swagger UI |
-| `/redoc` | FastAPI | ReDoc documentation |
-| `/health` | FastAPI | Health checks |
-| `/_next/*` | Next.js | Static assets (cached) |
-| `/` | Next.js | Frontend pages |
+| Path            | Destination        | Purpose                |
+| --------------- | ------------------ | ---------------------- |
+| `/api/*`        | FastAPI (api:8000) | API endpoints          |
+| `/openapi.json` | FastAPI            | OpenAPI schema         |
+| `/docs`         | FastAPI            | Swagger UI             |
+| `/redoc`        | FastAPI            | ReDoc documentation    |
+| `/health`       | FastAPI            | Health checks          |
+| `/_next/*`      | Next.js            | Static assets (cached) |
+| `/`             | Next.js            | Frontend pages         |
 
 ### 3. Dockerfile (`nginx/Dockerfile`)
 
 Custom Nginx image based on `nginx:1.25-alpine`:
+
 - Installs curl for health checks
 - Sets timezone to Asia/Manila
 - Runs as non-root `nginx` user
@@ -137,6 +144,7 @@ Client → http://localhost/api/v1/assessments
 ```
 
 **Features**:
+
 - Rate limiting: 30 requests/second with burst of 50
 - Connection limit: 10 concurrent connections per IP
 - CORS headers (backup, FastAPI handles primary)
@@ -155,6 +163,7 @@ Client → http://localhost/
 ```
 
 **Features**:
+
 - WebSocket upgrade for hot module reload (development)
 - No-cache headers for HTML pages (always fresh)
 - Static asset caching for `/_next/*` paths
@@ -177,6 +186,7 @@ Client → http://localhost/_next/static/...
 ### Development Environment
 
 1. **Start all services with Nginx**:
+
    ```bash
    ./scripts/docker-dev.sh up
    ```
@@ -236,6 +246,7 @@ curl -H "X-Custom-Header: test" http://localhost/api/v1/health
    - Server block: `nginx/conf.d/default.conf`
 
 2. **Test configuration**:
+
    ```bash
    ./scripts/docker-dev.sh nginx-test
    ```
@@ -243,16 +254,19 @@ curl -H "X-Custom-Header: test" http://localhost/api/v1/health
 3. **Apply changes**:
 
    **Option A: Reload (zero downtime)**:
+
    ```bash
    ./scripts/docker-dev.sh nginx-reload
    ```
 
    **Option B: Restart (full restart)**:
+
    ```bash
    ./scripts/docker-dev.sh restart
    ```
 
    **Option C: Rebuild (after Dockerfile changes)**:
+
    ```bash
    ./scripts/docker-dev.sh rebuild nginx
    ```
@@ -431,6 +445,7 @@ Nginx maintains persistent connections to backend services, reducing TCP handsha
 **Symptom**: Nginx returns 502 error
 
 **Possible Causes**:
+
 - Backend services not running
 - Backend services not healthy
 - Network connectivity issues
@@ -582,7 +597,7 @@ upstream sinag_api {
 ```yaml
 api:
   deploy:
-    replicas: 3  # Run 3 API instances
+    replicas: 3 # Run 3 API instances
 ```
 
 ## Future Enhancements
@@ -592,12 +607,14 @@ api:
 Once SSL certificates are obtained:
 
 1. **Place certificates**:
+
    ```
    nginx/ssl/cert.pem
    nginx/ssl/key.pem
    ```
 
 2. **Uncomment SSL in `docker-compose.prod.yml`**:
+
    ```yaml
    nginx:
      ports:
@@ -702,6 +719,7 @@ The Nginx reverse proxy provides:
 - ✅ **Flexibility**: Zero-downtime configuration reloads
 
 **Access Points**:
+
 - Production: http://localhost (port 80)
 - Development: http://localhost (port 80) or direct ports (3000, 8000)
 

@@ -89,7 +89,9 @@ describe("formSchemaParser", () => {
     it("should handle malformed sections with fallback values", () => {
       const schema = {
         sections: [
-          { /* missing id and title */ },
+          {
+            /* missing id and title */
+          },
           { id: null, title: null },
         ],
         fields: [],

@@ -33,11 +33,11 @@ export default function AssessmentValidationPage() {
   const assessment = data.assessment as any;
 
   // Debug logging to verify assessment data structure
-  console.log('[AssessmentValidationPage] Full data:', data);
-  console.log('[AssessmentValidationPage] Assessment:', assessment);
-  console.log('[AssessmentValidationPage] Responses count:', assessment.responses?.length || 0);
+  console.log("[AssessmentValidationPage] Full data:", data);
+  console.log("[AssessmentValidationPage] Assessment:", assessment);
+  console.log("[AssessmentValidationPage] Responses count:", assessment.responses?.length || 0);
   if (assessment.responses && assessment.responses.length > 0) {
-    console.log('[AssessmentValidationPage] First response MOVs:', assessment.responses[0].movs);
+    console.log("[AssessmentValidationPage] First response MOVs:", assessment.responses[0].movs);
   }
 
   const getStatusIcon = (status: string) => {
@@ -70,7 +70,7 @@ export default function AssessmentValidationPage() {
     <div className="container mx-auto px-4 py-8">
       <PageHeader
         title={`Assessment Review - ${assessment.blgu_user.name}`}
-        description={`Reviewing assessment for ${assessment.blgu_user.barangay?.name || 'Unknown Barangay'}`}
+        description={`Reviewing assessment for ${assessment.blgu_user.barangay?.name || "Unknown Barangay"}`}
       />
 
       {/* Assessment Overview */}
@@ -82,11 +82,11 @@ export default function AssessmentValidationPage() {
               Submitted by {assessment.blgu_user.name} ({assessment.blgu_user.email})
             </p>
           </div>
-          <div className={`flex items-center gap-2 rounded-lg border px-3 py-2 ${getStatusColor(assessment.status)}`}>
+          <div
+            className={`flex items-center gap-2 rounded-lg border px-3 py-2 ${getStatusColor(assessment.status)}`}
+          >
             {getStatusIcon(assessment.status)}
-            <span className="font-medium capitalize">
-              {assessment.status.replace(/_/g, ' ')}
-            </span>
+            <span className="font-medium capitalize">{assessment.status.replace(/_/g, " ")}</span>
           </div>
         </div>
 
@@ -98,36 +98,50 @@ export default function AssessmentValidationPage() {
             </div>
             <p className="mt-1 text-2xl font-bold">{assessment.responses.length}</p>
           </div>
-          
+
           <div className="rounded-lg bg-gray-50 p-4">
             <div className="flex items-center gap-2">
               <Upload className="h-5 w-5 text-gray-600" />
               <span className="font-medium">Total MOVs</span>
             </div>
             <p className="mt-1 text-2xl font-bold">
-              {assessment.responses.reduce((total: number, response: any) => total + response.movs.length, 0)}
+              {assessment.responses.reduce(
+                (total: number, response: any) => total + response.movs.length,
+                0
+              )}
             </p>
           </div>
-          
+
           <div className="rounded-lg bg-gray-50 p-4">
             <div className="flex items-center gap-2">
               <MessageSquare className="h-5 w-5 text-gray-600" />
               <span className="font-medium">Feedback Comments</span>
             </div>
             <p className="mt-1 text-2xl font-bold">
-              {assessment.responses.reduce((total: number, response: any) => total + response.feedback_comments.length, 0)}
+              {assessment.responses.reduce(
+                (total: number, response: any) => total + response.feedback_comments.length,
+                0
+              )}
             </p>
           </div>
         </div>
 
         <div className="mt-4 text-sm text-gray-600">
-          <p><strong>Created:</strong> {new Date(assessment.created_at).toLocaleDateString()}</p>
-          <p><strong>Last Updated:</strong> {new Date(assessment.updated_at).toLocaleDateString()}</p>
+          <p>
+            <strong>Created:</strong> {new Date(assessment.created_at).toLocaleDateString()}
+          </p>
+          <p>
+            <strong>Last Updated:</strong> {new Date(assessment.updated_at).toLocaleDateString()}
+          </p>
           {assessment.submitted_at && (
-            <p><strong>Submitted:</strong> {new Date(assessment.submitted_at).toLocaleDateString()}</p>
+            <p>
+              <strong>Submitted:</strong> {new Date(assessment.submitted_at).toLocaleDateString()}
+            </p>
           )}
           {assessment.validated_at && (
-            <p><strong>Validated:</strong> {new Date(assessment.validated_at).toLocaleDateString()}</p>
+            <p>
+              <strong>Validated:</strong> {new Date(assessment.validated_at).toLocaleDateString()}
+            </p>
           )}
         </div>
       </div>
@@ -145,7 +159,7 @@ export default function AssessmentValidationPage() {
       {/* Assessment Responses */}
       <div className="space-y-6">
         <h2 className="text-xl font-semibold">Assessment Responses</h2>
-        
+
         {assessment.responses.length === 0 ? (
           <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
             <FileText className="mx-auto h-12 w-12 text-gray-400" />

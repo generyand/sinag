@@ -152,7 +152,16 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
       }
       setErrors({});
     }
-  }, [open, initialValues]);
+  }, [
+    open,
+    initialValues,
+    setRole,
+    setValidatorAreaId,
+    setBarangayId,
+    setIsActive,
+    setIsSuperuser,
+    setMustChangePassword,
+  ]);
 
   const handleRoleChange = useCallback((newRole: string) => {
     const typedRole = newRole as UserRole;

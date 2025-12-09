@@ -1,50 +1,55 @@
-'use client';
+"use client";
 
-import { KPICards, SubmissionsFilters, SubmissionsTable } from '@/components/features/submissions';
-import { useAssessorQueue } from '@/hooks/useAssessor';
-import { useAssessorGovernanceArea } from '@/hooks/useAssessorGovernanceArea';
-import { BarangaySubmission, SubmissionsData, SubmissionsFilter, SubmissionsKPI } from '@/types/submissions';
-import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
-import { useGetAssessorStats } from '@sinag/shared';
+import { KPICards, SubmissionsFilters, SubmissionsTable } from "@/components/features/submissions";
+import { useAssessorQueue } from "@/hooks/useAssessor";
+import { useAssessorGovernanceArea } from "@/hooks/useAssessorGovernanceArea";
+import {
+  BarangaySubmission,
+  SubmissionsData,
+  SubmissionsFilter,
+  SubmissionsKPI,
+} from "@/types/submissions";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import { useGetAssessorStats } from "@sinag/shared";
 
 // Map API status to UI areaStatus for VALIDATORS
-function mapStatusToAreaStatus(status: string): BarangaySubmission['areaStatus'] {
+function mapStatusToAreaStatus(status: string): BarangaySubmission["areaStatus"] {
   const normalizedStatus = status.toLowerCase();
 
   // For validators, AWAITING_FINAL_VALIDATION means awaiting their review
-  if (normalizedStatus === 'awaiting_final_validation') {
-    return 'awaiting_review';
+  if (normalizedStatus === "awaiting_final_validation") {
+    return "awaiting_review";
   }
 
-  if (normalizedStatus.includes('rework')) {
-    return 'needs_rework';
+  if (normalizedStatus.includes("rework")) {
+    return "needs_rework";
   }
 
   // VALIDATED or COMPLETED means validator finished
-  if (normalizedStatus === 'validated' || normalizedStatus === 'completed') {
-    return 'validated';
+  if (normalizedStatus === "validated" || normalizedStatus === "completed") {
+    return "validated";
   }
 
-  return 'in_progress';
+  return "in_progress";
 }
 
 // Map API status to UI overallStatus
-function mapStatusToOverallStatus(status: string): BarangaySubmission['overallStatus'] {
+function mapStatusToOverallStatus(status: string): BarangaySubmission["overallStatus"] {
   const normalizedStatus = status.toLowerCase();
-  if (normalizedStatus.includes('submitted') || normalizedStatus.includes('review')) {
-    return 'submitted';
+  if (normalizedStatus.includes("submitted") || normalizedStatus.includes("review")) {
+    return "submitted";
   }
-  if (normalizedStatus.includes('rework')) {
-    return 'needs_rework';
+  if (normalizedStatus.includes("rework")) {
+    return "needs_rework";
   }
-  if (normalizedStatus.includes('validated')) {
-    return 'validated';
+  if (normalizedStatus.includes("validated")) {
+    return "validated";
   }
-  if (normalizedStatus.includes('draft')) {
-    return 'draft';
+  if (normalizedStatus.includes("draft")) {
+    return "draft";
   }
-  return 'under_review';
+  return "under_review";
 }
 
 export default function ValidatorSubmissionsPage() {
@@ -54,8 +59,8 @@ export default function ValidatorSubmissionsPage() {
   const { data: statsData } = useGetAssessorStats();
 
   const [filters, setFilters] = useState<SubmissionsFilter>({
-    search: '',
-    status: []
+    search: "",
+    status: [],
   });
 
   // Transform API data to UI shape
@@ -65,7 +70,7 @@ export default function ValidatorSubmissionsPage() {
     // Map queue items to BarangaySubmission
     const submissions: BarangaySubmission[] = queueData.map((item) => ({
       id: item.assessment_id.toString(),
-      barangayName: item.barangay_name || 'Unknown',
+      barangayName: item.barangay_name || "Unknown",
       areaProgress: item.area_progress ?? 0, // Progress from API
       areaStatus: mapStatusToAreaStatus(item.status),
       overallStatus: mapStatusToOverallStatus(item.status),
@@ -74,8 +79,8 @@ export default function ValidatorSubmissionsPage() {
 
     // Calculate KPIs from queue data and stats
     const kpi: SubmissionsKPI = {
-      awaitingReview: submissions.filter(s => s.areaStatus === 'awaiting_review').length,
-      inRework: submissions.filter(s => s.areaStatus === 'needs_rework').length,
+      awaitingReview: submissions.filter((s) => s.areaStatus === "awaiting_review").length,
+      inRework: submissions.filter((s) => s.areaStatus === "needs_rework").length,
       validated: (statsData as { validated_count?: number })?.validated_count ?? 0, // Use stats endpoint for accurate count
       avgReviewTime: 0, // Not provided by API, default to 0
     };
@@ -83,7 +88,7 @@ export default function ValidatorSubmissionsPage() {
     return {
       kpi,
       submissions,
-      governanceArea: governanceAreaName || 'Unknown',
+      governanceArea: governanceAreaName || "Unknown",
     };
   }, [queueData, queueLoading, governanceAreaName, statsData]);
 
@@ -95,16 +100,14 @@ export default function ValidatorSubmissionsPage() {
 
     // Apply search filter
     if (filters.search) {
-      filtered = filtered.filter(submission =>
+      filtered = filtered.filter((submission) =>
         submission.barangayName.toLowerCase().includes(filters.search.toLowerCase())
       );
     }
 
     // Apply status filter
     if (filters.status.length > 0) {
-      filtered = filtered.filter(submission =>
-        filters.status.includes(submission.areaStatus)
-      );
+      filtered = filtered.filter((submission) => filters.status.includes(submission.areaStatus));
     }
 
     return filtered;
@@ -145,7 +148,9 @@ export default function ValidatorSubmissionsPage() {
             Error Loading Submissions
           </h2>
           <p className="text-[var(--text-secondary)]">
-            {queueError ? 'Failed to load submissions queue. Please try again later.' : 'No submissions data available.'}
+            {queueError
+              ? "Failed to load submissions queue. Please try again later."
+              : "No submissions data available."}
           </p>
         </div>
       </div>
@@ -160,7 +165,10 @@ export default function ValidatorSubmissionsPage() {
         aria-labelledby="validation-overview-title"
       >
         <header className="mb-4">
-          <h2 id="validation-overview-title" className="text-lg font-semibold text-[var(--foreground)] mb-1">
+          <h2
+            id="validation-overview-title"
+            className="text-lg font-semibold text-[var(--foreground)] mb-1"
+          >
             Validation Overview
           </h2>
           <p className="text-sm text-[var(--text-secondary)]">
@@ -176,17 +184,15 @@ export default function ValidatorSubmissionsPage() {
         aria-labelledby="filter-search-title"
       >
         <header className="mb-4">
-          <h2 id="filter-search-title" className="text-lg font-semibold text-[var(--foreground)] mb-1">
+          <h2
+            id="filter-search-title"
+            className="text-lg font-semibold text-[var(--foreground)] mb-1"
+          >
             Filter & Search
           </h2>
-          <p className="text-sm text-[var(--text-secondary)]">
-            Find specific submissions quickly
-          </p>
+          <p className="text-sm text-[var(--text-secondary)]">Find specific submissions quickly</p>
         </header>
-        <SubmissionsFilters
-          filters={filters}
-          onFiltersChange={handleFiltersChange}
-        />
+        <SubmissionsFilters filters={filters} onFiltersChange={handleFiltersChange} />
       </section>
 
       {/* Enhanced Main Submissions Data Table */}
@@ -197,15 +203,22 @@ export default function ValidatorSubmissionsPage() {
         <header className="px-6 py-4 border-b border-[var(--border)] bg-gradient-to-r from-[var(--card)] to-[var(--muted)]">
           <div className="flex items-center justify-between">
             <div>
-              <h2 id="submissions-table-title" className="text-lg font-semibold text-[var(--foreground)]">
+              <h2
+                id="submissions-table-title"
+                className="text-lg font-semibold text-[var(--foreground)]"
+              >
                 Barangay Submissions
               </h2>
               <p className="text-sm text-[var(--text-secondary)]">
-                {filteredSubmissions.length} submission{filteredSubmissions.length !== 1 ? 's' : ''} found
+                {filteredSubmissions.length} submission{filteredSubmissions.length !== 1 ? "s" : ""}{" "}
+                found
               </p>
             </div>
             <div className="flex items-center space-x-2" role="status" aria-live="polite">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" aria-hidden="true"></div>
+              <div
+                className="w-2 h-2 bg-green-500 rounded-full animate-pulse"
+                aria-hidden="true"
+              ></div>
               <span className="text-xs text-[var(--text-muted)]">Live updates</span>
             </div>
           </div>
@@ -218,7 +231,10 @@ export default function ValidatorSubmissionsPage() {
           />
         ) : (
           <div className="text-center py-16 px-6" role="status" aria-label="No submissions found">
-            <div className="mx-auto h-16 w-16 text-[var(--text-muted)] mb-6 bg-[var(--muted)] rounded-sm flex items-center justify-center" aria-hidden="true">
+            <div
+              className="mx-auto h-16 w-16 text-[var(--text-muted)] mb-6 bg-[var(--muted)] rounded-sm flex items-center justify-center"
+              aria-hidden="true"
+            >
               <svg
                 className="h-8 w-8"
                 fill="none"
@@ -239,12 +255,12 @@ export default function ValidatorSubmissionsPage() {
             </h3>
             <p className="text-[var(--text-secondary)] max-w-md mx-auto">
               {filters.search || filters.status.length > 0
-                ? 'Try adjusting your search or filter criteria to find what you\'re looking for.'
-                : 'When barangays submit their assessments for your governance area, they will appear here for validation.'}
+                ? "Try adjusting your search or filter criteria to find what you're looking for."
+                : "When barangays submit their assessments for your governance area, they will appear here for validation."}
             </p>
             {(filters.search || filters.status.length > 0) && (
               <button
-                onClick={() => handleFiltersChange({ search: '', status: [] })}
+                onClick={() => handleFiltersChange({ search: "", status: [] })}
                 className="mt-4 px-4 py-2 text-sm bg-[var(--cityscape-yellow)] text-[var(--cityscape-accent-foreground)] rounded-sm hover:bg-[var(--cityscape-yellow-dark)] transition-colors duration-200"
                 aria-label="Clear all search filters"
               >

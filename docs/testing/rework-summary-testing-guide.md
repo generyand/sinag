@@ -3,6 +3,7 @@
 ## Prerequisites
 
 Before testing, ensure you have:
+
 - ✅ Gemini API key configured in `apps/api/.env`
 - ✅ PostgreSQL database running
 - ✅ Redis running (for Celery)
@@ -39,6 +40,7 @@ celery -A app.core.celery_app worker --loglevel=info
 ```
 
 **Expected output**:
+
 ```
 [tasks]
   . intelligence.generate_insights_task
@@ -99,6 +101,7 @@ curl -X POST http://localhost:8000/api/v1/users/ \
 ```
 
 **Option B: Via Frontend**
+
 - Use existing admin account to create users via User Management page
 
 ### Step 2: BLGU Submits Assessment
@@ -122,6 +125,7 @@ curl -X POST http://localhost:8000/api/v1/users/ \
 5. Click **"Request Rework"** button
 
 **Expected backend behavior**:
+
 ```json
 {
   "success": true,
@@ -152,8 +156,8 @@ curl -X POST http://localhost:8000/api/v1/users/ \
 [2025-11-24 10:30:05,890: INFO] Task intelligence.generate_rework_summary_task[abc-123-def-456] succeeded
 ```
 
-**If successful**: Summary generated in 5-10 seconds
-**If failed**: Check error logs for API key issues or network problems
+**If successful**: Summary generated in 5-10 seconds **If failed**: Check error logs for API key
+issues or network problems
 
 ### Step 5: Verify Database
 
@@ -169,6 +173,7 @@ WHERE id = 1;
 ```
 
 **Expected**:
+
 ```
 id | status  | has_summary | summary_text
 ---+---------+-------------+--------------------------------------------------
@@ -187,6 +192,7 @@ curl -X GET http://localhost:8000/api/v1/assessments/1/rework-summary \
 ```
 
 **Expected response**:
+
 ```json
 {
   "overall_summary": "The assessment requires revisions in 3 areas...",
@@ -222,6 +228,7 @@ curl -X GET http://localhost:8000/api/v1/assessments/1/rework-summary \
 3. Click on the assessment in rework status
 
 **Expected on indicator page**:
+
 - ✅ Orange alert banner: "This Indicator Requires Rework"
 - ✅ Blue alert banner: "AI-Powered Summary" (may show loading spinner for 5-10 seconds)
 - ✅ Brief summary text appears
@@ -235,6 +242,7 @@ curl -X GET http://localhost:8000/api/v1/assessments/1/rework-summary \
 2. Verify page loads: http://localhost:3000/blgu/rework-summary?assessment=1
 
 **Expected page sections**:
+
 - ✅ Header with AI icon and "AI-Powered Rework Summary" title
 - ✅ Estimated time badge (top right)
 - ✅ Overall summary card (blue background)
@@ -252,11 +260,13 @@ curl -X GET http://localhost:8000/api/v1/assessments/1/rework-summary \
 **Scenario**: Summary still generating
 
 1. Manually delete summary from database:
+
 ```sql
 UPDATE assessments SET rework_summary = NULL WHERE id = 1;
 ```
 
 2. Trigger summary generation again:
+
 ```bash
 cd apps/api
 python -c "
@@ -268,6 +278,7 @@ generate_rework_summary_task.delay(1)
 3. Immediately refresh the BLGU frontend page
 
 **Expected behavior**:
+
 - Loading spinner appears in banner
 - Message: "Analyzing assessor feedback and generating summary..."
 - Page polls every 5 seconds
@@ -283,6 +294,7 @@ generate_rework_summary_task.delay(1)
 **Setup**: Request rework without adding any comments or annotations
 
 **Expected**:
+
 - Backend should reject with error
 - Frontend shows validation message
 
@@ -296,6 +308,7 @@ curl -X GET http://localhost:8000/api/v1/assessments/1/rework-summary \
 ```
 
 **Expected response**:
+
 ```json
 {
   "detail": "Assessment is not in rework status. Current status: DRAFT"
@@ -312,6 +325,7 @@ curl -X GET http://localhost:8000/api/v1/assessments/1/rework-summary \
 ```
 
 **Expected response**:
+
 ```json
 {
   "detail": "You can only access rework summaries for your own assessments"
@@ -323,6 +337,7 @@ curl -X GET http://localhost:8000/api/v1/assessments/1/rework-summary \
 **Test**: Temporarily invalidate API key
 
 1. Edit `apps/api/.env`:
+
 ```
 GEMINI_API_KEY=invalid_key
 ```
@@ -330,6 +345,7 @@ GEMINI_API_KEY=invalid_key
 2. Trigger rework summary generation
 
 **Expected**:
+
 - Celery worker logs error
 - Retries 3 times with exponential backoff
 - After 3 failures, task fails
@@ -340,6 +356,7 @@ GEMINI_API_KEY=invalid_key
 **Test**: Keep summary NULL for extended period
 
 **Expected**:
+
 - Frontend polls 20 times (5 seconds each = 100 seconds)
 - After 20 attempts, shows error message
 - Error: "Rework summary generation is taking longer than expected. Please refresh..."
@@ -384,6 +401,7 @@ GEMINI_API_KEY=invalid_key
 ### Problem: Celery task not executing
 
 **Check**:
+
 ```bash
 # Verify Redis is running
 redis-cli ping
@@ -401,6 +419,7 @@ celery -A app.core.celery_app inspect registered
 ### Problem: Summary generation fails
 
 **Check Celery logs**:
+
 ```
 [ERROR] Gemini API authentication failed
 ```
@@ -410,6 +429,7 @@ celery -A app.core.celery_app inspect registered
 ### Problem: Frontend shows "still generating" indefinitely
 
 **Check**:
+
 ```sql
 SELECT rework_summary FROM assessments WHERE id = 1;
 ```
@@ -417,12 +437,14 @@ SELECT rework_summary FROM assessments WHERE id = 1;
 **If NULL**: Check Celery logs for errors
 
 **If NOT NULL**: Frontend polling may be broken
+
 - Check browser console for errors
 - Verify `useReworkSummary` hook is called correctly
 
 ### Problem: Frontend doesn't update after summary generated
 
 **Check**:
+
 - Browser console for errors
 - Network tab: verify polling requests every 5 seconds
 - Verify `isGenerating` state changes to `false`
@@ -444,6 +466,7 @@ done
 ```
 
 **Monitor**:
+
 - Celery worker handling concurrent tasks
 - Database connection pool usage
 - API response times
@@ -454,12 +477,14 @@ done
 ## Success Criteria
 
 ✅ **Backend**:
+
 - Migration applies without errors
 - Celery task executes successfully
 - Summary stored in database
 - API endpoint returns 200 with valid JSON
 
 ✅ **Frontend**:
+
 - Banner displays brief summary
 - Polling works (updates without refresh)
 - Full summary page renders correctly
@@ -467,12 +492,14 @@ done
 - Navigation works smoothly
 
 ✅ **AI Quality**:
+
 - Summary is coherent and actionable
 - Issues accurately extracted from feedback
 - Suggested actions are specific and clear
 - Priority actions make sense
 
 ✅ **Performance**:
+
 - Summary generated in < 15 seconds
 - Frontend updates within 5 seconds of generation
 - No UI blocking or freezing
@@ -485,18 +512,21 @@ done
 If issues arise in production:
 
 1. **Disable feature temporarily**:
+
 ```python
 # In assessor_service.py, comment out:
 # summary_task = generate_rework_summary_task.delay(assessment_id)
 ```
 
 2. **Revert migration**:
+
 ```bash
 cd apps/api
 alembic downgrade -1
 ```
 
 3. **Hide frontend components**:
+
 ```tsx
 // In ReworkAlertBanner.tsx, comment out AI summary section
 ```
@@ -518,6 +548,7 @@ alembic downgrade -1
 ## Questions?
 
 If you encounter issues during testing, check:
+
 - Celery logs: `/tmp/celery.log` or console output
 - Backend logs: FastAPI console
 - Frontend console: Browser DevTools

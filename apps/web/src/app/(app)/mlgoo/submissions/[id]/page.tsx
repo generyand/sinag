@@ -1,38 +1,21 @@
 "use client";
 
-import * as React from "react";
-import { useParams, useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  Calendar,
-  FileText,
-  Clock,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Loader2,
-  RotateCcw,
-  File,
-  X,
-  Eye,
-} from "lucide-react";
-import { useAuthStore } from "@/store/useAuthStore";
+import Image from "next/image";
+
+const GOVERNANCE_AREA_LOGOS: Record<string, string> = {
+  "Financial Administration and Sustainability": "/Assessment_Areas/financialAdmin.png",
+  "Disaster Preparedness": "/Assessment_Areas/disasterPreparedness.png",
+  "Social Protection and Sensitivity": "/Assessment_Areas/socialProtectAndSensitivity.png",
+  "Safety, Peace and Order": "/Assessment_Areas/safetyPeaceAndOrder.png",
+  "Environmental Management": "/Assessment_Areas/environmentalManagement.png",
+  "Business Friendliness and Competitiveness": "/Assessment_Areas/businessFriendliness.png",
+};
+
+import { CapDevInsightsCard } from "@/components/features/capdev";
+import { SecureFileViewer } from "@/components/features/movs/FileList";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
-import {
-  useGetMlgooAssessmentsAssessmentId,
-  usePostMlgooAssessmentsAssessmentIdApprove,
-  usePostMlgooAssessmentsAssessmentIdRecalibrate,
-  usePatchMlgooAssessmentsAssessmentIdRecalibrationValidation,
-  useGetCapdevAssessmentsAssessmentId,
-  usePostCapdevAssessmentsAssessmentIdRegenerate,
-  getGetCapdevAssessmentsAssessmentIdQueryKey,
-} from "@sinag/shared";
-import { SecureFileViewer } from "@/components/features/movs/FileList";
 import {
   Select,
   SelectContent,
@@ -40,7 +23,37 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CapDevInsightsCard } from "@/components/features/capdev";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuthStore } from "@/store/useAuthStore";
+import {
+  getGetCapdevAssessmentsAssessmentIdQueryKey,
+  useGetCapdevAssessmentsAssessmentId,
+  useGetMlgooAssessmentsAssessmentId,
+  usePatchMlgooAssessmentsAssessmentIdRecalibrationValidation,
+  usePostCapdevAssessmentsAssessmentIdRegenerate,
+  usePostMlgooAssessmentsAssessmentIdApprove,
+  usePostMlgooAssessmentsAssessmentIdRecalibrate,
+} from "@sinag/shared";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  AlertCircle,
+  ArrowLeft,
+  Calendar,
+  CheckCircle,
+  Clock,
+  Eye,
+  FileText,
+  LayoutDashboard,
+  ListChecks,
+  Loader2,
+  RotateCcw,
+  X,
+  XCircle,
+} from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import * as React from "react";
+import { toast } from "sonner";
 
 export default function SubmissionDetailsPage() {
   const { isAuthenticated } = useAuthStore();
@@ -71,6 +84,9 @@ export default function SubmissionDetailsPage() {
   // Fetch assessment details from API
   const { data, isLoading, isError, error } = useGetMlgooAssessmentsAssessmentId(assessmentId);
 
+  // Track previous CapDev status for notifications
+  const prevCapDevStatusRef = React.useRef<string | null>(null);
+
   // Approve mutation
   const approveMutation = usePostMlgooAssessmentsAssessmentIdApprove();
 
@@ -80,7 +96,7 @@ export default function SubmissionDetailsPage() {
   // Update recalibration validation mutation
   const updateValidationMutation = usePatchMlgooAssessmentsAssessmentIdRecalibrationValidation();
 
-  // CapDev insights query - only fetch if assessment is completed
+  // CapDev insights query - with polling for status updates
   const {
     data: capdevInsights,
     isLoading: isCapdevLoading,
@@ -89,8 +105,31 @@ export default function SubmissionDetailsPage() {
     query: {
       queryKey: getGetCapdevAssessmentsAssessmentIdQueryKey(assessmentId),
       enabled: !!(assessmentId && data && (data as any)?.status === "COMPLETED"),
+      refetchInterval: (query: any) => {
+        const status = (query.state.data as any)?.status;
+        // Poll every 3 seconds if generating
+        return status === "generating" ? 3000 : false;
+      },
     },
   });
+
+  // Effect to notify user when generation completes
+  React.useEffect(() => {
+    const currentStatus = (capdevInsights as any)?.status;
+    const prevStatus = prevCapDevStatusRef.current;
+
+    if (prevStatus === "generating" && currentStatus === "completed") {
+      toast.success("CapDev insights generated successfully!", {
+        id: "capdev-done",
+        duration: 5000,
+        description: "The AI has finished analyzing the assessment data.",
+      });
+    }
+
+    if (currentStatus) {
+      prevCapDevStatusRef.current = currentStatus;
+    }
+  }, [capdevInsights]);
 
   // CapDev regeneration mutation
   const regenerateCapdevMutation = usePostCapdevAssessmentsAssessmentIdRegenerate();
@@ -107,12 +146,13 @@ export default function SubmissionDetailsPage() {
       });
 
       toast.dismiss("capdev-regenerate");
-      toast.success("CapDev insights regeneration started. Please refresh in a few minutes.", {
+      toast.info("Regeneration started. We'll notify you when it's ready.", {
         duration: 5000,
+        icon: <Loader2 className="h-5 w-5 animate-spin text-blue-500" />,
       });
 
-      // Refetch after a delay to get updated status
-      setTimeout(() => refetchCapdev(), 3000);
+      // Refetch immediately to get the "generating" status which triggers polling
+      await refetchCapdev();
     } catch (err: any) {
       toast.dismiss("capdev-regenerate");
       const errorMessage = err?.response?.data?.detail || err?.message || "Failed to regenerate";
@@ -427,7 +467,7 @@ export default function SubmissionDetailsPage() {
   return (
     <div className="min-h-screen bg-[var(--background)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="space-y-8">
+        <div className="space-y-6">
           {/* Back Button */}
           <div>
             <Button
@@ -574,10 +614,14 @@ export default function SubmissionDetailsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-orange-800 mb-2">
+                  <label
+                    htmlFor="recalibration-reason"
+                    className="block text-sm font-medium text-orange-800 mb-2"
+                  >
                     Reason for Recalibration Request *
                   </label>
                   <Textarea
+                    id="recalibration-reason"
                     value={recalibrationComments}
                     onChange={(e) => setRecalibrationComments(e.target.value)}
                     placeholder="Explain why you believe these indicators should be recalibrated (minimum 10 characters)..."
@@ -668,7 +712,10 @@ export default function SubmissionDetailsPage() {
                             <p className="text-xs text-gray-500 mt-0.5">{ind.areaName}</p>
                           </div>
                           <div className="w-44">
-                            <label className="text-xs font-medium text-purple-700 mb-1.5 block">
+                            <label
+                              id={`status-label-${ind.indicator_id}`}
+                              className="text-xs font-medium text-purple-700 mb-1.5 block"
+                            >
                               Update Status
                             </label>
                             <Select
@@ -679,7 +726,10 @@ export default function SubmissionDetailsPage() {
                                 updateIndicatorStatus(ind.indicator_id, value)
                               }
                             >
-                              <SelectTrigger className="h-10 bg-white border-purple-300 focus:ring-purple-500">
+                              <SelectTrigger
+                                className="h-10 bg-white border-purple-300 focus:ring-purple-500"
+                                aria-labelledby={`status-label-${ind.indicator_id}`}
+                              >
                                 <SelectValue placeholder="Select status" />
                               </SelectTrigger>
                               <SelectContent>
@@ -778,10 +828,14 @@ export default function SubmissionDetailsPage() {
 
                         {/* Remarks Section */}
                         <div>
-                          <label className="text-sm font-medium text-gray-700 mb-1.5 block">
+                          <label
+                            htmlFor={`remarks-${ind.indicator_id}`}
+                            className="text-sm font-medium text-gray-700 mb-1.5 block"
+                          >
                             Remarks (optional)
                           </label>
                           <Textarea
+                            id={`remarks-${ind.indicator_id}`}
                             value={validationUpdates[ind.indicator_id]?.remarks || ""}
                             onChange={(e) =>
                               updateIndicatorRemarks(ind.indicator_id, e.target.value)
@@ -836,256 +890,314 @@ export default function SubmissionDetailsPage() {
             </Card>
           )}
 
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="bg-white rounded-sm shadow border">
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-blue-600">{overallScore}%</p>
-                  <p className="text-sm text-gray-500 mt-1">Overall Score</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-white rounded-sm shadow border">
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-green-600">{totalPass}</p>
-                  <p className="text-sm text-gray-500 mt-1">Pass</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-white rounded-sm shadow border">
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-red-600">{totalFail}</p>
-                  <p className="text-sm text-gray-500 mt-1">Fail</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-white rounded-sm shadow border">
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-yellow-600">{totalConditional}</p>
-                  <p className="text-sm text-gray-500 mt-1">Conditional</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Governance Areas Breakdown */}
-          <Card className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] overflow-hidden">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-3 text-lg font-semibold text-[var(--foreground)]">
-                <div
-                  className="w-8 h-8 rounded-sm flex items-center justify-center"
-                  style={{ backgroundColor: "var(--kpi-blue-from)" }}
+          <Tabs defaultValue="overview" className="w-full">
+            <div className="flex justify-center mb-8">
+              <TabsList className="grid w-full max-w-2xl grid-cols-1 sm:grid-cols-2 h-auto p-1.5 bg-gray-100/80 rounded-3xl sm:rounded-full border border-gray-200/50 gap-2 sm:gap-0">
+                <TabsTrigger
+                  value="overview"
+                  className="flex items-center justify-center gap-2.5 rounded-2xl sm:rounded-full py-3 text-sm font-medium transition-all duration-300 data-[state=active]:bg-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg hover:text-orange-600 data-[state=active]:hover:text-white"
                 >
-                  <FileText className="h-5 w-5" style={{ color: "var(--kpi-blue-text)" }} />
-                </div>
-                Governance Areas Breakdown
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {governanceAreas.map((ga: any) => (
-                  <div
-                    key={ga.id}
-                    className="flex items-center justify-between p-4 bg-gray-50 rounded-sm border border-gray-200"
-                  >
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">{ga.name}</h4>
-                      <p className="text-sm text-gray-500 mt-1">
-                        {ga.indicators?.length || 0} indicators
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-center">
-                        <span className="inline-flex items-center gap-1 text-green-600 font-medium">
-                          <CheckCircle className="h-4 w-4" />
-                          {ga.pass_count || 0}
-                        </span>
-                        <p className="text-xs text-gray-500">Pass</p>
-                      </div>
-                      <div className="text-center">
-                        <span className="inline-flex items-center gap-1 text-red-600 font-medium">
-                          <XCircle className="h-4 w-4" />
-                          {ga.fail_count || 0}
-                        </span>
-                        <p className="text-xs text-gray-500">Fail</p>
-                      </div>
-                      <div className="text-center">
-                        <span className="inline-flex items-center gap-1 text-yellow-600 font-medium">
-                          <AlertCircle className="h-4 w-4" />
-                          {ga.conditional_count || 0}
-                        </span>
-                        <p className="text-xs text-gray-500">Conditional</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  <LayoutDashboard className="h-4 w-4" />
+                  Executive Overview
+                </TabsTrigger>
+                <TabsTrigger
+                  value="detailed"
+                  className="flex items-center justify-center gap-2.5 rounded-2xl sm:rounded-full py-3 text-sm font-medium transition-all duration-300 data-[state=active]:bg-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg hover:text-orange-600 data-[state=active]:hover:text-white"
+                >
+                  <ListChecks className="h-4 w-4" />
+                  Detailed Assessment
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-          {/* Indicators Detail (expandable) */}
-          {governanceAreas.map((ga: any) => (
-            <Card key={`detail-${ga.id}`} className="bg-white rounded-sm shadow border">
-              <CardHeader>
-                <CardTitle className="text-base font-medium">{ga.name} - Indicators</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="divide-y">
-                  {(ga.indicators || []).map((indicator: any) => {
-                    const isRecalibrationTarget = indicator.is_recalibration_target;
-                    return (
+            <TabsContent value="overview" className="space-y-6">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card className="bg-white rounded-sm shadow border">
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-3xl font-bold text-blue-600">{overallScore}%</p>
+                      <p className="text-sm text-gray-500 mt-1">Overall Score</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-white rounded-sm shadow border">
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-3xl font-bold text-green-600">{totalPass}</p>
+                      <p className="text-sm text-gray-500 mt-1">Pass</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-white rounded-sm shadow border">
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-3xl font-bold text-red-600">{totalFail}</p>
+                      <p className="text-sm text-gray-500 mt-1">Fail</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-white rounded-sm shadow border">
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-3xl font-bold text-yellow-600">{totalConditional}</p>
+                      <p className="text-sm text-gray-500 mt-1">Conditional</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* CapDev AI Insights Section - Only for Completed Assessments */}
+              {assessment.status === "COMPLETED" && (
+                <CapDevInsightsCard
+                  insights={capdevInsights as any}
+                  isLoading={isCapdevLoading}
+                  onRegenerate={handleRegenerateCapdev}
+                  isRegenerating={regenerateCapdevMutation.isPending}
+                />
+              )}
+
+              {/* Governance Areas Breakdown */}
+              <Card className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] overflow-hidden">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-3 text-lg font-semibold text-[var(--foreground)]">
+                    <div
+                      className="w-8 h-8 rounded-sm flex items-center justify-center"
+                      style={{ backgroundColor: "var(--kpi-blue-from)" }}
+                    >
+                      <FileText className="h-5 w-5" style={{ color: "var(--kpi-blue-text)" }} />
+                    </div>
+                    Governance Areas Breakdown
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {governanceAreas.map((ga: any) => (
                       <div
-                        key={indicator.response_id}
-                        className={`py-3 flex items-start justify-between ${
-                          isRecalibrationTarget ? "bg-purple-50 -mx-6 px-6" : ""
-                        }`}
+                        key={ga.id}
+                        className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 bg-gray-50 rounded-sm border border-gray-200 gap-4 md:gap-0"
                       >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium text-sm">
-                              {indicator.indicator_code} - {indicator.indicator_name}
-                            </p>
-                            {isRecalibrationTarget && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
-                                <RotateCcw className="h-3 w-3" />
-                                Recalibration Target
-                              </span>
-                            )}
-                          </div>
-                          {indicator.assessor_remarks && (
-                            <p className="text-xs text-gray-500 mt-1">
-                              Remarks: {indicator.assessor_remarks}
-                            </p>
-                          )}
+                        <div className="flex-1 w-full md:w-auto">
+                          <h4 className="font-medium text-gray-900">{ga.name}</h4>
+                          <p className="text-sm text-gray-500 mt-1">
+                            {ga.indicators?.length || 0} indicators
+                          </p>
                         </div>
-                        <span
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
-                            indicator.validation_status?.toUpperCase() === "PASS"
-                              ? "bg-green-100 text-green-700"
-                              : indicator.validation_status?.toUpperCase() === "FAIL"
-                                ? "bg-red-100 text-red-700"
-                                : indicator.validation_status?.toUpperCase() === "CONDITIONAL"
-                                  ? "bg-yellow-100 text-yellow-700"
-                                  : "bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          {indicator.validation_status?.toUpperCase() === "PASS" && (
-                            <CheckCircle className="h-3 w-3" />
-                          )}
-                          {indicator.validation_status?.toUpperCase() === "FAIL" && (
-                            <XCircle className="h-3 w-3" />
-                          )}
-                          {indicator.validation_status?.toUpperCase() === "CONDITIONAL" && (
-                            <AlertCircle className="h-3 w-3" />
-                          )}
-                          {indicator.validation_status || "Pending"}
-                        </span>
+                        <div className="flex items-center justify-between md:justify-end gap-6 w-full md:w-auto border-t md:border-t-0 border-gray-200/50 pt-3 md:pt-0">
+                          <div className="text-center">
+                            <span className="inline-flex items-center gap-1 text-green-600 font-medium">
+                              <CheckCircle className="h-4 w-4" />
+                              {ga.pass_count || 0}
+                            </span>
+                            <p className="text-xs text-gray-500">Pass</p>
+                          </div>
+                          <div className="text-center">
+                            <span className="inline-flex items-center gap-1 text-red-600 font-medium">
+                              <XCircle className="h-4 w-4" />
+                              {ga.fail_count || 0}
+                            </span>
+                            <p className="text-xs text-gray-500">Fail</p>
+                          </div>
+                          <div className="text-center">
+                            <span className="inline-flex items-center gap-1 text-yellow-600 font-medium">
+                              <AlertCircle className="h-4 w-4" />
+                              {ga.conditional_count || 0}
+                            </span>
+                            <p className="text-xs text-gray-500">Conditional</p>
+                          </div>
+                        </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
 
-          {/* Recalibration Info (if applicable) */}
-          {assessment.is_mlgoo_recalibration && assessment.mlgoo_recalibration_comments && (
-            <Card className="bg-purple-50 border-purple-200">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-purple-800">
-                  <RotateCcw className="h-5 w-5" />
-                  Recalibration Details
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm font-medium text-purple-700">MLGOO Comments:</p>
-                    <p className="text-sm text-purple-900 mt-1">
-                      {assessment.mlgoo_recalibration_comments}
-                    </p>
-                  </div>
-                  {assessment.grace_period_expires_at && (
-                    <div>
-                      <p className="text-sm font-medium text-purple-700">Grace Period Expires:</p>
-                      <p className="text-sm text-purple-900 mt-1">
-                        {new Date(assessment.grace_period_expires_at).toLocaleString()}
-                      </p>
+              {/* Timeline */}
+              <Card className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] overflow-hidden">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-3 text-lg font-semibold text-[var(--foreground)]">
+                    <div
+                      className="w-8 h-8 rounded-sm flex items-center justify-center"
+                      style={{ backgroundColor: "var(--analytics-success-bg)" }}
+                    >
+                      <Calendar
+                        className="h-5 w-5"
+                        style={{ color: "var(--analytics-success-text-light)" }}
+                      />
                     </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                    Assessment Timeline
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {assessment.submitted_at && (
+                      <div className="flex items-start space-x-3">
+                        <div className="w-3 h-3 rounded-full mt-1.5 bg-blue-500"></div>
+                        <div>
+                          <p className="font-semibold text-[var(--foreground)]">Submitted</p>
+                          <p className="text-sm text-[var(--muted-foreground)]">
+                            {new Date(assessment.submitted_at).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {assessment.validated_at && (
+                      <div className="flex items-start space-x-3">
+                        <div className="w-3 h-3 rounded-full mt-1.5 bg-green-500"></div>
+                        <div>
+                          <p className="font-semibold text-[var(--foreground)]">
+                            Validation Completed
+                          </p>
+                          <p className="text-sm text-[var(--muted-foreground)]">
+                            {new Date(assessment.validated_at).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {assessment.status === "COMPLETED" && assessment.updated_at && (
+                      <div className="flex items-start space-x-3">
+                        <div className="w-3 h-3 rounded-full mt-1.5 bg-green-600"></div>
+                        <div>
+                          <p className="font-semibold text-[var(--foreground)]">MLGOO Approved</p>
+                          <p className="text-sm text-[var(--muted-foreground)]">
+                            {new Date(assessment.updated_at).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          {/* Timeline */}
-          <Card className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] overflow-hidden">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-3 text-lg font-semibold text-[var(--foreground)]">
-                <div
-                  className="w-8 h-8 rounded-sm flex items-center justify-center"
-                  style={{ backgroundColor: "var(--analytics-success-bg)" }}
-                >
-                  <Calendar
-                    className="h-5 w-5"
-                    style={{ color: "var(--analytics-success-text-light)" }}
-                  />
-                </div>
-                Assessment Timeline
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {assessment.submitted_at && (
-                  <div className="flex items-start space-x-3">
-                    <div className="w-3 h-3 rounded-full mt-1.5 bg-blue-500"></div>
-                    <div>
-                      <p className="font-semibold text-[var(--foreground)]">Submitted</p>
-                      <p className="text-sm text-[var(--muted-foreground)]">
-                        {new Date(assessment.submitted_at).toLocaleString()}
-                      </p>
+            <TabsContent value="detailed" className="space-y-6">
+              {/* Recalibration Info (if applicable) */}
+              {assessment.is_mlgoo_recalibration && assessment.mlgoo_recalibration_comments && (
+                <Card className="bg-purple-50 border-purple-200">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-purple-800">
+                      <RotateCcw className="h-5 w-5" />
+                      Recalibration Details
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm font-medium text-purple-700">MLGOO Comments:</p>
+                        <p className="text-sm text-purple-900 mt-1">
+                          {assessment.mlgoo_recalibration_comments}
+                        </p>
+                      </div>
+                      {assessment.grace_period_expires_at && (
+                        <div>
+                          <p className="text-sm font-medium text-purple-700">
+                            Grace Period Expires:
+                          </p>
+                          <p className="text-sm text-purple-900 mt-1">
+                            {new Date(assessment.grace_period_expires_at).toLocaleString()}
+                          </p>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                )}
-                {assessment.validated_at && (
-                  <div className="flex items-start space-x-3">
-                    <div className="w-3 h-3 rounded-full mt-1.5 bg-green-500"></div>
-                    <div>
-                      <p className="font-semibold text-[var(--foreground)]">Validation Completed</p>
-                      <p className="text-sm text-[var(--muted-foreground)]">
-                        {new Date(assessment.validated_at).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                {assessment.status === "COMPLETED" && assessment.updated_at && (
-                  <div className="flex items-start space-x-3">
-                    <div className="w-3 h-3 rounded-full mt-1.5 bg-green-600"></div>
-                    <div>
-                      <p className="font-semibold text-[var(--foreground)]">MLGOO Approved</p>
-                      <p className="text-sm text-[var(--muted-foreground)]">
-                        {new Date(assessment.updated_at).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                  </CardContent>
+                </Card>
+              )}
 
-          {/* CapDev AI Insights Section - Only for Completed Assessments */}
-          {assessment.status === "COMPLETED" && (
-            <CapDevInsightsCard
-              insights={capdevInsights as any}
-              isLoading={isCapdevLoading}
-              onRegenerate={handleRegenerateCapdev}
-              isRegenerating={regenerateCapdevMutation.isPending}
-            />
-          )}
+              {/* Indicators Detail (expandable) */}
+              {governanceAreas.map((ga: any) => {
+                const logoSrc = GOVERNANCE_AREA_LOGOS[ga.name] || "/logo/logo.webp"; // Fallback to main logo
+                return (
+                  <Card
+                    key={`detail-${ga.id}`}
+                    className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6 transition-all duration-300 hover:shadow-md py-0 gap-0"
+                  >
+                    <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50/30 border-b border-amber-100/50 p-4">
+                      <div className="flex items-center gap-4">
+                        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-amber-100 p-1">
+                          <Image
+                            src={logoSrc}
+                            alt={ga.name}
+                            width={48}
+                            height={48}
+                            className="h-full w-full object-contain"
+                          />
+                        </div>
+                        <div>
+                          <CardTitle className="text-lg font-bold text-gray-800">
+                            {ga.name}
+                          </CardTitle>
+                          <p className="text-sm text-gray-500 font-medium mt-0.5">
+                            Performance Indicators
+                          </p>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <div className="divide-y divide-gray-100">
+                        {(ga.indicators || []).map((indicator: any) => {
+                          const isRecalibrationTarget = indicator.is_recalibration_target;
+                          const status = indicator.validation_status?.toUpperCase();
+                          return (
+                            <div
+                              key={indicator.response_id}
+                              className={`p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/50 transition-colors ${
+                                isRecalibrationTarget ? "bg-purple-50/30" : ""
+                              }`}
+                            >
+                              <div className="flex-1 space-y-2">
+                                <div className="flex items-start gap-3">
+                                  <span className="shrink-0 px-2 py-1 rounded-md bg-gray-100 text-gray-600 font-mono text-xs font-bold border border-gray-200">
+                                    {indicator.indicator_code}
+                                  </span>
+                                  <div>
+                                    <p className="font-medium text-gray-900 leading-snug">
+                                      {indicator.indicator_name}
+                                    </p>
+                                    {isRecalibrationTarget && (
+                                      <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-purple-100 text-purple-700 text-xs font-semibold border border-purple-200">
+                                        <RotateCcw className="h-3.5 w-3.5" />
+                                        Recalibration Target
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                {indicator.assessor_remarks && (
+                                  <div className="ml-12 mt-1 p-3 bg-gray-50 rounded-lg text-xs text-gray-600 border border-gray-100 italic">
+                                    <span className="font-semibold text-gray-700 not-italic mr-1">
+                                      Remarks:
+                                    </span>
+                                    {indicator.assessor_remarks}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="ml-12 sm:ml-0 shrink-0">
+                                <span
+                                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm border ${
+                                    status === "PASS"
+                                      ? "bg-green-100 text-green-700 border-green-200"
+                                      : status === "FAIL"
+                                        ? "bg-red-100 text-red-700 border-red-200"
+                                        : status === "CONDITIONAL"
+                                          ? "bg-yellow-100 text-yellow-700 border-yellow-200"
+                                          : "bg-gray-100 text-gray-700 border-gray-200"
+                                  }`}
+                                >
+                                  {status === "PASS" && <CheckCircle className="h-3.5 w-3.5" />}
+                                  {status === "FAIL" && <XCircle className="h-3.5 w-3.5" />}
+                                  {status || "PENDING"}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
 

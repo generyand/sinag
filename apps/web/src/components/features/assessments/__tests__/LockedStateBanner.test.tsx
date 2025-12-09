@@ -18,16 +18,12 @@ import { LockedStateBanner } from "../LockedStateBanner";
 describe("LockedStateBanner", () => {
   describe("Banner Visibility", () => {
     it("should not render for DRAFT status", () => {
-      const { container } = render(
-        <LockedStateBanner status="DRAFT" reworkCount={0} />
-      );
+      const { container } = render(<LockedStateBanner status="DRAFT" reworkCount={0} />);
       expect(container).toBeEmptyDOMElement();
     });
 
     it("should not render for REWORK status", () => {
-      const { container } = render(
-        <LockedStateBanner status="REWORK" reworkCount={0} />
-      );
+      const { container } = render(<LockedStateBanner status="REWORK" reworkCount={0} />);
       expect(container).toBeEmptyDOMElement();
     });
 
@@ -53,9 +49,7 @@ describe("LockedStateBanner", () => {
 
       expect(screen.getByText("Assessment Submitted")).toBeInTheDocument();
       expect(
-        screen.getByText(
-          "Your assessment is under review. You cannot make edits at this time."
-        )
+        screen.getByText("Your assessment is under review. You cannot make edits at this time.")
       ).toBeInTheDocument();
     });
 
@@ -73,12 +67,8 @@ describe("LockedStateBanner", () => {
       render(<LockedStateBanner status="SUBMITTED" reworkCount={1} />);
 
       expect(screen.getByText("Final Submission")).toBeInTheDocument();
-      expect(
-        screen.getByText(/You have used your one rework cycle/i)
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(/This is your final submission/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/You have used your one rework cycle/i)).toBeInTheDocument();
+      expect(screen.getByText(/This is your final submission/i)).toBeInTheDocument();
     });
 
     it("should show rework warning when reworkCount exceeds 1", () => {
@@ -114,9 +104,7 @@ describe("LockedStateBanner", () => {
 
       expect(screen.getByText("Assessment Completed")).toBeInTheDocument();
       expect(
-        screen.getByText(
-          "This assessment has been finalized. No further edits allowed."
-        )
+        screen.getByText("This assessment has been finalized. No further edits allowed.")
       ).toBeInTheDocument();
     });
 
@@ -142,18 +130,14 @@ describe("LockedStateBanner", () => {
 
   describe("Styling", () => {
     it("should apply sticky positioning class", () => {
-      const { container } = render(
-        <LockedStateBanner status="SUBMITTED" reworkCount={0} />
-      );
+      const { container } = render(<LockedStateBanner status="SUBMITTED" reworkCount={0} />);
 
       const alert = container.querySelector('[role="alert"]');
       expect(alert).toHaveClass("sticky");
     });
 
     it("should apply blue theme for SUBMITTED status", () => {
-      const { container } = render(
-        <LockedStateBanner status="SUBMITTED" reworkCount={0} />
-      );
+      const { container } = render(<LockedStateBanner status="SUBMITTED" reworkCount={0} />);
 
       const alert = container.querySelector('[role="alert"]');
       expect(alert).toHaveClass("border-blue-600");
@@ -161,9 +145,7 @@ describe("LockedStateBanner", () => {
     });
 
     it("should apply green theme for COMPLETED status", () => {
-      const { container } = render(
-        <LockedStateBanner status="COMPLETED" reworkCount={0} />
-      );
+      const { container } = render(<LockedStateBanner status="COMPLETED" reworkCount={0} />);
 
       const alert = container.querySelector('[role="alert"]');
       expect(alert).toHaveClass("border-green-600");
@@ -171,9 +153,7 @@ describe("LockedStateBanner", () => {
     });
 
     it("should apply orange theme for rework warning", () => {
-      const { container } = render(
-        <LockedStateBanner status="SUBMITTED" reworkCount={1} />
-      );
+      const { container } = render(<LockedStateBanner status="SUBMITTED" reworkCount={1} />);
 
       // Find the rework warning alert (second alert in the component)
       const alerts = container.querySelectorAll('[role="alert"]');

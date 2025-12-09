@@ -7,17 +7,17 @@ interface AssessmentLockedBannerProps {
   status: AssessmentStatus;
 }
 
-export function AssessmentLockedBanner({
-  status,
-}: AssessmentLockedBannerProps) {
+export function AssessmentLockedBanner({ status }: AssessmentLockedBannerProps) {
   const getBannerContent = () => {
     // Normalize status to lowercase for comparison
     const normalizedStatus = (status || "").toLowerCase();
 
     // Submitted states
-    if (normalizedStatus === "submitted" ||
-        normalizedStatus === "submitted-for-review" ||
-        normalizedStatus === "in-review") {
+    if (
+      normalizedStatus === "submitted" ||
+      normalizedStatus === "submitted-for-review" ||
+      normalizedStatus === "in-review"
+    ) {
       return {
         icon: <Clock className="h-4 w-4" />,
         title: "Assessment Submitted",
@@ -73,12 +73,8 @@ export function AssessmentLockedBanner({
     <div className={`border-b ${content.bgClass}`}>
       <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-3">
         <div className="flex items-center justify-center gap-2 text-sm">
-          <div className={`p-1 rounded-full ${content.iconClass}`}>
-            {content.icon}
-          </div>
-          <span className={`font-medium ${content.textClass}`}>
-            {content.title}
-          </span>
+          <div className={`p-1 rounded-full ${content.iconClass}`}>{content.icon}</div>
+          <span className={`font-medium ${content.textClass}`}>{content.title}</span>
           <span className={`hidden sm:inline text-gray-400`}>•</span>
           <span className={`hidden sm:inline ${content.descriptionClass}`}>
             {content.description}

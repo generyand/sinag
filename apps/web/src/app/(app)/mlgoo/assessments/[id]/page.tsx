@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from "next/link";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -9,33 +9,36 @@ export default async function AssessmentDetailPage({ params }: PageProps) {
   // Mock data - replace with actual API call using id
   const assessment = {
     id: id,
-    title: 'Q1 2024 Leadership Assessment',
-    description: 'Comprehensive leadership evaluation focusing on strategic decision-making, team management, and organizational vision.',
-    status: 'completed',
-    completedDate: '2024-03-15',
+    title: "Q1 2024 Leadership Assessment",
+    description:
+      "Comprehensive leadership evaluation focusing on strategic decision-making, team management, and organizational vision.",
+    status: "completed",
+    completedDate: "2024-03-15",
     score: 85,
     categories: [
-      { name: 'Strategic Leadership', score: 88, maxScore: 100 },
-      { name: 'Team Management', score: 82, maxScore: 100 },
-      { name: 'Communication', score: 90, maxScore: 100 },
-      { name: 'Decision Making', score: 80, maxScore: 100 },
+      { name: "Strategic Leadership", score: 88, maxScore: 100 },
+      { name: "Team Management", score: 82, maxScore: 100 },
+      { name: "Communication", score: 90, maxScore: 100 },
+      { name: "Decision Making", score: 80, maxScore: 100 },
     ],
     feedback: [
       {
-        category: 'Strategic Leadership',
-        feedback: 'Demonstrates strong strategic thinking and vision. Areas for improvement include long-term planning execution.',
+        category: "Strategic Leadership",
+        feedback:
+          "Demonstrates strong strategic thinking and vision. Areas for improvement include long-term planning execution.",
       },
       {
-        category: 'Team Management',
-        feedback: 'Excellent team building skills. Consider focusing on delegation and empowerment strategies.',
+        category: "Team Management",
+        feedback:
+          "Excellent team building skills. Consider focusing on delegation and empowerment strategies.",
       },
     ],
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'bg-green-400';
-    if (score >= 60) return 'bg-yellow-400';
-    return 'bg-red-400';
+    if (score >= 80) return "bg-green-400";
+    if (score >= 60) return "bg-yellow-400";
+    return "bg-red-400";
   };
 
   return (
@@ -47,7 +50,12 @@ export default async function AssessmentDetailPage({ params }: PageProps) {
           className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
         >
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
           Back to Assessments
         </Link>
@@ -83,7 +91,9 @@ export default async function AssessmentDetailPage({ params }: PageProps) {
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-medium text-gray-700">{category.name}</span>
-                        <span className="text-sm text-gray-500">{category.score}/{category.maxScore}</span>
+                        <span className="text-sm text-gray-500">
+                          {category.score}/{category.maxScore}
+                        </span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
@@ -108,7 +118,9 @@ export default async function AssessmentDetailPage({ params }: PageProps) {
                 <div>
                   <dt className="text-sm font-medium text-gray-500">Completion Date</dt>
                   <dd className="mt-1 text-sm text-gray-900">
-                    {assessment.completedDate ? new Date(assessment.completedDate).toLocaleDateString() : 'Not completed'}
+                    {assessment.completedDate
+                      ? new Date(assessment.completedDate).toLocaleDateString()
+                      : "Not completed"}
                   </dd>
                 </div>
                 <div>
@@ -149,4 +161,4 @@ export default async function AssessmentDetailPage({ params }: PageProps) {
       </div>
     </div>
   );
-} 
+}

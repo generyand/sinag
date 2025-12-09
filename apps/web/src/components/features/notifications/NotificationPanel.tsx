@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
-import { NotificationResponse } from '@sinag/shared';
-import { Bell, CheckCheck, RefreshCw } from 'lucide-react';
-import { NotificationItem } from './NotificationItem';
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { NotificationResponse } from "@sinag/shared";
+import { Bell, CheckCheck, RefreshCw } from "lucide-react";
+import { NotificationItem } from "./NotificationItem";
 
 interface NotificationPanelProps {
   notifications: NotificationResponse[];
@@ -41,9 +41,7 @@ export function NotificationPanel({
           <Bell className="h-4 w-4" />
           <h3 className="font-semibold text-sm">Notifications</h3>
           {unreadCount > 0 && (
-            <span className="text-xs text-muted-foreground">
-              ({unreadCount} unread)
-            </span>
+            <span className="text-xs text-muted-foreground">({unreadCount} unread)</span>
           )}
         </div>
         <div className="flex items-center gap-1">
@@ -54,9 +52,7 @@ export function NotificationPanel({
             onClick={onRefresh}
             disabled={isLoading || isRefreshing}
           >
-            <RefreshCw
-              className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`}
-            />
+            <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
           </Button>
           {unreadCount > 0 && (
             <Button
@@ -97,8 +93,7 @@ export function NotificationPanel({
             </div>
             <p className="text-sm font-medium">No notifications yet</p>
             <p className="text-xs text-muted-foreground mt-1">
-              You&apos;ll see notifications here when there&apos;s activity on
-              your assessments.
+              You&apos;ll see notifications here when there&apos;s activity on your assessments.
             </p>
           </div>
         ) : (

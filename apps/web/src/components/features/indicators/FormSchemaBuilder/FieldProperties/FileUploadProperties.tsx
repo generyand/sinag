@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { useFormBuilderStore, isFileUploadField } from '@/store/useFormBuilderStore';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import type { FileUploadField } from '@sinag/shared';
+import { useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { useFormBuilderStore, isFileUploadField } from "@/store/useFormBuilderStore";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import type { FileUploadField } from "@sinag/shared";
 
 interface FileUploadPropertiesProps {
   fieldId: string;
@@ -40,16 +40,16 @@ export function FileUploadProperties({ fieldId }: FileUploadPropertiesProps) {
   const defaultValues = useMemo<FormValues>(() => {
     if (!fileField) {
       return {
-        label: '',
-        field_id: '',
+        label: "",
+        field_id: "",
         required: false,
-        help_text: '',
-        allowed_file_types: 'pdf, jpg, png',
+        help_text: "",
+        allowed_file_types: "pdf, jpg, png",
         max_file_size_mb: 10,
         enable_conditional_mov: false,
-        conditional_field_id: '',
-        conditional_operator: 'equals',
-        conditional_value: '',
+        conditional_field_id: "",
+        conditional_operator: "equals",
+        conditional_value: "",
       };
     }
 
@@ -57,13 +57,13 @@ export function FileUploadProperties({ fieldId }: FileUploadPropertiesProps) {
       label: fileField.label,
       field_id: fileField.field_id,
       required: fileField.required ?? false,
-      help_text: fileField.help_text || '',
-      allowed_file_types: fileField.allowed_file_types?.join(', ') || 'pdf, jpg, png',
+      help_text: fileField.help_text || "",
+      allowed_file_types: fileField.allowed_file_types?.join(", ") || "pdf, jpg, png",
       max_file_size_mb: fileField.max_file_size_mb || 10,
       enable_conditional_mov: !!fileField.conditional_mov_requirement,
-      conditional_field_id: fileField.conditional_mov_requirement?.field_id || '',
-      conditional_operator: fileField.conditional_mov_requirement?.operator || 'equals',
-      conditional_value: fileField.conditional_mov_requirement?.value || '',
+      conditional_field_id: fileField.conditional_mov_requirement?.field_id || "",
+      conditional_operator: fileField.conditional_mov_requirement?.operator || "equals",
+      conditional_value: fileField.conditional_mov_requirement?.value || "",
     };
   }, [fileField]);
 
@@ -86,11 +86,11 @@ export function FileUploadProperties({ fieldId }: FileUploadPropertiesProps) {
     return <div className="text-sm text-red-600">Error: Field not found or wrong type</div>;
   }
 
-  const enable_conditional_mov = watch('enable_conditional_mov');
+  const enable_conditional_mov = watch("enable_conditional_mov");
 
   // Get available fields (exclude self and file upload fields)
   const availableFields = fields.filter(
-    (f) => f.field_id !== fieldId && f.field_type !== 'file_upload'
+    (f) => f.field_id !== fieldId && f.field_type !== "file_upload"
   );
 
   const onSave = (data: FormValues) => {
@@ -100,7 +100,7 @@ export function FileUploadProperties({ fieldId }: FileUploadPropertiesProps) {
       required: data.required,
       help_text: data.help_text || undefined,
       allowed_file_types: data.allowed_file_types
-        .split(',')
+        .split(",")
         .map((t) => t.trim())
         .filter(Boolean),
       max_file_size_mb: data.max_file_size_mb ? Number(data.max_file_size_mb) : undefined,
@@ -110,8 +110,8 @@ export function FileUploadProperties({ fieldId }: FileUploadPropertiesProps) {
     if (data.enable_conditional_mov && data.conditional_field_id) {
       updates.conditional_mov_requirement = {
         field_id: data.conditional_field_id,
-        operator: data.conditional_operator as 'equals' | 'not_equals',
-        value: data.conditional_value || '',
+        operator: data.conditional_operator as "equals" | "not_equals",
+        value: data.conditional_value || "",
       };
     } else {
       updates.conditional_mov_requirement = undefined;
@@ -129,37 +129,70 @@ export function FileUploadProperties({ fieldId }: FileUploadPropertiesProps) {
   return (
     <form onSubmit={handleSubmit(onSave)} className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="label">Label <span className="text-red-600">*</span></Label>
-        <Input id="label" {...register('label', { required: 'Label is required' })} />
+        <Label htmlFor="label">
+          Label <span className="text-red-600">*</span>
+        </Label>
+        <Input id="label" {...register("label", { required: "Label is required" })} />
         {errors.label && <p className="text-sm text-red-600">{errors.label.message}</p>}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="field_id">Field ID <span className="text-red-600">*</span></Label>
-        <Input id="field_id" {...register('field_id', { required: 'Field ID is required', pattern: { value: /^[a-z0-9_]+$/, message: 'Only lowercase letters, numbers, and underscores' } })} />
+        <Label htmlFor="field_id">
+          Field ID <span className="text-red-600">*</span>
+        </Label>
+        <Input
+          id="field_id"
+          {...register("field_id", {
+            required: "Field ID is required",
+            pattern: {
+              value: /^[a-z0-9_]+$/,
+              message: "Only lowercase letters, numbers, and underscores",
+            },
+          })}
+        />
         {errors.field_id && <p className="text-sm text-red-600">{errors.field_id.message}</p>}
       </div>
 
       <div className="flex items-center justify-between rounded-lg border border-gray-200 p-3">
-        <Label htmlFor="required" className="cursor-pointer">Required field</Label>
-        <input id="required" type="checkbox" {...register('required')} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+        <Label htmlFor="required" className="cursor-pointer">
+          Required field
+        </Label>
+        <input
+          id="required"
+          type="checkbox"
+          {...register("required")}
+          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        />
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="help_text">Help text (optional)</Label>
-        <Textarea id="help_text" {...register('help_text')} rows={3} />
+        <Textarea id="help_text" {...register("help_text")} rows={3} />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="allowed_file_types">Allowed file types <span className="text-red-600">*</span></Label>
-        <Input id="allowed_file_types" {...register('allowed_file_types', { required: 'File types required' })} placeholder="pdf, jpg, png, docx" />
+        <Label htmlFor="allowed_file_types">
+          Allowed file types <span className="text-red-600">*</span>
+        </Label>
+        <Input
+          id="allowed_file_types"
+          {...register("allowed_file_types", { required: "File types required" })}
+          placeholder="pdf, jpg, png, docx"
+        />
         <p className="text-xs text-gray-500">Comma-separated list (e.g., pdf, jpg, png)</p>
-        {errors.allowed_file_types && <p className="text-sm text-red-600">{errors.allowed_file_types.message}</p>}
+        {errors.allowed_file_types && (
+          <p className="text-sm text-red-600">{errors.allowed_file_types.message}</p>
+        )}
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="max_file_size_mb">Max file size (MB)</Label>
-        <Input id="max_file_size_mb" type="number" {...register('max_file_size_mb', { valueAsNumber: true })} placeholder="10" />
+        <Input
+          id="max_file_size_mb"
+          type="number"
+          {...register("max_file_size_mb", { valueAsNumber: true })}
+          placeholder="10"
+        />
       </div>
 
       {/* Conditional MOV Requirement */}
@@ -176,7 +209,7 @@ export function FileUploadProperties({ fieldId }: FileUploadPropertiesProps) {
           <input
             id="enable_conditional_mov"
             type="checkbox"
-            {...register('enable_conditional_mov')}
+            {...register("enable_conditional_mov")}
             className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
           />
         </div>
@@ -193,7 +226,7 @@ export function FileUploadProperties({ fieldId }: FileUploadPropertiesProps) {
                   <Label htmlFor="conditional_field_id">If field</Label>
                   <select
                     id="conditional_field_id"
-                    {...register('conditional_field_id')}
+                    {...register("conditional_field_id")}
                     className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
                     <option value="">Select a field...</option>
@@ -209,7 +242,7 @@ export function FileUploadProperties({ fieldId }: FileUploadPropertiesProps) {
                   <Label htmlFor="conditional_operator">Operator</Label>
                   <select
                     id="conditional_operator"
-                    {...register('conditional_operator')}
+                    {...register("conditional_operator")}
                     className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
                     <option value="equals">Equals</option>
@@ -221,14 +254,15 @@ export function FileUploadProperties({ fieldId }: FileUploadPropertiesProps) {
                   <Label htmlFor="conditional_value">Value</Label>
                   <Input
                     id="conditional_value"
-                    {...register('conditional_value')}
+                    {...register("conditional_value")}
                     placeholder="Expected value"
                   />
                 </div>
 
                 <div className="rounded-lg bg-blue-50 p-3">
                   <p className="text-xs text-blue-900">
-                    <strong>Example:</strong> If "has_experience" equals "yes", then this file upload becomes required.
+                    <strong>Example:</strong> If "has_experience" equals "yes", then this file
+                    upload becomes required.
                   </p>
                 </div>
               </>
@@ -238,8 +272,12 @@ export function FileUploadProperties({ fieldId }: FileUploadPropertiesProps) {
       </div>
 
       <div className="flex gap-3 pt-4 border-t border-gray-200">
-        <Button type="submit" disabled={!hasChanges} className="flex-1">Save Changes</Button>
-        <Button type="button" variant="outline" onClick={onCancel} disabled={!hasChanges}>Cancel</Button>
+        <Button type="submit" disabled={!hasChanges} className="flex-1">
+          Save Changes
+        </Button>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={!hasChanges}>
+          Cancel
+        </Button>
       </div>
 
       {hasChanges && <p className="text-xs text-yellow-600">You have unsaved changes</p>}

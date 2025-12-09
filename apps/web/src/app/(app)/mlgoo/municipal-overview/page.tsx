@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 /**
  * Municipal Overview Page - Redirects to Analytics
@@ -15,7 +15,7 @@ export default function MunicipalOverviewPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/analytics?tab=overview');
+    router.replace("/analytics?tab=overview");
   }, [router]);
 
   return (

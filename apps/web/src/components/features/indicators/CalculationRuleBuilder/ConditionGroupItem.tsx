@@ -1,20 +1,20 @@
-'use client';
+"use client";
 
-import { useCalculationRuleStore } from '@/store/useCalculationRuleStore';
-import type { ConditionGroup, FormSchema } from '@sinag/shared';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { useCalculationRuleStore } from "@/store/useCalculationRuleStore";
+import type { ConditionGroup, FormSchema } from "@sinag/shared";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Plus, Trash2 } from 'lucide-react';
-import { RuleSelector } from './RuleSelector';
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Plus, Trash2 } from "lucide-react";
+import { RuleSelector } from "./RuleSelector";
 
 interface ConditionGroupItemProps {
   group: ConditionGroup;
@@ -32,33 +32,25 @@ interface ConditionGroupItemProps {
  * - Delete entire group
  * - Supports nesting (rules can be AND_ALL or OR_ANY which contain nested rules)
  */
-export function ConditionGroupItem({
-  group,
-  groupIndex,
-  formSchema,
-}: ConditionGroupItemProps) {
-  const {
-    updateConditionGroup,
-    deleteConditionGroup,
-    addRuleToGroup,
-    deleteRuleFromGroup,
-  } = useCalculationRuleStore();
+export function ConditionGroupItem({ group, groupIndex, formSchema }: ConditionGroupItemProps) {
+  const { updateConditionGroup, deleteConditionGroup, addRuleToGroup, deleteRuleFromGroup } =
+    useCalculationRuleStore();
 
   // Handle operator change
-  const handleOperatorChange = (operator: 'AND' | 'OR') => {
+  const handleOperatorChange = (operator: "AND" | "OR") => {
     updateConditionGroup(groupIndex, { operator });
   };
 
   // Handle delete group
   const handleDeleteGroup = () => {
-    if (confirm('Are you sure you want to delete this condition group?')) {
+    if (confirm("Are you sure you want to delete this condition group?")) {
       deleteConditionGroup(groupIndex);
     }
   };
 
   // Handle delete rule
   const handleDeleteRule = (ruleIndex: number) => {
-    if (confirm('Are you sure you want to delete this rule?')) {
+    if (confirm("Are you sure you want to delete this rule?")) {
       deleteRuleFromGroup(groupIndex, ruleIndex);
     }
   };
@@ -66,16 +58,14 @@ export function ConditionGroupItem({
   return (
     <Card className="border-2 border-blue-200 bg-blue-50/30">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <CardTitle className="text-lg font-semibold">
-          Condition Group {groupIndex + 1}
-        </CardTitle>
+        <CardTitle className="text-lg font-semibold">Condition Group {groupIndex + 1}</CardTitle>
         <div className="flex items-center gap-2">
           {/* Operator Selector */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Combine rules with:</span>
             <Select
               value={group.operator}
-              onValueChange={(value: 'AND' | 'OR') => handleOperatorChange(value)}
+              onValueChange={(value: "AND" | "OR") => handleOperatorChange(value)}
             >
               <SelectTrigger className="w-[100px]">
                 <SelectValue />
@@ -118,7 +108,7 @@ export function ConditionGroupItem({
                   <div className="flex items-center justify-center py-2">
                     <Separator className="flex-1" />
                     <Badge
-                      variant={group.operator === 'AND' ? 'secondary' : 'default'}
+                      variant={group.operator === "AND" ? "secondary" : "default"}
                       className="mx-3"
                     >
                       {group.operator}
@@ -164,9 +154,9 @@ export function ConditionGroupItem({
         {/* Help Text */}
         {group.rules.length > 1 && (
           <p className="mt-3 text-sm text-muted-foreground text-center">
-            {group.operator === 'AND'
-              ? 'All rules in this group must be true'
-              : 'At least one rule in this group must be true'}
+            {group.operator === "AND"
+              ? "All rules in this group must be true"
+              : "At least one rule in this group must be true"}
           </p>
         )}
       </CardContent>
@@ -177,13 +167,7 @@ export function ConditionGroupItem({
 /**
  * RuleDisplay - Displays a human-readable representation of a rule
  */
-function RuleDisplay({
-  rule,
-  formSchema,
-}: {
-  rule: any;
-  formSchema?: FormSchema | null;
-}) {
+function RuleDisplay({ rule, formSchema }: { rule: any; formSchema?: FormSchema | null }) {
   const ruleType = rule.rule_type;
 
   // Helper to get field label from form_schema
@@ -194,74 +178,65 @@ function RuleDisplay({
   };
 
   switch (ruleType) {
-    case 'PERCENTAGE_THRESHOLD':
+    case "PERCENTAGE_THRESHOLD":
       return (
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Badge variant="outline">Percentage Threshold</Badge>
           </div>
           <p className="text-sm">
-            <span className="font-medium">{getFieldLabel(rule.field_id)}</span>{' '}
-            <span className="text-muted-foreground">{rule.operator}</span>{' '}
+            <span className="font-medium">{getFieldLabel(rule.field_id)}</span>{" "}
+            <span className="text-muted-foreground">{rule.operator}</span>{" "}
             <span className="font-medium">{rule.threshold}%</span>
           </p>
-          {rule.description && (
-            <p className="text-xs text-muted-foreground">{rule.description}</p>
-          )}
+          {rule.description && <p className="text-xs text-muted-foreground">{rule.description}</p>}
         </div>
       );
 
-    case 'COUNT_THRESHOLD':
+    case "COUNT_THRESHOLD":
       return (
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Badge variant="outline">Count Threshold</Badge>
           </div>
           <p className="text-sm">
-            Count of <span className="font-medium">{getFieldLabel(rule.field_id)}</span>{' '}
-            <span className="text-muted-foreground">{rule.operator}</span>{' '}
+            Count of <span className="font-medium">{getFieldLabel(rule.field_id)}</span>{" "}
+            <span className="text-muted-foreground">{rule.operator}</span>{" "}
             <span className="font-medium">{rule.threshold}</span>
           </p>
-          {rule.description && (
-            <p className="text-xs text-muted-foreground">{rule.description}</p>
-          )}
+          {rule.description && <p className="text-xs text-muted-foreground">{rule.description}</p>}
         </div>
       );
 
-    case 'MATCH_VALUE':
+    case "MATCH_VALUE":
       return (
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Badge variant="outline">Match Value</Badge>
           </div>
           <p className="text-sm">
-            <span className="font-medium">{getFieldLabel(rule.field_id)}</span>{' '}
-            <span className="text-muted-foreground">{rule.operator}</span>{' '}
+            <span className="font-medium">{getFieldLabel(rule.field_id)}</span>{" "}
+            <span className="text-muted-foreground">{rule.operator}</span>{" "}
             <span className="font-medium">"{rule.expected_value}"</span>
           </p>
-          {rule.description && (
-            <p className="text-xs text-muted-foreground">{rule.description}</p>
-          )}
+          {rule.description && <p className="text-xs text-muted-foreground">{rule.description}</p>}
         </div>
       );
 
-    case 'BBI_FUNCTIONALITY_CHECK':
+    case "BBI_FUNCTIONALITY_CHECK":
       return (
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Badge variant="outline">BBI Functionality Check</Badge>
           </div>
           <p className="text-sm">
-            BBI #{rule.bbi_id} status is{' '}
-            <span className="font-medium">{rule.expected_status}</span>
+            BBI #{rule.bbi_id} status is <span className="font-medium">{rule.expected_status}</span>
           </p>
-          {rule.description && (
-            <p className="text-xs text-muted-foreground">{rule.description}</p>
-          )}
+          {rule.description && <p className="text-xs text-muted-foreground">{rule.description}</p>}
         </div>
       );
 
-    case 'AND_ALL':
+    case "AND_ALL":
       return (
         <div className="space-y-1">
           <div className="flex items-center gap-2">
@@ -270,13 +245,11 @@ function RuleDisplay({
           <p className="text-sm text-muted-foreground">
             Contains {rule.conditions?.length || 0} nested conditions
           </p>
-          {rule.description && (
-            <p className="text-xs text-muted-foreground">{rule.description}</p>
-          )}
+          {rule.description && <p className="text-xs text-muted-foreground">{rule.description}</p>}
         </div>
       );
 
-    case 'OR_ANY':
+    case "OR_ANY":
       return (
         <div className="space-y-1">
           <div className="flex items-center gap-2">
@@ -285,9 +258,7 @@ function RuleDisplay({
           <p className="text-sm text-muted-foreground">
             Contains {rule.conditions?.length || 0} nested conditions
           </p>
-          {rule.description && (
-            <p className="text-xs text-muted-foreground">{rule.description}</p>
-          )}
+          {rule.description && <p className="text-xs text-muted-foreground">{rule.description}</p>}
         </div>
       );
 

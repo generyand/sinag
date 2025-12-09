@@ -111,9 +111,7 @@ export function HeroSection() {
                 <span className="font-extrabold text-lg tracking-tight text-white leading-tight">
                   SINAG
                 </span>
-                <span className="text-xs text-gray-400 font-medium">
-                  SGLGB Analytics System
-                </span>
+                <span className="text-xs text-gray-400 font-medium">SGLGB Analytics System</span>
               </div>
             </div>
 
@@ -150,9 +148,7 @@ export function HeroSection() {
       {/* Hero Section Login Button - Top Right */}
       <div
         className={`fixed top-4 right-4 lg:top-8 lg:right-8 z-40 transition-all duration-1000 ease-out delay-900 ${
-          heroLoaded
-            ? "opacity-100 translate-y-0 scale-100"
-            : "opacity-0 -translate-y-4 scale-95"
+          heroLoaded ? "opacity-100 translate-y-0 scale-100" : "opacity-0 -translate-y-4 scale-95"
         }`}
       >
         <Link href="/login">
@@ -195,9 +191,7 @@ export function HeroSection() {
             {/* Logo */}
             <div
               className={`flex items-center gap-2 lg:gap-3 transition-all duration-1000 ease-out ${
-                heroLoaded
-                  ? "opacity-100 translate-x-0"
-                  : "opacity-0 -translate-x-8"
+                heroLoaded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-8"
               }`}
             >
               <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-sm bg-white border-2 border-gray-300/70 shadow-md flex items-center justify-center backdrop-blur-sm">
@@ -213,9 +207,7 @@ export function HeroSection() {
                 <span className="font-extrabold text-lg lg:text-xl tracking-tight text-white leading-tight">
                   SINAG
                 </span>
-                <span className="text-xs text-gray-400 font-medium">
-                  SGLGB Analytics System
-                </span>
+                <span className="text-xs text-gray-400 font-medium">SGLGB Analytics System</span>
               </div>
             </div>
           </div>
@@ -224,9 +216,7 @@ export function HeroSection() {
           <div className="flex flex-col items-start space-y-50">
             <div
               className={`relative transition-all duration-1000 ease-out delay-300 ${
-                heroLoaded
-                  ? "opacity-100 translate-x-0"
-                  : "opacity-0 -translate-x-8"
+                heroLoaded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-8"
               }`}
             >
               <div
@@ -240,16 +230,11 @@ export function HeroSection() {
               >
                 FOLLOW US
               </div>
-              <div
-                className="absolute top-30 left-3 w-px h-30 bg-white"
-                aria-hidden="true"
-              ></div>
+              <div className="absolute top-30 left-3 w-px h-30 bg-white" aria-hidden="true"></div>
             </div>
             <nav
               className={`flex flex-col space-y-6 transition-all duration-1000 ease-out delay-500 ${
-                heroLoaded
-                  ? "opacity-100 translate-x-0"
-                  : "opacity-0 -translate-x-8"
+                heroLoaded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-8"
               }`}
               role="navigation"
               aria-label="Social media links"
@@ -301,10 +286,7 @@ export function HeroSection() {
               className="w-72 h-[28rem] 3xl:w-80 3xl:h-[32rem] object-cover drop-shadow-2xl rounded-sm bg-white"
             />
             {/* Dark overlay for consistent styling */}
-            <div
-              className="absolute inset-0 bg-black/15 rounded-sm"
-              aria-hidden="true"
-            ></div>
+            <div className="absolute inset-0 bg-black/15 rounded-sm" aria-hidden="true"></div>
             {/* Left side gradient for blending with dark sidebar */}
             <div
               className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent rounded-sm"
@@ -338,10 +320,7 @@ export function HeroSection() {
             />
 
             {/* Dark overlay for better text readability */}
-            <div
-              className="absolute inset-0 bg-black/60"
-              aria-hidden="true"
-            ></div>
+            <div className="absolute inset-0 bg-black/60" aria-hidden="true"></div>
           </div>
 
           {/* Content Overlay */}
@@ -349,17 +328,12 @@ export function HeroSection() {
             {/* Location with enhanced styling */}
             <div
               className={`flex items-center gap-2 mb-2 backdrop-blur-sm bg-black/20 px-3 py-1.5 rounded-md border border-white/10 w-fit transition-all duration-1000 ease-out delay-300 ${
-                heroLoaded
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-8"
+                heroLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
               }`}
               role="region"
               aria-label="Location information"
             >
-              <MapPin
-                className="w-3 h-3 lg:w-4 lg:h-4 text-[#fbbf24]"
-                aria-hidden="true"
-              />
+              <MapPin className="w-3 h-3 lg:w-4 lg:h-4 text-[#fbbf24]" aria-hidden="true" />
               <div className="text-sm lg:text-base font-medium tracking-wide uppercase text-gray-200 hover:text-white transition-colors duration-300">
                 {currentHeroSlide.location}
               </div>
@@ -374,9 +348,7 @@ export function HeroSection() {
               }`}
             >
               <h1 className="text-4xl sm:text-5xl lg:text-7xl xl:text-8xl font-black text-[#fbbf24] leading-none tracking-tight mb-2 lg:mb-4 transform hover:scale-105 transition-all duration-500 ease-out">
-                <span className="inline-block hover:animate-pulse">
-                  {currentHeroSlide.title}
-                </span>
+                <span className="inline-block hover:animate-pulse">{currentHeroSlide.title}</span>
               </h1>
               {/* Subtle glow effect */}
               <div
@@ -390,9 +362,7 @@ export function HeroSection() {
             {/* Enhanced subtitle */}
             <div
               className={`text-sm sm:text-base lg:text-xl font-light leading-relaxed text-gray-100 max-w-2xl transition-all duration-1000 ease-out delay-700 ${
-                heroLoaded
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-8"
+                heroLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
               }`}
             >
               <span
@@ -401,9 +371,7 @@ export function HeroSection() {
               >
                 Official Platform
               </span>
-              <span aria-label="Platform description">
-                {currentHeroSlide.subtitle}
-              </span>
+              <span aria-label="Platform description">{currentHeroSlide.subtitle}</span>
             </div>
           </div>
         </main>

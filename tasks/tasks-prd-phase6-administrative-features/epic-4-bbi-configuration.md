@@ -1,21 +1,20 @@
 # Epic 4.0: BBI Configuration System
 
-**PRD Reference:** FR-4.2.1, FR-4.2.2
-**Duration:** 5-7 days
-**Dependencies:** Epic 1.0, Epic 3.0 (requires indicator calculation logic)
+**PRD Reference:** FR-4.2.1, FR-4.2.2 **Duration:** 5-7 days **Dependencies:** Epic 1.0, Epic 3.0
+(requires indicator calculation logic)
 
 ---
 
 ## Story 4.1: Database Schema for BBI Models ✅
 
-**Duration:** 1 day
-**Status:** COMPLETED
+**Duration:** 1 day **Status:** COMPLETED
 
 ### Atomic Tasks (5 tasks)
 
 - [x] **4.1.1** Create bbis table model
   - **File:** `apps/api/app/db/models/bbi.py`
-  - **Criteria:** Fields: id, name, abbreviation, description, governance_area_id, is_active, mapping_rules (JSONB), created_at, updated_at
+  - **Criteria:** Fields: id, name, abbreviation, description, governance_area_id, is_active,
+    mapping_rules (JSONB), created_at, updated_at
   - **Duration:** 2 hours
 
 - [x] **4.1.2** Create BBI status enum
@@ -42,9 +41,7 @@
 
 ## Story 4.2: Backend BBI Service Layer ✅
 
-**Duration:** 2 days
-**Status:** COMPLETED
-**Dependencies:** 4.1, Epic 3.1 (needs rule engine)
+**Duration:** 2 days **Status:** COMPLETED **Dependencies:** 4.1, Epic 3.1 (needs rule engine)
 
 ### Atomic Tasks (8 tasks)
 
@@ -75,7 +72,8 @@
 
 - [x] **4.2.6** Implement calculate_bbi_status() method
   - **File:** `apps/api/app/services/bbi_service.py`
-  - **Criteria:** Read mapping_rules, evaluate against indicator statuses, return Functional/Non-Functional
+  - **Criteria:** Read mapping_rules, evaluate against indicator statuses, return
+    Functional/Non-Functional
   - **Duration:** 4 hours
 
 - [x] **4.2.7** Integrate with assessment finalization workflow
@@ -92,9 +90,7 @@
 
 ## Story 4.3: Backend BBI API Endpoints ✅
 
-**Duration:** 1 day
-**Status:** COMPLETED
-**Dependencies:** 4.2
+**Duration:** 1 day **Status:** COMPLETED **Dependencies:** 4.2
 
 ### Atomic Tasks (7 tasks)
 
@@ -130,16 +126,15 @@
 
 - [x] **4.3.7** Implement POST /api/v1/bbis/test-calculation endpoint
   - **File:** `apps/api/app/api/v1/bbis.py`
-  - **Criteria:** Accept mapping_rules and sample indicator statuses, return Functional/Non-Functional
+  - **Criteria:** Accept mapping_rules and sample indicator statuses, return
+    Functional/Non-Functional
   - **Duration:** 2 hours
 
 ---
 
 ## Story 4.4: Frontend BBI List & Configuration Pages ✅
 
-**Duration:** 2 days
-**Status:** COMPLETED
-**Dependencies:** 4.3, `pnpm generate-types`
+**Duration:** 2 days **Status:** COMPLETED **Dependencies:** 4.3, `pnpm generate-types`
 
 ### Atomic Tasks (7 tasks)
 
@@ -160,7 +155,8 @@
 
 - [x] **4.4.4** Create BBIList component
   - **File:** `apps/web/src/components/features/bbis/BBIList.tsx`
-  - **Criteria:** Table with columns (Name, Abbreviation, Governance Area, # Mapped Indicators, Actions)
+  - **Criteria:** Table with columns (Name, Abbreviation, Governance Area, # Mapped Indicators,
+    Actions)
   - **Duration:** 3 hours
 
 - [x] **4.4.5** Create BBI create page
@@ -182,9 +178,8 @@
 
 ## Story 4.5: Frontend BBI Mapping Builder ✅
 
-**Duration:** 2 days
-**Status:** COMPLETED
-**Dependencies:** 4.4, Epic 3.3 (reuse rule builder architecture)
+**Duration:** 2 days **Status:** COMPLETED **Dependencies:** 4.4, Epic 3.3 (reuse rule builder
+architecture)
 
 ### Atomic Tasks (7 tasks)
 
@@ -227,9 +222,7 @@
 
 ## Story 4.6: Testing for BBI Configuration ✅
 
-**Duration:** 1 day
-**Status:** COMPLETED (Backend tests)
-**Dependencies:** 4.5
+**Duration:** 1 day **Status:** COMPLETED (Backend tests) **Dependencies:** 4.5
 
 ### Atomic Tasks (6 tasks)
 
@@ -245,7 +238,8 @@
 
 - [x] **4.6.3** Write BBI status calculation tests
   - **File:** `apps/api/tests/services/test_bbi_service.py`
-  - **Criteria:** Test various rule combinations (AND, OR), verify Functional/Non-Functional output (covered in service tests)
+  - **Criteria:** Test various rule combinations (AND, OR), verify Functional/Non-Functional output
+    (covered in service tests)
   - **Duration:** 3 hours
 
 - [ ] **4.6.4** Write frontend BBIList tests (OPTIONAL - Frontend testing not critical for MVP)
@@ -260,30 +254,34 @@
 
 - [ ] **4.6.6** Write integration test for BBI workflow (OPTIONAL - Core functionality tested)
   - **File:** `apps/api/tests/integration/test_bbi_workflow.py`
-  - **Criteria:** Create BBI → configure mapping → finalize assessment → verify BBI status calculated
+  - **Criteria:** Create BBI → configure mapping → finalize assessment → verify BBI status
+    calculated
   - **Duration:** 3 hours
 
-**Note:** Backend testing is comprehensive with 50 passing tests covering all critical functionality. Frontend and integration tests are optional for MVP.
+**Note:** Backend testing is comprehensive with 50 passing tests covering all critical
+functionality. Frontend and integration tests are optional for MVP.
 
 ---
 
 ## Summary ✅
 
-**Epic 4.0 Status:** COMPLETED
-**Total Atomic Tasks:** 40 tasks (37 completed, 3 optional)
-**Actual Duration:** 5-7 days
+**Epic 4.0 Status:** COMPLETED **Total Atomic Tasks:** 40 tasks (37 completed, 3 optional) **Actual
+Duration:** 5-7 days
 
 ### Task Breakdown by Story:
+
 - ✅ Story 4.1 (Database): 5/5 tasks completed (8 hours)
 - ✅ Story 4.2 (Service Layer): 8/8 tasks completed (16 hours)
 - ✅ Story 4.3 (API Endpoints): 7/7 tasks completed (8.5 hours)
 - ✅ Story 4.4 (Frontend Pages): 7/7 tasks completed (12 hours)
 - ✅ Story 4.5 (Mapping Builder): 7/7 tasks completed (13.5 hours)
-- ✅ Story 4.6 (Testing): 3/6 tasks completed (16 hours backend testing, 3 optional frontend/integration tests)
+- ✅ Story 4.6 (Testing): 3/6 tasks completed (16 hours backend testing, 3 optional
+  frontend/integration tests)
 
 **Total: 37/40 tasks completed across 6 stories**
 
 ### Deliverables:
+
 - ✅ Full BBI CRUD operations with database models and migrations
 - ✅ Comprehensive service layer with status calculation engine
 - ✅ 8 REST API endpoints with proper authentication
@@ -294,6 +292,7 @@
 - ✅ Type-safe frontend with auto-generated TypeScript types
 
 ### Git Commits:
+
 1. `287558d` - Story 4.1: Database Schema for BBI Models
 2. `139cf13` - Story 4.2: Backend BBI Service Layer
 3. `496a843` - Story 4.3: Backend BBI API Endpoints

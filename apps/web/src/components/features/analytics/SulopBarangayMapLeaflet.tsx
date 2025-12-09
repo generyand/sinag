@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import React, { useState, useEffect } from "react";
+import { MapContainer, TileLayer, GeoJSON, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 /**
  * Barangay data structure
@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 interface BarangayData {
   id: string; // e.g., "1katipunan", "2tanwalang"
   name: string; // Display name
-  status: 'pass' | 'fail' | 'in_progress' | 'not_started';
+  status: "pass" | "fail" | "in_progress" | "not_started";
   compliance_rate?: number;
   submission_count?: number;
 }
@@ -29,17 +29,17 @@ interface SulopBarangayMapLeafletProps {
  * Color scheme for barangay status
  */
 const STATUS_COLORS = {
-  pass: '#22c55e', // Green
-  fail: '#ef4444', // Red
-  in_progress: '#f59e0b', // Orange
-  not_started: '#94a3b8', // Gray
+  pass: "#22c55e", // Green
+  fail: "#ef4444", // Red
+  in_progress: "#f59e0b", // Orange
+  not_started: "#94a3b8", // Gray
 } as const;
 
 const STATUS_LABELS = {
-  pass: 'Pass',
-  fail: 'Fail',
-  in_progress: 'In Progress',
-  not_started: 'Not Started',
+  pass: "Pass",
+  fail: "Fail",
+  in_progress: "In Progress",
+  not_started: "Not Started",
 } as const;
 
 /**
@@ -61,34 +61,38 @@ const DEFAULT_ZOOM = 12;
  * 3. Ensure each feature has a 'properties.id' matching barangay IDs
  */
 const sampleGeoJSON: GeoJSON.FeatureCollection = {
-  type: 'FeatureCollection',
+  type: "FeatureCollection",
   features: [
     {
-      type: 'Feature',
-      properties: { id: '1katipunan', name: 'Katipunan' },
+      type: "Feature",
+      properties: { id: "1katipunan", name: "Katipunan" },
       geometry: {
-        type: 'Polygon',
-        coordinates: [[
-          [125.45, 6.50],
-          [125.47, 6.50],
-          [125.47, 6.48],
-          [125.45, 6.48],
-          [125.45, 6.50],
-        ]],
+        type: "Polygon",
+        coordinates: [
+          [
+            [125.45, 6.5],
+            [125.47, 6.5],
+            [125.47, 6.48],
+            [125.45, 6.48],
+            [125.45, 6.5],
+          ],
+        ],
       },
     },
     {
-      type: 'Feature',
-      properties: { id: '2tanwalang', name: 'Tanwalang' },
+      type: "Feature",
+      properties: { id: "2tanwalang", name: "Tanwalang" },
       geometry: {
-        type: 'Polygon',
-        coordinates: [[
-          [125.47, 6.50],
-          [125.49, 6.50],
-          [125.49, 6.48],
-          [125.47, 6.48],
-          [125.47, 6.50],
-        ]],
+        type: "Polygon",
+        coordinates: [
+          [
+            [125.47, 6.5],
+            [125.49, 6.5],
+            [125.49, 6.48],
+            [125.47, 6.48],
+            [125.47, 6.5],
+          ],
+        ],
       },
     },
     // Add more barangays here...
@@ -130,8 +134,8 @@ function FitBounds({ bounds }: { bounds: L.LatLngBounds }) {
 export function SulopBarangayMapLeaflet({
   barangays,
   onBarangayClick,
-  title = 'Sulop Barangays Geographic Distribution',
-  description = 'Click on a barangay to view details',
+  title = "Sulop Barangays Geographic Distribution",
+  description = "Click on a barangay to view details",
 }: SulopBarangayMapLeafletProps) {
   const [hoveredBarangay, setHoveredBarangay] = useState<string | null>(null);
   const [selectedBarangay, setSelectedBarangay] = useState<string | null>(null);
@@ -152,7 +156,7 @@ export function SulopBarangayMapLeaflet({
   };
 
   // Get currently displayed barangay (hovered or selected)
-  const displayedBarangay = barangayMap.get(hoveredBarangay || selectedBarangay || '');
+  const displayedBarangay = barangayMap.get(hoveredBarangay || selectedBarangay || "");
 
   // Count barangays by status
   const statusCounts = React.useMemo(() => {
@@ -178,7 +182,7 @@ export function SulopBarangayMapLeaflet({
       fillColor: getBarangayColor(barangayId),
       weight: isSelected || isHovered ? 3 : 1,
       opacity: 1,
-      color: '#1e293b',
+      color: "#1e293b",
       fillOpacity: 0.7,
     };
   };
@@ -195,8 +199,8 @@ export function SulopBarangayMapLeaflet({
       <div class="text-sm">
         <div class="font-bold text-base mb-1">${brgy.name}</div>
         <div class="text-gray-600">Status: <span style="color: ${STATUS_COLORS[brgy.status]}">${STATUS_LABELS[brgy.status]}</span></div>
-        ${brgy.compliance_rate !== undefined ? `<div class="text-gray-600">Compliance: ${brgy.compliance_rate.toFixed(1)}%</div>` : ''}
-        ${brgy.submission_count !== undefined ? `<div class="text-gray-600">Submissions: ${brgy.submission_count}</div>` : ''}
+        ${brgy.compliance_rate !== undefined ? `<div class="text-gray-600">Compliance: ${brgy.compliance_rate.toFixed(1)}%</div>` : ""}
+        ${brgy.submission_count !== undefined ? `<div class="text-gray-600">Submissions: ${brgy.submission_count}</div>` : ""}
       </div>
     `);
 
@@ -230,7 +234,7 @@ export function SulopBarangayMapLeaflet({
   useEffect(() => {
     const bounds = L.geoJSON(sampleGeoJSON).getBounds();
     setMapBounds(bounds);
-  }, []);
+  }, [mapBounds]);
 
   return (
     <Card className="w-full">
@@ -241,15 +245,8 @@ export function SulopBarangayMapLeaflet({
         {/* Status Legend */}
         <div className="flex flex-wrap gap-2 pt-2">
           {Object.entries(STATUS_COLORS).map(([status, color]) => (
-            <Badge
-              key={status}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: color }}
-              />
+            <Badge key={status} variant="outline" className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
               <span className="text-xs">
                 {STATUS_LABELS[status as keyof typeof STATUS_LABELS]} (
                 {statusCounts[status as keyof typeof statusCounts]})
@@ -267,7 +264,7 @@ export function SulopBarangayMapLeaflet({
               <MapContainer
                 center={SULOP_CENTER}
                 zoom={DEFAULT_ZOOM}
-                style={{ height: '100%', width: '100%' }}
+                style={{ height: "100%", width: "100%" }}
                 scrollWheelZoom={true}
               >
                 {/* OpenStreetMap Tiles */}
@@ -277,11 +274,7 @@ export function SulopBarangayMapLeaflet({
                 />
 
                 {/* Barangay Boundaries (GeoJSON) */}
-                <GeoJSON
-                  data={sampleGeoJSON}
-                  style={styleFeature}
-                  onEachFeature={onEachFeature}
-                />
+                <GeoJSON data={sampleGeoJSON} style={styleFeature} onEachFeature={onEachFeature} />
 
                 {/* Fit bounds to show all barangays */}
                 {mapBounds && <FitBounds bounds={mapBounds} />}
@@ -297,9 +290,7 @@ export function SulopBarangayMapLeaflet({
               {displayedBarangay ? (
                 <div className="space-y-3">
                   <div>
-                    <div className="text-lg font-bold text-gray-900">
-                      {displayedBarangay.name}
-                    </div>
+                    <div className="text-lg font-bold text-gray-900">{displayedBarangay.name}</div>
                     <div className="text-xs text-gray-500">ID: {displayedBarangay.id}</div>
                   </div>
 
@@ -309,7 +300,7 @@ export function SulopBarangayMapLeaflet({
                       <Badge
                         style={{
                           backgroundColor: STATUS_COLORS[displayedBarangay.status],
-                          color: 'white',
+                          color: "white",
                         }}
                       >
                         {STATUS_LABELS[displayedBarangay.status]}
@@ -360,7 +351,8 @@ export function SulopBarangayMapLeaflet({
                   className="text-blue-600 hover:underline"
                 >
                   mapshaper.org
-                </a> - Upload SVG, export as GeoJSON
+                </a>{" "}
+                - Upload SVG, export as GeoJSON
               </li>
               <li>
                 <a
@@ -370,7 +362,8 @@ export function SulopBarangayMapLeaflet({
                   className="text-blue-600 hover:underline"
                 >
                   geojson.io
-                </a> - Manual boundary drawing and GeoJSON export
+                </a>{" "}
+                - Manual boundary drawing and GeoJSON export
               </li>
             </ul>
 
@@ -385,8 +378,7 @@ export function SulopBarangayMapLeaflet({
             <p className="font-semibold pt-2">Option 3: Programming (Most Control)</p>
             <ul className="list-disc list-inside ml-2 space-y-1">
               <li>
-                Use{' '}
-                <code className="bg-blue-100 px-1 rounded">svg-path-parser</code> library
+                Use <code className="bg-blue-100 px-1 rounded">svg-path-parser</code> library
               </li>
               <li>Parse SVG paths to coordinates</li>
               <li>Transform to lat/lng (requires bounds mapping)</li>
@@ -395,8 +387,14 @@ export function SulopBarangayMapLeaflet({
 
             <p className="pt-2 font-semibold">After conversion:</p>
             <ul className="list-disc list-inside ml-2">
-              <li>Replace <code className="bg-blue-100 px-1 rounded">sampleGeoJSON</code> in this file</li>
-              <li>Ensure each feature has <code className="bg-blue-100 px-1 rounded">properties.id</code> matching barangay IDs</li>
+              <li>
+                Replace <code className="bg-blue-100 px-1 rounded">sampleGeoJSON</code> in this file
+              </li>
+              <li>
+                Ensure each feature has{" "}
+                <code className="bg-blue-100 px-1 rounded">properties.id</code> matching barangay
+                IDs
+              </li>
             </ul>
           </div>
         </div>

@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useAuthStore } from '@/store/useAuthStore';
-import { ProfileForm, ProfileSkeleton } from '@/components/features/profile';
+import { useEffect, useState } from "react";
+import { useAuthStore } from "@/store/useAuthStore";
+import { ProfileForm, ProfileSkeleton } from "@/components/features/profile";
 
 export default function AdminProfilePage() {
   const { isAuthenticated, user } = useAuthStore();
@@ -44,4 +44,4 @@ export default function AdminProfilePage() {
       </div>
     </div>
   );
-} 
+}

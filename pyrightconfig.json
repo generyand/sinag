@@ -1,22 +1,11 @@
 {
-    "include": [
-        "apps/api/app",
-        "apps/api/alembic",
-        "apps/api/tests"
-    ],
-    "exclude": [
-        "apps/api/.venv",
-        "apps/api/__pycache__",
-        "apps/api/.ruff_cache"
-    ],
-    "extraPaths": [
-        "apps/api",
-        "apps/api/app"
-    ],
-    "pythonVersion": "3.13",
-    "pythonPlatform": "Linux",
-    "typeCheckingMode": "basic",
-    "useLibraryCodeForTypes": true,
-    "autoImportCompletions": true,
-    "autoSearchPaths": true
+  "include": ["apps/api/app", "apps/api/alembic", "apps/api/tests"],
+  "exclude": ["apps/api/.venv", "apps/api/__pycache__", "apps/api/.ruff_cache"],
+  "extraPaths": ["apps/api", "apps/api/app"],
+  "pythonVersion": "3.13",
+  "pythonPlatform": "Linux",
+  "typeCheckingMode": "basic",
+  "useLibraryCodeForTypes": true,
+  "autoImportCompletions": true,
+  "autoSearchPaths": true
 }

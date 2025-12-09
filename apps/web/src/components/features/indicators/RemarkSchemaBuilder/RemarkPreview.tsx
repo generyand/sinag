@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Eye } from 'lucide-react';
+import { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Eye } from "lucide-react";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 interface RemarkSchema {
   conditional_remarks: ConditionalRemark[];
@@ -39,30 +39,30 @@ interface RemarkPreviewProps {
  * - Displays rendered output
  */
 export function RemarkPreview({ schema }: RemarkPreviewProps) {
-  const [status, setStatus] = useState<'pass' | 'fail'>('pass');
+  const [status, setStatus] = useState<"pass" | "fail">("pass");
 
   // Find matching conditional remark
   const matchingRemark = schema.conditional_remarks.find((r) => r.condition === status);
 
   // Determine which template to use
   const templateToUse = matchingRemark
-    ? { source: 'conditional', template: matchingRemark.template, condition: status }
-    : { source: 'default', template: schema.default_template, condition: 'none' };
+    ? { source: "conditional", template: matchingRemark.template, condition: status }
+    : { source: "default", template: schema.default_template, condition: "none" };
 
   // Mock render template (simple string replacement for preview)
   const renderTemplate = (template: string): string => {
-    if (!template) return '';
+    if (!template) return "";
 
     // Sample data for preview
     const sampleData: Record<string, string> = {
-      indicator_name: 'Sample Indicator Name',
-      status: status === 'pass' ? 'Pass' : 'Fail',
-      field_name: '[field value would appear here]',
+      indicator_name: "Sample Indicator Name",
+      status: status === "pass" ? "Pass" : "Fail",
+      field_name: "[field value would appear here]",
     };
 
     let rendered = template;
     Object.entries(sampleData).forEach(([key, value]) => {
-      rendered = rendered.replace(new RegExp(`{{\\s*${key}\\s*}}`, 'g'), value);
+      rendered = rendered.replace(new RegExp(`{{\\s*${key}\\s*}}`, "g"), value);
     });
 
     return rendered;
@@ -86,7 +86,7 @@ export function RemarkPreview({ schema }: RemarkPreviewProps) {
         {/* Status Selector */}
         <div className="space-y-2">
           <Label htmlFor="preview-status">Indicator Status</Label>
-          <Select value={status} onValueChange={(value: 'pass' | 'fail') => setStatus(value)}>
+          <Select value={status} onValueChange={(value: "pass" | "fail") => setStatus(value)}>
             <SelectTrigger id="preview-status" className="w-[200px]">
               <SelectValue />
             </SelectTrigger>
@@ -103,7 +103,7 @@ export function RemarkPreview({ schema }: RemarkPreviewProps) {
         {/* Template Source */}
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Using template:</span>
-          {templateToUse.source === 'conditional' ? (
+          {templateToUse.source === "conditional" ? (
             <Badge variant="default">Conditional ({templateToUse.condition})</Badge>
           ) : (
             <Badge variant="secondary">Default (fallback)</Badge>

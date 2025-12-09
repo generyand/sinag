@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface Column<T> {
@@ -22,18 +22,18 @@ export default function DataTable<T extends Record<string, unknown>>({
   data,
   columns,
   loading = false,
-  emptyMessage = 'No data available',
+  emptyMessage = "No data available",
   onRowClick,
 }: DataTableProps<T>) {
   const [sortConfig, setSortConfig] = useState<{
     key: keyof T;
-    direction: 'asc' | 'desc';
+    direction: "asc" | "desc";
   } | null>(null);
 
   const handleSort = (key: keyof T) => {
-    let direction: 'asc' | 'desc' = 'asc';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
+    let direction: "asc" | "desc" = "asc";
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
     }
     setSortConfig({ key, direction });
   };
@@ -45,10 +45,10 @@ export default function DataTable<T extends Record<string, unknown>>({
     const bValue = b[sortConfig.key];
 
     if (aValue < bValue) {
-      return sortConfig.direction === 'asc' ? -1 : 1;
+      return sortConfig.direction === "asc" ? -1 : 1;
     }
     if (aValue > bValue) {
-      return sortConfig.direction === 'asc' ? 1 : -1;
+      return sortConfig.direction === "asc" ? 1 : -1;
     }
     return 0;
   });
@@ -67,7 +67,13 @@ export default function DataTable<T extends Record<string, unknown>>({
           {[...Array(5)].map((_, rowIdx) => (
             <div key={rowIdx} className="flex">
               {columns.map((col, colIdx) => (
-                <Skeleton key={colIdx} shape="rounded" size="md" width="md" className="m-2 flex-1" />
+                <Skeleton
+                  key={colIdx}
+                  shape="rounded"
+                  size="md"
+                  width="md"
+                  className="m-2 flex-1"
+                />
               ))}
             </div>
           ))}
@@ -86,7 +92,9 @@ export default function DataTable<T extends Record<string, unknown>>({
                 key={String(column.key)}
                 scope="col"
                 className={`px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider ${
-                  column.sortable ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50' : ''
+                  column.sortable
+                    ? "cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                    : ""
                 }`}
                 onClick={() => column.sortable && handleSort(column.key)}
               >
@@ -96,8 +104,8 @@ export default function DataTable<T extends Record<string, unknown>>({
                     <svg
                       className={`w-4 h-4 ${
                         sortConfig?.key === column.key
-                          ? 'text-gray-900 dark:text-gray-100'
-                          : 'text-gray-400 dark:text-gray-500'
+                          ? "text-gray-900 dark:text-gray-100"
+                          : "text-gray-400 dark:text-gray-500"
                       }`}
                       fill="none"
                       stroke="currentColor"
@@ -108,9 +116,9 @@ export default function DataTable<T extends Record<string, unknown>>({
                         strokeLinejoin="round"
                         strokeWidth={2}
                         d={
-                          sortConfig?.key === column.key && sortConfig.direction === 'desc'
-                            ? 'M5 15l7-7 7 7'
-                            : 'M19 9l-7 7-7-7'
+                          sortConfig?.key === column.key && sortConfig.direction === "desc"
+                            ? "M5 15l7-7 7 7"
+                            : "M19 9l-7 7-7-7"
                         }
                       />
                     </svg>
@@ -135,9 +143,7 @@ export default function DataTable<T extends Record<string, unknown>>({
               <tr
                 key={index}
                 className={`${
-                  onRowClick
-                    ? 'hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer'
-                    : ''
+                  onRowClick ? "hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer" : ""
                 } transition-colors duration-150`}
                 onClick={() => onRowClick?.(row)}
               >
@@ -148,8 +154,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                   >
                     {column.render
                       ? column.render(row[column.key], row)
-                      : String(row[column.key] || '-')
-                    }
+                      : String(row[column.key] || "-")}
                   </td>
                 ))}
               </tr>
@@ -161,4 +166,4 @@ export default function DataTable<T extends Record<string, unknown>>({
   );
 }
 
-export type { Column }; 
+export type { Column };

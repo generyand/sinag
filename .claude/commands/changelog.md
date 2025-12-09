@@ -19,6 +19,7 @@ Based on their change, ask:
 **Question**: "Which category does this fall under?"
 
 Provide these options:
+
 - **Added** - New features
 - **Changed** - Changes in existing functionality
 - **Deprecated** - Soon-to-be removed features
@@ -31,19 +32,22 @@ Provide these options:
 Help the user write a concise changelog entry following these guidelines:
 
 **Good changelog entries**:
+
 - Start with a verb (Add, Fix, Update, Remove, etc.)
 - Are concise but descriptive
 - Focus on user-facing changes
 - Include context when helpful
 
 **Examples**:
+
 - ✅ "Add bulk import functionality for barangays with CSV support"
 - ✅ "Fix login error when credentials are invalid"
 - ✅ "Update assessment query performance from 2s to 200ms"
 - ❌ "Fix bug" (too vague)
 - ❌ "Refactor internal helper function" (too technical)
 
-**Ask**: "Here's a suggested entry: `[your suggestion based on their input]`. Does this look good, or would you like to modify it?"
+**Ask**: "Here's a suggested entry: `[your suggestion based on their input]`. Does this look good,
+or would you like to modify it?"
 
 ## Step 4: Read the Current CHANGELOG.md
 
@@ -56,15 +60,18 @@ Find the `## [Unreleased]` section.
 Use the Edit tool to add the new entry under the appropriate category in the `[Unreleased]` section.
 
 **Format**:
+
 ```markdown
 ## [Unreleased]
 
 ### [Category]
+
 - [New entry]
 - [Existing entries...]
 ```
 
 **Rules**:
+
 - Add the new entry as the first item under the category (most recent first)
 - If the category doesn't exist under `[Unreleased]`, create it
 - Maintain the category order: Added, Changed, Deprecated, Removed, Fixed, Security
@@ -75,11 +82,13 @@ Use the Edit tool to add the new entry under the appropriate category in the `[U
 After updating, tell the user:
 
 "✅ Added to changelog under `[Category]`:
+
 ```
 - [their entry]
 ```
 
-The entry has been added to the `[Unreleased]` section of CHANGELOG.md. Remember to commit this change:
+The entry has been added to the `[Unreleased]` section of CHANGELOG.md. Remember to commit this
+change:
 
 ```bash
 git add CHANGELOG.md
@@ -112,11 +121,13 @@ Guide them through creating a new release:
 
 ### `/changelog show`
 
-Read and display the `## [Unreleased]` section of CHANGELOG.md so the user can review pending changes.
+Read and display the `## [Unreleased]` section of CHANGELOG.md so the user can review pending
+changes.
 
 ### `/changelog help`
 
 Show a brief help message:
+
 - `/changelog` or `/changelog add` - Add a new entry
 - `/changelog release` - Prepare a new release
 - `/changelog show` - Show unreleased changes

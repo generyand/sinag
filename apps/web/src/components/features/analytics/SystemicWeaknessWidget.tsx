@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface WeaknessData {
   indicator: string;
@@ -34,9 +34,7 @@ export function SystemicWeaknessWidget({ data }: SystemicWeaknessWidgetProps) {
             <div key={index} className="space-y-2">
               <div className="flex justify-between items-center">
                 <div className="flex-1">
-                  <h4 className="text-sm font-medium text-gray-900">
-                    {weakness.indicator}
-                  </h4>
+                  <h4 className="text-sm font-medium text-gray-900">{weakness.indicator}</h4>
                   <p className="text-xs text-gray-500">
                     Failed by {weakness.failedCount} Barangays ({weakness.percentage}%)
                   </p>
@@ -45,7 +43,7 @@ export function SystemicWeaknessWidget({ data }: SystemicWeaknessWidgetProps) {
                   {weakness.failedCount}/{weakness.totalBarangays}
                 </div>
               </div>
-              
+
               {/* Progress Bar */}
               <div className="w-full bg-gray-200 rounded-full h-3">
                 <div
@@ -61,11 +59,11 @@ export function SystemicWeaknessWidget({ data }: SystemicWeaknessWidgetProps) {
         <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
           <h4 className="font-semibold text-blue-900 mb-2">Capacity Development Priority</h4>
           <p className="text-sm text-blue-800">
-            Focus municipal training programs on the indicators with the highest failure rates. 
-            The top failing indicators represent the most critical areas for capacity development.
+            Focus municipal training programs on the indicators with the highest failure rates. The
+            top failing indicators represent the most critical areas for capacity development.
           </p>
         </div>
       </CardContent>
     </Card>
   );
-} 
+}

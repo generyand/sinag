@@ -2,7 +2,10 @@
 
 ## Overview
 
-The **Intelligence Layer Workflow** leverages Google's Gemini 2.5 Flash API to generate actionable Capacity Development (CapDev) recommendations based on failed indicators from validated assessments. This AI-powered system transforms raw validation data into strategic insights that guide DILG capacity building programs and help barangays improve governance compliance.
+The **Intelligence Layer Workflow** leverages Google's Gemini 2.5 Flash API to generate actionable
+Capacity Development (CapDev) recommendations based on failed indicators from validated assessments.
+This AI-powered system transforms raw validation data into strategic insights that guide DILG
+capacity building programs and help barangays improve governance compliance.
 
 **Last Updated:** 2025-11-27
 
@@ -10,7 +13,8 @@ The **Intelligence Layer Workflow** leverages Google's Gemini 2.5 Flash API to g
 
 **Stage 4**: AI-Powered Insight Generation
 
-This stage follows the classification workflow, analyzing failed indicators to produce customized recommendations, capacity development plans, and strategic summaries for MLGOO-DILG decision-makers.
+This stage follows the classification workflow, analyzing failed indicators to produce customized
+recommendations, capacity development plans, and strategic summaries for MLGOO-DILG decision-makers.
 
 ### AI Features
 
@@ -23,18 +27,22 @@ The Intelligence Layer provides three types of AI-generated content:
 ### Key Stakeholders
 
 - **MLGOO-DILG Users**: Request and review AI-generated insights for strategic planning
-- **BLGU Users**: Receive AI-generated summaries in their preferred language during rework/calibration
+- **BLGU Users**: Receive AI-generated summaries in their preferred language during
+  rework/calibration
 - **Validators**: Trigger calibration summary generation when requesting calibration
 - **System (Gemini API)**: Generate recommendations based on assessment data
 - **Celery Workers**: Handle background processing for long-running AI operations
 
 ### Business Objectives
 
-1. **Actionable Recommendations**: Provide specific, data-driven guidance for improving governance compliance
-2. **Resource Allocation**: Help DILG identify which barangays need assistance and what type of support
+1. **Actionable Recommendations**: Provide specific, data-driven guidance for improving governance
+   compliance
+2. **Resource Allocation**: Help DILG identify which barangays need assistance and what type of
+   support
 3. **Capacity Development Planning**: Generate customized training and program recommendations
 4. **Cost Efficiency**: Use caching and on-demand generation to manage API costs
-5. **Strategic Decision Support**: Enable leadership to make informed decisions about resource deployment
+5. **Strategic Decision Support**: Enable leadership to make informed decisions about resource
+   deployment
 6. **BLGU Empowerment**: Provide clear, localized guidance to help BLGUs address compliance gaps
 
 ---
@@ -108,7 +116,7 @@ flowchart TD
 
 ### Gemini API Integration Flow
 
-```mermaid
+````mermaid
 flowchart TD
     Start([Intelligence Service Triggered]) --> GetAssessment[Get Assessment from Database]
 
@@ -157,7 +165,7 @@ flowchart TD
     NoInsights --> End
     InvalidResponse --> ErrorHandler[Error Handler]
     ErrorHandler --> End
-```
+````
 
 ### Caching and Cost Management
 
@@ -261,15 +269,17 @@ flowchart TD
 
 ### Overview
 
-In addition to post-classification CapDev recommendations, the Intelligence Layer generates **rework summaries** and **calibration summaries** to help BLGU users understand what corrections are needed. These summaries are generated in multiple languages based on user preference.
+In addition to post-classification CapDev recommendations, the Intelligence Layer generates **rework
+summaries** and **calibration summaries** to help BLGU users understand what corrections are needed.
+These summaries are generated in multiple languages based on user preference.
 
 ### Supported Languages
 
-| Code | Language | Description |
-|------|----------|-------------|
+| Code  | Language       | Description                     |
+| ----- | -------------- | ------------------------------- |
 | `ceb` | Bisaya/Cebuano | Default language for most BLGUs |
-| `en` | English | For formal documentation |
-| `fil` | Tagalog | For Tagalog-speaking regions |
+| `en`  | English        | For formal documentation        |
+| `fil` | Tagalog        | For Tagalog-speaking regions    |
 
 ### Summary Types
 
@@ -280,6 +290,7 @@ Generated when an **Assessor** sends an assessment for rework.
 **Trigger**: `POST /api/v1/assessor/assessments/{id}/rework`
 
 **Content**:
+
 - Overall summary of issues found
 - Per-indicator breakdown of problems
 - Suggested actions for each indicator
@@ -290,6 +301,7 @@ Generated when an **Assessor** sends an assessment for rework.
 **Storage**: `assessments.rework_summary` (JSONB)
 
 **Format**:
+
 ```json
 {
   "ceb": {
@@ -320,6 +332,7 @@ Generated when a **Validator** requests calibration for their governance area.
 **Trigger**: `POST /api/v1/assessor/assessments/{id}/request-calibration`
 
 **Content**:
+
 - Summary specific to the calibrated governance area
 - Only indicators within the Validator's area
 - Focused, targeted feedback
@@ -334,6 +347,7 @@ For **parallel calibration** where multiple Validators request calibration simul
 **Storage**: `assessments.calibration_summaries_by_area` (JSONB)
 
 **Format**:
+
 ```json
 {
   "1": {  // Governance Area ID as string key
@@ -354,12 +368,15 @@ For **parallel calibration** where multiple Validators request calibration simul
 
 ### BLGU Dashboard Integration
 
-The BLGU dashboard (`GET /api/v1/blgu-dashboard/{assessment_id}`) returns AI summaries based on assessment status:
+The BLGU dashboard (`GET /api/v1/blgu-dashboard/{assessment_id}`) returns AI summaries based on
+assessment status:
 
 **Request Parameters**:
+
 - `language` (optional): Override user's preferred language (`ceb`, `en`, `fil`)
 
 **Response Fields**:
+
 ```json
 {
   "ai_summary": {
@@ -444,9 +461,11 @@ OUTPUT FORMAT (JSON):
 **Purpose**: Allow MLGOO-DILG users to generate AI insights on-demand for completed assessments.
 
 **API Endpoints**:
+
 - `POST /api/v1/assessments/{assessment_id}/generate-insights` - Request insight generation
 
 **User Interface Components**:
+
 - `apps/web/src/components/features/analytics/GenerateInsightsButton.tsx` - Trigger button
 - `apps/web/src/components/features/analytics/InsightsDisplay.tsx` - Results display
 
@@ -463,17 +482,20 @@ OUTPUT FORMAT (JSON):
 4. **User Clicks Button**: Triggers API request
 
 **Authorization**:
+
 - Requires `MLGOO_DILG` role
 - Returns 403 Forbidden for other roles
 
 **Database Changes**:
+
 - None at this stage (read-only check)
 
 ---
 
 ### 2. Cache Check: Avoid Duplicate API Calls
 
-**Purpose**: Reduce costs by checking if insights already exist in the database before calling Gemini API.
+**Purpose**: Reduce costs by checking if insights already exist in the database before calling
+Gemini API.
 
 **Service Method** (`apps/api/app/services/intelligence_service.py`):
 
@@ -497,22 +519,26 @@ def get_insights_with_caching(
    - If JSONB data exists: Return cached insights immediately ✅ (No API cost)
    - If NULL or empty: Proceed to API call
 3. **Validate Cached Data** (if exists):
-   - Verify JSON structure has required keys: `summary`, `recommendations`, `capacity_development_needs`
+   - Verify JSON structure has required keys: `summary`, `recommendations`,
+     `capacity_development_needs`
    - If invalid: Clear cache and regenerate
 
 **Cost Savings**:
+
 - Cached insights return in < 10ms (database query only)
 - Fresh API calls take 2-5 seconds and incur Gemini API costs
 - Cache hit rate target: 90% for assessments viewed multiple times
 
 **Database Changes**:
+
 - Read from `assessments.ai_recommendations`
 
 ---
 
 ### 3. Build Gemini Prompt from Failed Indicators
 
-**Purpose**: Construct a structured, context-rich prompt that guides Gemini to generate high-quality recommendations.
+**Purpose**: Construct a structured, context-rich prompt that guides Gemini to generate high-quality
+recommendations.
 
 **Service Method**:
 
@@ -537,6 +563,7 @@ def build_gemini_prompt(self, db: Session, assessment_id: int) -> str:
    - Overall compliance status (from `assessment.final_compliance_status`)
 
 2. **Filter Failed Indicators**:
+
    ```python
    failed_indicators = [
        response for response in assessment.responses
@@ -544,8 +571,7 @@ def build_gemini_prompt(self, db: Session, assessment_id: int) -> str:
    ]
    ```
 
-3. **Enrich with Metadata**:
-   For each failed indicator, include:
+3. **Enrich with Metadata**: For each failed indicator, include:
    - Indicator name and code
    - Governance area name (Core vs. Essential)
    - Indicator description
@@ -598,12 +624,16 @@ Focus on:
 ```
 
 **Edge Case Handling**:
-- If no failed indicators: Return message indicating assessment passed all indicators (no insights needed)
+
+- If no failed indicators: Return message indicating assessment passed all indicators (no insights
+  needed)
 - If barangay name unavailable: Use "Unknown" placeholder
 - If no assessor feedback: Omit feedback section for that indicator
 
 **Database Changes**:
-- Read from `assessments`, `assessment_responses`, `indicators`, `governance_areas`, `feedback_comments`
+
+- Read from `assessments`, `assessment_responses`, `indicators`, `governance_areas`,
+  `feedback_comments`
 
 ---
 
@@ -626,12 +656,14 @@ def call_gemini_api(self, db: Session, assessment_id: int) -> dict[str, Any]:
 **API Configuration**:
 
 **Model**: `gemini-2.5-flash`
+
 - Latest stable Gemini model as of October 2025
 - Supports up to 1M input tokens
 - Supports up to 65K output tokens
 - Optimized for fast, cost-effective generation
 
 **Generation Settings**:
+
 ```python
 generation_config = {
     "temperature": 0.7,      # Balanced creativity and consistency
@@ -642,6 +674,7 @@ generation_config = {
 **Process**:
 
 1. **Verify API Key**:
+
    ```python
    if not settings.GEMINI_API_KEY:
        raise ValueError("GEMINI_API_KEY not configured in environment")
@@ -650,17 +683,20 @@ generation_config = {
 2. **Build Prompt**: Call `build_gemini_prompt()` method
 
 3. **Configure Gemini SDK**:
+
    ```python
    import google.generativeai as genai
    genai.configure(api_key=settings.GEMINI_API_KEY)
    ```
 
 4. **Initialize Model**:
+
    ```python
    model = genai.GenerativeModel("gemini-2.5-flash")
    ```
 
 5. **Send Request**:
+
    ```python
    response = model.generate_content(
        prompt,
@@ -677,7 +713,7 @@ generation_config = {
 
 **Response Extraction Logic**:
 
-```python
+````python
 response_text = response.text
 
 if "```json" in response_text:
@@ -695,7 +731,7 @@ else:
     json_str = response_text.strip()
 
 parsed_response = json.loads(json_str)
-```
+````
 
 7. **Validate Response Structure**:
    - Must contain exactly three keys: `summary`, `recommendations`, `capacity_development_needs`
@@ -705,17 +741,18 @@ parsed_response = json.loads(json_str)
 
 **Error Handling**:
 
-| Error Type | Detection | Action |
-|-----------|-----------|--------|
-| **Missing API Key** | `settings.GEMINI_API_KEY` is None | Raise ValueError |
-| **JSON Parse Error** | `json.loads()` fails | Raise Exception with response text |
-| **Invalid Structure** | Missing required keys | Raise ValueError |
-| **Timeout** | Network timeout | Raise TimeoutError → Trigger retry |
-| **Quota Exceeded** | "quota" or "rate limit" in error message | Raise Exception with user-friendly message |
-| **Network Error** | "network" or "connection" in error | Raise Exception with connectivity message |
-| **Auth Error** | "permission" or "unauthorized" in error | Raise Exception with API key message |
+| Error Type            | Detection                                | Action                                     |
+| --------------------- | ---------------------------------------- | ------------------------------------------ |
+| **Missing API Key**   | `settings.GEMINI_API_KEY` is None        | Raise ValueError                           |
+| **JSON Parse Error**  | `json.loads()` fails                     | Raise Exception with response text         |
+| **Invalid Structure** | Missing required keys                    | Raise ValueError                           |
+| **Timeout**           | Network timeout                          | Raise TimeoutError → Trigger retry         |
+| **Quota Exceeded**    | "quota" or "rate limit" in error message | Raise Exception with user-friendly message |
+| **Network Error**     | "network" or "connection" in error       | Raise Exception with connectivity message  |
+| **Auth Error**        | "permission" or "unauthorized" in error  | Raise Exception with API key message       |
 
 **Database Changes**:
+
 - None at this stage (API call only)
 
 ---
@@ -727,6 +764,7 @@ parsed_response = json.loads(json_str)
 **Process**:
 
 1. **Update Assessment Record**:
+
    ```python
    assessment.ai_recommendations = insights  # Store JSON
    assessment.updated_at = datetime.now(UTC)
@@ -756,6 +794,7 @@ parsed_response = json.loads(json_str)
    ```
 
 **Database Changes**:
+
 - Update `assessments.ai_recommendations` = JSONB object
 - Update `assessments.updated_at` = current timestamp
 
@@ -766,6 +805,7 @@ parsed_response = json.loads(json_str)
 **Purpose**: Present AI-generated insights in a user-friendly, actionable format.
 
 **User Interface Components**:
+
 - `apps/web/src/components/features/analytics/InsightsSummary.tsx` - Summary paragraph
 - `apps/web/src/components/features/analytics/RecommendationsList.tsx` - Actionable recommendations
 - `apps/web/src/components/features/analytics/CapDevNeeds.tsx` - Training program list
@@ -773,16 +813,16 @@ parsed_response = json.loads(json_str)
 **Display Structure**:
 
 **1. Summary Section**:
+
 ```html
 <section class="insights-summary">
   <h3>Assessment Summary</h3>
-  <p class="summary-text">
-    [AI-generated summary paragraph]
-  </p>
+  <p class="summary-text">[AI-generated summary paragraph]</p>
 </section>
 ```
 
 **2. Recommendations Section**:
+
 ```html
 <section class="recommendations">
   <h3>Recommended Actions</h3>
@@ -796,6 +836,7 @@ parsed_response = json.loads(json_str)
 ```
 
 **3. Capacity Development Needs Section**:
+
 ```html
 <section class="capdev-needs">
   <h3>Capacity Development Programs</h3>
@@ -809,11 +850,13 @@ parsed_response = json.loads(json_str)
 ```
 
 **Visual Design**:
+
 - Summary: Prominent card with light blue background
 - Recommendations: Green checkmark icons, actionable bullet points
 - CapDev Needs: Book icons, distinct visual separator from recommendations
 
 **Accessibility**:
+
 - Semantic HTML with proper heading hierarchy
 - ARIA labels for screen readers
 - Keyboard navigation support
@@ -843,6 +886,7 @@ def generate_insights_task(self, assessment_id: int) -> dict[str, Any]:
 ```
 
 **When to Use Background Task**:
+
 - Expected API response time > 10 seconds
 - User should not wait for completion
 - Allows user to continue working while insights generate
@@ -850,6 +894,7 @@ def generate_insights_task(self, assessment_id: int) -> dict[str, Any]:
 **Process**:
 
 1. **Queue Task**:
+
    ```python
    from app.workers.intelligence_worker import generate_insights_task
 
@@ -871,6 +916,7 @@ def generate_insights_task(self, assessment_id: int) -> dict[str, Any]:
    ```
 
 **Retry Schedule**:
+
 - Attempt 1: Immediate
 - Attempt 2: 60 seconds delay
 - Attempt 3: 120 seconds delay
@@ -878,12 +924,14 @@ def generate_insights_task(self, assessment_id: int) -> dict[str, Any]:
 - Max retries exceeded: Fail with error
 
 **Error Handling**:
+
 - `ValueError`: No retry (validation errors are permanent)
 - `TimeoutError`: Retry with backoff
 - `APIError`: Retry with backoff
 - Other exceptions: Retry with backoff
 
 **Database Changes**:
+
 - Worker opens and closes its own database session
 - Writes to `assessments.ai_recommendations` when successful
 
@@ -894,17 +942,20 @@ def generate_insights_task(self, assessment_id: int) -> dict[str, Any]:
 ### API Configuration
 
 **Environment Variables** (`.env`):
+
 ```bash
 GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
 **Settings** (`apps/api/app/core/config.py`):
+
 ```python
 class Settings(BaseSettings):
     GEMINI_API_KEY: str | None = None
 ```
 
 **Security**:
+
 - API key stored in environment variables (never in code)
 - API key never logged or exposed to frontend
 - API key not committed to version control
@@ -914,6 +965,7 @@ class Settings(BaseSettings):
 **Model**: `gemini-2.5-flash`
 
 **Generation Config**:
+
 ```python
 {
     "temperature": 0.7,        # Balanced creativity and consistency
@@ -928,6 +980,7 @@ class Settings(BaseSettings):
 ### Response Format
 
 **Expected JSON Structure**:
+
 ```json
 {
   "summary": "String (2-4 sentences)",
@@ -937,12 +990,14 @@ class Settings(BaseSettings):
 ```
 
 **Response Validation**:
+
 1. Check if all three keys present
 2. Verify `summary` is non-empty string
 3. Verify `recommendations` is array with at least 1 item
 4. Verify `capacity_development_needs` is array with at least 1 item
 
 **Invalid Response Handling**:
+
 - Log error with assessment ID and response text
 - Raise `ValueError` with descriptive message
 - Do not retry (invalid structure indicates prompt issue, not transient error)
@@ -950,26 +1005,31 @@ class Settings(BaseSettings):
 ### Rate Limiting and Cost Management
 
 **Rate Limiting Strategy**:
+
 - Endpoint rate limit: 10 requests per minute per user (application-level)
 - Gemini API has its own rate limits (managed by Google)
 
 **Cost Management**:
 
 **Caching**:
+
 - Check database before every API call
 - Cache hit rate target: 90%
 - Estimated cost savings: 90% reduction in API calls
 
 **On-Demand Generation**:
+
 - Insights only generated when user clicks button (not automatic)
 - Prevents unnecessary API calls for assessments that are never viewed
 
 **Cost Estimation**:
+
 - Gemini 2.5 Flash pricing: ~$0.075 per 1M input tokens, ~$0.30 per 1M output tokens
 - Typical prompt: ~1000 tokens input, ~500 tokens output
 - Cost per insight: ~$0.0002 (negligible)
 
 **Budget Monitoring**:
+
 - Log all API calls with timestamps
 - Track total API usage in application logs
 - Alert if usage exceeds expected thresholds
@@ -981,6 +1041,7 @@ class Settings(BaseSettings):
 ### What Data is Sent to Gemini API?
 
 **Included Data**:
+
 - Barangay name (public information)
 - Assessment year (public information)
 - Failed indicator names and codes (official SGLGB indicators)
@@ -990,6 +1051,7 @@ class Settings(BaseSettings):
 - Overall compliance status (Pass/Fail)
 
 **Excluded Data**:
+
 - User personal information (names, emails, addresses)
 - Internal DILG notes (marked with `is_internal_note` = true)
 - MOV file contents or URLs
@@ -999,16 +1061,19 @@ class Settings(BaseSettings):
 ### Privacy Considerations
 
 **Gemini API Data Retention** (per Google's policy as of 2025):
+
 - Prompts and responses may be retained for service improvement
 - No personally identifiable information (PII) sent in prompts
 - Barangay-level data is considered public governance information
 
 **Compliance**:
+
 - Data sent to Gemini is limited to public governance data
 - No Data Privacy Act violations (no personal data transmitted)
 - Assessor feedback is professional evaluation (not personal opinion)
 
 **Security Measures**:
+
 - HTTPS encryption for all API communication
 - API key stored securely in environment variables
 - No logging of API responses containing recommendations (to prevent log bloat)
@@ -1022,12 +1087,14 @@ class Settings(BaseSettings):
 **Scenario**: Assessment has `final_compliance_status` = `PASSED` and no failed indicators.
 
 **System Behavior**:
+
 - Prompt building function detects zero failed indicators
 - Returns message: "No insights needed - assessment passed all indicators"
 - Frontend displays success message instead of recommendations
 - No API call made (cost savings)
 
 **Database Changes**:
+
 - `ai_recommendations` remains NULL (no data to store)
 
 ---
@@ -1037,12 +1104,14 @@ class Settings(BaseSettings):
 **Scenario**: API response cannot be parsed as valid JSON.
 
 **System Behavior**:
+
 1. Log error with assessment ID and raw response text
 2. Raise `Exception` with descriptive message
 3. Celery worker triggers retry with exponential backoff
 4. After max retries, return error to user
 
 **User Experience**:
+
 - Error message: "Could not generate AI insights at this time. Please try again later."
 - Button re-enabled after 10 seconds for manual retry
 
@@ -1053,12 +1122,14 @@ class Settings(BaseSettings):
 **Scenario**: API call exceeds 30-second timeout.
 
 **System Behavior**:
+
 1. Catch `TimeoutError` exception
 2. Log timeout event with assessment ID
 3. Trigger Celery retry with exponential backoff
 4. Max 3 retry attempts
 
 **Mitigation**:
+
 - Use Celery background task for all production calls
 - User sees "Processing..." status
 - Can navigate away and return later to view results
@@ -1070,11 +1141,13 @@ class Settings(BaseSettings):
 **Scenario**: Failed indicator has no assessor feedback comments.
 
 **System Behavior**:
+
 - Include indicator in prompt with "No assessor feedback provided"
 - Gemini generates recommendations based on indicator name and description only
 - Quality may be lower without feedback context
 
 **Mitigation**:
+
 - Encourage assessors to provide detailed feedback during validation
 
 ---
@@ -1084,12 +1157,14 @@ class Settings(BaseSettings):
 **Scenario**: Gemini API returns quota exceeded error.
 
 **System Behavior**:
+
 1. Detect "quota" or "rate limit" keywords in error message
 2. Return user-friendly error: "Gemini API quota exceeded. Please try again later."
 3. Do not retry automatically (quota errors are not transient)
 4. Log event for admin review
 
 **Mitigation**:
+
 - Monitor API usage to prevent quota exhaustion
 - Implement application-level rate limiting (10 requests/minute/user)
 - Consider upgrading Gemini API plan if quota frequently exceeded
@@ -1103,10 +1178,12 @@ class Settings(BaseSettings):
 **Primary Table**: `assessments`
 
 **Fields Written**:
+
 - `ai_recommendations` (JSONB): Stores full Gemini API response
 - `updated_at` (Timestamp): Updated when insights stored
 
 **Fields Read**:
+
 - `id` (Assessment identifier)
 - `status` (Must be COMPLETED)
 - `final_compliance_status` (Pass/Fail for context)
@@ -1145,11 +1222,13 @@ class Settings(BaseSettings):
 **Intelligence Service** (`apps/api/app/services/intelligence_service.py`):
 
 **Core Methods**:
+
 1. `get_insights_with_caching(db, assessment_id)` - Main entry point with cache check
 2. `call_gemini_api(db, assessment_id)` - Direct API call
 3. `build_gemini_prompt(db, assessment_id)` - Prompt construction
 
 **Worker Dependencies**:
+
 - Celery background task system
 - Redis message broker
 - `intelligence_worker.py` task definitions
@@ -1157,6 +1236,7 @@ class Settings(BaseSettings):
 ### External Services
 
 **Google Gemini API**:
+
 - **Endpoint**: `generativelanguage.googleapis.com`
 - **Model**: `gemini-2.5-flash`
 - **Authentication**: API key
@@ -1164,6 +1244,7 @@ class Settings(BaseSettings):
 - **SLA**: 99.9% uptime (Google Cloud SLA)
 
 **Redis (Celery Broker)**:
+
 - Message queue for background tasks
 - Task result storage
 - Worker coordination
@@ -1171,11 +1252,13 @@ class Settings(BaseSettings):
 ### Related Workflows
 
 **Previous Workflow**: [Classification Algorithm Workflow](./classification-algorithm.md)
+
 - Provides `final_compliance_status` (required for insights)
 - Triggers automatic classification that precedes insight generation
 - Stores area-level results used in prompt context
 
 **Dependent Workflow**: [Assessor Validation Workflow](./assessor-validation.md)
+
 - Provides failed indicators and assessor feedback
 - `validation_status` field determines which indicators trigger recommendations
 - Public feedback comments included in Gemini prompt
@@ -1188,10 +1271,10 @@ class Settings(BaseSettings):
 
 All endpoints require `MLGOO_DILG` role.
 
-| Endpoint | Method | Purpose | Request Body | Response |
-|----------|--------|---------|-------------|----------|
-| `/api/v1/assessments/{id}/generate-insights` | POST | Generate AI insights (checks cache first) | None | `InsightsResponse` |
-| `/api/v1/assessments/{id}/insights` | GET | Get cached insights if available | None | `InsightsResponse` or 404 |
+| Endpoint                                     | Method | Purpose                                   | Request Body | Response                  |
+| -------------------------------------------- | ------ | ----------------------------------------- | ------------ | ------------------------- |
+| `/api/v1/assessments/{id}/generate-insights` | POST   | Generate AI insights (checks cache first) | None         | `InsightsResponse`        |
+| `/api/v1/assessments/{id}/insights`          | GET    | Get cached insights if available          | None         | `InsightsResponse` or 404 |
 
 ### Response Schema
 
@@ -1221,6 +1304,7 @@ All endpoints require `MLGOO_DILG` role.
 **Error Responses**:
 
 **404 Not Found**:
+
 ```json
 {
   "detail": "Assessment 123 not found"
@@ -1228,6 +1312,7 @@ All endpoints require `MLGOO_DILG` role.
 ```
 
 **400 Bad Request** (Not Validated):
+
 ```json
 {
   "detail": "Assessment must be in COMPLETED status to generate insights"
@@ -1235,6 +1320,7 @@ All endpoints require `MLGOO_DILG` role.
 ```
 
 **500 Internal Server Error** (API Failure):
+
 ```json
 {
   "detail": "Could not generate AI insights at this time. Please try again later."
@@ -1242,6 +1328,7 @@ All endpoints require `MLGOO_DILG` role.
 ```
 
 **503 Service Unavailable** (Quota Exceeded):
+
 ```json
 {
   "detail": "Gemini API quota exceeded. Please contact system administrator."
@@ -1259,6 +1346,7 @@ All endpoints require `MLGOO_DILG` role.
 **Test Scenarios**:
 
 **1. Test Prompt Building**
+
 ```python
 def test_build_gemini_prompt():
     """
@@ -1272,6 +1360,7 @@ def test_build_gemini_prompt():
 ```
 
 **2. Test Cache Hit**
+
 ```python
 def test_get_insights_with_caching_cache_hit():
     """
@@ -1285,6 +1374,7 @@ def test_get_insights_with_caching_cache_hit():
 ```
 
 **3. Test Cache Miss with API Call**
+
 ```python
 def test_get_insights_with_caching_cache_miss():
     """
@@ -1301,6 +1391,7 @@ def test_get_insights_with_caching_cache_miss():
 ```
 
 **4. Test Invalid JSON Response**
+
 ```python
 def test_call_gemini_api_invalid_json():
     """
@@ -1313,6 +1404,7 @@ def test_call_gemini_api_invalid_json():
 ```
 
 **5. Test Missing Required Keys**
+
 ```python
 def test_call_gemini_api_missing_keys():
     """
@@ -1325,6 +1417,7 @@ def test_call_gemini_api_missing_keys():
 ```
 
 **6. Test No Failed Indicators**
+
 ```python
 def test_build_prompt_no_failures():
     """
@@ -1385,6 +1478,7 @@ def test_generate_insights_task():
 ### Manual Testing Checklist
 
 **Scenario 1: Fresh Insight Generation**
+
 ```
 1. Create validated assessment with failed indicators
 2. Navigate to assessment report page
@@ -1396,6 +1490,7 @@ def test_generate_insights_task():
 ```
 
 **Scenario 2: Cached Insight Retrieval**
+
 ```
 1. Use assessment from Scenario 1 (has cached insights)
 2. Refresh page
@@ -1406,6 +1501,7 @@ def test_generate_insights_task():
 ```
 
 **Scenario 3: Error Handling**
+
 ```
 1. Temporarily disable GEMINI_API_KEY
 2. Attempt to generate insights
@@ -1421,11 +1517,13 @@ def test_generate_insights_task():
 ### API Response Time
 
 **Gemini 2.5 Flash Performance**:
+
 - Typical response time: 2-5 seconds
 - 95th percentile: < 8 seconds
 - 99th percentile: < 15 seconds
 
 **Optimization Strategies**:
+
 1. **Caching**: 90% cache hit rate → 90% of requests return in < 10ms
 2. **Background Tasks**: Use Celery for operations expected to exceed 10 seconds
 3. **Prompt Optimization**: Keep prompts concise to reduce processing time
@@ -1433,11 +1531,13 @@ def test_generate_insights_task():
 ### Database Performance
 
 **Query Optimization**:
+
 - Use `joinedload()` to eager-load relationships in single query
 - Avoid N+1 query problems when gathering failed indicators
 - Index on `assessments.id` and `assessment_responses.assessment_id`
 
 **Caching Strategy**:
+
 - Check `ai_recommendations` column before API call
 - Store full JSON response for future retrieval
 - No expiration (insights remain valid for historical tracking)
@@ -1445,16 +1545,19 @@ def test_generate_insights_task():
 ### Cost Optimization
 
 **API Cost per Insight** (estimated):
+
 - Input tokens: ~1000 tokens × $0.075/1M = $0.000075
 - Output tokens: ~500 tokens × $0.30/1M = $0.00015
 - **Total per insight**: ~$0.0002 (negligible)
 
 **Cost Savings from Caching**:
+
 - With 90% cache hit rate: 90% cost reduction
 - With 1000 assessments viewed 5 times each: 4000 API calls saved
 - Estimated savings: $0.80 per 1000 assessments
 
 **Budget Monitoring**:
+
 - Log all API calls with timestamps
 - Track cumulative token usage
 - Alert if monthly usage exceeds budget threshold
@@ -1463,13 +1566,21 @@ def test_generate_insights_task():
 
 ## Summary
 
-The Intelligence Layer Workflow transforms validated assessment data into strategic insights through AI-powered analysis. Key success factors include:
+The Intelligence Layer Workflow transforms validated assessment data into strategic insights through
+AI-powered analysis. Key success factors include:
 
-1. **Cost-Effective Design**: Caching and on-demand generation minimize API costs while maintaining responsiveness
-2. **High-Quality Recommendations**: Structured prompts with rich context produce actionable, barangay-specific guidance
-3. **Robust Error Handling**: Comprehensive retry logic and user-friendly error messages ensure reliable operation
-4. **Strategic Value**: AI-generated insights enable MLGOO-DILG to allocate resources effectively and plan targeted CapDev programs
-5. **Background Processing**: Celery integration prevents frontend timeouts and allows users to continue working
-6. **Data Privacy**: Careful filtering ensures no PII or sensitive internal notes are sent to external APIs
+1. **Cost-Effective Design**: Caching and on-demand generation minimize API costs while maintaining
+   responsiveness
+2. **High-Quality Recommendations**: Structured prompts with rich context produce actionable,
+   barangay-specific guidance
+3. **Robust Error Handling**: Comprehensive retry logic and user-friendly error messages ensure
+   reliable operation
+4. **Strategic Value**: AI-generated insights enable MLGOO-DILG to allocate resources effectively
+   and plan targeted CapDev programs
+5. **Background Processing**: Celery integration prevents frontend timeouts and allows users to
+   continue working
+6. **Data Privacy**: Careful filtering ensures no PII or sensitive internal notes are sent to
+   external APIs
 
-This workflow empowers DILG leadership with data-driven intelligence for improving local governance across the Philippines.
+This workflow empowers DILG leadership with data-driven intelligence for improving local governance
+across the Philippines.

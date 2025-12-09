@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { AssessorData, SystemicWeakness } from "@/components/features/analytics/AssessorAnalyticsTypes";
+import {
+  AssessorData,
+  SystemicWeakness,
+} from "@/components/features/analytics/AssessorAnalyticsTypes";
 import { useAssessorAnalytics } from "@/hooks/useAssessor";
 import { useAssessorGovernanceArea } from "@/hooks/useAssessorGovernanceArea";
 import {
@@ -16,9 +19,13 @@ import {
 export default function AssessorAnalyticsPage() {
   const [selectedWeakness, setSelectedWeakness] = useState<SystemicWeakness | null>(null);
   const [showWeaknessModal, setShowWeaknessModal] = useState(false);
-  
+
   const { governanceAreaName, isLoading: governanceAreaLoading } = useAssessorGovernanceArea();
-  const { data: analyticsData, isLoading: analyticsLoading, error: analyticsError } = useAssessorAnalytics();
+  const {
+    data: analyticsData,
+    isLoading: analyticsLoading,
+    error: analyticsError,
+  } = useAssessorAnalytics();
 
   // Map API response to UI shape (must be called unconditionally to preserve hook order)
   const assessorData = useMemo<AssessorData | null>(() => {
@@ -72,7 +79,9 @@ export default function AssessorAnalyticsPage() {
             Error Loading Analytics
           </h2>
           <p className="text-[var(--text-secondary)]">
-            {analyticsError ? 'Failed to load analytics data. Please try again later.' : 'No analytics data available.'}
+            {analyticsError
+              ? "Failed to load analytics data. Please try again later."
+              : "No analytics data available."}
           </p>
         </div>
       </div>

@@ -89,9 +89,7 @@ export function BBIPreviewPanel({ data, isLoading = false }: BBIPreviewPanelProp
       <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-sm">
         <div className="px-4 py-2 flex items-center gap-2 animate-pulse">
           <Building2 className="w-4 h-4 text-blue-600" />
-          <span className="text-sm text-blue-700 dark:text-blue-300">
-            Loading BBI preview...
-          </span>
+          <span className="text-sm text-blue-700 dark:text-blue-300">Loading BBI preview...</span>
         </div>
       </div>
     );
@@ -101,18 +99,12 @@ export function BBIPreviewPanel({ data, isLoading = false }: BBIPreviewPanelProp
     return null;
   }
 
-  const highly = data.bbi_results.filter(
-    (r) => r.compliance_rating === "HIGHLY_FUNCTIONAL"
-  ).length;
+  const highly = data.bbi_results.filter((r) => r.compliance_rating === "HIGHLY_FUNCTIONAL").length;
   const moderate = data.bbi_results.filter(
     (r) => r.compliance_rating === "MODERATELY_FUNCTIONAL"
   ).length;
-  const low = data.bbi_results.filter(
-    (r) => r.compliance_rating === "LOW_FUNCTIONAL"
-  ).length;
-  const nonFunc = data.bbi_results.filter(
-    (r) => r.compliance_rating === "NON_FUNCTIONAL"
-  ).length;
+  const low = data.bbi_results.filter((r) => r.compliance_rating === "LOW_FUNCTIONAL").length;
+  const nonFunc = data.bbi_results.filter((r) => r.compliance_rating === "NON_FUNCTIONAL").length;
 
   return (
     <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-sm overflow-hidden">
@@ -123,9 +115,7 @@ export function BBIPreviewPanel({ data, isLoading = false }: BBIPreviewPanelProp
       >
         <div className="flex items-center gap-2">
           <Building2 className="w-4 h-4 text-blue-600" />
-          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-            BBI Preview
-          </span>
+          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">BBI Preview</span>
           <span className="text-xs text-blue-600 dark:text-blue-400">
             ({Math.round(data.average_compliance)}% avg)
           </span>
@@ -170,19 +160,14 @@ export function BBIPreviewPanel({ data, isLoading = false }: BBIPreviewPanelProp
               const style = getRatingStyle(bbi.compliance_rating);
               const Icon = style.icon;
               return (
-                <div
-                  key={bbi.bbi_id}
-                  className={`${style.bg} rounded p-2 text-center`}
-                >
+                <div key={bbi.bbi_id} className={`${style.bg} rounded p-2 text-center`}>
                   <div className="flex items-center justify-center gap-1 mb-1">
                     <Icon className={`w-3.5 h-3.5 ${style.text}`} />
                     <span className={`text-sm font-semibold ${style.text}`}>
                       {Math.round(bbi.compliance_percentage)}%
                     </span>
                   </div>
-                  <p className={`text-xs font-medium ${style.text}`}>
-                    {bbi.bbi_abbreviation}
-                  </p>
+                  <p className={`text-xs font-medium ${style.text}`}>{bbi.bbi_abbreviation}</p>
                   <p className="text-[10px] text-gray-600 dark:text-gray-400 truncate">
                     {bbi.sub_indicators_passed}/{bbi.sub_indicators_total} passed
                   </p>

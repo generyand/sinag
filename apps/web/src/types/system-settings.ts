@@ -1,7 +1,7 @@
 /**
  * Assessment Period Status
  */
-export type AssessmentPeriodStatus = 'active' | 'upcoming' | 'archived';
+export type AssessmentPeriodStatus = "active" | "upcoming" | "archived";
 
 /**
  * Assessment Period
@@ -54,5 +54,5 @@ export interface ConfirmationDialogProps {
   message: string;
   confirmText?: string;
   cancelText?: string;
-  variant?: 'danger' | 'warning' | 'info';
-} 
+  variant?: "danger" | "warning" | "info";
+}

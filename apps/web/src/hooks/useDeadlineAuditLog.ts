@@ -5,8 +5,8 @@
  * Wraps TanStack Query hooks for querying and exporting override history.
  */
 
-import type { DeadlineOverrideListResponse } from '@sinag/shared';
-import { useGetAdminDeadlinesOverrides } from '@sinag/shared';
+import type { DeadlineOverrideListResponse } from "@sinag/shared";
+import { useGetAdminDeadlinesOverrides } from "@sinag/shared";
 
 interface UseDeadlineAuditLogOptions {
   cycleId?: number;
@@ -70,19 +70,19 @@ export function exportDeadlineOverridesCSV(filters?: UseDeadlineAuditLogOptions)
   const params = new URLSearchParams();
 
   if (filters?.cycleId) {
-    params.append('cycle_id', filters.cycleId.toString());
+    params.append("cycle_id", filters.cycleId.toString());
   }
   if (filters?.barangayId) {
-    params.append('barangay_id', filters.barangayId.toString());
+    params.append("barangay_id", filters.barangayId.toString());
   }
   if (filters?.indicatorId) {
-    params.append('indicator_id', filters.indicatorId.toString());
+    params.append("indicator_id", filters.indicatorId.toString());
   }
 
   const url = `/api/v1/admin/deadlines/overrides/export?${params.toString()}`;
 
   // Create a temporary link and trigger download
-  const link = document.createElement('a');
+  const link = document.createElement("a");
   link.href = url;
   link.download = `deadline_overrides_${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(link);

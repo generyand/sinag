@@ -59,10 +59,7 @@ function getVerdictStatus(
   }
 
   // MLGOO RE-calibration: Show recalibration state (this is the active phase)
-  if (
-    isMlgooRecalibration &&
-    (status === "REWORK" || status === "NEEDS_REWORK")
-  ) {
+  if (isMlgooRecalibration && (status === "REWORK" || status === "NEEDS_REWORK")) {
     return {
       phaseStatus: "calibration",
       statusLabel: "RE-Calibration Requested",
@@ -76,7 +73,8 @@ function getVerdictStatus(
       phaseStatus: "pending",
       statusLabel: "Awaiting MLGOO Approval",
       isActive: false,
-      pendingMessage: "Your assessment has been validated and is now awaiting final approval from the MLGOO Chairman.",
+      pendingMessage:
+        "Your assessment has been validated and is now awaiting final approval from the MLGOO Chairman.",
     };
   }
 
@@ -84,7 +82,8 @@ function getVerdictStatus(
     phaseStatus: "pending",
     statusLabel: "Pending",
     isActive: false,
-    pendingMessage: "Your SGLGB classification result will be available after the table validation is completed by the DILG validator team.",
+    pendingMessage:
+      "Your SGLGB classification result will be available after the table validation is completed by the DILG validator team.",
   };
 }
 
@@ -157,8 +156,8 @@ export function VerdictSection({
                     MLGOO RE-Calibration Requested
                   </h3>
                   <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                    The MLGOO Chairman has requested re-calibration for specific indicators.
-                    Please review the feedback below and make the necessary corrections.
+                    The MLGOO Chairman has requested re-calibration for specific indicators. Please
+                    review the feedback below and make the necessary corrections.
                   </p>
                   {mlgooRecalibrationComments && (
                     <div className="mt-3 p-3 bg-white dark:bg-gray-800 rounded border border-amber-200 dark:border-amber-700">
@@ -219,9 +218,7 @@ export function VerdictSection({
                 ? "Awaiting MLGOO Approval"
                 : "SGLGB Result Pending"}
             </h3>
-            <p className="text-[var(--text-secondary)] max-w-md mx-auto">
-              {pendingMessage}
-            </p>
+            <p className="text-[var(--text-secondary)] max-w-md mx-auto">{pendingMessage}</p>
             <div className="mt-6 flex justify-center gap-4">
               <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
                 <div className="w-3 h-3 rounded-full bg-green-500" />
@@ -259,20 +256,14 @@ export function VerdictSection({
               </div>
               <h2
                 className={`text-2xl font-bold mb-2 ${
-                  isPassed
-                    ? "text-green-800 dark:text-green-200"
-                    : "text-red-800 dark:text-red-200"
+                  isPassed ? "text-green-800 dark:text-green-200" : "text-red-800 dark:text-red-200"
                 }`}
               >
-                {isPassed
-                  ? "Congratulations! SGLGB Passed"
-                  : "SGLGB Not Achieved"}
+                {isPassed ? "Congratulations! SGLGB Passed" : "SGLGB Not Achieved"}
               </h2>
               <p
                 className={`text-sm ${
-                  isPassed
-                    ? "text-green-700 dark:text-green-300"
-                    : "text-red-700 dark:text-red-300"
+                  isPassed ? "text-green-700 dark:text-green-300" : "text-red-700 dark:text-red-300"
                 }`}
               >
                 {isPassed
@@ -361,8 +352,8 @@ export function VerdictSection({
                             rec.priority === "high"
                               ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                               : rec.priority === "medium"
-                              ? "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200"
-                              : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
+                                ? "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200"
+                                : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
                           }`}
                         >
                           {rec.priority} priority

@@ -1,6 +1,8 @@
 # Lookups API
 
-The Lookups API provides endpoints for fetching reference data from lookup tables such as governance areas and barangays. These endpoints support form dropdowns, filters, and data validation throughout the SINAG platform.
+The Lookups API provides endpoints for fetching reference data from lookup tables such as governance
+areas and barangays. These endpoints support form dropdowns, filters, and data validation throughout
+the SINAG platform.
 
 ## Overview
 
@@ -10,7 +12,8 @@ The Lookups API provides endpoints for fetching reference data from lookup table
 
 **Purpose**: Provides static/reference data for forms, filters, and validation.
 
-**Type Generation**: After modifying any lookups endpoint or schema, run `pnpm generate-types` to update frontend types.
+**Type Generation**: After modifying any lookups endpoint or schema, run `pnpm generate-types` to
+update frontend types.
 
 ---
 
@@ -24,9 +27,11 @@ Retrieve all governance areas.
 
 **Workflow Stage**: All stages (Reference Data)
 
-**Description**: Returns a complete list of all governance areas used in the SGLGB assessment framework. Governance areas represent the six major categories under which indicators are organized.
+**Description**: Returns a complete list of all governance areas used in the SGLGB assessment
+framework. Governance areas represent the six major categories under which indicators are organized.
 
 **SGLGB Governance Areas**:
+
 1. Financial Administration
 2. Disaster Preparedness
 3. Social Protection
@@ -37,6 +42,7 @@ Retrieve all governance areas.
 **Request Body**: None
 
 **Response** (200 OK):
+
 ```json
 [
   {
@@ -91,9 +97,11 @@ Retrieve all governance areas.
 ```
 
 **Errors**:
+
 - `401 Unauthorized`: User not authenticated
 
 **Usage**:
+
 - Populating validator assignment dropdowns (VALIDATOR role assignment)
 - Filtering assessment data by governance area
 - Displaying governance area names in reports and dashboards
@@ -109,11 +117,13 @@ Retrieve all barangays.
 
 **Workflow Stage**: All stages (Reference Data)
 
-**Description**: Returns a complete list of all barangays in the system. Barangays are the smallest local government units that participate in SGLGB assessments.
+**Description**: Returns a complete list of all barangays in the system. Barangays are the smallest
+local government units that participate in SGLGB assessments.
 
 **Request Body**: None
 
 **Response** (200 OK):
+
 ```json
 [
   {
@@ -146,9 +156,11 @@ Retrieve all barangays.
 ```
 
 **Errors**:
+
 - `401 Unauthorized`: User not authenticated
 
 **Usage**:
+
 - Populating BLGU_USER assignment dropdowns (barangay assignment)
 - Filtering reports and analytics by barangay
 - Displaying barangay information in assessment details
@@ -161,30 +173,30 @@ Retrieve all barangays.
 
 ### GovernanceArea
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | integer | Primary key |
-| code | string | Short code (e.g., "GA-1") |
-| name | string | Governance area name |
-| description | string | Detailed description |
-| is_active | boolean | Active status |
-| created_at | datetime | Creation timestamp |
+| Field       | Type     | Description               |
+| ----------- | -------- | ------------------------- |
+| id          | integer  | Primary key               |
+| code        | string   | Short code (e.g., "GA-1") |
+| name        | string   | Governance area name      |
+| description | string   | Detailed description      |
+| is_active   | boolean  | Active status             |
+| created_at  | datetime | Creation timestamp        |
 
 ### Barangay
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | integer | Primary key |
-| name | string | Barangay name |
-| code | string | Unique barangay code |
-| municipality | string | Municipality name |
-| province | string | Province name |
-| region | string | Region name |
-| population | integer | Population count |
-| latitude | float | Latitude for mapping |
-| longitude | float | Longitude for mapping |
-| is_active | boolean | Active status |
-| created_at | datetime | Creation timestamp |
+| Field        | Type     | Description           |
+| ------------ | -------- | --------------------- |
+| id           | integer  | Primary key           |
+| name         | string   | Barangay name         |
+| code         | string   | Unique barangay code  |
+| municipality | string   | Municipality name     |
+| province     | string   | Province name         |
+| region       | string   | Region name           |
+| population   | integer  | Population count      |
+| latitude     | float    | Latitude for mapping  |
+| longitude    | float    | Longitude for mapping |
+| is_active    | boolean  | Active status         |
+| created_at   | datetime | Creation timestamp    |
 
 ---
 

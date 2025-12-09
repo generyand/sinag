@@ -1,7 +1,14 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAssessorQueue } from "@/hooks/useAssessor";
 import Link from "next/link";
@@ -92,14 +99,14 @@ export function SubmissionsQueue({ items = [] }: SubmissionsQueueProps) {
                     <TableRow key={row.assessment_id}>
                       <TableCell>{row.barangay_name}</TableCell>
                       <TableCell>
-                        {row.submission_date
-                          ? new Date(row.submission_date).toLocaleString()
-                          : "—"}
+                        {row.submission_date ? new Date(row.submission_date).toLocaleString() : "—"}
                       </TableCell>
                       <TableCell>{row.status}</TableCell>
                       <TableCell className="text-right">
                         <Button asChild size="sm">
-                          <Link href={`/assessor/submissions/${row.assessment_id}/validation`}>Review</Link>
+                          <Link href={`/assessor/submissions/${row.assessment_id}/validation`}>
+                            Review
+                          </Link>
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -119,5 +126,3 @@ export function SubmissionsQueue({ items = [] }: SubmissionsQueueProps) {
     </Tabs>
   );
 }
-
-

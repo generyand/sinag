@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { useAuditLogs } from '@/hooks/useAuditLogs';
-import type { AuditLogResponse } from '@sinag/shared';
+} from "@/components/ui/select";
+import { useAuditLogs } from "@/hooks/useAuditLogs";
+import type { AuditLogResponse } from "@sinag/shared";
 import {
   Activity,
   Calendar,
@@ -21,8 +21,8 @@ import {
   Filter,
   Globe,
   User,
-} from 'lucide-react';
-import * as React from 'react';
+} from "lucide-react";
+import * as React from "react";
 
 /**
  * Audit Log Table Component
@@ -35,8 +35,8 @@ export function AuditLogTable() {
   const [userFilter, setUserFilter] = React.useState<number | null>(null);
   const [entityTypeFilter, setEntityTypeFilter] = React.useState<string | null>(null);
   const [actionFilter, setActionFilter] = React.useState<string | null>(null);
-  const [startDateFilter, setStartDateFilter] = React.useState<string>('');
-  const [endDateFilter, setEndDateFilter] = React.useState<string>('');
+  const [startDateFilter, setStartDateFilter] = React.useState<string>("");
+  const [endDateFilter, setEndDateFilter] = React.useState<string>("");
 
   // Pagination state
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -73,19 +73,19 @@ export function AuditLogTable() {
 
   // Format date for display
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
+    return new Date(dateString).toLocaleString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
     });
   };
 
   // Format changes JSON for display
-  const formatChanges = (changes: AuditLogResponse['changes']) => {
-    if (!changes) return '—';
+  const formatChanges = (changes: AuditLogResponse["changes"]) => {
+    if (!changes) return "—";
     try {
       return JSON.stringify(changes, null, 2);
     } catch {
@@ -98,23 +98,23 @@ export function AuditLogTable() {
     setUserFilter(null);
     setEntityTypeFilter(null);
     setActionFilter(null);
-    setStartDateFilter('');
-    setEndDateFilter('');
+    setStartDateFilter("");
+    setEndDateFilter("");
     setCurrentPage(1);
   };
 
   // Common entity types for filter
   const entityTypes = [
-    'indicator',
-    'bbi',
-    'deadline_override',
-    'user',
-    'assessment_cycle',
-    'assessment_response',
+    "indicator",
+    "bbi",
+    "deadline_override",
+    "user",
+    "assessment_cycle",
+    "assessment_response",
   ];
 
   // Common actions for filter
-  const actions = ['create', 'update', 'delete', 'deactivate', 'activate'];
+  const actions = ["create", "update", "delete", "deactivate", "activate"];
 
   return (
     <div className="space-y-6">
@@ -134,8 +134,8 @@ export function AuditLogTable() {
           <div className="space-y-2">
             <Label htmlFor="entity-type-filter">Entity Type</Label>
             <Select
-              value={entityTypeFilter || 'all'}
-              onValueChange={(value) => setEntityTypeFilter(value === 'all' ? null : value)}
+              value={entityTypeFilter || "all"}
+              onValueChange={(value) => setEntityTypeFilter(value === "all" ? null : value)}
             >
               <SelectTrigger id="entity-type-filter">
                 <SelectValue placeholder="All Entity Types" />
@@ -144,7 +144,7 @@ export function AuditLogTable() {
                 <SelectItem value="all">All Entity Types</SelectItem>
                 {entityTypes.map((type) => (
                   <SelectItem key={type} value={type}>
-                    {type.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                    {type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -155,8 +155,8 @@ export function AuditLogTable() {
           <div className="space-y-2">
             <Label htmlFor="action-filter">Action</Label>
             <Select
-              value={actionFilter || 'all'}
-              onValueChange={(value) => setActionFilter(value === 'all' ? null : value)}
+              value={actionFilter || "all"}
+              onValueChange={(value) => setActionFilter(value === "all" ? null : value)}
             >
               <SelectTrigger id="action-filter">
                 <SelectValue placeholder="All Actions" />
@@ -265,17 +265,14 @@ export function AuditLogTable() {
                     <p className="text-[var(--muted-foreground)]">
                       No audit logs found
                       {(entityTypeFilter || actionFilter || startDateFilter || endDateFilter) &&
-                        ' with the selected filters'}
+                        " with the selected filters"}
                       .
                     </p>
                   </td>
                 </tr>
               ) : (
                 auditLogs.map((log: AuditLogResponse) => (
-                  <tr
-                    key={log.id}
-                    className="hover:bg-[var(--background)]/50 transition-colors"
-                  >
+                  <tr key={log.id} className="hover:bg-[var(--background)]/50 transition-colors">
                     {/* Timestamp */}
                     <td className="px-6 py-4">
                       <div className="text-sm text-[var(--foreground)]">
@@ -287,7 +284,7 @@ export function AuditLogTable() {
                     <td className="px-6 py-4">
                       <div className="space-y-1">
                         <div className="text-sm font-medium text-[var(--foreground)]">
-                          {log.user_name || 'Unknown'}
+                          {log.user_name || "Unknown"}
                         </div>
                         {log.user_email && (
                           <div className="text-xs text-[var(--muted-foreground)]">
@@ -300,15 +297,15 @@ export function AuditLogTable() {
                     {/* Entity Type */}
                     <td className="px-6 py-4">
                       <div className="text-sm text-[var(--foreground)]">
-                        {log.entity_type.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                        {log.entity_type
+                          .replace(/_/g, " ")
+                          .replace(/\b\w/g, (l) => l.toUpperCase())}
                       </div>
                     </td>
 
                     {/* Entity ID */}
                     <td className="px-6 py-4">
-                      <div className="text-sm text-[var(--foreground)]">
-                        {log.entity_id ?? '—'}
-                      </div>
+                      <div className="text-sm text-[var(--foreground)]">{log.entity_id ?? "—"}</div>
                     </td>
 
                     {/* Action */}
@@ -321,7 +318,7 @@ export function AuditLogTable() {
                     {/* IP Address */}
                     <td className="px-6 py-4">
                       <div className="text-sm text-[var(--muted-foreground)] font-mono">
-                        {log.ip_address || '—'}
+                        {log.ip_address || "—"}
                       </div>
                     </td>
 

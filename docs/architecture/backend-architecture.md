@@ -1,6 +1,8 @@
 # Backend Architecture
 
-This document provides comprehensive visual documentation of the SINAG FastAPI backend architecture, including the service layer pattern, dependency injection, request/response flow, and Celery task processing.
+This document provides comprehensive visual documentation of the SINAG FastAPI backend architecture,
+including the service layer pattern, dependency injection, request/response flow, and Celery task
+processing.
 
 ## Table of Contents
 
@@ -119,7 +121,8 @@ graph TB
 
 ## Service Layer Pattern
 
-SINAG follows the "Fat Services, Thin Routers" pattern where business logic lives in service classes:
+SINAG follows the "Fat Services, Thin Routers" pattern where business logic lives in service
+classes:
 
 ```mermaid
 graph LR
@@ -315,7 +318,8 @@ sequenceDiagram
 
 ## Dependency Injection System
 
-FastAPI's dependency injection system provides database sessions, authentication, and role-based access control:
+FastAPI's dependency injection system provides database sessions, authentication, and role-based
+access control:
 
 ```mermaid
 graph TB
@@ -573,7 +577,8 @@ def get_assessment(self, db: Session, assessment_id: int) -> Assessment:
 
 ## Celery Task Processing
 
-Background tasks for long-running operations (classification, AI insights) use Celery with Redis broker:
+Background tasks for long-running operations (classification, AI insights) use Celery with Redis
+broker:
 
 ```mermaid
 graph TB
@@ -878,15 +883,15 @@ def get_assessment(
 
 **Tag-Based Organization:**
 
-| Endpoint | Tag | Generated Files |
-|----------|-----|----------------|
-| `POST /api/v1/assessments` | `assessments` | `endpoints/assessments/`, `schemas/assessments/` |
-| `GET /api/v1/users` | `users` | `endpoints/users/`, `schemas/users/` |
-| `POST /api/v1/auth/login` | `auth` | `endpoints/auth/`, `schemas/auth/` |
-| `GET /api/v1/assessor/barangays` | `assessor` | `endpoints/assessor/`, `schemas/assessor/` |
-| `GET /api/v1/analytics/dashboard` | `analytics` | `endpoints/analytics/`, `schemas/analytics/` |
-| `GET /api/v1/external/analytics` | `external-analytics` | `endpoints/external-analytics/`, `schemas/external-analytics/` |
-| `GET /api/v1/admin/audit-logs` | `admin` | `endpoints/admin/`, `schemas/admin/` |
+| Endpoint                          | Tag                  | Generated Files                                                |
+| --------------------------------- | -------------------- | -------------------------------------------------------------- |
+| `POST /api/v1/assessments`        | `assessments`        | `endpoints/assessments/`, `schemas/assessments/`               |
+| `GET /api/v1/users`               | `users`              | `endpoints/users/`, `schemas/users/`                           |
+| `POST /api/v1/auth/login`         | `auth`               | `endpoints/auth/`, `schemas/auth/`                             |
+| `GET /api/v1/assessor/barangays`  | `assessor`           | `endpoints/assessor/`, `schemas/assessor/`                     |
+| `GET /api/v1/analytics/dashboard` | `analytics`          | `endpoints/analytics/`, `schemas/analytics/`                   |
+| `GET /api/v1/external/analytics`  | `external-analytics` | `endpoints/external-analytics/`, `schemas/external-analytics/` |
+| `GET /api/v1/admin/audit-logs`    | `admin`              | `endpoints/admin/`, `schemas/admin/`                           |
 
 ---
 
@@ -1098,4 +1103,4 @@ class AssessmentService:
 - Five user roles with dedicated dependency functions for access control
 - External analytics endpoint provides aggregated, anonymized data for research
 
-*Last updated: December 2025*
+_Last updated: December 2025_

@@ -1,16 +1,20 @@
 # System API
 
-The System API provides endpoints for system health checks, connectivity status, and basic API information. These endpoints are used for monitoring, debugging, and infrastructure health verification.
+The System API provides endpoints for system health checks, connectivity status, and basic API
+information. These endpoints are used for monitoring, debugging, and infrastructure health
+verification.
 
 ## Overview
 
 **Base Path**: `/api/v1`
 
-**Authentication**: Most endpoints are public (no authentication required) for health check purposes.
+**Authentication**: Most endpoints are public (no authentication required) for health check
+purposes.
 
 **Purpose**: System monitoring, health checks, and connectivity verification.
 
-**Type Generation**: After modifying any system endpoint or schema, run `pnpm generate-types` to update frontend types.
+**Type Generation**: After modifying any system endpoint or schema, run `pnpm generate-types` to
+update frontend types.
 
 ---
 
@@ -27,6 +31,7 @@ Root endpoint - welcome message for the API.
 **Request Body**: None
 
 **Response** (200 OK):
+
 ```json
 {
   "message": "Welcome to SINAG API"
@@ -41,9 +46,12 @@ Comprehensive health check endpoint.
 
 **Authentication**: Public (no authentication required)
 
-**Description**: Performs comprehensive health checks including API service status, database connectivity (SQLAlchemy + Supabase), and overall system health. Used by infrastructure monitoring tools and load balancers.
+**Description**: Performs comprehensive health checks including API service status, database
+connectivity (SQLAlchemy + Supabase), and overall system health. Used by infrastructure monitoring
+tools and load balancers.
 
 **Health Check Components**:
+
 - API service status
 - PostgreSQL connection via SQLAlchemy
 - Supabase connection and configuration
@@ -52,6 +60,7 @@ Comprehensive health check endpoint.
 **Request Body**: None
 
 **Response** (200 OK):
+
 ```json
 {
   "status": "healthy",
@@ -83,6 +92,7 @@ Comprehensive health check endpoint.
 ```
 
 **Response** (503 Service Unavailable - if unhealthy):
+
 ```json
 {
   "status": "unhealthy",
@@ -115,6 +125,7 @@ Comprehensive health check endpoint.
 ```
 
 **Usage**:
+
 - Kubernetes/Docker health probes
 - Load balancer health checks
 - Infrastructure monitoring (Datadog, New Relic, etc.)
@@ -129,11 +140,14 @@ Detailed database connectivity status for debugging.
 
 **Authentication**: Public (no authentication required)
 
-**Description**: Returns detailed information about database connections including PostgreSQL connection via SQLAlchemy, Supabase connection and configuration, and connection errors with troubleshooting info. Used for debugging database connectivity issues.
+**Description**: Returns detailed information about database connections including PostgreSQL
+connection via SQLAlchemy, Supabase connection and configuration, and connection errors with
+troubleshooting info. Used for debugging database connectivity issues.
 
 **Request Body**: None
 
 **Response** (200 OK):
+
 ```json
 {
   "timestamp": "2025-01-15T10:30:00Z",
@@ -174,6 +188,7 @@ Detailed database connectivity status for debugging.
 ```
 
 **Usage**:
+
 - Debugging database connection issues
 - Verifying Supabase configuration
 - Troubleshooting environment variable issues
@@ -187,11 +202,13 @@ Simple hello endpoint for testing connectivity.
 
 **Authentication**: Public (no authentication required)
 
-**Description**: Returns a simple hello message confirming the API is reachable. Useful for quick connectivity tests.
+**Description**: Returns a simple hello message confirming the API is reachable. Useful for quick
+connectivity tests.
 
 **Request Body**: None
 
 **Response** (200 OK):
+
 ```json
 {
   "message": "Hello from FastAPI backend!"
@@ -199,6 +216,7 @@ Simple hello endpoint for testing connectivity.
 ```
 
 **Usage**:
+
 - Quick connectivity test
 - Network troubleshooting
 - Firewall/proxy verification
@@ -210,21 +228,21 @@ Simple hello endpoint for testing connectivity.
 
 ### HealthCheck
 
-| Field | Type | Description |
-|-------|------|-------------|
-| status | string | Overall health status (healthy/unhealthy) |
-| timestamp | datetime | Check timestamp |
-| api | object | API service status |
-| connections | object | Database connection statuses |
-| checks | object | Boolean flags for each check |
+| Field       | Type     | Description                               |
+| ----------- | -------- | ----------------------------------------- |
+| status      | string   | Overall health status (healthy/unhealthy) |
+| timestamp   | datetime | Check timestamp                           |
+| api         | object   | API service status                        |
+| connections | object   | Database connection statuses              |
+| checks      | object   | Boolean flags for each check              |
 
 ### ConnectionStatus
 
-| Field | Type | Description |
-|-------|------|-------------|
-| status | string | Connection status (connected/error) |
-| connection_time_ms | integer | Connection time in milliseconds |
-| error | string | Error message if failed |
+| Field              | Type    | Description                         |
+| ------------------ | ------- | ----------------------------------- |
+| status             | string  | Connection status (connected/error) |
+| connection_time_ms | integer | Connection time in milliseconds     |
+| error              | string  | Error message if failed             |
 
 ---
 

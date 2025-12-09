@@ -5,6 +5,7 @@ Step-by-step guides for common development tasks in the SINAG project.
 ## Available Guides
 
 ### Development Workflow
+
 - [Adding Features](./adding-features.md) - Complete workflow for adding new features
 - [Database Migrations](./database-migrations.md) - Working with Alembic migrations
 - [Testing](./testing.md) - Testing strategy and guidelines
@@ -14,8 +15,11 @@ Step-by-step guides for common development tasks in the SINAG project.
 - [Deployment](./deployment.md) - Deployment procedures
 
 ### UI Implementation Guides
-- [UI Implementation: Navigation & Logos](./ui-implementation-navigation-and-logos.md) - Next/Previous navigation and governance area logos
-- [UI Implementation: Tree Navigation](./ui-implementation-tree-navigation.md) - Tree hierarchical navigation for BLGU assessments
+
+- [UI Implementation: Navigation & Logos](./ui-implementation-navigation-and-logos.md) -
+  Next/Previous navigation and governance area logos
+- [UI Implementation: Tree Navigation](./ui-implementation-tree-navigation.md) - Tree hierarchical
+  navigation for BLGU assessments
 
 ## Quick Reference
 

@@ -1,17 +1,15 @@
 # Epic 2.0: Indicator Management - Form Schema Builder (Visual)
 
-**PRD Reference:** FR-4.1.2
-**Duration:** 7-10 days
-**Dependencies:** Epic 1.0 (Core CRUD system must exist)
-**Status:** ✅ FUNCTIONALLY COMPLETE (Stories 2.1-2.6 completed on 2025-11-06)
+**PRD Reference:** FR-4.1.2 **Duration:** 7-10 days **Dependencies:** Epic 1.0 (Core CRUD system
+must exist) **Status:** ✅ FUNCTIONALLY COMPLETE (Stories 2.1-2.6 completed on 2025-11-06)
 
 ## Completion Summary
 
-**Completed Stories:** 6 of 7 (Story 2.7 Testing deferred)
-**Total Tasks Completed:** 31 of 37 tasks
+**Completed Stories:** 6 of 7 (Story 2.7 Testing deferred) **Total Tasks Completed:** 31 of 37 tasks
 **Functional Status:** Fully operational and ready for production use
 
 ### What's Working:
+
 - ✅ Form schema data models and validation (Story 2.1)
 - ✅ Backend validation service with circular reference detection (Story 2.2)
 - ✅ Visual drag-and-drop form builder with 7 field types (Stories 2.3-2.4)
@@ -22,14 +20,14 @@
 - ✅ Navigation menu integration
 
 ### Deferred:
+
 - ⏸️ Story 2.7: Comprehensive test suite (6 tasks) - to be implemented in future sprint
 
 ---
 
 ## Story 2.1: Form Schema Data Models & Validation
 
-**Duration:** 1 day
-**Dependencies:** Epic 1.0 complete
+**Duration:** 1 day **Dependencies:** Epic 1.0 complete
 
 ### Atomic Tasks
 
@@ -97,8 +95,7 @@
 
 ## Story 2.2: Backend Form Schema Validation Service
 
-**Duration:** 1 day
-**Dependencies:** 2.1
+**Duration:** 1 day **Dependencies:** 2.1
 
 ### Atomic Tasks
 
@@ -161,8 +158,7 @@
 
 ## Story 2.3: Frontend Form Builder Core Architecture
 
-**Duration:** 2 days
-**Dependencies:** 2.1, 2.2, `pnpm generate-types`
+**Duration:** 2 days **Dependencies:** 2.1, 2.2, `pnpm generate-types`
 
 ### Atomic Tasks
 
@@ -172,7 +168,8 @@
   - **Dependencies:** 2.1.4
   - **Acceptance Criteria:**
     - Store manages `fields: FormField[]` array
-    - Actions: `addField(field)`, `updateField(id, updates)`, `deleteField(id)`, `reorderFields(fromIndex, toIndex)`, `clearFields()`
+    - Actions: `addField(field)`, `updateField(id, updates)`, `deleteField(id)`,
+      `reorderFields(fromIndex, toIndex)`, `clearFields()`
     - Selector: `getFieldById(id)`
     - State persists during editing session (no localStorage yet)
     - TypeScript types from generated schemas
@@ -252,8 +249,7 @@
 
 ## Story 2.4: Frontend Form Builder - Field Components (7 Input Types)
 
-**Duration:** 2 days
-**Dependencies:** 2.3
+**Duration:** 2 days **Dependencies:** 2.3
 
 ### Atomic Tasks
 
@@ -370,8 +366,7 @@
 
 ## Story 2.5: Frontend Form Builder - Live Preview & JSON Viewer
 
-**Duration:** 1 day
-**Dependencies:** 2.4
+**Duration:** 1 day **Dependencies:** 2.4
 
 ### Atomic Tasks
 
@@ -384,7 +379,7 @@
     - Renders each field as it would appear to BLGU user
     - Uses shadcn/ui form components
     - Shows labels, placeholders, help text
-    - Displays required indicators (*)
+    - Displays required indicators (\*)
     - Shows validation rules visually (e.g., "Min: 0, Max: 100")
     - Non-interactive (read-only preview)
     - Responsive layout matching BLGU view
@@ -438,8 +433,7 @@
 
 ## Story 2.6: Frontend Form Builder - Integration & Persistence
 
-**Duration:** 1 day
-**Dependencies:** 2.5
+**Duration:** 1 day **Dependencies:** 2.5
 
 ### Atomic Tasks
 
@@ -543,9 +537,8 @@
 
 ## Story 2.7: Testing for Form Schema Builder
 
-**Duration:** 1 day
-**Dependencies:** 2.6
-**Status:** ⏸️ DEFERRED - Epic 2.0 is functionally complete. Testing deferred to future sprint.
+**Duration:** 1 day **Dependencies:** 2.6 **Status:** ⏸️ DEFERRED - Epic 2.0 is functionally
+complete. Testing deferred to future sprint.
 
 ### Atomic Tasks
 
@@ -631,11 +624,11 @@
 
 ## Summary
 
-**Epic 2.0 Total Atomic Tasks:** 37 tasks (35 implementation + 2 additional noted)
-**Estimated Total Duration:** 7-10 days
-**Actual Duration:** ~6 days (Completed November 6, 2025)
+**Epic 2.0 Total Atomic Tasks:** 37 tasks (35 implementation + 2 additional noted) **Estimated Total
+Duration:** 7-10 days **Actual Duration:** ~6 days (Completed November 6, 2025)
 
 ### Task Breakdown by Story:
+
 - Story 2.1 (Data Models): ✅ 4/4 tasks complete (8 hours)
 - Story 2.2 (Validation Service): ✅ 4/4 tasks complete (9 hours)
 - Story 2.3 (Core Architecture): ✅ 5/5 tasks complete (14 hours)
@@ -644,7 +637,8 @@
 - Story 2.6 (Integration): ✅ 6/6 tasks complete (15 hours)
 - Story 2.7 (Testing): ⏸️ 6/6 tasks deferred (15 hours)
 
-**Completed: 31/37 tasks (84% complete)**
-**Functional Status: 100% - All implementation complete, testing deferred**
+**Completed: 31/37 tasks (84% complete)** **Functional Status: 100% - All implementation complete,
+testing deferred**
 
-All tasks are 1.5-4 hours, suitable for junior developers, with clear acceptance criteria and file paths.
+All tasks are 1.5-4 hours, suitable for junior developers, with clear acceptance criteria and file
+paths.

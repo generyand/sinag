@@ -99,9 +99,7 @@ describe("SubmissionValidation", () => {
     expect(screen.getByText("Ready to Submit")).toBeInTheDocument();
     expect(screen.getByText("All indicators complete")).toBeInTheDocument();
     expect(screen.getByText("All required files uploaded")).toBeInTheDocument();
-    expect(
-      screen.getByText("Assessment Ready for Submission")
-    ).toBeInTheDocument();
+    expect(screen.getByText("Assessment Ready for Submission")).toBeInTheDocument();
   });
 
   it("should display incomplete indicators when validation fails", () => {
@@ -167,12 +165,8 @@ describe("SubmissionValidation", () => {
 
     expect(screen.getByText("Incomplete")).toBeInTheDocument();
     expect(screen.getByText("2 Missing File Uploads")).toBeInTheDocument();
-    expect(
-      screen.getByText("Indicator 3: Barangay Development Plan")
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("Indicator 4: Annual Budget Document")
-    ).toBeInTheDocument();
+    expect(screen.getByText("Indicator 3: Barangay Development Plan")).toBeInTheDocument();
+    expect(screen.getByText("Indicator 4: Annual Budget Document")).toBeInTheDocument();
   });
 
   it("should display both incomplete indicators and missing MOVs", () => {

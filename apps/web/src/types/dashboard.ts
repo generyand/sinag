@@ -4,11 +4,7 @@
 // - GET /api/v1/assessments/{assessment_id}/progress -> AssessmentProgress
 // - GET /api/v1/assessments/{assessment_id}/feedback -> AssessorFeedback[]
 
-export type AssessmentStatus =
-  | "Draft"
-  | "Submitted for Review"
-  | "Validated"
-  | "Needs Rework";
+export type AssessmentStatus = "Draft" | "Submitted for Review" | "Validated" | "Needs Rework";
 
 export interface AssessmentProgress {
   current: number;
@@ -29,7 +25,7 @@ export interface GovernanceAreaProgress {
 
 export type AssessorFeedback = {
   [key: string]: unknown;
-}
+};
 
 export interface DashboardData {
   barangayName: string;

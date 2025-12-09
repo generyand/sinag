@@ -90,6 +90,7 @@ The production setup uses two isolated networks:
 ### Implemented Security Features
 
 #### 1. Container Security
+
 - ✅ **Non-root users**: All containers run as unprivileged users (UID 1001)
 - ✅ **Multi-stage builds**: Minimal production images with only necessary files
 - ✅ **Read-only root filesystem**: Where applicable
@@ -98,21 +99,25 @@ The production setup uses two isolated networks:
 - ✅ **Resource limits**: CPU and memory limits prevent resource exhaustion
 
 #### 2. Network Security
+
 - ✅ **Network isolation**: Backend network has no external access
 - ✅ **Minimal port exposure**: Only reverse proxy ports exposed externally
 - ✅ **TLS/SSL**: All external traffic encrypted (configured in reverse proxy)
 
 #### 3. Secrets Management
+
 - ✅ **Docker secrets**: Production credentials stored in Docker secrets
 - ✅ **No hardcoded credentials**: All sensitive data externalized
 - ✅ **Environment separation**: Clear separation between dev and prod configs
 
 #### 4. Dependency Security
+
 - ✅ **Version pinning**: All base images and dependencies use specific versions
 - ✅ **Security updates**: Base images regularly updated
 - ✅ **Vulnerability scanning**: Trivy scanner integrated
 
 #### 5. Logging and Monitoring
+
 - ✅ **Centralized logging**: JSON-file driver with rotation
 - ✅ **Log retention**: 10 files × 100MB for production services
 - ✅ **Health monitoring**: Built-in health checks for all services
@@ -153,7 +158,8 @@ git checkout main
 
 ### Step 3: Configure Environment
 
-Production uses Docker secrets instead of `.env` files. However, you still need to configure non-sensitive environment variables.
+Production uses Docker secrets instead of `.env` files. However, you still need to configure
+non-sensitive environment variables.
 
 Create a minimal production environment file:
 
@@ -184,6 +190,7 @@ Docker secrets provide secure credential storage for production.
 ```
 
 This will prompt you for:
+
 - `sinag_secret_key` - Application secret key for JWT tokens
 - `sinag_database_url` - PostgreSQL connection URL from Supabase
 - `sinag_supabase_key` - Supabase service role key
@@ -286,6 +293,7 @@ curl http://localhost:3000
 ### Step 9: Configure Reverse Proxy
 
 For production, you should use a reverse proxy (Nginx, Caddy, or Traefik) for:
+
 - SSL/TLS termination
 - Load balancing
 - Security headers
@@ -446,6 +454,7 @@ docker stats
 ### Backup Procedures
 
 #### 1. Database Backup (Supabase)
+
 Supabase provides automatic backups. For manual backups:
 
 ```bash
@@ -580,6 +589,7 @@ upstream sinag_api {
 ### Database Scaling
 
 For PostgreSQL (Supabase):
+
 - Use read replicas for read-heavy workloads
 - Enable connection pooling (already configured via Supabase pooler)
 - Consider upgrading Supabase plan for more resources
@@ -587,6 +597,7 @@ For PostgreSQL (Supabase):
 ### Redis Scaling
 
 For high-traffic scenarios:
+
 - Use Redis Sentinel for high availability
 - Consider Redis Cluster for horizontal scaling
 - Implement Redis caching strategies in the application
@@ -662,5 +673,4 @@ docker service update \
 
 ---
 
-**Last Updated**: 2025-11-28
-**Maintained By**: DevOps Team
+**Last Updated**: 2025-11-28 **Maintained By**: DevOps Team

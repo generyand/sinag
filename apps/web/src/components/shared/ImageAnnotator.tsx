@@ -1,7 +1,7 @@
 "use client";
 
-import * as React from 'react';
-import { useState, useRef, useCallback, useEffect } from 'react';
+import * as React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface Rect {
   x: number;
@@ -36,44 +36,43 @@ export default function ImageAnnotator({
   const [currentRect, setCurrentRect] = useState<Rect | null>(null);
   const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(null);
   const [showCommentInput, setShowCommentInput] = useState(false);
-  const [comment, setComment] = useState('');
+  const [comment, setComment] = useState("");
   const [pendingRect, setPendingRect] = useState<Rect | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  // Convert pixel coordinates to percentage (0-100)
-  const pixelToPercent = useCallback((pixelX: number, pixelY: number) => {
-    if (!imageRef.current) return { x: 0, y: 0 };
-    const rect = imageRef.current.getBoundingClientRect();
-    return {
-      x: (pixelX / rect.width) * 100,
-      y: (pixelY / rect.height) * 100,
-    };
+  // Layout state to avoid reading refs in render
+  const [layout, setLayout] = useState<{
+    image: DOMRect;
+    container: DOMRect;
+  } | null>(null);
+
+  const updateLayout = useCallback(() => {
+    if (imageRef.current && containerRef.current) {
+      setLayout({
+        image: imageRef.current.getBoundingClientRect(),
+        container: containerRef.current.getBoundingClientRect(),
+      });
+    }
   }, []);
 
-  // Convert percentage to pixel coordinates
-  const percentToPixel = useCallback((percentX: number, percentY: number) => {
-    if (!imageRef.current) return { x: 0, y: 0 };
-    const rect = imageRef.current.getBoundingClientRect();
-    return {
-      x: (percentX / 100) * rect.width,
-      y: (percentY / 100) * rect.height,
+  useEffect(() => {
+    window.addEventListener("resize", updateLayout);
+    // Also update on scroll as bounds might change
+    window.addEventListener("scroll", updateLayout, true);
+    return () => {
+      window.removeEventListener("resize", updateLayout);
+      window.removeEventListener("scroll", updateLayout, true);
     };
-  }, []);
+  }, [updateLayout]);
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
+      // ... same logic using refs (events are safe) ...
       if (!annotateEnabled || !imageRef.current) return;
-
-      // Get the actual image element's bounding box
       const rect = imageRef.current.getBoundingClientRect();
-
-      // Calculate position relative to the image
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-
-      // Only start drawing if click is within image bounds
       if (x < 0 || y < 0 || x > rect.width || y > rect.height) return;
-
       setIsDrawing(true);
       setStartPoint({ x, y });
       setCurrentRect(null);
@@ -84,15 +83,9 @@ export default function ImageAnnotator({
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       if (!isDrawing || !startPoint || !imageRef.current) return;
-
-      // Get the actual image element's bounding box
       const rect = imageRef.current.getBoundingClientRect();
-
-      // Calculate current position relative to the image
       const currentX = e.clientX - rect.left;
       const currentY = e.clientY - rect.top;
-
-      // Clamp coordinates to image bounds
       const clampedCurrentX = Math.max(0, Math.min(currentX, rect.width));
       const clampedCurrentY = Math.max(0, Math.min(currentY, rect.height));
 
@@ -101,9 +94,15 @@ export default function ImageAnnotator({
       const w = Math.abs(clampedCurrentX - startPoint.x);
       const h = Math.abs(clampedCurrentY - startPoint.y);
 
-      // Convert to percentages for storage
-      const percentStart = pixelToPercent(x, y);
-      const percentEnd = pixelToPercent(x + w, y + h);
+      // Re-implement pixelToPercent logic inline or keep using the ref-based one since this is event handler
+      const percentStart = {
+        x: (x / rect.width) * 100,
+        y: (y / rect.height) * 100,
+      };
+      const percentEnd = {
+        x: ((x + w) / rect.width) * 100,
+        y: ((y + h) / rect.height) * 100,
+      };
 
       setCurrentRect({
         x: percentStart.x,
@@ -112,7 +111,7 @@ export default function ImageAnnotator({
         h: percentEnd.y - percentStart.y,
       });
     },
-    [isDrawing, startPoint, pixelToPercent]
+    [isDrawing, startPoint]
   );
 
   const handleMouseUp = useCallback(() => {
@@ -120,66 +119,70 @@ export default function ImageAnnotator({
       setIsDrawing(false);
       return;
     }
-
     setIsDrawing(false);
     setStartPoint(null);
-
-    // Only save if rectangle has meaningful size
     if (currentRect.w > 1 && currentRect.h > 1) {
       setPendingRect(currentRect);
       setShowCommentInput(true);
     }
-
     setCurrentRect(null);
   }, [isDrawing, currentRect]);
 
   const handleSaveAnnotation = useCallback(() => {
     if (!pendingRect || !comment.trim()) return;
-
     onAdd?.({
       rect: pendingRect,
       comment: comment.trim(),
     });
-
     setPendingRect(null);
-    setComment('');
+    setComment("");
     setShowCommentInput(false);
   }, [pendingRect, comment, onAdd]);
 
   const handleCancelAnnotation = useCallback(() => {
     setPendingRect(null);
-    setComment('');
+    setComment("");
     setShowCommentInput(false);
   }, []);
 
   // Render a rectangle overlay with optional comment tooltip
   const renderRect = useCallback(
     (rect: Rect, color: string, opacity: number, comment?: string) => {
-      if (!imageRef.current || !containerRef.current) return null;
+      // Use layout state instead of refs
+      if (!layout) return null;
 
-      const imageRect = imageRef.current.getBoundingClientRect();
-      const containerRect = containerRef.current.getBoundingClientRect();
+      const { image, container } = layout;
+      // Also need to use layout for percentToPixel conversion to be consistent
+      // percentToPixel helper uses refs, so we inline it or pass layout
+      const pixel = {
+        x: (rect.x / 100) * image.width,
+        y: (rect.y / 100) * image.height,
+      };
 
-      // Calculate position relative to container
-      const imageOffsetX = imageRect.left - containerRect.left;
-      const imageOffsetY = imageRect.top - containerRect.top;
+      const pixelEnd = {
+        x: ((rect.x + rect.w) / 100) * image.width,
+        y: ((rect.y + rect.h) / 100) * image.height,
+      };
 
-      const pixel = percentToPixel(rect.x, rect.y);
-      const pixelEnd = percentToPixel(rect.x + rect.w, rect.y + rect.h);
+      const imageOffsetX = image.left - container.left;
+      const imageOffsetY = image.top - container.top;
 
       return (
         <div
+          key={JSON.stringify(rect) /* Ensure key changes if rect changes */}
           className="group"
           style={{
-            position: 'absolute',
+            position: "absolute",
             left: `${imageOffsetX + pixel.x}px`,
             top: `${imageOffsetY + pixel.y}px`,
             width: `${pixelEnd.x - pixel.x}px`,
             height: `${pixelEnd.y - pixel.y}px`,
             border: `2px solid ${color}`,
-            backgroundColor: `${color}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`,
-            borderRadius: '0.125rem', // rounded-sm (2px)
-            pointerEvents: comment ? 'auto' : 'none',
+            backgroundColor: `${color}${Math.round(opacity * 255)
+              .toString(16)
+              .padStart(2, "0")}`,
+            borderRadius: "0.125rem",
+            pointerEvents: comment ? "auto" : "none",
           }}
         >
           {comment && (
@@ -190,7 +193,7 @@ export default function ImageAnnotator({
         </div>
       );
     },
-    [percentToPixel]
+    [layout]
   );
 
   return (
@@ -209,7 +212,7 @@ export default function ImageAnnotator({
             setCurrentRect(null);
           }
         }}
-        style={{ cursor: annotateEnabled ? 'crosshair' : 'default' }}
+        style={{ cursor: annotateEnabled ? "crosshair" : "default" }}
       >
         <img
           ref={imageRef}
@@ -217,22 +220,26 @@ export default function ImageAnnotator({
           alt="Annotatable image"
           className="max-w-full max-h-full object-contain"
           draggable={false}
-          onLoad={() => setImageLoaded(true)}
+          onLoad={() => {
+            setImageLoaded(true);
+            updateLayout();
+          }}
         />
 
         {/* Render existing annotations */}
         {imageLoaded &&
+          layout &&
           annotations.map((ann) => (
             <React.Fragment key={ann.id}>
-              {renderRect(ann.rect, '#fbbf24', 0.2, ann.comment)}
+              {renderRect(ann.rect, "#fbbf24", 0.2, ann.comment)}
             </React.Fragment>
           ))}
 
         {/* Render current drawing rectangle */}
-        {imageLoaded && currentRect && renderRect(currentRect, '#3b82f6', 0.3)}
+        {imageLoaded && layout && currentRect && renderRect(currentRect, "#3b82f6", 0.3)}
 
         {/* Render pending rectangle */}
-        {imageLoaded && pendingRect && renderRect(pendingRect, '#10b981', 0.3)}
+        {imageLoaded && layout && pendingRect && renderRect(pendingRect, "#10b981", 0.3)}
       </div>
 
       {/* Comment Input Modal */}
@@ -247,7 +254,7 @@ export default function ImageAnnotator({
               placeholder="Enter your comment for this annotation..."
               className="w-full h-32 p-3 border border-gray-300 rounded-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && e.ctrlKey) {
+                if (e.key === "Enter" && e.ctrlKey) {
                   handleSaveAnnotation();
                 }
               }}

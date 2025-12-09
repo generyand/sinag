@@ -1,2 +1,2 @@
-export { ProfileForm } from './ProfileForm';
-export { ProfileSkeleton } from './ProfileSkeleton'; 
+export { ProfileForm } from "./ProfileForm";
+export { ProfileSkeleton } from "./ProfileSkeleton";

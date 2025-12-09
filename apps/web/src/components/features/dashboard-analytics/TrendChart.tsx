@@ -7,9 +7,9 @@
  * If not installed, run: pnpm add recharts
  */
 
-import type { TrendData } from '@sinag/shared';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp } from 'lucide-react';
+import type { TrendData } from "@sinag/shared";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { TrendingUp } from "lucide-react";
 
 // Recharts imports - will need to install: pnpm add recharts
 // Uncomment when recharts is installed:
@@ -57,7 +57,7 @@ export function TrendChart({ data }: TrendChartProps) {
   const chartData = data.map((item) => ({
     cycle: item.cycle_name,
     passRate: item.pass_rate,
-    date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+    date: new Date(item.date).toLocaleDateString("en-US", { month: "short", year: "numeric" }),
   }));
 
   const hasData = chartData.length > 0;
@@ -114,9 +114,7 @@ export function TrendChart({ data }: TrendChartProps) {
             <div className="h-[300px] rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50">
               <div className="text-center p-6">
                 <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-sm font-medium text-gray-700 mb-2">
-                  Trend Chart Placeholder
-                </p>
+                <p className="text-sm font-medium text-gray-700 mb-2">Trend Chart Placeholder</p>
                 <p className="text-xs text-gray-500 mb-3">
                   Install recharts to view the line chart visualization
                 </p>

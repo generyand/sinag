@@ -1,8 +1,14 @@
 "use client";
 
-import * as React from 'react';
-import { useAuthStore } from '@/store/useAuthStore';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import * as React from "react";
+import { useAuthStore } from "@/store/useAuthStore";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 interface MovPreviewItem {
   title?: string;
@@ -18,12 +24,19 @@ interface MovPreviewerProps {
   startIndex?: number;
 }
 
-export function MovPreviewer({ open, onOpenChange, title, url, items, startIndex }: MovPreviewerProps) {
+export function MovPreviewer({
+  open,
+  onOpenChange,
+  title,
+  url,
+  items,
+  startIndex,
+}: MovPreviewerProps) {
   const hasGallery = Array.isArray(items) && (items?.length || 0) > 0;
   const [index, setIndex] = React.useState<number>(startIndex ?? 0);
 
   React.useEffect(() => {
-    if (typeof startIndex === 'number') setIndex(startIndex);
+    if (typeof startIndex === "number") setIndex(startIndex);
   }, [startIndex, open]);
 
   const active = hasGallery ? (items as MovPreviewItem[])[index] : { title, url };
@@ -48,7 +61,7 @@ export function MovPreviewer({ open, onOpenChange, title, url, items, startIndex
         const url = URL.createObjectURL(blob);
         revoke = url;
         setBlobUrl(url);
-        setBlobMime(res.headers.get('content-type'));
+        setBlobMime(res.headers.get("content-type"));
       } catch {
         // ignore and fallback
       }
@@ -61,19 +74,20 @@ export function MovPreviewer({ open, onOpenChange, title, url, items, startIndex
 
   const previewUrl = blobUrl || activeUrl;
 
-  const stripQuery = (u: string) => u.split('#')[0].split('?')[0];
+  const stripQuery = (u: string) => u.split("#")[0].split("?")[0];
   const isPdf =
-    (blobMime?.includes('application/pdf')) ||
-    (typeof previewUrl === 'string' && stripQuery(previewUrl).toLowerCase().endsWith('.pdf'));
+    blobMime?.includes("application/pdf") ||
+    (typeof previewUrl === "string" && stripQuery(previewUrl).toLowerCase().endsWith(".pdf"));
   const isImage =
-    (blobMime?.startsWith('image/')) ||
-    (typeof previewUrl === 'string' && /(png|jpe?g|gif|webp|svg)$/i.test(stripQuery(previewUrl || '')));
+    blobMime?.startsWith("image/") ||
+    (typeof previewUrl === "string" &&
+      /(png|jpe?g|gif|webp|svg)$/i.test(stripQuery(previewUrl || "")));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl">
         <DialogHeader>
-          <DialogTitle className="truncate">{activeTitle || 'MOV Preview'}</DialogTitle>
+          <DialogTitle className="truncate">{activeTitle || "MOV Preview"}</DialogTitle>
           <DialogDescription>Viewing uploaded Means of Verification.</DialogDescription>
         </DialogHeader>
         {hasGallery ? (
@@ -105,16 +119,23 @@ export function MovPreviewer({ open, onOpenChange, title, url, items, startIndex
           <div className="h-[70vh] w-full">
             <embed src={previewUrl} type="application/pdf" className="h-full w-full" />
             <div className="mt-2 text-xs">
-              Having trouble loading the preview? 
-              <a className="underline ml-1" href={previewUrl} target="_blank" rel="noreferrer">Open in new tab</a>
+              Having trouble loading the preview?
+              <a className="underline ml-1" href={previewUrl} target="_blank" rel="noreferrer">
+                Open in new tab
+              </a>
             </div>
           </div>
         ) : isImage ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={previewUrl} alt={activeTitle || 'MOV'} className="max-h-[70vh] w-auto" />
+          <img src={previewUrl} alt={activeTitle || "MOV"} className="max-h-[70vh] w-auto" />
         ) : (
           <div className="text-sm">
-            <a className="text-blue-600 underline" href={previewUrl} target="_blank" rel="noreferrer">
+            <a
+              className="text-blue-600 underline"
+              href={previewUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
               Open file
             </a>
           </div>
@@ -123,5 +144,3 @@ export function MovPreviewer({ open, onOpenChange, title, url, items, startIndex
     </Dialog>
   );
 }
-
-

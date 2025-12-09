@@ -1,21 +1,20 @@
 # Epic 6.0: Audit & Security Infrastructure
 
-**PRD Reference:** FR-4.4.1, FR-4.4.3, FR-4.5, FR-4.6
-**Duration:** 4-6 days
-**Dependencies:** None (supports all other epics)
+**PRD Reference:** FR-4.4.1, FR-4.4.3, FR-4.5, FR-4.6 **Duration:** 4-6 days **Dependencies:** None
+(supports all other epics)
 
 ---
 
 ## Story 6.1: Database Schema for Audit Logs ✅
 
-**Duration:** 0.5 days
-**Status:** COMPLETE (Commit: 0f79ee5)
+**Duration:** 0.5 days **Status:** COMPLETE (Commit: 0f79ee5)
 
 ### Atomic Tasks (3 tasks)
 
 - [x] **6.1.1** Create audit_logs table model
   - **File:** `apps/api/app/db/models/admin.py`
-  - **Criteria:** Fields: id, user_id, entity_type, entity_id, action, changes (JSONB), timestamp, ip_address
+  - **Criteria:** Fields: id, user_id, entity_type, entity_id, action, changes (JSONB), timestamp,
+    ip_address
   - **Duration:** 2 hours
 
 - [x] **6.1.2** Add indexes for audit log queries
@@ -32,9 +31,7 @@
 
 ## Story 6.2: Backend Audit Service ✅
 
-**Duration:** 1 day
-**Dependencies:** 6.1
-**Status:** COMPLETE (Commit: 9388232)
+**Duration:** 1 day **Dependencies:** 6.1 **Status:** COMPLETE (Commit: 9388232)
 
 ### Atomic Tasks (6 tasks)
 
@@ -74,8 +71,7 @@
 
 ## Story 6.3: Backend Access Control Middleware ✅
 
-**Duration:** 1 day
-**Status:** COMPLETE (Commit: ab0aca1)
+**Duration:** 1 day **Status:** COMPLETE (Commit: ab0aca1)
 
 ### Atomic Tasks (5 tasks)
 
@@ -108,10 +104,8 @@
 
 ## Story 6.4: Backend Data Validation for JSON Schemas ✅
 
-**Duration:** 1.5 days
-**Dependencies:** Epic 2.1, Epic 3.1 (Pydantic models must exist)
-**Status:** IMPLEMENTATION COMPLETE (Commit: 7f0bfe4)
-**Completed:** November 7, 2025
+**Duration:** 1.5 days **Dependencies:** Epic 2.1, Epic 3.1 (Pydantic models must exist) **Status:**
+IMPLEMENTATION COMPLETE (Commit: 7f0bfe4) **Completed:** November 7, 2025
 
 ### Atomic Tasks (8 tasks)
 
@@ -125,7 +119,7 @@
   - **File:** `apps/api/app/services/indicator_service.py` (already exists)
   - **Criteria:** Recursive check for parent_id cycles ✅
   - **Duration:** 2 hours
-  - **Status:** _check_circular_parent() method already implemented
+  - **Status:** \_check_circular_parent() method already implemented
 
 - [x] **6.4.3** Implement field reference validation for calculation_schema
   - **File:** `apps/api/app/services/form_schema_validator.py`
@@ -167,9 +161,7 @@
 
 ## Story 6.5: Backend Security Measures ✅
 
-**Duration:** 1 day
-**Dependencies:** 6.3
-**Status:** COMPLETE (Commit: 934953e)
+**Duration:** 1 day **Dependencies:** 6.3 **Status:** COMPLETE (Commit: 934953e)
 
 ### Atomic Tasks (6 tasks)
 
@@ -207,9 +199,7 @@
 
 ## Story 6.6: Frontend Audit Log Viewer ✅
 
-**Duration:** 1 day
-**Dependencies:** 6.2, `pnpm generate-types`
-**Status:** COMPLETE
+**Duration:** 1 day **Dependencies:** 6.2, `pnpm generate-types` **Status:** COMPLETE
 
 ### Atomic Tasks (6 tasks)
 
@@ -248,8 +238,7 @@
 
 ## Story 6.7: Frontend Error Handling & User Feedback ✅
 
-**Duration:** 1 day
-**Status:** COMPLETE (Commit: 21ceac0)
+**Duration:** 1 day **Status:** COMPLETE (Commit: 21ceac0)
 
 ### Atomic Tasks (6 tasks)
 
@@ -260,7 +249,8 @@
 
 - [x] **6.7.2** Create toast notification system
   - **File:** `apps/web/src/components/shared/ToastProvider.tsx`, `apps/web/src/lib/toast.ts`
-  - **Criteria:** Sonner integration with 5 notification types (success, error, warning, info, loading)
+  - **Criteria:** Sonner integration with 5 notification types (success, error, warning, info,
+    loading)
   - **Duration:** 1.5 hours
 
 - [x] **6.7.3** Add global error interceptor to Axios
@@ -287,9 +277,8 @@
 
 ## Story 6.8: Testing for Audit & Security ⏸️
 
-**Duration:** 1 day
-**Dependencies:** 6.7
-**Status:** BLOCKED - Requires Epic 1, 2, 3 for comprehensive integration tests
+**Duration:** 1 day **Dependencies:** 6.7 **Status:** BLOCKED - Requires Epic 1, 2, 3 for
+comprehensive integration tests
 
 ### Atomic Tasks (6 tasks)
 
@@ -327,16 +316,17 @@
 
 ## Summary
 
-**Epic 6.0 Total Atomic Tasks:** 46 tasks
-**Estimated Total Duration:** 4-6 days
-**Actual Duration:** 3-4 days (for implementable stories)
+**Epic 6.0 Total Atomic Tasks:** 46 tasks **Estimated Total Duration:** 4-6 days **Actual
+Duration:** 3-4 days (for implementable stories)
 
 ### Completion Status:
+
 - ✅ **7 Stories Completed** (6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7) - 38 tasks
 - ⏸️ **1 Story Blocked** (6.8) - 6 tasks deferred to later epics
 - ⏸️ **2 Tasks Deferred** (6.4.7, 6.4.8 testing - moved to Story 6.8)
 
 ### Task Breakdown by Story:
+
 - Story 6.1 (Database): ✅ 3/3 tasks complete (4 hours)
 - Story 6.2 (Audit Service): ✅ 6/6 tasks complete (10 hours)
 - Story 6.3 (Access Control): ✅ 5/5 tasks complete (8 hours)
@@ -346,19 +336,18 @@
 - Story 6.7 (Error Handling): ✅ 6/6 tasks complete (10 hours)
 - Story 6.8 (Testing): ⏸️ 0/8 tasks - Includes 6.4.7 & 6.4.8 (15 hours)
 
-**Completed: 65.5 hours / 38 tasks across 7 stories**
-**Deferred: 15 hours / 8 tasks in Story 6.8**
+**Completed: 65.5 hours / 38 tasks across 7 stories** **Deferred: 15 hours / 8 tasks in Story 6.8**
 **Total: 80.5 hours across 8 stories**
 
 ### Implementation Summary:
-✅ Audit logging infrastructure complete
-✅ Role-based access control implemented
-✅ Security middleware stack deployed (headers, rate limiting, logging)
-✅ Frontend error handling and user feedback complete
-✅ Frontend audit log viewer with filtering and pagination complete
-✅ Backend data validation with XSS prevention complete
-✅ Comprehensive test coverage (31+ tests, 96.7% pass rate)
+
+✅ Audit logging infrastructure complete ✅ Role-based access control implemented ✅ Security
+middleware stack deployed (headers, rate limiting, logging) ✅ Frontend error handling and user
+feedback complete ✅ Frontend audit log viewer with filtering and pagination complete ✅ Backend
+data validation with XSS prevention complete ✅ Comprehensive test coverage (31+ tests, 96.7% pass
+rate)
 
 ### Next Steps:
+
 1. (Optional) Complete Story 6.8 for comprehensive integration testing
 2. All core audit and security features are production-ready

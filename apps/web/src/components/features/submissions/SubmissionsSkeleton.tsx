@@ -1,5 +1,5 @@
-import { Skeleton } from '@/components/ui/skeleton';
-import { Filter, Search } from 'lucide-react';
+import { Skeleton } from "@/components/ui/skeleton";
+import { Filter, Search } from "lucide-react";
 
 export function SubmissionsSkeleton() {
   return (
@@ -72,7 +72,7 @@ export function SubmissionsSkeleton() {
                       <td className="px-6 py-4">
                         <Skeleton className="h-4 w-40" />
                       </td>
-                      
+
                       {/* Overall Progress */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -82,7 +82,7 @@ export function SubmissionsSkeleton() {
                           <Skeleton className="h-4 w-8" />
                         </div>
                       </td>
-                      
+
                       {/* Current Status */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
@@ -90,7 +90,7 @@ export function SubmissionsSkeleton() {
                           <Skeleton className="h-5 w-24" />
                         </div>
                       </td>
-                      
+
                       {/* Assigned Assessors */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
@@ -99,12 +99,12 @@ export function SubmissionsSkeleton() {
                           ))}
                         </div>
                       </td>
-                      
+
                       {/* Last Updated */}
                       <td className="px-6 py-4">
                         <Skeleton className="h-4 w-20" />
                       </td>
-                      
+
                       {/* Actions */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
@@ -122,4 +122,4 @@ export function SubmissionsSkeleton() {
       </div>
     </div>
   );
-} 
+}

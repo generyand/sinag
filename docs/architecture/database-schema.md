@@ -1,6 +1,8 @@
 # Database Schema
 
-This document provides comprehensive visual documentation of the SINAG database schema, including entity relationship diagrams, table structures, and data relationships for the SGLGB assessment platform.
+This document provides comprehensive visual documentation of the SINAG database schema, including
+entity relationship diagrams, table structures, and data relationships for the SGLGB assessment
+platform.
 
 ## Table of Contents
 
@@ -368,13 +370,13 @@ erDiagram
 
 **Role-Based Field Requirements:**
 
-| Role | Required Fields | Optional Fields | Purpose |
-|------|-----------------|-----------------|---------|
-| `MLGOO_DILG` | email, name, password | - | System administrators with full access, final approval authority |
-| `VALIDATOR` | email, name, password, **validator_area_id** | - | Area-specific validators (requires governance area assignment) |
-| `ASSESSOR` | email, name, password | - | Flexible assessors (can work with any barangay) |
-| `BLGU_USER` | email, name, password, **barangay_id** | - | Barangay users (requires barangay assignment) |
-| `KATUPARAN_CENTER_USER` | email, name, password | - | External research users with read-only access to aggregated analytics |
+| Role                    | Required Fields                              | Optional Fields | Purpose                                                               |
+| ----------------------- | -------------------------------------------- | --------------- | --------------------------------------------------------------------- |
+| `MLGOO_DILG`            | email, name, password                        | -               | System administrators with full access, final approval authority      |
+| `VALIDATOR`             | email, name, password, **validator_area_id** | -               | Area-specific validators (requires governance area assignment)        |
+| `ASSESSOR`              | email, name, password                        | -               | Flexible assessors (can work with any barangay)                       |
+| `BLGU_USER`             | email, name, password, **barangay_id**       | -               | Barangay users (requires barangay assignment)                         |
+| `KATUPARAN_CENTER_USER` | email, name, password                        | -               | External research users with read-only access to aggregated analytics |
 
 **Business Rules:**
 
@@ -384,7 +386,8 @@ erDiagram
 4. **MLGOO_DILG role**: No assignments required (system-wide access, final approval authority)
 5. **KATUPARAN_CENTER_USER role**: No assignments required (read-only external access)
 6. **Email uniqueness**: Each email can only be used once across all roles
-7. **Password change**: All new users must change password on first login (`must_change_password = True`)
+7. **Password change**: All new users must change password on first login
+   (`must_change_password = True`)
 
 **Example Queries:**
 
@@ -412,7 +415,8 @@ WHERE u.id = 42 AND u.role = 'VALIDATOR';
 
 ## Assessment Years
 
-The `assessment_years` table provides unified management of annual SGLGB assessment cycles, combining year configuration with phase deadlines:
+The `assessment_years` table provides unified management of annual SGLGB assessment cycles,
+combining year configuration with phase deadlines:
 
 ```mermaid
 erDiagram
@@ -450,11 +454,11 @@ erDiagram
 
 **Key Concepts:**
 
-| Concept | Description |
-|---------|-------------|
-| **Active Year** | The year currently accepting new submissions. Only ONE year can be active at a time. Activating a new year automatically deactivates the previous one. |
-| **Published Year** | The year's data is visible to Katuparan Center users for external analytics. Multiple years can be published simultaneously. |
-| **Year Lifecycle** | CREATE (inactive) -> ACTIVATE (active) -> PUBLISH (visible) -> DEACTIVATE (historical) |
+| Concept            | Description                                                                                                                                            |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Active Year**    | The year currently accepting new submissions. Only ONE year can be active at a time. Activating a new year automatically deactivates the previous one. |
+| **Published Year** | The year's data is visible to Katuparan Center users for external analytics. Multiple years can be published simultaneously.                           |
+| **Year Lifecycle** | CREATE (inactive) -> ACTIVATE (active) -> PUBLISH (visible) -> DEACTIVATE (historical)                                                                 |
 
 **Unique Constraints:**
 
@@ -470,27 +474,29 @@ ALTER TABLE assessments ADD CONSTRAINT uq_assessment_blgu_year
 
 **Role-Based Year Access:**
 
-| Role | Accessible Years |
-|------|------------------|
-| MLGOO_DILG | All years (published and unpublished) |
-| KATUPARAN_CENTER_USER | Published years only |
-| BLGU_USER | Years they have assessments for |
-| ASSESSOR / VALIDATOR | Active year only |
+| Role                  | Accessible Years                      |
+| --------------------- | ------------------------------------- |
+| MLGOO_DILG            | All years (published and unpublished) |
+| KATUPARAN_CENTER_USER | Published years only                  |
+| BLGU_USER             | Years they have assessments for       |
+| ASSESSOR / VALIDATOR  | Active year only                      |
 
 **Year Placeholder Resolution:**
 
-The `YearPlaceholderResolver` uses the assessment year to resolve dynamic placeholders in indicator definitions:
+The `YearPlaceholderResolver` uses the assessment year to resolve dynamic placeholders in indicator
+definitions:
 
-| Placeholder | Example (Year 2025) |
-|-------------|---------------------|
-| `{CURRENT_YEAR}` | 2025 |
-| `{PREVIOUS_YEAR}` | 2024 |
+| Placeholder              | Example (Year 2025)     |
+| ------------------------ | ----------------------- |
+| `{CURRENT_YEAR}`         | 2025                    |
+| `{PREVIOUS_YEAR}`        | 2024                    |
 | `{JAN_OCT_CURRENT_YEAR}` | January to October 2025 |
-| `{CY_CURRENT_YEAR}` | CY 2025 |
+| `{CY_CURRENT_YEAR}`      | CY 2025                 |
 
 **Migration from Legacy Tables:**
 
 The `assessment_years` table unifies data from two legacy tables:
+
 - `assessment_year_configs`: Year and period configuration
 - `assessment_cycles`: Phase deadline configuration
 
@@ -647,6 +653,7 @@ stateDiagram-v2
 **Calibration Workflow (Validator to BLGU):**
 
 When a Validator requests calibration:
+
 1. Assessment status changes to `REWORK`
 2. `is_calibration_rework` is set to `true`
 3. `calibration_validator_id` stores the requesting Validator's ID
@@ -658,12 +665,15 @@ When a Validator requests calibration:
 **Parallel Calibration:**
 
 Multiple Validators can calibrate different governance areas simultaneously:
-- `pending_calibrations` stores: `[{"validator_id": 1, "governance_area_id": 2, "requested_at": "...", "approved": false}, ...]`
+
+- `pending_calibrations` stores:
+  `[{"validator_id": 1, "governance_area_id": 2, "requested_at": "...", "approved": false}, ...]`
 - `calibration_summaries_by_area` stores per-area AI summaries
 
 **MLGOO RE-calibration (distinct from Validator calibration):**
 
 When MLGOO determines a Validator was too strict:
+
 1. MLGOO sets `is_mlgoo_recalibration = true`
 2. `mlgoo_recalibration_indicator_ids` specifies which indicators to unlock
 3. BLGU can update only those specific indicators
@@ -679,21 +689,24 @@ When MLGOO determines a Validator was too strict:
 
 **Validation Status Options:**
 
-| Status | Description | Use Case |
-|--------|-------------|----------|
-| `PASSED` | Indicator fully met | All MOVs present and valid |
-| `CONSIDERED` | Partial compliance | Some criteria met, grace period applied |
-| `FAILED` | Indicator not met | Missing MOVs or invalid evidence |
-| `NOT_APPLICABLE` | Indicator doesn't apply | Grace period or exemption |
-| `PENDING` | Not yet validated | Awaiting assessor review |
+| Status           | Description             | Use Case                                |
+| ---------------- | ----------------------- | --------------------------------------- |
+| `PASSED`         | Indicator fully met     | All MOVs present and valid              |
+| `CONSIDERED`     | Partial compliance      | Some criteria met, grace period applied |
+| `FAILED`         | Indicator not met       | Missing MOVs or invalid evidence        |
+| `NOT_APPLICABLE` | Indicator doesn't apply | Grace period or exemption               |
+| `PENDING`        | Not yet validated       | Awaiting assessor review                |
 
 **Business Rules:**
 
 1. **Rework Limit**: `rework_count` cannot exceed 1 (enforced by model validator)
-2. **Locked Assessments**: BLGU cannot edit assessments in `SUBMITTED`, `IN_REVIEW`, `AWAITING_FINAL_VALIDATION`, or `COMPLETED` status
-3. **MOV Requirements**: Each indicator response must have associated MOV files unless `is_profiling_only = True`
+2. **Locked Assessments**: BLGU cannot edit assessments in `SUBMITTED`, `IN_REVIEW`,
+   `AWAITING_FINAL_VALIDATION`, or `COMPLETED` status
+3. **MOV Requirements**: Each indicator response must have associated MOV files unless
+   `is_profiling_only = True`
 4. **Soft Delete**: MOV files use `deleted_at` timestamp instead of hard deletion
-5. **Internal Notes**: Assessor feedback can be marked as `is_internal_note = True` to hide from BLGU users
+5. **Internal Notes**: Assessor feedback can be marked as `is_internal_note = True` to hide from
+   BLGU users
 
 ---
 
@@ -798,21 +811,21 @@ erDiagram
 
 **MOV Checklist Item Types:**
 
-| Type | Description | Validator Action | Required Field |
-|------|-------------|------------------|----------------|
-| `checkbox` | Standard MOV requirement | Check if present | `required` |
-| `info_text` | Informational note | Read only | N/A |
-| `assessment_field` | Dynamic assessment data | View/validate data | Depends on schema |
-| `document_count` | Validator counts documents | Enter count | `requires_document_count = True` |
-| `calculation_field` | Auto-calculated result | View only | N/A |
+| Type                | Description                | Validator Action   | Required Field                   |
+| ------------------- | -------------------------- | ------------------ | -------------------------------- |
+| `checkbox`          | Standard MOV requirement   | Check if present   | `required`                       |
+| `info_text`         | Informational note         | Read only          | N/A                              |
+| `assessment_field`  | Dynamic assessment data    | View/validate data | Depends on schema                |
+| `document_count`    | Validator counts documents | Enter count        | `requires_document_count = True` |
+| `calculation_field` | Auto-calculated result     | View only          | N/A                              |
 
 **Validation Rules:**
 
-| Rule | Logic | Use Case |
-|------|-------|----------|
+| Rule                 | Logic                               | Use Case                     |
+| -------------------- | ----------------------------------- | ---------------------------- |
 | `ALL_ITEMS_REQUIRED` | All checklist items must be checked | Strict compliance indicators |
-| `ANY_ITEM_REQUIRED` | At least one item must be checked | Alternative evidence allowed |
-| `CUSTOM` | Custom validation logic in backend | Complex business rules |
+| `ANY_ITEM_REQUIRED`  | At least one item must be checked   | Alternative evidence allowed |
+| `CUSTOM`             | Custom validation logic in backend  | Complex business rules       |
 
 **Versioning Workflow:**
 
@@ -820,7 +833,8 @@ erDiagram
 2. **Modify Indicator**: Create new version (`version = N + 1`)
 3. **Archive Old Version**: Copy old record to `indicators_history` table
 4. **Update Active**: Update `indicators` with new schema and increment version
-5. **Historical Reference**: Existing assessments continue referencing archived version via `indicators_history`
+5. **Historical Reference**: Existing assessments continue referencing archived version via
+   `indicators_history`
 
 **Example Queries:**
 
@@ -903,17 +917,17 @@ erDiagram
 
 **9 Mandatory BBIs and Governance Area Mapping:**
 
-| BBI | Abbreviation | Governance Area | Mapping Indicators |
-|-----|--------------|-----------------|-------------------|
-| Barangay Anti-Drug Abuse Council | BADAC | Social Protection & Inclusion | 4.1, 4.2, 4.3 |
-| Barangay Council for Protection of Children | BCPC | Social Protection & Inclusion | 4.4, 4.5 |
-| Barangay Disaster Risk Reduction Management Committee | BDRRMC | Disaster Intervention | 2.1, 2.2, 2.3 |
-| Barangay Health Committee | BHC | Social Protection & Inclusion | 4.6, 4.7 |
-| Barangay Nutrition Committee | BNC | Social Protection & Inclusion | 4.8, 4.9 |
-| Barangay Peace & Order Committee | BPOC | Social Protection & Inclusion | 4.10, 4.11 |
-| Lupong Tagapamayapa | LT | Social Protection & Inclusion | 4.12, 4.13 |
-| Sangguniang Kabataan | SK | Community Empowerment | 5.1, 5.2, 5.3 |
-| Barangay Housing Committee | BHoC | Environmental | 6.1, 6.2 |
+| BBI                                                   | Abbreviation | Governance Area               | Mapping Indicators |
+| ----------------------------------------------------- | ------------ | ----------------------------- | ------------------ |
+| Barangay Anti-Drug Abuse Council                      | BADAC        | Social Protection & Inclusion | 4.1, 4.2, 4.3      |
+| Barangay Council for Protection of Children           | BCPC         | Social Protection & Inclusion | 4.4, 4.5           |
+| Barangay Disaster Risk Reduction Management Committee | BDRRMC       | Disaster Intervention         | 2.1, 2.2, 2.3      |
+| Barangay Health Committee                             | BHC          | Social Protection & Inclusion | 4.6, 4.7           |
+| Barangay Nutrition Committee                          | BNC          | Social Protection & Inclusion | 4.8, 4.9           |
+| Barangay Peace & Order Committee                      | BPOC         | Social Protection & Inclusion | 4.10, 4.11         |
+| Lupong Tagapamayapa                                   | LT           | Social Protection & Inclusion | 4.12, 4.13         |
+| Sangguniang Kabataan                                  | SK           | Community Empowerment         | 5.1, 5.2, 5.3      |
+| Barangay Housing Committee                            | BHoC         | Environmental                 | 6.1, 6.2           |
 
 **BBI Mapping Rules Example (JSON):**
 
@@ -949,11 +963,11 @@ erDiagram
 
 BBI functionality is now determined by compliance rate using a 3-tier system:
 
-| Status | Compliance Rate | Description |
-|--------|-----------------|-------------|
-| `HIGHLY_FUNCTIONAL` | 75% - 100% | Full or near-full compliance with all sub-indicators |
-| `MODERATELY_FUNCTIONAL` | 50% - 74% | Partial compliance, some improvements needed |
-| `LOW_FUNCTIONAL` | Below 50% | Significant gaps in compliance |
+| Status                  | Compliance Rate | Description                                          |
+| ----------------------- | --------------- | ---------------------------------------------------- |
+| `HIGHLY_FUNCTIONAL`     | 75% - 100%      | Full or near-full compliance with all sub-indicators |
+| `MODERATELY_FUNCTIONAL` | 50% - 74%       | Partial compliance, some improvements needed         |
+| `LOW_FUNCTIONAL`        | Below 50%       | Significant gaps in compliance                       |
 
 **Compliance Rate Calculation:**
 
@@ -962,6 +976,7 @@ Compliance Rate = (Passed Sub-Indicators / Total Sub-Indicators) x 100%
 ```
 
 **Legacy Values (backward compatibility):**
+
 - `FUNCTIONAL` maps to `HIGHLY_FUNCTIONAL`
 - `NON_FUNCTIONAL` maps to `LOW_FUNCTIONAL`
 
@@ -972,7 +987,7 @@ Compliance Rate = (Passed Sub-Indicators / Total Sub-Indicators) x 100%
 3. **Evaluate Mapping Rules**: Check validation status against BBI mapping rules
 4. **Calculate Compliance Rate**: Count passed sub-indicators vs. total
 5. **Determine 3-Tier Status**:
-   - >= 75%: `HIGHLY_FUNCTIONAL`
+   - > = 75%: `HIGHLY_FUNCTIONAL`
    - 50-74%: `MODERATELY_FUNCTIONAL`
    - < 50%: `LOW_FUNCTIONAL`
 6. **Store Result**: Insert `bbi_results` record with calculation details for audit
@@ -1102,8 +1117,10 @@ erDiagram
 
 **Assessment Cycle Constraints:**
 
-1. **Unique Active Cycle**: Only one cycle can have `is_active = TRUE` at a time (enforced by partial unique index)
-2. **Deadline Ordering**: `phase1_deadline < rework_deadline < phase2_deadline < calibration_deadline`
+1. **Unique Active Cycle**: Only one cycle can have `is_active = TRUE` at a time (enforced by
+   partial unique index)
+2. **Deadline Ordering**:
+   `phase1_deadline < rework_deadline < phase2_deadline < calibration_deadline`
 3. **Year Validation**: Year must match current or next year
 4. **Timezone**: All deadlines stored in UTC
 
@@ -1214,11 +1231,13 @@ CREATE INDEX idx_deadline_overrides_created_at_desc ON deadline_overrides(create
 
 **Query Performance Considerations:**
 
-1. **Filtered Indexes**: Use `WHERE` clauses on indexes to reduce size (e.g., `WHERE is_active = TRUE`)
+1. **Filtered Indexes**: Use `WHERE` clauses on indexes to reduce size (e.g.,
+   `WHERE is_active = TRUE`)
 2. **Partial Unique Indexes**: Assessment cycles use partial unique index on `is_active = TRUE`
 3. **Composite Indexes**: Multi-column indexes for common JOIN queries
 4. **Covering Indexes**: Include frequently queried columns in index (future optimization)
-5. **JSONB Indexes**: Consider GIN indexes on `form_schema`, `mapping_rules` for JSON queries (future enhancement)
+5. **JSONB Indexes**: Consider GIN indexes on `form_schema`, `mapping_rules` for JSON queries
+   (future enhancement)
 
 ---
 
@@ -1226,15 +1245,15 @@ CREATE INDEX idx_deadline_overrides_created_at_desc ON deadline_overrides(create
 
 Current schema metrics (as of December 2025):
 
-| Category | Count | Notes |
-|----------|-------|-------|
-| **Core Tables** | 18 | Main application tables (including mov_annotations) |
-| **Total Columns** | ~250+ | Across all tables |
-| **Foreign Keys** | 30+ | Enforcing referential integrity |
-| **Unique Constraints** | 15+ | Ensuring data uniqueness |
-| **Check Constraints** | 5+ | Business rule enforcement |
-| **Indexes** | 45+ | Performance optimization |
-| **Enums** | 8 | AssessmentStatus, ValidationStatus, UserRole, BBIStatus, NotificationType, etc |
+| Category               | Count | Notes                                                                          |
+| ---------------------- | ----- | ------------------------------------------------------------------------------ |
+| **Core Tables**        | 18    | Main application tables (including mov_annotations)                            |
+| **Total Columns**      | ~250+ | Across all tables                                                              |
+| **Foreign Keys**       | 30+   | Enforcing referential integrity                                                |
+| **Unique Constraints** | 15+   | Ensuring data uniqueness                                                       |
+| **Check Constraints**  | 5+    | Business rule enforcement                                                      |
+| **Indexes**            | 45+   | Performance optimization                                                       |
+| **Enums**              | 8     | AssessmentStatus, ValidationStatus, UserRole, BBIStatus, NotificationType, etc |
 
 ---
 
@@ -1269,7 +1288,8 @@ alembic downgrade -1
 
 ## MOV Annotations
 
-The `mov_annotations` table supports interactive annotation of MOV files (PDFs and images) by assessors:
+The `mov_annotations` table supports interactive annotation of MOV files (PDFs and images) by
+assessors:
 
 ```mermaid
 erDiagram
@@ -1292,19 +1312,19 @@ erDiagram
 
 **Annotation Types:**
 
-| Type | Description | Use Case |
-|------|-------------|----------|
-| `pdfRect` | Rectangle annotation on PDF page | Highlight text or mark areas on PDF MOVs |
-| `imageRect` | Rectangle annotation on image | Mark areas on image MOVs (JPG, PNG) |
+| Type        | Description                      | Use Case                                 |
+| ----------- | -------------------------------- | ---------------------------------------- |
+| `pdfRect`   | Rectangle annotation on PDF page | Highlight text or mark areas on PDF MOVs |
+| `imageRect` | Rectangle annotation on image    | Mark areas on image MOVs (JPG, PNG)      |
 
 **Rectangle Format (stored as percentages for responsive rendering):**
 
 ```json
 {
-  "x": 10.5,   // Left position as % of document width
-  "y": 25.0,  // Top position as % of document height
-  "w": 30.0,  // Width as % of document width
-  "h": 5.0    // Height as % of document height
+  "x": 10.5, // Left position as % of document width
+  "y": 25.0, // Top position as % of document height
+  "w": 30.0, // Width as % of document width
+  "h": 5.0 // Height as % of document height
 }
 ```
 
@@ -1337,12 +1357,12 @@ AI-generated Capacity Development (CapDev) insights are stored in the `capdev_in
 
 **CapDev Insights Status:**
 
-| Status | Description |
-|--------|-------------|
-| `pending` | Insights generation queued |
+| Status       | Description                         |
+| ------------ | ----------------------------------- |
+| `pending`    | Insights generation queued          |
 | `generating` | AI is currently generating insights |
-| `completed` | Insights generated successfully |
-| `failed` | Generation failed (can be retried) |
+| `completed`  | Insights generated successfully     |
+| `failed`     | Generation failed (can be retried)  |
 
 ---
 
@@ -1350,20 +1370,20 @@ AI-generated Capacity Development (CapDev) insights are stored in the `capdev_in
 
 The system supports the following notification types for workflow events:
 
-| Type | Trigger | Recipients |
-|------|---------|------------|
-| `NEW_SUBMISSION` | BLGU submits assessment | All Assessors |
-| `REWORK_REQUESTED` | Assessor requests rework | BLGU |
-| `REWORK_RESUBMITTED` | BLGU resubmits after rework | All Assessors |
-| `READY_FOR_VALIDATION` | Assessor finalizes | Validator(s) |
-| `CALIBRATION_REQUESTED` | Validator requests calibration | BLGU |
-| `CALIBRATION_RESUBMITTED` | BLGU resubmits calibration | Same Validator |
-| `VALIDATION_COMPLETED` | Validator completes validation | MLGOO and BLGU |
-| `READY_FOR_MLGOO_APPROVAL` | All validators done | MLGOO |
-| `MLGOO_RECALIBRATION_REQUESTED` | MLGOO requests RE-calibration | BLGU |
-| `ASSESSMENT_APPROVED` | MLGOO approves assessment | BLGU |
-| `DEADLINE_EXPIRED_LOCKED` | Grace period expired | BLGU (locked), MLGOO |
-| `GRACE_PERIOD_WARNING` | Grace period expiring soon | BLGU |
+| Type                            | Trigger                        | Recipients           |
+| ------------------------------- | ------------------------------ | -------------------- |
+| `NEW_SUBMISSION`                | BLGU submits assessment        | All Assessors        |
+| `REWORK_REQUESTED`              | Assessor requests rework       | BLGU                 |
+| `REWORK_RESUBMITTED`            | BLGU resubmits after rework    | All Assessors        |
+| `READY_FOR_VALIDATION`          | Assessor finalizes             | Validator(s)         |
+| `CALIBRATION_REQUESTED`         | Validator requests calibration | BLGU                 |
+| `CALIBRATION_RESUBMITTED`       | BLGU resubmits calibration     | Same Validator       |
+| `VALIDATION_COMPLETED`          | Validator completes validation | MLGOO and BLGU       |
+| `READY_FOR_MLGOO_APPROVAL`      | All validators done            | MLGOO                |
+| `MLGOO_RECALIBRATION_REQUESTED` | MLGOO requests RE-calibration  | BLGU                 |
+| `ASSESSMENT_APPROVED`           | MLGOO approves assessment      | BLGU                 |
+| `DEADLINE_EXPIRED_LOCKED`       | Grace period expired           | BLGU (locked), MLGOO |
+| `GRACE_PERIOD_WARNING`          | Grace period expiring soon     | BLGU                 |
 
 ---
 
@@ -1372,12 +1392,14 @@ The system supports the following notification types for workflow events:
 - All diagrams reflect the actual SINAG database schema as of December 2025
 - Schema supports multi-tenancy through `barangay_id` and `validator_area_id` isolation
 - Five user roles: MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER, KATUPARAN_CENTER_USER
-- JSONB fields (`form_schema`, `mapping_rules`, `capdev_insights`) enable dynamic, schema-less data storage
-- Soft deletes used for `indicators` (`is_active`), `mov_files` (`deleted_at`), and `bbis` (`is_active`)
+- JSONB fields (`form_schema`, `mapping_rules`, `capdev_insights`) enable dynamic, schema-less data
+  storage
+- Soft deletes used for `indicators` (`is_active`), `mov_files` (`deleted_at`), and `bbis`
+  (`is_active`)
 - Audit trail maintained via `audit_logs` table for all administrative actions
 - Performance optimized with strategic indexes on high-cardinality columns and common JOIN paths
 - Versioning system for indicators ensures historical assessment data integrity
 - BBI functionality uses 3-tier rating system per DILG MC 2024-417
 - Calibration workflow supports both Validator calibration and MLGOO RE-calibration
 
-*Last updated: December 2025*
+_Last updated: December 2025_

@@ -68,9 +68,7 @@ export function UploadDropzone({
         <div className="text-[var(--text-secondary)]">
           Drag & drop files here, or <span className="underline">browse</span>
         </div>
-        {hint && (
-          <div className="text-xs text-[var(--text-secondary)]">{hint}</div>
-        )}
+        {hint && <div className="text-xs text-[var(--text-secondary)]">{hint}</div>}
       </div>
       <input
         ref={inputRef}
@@ -84,5 +82,3 @@ export function UploadDropzone({
     </div>
   );
 }
-
-

@@ -5,6 +5,7 @@ Performance tests for the SINAG BLGU assessment system.
 ## Test Fixtures
 
 ### Large Form Schema
+
 - **File:** `fixtures/large-form-schema.ts`
 - **Fields:** 67 fields total
 - **Sections:** 4 major sections (Basic Info, Governance, Social Services, Peace & Order)
@@ -34,14 +35,14 @@ Performance tests for the SINAG BLGU assessment system.
 
 Based on industry standards and user experience research:
 
-| Metric | Target | Acceptable | Poor |
-|--------|--------|-----------|------|
-| Initial Render | < 500ms | < 1s | > 2s |
-| Field Interaction | < 100ms | < 200ms | > 500ms |
-| Conditional Toggle | < 150ms | < 300ms | > 500ms |
-| Form Validation | < 200ms | < 500ms | > 1s |
-| Auto-save | < 300ms | < 1s | > 2s |
-| File Upload (10MB) | < 5s | < 10s | > 30s |
+| Metric             | Target  | Acceptable | Poor    |
+| ------------------ | ------- | ---------- | ------- |
+| Initial Render     | < 500ms | < 1s       | > 2s    |
+| Field Interaction  | < 100ms | < 200ms    | > 500ms |
+| Conditional Toggle | < 150ms | < 300ms    | > 500ms |
+| Form Validation    | < 200ms | < 500ms    | > 1s    |
+| Auto-save          | < 300ms | < 1s       | > 2s    |
+| File Upload (10MB) | < 5s    | < 10s      | > 30s   |
 
 ### Test Strategy
 
@@ -100,6 +101,7 @@ pnpm test:performance --reporter=html
 ### Lighthouse Scores
 
 Target Lighthouse scores for form pages:
+
 - Performance: > 90
 - Accessibility: > 95
 - Best Practices: > 95

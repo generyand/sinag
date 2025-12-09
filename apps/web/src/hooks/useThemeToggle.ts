@@ -1,17 +1,17 @@
 /**
  * Custom hook for theme toggle functionality
- * 
+ *
  * Provides theme state management, icon selection, and label generation
  * for the theme toggle component. Integrates with the ThemeProvider context.
- * 
+ *
  * @returns Object containing theme state, setter, and display properties
  */
-'use client';
+"use client";
 
-import { useTheme } from '@/providers/ThemeProvider';
-import { Sun, Moon, Monitor } from 'lucide-react';
+import { useTheme } from "@/providers/ThemeProvider";
+import { Sun, Moon, Monitor } from "lucide-react";
 
-type Theme = 'light' | 'dark' | 'system';
+type Theme = "light" | "dark" | "system";
 
 interface ThemeOption {
   value: Theme;
@@ -21,7 +21,7 @@ interface ThemeOption {
 
 /**
  * Custom hook for managing theme toggle functionality
- * 
+ *
  * @returns Theme management state and utilities
  */
 export function useThemeToggle() {
@@ -30,24 +30,25 @@ export function useThemeToggle() {
   // Theme options configuration
   const themeOptions: ThemeOption[] = [
     {
-      value: 'light',
-      label: 'Light',
+      value: "light",
+      label: "Light",
       icon: Sun,
     },
     {
-      value: 'dark',
-      label: 'Dark',
+      value: "dark",
+      label: "Dark",
       icon: Moon,
     },
     {
-      value: 'system',
-      label: 'System',
+      value: "system",
+      label: "System",
       icon: Monitor,
     },
   ];
 
   // Get current theme option
-  const currentThemeOption = themeOptions.find(option => option.value === theme) || themeOptions[2];
+  const currentThemeOption =
+    themeOptions.find((option) => option.value === theme) || themeOptions[2];
 
   // Get the icon for the current theme
   const getCurrentIcon = () => {
@@ -68,15 +69,15 @@ export function useThemeToggle() {
     // Current theme state
     theme,
     actualTheme,
-    
+
     // Theme options
     themeOptions,
     currentThemeOption,
-    
+
     // Display utilities
     getCurrentIcon,
     getCurrentLabel,
-    
+
     // Actions
     setTheme: handleThemeChange,
   };

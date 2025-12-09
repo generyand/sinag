@@ -3,10 +3,7 @@
  * @param data Array of objects to export
  * @param filename Base filename (without extension)
  */
-export function exportToCSV<T extends Record<string, unknown>>(
-  data: T[],
-  filename: string
-): void {
+export function exportToCSV<T extends Record<string, unknown>>(data: T[], filename: string): void {
   if (!data || data.length === 0) {
     console.warn("No data to export");
     return;
@@ -24,11 +21,7 @@ export function exportToCSV<T extends Record<string, unknown>>(
     const stringValue = String(value);
 
     // If value contains comma, newline, or double quote, wrap in quotes and escape quotes
-    if (
-      stringValue.includes(",") ||
-      stringValue.includes("\n") ||
-      stringValue.includes('"')
-    ) {
+    if (stringValue.includes(",") || stringValue.includes("\n") || stringValue.includes('"')) {
       return `"${stringValue.replace(/"/g, '""')}"`;
     }
 

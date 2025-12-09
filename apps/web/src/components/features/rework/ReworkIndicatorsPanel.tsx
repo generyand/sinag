@@ -346,7 +346,7 @@ export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkInd
         setExpandedAreas(new Set(allAreaIds));
       }
     }
-  }, [areaIdsKey]);
+  }, [areaIdsKey, setExpandedAreas]);
 
   const toggleArea = (areaId: number) => {
     setExpandedAreas((prev) => {

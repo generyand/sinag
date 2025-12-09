@@ -1,9 +1,7 @@
 # Split-Pane Schema Configuration Architecture
 
-**Version:** 1.0 - Initial Design
-**Last Updated:** January 10, 2025
-**Status:** Approved for Implementation
-**Related PRD:** `docs/prds/prd-phase6-administrative-features.md` (Section 4.0.5)
+**Version:** 1.0 - Initial Design **Last Updated:** January 10, 2025 **Status:** Approved for
+Implementation **Related PRD:** `docs/prds/prd-phase6-administrative-features.md` (Section 4.0.5)
 
 ---
 
@@ -26,27 +24,37 @@
 
 ### What Problem We're Solving
 
-The current schema configuration step (Step 3) of the Hierarchical Indicator Builder requires users to configure form schemas, calculation schemas, and remark templates for each indicator. However, the **current implementation only displays one indicator at a time** without showing the tree hierarchy, which creates significant usability challenges:
+The current schema configuration step (Step 3) of the Hierarchical Indicator Builder requires users
+to configure form schemas, calculation schemas, and remark templates for each indicator. However,
+the **current implementation only displays one indicator at a time** without showing the tree
+hierarchy, which creates significant usability challenges:
 
-- **Lost Context**: Users lose sight of the hierarchical structure and can't see which indicators remain incomplete
-- **Unclear Navigation**: No visual indication of which indicator they're working on or how to switch between indicators
-- **Slow Context Switching**: Users must return to Step 2 to see the tree, then navigate back to Step 3
-- **No Progress Tracking**: No visual feedback on which indicators have complete schemas vs. incomplete schemas
+- **Lost Context**: Users lose sight of the hierarchical structure and can't see which indicators
+  remain incomplete
+- **Unclear Navigation**: No visual indication of which indicator they're working on or how to
+  switch between indicators
+- **Slow Context Switching**: Users must return to Step 2 to see the tree, then navigate back to
+  Step 3
+- **No Progress Tracking**: No visual feedback on which indicators have complete schemas vs.
+  incomplete schemas
 - **Error-Prone**: Easy to forget indicators or duplicate work
 
 ### Solution Summary
 
-We're introducing a **persistent split-pane layout** where the tree navigator remains visible alongside the schema editor throughout Step 3. This provides continuous context, click-to-switch navigation, real-time status indicators, and progress tracking—transforming schema configuration from a disorienting single-pane experience into an efficient, context-rich workflow.
+We're introducing a **persistent split-pane layout** where the tree navigator remains visible
+alongside the schema editor throughout Step 3. This provides continuous context, click-to-switch
+navigation, real-time status indicators, and progress tracking—transforming schema configuration
+from a disorienting single-pane experience into an efficient, context-rich workflow.
 
 ### Benefits
 
-| Metric | Current Implementation | Split-Pane Solution | Improvement |
-|--------|------------------------|---------------------|-------------|
-| **Schema configuration time** | ~8 min/indicator | ~5 min/indicator | **37% faster** |
-| **Context switches** | 20-30 per session | 0 | **100% reduction** |
-| **User errors** | 2-3 missed indicators | Near zero | **90% reduction** |
-| **User satisfaction** | Low (disorienting) | High (intuitive) | **Qualitative gain** |
-| **Cognitive load** | High (must remember tree) | Low (visual reference) | **Qualitative gain** |
+| Metric                        | Current Implementation    | Split-Pane Solution    | Improvement          |
+| ----------------------------- | ------------------------- | ---------------------- | -------------------- |
+| **Schema configuration time** | ~8 min/indicator          | ~5 min/indicator       | **37% faster**       |
+| **Context switches**          | 20-30 per session         | 0                      | **100% reduction**   |
+| **User errors**               | 2-3 missed indicators     | Near zero              | **90% reduction**    |
+| **User satisfaction**         | Low (disorienting)        | High (intuitive)       | **Qualitative gain** |
+| **Cognitive load**            | High (must remember tree) | Low (visual reference) | **Qualitative gain** |
 
 ---
 
@@ -87,8 +95,10 @@ The current Step 3 implementation (`IndicatorBuilderWizard.tsx`) follows this pa
 
 **Critical Problems:**
 
-1. **No Tree Visibility**: The user sees only the current indicator's name (e.g., "1.1.1 - BDP Preparation") without any tree context
-2. **No Status Indicators**: No way to know which indicators have complete schemas, which have errors, which are pending
+1. **No Tree Visibility**: The user sees only the current indicator's name (e.g., "1.1.1 - BDP
+   Preparation") without any tree context
+2. **No Status Indicators**: No way to know which indicators have complete schemas, which have
+   errors, which are pending
 3. **No Quick Navigation**: To switch indicators, users must:
    - Click "Back" to return to Step 2
    - Click on a different indicator in the tree
@@ -102,16 +112,20 @@ The current Step 3 implementation (`IndicatorBuilderWizard.tsx`) follows this pa
 We conducted a user survey with 5 MLGOO-DILG administrators who tested the MVP. Key findings:
 
 **Scale Requirements:**
+
 - Average session: 10-15 indicators
 - Large sessions: 30-50 indicators
 - Maximum realistic: 100+ indicators (rare, but must handle)
 
 **Work Patterns:**
+
 - **Sequential work (40%)**: Configure indicators in order (1.1 → 1.2 → 1.3)
-- **Pattern-based work (35%)**: Configure all similar indicators together (e.g., all "attendance record" indicators)
+- **Pattern-based work (35%)**: Configure all similar indicators together (e.g., all "attendance
+  record" indicators)
 - **Jump-around work (25%)**: Fix errors, skip complex indicators, return later
 
 **Pain Points (Ranked by Severity):**
+
 1. **"I can't see the tree structure while configuring schemas"** (5/5 users, Severity: Critical)
 2. **"I lose track of which indicators are complete"** (5/5 users, Severity: High)
 3. **"Switching between indicators is too slow"** (4/5 users, Severity: High)
@@ -119,6 +133,7 @@ We conducted a user survey with 5 MLGOO-DILG administrators who tested the MVP. 
 5. **"No way to copy schemas between similar indicators"** (4/5 users, Severity: Medium)
 
 **Desired Features:**
+
 - Persistent tree view with status icons (5/5 users requested)
 - Click-to-switch navigation (5/5 users requested)
 - Schema copy/paste functionality (4/5 users requested)
@@ -131,29 +146,29 @@ We conducted a user survey with 5 MLGOO-DILG administrators who tested the MVP. 
 
 ### Functional Requirements
 
-| ID | Requirement | Priority | Source |
-|----|-------------|----------|--------|
-| **UR-1** | Display tree hierarchy alongside schema editor | **P0** | User Survey |
-| **UR-2** | Show status icons for each indicator (complete, incomplete, error) | **P0** | User Survey |
-| **UR-3** | Enable click-to-switch navigation without leaving Step 3 | **P0** | User Survey |
-| **UR-4** | Display progress tracking (X/Y complete, percentage) | **P1** | User Survey |
-| **UR-5** | Auto-save when switching indicators | **P0** | Technical |
-| **UR-6** | Highlight current indicator in tree | **P1** | UX Best Practice |
-| **UR-7** | Show validation errors directly in tree | **P1** | User Survey |
-| **UR-8** | Support copy/paste schemas between indicators | **P2** | User Survey |
-| **UR-9** | Provide schema templates for common patterns | **P2** | User Survey |
-| **UR-10** | Scroll to selected indicator in tree | **P1** | UX Best Practice |
+| ID        | Requirement                                                        | Priority | Source           |
+| --------- | ------------------------------------------------------------------ | -------- | ---------------- |
+| **UR-1**  | Display tree hierarchy alongside schema editor                     | **P0**   | User Survey      |
+| **UR-2**  | Show status icons for each indicator (complete, incomplete, error) | **P0**   | User Survey      |
+| **UR-3**  | Enable click-to-switch navigation without leaving Step 3           | **P0**   | User Survey      |
+| **UR-4**  | Display progress tracking (X/Y complete, percentage)               | **P1**   | User Survey      |
+| **UR-5**  | Auto-save when switching indicators                                | **P0**   | Technical        |
+| **UR-6**  | Highlight current indicator in tree                                | **P1**   | UX Best Practice |
+| **UR-7**  | Show validation errors directly in tree                            | **P1**   | User Survey      |
+| **UR-8**  | Support copy/paste schemas between indicators                      | **P2**   | User Survey      |
+| **UR-9**  | Provide schema templates for common patterns                       | **P2**   | User Survey      |
+| **UR-10** | Scroll to selected indicator in tree                               | **P1**   | UX Best Practice |
 
 ### Non-Functional Requirements
 
-| ID | Requirement | Target | Rationale |
-|----|-------------|--------|-----------|
-| **NFR-1** | Initial render time for 50 indicators | < 300ms | Perceived as instant |
-| **NFR-2** | Tree re-render time after status update | < 50ms | No visual lag |
-| **NFR-3** | Indicator switch time (click to render) | < 100ms | Instant feedback |
-| **NFR-4** | Auto-save latency | < 200ms | User shouldn't notice |
-| **NFR-5** | Memory usage for 100 indicators | < 50MB | Reasonable browser limit |
-| **NFR-6** | Keyboard navigation responsiveness | < 16ms | 60fps smooth |
+| ID        | Requirement                             | Target  | Rationale                |
+| --------- | --------------------------------------- | ------- | ------------------------ |
+| **NFR-1** | Initial render time for 50 indicators   | < 300ms | Perceived as instant     |
+| **NFR-2** | Tree re-render time after status update | < 50ms  | No visual lag            |
+| **NFR-3** | Indicator switch time (click to render) | < 100ms | Instant feedback         |
+| **NFR-4** | Auto-save latency                       | < 200ms | User shouldn't notice    |
+| **NFR-5** | Memory usage for 100 indicators         | < 50MB  | Reasonable browser limit |
+| **NFR-6** | Keyboard navigation responsiveness      | < 16ms  | 60fps smooth             |
 
 ---
 
@@ -193,7 +208,8 @@ The solution consists of three major architectural layers:
 **Key UX Decisions:**
 
 - **Split-Pane Layout**: 30% tree navigator (left) + 70% schema editor (right)
-  - **Rationale**: 30% provides enough space for 3-level hierarchy without horizontal scrolling, while 70% gives adequate room for complex form/calculation builders
+  - **Rationale**: 30% provides enough space for 3-level hierarchy without horizontal scrolling,
+    while 70% gives adequate room for complex form/calculation builders
 
 - **Status Icon System**: Visual indicators for each tree node
   - `☑` Complete (green) - All required schemas configured and valid
@@ -258,12 +274,13 @@ interface IndicatorBuilderStore {
 
   // NEW: Schema configuration state
   schemaEditorState: {
-    expandedNodeIds: Set<string>;        // Which tree nodes are expanded
-    completionStatus: Map<string, SchemaCompletionStatus>;  // Per-indicator status
-    validationErrors: Map<string, ValidationError[]>;       // Per-indicator errors
-    lastSavedTimestamps: Map<string, number>;               // For "saved X seconds ago"
-    copiedSchema: {                                         // Schema clipboard
-      type: 'form' | 'calculation' | 'remark';
+    expandedNodeIds: Set<string>; // Which tree nodes are expanded
+    completionStatus: Map<string, SchemaCompletionStatus>; // Per-indicator status
+    validationErrors: Map<string, ValidationError[]>; // Per-indicator errors
+    lastSavedTimestamps: Map<string, number>; // For "saved X seconds ago"
+    copiedSchema: {
+      // Schema clipboard
+      type: "form" | "calculation" | "remark";
       schema: any;
       sourceIndicatorId: string;
     } | null;
@@ -276,8 +293,8 @@ interface IndicatorBuilderStore {
 
     // NEW actions
     updateSchemaCompletionStatus: (indicatorId: string, status: SchemaCompletionStatus) => void;
-    copySchema: (indicatorId: string, type: 'form' | 'calculation' | 'remark') => void;
-    pasteSchema: (indicatorId: string, type: 'form' | 'calculation' | 'remark') => void;
+    copySchema: (indicatorId: string, type: "form" | "calculation" | "remark") => void;
+    pasteSchema: (indicatorId: string, type: "form" | "calculation" | "remark") => void;
     toggleNodeExpansion: (nodeId: string) => void;
     getNextIncompleteIndicator: () => string | null;
     getSchemaProgress: () => { complete: number; total: number; percentage: number };
@@ -295,10 +312,13 @@ export function useSchemaEditor(indicatorId: string) {
   const completionStatus = store.schemaEditorState.completionStatus.get(indicatorId);
   const errors = store.schemaEditorState.validationErrors.get(indicatorId) || [];
 
-  const updateFormSchema = useCallback((schema: any) => {
-    store.actions.updateIndicator(indicatorId, { form_schema: schema });
-    store.actions.updateSchemaCompletionStatus(indicatorId, calculateCompletionStatus(indicator));
-  }, [indicatorId, indicator]);
+  const updateFormSchema = useCallback(
+    (schema: any) => {
+      store.actions.updateIndicator(indicatorId, { form_schema: schema });
+      store.actions.updateSchemaCompletionStatus(indicatorId, calculateCompletionStatus(indicator));
+    },
+    [indicatorId, indicator]
+  );
 
   // Similar for calculation_schema, remark_schema...
 
@@ -309,8 +329,8 @@ export function useSchemaEditor(indicatorId: string) {
     updateFormSchema,
     updateCalculationSchema,
     updateRemarkSchema,
-    copySchema: () => store.actions.copySchema(indicatorId, 'form'),
-    pasteSchema: () => store.actions.pasteSchema(indicatorId, 'form'),
+    copySchema: () => store.actions.copySchema(indicatorId, "form"),
+    pasteSchema: () => store.actions.pasteSchema(indicatorId, "form"),
   };
 }
 
@@ -318,22 +338,25 @@ export function useSchemaEditor(indicatorId: string) {
 export function useSchemaTreeNavigation() {
   const store = useIndicatorBuilderStore();
 
-  const selectIndicator = useCallback(async (indicatorId: string) => {
-    // Auto-save current indicator before switching
-    const currentId = store.selectedIndicatorId;
-    if (currentId && store.indicators.get(currentId)?.isDirty) {
-      await saveIndicatorNow(currentId);
-    }
+  const selectIndicator = useCallback(
+    async (indicatorId: string) => {
+      // Auto-save current indicator before switching
+      const currentId = store.selectedIndicatorId;
+      if (currentId && store.indicators.get(currentId)?.isDirty) {
+        await saveIndicatorNow(currentId);
+      }
 
-    // Switch to new indicator
-    store.actions.selectIndicator(indicatorId);
+      // Switch to new indicator
+      store.actions.selectIndicator(indicatorId);
 
-    // Scroll to indicator in tree
-    document.getElementById(`tree-node-${indicatorId}`)?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'nearest'
-    });
-  }, [store]);
+      // Scroll to indicator in tree
+      document.getElementById(`tree-node-${indicatorId}`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    },
+    [store]
+  );
 
   const goToNextIncomplete = useCallback(() => {
     const nextId = store.actions.getNextIncompleteIndicator();
@@ -353,34 +376,36 @@ export function useSchemaTreeNavigation() {
 
 **Backend Changes:**
 
-**No new API endpoints required!** The existing indicator draft auto-save system (`useAutoSave` hook) already handles persisting schema changes. However, we add **delta-based saving** for performance:
+**No new API endpoints required!** The existing indicator draft auto-save system (`useAutoSave`
+hook) already handles persisting schema changes. However, we add **delta-based saving** for
+performance:
 
 **Current Auto-Save (saves entire draft):**
+
 ```typescript
 // Current implementation (apps/web/src/hooks/useAutoSave.ts)
 const saveTimer = useDebounce(() => {
   saveDraftMutation.mutate({
     draftId,
-    data: allIndicators,  // ❌ Saves all 50 indicators every 3 seconds
+    data: allIndicators, // ❌ Saves all 50 indicators every 3 seconds
     version,
   });
 }, 3000);
 ```
 
 **NEW Delta-Based Auto-Save (saves only changed indicators):**
+
 ```typescript
 // Enhanced implementation
 const saveTimer = useDebounce(() => {
-  const changedIndicators = allIndicators.filter(ind =>
-    ind.temp_id in dirtyIndicatorIds
-  );
+  const changedIndicators = allIndicators.filter((ind) => ind.temp_id in dirtyIndicatorIds);
 
   saveDraftMutation.mutate({
     draftId,
     data: {
-      changed: changedIndicators,          // Only modified indicators
+      changed: changedIndicators, // Only modified indicators
       changedIds: Array.from(dirtyIndicatorIds),
-      fullSnapshot: allIndicators,          // Full snapshot every 10th save
+      fullSnapshot: allIndicators, // Full snapshot every 10th save
     },
     version,
   });
@@ -391,7 +416,8 @@ const saveTimer = useDebounce(() => {
 
 **Database Schema (No Changes):**
 
-The existing `indicator_drafts` table already stores JSONB data, which can handle both full snapshots and delta updates:
+The existing `indicator_drafts` table already stores JSONB data, which can handle both full
+snapshots and delta updates:
 
 ```sql
 -- Existing table (apps/api/alembic/versions/8f53ce50c4b0_add_indicator_drafts_table.py)
@@ -452,9 +478,11 @@ class IndicatorDraftService:
 
 **Template System (Phase 3 Enhancement):**
 
-The template system is a **future enhancement** (Phase 3) that allows users to save commonly-used schemas as reusable templates:
+The template system is a **future enhancement** (Phase 3) that allows users to save commonly-used
+schemas as reusable templates:
 
 **Database Schema (NEW - Phase 3):**
+
 ```sql
 CREATE TABLE schema_templates (
     id SERIAL PRIMARY KEY,
@@ -472,6 +500,7 @@ CREATE INDEX idx_schema_templates_type ON schema_templates(template_type);
 ```
 
 **API Endpoints (NEW - Phase 3):**
+
 ```python
 # POST /api/v1/schema-templates
 # GET /api/v1/schema-templates?template_type=form
@@ -487,11 +516,13 @@ CREATE INDEX idx_schema_templates_type ON schema_templates(template_type);
 **Decision:** Use a 30% tree navigator / 70% schema editor split ratio.
 
 **Alternatives Considered:**
+
 - 25/75 split: More space for editor, but tree feels cramped
 - 33/67 split: More balanced, but editor too narrow for complex forms
 - Draggable resize: Added complexity, users rarely adjust
 
 **Rationale:**
+
 - 30% provides enough space for 3-level hierarchy without horizontal scrolling
 - 70% gives adequate room for FormSchemaBuilder's field palette + properties panel
 - Matches industry standards (VS Code, Figma, Notion use 20-30% sidebars)
@@ -506,17 +537,20 @@ CREATE INDEX idx_schema_templates_type ON schema_templates(template_type);
 **Decision:** Use 4 distinct status icons (☑ complete, ○ incomplete, ⚠ error, ◉ current).
 
 **Alternatives Considered:**
+
 - Text labels ("Complete", "Incomplete"): Too verbose, clutters tree
 - Color-only indicators: Not accessible for colorblind users
 - Progress bars per indicator: Visually overwhelming
 
 **Rationale:**
+
 - Icons are universally recognizable
 - Combined with color, satisfies WCAG 2.1 AA accessibility
 - Low visual weight, high information density
 - User testing: 5/5 users immediately understood icon meanings
 
 **Implementation:**
+
 ```typescript
 export function getStatusIcon(completionStatus: SchemaCompletionStatus): {
   icon: string;
@@ -524,14 +558,14 @@ export function getStatusIcon(completionStatus: SchemaCompletionStatus): {
   label: string;
 } {
   switch (completionStatus) {
-    case 'complete':
-      return { icon: '☑', color: 'text-green-600', label: 'Complete' };
-    case 'incomplete':
-      return { icon: '○', color: 'text-gray-400', label: 'Incomplete' };
-    case 'error':
-      return { icon: '⚠', color: 'text-red-600', label: 'Has Errors' };
-    case 'current':
-      return { icon: '◉', color: 'text-blue-600', label: 'Current' };
+    case "complete":
+      return { icon: "☑", color: "text-green-600", label: "Complete" };
+    case "incomplete":
+      return { icon: "○", color: "text-gray-400", label: "Incomplete" };
+    case "error":
+      return { icon: "⚠", color: "text-red-600", label: "Has Errors" };
+    case "current":
+      return { icon: "◉", color: "text-blue-600", label: "Current" };
   }
 }
 ```
@@ -540,20 +574,24 @@ export function getStatusIcon(completionStatus: SchemaCompletionStatus): {
 
 ### 3. Auto-Save on Indicator Switch
 
-**Decision:** Automatically save the current indicator's schemas when the user clicks a different indicator in the tree.
+**Decision:** Automatically save the current indicator's schemas when the user clicks a different
+indicator in the tree.
 
 **Alternatives Considered:**
+
 - No auto-save: User must manually save before switching (annoying, error-prone)
 - Prompt to save: "Save changes before switching?" (interrupts flow)
 - Discard changes: Switch without saving (dangerous, data loss risk)
 
 **Rationale:**
+
 - Users expect modern apps to auto-save (Google Docs, Notion, Figma)
 - Eliminates "Save" button clicks (reduces cognitive load)
 - No data loss if user forgets to save
 - Implemented with optimistic updates for instant feedback
 
 **Edge Case Handling:**
+
 ```typescript
 const selectIndicator = async (newIndicatorId: string) => {
   const currentId = store.selectedIndicatorId;
@@ -561,10 +599,10 @@ const selectIndicator = async (newIndicatorId: string) => {
   // If current indicator is dirty, save before switching
   if (currentId && store.indicators.get(currentId)?.isDirty) {
     try {
-      await saveIndicatorNow(currentId);  // Blocks until save completes
+      await saveIndicatorNow(currentId); // Blocks until save completes
     } catch (error) {
       toast.error("Failed to save current indicator. Please try again.");
-      return;  // Don't switch if save fails
+      return; // Don't switch if save fails
     }
   }
 
@@ -580,11 +618,13 @@ const selectIndicator = async (newIndicatorId: string) => {
 **Decision:** Only save indicators that have changed since the last save, not the entire draft.
 
 **Alternatives Considered:**
+
 - Save entire draft every time: Simple, but slow for 50+ indicators
 - Save current indicator only: Fast, but loses changes if user switches without waiting for debounce
 - Manual save only: Users hate manual saving
 
 **Rationale:**
+
 - **Performance**: Reduces payload size by ~95% (1 indicator vs. 50 indicators)
 - **Bandwidth**: Critical for users on slow connections (rural LGUs)
 - **Database Load**: Fewer large JSONB writes
@@ -592,14 +632,15 @@ const selectIndicator = async (newIndicatorId: string) => {
 
 **Performance Comparison:**
 
-| Scenario | Full Save | Delta Save | Improvement |
-|----------|-----------|------------|-------------|
-| 10 indicators, 1 changed | 120 KB | 12 KB | **10x faster** |
-| 50 indicators, 1 changed | 600 KB | 12 KB | **50x faster** |
-| 50 indicators, 5 changed | 600 KB | 60 KB | **10x faster** |
-| Network latency impact | 300ms | 30ms | **10x faster** |
+| Scenario                 | Full Save | Delta Save | Improvement    |
+| ------------------------ | --------- | ---------- | -------------- |
+| 10 indicators, 1 changed | 120 KB    | 12 KB      | **10x faster** |
+| 50 indicators, 1 changed | 600 KB    | 12 KB      | **50x faster** |
+| 50 indicators, 5 changed | 600 KB    | 60 KB      | **10x faster** |
+| Network latency impact   | 300ms     | 30ms       | **10x faster** |
 
 **Implementation:**
+
 ```typescript
 // Track which indicators are dirty
 const [dirtyIndicatorIds, setDirtyIndicatorIds] = useState<Set<string>>(new Set());
@@ -607,14 +648,12 @@ const [dirtyIndicatorIds, setDirtyIndicatorIds] = useState<Set<string>>(new Set(
 // Mark indicator as dirty when schema changes
 const updateFormSchema = (indicatorId: string, schema: any) => {
   store.actions.updateIndicator(indicatorId, { form_schema: schema });
-  setDirtyIndicatorIds(prev => new Set(prev).add(indicatorId));
+  setDirtyIndicatorIds((prev) => new Set(prev).add(indicatorId));
 };
 
 // Auto-save only dirty indicators
 const saveTimer = useDebounce(() => {
-  const changedIndicators = Array.from(dirtyIndicatorIds).map(id =>
-    store.indicators.get(id)
-  );
+  const changedIndicators = Array.from(dirtyIndicatorIds).map((id) => store.indicators.get(id));
 
   saveDraftMutation.mutate({
     draftId,
@@ -622,7 +661,7 @@ const saveTimer = useDebounce(() => {
     version,
   });
 
-  setDirtyIndicatorIds(new Set());  // Clear after save
+  setDirtyIndicatorIds(new Set()); // Clear after save
 }, 3000);
 ```
 
@@ -630,17 +669,21 @@ const saveTimer = useDebounce(() => {
 
 ### 5. No Inline Editing in Tree
 
-**Decision:** Tree nodes are **read-only labels** that navigate to the schema editor. No inline editing of indicator names/codes in the tree navigator.
+**Decision:** Tree nodes are **read-only labels** that navigate to the schema editor. No inline
+editing of indicator names/codes in the tree navigator.
 
 **Alternatives Considered:**
+
 - Inline editing: Double-click tree node to edit name (like VS Code file tree)
 - Right-click context menu: "Rename Indicator"
 
 **Rationale:**
+
 - **Simplicity**: Tree navigator has one job—navigation
 - **Avoids Ambiguity**: Clicking a node always navigates, never enters edit mode
 - **Editing in Step 2**: Users already configured names/codes in Step 2 (Build Structure)
-- **Rare Use Case**: Schema configuration phase shouldn't require name changes (design smell if users need this frequently)
+- **Rare Use Case**: Schema configuration phase shouldn't require name changes (design smell if
+  users need this frequently)
 
 **User Feedback:** 4/5 users preferred "tree for navigation only" over inline editing.
 
@@ -648,19 +691,24 @@ const saveTimer = useDebounce(() => {
 
 ### 6. Schema Copy/Paste (Phase 2)
 
-**Decision:** Provide "Copy Schema" and "Paste Schema" buttons for duplicating schemas between indicators (implemented in Phase 2).
+**Decision:** Provide "Copy Schema" and "Paste Schema" buttons for duplicating schemas between
+indicators (implemented in Phase 2).
 
 **Alternatives Considered:**
+
 - Drag-and-drop schema transfer: Cool but complex, rare use case doesn't justify effort
 - Schema diffing: Show differences between two indicators' schemas (overkill for MVP)
 
 **Rationale:**
-- **Common Pattern**: Many indicators share similar form schemas (e.g., all "attendance record" indicators)
+
+- **Common Pattern**: Many indicators share similar form schemas (e.g., all "attendance record"
+  indicators)
 - **Time Savings**: Copying a 10-field form schema saves ~5 minutes vs. rebuilding
 - **Low Complexity**: Just clipboard state in Zustand store
 - **User Requested**: 4/5 users explicitly asked for this feature
 
 **Implementation:**
+
 ```typescript
 // Zustand store actions
 copySchema: (indicatorId: string, type: 'form' | 'calculation' | 'remark') => {
@@ -707,18 +755,22 @@ pasteSchema: (indicatorId: string, type: 'form' | 'calculation' | 'remark') => {
 **Decision:** Defer schema templates to Phase 3 (post-MVP).
 
 **Rationale:**
+
 - **MVP Scope Control**: Copy/paste covers 80% of reuse cases
 - **Templates Require Infrastructure**: Backend endpoints, database tables, UI for template library
 - **User Validation**: Need to confirm copy/paste isn't sufficient before building templates
-- **3 Weeks Development**: Templates add significant scope (see [Implementation Plan](./IMPLEMENTATION-PLAN-SPLIT-PANE.md))
+- **3 Weeks Development**: Templates add significant scope (see
+  [Implementation Plan](./IMPLEMENTATION-PLAN-SPLIT-PANE.md))
 
 **Phase 3 Checklist:**
+
 - [ ] Create `schema_templates` database table
 - [ ] Add `POST /api/v1/schema-templates` API endpoint
 - [ ] Add `GET /api/v1/schema-templates` API endpoint
 - [ ] Create `TemplateLibraryModal` component
 - [ ] Add "Use Template" button to schema editor
-- [ ] System templates for common patterns (e.g., "Attendance Record Form", "Budget Accomplishment Calculation")
+- [ ] System templates for common patterns (e.g., "Attendance Record Form", "Budget Accomplishment
+      Calculation")
 
 ---
 
@@ -1003,13 +1055,13 @@ graph TD
 
 ### Target Metrics
 
-| Metric | Target | Current | Phase 1 Goal | Phase 2 Goal |
-|--------|--------|---------|--------------|--------------|
-| Initial render (50 indicators) | < 300ms | N/A (new feature) | 250ms | 200ms |
-| Tree re-render after status update | < 50ms | N/A | 40ms | 30ms |
-| Indicator switch time | < 100ms | N/A | 80ms | 60ms |
-| Auto-save latency | < 200ms | N/A | 150ms | 100ms |
-| Memory usage (100 indicators) | < 50MB | N/A | 45MB | 40MB |
+| Metric                             | Target  | Current           | Phase 1 Goal | Phase 2 Goal |
+| ---------------------------------- | ------- | ----------------- | ------------ | ------------ |
+| Initial render (50 indicators)     | < 300ms | N/A (new feature) | 250ms        | 200ms        |
+| Tree re-render after status update | < 50ms  | N/A               | 40ms         | 30ms         |
+| Indicator switch time              | < 100ms | N/A               | 80ms         | 60ms         |
+| Auto-save latency                  | < 200ms | N/A               | 150ms        | 100ms        |
+| Memory usage (100 indicators)      | < 50MB  | N/A               | 45MB         | 40MB         |
 
 ### Optimization Strategies
 
@@ -1021,23 +1073,20 @@ graph TD
 
 ```typescript
 // SchemaTreeNode.tsx
-export const SchemaTreeNode = React.memo(({
-  node,
-  isSelected,
-  completionStatus,
-  errorCount,
-  onSelect
-}: SchemaTreeNodeProps) => {
-  // ... render logic
-}, (prevProps, nextProps) => {
-  // Only re-render if these specific props change
-  return (
-    prevProps.node.id === nextProps.node.id &&
-    prevProps.isSelected === nextProps.isSelected &&
-    prevProps.completionStatus === nextProps.completionStatus &&
-    prevProps.errorCount === nextProps.errorCount
-  );
-});
+export const SchemaTreeNode = React.memo(
+  ({ node, isSelected, completionStatus, errorCount, onSelect }: SchemaTreeNodeProps) => {
+    // ... render logic
+  },
+  (prevProps, nextProps) => {
+    // Only re-render if these specific props change
+    return (
+      prevProps.node.id === nextProps.node.id &&
+      prevProps.isSelected === nextProps.isSelected &&
+      prevProps.completionStatus === nextProps.completionStatus &&
+      prevProps.errorCount === nextProps.errorCount
+    );
+  }
+);
 ```
 
 **Expected Impact:** Reduces re-renders from 50+ components to 1-2 components per update.
@@ -1064,6 +1113,7 @@ export const SchemaTreeNode = React.memo(({
 ```
 
 **Expected Impact:**
+
 - 100 indicators: Renders ~20 nodes instead of 100 (5x faster)
 - Smooth scrolling even with 200+ indicators
 
@@ -1071,11 +1121,14 @@ export const SchemaTreeNode = React.memo(({
 
 #### 3. **Delta-Based Auto-Save**
 
-**Problem:** Saving 50 indicators every 3 seconds generates 600 KB payloads and takes 300ms on slow networks.
+**Problem:** Saving 50 indicators every 3 seconds generates 600 KB payloads and takes 300ms on slow
+networks.
 
-**Solution:** Only save changed indicators (see [System Architecture](#3-system-architecture-frontend--backend)).
+**Solution:** Only save changed indicators (see
+[System Architecture](#3-system-architecture-frontend--backend)).
 
 **Expected Impact:**
+
 - Payload size: 600 KB → 12 KB (50x reduction)
 - Save latency: 300ms → 30ms (10x faster)
 - User experience: Imperceptible saves
@@ -1090,10 +1143,11 @@ export const SchemaTreeNode = React.memo(({
 
 ```typescript
 const validateSchema = useMemo(
-  () => debounce((schema: any) => {
-    const errors = runSchemaValidation(schema);
-    store.actions.updateValidationErrors(indicatorId, errors);
-  }, 500),
+  () =>
+    debounce((schema: any) => {
+      const errors = runSchemaValidation(schema);
+      store.actions.updateValidationErrors(indicatorId, errors);
+    }, 500),
   [indicatorId]
 );
 
@@ -1132,6 +1186,7 @@ const CalculationSchemaBuilder = React.lazy(() =>
 ```
 
 **Expected Impact:**
+
 - Initial page load: 300 KB → 200 KB (33% reduction)
 - Time to interactive: 1.2s → 0.8s (33% faster)
 
@@ -1139,25 +1194,27 @@ const CalculationSchemaBuilder = React.lazy(() =>
 
 ### Performance Budget
 
-| Resource | Budget | Rationale |
-|----------|--------|-----------|
-| **JavaScript bundle (Step 3 chunk)** | < 150 KB gzipped | Step 3 is lazy-loaded separately |
-| **Initial render time** | < 300ms | Perceived as instant (< 400ms threshold) |
-| **Auto-save latency** | < 200ms | User shouldn't notice |
-| **Memory usage** | < 50 MB | Reasonable for modern browsers |
-| **Network payload per save** | < 20 KB | Delta saves with 3-5 changed indicators |
+| Resource                             | Budget           | Rationale                                |
+| ------------------------------------ | ---------------- | ---------------------------------------- |
+| **JavaScript bundle (Step 3 chunk)** | < 150 KB gzipped | Step 3 is lazy-loaded separately         |
+| **Initial render time**              | < 300ms          | Perceived as instant (< 400ms threshold) |
+| **Auto-save latency**                | < 200ms          | User shouldn't notice                    |
+| **Memory usage**                     | < 50 MB          | Reasonable for modern browsers           |
+| **Network payload per save**         | < 20 KB          | Delta saves with 3-5 changed indicators  |
 
 ---
 
 ### Performance Testing Plan
 
 **Phase 1 Testing:**
+
 - [ ] Lighthouse performance audit (target score: 90+)
 - [ ] React DevTools Profiler (identify slow renders)
 - [ ] Network tab monitoring (measure save payload sizes)
 - [ ] Memory profiler (check for leaks during long sessions)
 
 **Phase 2 Testing:**
+
 - [ ] Load test with 100 indicators
 - [ ] Stress test with rapid indicator switching (10 switches/second)
 - [ ] Network throttling (3G) for auto-save
@@ -1171,7 +1228,8 @@ const CalculationSchemaBuilder = React.lazy(() =>
 
 **Threat:** Two users editing the same draft simultaneously cause data loss.
 
-**Mitigation:** The existing draft system already implements optimistic locking via the `version` field.
+**Mitigation:** The existing draft system already implements optimistic locking via the `version`
+field.
 
 ```python
 # apps/api/app/services/indicator_draft_service.py
@@ -1190,15 +1248,19 @@ def save_draft(self, db: Session, draft_id: UUID, data: Dict, version: int):
 ```
 
 **Frontend Handling:**
+
 ```typescript
-saveDraftMutation.mutate({ draftId, data, version }, {
-  onError: (error) => {
-    if (error.response?.status === 409) {
-      toast.error("Draft out of sync. Refreshing...");
-      queryClient.invalidateQueries(['indicator-draft', draftId]);
-    }
+saveDraftMutation.mutate(
+  { draftId, data, version },
+  {
+    onError: (error) => {
+      if (error.response?.status === 409) {
+        toast.error("Draft out of sync. Refreshing...");
+        queryClient.invalidateQueries(["indicator-draft", draftId]);
+      }
+    },
   }
-});
+);
 ```
 
 ---
@@ -1208,6 +1270,7 @@ saveDraftMutation.mutate({ draftId, data, version }, {
 **Threat:** Malicious users inject XSS payloads in indicator names or schema field labels.
 
 **Mitigation:**
+
 - Backend validates all inputs via Pydantic schemas
 - Frontend sanitizes HTML in RichTextEditor (TipTap's built-in XSS protection)
 - Database stores JSON schemas, not executable code
@@ -1251,6 +1314,7 @@ export default function IndicatorBuilderPage() {
 ```
 
 Backend enforces same check:
+
 ```python
 # apps/api/app/api/v1/indicators.py
 @router.post("/bulk", tags=["indicators"])
@@ -1269,6 +1333,7 @@ def bulk_create_indicators(
 **Threat:** Malicious user floods auto-save endpoint with rapid requests.
 
 **Mitigation:**
+
 - Frontend debounces saves (3 seconds minimum)
 - Backend rate limits (100 requests/minute per user)
 
@@ -1298,7 +1363,7 @@ def save_draft(draft_id: UUID, data: Dict):
 export const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
   headers: {
-    'X-CSRF-Token': getCsrfToken(),  // Added by middleware
+    "X-CSRF-Token": getCsrfToken(), // Added by middleware
   },
 });
 ```
@@ -1309,19 +1374,20 @@ export const apiClient = axios.create({
 
 ### WCAG 2.1 AA Compliance
 
-| Criterion | Requirement | Implementation |
-|-----------|-------------|----------------|
-| **1.4.3 Contrast (Minimum)** | 4.5:1 for text | Status icons use high-contrast colors (green-600, red-600, gray-400) |
-| **2.1.1 Keyboard** | All functionality via keyboard | Full keyboard navigation (Tab, Arrow keys, Enter) |
-| **2.4.7 Focus Visible** | Visible focus indicator | Blue focus ring on tree nodes, 2px solid |
-| **3.2.1 On Focus** | No context change on focus | Selecting indicator doesn't auto-submit |
-| **4.1.2 Name, Role, Value** | ARIA labels for all controls | `aria-label`, `role="tree"`, `aria-selected` |
+| Criterion                    | Requirement                    | Implementation                                                       |
+| ---------------------------- | ------------------------------ | -------------------------------------------------------------------- |
+| **1.4.3 Contrast (Minimum)** | 4.5:1 for text                 | Status icons use high-contrast colors (green-600, red-600, gray-400) |
+| **2.1.1 Keyboard**           | All functionality via keyboard | Full keyboard navigation (Tab, Arrow keys, Enter)                    |
+| **2.4.7 Focus Visible**      | Visible focus indicator        | Blue focus ring on tree nodes, 2px solid                             |
+| **3.2.1 On Focus**           | No context change on focus     | Selecting indicator doesn't auto-submit                              |
+| **4.1.2 Name, Role, Value**  | ARIA labels for all controls   | `aria-label`, `role="tree"`, `aria-selected`                         |
 
 ---
 
 ### Keyboard Navigation
 
 **Tree Navigator:**
+
 - `Tab` → Focus tree
 - `Arrow Up/Down` → Navigate tree nodes
 - `Arrow Left/Right` → Collapse/expand parent nodes
@@ -1329,6 +1395,7 @@ export const apiClient = axios.create({
 - `Space` → Toggle node expansion
 
 **Schema Editor:**
+
 - `Tab` → Navigate between form fields
 - `Ctrl+S` → Manual save
 - `Ctrl+C` → Copy schema
@@ -1336,24 +1403,25 @@ export const apiClient = axios.create({
 - `Ctrl+[1-3]` → Switch tabs (Form, Calculation, Remark)
 
 **Implementation:**
+
 ```typescript
 // SchemaTreeNavigator.tsx
 useEffect(() => {
   const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
+    if (e.key === "ArrowDown") {
       e.preventDefault();
       selectNextIndicator();
-    } else if (e.key === 'ArrowUp') {
+    } else if (e.key === "ArrowUp") {
       e.preventDefault();
       selectPreviousIndicator();
-    } else if (e.key === 'Enter') {
+    } else if (e.key === "Enter") {
       e.preventDefault();
       activateSelectedIndicator();
     }
   };
 
-  document.addEventListener('keydown', handleKeyDown);
-  return () => document.removeEventListener('keydown', handleKeyDown);
+  document.addEventListener("keydown", handleKeyDown);
+  return () => document.removeEventListener("keydown", handleKeyDown);
 }, []);
 ```
 
@@ -1385,15 +1453,17 @@ useEffect(() => {
 ### Screen Reader Support
 
 **Announcements:**
+
 - "Indicator 1.1.2 selected. Form schema incomplete. 0 errors."
 - "Schema saved successfully."
 - "Schema copied from indicator 1.1.1."
 - "Validation error: Field 'budget_amount' is required."
 
 **Implementation:**
+
 ```typescript
 // Use react-aria-live for announcements
-import { useLiveAnnouncer } from '@react-aria/live-announcer';
+import { useLiveAnnouncer } from "@react-aria/live-announcer";
 
 const { announce } = useLiveAnnouncer();
 
@@ -1402,10 +1472,7 @@ const selectIndicator = (id: string) => {
   const status = store.schemaEditorState.completionStatus.get(id);
   const errors = store.schemaEditorState.validationErrors.get(id)?.length || 0;
 
-  announce(
-    `Indicator ${indicator.code} selected. ${status}. ${errors} errors.`,
-    'polite'
-  );
+  announce(`Indicator ${indicator.code} selected. ${status}. ${errors} errors.`, "polite");
 
   store.actions.selectIndicator(id);
 };
@@ -1419,12 +1486,12 @@ const selectIndicator = (id: string) => {
 
 **Solution:** Combine color with shape and text.
 
-| Status | Color | Icon | Text Label |
-|--------|-------|------|------------|
-| Complete | Green | ☑ (checkmark) | "Complete" |
-| Incomplete | Gray | ○ (circle) | "Incomplete" |
-| Error | Red | ⚠ (warning) | "Has Errors" |
-| Current | Blue | ◉ (filled circle) | "Current" |
+| Status     | Color | Icon              | Text Label   |
+| ---------- | ----- | ----------------- | ------------ |
+| Complete   | Green | ☑ (checkmark)     | "Complete"   |
+| Incomplete | Gray  | ○ (circle)        | "Incomplete" |
+| Error      | Red   | ⚠ (warning)       | "Has Errors" |
+| Current    | Blue  | ◉ (filled circle) | "Current"    |
 
 **Testing:** Use Chrome DevTools "Emulate Vision Deficiencies" to verify distinguishability.
 
@@ -1435,6 +1502,7 @@ const selectIndicator = (id: string) => {
 ### From Current Implementation to Split-Pane
 
 **Current State:**
+
 - Step 3 shows only selected indicator
 - No tree visibility
 - No status tracking
@@ -1443,25 +1511,30 @@ const selectIndicator = (id: string) => {
 **Migration Strategy:**
 
 #### **Phase 1: Core Split-Pane (Week 1-2)**
+
 - ✅ Replace `currentStep === 3` content with `<SchemaConfigurationStep />`
 - ✅ Implement `SchemaSplitPane`, `SchemaTreeNavigator`, `SchemaEditorPane`
 - ✅ Add status icon system to Zustand store
 - ✅ Implement click-to-switch navigation
-- ✅ No breaking changes to existing components (FormSchemaBuilder, CalculationSchemaBuilder, RichTextEditor remain unchanged)
+- ✅ No breaking changes to existing components (FormSchemaBuilder, CalculationSchemaBuilder,
+  RichTextEditor remain unchanged)
 
 #### **Phase 2: Auto-Save & Validation (Week 3)**
+
 - ✅ Enhance `useAutoSave` hook with delta-based saving
 - ✅ Add real-time validation with error tracking
 - ✅ Implement copy/paste schema functionality
 - ✅ Add progress tracking footer
 
 #### **Phase 3: Template System (Week 4-5)**
+
 - ✅ Create `schema_templates` database table
 - ✅ Add template API endpoints
 - ✅ Build `TemplateLibraryModal` component
 - ✅ Integrate "Use Template" button
 
 #### **Phase 4: Polish & Optimization (Week 6)**
+
 - ✅ Performance optimization (memoization, lazy loading)
 - ✅ Accessibility audit
 - ✅ User testing with 5 MLGOO-DILG administrators
@@ -1472,6 +1545,7 @@ const selectIndicator = (id: string) => {
 ### Backward Compatibility
 
 **Existing Drafts:**
+
 - Old drafts (created before split-pane) have no `completionStatus` or `validationErrors` metadata
 - **Solution:** Compute status on-the-fly during first load of old drafts
 - **Migration function:**
@@ -1480,7 +1554,7 @@ const selectIndicator = (id: string) => {
 function migrateLegacyDraft(draft: IndicatorDraft): IndicatorDraft {
   const completionStatus = new Map<string, SchemaCompletionStatus>();
 
-  draft.data.forEach(indicator => {
+  draft.data.forEach((indicator) => {
     const status = calculateCompletionStatus(indicator);
     completionStatus.set(indicator.temp_id, status);
   });
@@ -1490,7 +1564,7 @@ function migrateLegacyDraft(draft: IndicatorDraft): IndicatorDraft {
     metadata: {
       ...draft.metadata,
       completionStatus: Object.fromEntries(completionStatus),
-      schemaEditorVersion: '2.0',  // Mark as migrated
+      schemaEditorVersion: "2.0", // Mark as migrated
     },
   };
 }
@@ -1503,14 +1577,16 @@ function migrateLegacyDraft(draft: IndicatorDraft): IndicatorDraft {
 **If critical bugs discovered in production:**
 
 1. **Feature Flag Disable:**
+
    ```typescript
    // apps/web/src/lib/feature-flags.ts
    export const FEATURE_FLAGS = {
-     SPLIT_PANE_SCHEMA_CONFIG: false,  // Disable split-pane
+     SPLIT_PANE_SCHEMA_CONFIG: false, // Disable split-pane
    };
    ```
 
 2. **Fallback to Current Implementation:**
+
    ```typescript
    {currentStep === 3 && (
      FEATURE_FLAGS.SPLIT_PANE_SCHEMA_CONFIG
@@ -1573,7 +1649,8 @@ function migrateLegacyDraft(draft: IndicatorDraft): IndicatorDraft {
 ### Related Documentation
 
 - [Implementation Plan](./IMPLEMENTATION-PLAN-SPLIT-PANE.md) - Phased development timeline
-- [Expert Recommendations](./EXPERT-RECOMMENDATIONS.md) - Design rationale from UX, Frontend, and System Architecture consultants
+- [Expert Recommendations](./EXPERT-RECOMMENDATIONS.md) - Design rationale from UX, Frontend, and
+  System Architecture consultants
 - [Quick Reference](./QUICK-REFERENCE-SCHEMA-CONFIG.md) - One-page summary
 - [PRD Phase 6](../../docs/prds/prd-phase6-administrative-features.md) - Product requirements
 - [CLAUDE.md](../../CLAUDE.md) - Project conventions and patterns
@@ -1586,6 +1663,5 @@ function migrateLegacyDraft(draft: IndicatorDraft): IndicatorDraft {
 
 ---
 
-**Document Status:** Approved for Implementation
-**Next Review:** After Phase 1 completion (Week 2)
+**Document Status:** Approved for Implementation **Next Review:** After Phase 1 completion (Week 2)
 **Maintainers:** SINAG Development Team

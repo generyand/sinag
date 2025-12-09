@@ -162,12 +162,8 @@ function BBICard({ result }: { result: BBIComplianceResult }) {
             <Icon className="w-5 h-5" />
           </div>
           <div className="text-left">
-            <h4 className="font-medium text-[var(--foreground)]">
-              {result.bbi_abbreviation}
-            </h4>
-            <p className="text-xs text-[var(--text-secondary)] line-clamp-1">
-              {result.bbi_name}
-            </p>
+            <h4 className="font-medium text-[var(--foreground)]">{result.bbi_abbreviation}</h4>
+            <p className="text-xs text-[var(--text-secondary)] line-clamp-1">{result.bbi_name}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -180,13 +176,12 @@ function BBICard({ result }: { result: BBIComplianceResult }) {
             </div>
             <p className={`text-xs ${rating.text}`}>{rating.label}</p>
           </div>
-          {result.sub_indicator_results.length > 0 && (
-            isExpanded ? (
+          {result.sub_indicator_results.length > 0 &&
+            (isExpanded ? (
               <ChevronUp className="w-4 h-4 text-[var(--text-secondary)]" />
             ) : (
               <ChevronDown className="w-4 h-4 text-[var(--text-secondary)]" />
-            )
-          )}
+            ))}
         </div>
       </button>
 
@@ -198,10 +193,7 @@ function BBICard({ result }: { result: BBIComplianceResult }) {
           </p>
           <div className="space-y-1.5">
             {result.sub_indicator_results.map((sub, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between text-sm py-1"
-              >
+              <div key={index} className="flex items-center justify-between text-sm py-1">
                 <div className="flex items-center gap-2">
                   {sub.passed ? (
                     <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
@@ -210,9 +202,7 @@ function BBICard({ result }: { result: BBIComplianceResult }) {
                   )}
                   <span className="text-[var(--foreground)]">{sub.name}</span>
                 </div>
-                <span className="text-xs text-[var(--text-secondary)]">
-                  {sub.code}
-                </span>
+                <span className="text-xs text-[var(--text-secondary)]">{sub.code}</span>
               </div>
             ))}
           </div>
@@ -237,33 +227,25 @@ function SummaryCard({ summary }: { summary: BBIComplianceSummary }) {
           <p className="text-xl font-bold text-green-700 dark:text-green-300">
             {summary.highly_functional_count}
           </p>
-          <p className="text-xs text-green-600 dark:text-green-400">
-            Highly
-          </p>
+          <p className="text-xs text-green-600 dark:text-green-400">Highly</p>
         </div>
         <div className="bg-amber-100 dark:bg-amber-950/30 rounded-lg p-2">
           <p className="text-xl font-bold text-amber-700 dark:text-amber-300">
             {summary.moderately_functional_count}
           </p>
-          <p className="text-xs text-amber-600 dark:text-amber-400">
-            Moderate
-          </p>
+          <p className="text-xs text-amber-600 dark:text-amber-400">Moderate</p>
         </div>
         <div className="bg-orange-100 dark:bg-orange-950/30 rounded-lg p-2">
           <p className="text-xl font-bold text-orange-700 dark:text-orange-300">
             {summary.low_functional_count}
           </p>
-          <p className="text-xs text-orange-600 dark:text-orange-400">
-            Low
-          </p>
+          <p className="text-xs text-orange-600 dark:text-orange-400">Low</p>
         </div>
         <div className="bg-red-100 dark:bg-red-950/30 rounded-lg p-2">
           <p className="text-xl font-bold text-red-700 dark:text-red-300">
             {summary.non_functional_count}
           </p>
-          <p className="text-xs text-red-600 dark:text-red-400">
-            Non
-          </p>
+          <p className="text-xs text-red-600 dark:text-red-400">Non</p>
         </div>
       </div>
     </div>

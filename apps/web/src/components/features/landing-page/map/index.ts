@@ -1,2 +1,2 @@
-export { AnimatedSulopMap } from './AnimatedSulopMap';
-export { MapSection } from './MapSection';
+export { AnimatedSulopMap } from "./AnimatedSulopMap";
+export { MapSection } from "./MapSection";

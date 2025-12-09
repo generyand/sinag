@@ -131,24 +131,19 @@ export function DeadlineAuditLog() {
               </p>
               {activeCycle && (
                 <p className="text-sm text-[var(--muted-foreground)] mt-1">
-                  Active Cycle: <span className="font-medium">{activeCycle.name}</span> ({activeCycle.year})
+                  Active Cycle: <span className="font-medium">{activeCycle.name}</span> (
+                  {activeCycle.year})
                 </p>
               )}
             </div>
 
             {/* Action Buttons */}
             <div className="flex gap-2 self-start lg:self-center">
-              <Button
-                onClick={() => router.push("/mlgoo/deadlines")}
-                variant="outline"
-              >
+              <Button onClick={() => router.push("/mlgoo/deadlines")} variant="outline">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Status
               </Button>
-              <Button
-                onClick={handleExport}
-                variant="outline"
-              >
+              <Button onClick={handleExport} variant="outline">
                 <Download className="w-4 h-4 mr-2" />
                 Export CSV
               </Button>
@@ -169,9 +164,7 @@ export function DeadlineAuditLog() {
             <Label htmlFor="barangay-filter">Barangay</Label>
             <Select
               value={barangayFilter?.toString() || "all"}
-              onValueChange={(value) =>
-                setBarangayFilter(value === "all" ? null : parseInt(value))
-              }
+              onValueChange={(value) => setBarangayFilter(value === "all" ? null : parseInt(value))}
             >
               <SelectTrigger id="barangay-filter">
                 <SelectValue placeholder="All Barangays" />
@@ -333,7 +326,8 @@ export function DeadlineAuditLog() {
                     {/* Extension Duration */}
                     <td className="px-6 py-4">
                       <div className="text-sm font-semibold text-[var(--foreground)]">
-                        +{calculateExtensionDays(override.original_deadline, override.new_deadline)} days
+                        +{calculateExtensionDays(override.original_deadline, override.new_deadline)}{" "}
+                        days
                       </div>
                     </td>
 
@@ -356,11 +350,7 @@ export function DeadlineAuditLog() {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               {/* Results Info */}
               <div className="text-sm text-[var(--muted-foreground)]">
-                Showing{" "}
-                <span className="font-medium">
-                  {(currentPage - 1) * pageSize + 1}
-                </span>{" "}
-                to{" "}
+                Showing <span className="font-medium">{(currentPage - 1) * pageSize + 1}</span> to{" "}
                 <span className="font-medium">
                   {Math.min(currentPage * pageSize, overrides.length)}
                 </span>{" "}

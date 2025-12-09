@@ -1,6 +1,7 @@
 # Database Utility Scripts
 
-This directory contains database seeding and management utilities for development and testing environments.
+This directory contains database seeding and management utilities for development and testing
+environments.
 
 ## Prerequisites
 
@@ -15,9 +16,11 @@ This directory contains database seeding and management utilities for developmen
 
 Creates validator user accounts for governance areas 2-6.
 
-**Purpose**: Quickly populate the database with validator accounts for testing the validator workflow introduced in November 2025 (Epic 3.0).
+**Purpose**: Quickly populate the database with validator accounts for testing the validator
+workflow introduced in November 2025 (Epic 3.0).
 
 **Usage:**
+
 ```bash
 # From project root
 python scripts/database/seed-validators.py
@@ -28,6 +31,7 @@ uv run ../../scripts/database/seed-validators.py
 ```
 
 **What it creates:**
+
 - 5 validator accounts (one for each governance area 2-6)
 - Email format: `validator.area[N]@dilg.gov.ph`
 - Default password: `validator123`
@@ -35,6 +39,7 @@ uv run ../../scripts/database/seed-validators.py
 - Each assigned to their respective governance area via `validator_area_id`
 
 **Generated Credentials:**
+
 ```
 validator.area2@dilg.gov.ph / validator123 (Governance Area 2)
 validator.area3@dilg.gov.ph / validator123 (Governance Area 3)
@@ -44,6 +49,7 @@ validator.area6@dilg.gov.ph / validator123 (Governance Area 6)
 ```
 
 **Safety:**
+
 - Checks for existing users before creating (idempotent)
 - Uses transactions (rolls back on error)
 - Only creates if user doesn't already exist
@@ -54,9 +60,11 @@ validator.area6@dilg.gov.ph / validator123 (Governance Area 6)
 
 Populates assessment responses for testing validator workflows.
 
-**Purpose**: Add test assessment response data to existing assessments, useful for testing the validation workflow with data across multiple governance areas.
+**Purpose**: Add test assessment response data to existing assessments, useful for testing the
+validation workflow with data across multiple governance areas.
 
 **Usage:**
+
 ```bash
 # From project root
 python scripts/database/seed-assessment-data.py
@@ -67,6 +75,7 @@ uv run ../../scripts/database/seed-assessment-data.py
 ```
 
 **What it does:**
+
 - Adds assessment responses for governance areas 4, 5, and 6
 - Creates responses for the first 3 indicators in each area
 - Sets validation status to `PASS`
@@ -74,6 +83,7 @@ uv run ../../scripts/database/seed-assessment-data.py
 - Useful for testing multi-area validation scenarios
 
 **Notes:**
+
 - Currently hardcoded to work with specific assessment IDs
 - Modify the script if you need to target different assessments
 - Safe to run multiple times (won't duplicate if responses exist)
@@ -84,9 +94,11 @@ uv run ../../scripts/database/seed-assessment-data.py
 
 Creates a complete test dataset including users, assessments, and responses.
 
-**Purpose**: Set up a comprehensive test environment in one command, ideal for QA testing or demonstrating the full SINAG workflow.
+**Purpose**: Set up a comprehensive test environment in one command, ideal for QA testing or
+demonstrating the full SINAG workflow.
 
 **Usage:**
+
 ```bash
 # From project root
 python scripts/database/seed-complete-test.py
@@ -118,12 +130,14 @@ uv run ../../scripts/database/seed-complete-test.py
    - Creates validator accounts for areas 2-6 (same as `seed-validators.py`)
 
 **Generated Credentials:**
+
 ```
 BLGU User:  test.complete@blgu.local / blgu123
 Validators: validator.area[2-6]@dilg.gov.ph / validator123
 ```
 
 **Use Cases:**
+
 - Fresh environment setup for QA testing
 - Demonstrating the complete BLGU → Validator workflow
 - Integration testing with realistic data
@@ -170,22 +184,27 @@ python scripts/database/seed-assessment-data.py
 ## Safety and Best Practices
 
 ### Development Only
+
 - **These scripts are for development and testing environments only**
 - **Never run against production databases**
 - Always verify the `DATABASE_URL` environment variable before running
 
 ### Transaction Safety
+
 - All scripts use database transactions
 - Automatic rollback on errors
 - Won't leave the database in an inconsistent state
 
 ### Idempotency
+
 - Scripts check for existing data before creating
 - Safe to run multiple times
 - Won't create duplicate users or data
 
 ### Environment Variables
+
 All scripts load from `apps/api/.env`:
+
 ```env
 DATABASE_URL=postgresql://user:password@host:port/database
 ```
@@ -197,19 +216,23 @@ Ensure this points to your development database, not production.
 ## Troubleshooting
 
 ### "DATABASE_URL not found in environment"
+
 - Ensure `apps/api/.env` exists
 - Verify `DATABASE_URL` is set in the file
 - Check file path in error message
 
 ### "Password hashing error"
+
 - Ensure `passlib` and `bcrypt` are installed
 - Run `uv sync` or `pip install passlib[bcrypt]`
 
 ### "Table does not exist" errors
+
 - Run database migrations: `cd apps/api && alembic upgrade head`
 - Ensure you're connected to the correct database
 
 ### "User already exists" (not an error)
+
 - Scripts are idempotent - this is expected behavior
 - Existing users won't be modified or duplicated
 
@@ -218,6 +241,7 @@ Ensure this points to your development database, not production.
 ## Script Maintenance
 
 ### Adding new governance areas
+
 If governance areas 7-10 are added in the future, update `seed-validators.py`:
 
 ```python
@@ -229,6 +253,7 @@ validators_to_create = [
 ```
 
 ### Customizing passwords
+
 Modify the hardcoded password in each script:
 
 ```python
@@ -236,7 +261,9 @@ hashed_pw = hash_password("your-custom-password")
 ```
 
 ### Extending seed-complete-test.py
+
 The script can be extended to include:
+
 - Multiple BLGU users
 - Different assessment statuses (DRAFT, SUBMITTED, etc.)
 - Assessor users for testing the full workflow
@@ -256,6 +283,7 @@ The script can be extended to include:
 ## Contributing
 
 When adding new database scripts:
+
 1. Follow the naming convention: `seed-*.py` for seeding scripts
 2. Use transactions for data safety
 3. Make scripts idempotent (safe to run multiple times)

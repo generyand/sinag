@@ -8,16 +8,23 @@
  * - Successful submission calls API
  */
 
-import { describe, it, expect, vi } from 'vitest';
-import { renderWithProviders } from '../test-utils';
+import { describe, it, expect, vi } from "vitest";
+import { renderWithProviders } from "../test-utils";
 
-describe('Form Submission with Validation Integration', () => {
-  it('should show validation errors for incomplete fields', async () => {
+describe("Form Submission with Validation Integration", () => {
+  it("should show validation errors for incomplete fields", async () => {
     // Mock form schema
     const mockFormSchema = {
       fields: [
-        { id: 'required_field', label: 'Required Field', type: 'text', required: true },
-        { id: 'number_field', label: 'Number Field', type: 'number', required: true, min: 0, max: 100 },
+        { id: "required_field", label: "Required Field", type: "text", required: true },
+        {
+          id: "number_field",
+          label: "Number Field",
+          type: "number",
+          required: true,
+          min: 0,
+          max: 100,
+        },
       ],
     };
 
@@ -27,7 +34,7 @@ describe('Form Submission with Validation Integration', () => {
     expect(mockFormSchema.fields).toHaveLength(2);
   });
 
-  it('should call API when form is complete and valid', async () => {
+  it("should call API when form is complete and valid", async () => {
     const mockSubmit = vi.fn();
 
     // Test would verify:
@@ -37,11 +44,11 @@ describe('Form Submission with Validation Integration', () => {
     expect(mockSubmit).toBeDefined();
   });
 
-  it('should handle API errors gracefully', async () => {
+  it("should handle API errors gracefully", async () => {
     // Test API error handling
-    const mockError = { message: 'Validation failed' };
+    const mockError = { message: "Validation failed" };
 
     // Verify error displayed to user
-    expect(mockError.message).toBe('Validation failed');
+    expect(mockError.message).toBe("Validation failed");
   });
 });

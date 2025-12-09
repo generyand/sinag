@@ -15,10 +15,7 @@ export function MobileNavButton({ progress, onClick }: MobileNavButtonProps) {
       aria-label="Open assessment navigation"
     >
       {/* Progress Ring */}
-      <svg
-        className="absolute inset-0 transform -rotate-90"
-        viewBox="0 0 56 56"
-      >
+      <svg className="absolute inset-0 transform -rotate-90" viewBox="0 0 56 56">
         {/* Background ring */}
         <circle
           cx="28"
@@ -49,9 +46,7 @@ export function MobileNavButton({ progress, onClick }: MobileNavButtonProps) {
 
       {/* Progress Badge */}
       <div className="absolute -top-1 -right-1 h-6 w-6 rounded-full bg-white shadow-md flex items-center justify-center">
-        <span className="text-xs font-bold text-[var(--cityscape-yellow)]">
-          {progress}%
-        </span>
+        <span className="text-xs font-bold text-[var(--cityscape-yellow)]">{progress}%</span>
       </div>
     </button>
   );

@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { createDefaultRule, type CalculationRule } from '@/store/useCalculationRuleStore';
-import type { FormSchema } from '@sinag/shared';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import { createDefaultRule, type CalculationRule } from "@/store/useCalculationRuleStore";
+import type { FormSchema } from "@sinag/shared";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -12,17 +12,17 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { Plus } from 'lucide-react';
-import { RuleConfigForm } from './RuleConfigForm';
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Plus } from "lucide-react";
+import { RuleConfigForm } from "./RuleConfigForm";
 
 interface RuleSelectorProps {
   onAddRule: (rule: CalculationRule) => void;
@@ -42,7 +42,7 @@ interface RuleSelectorProps {
  */
 export function RuleSelector({ onAddRule, formSchema }: RuleSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedRuleType, setSelectedRuleType] = useState<string>('');
+  const [selectedRuleType, setSelectedRuleType] = useState<string>("");
   const [currentRule, setCurrentRule] = useState<CalculationRule | null>(null);
 
   // Handle rule type selection
@@ -63,7 +63,7 @@ export function RuleSelector({ onAddRule, formSchema }: RuleSelectorProps) {
       onAddRule(currentRule);
       // Reset state
       setIsOpen(false);
-      setSelectedRuleType('');
+      setSelectedRuleType("");
       setCurrentRule(null);
     }
   };
@@ -71,7 +71,7 @@ export function RuleSelector({ onAddRule, formSchema }: RuleSelectorProps) {
   // Handle cancel
   const handleCancel = () => {
     setIsOpen(false);
-    setSelectedRuleType('');
+    setSelectedRuleType("");
     setCurrentRule(null);
   };
 
@@ -87,9 +87,7 @@ export function RuleSelector({ onAddRule, formSchema }: RuleSelectorProps) {
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add Calculation Rule</DialogTitle>
-          <DialogDescription>
-            Select a rule type and configure its properties
-          </DialogDescription>
+          <DialogDescription>Select a rule type and configure its properties</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">

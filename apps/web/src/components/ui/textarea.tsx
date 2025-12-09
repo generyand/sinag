@@ -1,6 +1,6 @@
-import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "@/lib/utils";
 
 const textareaVariants = cva(
   "border-input placeholder:text-muted selection:bg-primary selection:text-primary-foreground bg-input border flex field-sizing-content min-h-16 w-full px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
@@ -22,9 +22,9 @@ const textareaVariants = cva(
       size: "md",
     },
   }
-)
+);
 
-type TextareaProps = React.ComponentProps<"textarea"> & VariantProps<typeof textareaVariants>
+type TextareaProps = React.ComponentProps<"textarea"> & VariantProps<typeof textareaVariants>;
 
 function Textarea({ className, shape, size, ...props }: TextareaProps) {
   return (
@@ -38,7 +38,7 @@ function Textarea({ className, shape, size, ...props }: TextareaProps) {
       )}
       {...props}
     />
-  )
+  );
 }
 
-export { Textarea, textareaVariants }
+export { Textarea, textareaVariants };

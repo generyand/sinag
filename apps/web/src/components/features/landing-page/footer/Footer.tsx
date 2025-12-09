@@ -44,9 +44,7 @@ export function Footer() {
     <footer
       ref={footerAnimation.elementRef}
       className={`relative z-20 w-full bg-gradient-to-br from-gray-900 via-black to-gray-800 text-white py-16 px-8 transition-all duration-1000 overflow-hidden ${
-        footerAnimation.isVisible
-          ? "opacity-100 translate-y-0"
-          : "opacity-0 translate-y-8"
+        footerAnimation.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
       }`}
     >
       {/* Background Pattern */}
@@ -85,12 +83,10 @@ export function Footer() {
                   />
                 </div>
               </div>
-              <h3 className="text-xl font-bold text-white mb-3">
-                SINAG Platform
-              </h3>
+              <h3 className="text-xl font-bold text-white mb-3">SINAG Platform</h3>
               <p className="text-gray-400 text-sm leading-relaxed">
-                The official digital platform for Sulop&apos;s Seal of Good
-                Local Governance for Barangays program.
+                The official digital platform for Sulop&apos;s Seal of Good Local Governance for
+                Barangays program.
               </p>
             </div>
 
@@ -109,9 +105,7 @@ export function Footer() {
 
           {/* Column 3: Contact Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-bold text-white mb-6">
-              Contact & Support
-            </h3>
+            <h3 className="text-lg font-bold text-white mb-6">Contact & Support</h3>
             <div className="space-y-4">
               <div className="bg-white/5 rounded-sm p-4 backdrop-blur-sm border border-white/10">
                 <div className="flex items-center gap-3 mb-2">
@@ -131,9 +125,7 @@ export function Footer() {
                     </svg>
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-white">
-                      System Administrator
-                    </div>
+                    <div className="text-sm font-semibold text-white">System Administrator</div>
                     <div className="text-xs text-gray-400">MLGOO-DILG</div>
                   </div>
                 </div>
@@ -166,15 +158,11 @@ export function Footer() {
 
           {/* Column 4: Social Media & Updates */}
           <div className="space-y-4">
-            <h3 className="text-lg font-bold text-white mb-6">
-              Stay Connected
-            </h3>
+            <h3 className="text-lg font-bold text-white mb-6">Stay Connected</h3>
 
             {/* Social Media */}
             <div>
-              <p className="text-gray-400 text-sm mb-4">
-                Follow us for updates and announcements
-              </p>
+              <p className="text-gray-400 text-sm mb-4">Follow us for updates and announcements</p>
               <div className="flex gap-3">
                 <a
                   href="#"
@@ -239,13 +227,10 @@ export function Footer() {
                 </svg>
               </div>
               <div>
-                <div className="font-medium text-white">
-                  © 2025 Municipality of Sulop
-                </div>
+                <div className="font-medium text-white">© 2025 Municipality of Sulop</div>
                 <div className="text-xs">
                   All Rights Reserved • Developed by{" "}
-                  <span className="text-[#fbbf24] font-semibold">SINAG</span>{" "}
-                  Team
+                  <span className="text-[#fbbf24] font-semibold">SINAG</span> Team
                 </div>
               </div>
             </div>

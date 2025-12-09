@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { Button } from '@/components/ui/button';
-import { Loader2, Sparkles } from 'lucide-react';
-import { useState } from 'react';
+import { Button } from "@/components/ui/button";
+import { Loader2, Sparkles } from "lucide-react";
+import { useState } from "react";
 
 interface InsightsGeneratorProps {
   assessmentId: number;
@@ -30,7 +30,7 @@ export function InsightsGenerator({
       setError(null);
       await onGenerate();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate insights');
+      setError(err instanceof Error ? err.message : "Failed to generate insights");
     }
   };
 
@@ -57,9 +57,7 @@ export function InsightsGenerator({
         )}
       </Button>
 
-      {error && (
-        <p className="mt-2 text-sm text-destructive">{error}</p>
-      )}
+      {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
 
       {!isAssessmentValidated && (
         <p className="mt-2 text-sm text-muted-foreground">
@@ -69,4 +67,3 @@ export function InsightsGenerator({
     </div>
   );
 }
-

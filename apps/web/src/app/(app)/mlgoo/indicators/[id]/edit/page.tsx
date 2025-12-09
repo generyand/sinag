@@ -86,7 +86,7 @@ export default function EditIndicatorPage() {
 
       setIsLoaded(true);
     }
-  }, [indicator, isLoaded, reset, loadFields]);
+  }, [indicator, isLoaded, reset, loadFields, setIsLoaded]);
 
   // Warn before unload if there are unsaved changes
   useEffect(() => {

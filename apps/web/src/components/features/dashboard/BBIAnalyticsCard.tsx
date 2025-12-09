@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * BBIAnalyticsCard Component
@@ -26,7 +26,7 @@ import {
   Briefcase,
   Leaf,
   Scale,
-} from 'lucide-react';
+} from "lucide-react";
 
 // BBI analytics types
 export interface BBIAnalyticsItem {
@@ -63,22 +63,22 @@ const BBIIcons: Record<string, React.ElementType> = {
   BDRRMC: Shield,
   BPOC: Scale,
   BESWMC: Leaf,
-  'VAW Desk': Heart,
+  "VAW Desk": Heart,
   BCPC: Users,
   BADAC: Briefcase,
 };
 
 // Get rating color based on average compliance
 function getComplianceColor(percentage: number): string {
-  if (percentage >= 75) return 'text-green-600 dark:text-green-400';
-  if (percentage >= 50) return 'text-amber-600 dark:text-amber-400';
-  return 'text-red-600 dark:text-red-400';
+  if (percentage >= 75) return "text-green-600 dark:text-green-400";
+  if (percentage >= 50) return "text-amber-600 dark:text-amber-400";
+  return "text-red-600 dark:text-red-400";
 }
 
 function getComplianceBg(percentage: number): string {
-  if (percentage >= 75) return 'bg-green-100 dark:bg-green-950/30';
-  if (percentage >= 50) return 'bg-amber-100 dark:bg-amber-950/30';
-  return 'bg-red-100 dark:bg-red-950/30';
+  if (percentage >= 75) return "bg-green-100 dark:bg-green-950/30";
+  if (percentage >= 50) return "bg-amber-100 dark:bg-amber-950/30";
+  return "bg-red-100 dark:bg-red-950/30";
 }
 
 // Mini bar chart for distribution
@@ -136,9 +136,7 @@ export function BBIAnalyticsCard({ data }: BBIAnalyticsCardProps) {
         </div>
         <div className="p-5 text-center">
           <Building2 className="w-10 h-10 text-gray-400 mx-auto mb-2" />
-          <p className="text-[var(--text-secondary)]">
-            BBI analytics data not yet available.
-          </p>
+          <p className="text-[var(--text-secondary)]">BBI analytics data not yet available.</p>
           <p className="text-xs text-[var(--muted-foreground)] mt-1">
             Data will appear after assessments are completed.
           </p>
@@ -170,10 +168,14 @@ export function BBIAnalyticsCard({ data }: BBIAnalyticsCardProps) {
           {/* Average Compliance */}
           <div className={`rounded-sm p-3 ${getComplianceBg(summary.overall_average_compliance)}`}>
             <div className="flex items-center gap-2 mb-1">
-              <TrendingUp className={`w-4 h-4 ${getComplianceColor(summary.overall_average_compliance)}`} />
+              <TrendingUp
+                className={`w-4 h-4 ${getComplianceColor(summary.overall_average_compliance)}`}
+              />
               <span className="text-xs text-[var(--muted-foreground)]">Avg</span>
             </div>
-            <p className={`text-xl font-bold ${getComplianceColor(summary.overall_average_compliance)}`}>
+            <p
+              className={`text-xl font-bold ${getComplianceColor(summary.overall_average_compliance)}`}
+            >
               {Math.round(summary.overall_average_compliance)}%
             </p>
           </div>
@@ -215,9 +217,7 @@ export function BBIAnalyticsCard({ data }: BBIAnalyticsCardProps) {
 
       {/* Per-BBI Breakdown */}
       <div className="p-5">
-        <h4 className="text-sm font-medium text-[var(--foreground)] mb-3">
-          Per-BBI Breakdown
-        </h4>
+        <h4 className="text-sm font-medium text-[var(--foreground)] mb-3">Per-BBI Breakdown</h4>
         <div className="space-y-3">
           {bbi_breakdown.map((bbi) => {
             const Icon = BBIIcons[bbi.bbi_abbreviation] || Building2;
@@ -232,7 +232,9 @@ export function BBIAnalyticsCard({ data }: BBIAnalyticsCardProps) {
                     <span className="text-sm font-medium text-[var(--foreground)] truncate">
                       {bbi.bbi_abbreviation}
                     </span>
-                    <span className={`text-sm font-semibold ${getComplianceColor(bbi.average_compliance)}`}>
+                    <span
+                      className={`text-sm font-semibold ${getComplianceColor(bbi.average_compliance)}`}
+                    >
                       {Math.round(bbi.average_compliance)}%
                     </span>
                   </div>

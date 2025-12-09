@@ -1,1 +1,1 @@
-export { BarangaysSection } from './BarangaysSection'; 
+export { BarangaysSection } from "./BarangaysSection";

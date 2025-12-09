@@ -1,4 +1,4 @@
-import { SeverityLevel } from './AssessorAnalyticsTypes';
+import { SeverityLevel } from "./AssessorAnalyticsTypes";
 
 export const getSeverityLevel = (failedCount: number): SeverityLevel => {
   if (failedCount >= 15) return { level: "CRITICAL", color: "red" };
@@ -9,4 +9,4 @@ export const getSeverityLevel = (failedCount: number): SeverityLevel => {
 
 export const calculateImpactPercentage = (failedCount: number, totalBarangays: number): number => {
   return Math.round((failedCount / totalBarangays) * 100);
-}; 
+};

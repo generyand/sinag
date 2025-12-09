@@ -14,13 +14,13 @@ export interface StatusConfig {
  */
 export const STATUS_DISPLAY_MAP: Record<string, StatusConfig> = {
   // Final states (Green)
-  "Completed": {
+  Completed: {
     label: "Completed",
     bgColor: "var(--analytics-success-bg)",
     textColor: "var(--analytics-success-text)",
     icon: CheckCircle,
   },
-  "Validated": {
+  Validated: {
     label: "Validated",
     bgColor: "var(--analytics-success-bg)",
     textColor: "var(--analytics-success-text)",
@@ -66,7 +66,7 @@ export const STATUS_DISPLAY_MAP: Record<string, StatusConfig> = {
     icon: AlertTriangle,
   },
   // Inactive (Gray)
-  "Draft": {
+  Draft: {
     label: "Draft",
     bgColor: "var(--analytics-neutral-bg)",
     textColor: "var(--analytics-neutral-text)",

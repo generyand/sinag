@@ -72,8 +72,7 @@ export function useIndicatorNavigation(
       : null;
 
   // Current indicator data
-  const current =
-    currentIndex >= 0 ? flatIndicators[currentIndex] : null;
+  const current = currentIndex >= 0 ? flatIndicators[currentIndex] : null;
 
   // Navigation functions
   const navigatePrevious = useCallback(() => {

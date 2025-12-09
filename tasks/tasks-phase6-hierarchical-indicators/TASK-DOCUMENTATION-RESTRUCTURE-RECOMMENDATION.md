@@ -1,8 +1,6 @@
 # Phase 6 Task Documentation Update - Comprehensive Recommendation
 
-**Version:** 1.0
-**Date:** 2025-11-13
-**Author:** SINAG Technical Documentation Specialist
+**Version:** 1.0 **Date:** 2025-11-13 **Author:** SINAG Technical Documentation Specialist
 **Purpose:** Restructure task documentation to align with new implementation approach
 
 ---
@@ -11,7 +9,9 @@
 
 **Recommendation: HYBRID APPROACH (Option D) with Strategic Archiving**
 
-The current task documentation was built for a **schema-first** approach (visual JSON editors). The new implementation requires a **MOV-checklist-first** approach based on Indicator Builder Specification v1.4. Rather than wholesale deletion or versioning, I recommend:
+The current task documentation was built for a **schema-first** approach (visual JSON editors). The
+new implementation requires a **MOV-checklist-first** approach based on Indicator Builder
+Specification v1.4. Rather than wholesale deletion or versioning, I recommend:
 
 1. **Archive outdated schema-focused content** to `archive/v1-schema-builder/`
 2. **Update core files** (README, Split-Pane Plan) with version history sections
@@ -19,6 +19,7 @@ The current task documentation was built for a **schema-first** approach (visual
 4. **Preserve valuable architectural decisions** and testing infrastructure
 
 **Rationale:**
+
 - **Minimizes context loss**: Architectural decisions and expert recommendations remain accessible
 - **Clear progress tracking**: Separates "what's done" from "what needs rework"
 - **Enables incremental transition**: Development can continue while updating docs
@@ -30,16 +31,16 @@ The current task documentation was built for a **schema-first** approach (visual
 
 ### What Exists (Valid & Valuable)
 
-| File | Size | Status | Value Assessment |
-|------|------|--------|------------------|
-| **IMPLEMENTATION-PLAN-SPLIT-PANE.md** | 70KB | ✅ **KEEP & UPDATE** | Split-pane UI architecture is still valid; needs MOV checklist integration |
-| **README.md** | 27KB | ⚠️ **UPDATE EXTENSIVELY** | Core task breakdown; needs realignment to Spec v1.4 MOV patterns |
-| **AI-FEATURES-ROADMAP.md** | 32KB | ✅ **KEEP AS-IS** | Post-MVP AI features; no changes needed (deferred to Phase 3) |
-| **EXPERT-RECOMMENDATIONS.md** | 37KB | ✅ **KEEP AS-IS** | UX/Frontend/Backend insights remain valid for split-pane layout |
-| **TESTING-GUIDE-PHASE1.md** | 12KB | ⚠️ **UPDATE** | Testing strategy valid; needs new MOV checklist test cases |
-| **sample-indicator-data.json** | 20KB | ❌ **ARCHIVE** | Based on old schema structure; Spec v1.4 has 29 validated indicators |
-| **SCHEMA-CONFIGURATION-ARCHITECTURE.md** | 53KB | ⚠️ **ARCHIVE & REPLACE** | 90% focused on form/calc schema builders; needs MOV-first rewrite |
-| **QUICK-REFERENCE-SCHEMA-CONFIG.md** | 16KB | ❌ **ARCHIVE** | Quick ref for outdated schema builder approach |
+| File                                     | Size | Status                    | Value Assessment                                                           |
+| ---------------------------------------- | ---- | ------------------------- | -------------------------------------------------------------------------- |
+| **IMPLEMENTATION-PLAN-SPLIT-PANE.md**    | 70KB | ✅ **KEEP & UPDATE**      | Split-pane UI architecture is still valid; needs MOV checklist integration |
+| **README.md**                            | 27KB | ⚠️ **UPDATE EXTENSIVELY** | Core task breakdown; needs realignment to Spec v1.4 MOV patterns           |
+| **AI-FEATURES-ROADMAP.md**               | 32KB | ✅ **KEEP AS-IS**         | Post-MVP AI features; no changes needed (deferred to Phase 3)              |
+| **EXPERT-RECOMMENDATIONS.md**            | 37KB | ✅ **KEEP AS-IS**         | UX/Frontend/Backend insights remain valid for split-pane layout            |
+| **TESTING-GUIDE-PHASE1.md**              | 12KB | ⚠️ **UPDATE**             | Testing strategy valid; needs new MOV checklist test cases                 |
+| **sample-indicator-data.json**           | 20KB | ❌ **ARCHIVE**            | Based on old schema structure; Spec v1.4 has 29 validated indicators       |
+| **SCHEMA-CONFIGURATION-ARCHITECTURE.md** | 53KB | ⚠️ **ARCHIVE & REPLACE**  | 90% focused on form/calc schema builders; needs MOV-first rewrite          |
+| **QUICK-REFERENCE-SCHEMA-CONFIG.md**     | 16KB | ❌ **ARCHIVE**            | Quick ref for outdated schema builder approach                             |
 
 ### What's Missing (Gaps)
 
@@ -53,9 +54,12 @@ The current task documentation was built for a **schema-first** approach (visual
 
 ### What's Outdated (Needs Revision)
 
-1. **README.md Task 2.7 (Form Schema Builder)**: Describes building generic form fields, not MOV checklist items
-2. **README.md Task 2.8 (Calculation Schema Builder)**: Focuses on generic rules, not threshold validation for MOVs
-3. **SCHEMA-CONFIGURATION-ARCHITECTURE.md**: Entire document assumes JSON schema editing, not MOV-first workflow
+1. **README.md Task 2.7 (Form Schema Builder)**: Describes building generic form fields, not MOV
+   checklist items
+2. **README.md Task 2.8 (Calculation Schema Builder)**: Focuses on generic rules, not threshold
+   validation for MOVs
+3. **SCHEMA-CONFIGURATION-ARCHITECTURE.md**: Entire document assumes JSON schema editing, not
+   MOV-first workflow
 4. **QUICK-REFERENCE-SCHEMA-CONFIG.md**: Quick ref for wrong approach
 
 ---
@@ -89,16 +93,19 @@ Current Task Directory Structure
 ### Rationale for Hybrid Approach
 
 **Why Archive (not delete)?**
+
 - **Preserve architectural decisions**: Expert recommendations for split-pane are still valid
 - **Audit trail**: Shows evolution of understanding (from schema-first → MOV-first)
 - **Learning resource**: Future team members can understand why approach changed
 
 **Why Update (not replace)?**
+
 - **Continuity**: README and Split-Pane Plan have valuable structure that can be adapted
 - **Progress tracking**: Testing results and completed tasks shouldn't be lost
 - **Version history**: Shows what was done vs. what needs rework
 
 **Why Create New Files?**
+
 - **Clear separation**: MOV checklist work is fundamentally different from generic schema building
 - **Spec alignment**: Each new file maps directly to Spec v1.4 sections
 - **Parallel work**: Team can reference both old and new approaches during transition
@@ -110,19 +117,23 @@ Current Task Directory Structure
 ### Existing Files: Actions & Reasoning
 
 #### 1. README.md (27KB)
+
 **ACTION: UPDATE with Version History**
 
 **Changes Required:**
+
 1. **Add version history header**:
+
    ```markdown
    ## Document Version History
 
-   | Version | Date | Summary |
-   |---------|------|---------|
-   | v1.0 | Nov 9, 2025 | Initial schema-builder approach |
-   | v2.0 | Nov 13, 2025 | **Pivot to MOV-checklist-first** aligned with Spec v1.4 |
+   | Version | Date         | Summary                                                 |
+   | ------- | ------------ | ------------------------------------------------------- |
+   | v1.0    | Nov 9, 2025  | Initial schema-builder approach                         |
+   | v2.0    | Nov 13, 2025 | **Pivot to MOV-checklist-first** aligned with Spec v1.4 |
 
    ### v2.0 Changes
+
    - Replaced generic form schema builder with 9 MOV checklist item types
    - Added BBI system implementation tasks (9 mandatory BBIs)
    - Integrated FormSchemaBuilder.tsx drag-drop reuse
@@ -130,18 +141,21 @@ Current Task Directory Structure
    ```
 
 2. **Update Task 2.7 (Form Schema Builder)**:
+
    ```markdown
    #### Task 2.7: MOV Checklist Builder (Reuse FormSchemaBuilder.tsx)
 
    **IMPLEMENTATION NOTE**: This task has been **REVISED** to align with Indicator Builder
-   Specification v1.4. Instead of building generic form schemas, we now build **MOV
-   checklists** with 9 specialized item types.
+   Specification v1.4. Instead of building generic form schemas, we now build **MOV checklists**
+   with 9 specialized item types.
 
    **Files:**
+
    - `apps/web/src/components/features/indicators/builder/MOVChecklistBuilder.tsx` (NEW)
    - `apps/web/src/components/features/indicators/builder/FormSchemaBuilder.tsx` (REUSE PATTERNS)
 
    **Checklist:**
+
    - [x] Review FormSchemaBuilder.tsx drag-drop implementation
    - [ ] Create MOVChecklistBuilder component reusing drag-drop logic
    - [ ] Implement 9 MOV item types (see MOV-CHECKLIST-IMPLEMENTATION.md):
@@ -162,13 +176,15 @@ Current Task Directory Structure
    ```
 
 3. **Update Task 2.8 (Calculation Schema Builder)**:
+
    ```markdown
    #### Task 2.8: Threshold & Formula Validator (Simplified)
 
-   **IMPLEMENTATION NOTE**: Calculation schemas are now primarily used for **threshold
-   validation** (e.g., "≥50% budget utilization") rather than complex rule engines.
+   **IMPLEMENTATION NOTE**: Calculation schemas are now primarily used for **threshold validation**
+   (e.g., "≥50% budget utilization") rather than complex rule engines.
 
    **Checklist:**
+
    - [ ] Add threshold input UI (percentage, currency, numeric)
    - [ ] Add formula calculator for utilization rates: `(amount_utilized / amount_allocated) × 100`
    - [ ] Add validation status mapping:
@@ -181,10 +197,12 @@ Current Task Directory Structure
    ```
 
 4. **Add "Completed Work" section**:
+
    ```markdown
    ## Progress Summary
 
    ### ✅ Completed (v1.0 - Nov 9, 2025)
+
    - [x] Backend: Database schema (indicator_drafts table)
    - [x] Backend: Bulk creation service with topological sorting
    - [x] Backend: Draft auto-save service with optimistic locking
@@ -195,30 +213,36 @@ Current Task Directory Structure
    - [x] Frontend: 176/178 tests passing (99% pass rate)
 
    ### 🔄 In Progress (v2.0 - Nov 13, 2025)
+
    - [ ] MOV Checklist Builder (replacing generic form schema builder)
    - [ ] BBI System Integration (9 mandatory BBIs)
    - [ ] FormSchemaBuilder.tsx integration
 
    ### ⏳ Not Started (v2.0)
+
    - [ ] Grace period validation logic
    - [ ] Alternative evidence UI (OR logic)
    - [ ] Conditional display rules
    ```
 
-**REASONING**: README is the central task list. Updating with version history preserves completed work while clearly marking what needs rework.
+**REASONING**: README is the central task list. Updating with version history preserves completed
+work while clearly marking what needs rework.
 
 ---
 
 #### 2. IMPLEMENTATION-PLAN-SPLIT-PANE.md (70KB)
+
 **ACTION: UPDATE with MOV Integration Section**
 
 **Changes Required:**
+
 1. **Add new section after Phase 1**:
+
    ```markdown
    ### Phase 1.5: MOV Checklist Integration (Week 2.5)
 
-   **NEW REQUIREMENT** (Added Nov 13, 2025): Integrate MOV checklist builder into
-   split-pane schema configuration step.
+   **NEW REQUIREMENT** (Added Nov 13, 2025): Integrate MOV checklist builder into split-pane schema
+   configuration step.
 
    #### Task 1.5.1: Adapt Tree Navigator for MOV Status
 
@@ -242,21 +266,24 @@ Current Task Directory Structure
 
 2. **Update timeline**:
    ```markdown
-   | Phase | Duration | Deliverables | Status |
-   |-------|----------|--------------|--------|
-   | Phase 1 | Week 1-2 | Core split-pane UI, tree navigator | 🟢 Complete |
-   | **Phase 1.5** | **Week 2.5** | **MOV checklist integration** | 🟡 **NEW** |
-   | Phase 2 | Week 3 | Delta-based auto-save, copy/paste schemas | 🟡 Planned |
+   | Phase         | Duration     | Deliverables                              | Status      |
+   | ------------- | ------------ | ----------------------------------------- | ----------- |
+   | Phase 1       | Week 1-2     | Core split-pane UI, tree navigator        | 🟢 Complete |
+   | **Phase 1.5** | **Week 2.5** | **MOV checklist integration**             | 🟡 **NEW**  |
+   | Phase 2       | Week 3       | Delta-based auto-save, copy/paste schemas | 🟡 Planned  |
    ```
 
-**REASONING**: Split-pane architecture is sound; needs integration with MOV-first approach, not complete rewrite.
+**REASONING**: Split-pane architecture is sound; needs integration with MOV-first approach, not
+complete rewrite.
 
 ---
 
 #### 3. SCHEMA-CONFIGURATION-ARCHITECTURE.md (53KB)
+
 **ACTION: ARCHIVE to `archive/v1-schema-builder/` & CREATE NEW**
 
 **Archival Notes:**
+
 - 90% of content assumes generic JSON schema editing (form_schema, calculation_schema)
 - Only 10% (split-pane layout diagrams) remains relevant
 - Better to archive entire file and extract layout diagrams into new MOV-focused architecture doc
@@ -268,9 +295,11 @@ Current Task Directory Structure
 ---
 
 #### 4. QUICK-REFERENCE-SCHEMA-CONFIG.md (16KB)
+
 **ACTION: ARCHIVE to `archive/v1-schema-builder/`**
 
 **Archival Notes:**
+
 - Entire quick reference is for outdated schema builder UI
 - No content salvageable for MOV-first approach
 - Will be replaced with new quick reference for MOV checklist items
@@ -280,9 +309,11 @@ Current Task Directory Structure
 ---
 
 #### 5. sample-indicator-data.json (20KB)
+
 **ACTION: ARCHIVE to `archive/v1-schema-builder/`**
 
 **Archival Notes:**
+
 - JSON structure predates Spec v1.4 (no MOV checklist format)
 - Spec v1.4 now has 29 validated real indicators with correct MOV structure
 - No value in updating old sample data; use Spec v1.4 examples instead
@@ -292,9 +323,11 @@ Current Task Directory Structure
 ---
 
 #### 6. AI-FEATURES-ROADMAP.md (32KB)
+
 **ACTION: KEEP AS-IS (No Changes)**
 
 **Rationale:**
+
 - AI features deferred to post-MVP Phase 3
 - Document accurately describes future enhancements
 - No dependency on schema-first vs. MOV-first approach
@@ -305,9 +338,11 @@ Current Task Directory Structure
 ---
 
 #### 7. EXPERT-RECOMMENDATIONS.md (37KB)
+
 **ACTION: KEEP AS-IS (No Changes)**
 
 **Rationale:**
+
 - Expert recommendations focus on **split-pane UX**, not schema structure
 - UX insights (30/70 split, status icons, click-to-switch) remain valid
 - Dr. Vasquez's accessibility recommendations apply to MOV builder too
@@ -318,45 +353,54 @@ Current Task Directory Structure
 ---
 
 #### 8. TESTING-GUIDE-PHASE1.md (12KB)
+
 **ACTION: UPDATE with MOV Test Cases**
 
 **Changes Required:**
+
 1. **Add MOV validation test section**:
+
    ```markdown
    ### Test Suite: MOV Checklist Validation
 
    #### Test Category: MOV Item Types
 
    **Test 1: Checkbox Item Validation**
+
    - Create MOV checklist with single checkbox
    - Verify checkbox renders correctly
    - Test validation: unchecked → incomplete, checked → complete
 
    **Test 2: Group with OR Logic**
+
    - Create group with OR logic (Path A OR Path B)
    - Verify only ONE path needs completion
    - Test: Path A complete, Path B empty → Status: PASSED
 
    **Test 3: Currency Input with Threshold**
+
    - Create currency input (Budget Allocation)
    - Set threshold: ≥ ₱50,000
    - Test: ₱60,000 → PASSED, ₱40,000 → FAILED
 
    **Test 4: Date Input with Grace Period**
+
    - Create date input with deadline: Dec 31, 2022
    - Set grace period: until Mar 31, 2023
    - Test cases:
-      - Dec 15, 2022 → PASSED
+     - Dec 15, 2022 → PASSED
    - Jan 15, 2023 → CONSIDERED
    - Apr 15, 2023 → FAILED
 
    **Test 5: Assessment Field (YES/NO)**
+
    - Create assessment question: "BDRRMC functional?"
    - Verify YES/NO radio buttons render
    - Test conditional display: Items show only when YES selected
    ```
 
 2. **Update integration test scenarios**:
+
    ```markdown
    ### Integration Test: Complete Indicator with MOV Checklist
 
@@ -387,70 +431,82 @@ Current Task Directory Structure
 ### New Files Required
 
 #### 1. MOV-CHECKLIST-IMPLEMENTATION.md
+
 **Purpose**: Comprehensive task breakdown for 9 MOV item types
 
 **Outline**:
+
 ```markdown
 # MOV Checklist Implementation Guide
 
 ## Overview
-Implementation tasks for 9 MOV checklist item types defined in Indicator Builder
-Specification v1.4.
+
+Implementation tasks for 9 MOV checklist item types defined in Indicator Builder Specification v1.4.
 
 ## Component Architecture
 
 ### Core Component: MOVChecklistBuilder.tsx
+
 - Reuses drag-drop patterns from FormSchemaBuilder.tsx
 - Supports 9 item types with specialized configuration panels
 
 ## Task Breakdown by Item Type
 
 ### 1. Checkbox Item Type
+
 - [ ] Create CheckboxItemConfig component
 - [ ] Add binary validation (checked/unchecked)
 - [ ] Support label, helpText, required toggle
 
 ### 2. Group Item Type (with OR Logic)
+
 - [ ] Create GroupItemConfig component
 - [ ] Add nested item support (drag-drop into group)
 - [ ] Implement OR logic toggle (one_of vs all)
 - [ ] Add visual grouping (indentation, borders)
 
 ### 3. Currency Input Item Type
+
 - [ ] Create CurrencyInputConfig component
 - [ ] Add currency formatter (₱ symbol, comma separators)
 - [ ] Add threshold validation UI (≥, ≤, ==)
 - [ ] Add comparison logic (field A > field B)
 
 ### 4. Number Input Item Type
+
 - [ ] Create NumberInputConfig component
 - [ ] Add min/max validation
 - [ ] Add threshold validation (percentage support)
 - [ ] Add auto-calculation support (formulas)
 
 ### 5. Text Input Item Type
+
 - [ ] Create TextInputConfig component
 - [ ] Add maxLength validation
 - [ ] Add free-text evidence recording
 
 ### 6. Date Input Item Type (with Grace Period)
+
 - [ ] Create DateInputConfig component
 - [ ] Add deadline validation UI
 - [ ] Add grace period configuration (consideration deadline)
 - [ ] Implement 3-state validation: PASSED, CONSIDERED, FAILED
 
 ### 7. Assessment Item Type (YES/NO Validator Judgment)
+
 - [ ] Create AssessmentItemConfig component
 - [ ] Add YES/NO radio button rendering
 - [ ] Add conditional display trigger configuration
 - [ ] Link to conditional items (show if YES/NO)
 
 ### 8. Radio Group Item Type
+
 - [ ] Create RadioGroupItemConfig component
 - [ ] Add options editor (add/remove/reorder)
 - [ ] Add single-selection validation
 
 ### 9. Dropdown Item Type
+
 - [ ] Create DropdownItemConfig component
 - [ ] Add options editor (add/remove/reorder)
 - [ ] Add placeholder text
@@ -458,16 +514,19 @@ Specification v1.4.
 ## Advanced Features
 
 ### Alternative Evidence (OR Logic)
+
 - [ ] Task: Implement OR groups within MOV checklists
 - [ ] UI: "Add Alternative Evidence Path" button
 - [ ] Validation: ANY path passing = item validated
 
 ### Conditional Display
+
 - [ ] Task: Show/hide items based on other items
 - [ ] UI: "Conditional Display Rules" panel
 - [ ] Logic: if (item_X == value) then show(item_Y)
 
 ### Exclusion Rules
+
 - [ ] Task: Mark evidence as NOT acceptable
 - [ ] UI: "Exclusion Warning" configuration
 - [ ] Display: Red warning banner when excluded evidence uploaded
@@ -475,12 +534,14 @@ Specification v1.4.
 ## Integration with FormSchemaBuilder.tsx
 
 ### Reusable Patterns
+
 1. Drag-drop implementation (@hello-pangea/dnd)
 2. Field properties panel (right sidebar)
 3. JSON preview tab
 4. Delete field confirmation dialog
 
 ### New Patterns Needed
+
 1. MOV-specific validation types (threshold, grace period)
 2. OR logic configuration UI
 3. Conditional display rule builder
@@ -489,6 +550,7 @@ Specification v1.4.
 ## Spec v1.4 Compliance Checklist
 
 ### Validated Against Examples
+
 - [ ] Example 1: Indicator 1.1 (grouped MOV items)
 - [ ] Example 2: Indicator 1.2 (currency comparison)
 - [ ] Example 3: Indicator 1.3.1 (date with grace period)
@@ -498,6 +560,7 @@ Specification v1.4.
 ## Testing Checklist
 
 ### Unit Tests
+
 - [ ] Test each MOV item type renders correctly
 - [ ] Test OR logic: Path A OR Path B validation
 - [ ] Test conditional display: items show/hide correctly
@@ -505,11 +568,13 @@ Specification v1.4.
 - [ ] Test grace period: PASSED vs CONSIDERED vs FAILED
 
 ### Integration Tests
+
 - [ ] Test complete MOV checklist creation workflow
 - [ ] Test MOV validation during indicator submission
 - [ ] Test BBI status determination from MOV results
 
 ## Reference
+
 - Spec v1.4 Section 2: MOV Checklist System
 - Spec v1.4 Section 3: Validated Indicator Examples (29 indicators)
 ```
@@ -519,21 +584,25 @@ Specification v1.4.
 ---
 
 #### 2. BBI-SYSTEM-IMPLEMENTATION.md
+
 **Purpose**: Implementation tasks for 9 mandatory BBI mappings
 
 **Outline**:
-```markdown
+
+````markdown
 # BBI System Implementation Guide
 
 ## Overview
-Implementation tasks for Barangay-Based Institution (BBI) functionality tracking
-system as defined in Indicator Builder Specification v1.4 and PRD v1.1 Section 4.2.
+
+Implementation tasks for Barangay-Based Institution (BBI) functionality tracking system as defined
+in Indicator Builder Specification v1.4 and PRD v1.1 Section 4.2.
 
 ## BBI System Architecture
 
 ### Database Schema
 
 #### Table: bbis
+
 ```sql
 CREATE TABLE bbis (
     id SERIAL PRIMARY KEY,
@@ -544,8 +613,10 @@ CREATE TABLE bbis (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ```
+````
 
 #### Table: bbi_barangay_status
+
 ```sql
 CREATE TABLE bbi_barangay_status (
     id SERIAL PRIMARY KEY,
@@ -565,6 +636,7 @@ CREATE TABLE bbi_barangay_status (
 ### Backend Tasks
 
 #### Task 1: BBI Data Migration
+
 - [ ] Create migration: Seed 9 mandatory BBIs
   ```python
   # Seed data from Spec v1.4
@@ -578,12 +650,14 @@ CREATE TABLE bbi_barangay_status (
 - [ ] Link BBIs to functionality indicators (one-to-one)
 
 #### Task 2: BBI Service Layer
+
 - [ ] Create `bbi_service.py`
   - [ ] `update_bbi_status(bbi_code, barangay_id, indicator_result)`
   - [ ] `get_bbi_status(bbi_code, barangay_id)`
   - [ ] `get_all_bbi_statuses(barangay_id, assessment_id)`
 
 #### Task 3: Integration with Indicator Validation
+
 - [ ] Modify `assessor_service.py`:
   - [ ] After validating BBI functionality indicator (e.g., 2.1), call:
     ```python
@@ -600,18 +674,20 @@ CREATE TABLE bbi_barangay_status (
 ### Frontend Tasks
 
 #### Task 4: BBI Configuration UI (MLGOO Admin)
+
 - [ ] Create `BBIManagementPage.tsx` at `/mlgoo/bbi-management`
 - [ ] Display 9 mandatory BBIs in table:
   - Columns: BBI Code, Name, Governance Area, Functionality Indicator, Status
 - [ ] Add "View Mapping" button → Shows which indicator determines BBI status
 - [ ] Add validation status legend:
   - ✅ Functional (Passed)
-  - ✅ Functional* (Considered - with grace period note)
+  - ✅ Functional\* (Considered - with grace period note)
   - ❌ Non-Functional (Failed)
   - ⚠️ N/A (Not Applicable)
   - ⏳ Pending Validation
 
 #### Task 5: BBI Status Display (Assessor/BLGU Views)
+
 - [ ] Add BBI status panel to assessment review page
 - [ ] Display all 9 BBIs with current functionality status
 - [ ] Show consideration notes (e.g., "Document dated within grace period")
@@ -619,6 +695,7 @@ CREATE TABLE bbi_barangay_status (
 ## Validation Status Mapping
 
 ### Rule Implementation
+
 - [ ] Implement status determination logic:
   ```python
   def determine_bbi_status(indicator_result):
@@ -639,6 +716,7 @@ CREATE TABLE bbi_barangay_status (
 ## Grace Period Handling
 
 ### Example: BDRRMC Meeting Minutes Date
+
 - Indicator 2.1.2: "Meeting minutes dated by Dec 31, 2023"
 - Grace period: Until Mar 31, 2024
 - Logic:
@@ -649,11 +727,13 @@ CREATE TABLE bbi_barangay_status (
 ## Testing
 
 ### Unit Tests
+
 - [ ] Test BBI status update from indicator result
 - [ ] Test grace period consideration note persistence
 - [ ] Test one-to-one indicator-to-BBI mapping validation
 
 ### Integration Tests
+
 - [ ] Test full workflow:
   1. Assessor validates Indicator 2.1 (BDRRMC Functionality)
   2. Result: CONSIDERED (grace period)
@@ -661,10 +741,12 @@ CREATE TABLE bbi_barangay_status (
   4. BBI status appears in assessment reports
 
 ## Reference
+
 - Spec v1.4: BBI Functionality Tracking System
 - PRD v1.1 Section 4.2: BBI Configuration Interface
 - PRD v1.1 Section 4.2.2: Indicator-to-BBI Mapping
-```
+
+````
 
 **REASONING**: BBI system is a major feature requiring dedicated task file. Separates concerns from MOV checklists.
 
@@ -718,15 +800,18 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
     )}
   </Droppable>
 </DragDropContext>
-```
+````
 
 **Adaptation for MOVChecklistBuilder**:
+
 - Keep DragDropContext structure
 - Change field types from generic (text, number, email) to MOV types (checkbox, group, currency)
 - Add support for **nested droppables** (groups within groups)
 
 #### 2. Field Palette (Left Sidebar)
+
 **Reusable Pattern**:
+
 ```typescript
 const FIELD_TYPES = [
   { type: 'text', label: 'Text Input', icon: Type },
@@ -745,19 +830,22 @@ const FIELD_TYPES = [
 ```
 
 **Adaptation for MOVChecklistBuilder**:
+
 ```typescript
 const MOV_ITEM_TYPES = [
-  { type: 'checkbox', label: 'Checkbox', icon: CheckSquare },
-  { type: 'group', label: 'Group (OR Logic)', icon: Folder },
-  { type: 'currency', label: 'Currency Input', icon: DollarSign },
-  { type: 'date', label: 'Date (Grace Period)', icon: Calendar },
-  { type: 'assessment', label: 'Assessment (YES/NO)', icon: HelpCircle },
+  { type: "checkbox", label: "Checkbox", icon: CheckSquare },
+  { type: "group", label: "Group (OR Logic)", icon: Folder },
+  { type: "currency", label: "Currency Input", icon: DollarSign },
+  { type: "date", label: "Date (Grace Period)", icon: Calendar },
+  { type: "assessment", label: "Assessment (YES/NO)", icon: HelpCircle },
   // ... 4 more MOV types
 ];
 ```
 
 #### 3. Field Properties Panel (Right Sidebar)
+
 **Reusable Pattern**:
+
 ```typescript
 // When field selected, show properties panel
 {selectedField && (
@@ -785,6 +873,7 @@ const MOV_ITEM_TYPES = [
 ```
 
 **Adaptation for MOVChecklistBuilder**:
+
 - Add MOV-specific properties:
   - **For Currency Input**: Threshold value, comparison operator (≥, ≤)
   - **For Date Input**: Deadline date, grace period end date
@@ -792,7 +881,9 @@ const MOV_ITEM_TYPES = [
   - **For Assessment**: Conditional display rules
 
 #### 4. JSON Preview Tab
+
 **Reusable Pattern**:
+
 ```typescript
 <Tabs value={activeTab} onValueChange={setActiveTab}>
   <TabsList>
@@ -809,22 +900,26 @@ const MOV_ITEM_TYPES = [
 ```
 
 **Adaptation for MOVChecklistBuilder**:
+
 - Keep tab structure
 - Change JSON output format to match MOV checklist schema (not form_schema)
 
 ## Integration Steps
 
 ### Step 1: Copy Component Structure
+
 1. Create `MOVChecklistBuilder.tsx` in same directory
 2. Copy imports, state management, and layout structure from FormSchemaBuilder.tsx
 3. Keep drag-drop, palette, properties panel, JSON preview
 
 ### Step 2: Replace Field Types
+
 1. Replace `FIELD_TYPES` constant with `MOV_ITEM_TYPES`
 2. Update `FormField` interface → `MOVChecklistItem` interface
 3. Add new properties: `orLogic`, `threshold`, `gracePeriod`, `conditionalDisplay`
 
 ### Step 3: Customize Properties Panel
+
 1. For each MOV item type, create custom properties panel
 2. Reuse form controls (Input, Select, Switch) from FormSchemaBuilder
 3. Add new controls:
@@ -833,6 +928,7 @@ const MOV_ITEM_TYPES = [
    - OR logic toggle (radio buttons: "All items required" vs "Any item satisfies")
 
 ### Step 4: Update Validation Logic
+
 1. Add MOV-specific validation:
    - Currency threshold validation (≥50%)
    - Date grace period validation (PASSED vs CONSIDERED vs FAILED)
@@ -840,6 +936,7 @@ const MOV_ITEM_TYPES = [
 2. Keep existing required field validation
 
 ### Step 5: Testing
+
 1. Copy test structure from `FormSchemaBuilder.test.tsx` (if exists)
 2. Add MOV-specific test cases:
    - Test OR group validation
@@ -849,10 +946,11 @@ const MOV_ITEM_TYPES = [
 ## Code Comparison
 
 ### FormSchemaBuilder.tsx (Current)
+
 ```typescript
 interface FormField {
   id: string;
-  type: 'text' | 'number' | 'email' | 'date' | 'select';
+  type: "text" | "number" | "email" | "date" | "select";
   label: string;
   required: boolean;
   validation: ValidationRule[];
@@ -860,36 +958,47 @@ interface FormField {
 ```
 
 ### MOVChecklistBuilder.tsx (New)
+
 ```typescript
 interface MOVChecklistItem {
   id: string;
-  type: 'checkbox' | 'group' | 'currency' | 'number' | 'text' | 'date' | 'assessment' | 'radio' | 'dropdown';
+  type:
+    | "checkbox"
+    | "group"
+    | "currency"
+    | "number"
+    | "text"
+    | "date"
+    | "assessment"
+    | "radio"
+    | "dropdown";
   label: string;
   required: boolean;
 
   // MOV-specific fields
-  orLogic?: boolean;  // For groups: true = one_of, false = all
+  orLogic?: boolean; // For groups: true = one_of, false = all
   threshold?: {
     value: number;
-    operator: '>=' | '<=' | '==' | '>' | '<';
-    unit: 'percentage' | 'currency' | 'number';
+    operator: ">=" | "<=" | "==" | ">" | "<";
+    unit: "percentage" | "currency" | "number";
   };
   gracePeriod?: {
-    deadline: string;  // ISO date
-    considerationDeadline: string;  // ISO date (grace period end)
+    deadline: string; // ISO date
+    considerationDeadline: string; // ISO date (grace period end)
   };
   conditionalDisplay?: {
-    dependsOn: string;  // Other item ID
-    condition: 'equals' | 'not_equals';
+    dependsOn: string; // Other item ID
+    condition: "equals" | "not_equals";
     value: any;
   };
-  children?: MOVChecklistItem[];  // For groups
+  children?: MOVChecklistItem[]; // For groups
 }
 ```
 
 ## What NOT to Change
 
 ### Keep These Patterns Unchanged
+
 1. **Drag-drop library**: Continue using `@hello-pangea/dnd`
 2. **Layout structure**: Keep palette (left), canvas (center), properties (right)
 3. **State management**: Use same `useState` pattern for fields array
@@ -897,6 +1006,7 @@ interface MOVChecklistItem {
 5. **Styling**: Reuse same Tailwind classes and Card/Button components
 
 ### Only Change These Parts
+
 1. **Field type definitions**: Generic → MOV-specific
 2. **Properties panel content**: Generic validation → MOV validation (threshold, grace period)
 3. **JSON output format**: form_schema → mov_checklist schema
@@ -905,9 +1015,11 @@ interface MOVChecklistItem {
 ## Reference Implementation
 
 ### File to Study
+
 `apps/web/src/components/features/indicators/builder/FormSchemaBuilder.tsx`
 
 ### Key Sections to Review
+
 - Lines 1-100: Imports and type definitions
 - Lines 100-200: Drag-drop implementation
 - Lines 200-300: Field palette
@@ -915,15 +1027,18 @@ interface MOVChecklistItem {
 - Lines 400-500: JSON preview
 
 ### Lines to Copy Verbatim
+
 - DragDropContext setup (lines ~150-200)
 - Droppable/Draggable structure (lines ~200-250)
 - Properties panel layout (lines ~300-350)
 
 ### Lines to Modify Heavily
+
 - Field type definitions (lines ~40-80) → Replace with MOV types
 - Properties content (lines ~350-400) → Add MOV-specific properties
 - Validation logic (lines ~450-500) → Add threshold/grace period validation
-```
+
+````
 
 **REASONING**: Reusing existing FormSchemaBuilder patterns accelerates development. Dedicated guide prevents reinventing the wheel.
 
@@ -1123,9 +1238,10 @@ interface MOVChecklistItem {
   exclusionWarning?: string;
   alternativeEvidence?: string[];
 }
-```
+````
 
 **Compliance Check**:
+
 - [ ] All 9 MOV item types supported in `type` field
 - [ ] `orLogic` boolean for group OR logic
 - [ ] `threshold` object for validation thresholds
@@ -1138,12 +1254,14 @@ interface MOVChecklistItem {
 ## Section 7: UI/UX Compliance
 
 ### Split-Pane Layout (from Implementation Plan)
+
 - [ ] 30% tree navigator (left) / 70% MOV checklist editor (right)
 - [ ] Tree nodes show MOV validation status icons (☑, ○, ⚠)
 - [ ] Click-to-switch navigation between indicators
 - [ ] Progress tracking footer (8/12 complete, 67%)
 
 ### MOV Checklist Builder UI
+
 - [ ] Drag-drop field palette (9 MOV item types)
 - [ ] Field properties panel (right sidebar)
 - [ ] JSON preview tab (for debugging)
@@ -1156,12 +1274,14 @@ interface MOVChecklistItem {
 ## Section 8: Performance Compliance
 
 ### Auto-Save Requirements
+
 - [ ] Delta-based auto-save (only changed items)
 - [ ] Debounced auto-save (3 seconds after last edit)
 - [ ] Hybrid storage (localStorage + backend database)
 - [ ] Optimistic locking (version conflict detection)
 
 ### Tree Rendering Performance
+
 - [ ] Virtualization for trees with 50+ nodes
 - [ ] Memoized tree traversal functions
 - [ ] Optimistic updates (UI updates before server response)
@@ -1175,6 +1295,7 @@ interface MOVChecklistItem {
 ### End-to-End Test Scenarios
 
 #### Scenario 1: Create Complete Governance Area
+
 1. Create 12 indicators for "Core 1: Financial Administration"
 2. Configure MOV checklists for all 12 indicators
 3. Include examples of all 9 MOV item types
@@ -1184,6 +1305,7 @@ interface MOVChecklistItem {
 **Success Criteria**: All indicators published, no errors, codes auto-numbered correctly.
 
 #### Scenario 2: Validate BBI Functionality Indicator
+
 1. Create Indicator 2.1 (BDRRMC Functionality)
 2. Configure MOV checklist with date input (grace period)
 3. Validator enters date: Jan 15, 2023 (within grace period)
@@ -1193,6 +1315,7 @@ interface MOVChecklistItem {
 **Success Criteria**: BBI status updated correctly, consideration note stored.
 
 #### Scenario 3: Test OR Evidence Logic
+
 1. Create Indicator 2.1.4 (BDRRMC Accomplishment)
 2. Configure Path A (physical) and Path B (financial)
 3. Validator selects Path A YES, inputs 60% completion
@@ -1206,6 +1329,7 @@ interface MOVChecklistItem {
 ## Final Compliance Report
 
 ### Compliance Summary
+
 - [ ] **Section 1**: Hierarchical structure (4 levels, selection modes)
 - [ ] **Section 2**: MOV checklist system (9 types, 8 advanced features)
 - [ ] **Section 3**: BBI functionality system (9 BBIs, status determination)
@@ -1217,13 +1341,15 @@ interface MOVChecklistItem {
 - [ ] **Section 9**: Integration testing (E2E scenarios)
 
 ### Sign-Off
+
 - [ ] Development Lead: Implementation complete and spec-compliant
 - [ ] QA Engineer: All test scenarios passed
 - [ ] Product Owner: Acceptance criteria met
 
-**Date**: ___________
-**Version**: Indicator Builder Implementation v2.0 (Spec v1.4 Compliant)
-```
+**Date**: \***\*\_\_\_\*\*** **Version**: Indicator Builder Implementation v2.0 (Spec v1.4
+Compliant)
+
+````
 
 **REASONING**: Spec v1.4 is source of truth. Compliance checklist ensures nothing is missed during implementation.
 
@@ -1323,9 +1449,10 @@ mkdir -p archive/v1-schema-builder/
 mv SCHEMA-CONFIGURATION-ARCHITECTURE.md archive/v1-schema-builder/
 mv QUICK-REFERENCE-SCHEMA-CONFIG.md archive/v1-schema-builder/
 mv sample-indicator-data.json archive/v1-schema-builder/
-```
+````
 
 **Create migration note**:
+
 ```bash
 cat > archive/v1-schema-builder/MIGRATION-NOTES.md << 'EOF'
 # Why We Archived These Files
@@ -1356,12 +1483,14 @@ EOF
 ```
 
 ### Step 2: Update README.md with Version History
+
 1. Add version history table at top of README.md
 2. Mark old tasks (2.7, 2.8) with **REVISED** badges
 3. Add new tasks for MOV checklist builder
 4. Add "Completed Work" section showing backend progress
 
 **Diff Example**:
+
 ```diff
 # Phase 6: Hierarchical Indicator Creation - Implementation Tasks
 
@@ -1394,17 +1523,20 @@ EOF
 ```
 
 ### Step 3: Create New MOV-Focused Task Files
+
 1. Create `MOV-CHECKLIST-IMPLEMENTATION.md` (see section above)
 2. Create `BBI-SYSTEM-IMPLEMENTATION.md` (see section above)
 3. Create `FORM-BUILDER-REUSE-GUIDE.md` (see section above)
 4. Create `SPEC-V1.4-COMPLIANCE-CHECKLIST.md` (see section above)
 
 ### Step 4: Update Testing Guide
+
 1. Add MOV validation test cases to `TESTING-GUIDE-PHASE1.md`
 2. Add BBI integration test scenarios
 3. Keep existing service layer tests (still valid)
 
 **Diff Example**:
+
 ```diff
 # Testing Guide - Phase 1
 
@@ -1424,6 +1556,7 @@ EOF
 ```
 
 ### Step 5: Update Split-Pane Implementation Plan
+
 1. Add Phase 1.5 (MOV Checklist Integration)
 2. Update timeline to reflect MOV builder work
 3. Keep split-pane architecture (still valid)
@@ -1433,41 +1566,50 @@ EOF
 ## Developer FAQ
 
 ### Q1: Do I need to delete FormSchemaBuilder.tsx?
-**A:** No! **Reuse its drag-drop patterns**. Copy it to MOVChecklistBuilder.tsx
-and adapt field types.
+
+**A:** No! **Reuse its drag-drop patterns**. Copy it to MOVChecklistBuilder.tsx and adapt field
+types.
 
 ### Q2: Is the backend work still valid?
-**A:** Yes, 100%. Database schema, draft service, bulk creation—all still valid.
-Backend doesn't care about schema structure.
+
+**A:** Yes, 100%. Database schema, draft service, bulk creation—all still valid. Backend doesn't
+care about schema structure.
 
 ### Q3: What about the 176 passing frontend tests?
-**A:** 95% still valid. Tree utilities, draft storage, Zustand store tests require
-minor updates to test data (MOV schema format instead of form schema format).
+
+**A:** 95% still valid. Tree utilities, draft storage, Zustand store tests require minor updates to
+test data (MOV schema format instead of form schema format).
 
 ### Q4: How long will migration take?
+
 **A:** Estimated 1-2 weeks:
+
 - Week 1: Create MOVChecklistBuilder.tsx, implement 9 MOV item types
 - Week 2: BBI system, testing, integration
 
 ### Q5: Can I still reference archived docs?
-**A:** Yes! Archived docs in `archive/v1-schema-builder/` remain accessible.
-Split-pane UX diagrams and expert recommendations are still valuable.
+
+**A:** Yes! Archived docs in `archive/v1-schema-builder/` remain accessible. Split-pane UX diagrams
+and expert recommendations are still valuable.
 
 ---
 
 ## Rollout Plan
 
 ### Week 1: MOV Checklist Foundation
+
 - [ ] Day 1: Archive old docs, update README version history
 - [ ] Day 2-3: Create MOVChecklistBuilder.tsx (copy FormSchemaBuilder patterns)
 - [ ] Day 4-5: Implement first 5 MOV item types (checkbox, group, currency, number, text)
 
 ### Week 2: Advanced MOV Features + BBI System
+
 - [ ] Day 1-2: Implement remaining 4 MOV item types (date, assessment, radio, dropdown)
 - [ ] Day 3-4: Add OR logic, conditional display, threshold validation
 - [ ] Day 5: BBI system (database migration, service layer, UI)
 
 ### Week 3: Testing & Integration
+
 - [ ] Day 1-2: Unit tests for MOV validation logic
 - [ ] Day 3: Integration tests (end-to-end indicator creation)
 - [ ] Day 4: Spec v1.4 compliance validation (29 indicator examples)
@@ -1478,16 +1620,19 @@ Split-pane UX diagrams and expert recommendations are still valuable.
 ## Risk Mitigation
 
 ### Risk 1: Scope Creep
-**Mitigation**: Strict adherence to Spec v1.4. If an indicator pattern isn't in
-the 29 validated examples, defer to Phase 2.
+
+**Mitigation**: Strict adherence to Spec v1.4. If an indicator pattern isn't in the 29 validated
+examples, defer to Phase 2.
 
 ### Risk 2: Team Confusion
-**Mitigation**: This migration guide. Daily standup to address questions. Pair
-programming for MOV builder.
+
+**Mitigation**: This migration guide. Daily standup to address questions. Pair programming for MOV
+builder.
 
 ### Risk 3: Lost Work
-**Mitigation**: Archive old docs (don't delete). Version history in README. Git
-branch strategy:
+
+**Mitigation**: Archive old docs (don't delete). Version history in README. Git branch strategy:
+
 - `main` branch: v1.0 code (schema-builder)
 - `feat/mov-checklist-v2` branch: v2.0 code (MOV-first)
 - Merge after testing complete
@@ -1497,6 +1642,7 @@ branch strategy:
 ## Success Criteria
 
 ### Migration Complete When:
+
 - [ ] All v1.0 schema-focused docs archived with migration notes
 - [ ] README.md updated with v2.0 version history
 - [ ] 5 new task files created (MOV, BBI, FormBuilder Reuse, Spec Compliance, Migration)
@@ -1507,12 +1653,14 @@ branch strategy:
 - [ ] User acceptance testing complete
 
 ### Sign-Off
+
 - [ ] Tech Lead: Architecture approved
 - [ ] Product Owner: Spec v1.4 compliance verified
 - [ ] QA: All tests passing
 
 **Target Completion**: November 27, 2025 (2 weeks from Nov 13, 2025)
-```
+
+````
 
 **REASONING**: Clear migration path reduces team confusion and preserves context from v1.0 work.
 
@@ -1623,9 +1771,10 @@ export default function MOVChecklistBuilder({ value, onChange }: Props) {
     </div>
   );
 }
-```
+````
 
 **Step 2: Implement 9 MOV Item Type Configurations**
+
 - Each MOV item type gets its own properties panel component
 - Reuse Input, Select, Switch from shadcn/ui (same as FormSchemaBuilder)
 - Add new controls for MOV-specific features:
@@ -1634,6 +1783,7 @@ export default function MOVChecklistBuilder({ value, onChange }: Props) {
   - OR logic toggle (for groups)
 
 **Step 3: Add Nested Droppable Support**
+
 - Groups need to accept dragged items as children
 - Use nested `<Droppable>` components
 - Reference: react-beautiful-dnd nested examples
@@ -1644,32 +1794,32 @@ export default function MOVChecklistBuilder({ value, onChange }: Props) {
 
 #### Current vs. Required Field Types
 
-| Spec v1.4 MOV Type | FormSchemaBuilder Equivalent | Gap |
-|--------------------|------------------------------|-----|
-| ✅ **checkbox** | ❌ Not present (has checkbox group for multi-select) | Need binary checkbox |
-| ✅ **group** | ❌ Not present (no nested structure support) | Need group with OR logic |
-| ✅ **currency_input** | ❌ Not present (has generic number input) | Need currency formatter, threshold |
-| ✅ **number_input** | ✅ Has number input | Need threshold validation |
-| ✅ **text_input** | ✅ Has text input | Already supported |
-| ✅ **date_input** | ✅ Has date picker | Need grace period logic |
-| ✅ **assessment** | ❌ Not present | Need YES/NO radio (validator judgment) |
-| ✅ **radio_group** | ✅ Has radio button group | Already supported |
-| ✅ **dropdown** | ✅ Has dropdown select | Already supported |
+| Spec v1.4 MOV Type    | FormSchemaBuilder Equivalent                         | Gap                                    |
+| --------------------- | ---------------------------------------------------- | -------------------------------------- |
+| ✅ **checkbox**       | ❌ Not present (has checkbox group for multi-select) | Need binary checkbox                   |
+| ✅ **group**          | ❌ Not present (no nested structure support)         | Need group with OR logic               |
+| ✅ **currency_input** | ❌ Not present (has generic number input)            | Need currency formatter, threshold     |
+| ✅ **number_input**   | ✅ Has number input                                  | Need threshold validation              |
+| ✅ **text_input**     | ✅ Has text input                                    | Already supported                      |
+| ✅ **date_input**     | ✅ Has date picker                                   | Need grace period logic                |
+| ✅ **assessment**     | ❌ Not present                                       | Need YES/NO radio (validator judgment) |
+| ✅ **radio_group**    | ✅ Has radio button group                            | Already supported                      |
+| ✅ **dropdown**       | ✅ Has dropdown select                               | Already supported                      |
 
 **Summary**: 4/9 MOV types already supported, 5/9 need new implementations.
 
 #### Current vs. Required Validation Features
 
-| Spec v1.4 Feature | FormSchemaBuilder Support | Gap |
-|-------------------|---------------------------|-----|
-| **OR Logic** (alternative evidence paths) | ❌ Not supported | Need group-level OR toggle |
-| **Conditional Display** (show/hide items) | ❌ Not supported | Need conditional rules builder |
-| **Threshold Validation** (≥50%) | ⚠️ Partial (has min/max) | Need threshold with operators |
-| **Grace Period** (3-state validation) | ❌ Not supported | Need deadline + consideration deadline |
-| **Alternative Evidence** | ❌ Not supported | Need consideration notes field |
-| **Exclusion Rules** | ❌ Not supported | Need exclusion warning field |
-| **Calculation Formulas** | ❌ Not supported (separate builder) | Need inline formula editor |
-| **Intra-checklist Conditions** | ❌ Not supported | Need item-to-item dependencies |
+| Spec v1.4 Feature                         | FormSchemaBuilder Support           | Gap                                    |
+| ----------------------------------------- | ----------------------------------- | -------------------------------------- |
+| **OR Logic** (alternative evidence paths) | ❌ Not supported                    | Need group-level OR toggle             |
+| **Conditional Display** (show/hide items) | ❌ Not supported                    | Need conditional rules builder         |
+| **Threshold Validation** (≥50%)           | ⚠️ Partial (has min/max)            | Need threshold with operators          |
+| **Grace Period** (3-state validation)     | ❌ Not supported                    | Need deadline + consideration deadline |
+| **Alternative Evidence**                  | ❌ Not supported                    | Need consideration notes field         |
+| **Exclusion Rules**                       | ❌ Not supported                    | Need exclusion warning field           |
+| **Calculation Formulas**                  | ❌ Not supported (separate builder) | Need inline formula editor             |
+| **Intra-checklist Conditions**            | ❌ Not supported                    | Need item-to-item dependencies         |
 
 **Summary**: 0/8 advanced features fully supported. All require new implementation.
 
@@ -1677,18 +1827,18 @@ export default function MOVChecklistBuilder({ value, onChange }: Props) {
 
 ### PRD v1.1 Feature Mapping
 
-| PRD Section | Task File | Status |
-|-------------|-----------|--------|
-| **4.0.1** Multi-Step Wizard | README.md (Step 1-4) | ✅ Complete |
-| **4.0.2** Draft System with Auto-Save | README.md (Task 1.4, 2.5) | ✅ Complete |
-| **4.0.3** Hierarchical Tree Editor | README.md (Task 2.6) | ✅ Complete |
-| **4.0.4** Visual Schema Builders | **MOV-CHECKLIST-IMPLEMENTATION.md** | 🔄 **IN PROGRESS** |
-| **4.0.5** Real-Time Validation | README.md (Task 2.11), SPEC-V1.4-COMPLIANCE-CHECKLIST.md | ⏳ Not Started |
-| **4.0.6** Bulk Creation & Publishing | README.md (Task 1.3) | ✅ Backend Complete |
-| **4.0.7** Conflict Resolution & Locking | README.md (Task 1.4) | ✅ Complete |
-| **4.1.2** Form Schema Builder (MOV Checklist) | **MOV-CHECKLIST-IMPLEMENTATION.md** | 🔄 **IN PROGRESS** |
-| **4.2.1** BBI Definition Management | **BBI-SYSTEM-IMPLEMENTATION.md** | ⏳ Not Started |
-| **4.2.2** Indicator-to-BBI Mapping | **BBI-SYSTEM-IMPLEMENTATION.md** | ⏳ Not Started |
+| PRD Section                                   | Task File                                                | Status              |
+| --------------------------------------------- | -------------------------------------------------------- | ------------------- |
+| **4.0.1** Multi-Step Wizard                   | README.md (Step 1-4)                                     | ✅ Complete         |
+| **4.0.2** Draft System with Auto-Save         | README.md (Task 1.4, 2.5)                                | ✅ Complete         |
+| **4.0.3** Hierarchical Tree Editor            | README.md (Task 2.6)                                     | ✅ Complete         |
+| **4.0.4** Visual Schema Builders              | **MOV-CHECKLIST-IMPLEMENTATION.md**                      | 🔄 **IN PROGRESS**  |
+| **4.0.5** Real-Time Validation                | README.md (Task 2.11), SPEC-V1.4-COMPLIANCE-CHECKLIST.md | ⏳ Not Started      |
+| **4.0.6** Bulk Creation & Publishing          | README.md (Task 1.3)                                     | ✅ Backend Complete |
+| **4.0.7** Conflict Resolution & Locking       | README.md (Task 1.4)                                     | ✅ Complete         |
+| **4.1.2** Form Schema Builder (MOV Checklist) | **MOV-CHECKLIST-IMPLEMENTATION.md**                      | 🔄 **IN PROGRESS**  |
+| **4.2.1** BBI Definition Management           | **BBI-SYSTEM-IMPLEMENTATION.md**                         | ⏳ Not Started      |
+| **4.2.2** Indicator-to-BBI Mapping            | **BBI-SYSTEM-IMPLEMENTATION.md**                         | ⏳ Not Started      |
 
 ---
 
@@ -1696,23 +1846,25 @@ export default function MOVChecklistBuilder({ value, onChange }: Props) {
 
 ### Timeline
 
-| Week | Focus | Deliverables |
-|------|-------|--------------|
-| **Week 1** | Documentation cleanup | Archive old docs, update README, create 5 new task files |
-| **Week 2** | MOV Checklist Builder (5 item types) | Checkbox, Group, Currency, Number, Text |
-| **Week 3** | MOV Checklist Builder (4 item types) | Date (grace period), Assessment, Radio, Dropdown |
-| **Week 4** | Advanced Features | OR logic, conditional display, threshold validation |
-| **Week 5** | BBI System | Database migration, service layer, UI, testing |
-| **Week 6** | Validation & Testing | Spec v1.4 compliance, 29 indicator examples, user testing |
+| Week       | Focus                                | Deliverables                                              |
+| ---------- | ------------------------------------ | --------------------------------------------------------- |
+| **Week 1** | Documentation cleanup                | Archive old docs, update README, create 5 new task files  |
+| **Week 2** | MOV Checklist Builder (5 item types) | Checkbox, Group, Currency, Number, Text                   |
+| **Week 3** | MOV Checklist Builder (4 item types) | Date (grace period), Assessment, Radio, Dropdown          |
+| **Week 4** | Advanced Features                    | OR logic, conditional display, threshold validation       |
+| **Week 5** | BBI System                           | Database migration, service layer, UI, testing            |
+| **Week 6** | Validation & Testing                 | Spec v1.4 compliance, 29 indicator examples, user testing |
 
 ### Rollback Plan
 
 **If migration fails**:
+
 1. Git revert to v1.0 branch (`main`)
 2. Continue with schema-builder approach
 3. Defer MOV checklist to Phase 7
 
 **Rollback triggers**:
+
 - User testing feedback <60% satisfaction
 - Implementation complexity exceeds 6 weeks
 - Critical bugs in MOV validation logic
@@ -1724,6 +1876,7 @@ export default function MOVChecklistBuilder({ value, onChange }: Props) {
 ### Version Control
 
 **Branch Strategy**:
+
 ```
 main (v1.0 - schema-builder)
   ├── archive (tagged: v1.0-schema-builder)
@@ -1735,6 +1888,7 @@ main (v1.0 - schema-builder)
 ```
 
 **Tag Strategy**:
+
 - `v1.0-schema-builder`: Snapshot before migration
 - `v2.0-mov-checklist-alpha`: First working MOV builder
 - `v2.0-mov-checklist-beta`: BBI system integrated
@@ -1743,16 +1897,18 @@ main (v1.0 - schema-builder)
 ### Documentation History
 
 **All files get version history sections**:
+
 ```markdown
 ## Document Version History
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| v1.0 | Nov 9, 2025 | Team | Initial schema-builder approach |
-| v2.0 | Nov 13, 2025 | Team | **Pivot to MOV-checklist-first**, aligned with Spec v1.4 |
+| Version | Date         | Author | Changes                                                  |
+| ------- | ------------ | ------ | -------------------------------------------------------- |
+| v1.0    | Nov 9, 2025  | Team   | Initial schema-builder approach                          |
+| v2.0    | Nov 13, 2025 | Team   | **Pivot to MOV-checklist-first**, aligned with Spec v1.4 |
 ```
 
 **Archive directory structure**:
+
 ```
 tasks/tasks-phase6-hierarchical-indicators/
 ├── archive/
@@ -1766,10 +1922,12 @@ tasks/tasks-phase6-hierarchical-indicators/
 ### Progress Tracking
 
 **README.md "Progress Summary" section**:
+
 ```markdown
 ## Progress Summary
 
 ### ✅ Completed (v1.0 - Backend & Infrastructure)
+
 - [x] Database schema (indicator_drafts table)
 - [x] Bulk creation service (topological sorting)
 - [x] Draft auto-save service (optimistic locking)
@@ -1779,11 +1937,13 @@ tasks/tasks-phase6-hierarchical-indicators/
 - [x] 27/27 backend service tests passing (100%)
 
 ### 🔄 In Progress (v2.0 - MOV Checklist)
+
 - [ ] MOVChecklistBuilder.tsx (0/9 item types complete)
 - [ ] BBI system (0/9 BBIs configured)
 - [ ] Spec v1.4 compliance (0/29 indicators validated)
 
 ### ⏳ Not Started (v2.0)
+
 - [ ] Grace period validation logic
 - [ ] Alternative evidence UI (OR logic)
 - [ ] Conditional display rules
@@ -1795,40 +1955,44 @@ tasks/tasks-phase6-hierarchical-indicators/
 ## Risk Mitigation
 
 ### Risk 1: Team Confusion About Pivot
-**Impact**: High (team may continue building wrong components)
-**Probability**: Medium
+
+**Impact**: High (team may continue building wrong components) **Probability**: Medium
 
 **Mitigation**:
+
 1. ✅ **This comprehensive documentation** explaining why we pivoted
 2. ✅ Daily standup discussion of migration progress
 3. ✅ Pair programming for first MOV item type implementation
 4. ✅ Clear task assignments in new MOV-CHECKLIST-IMPLEMENTATION.md
 
 ### Risk 2: Lost Context from v1.0 Work
-**Impact**: Medium (architectural decisions forgotten)
-**Probability**: Low (with proper archiving)
+
+**Impact**: Medium (architectural decisions forgotten) **Probability**: Low (with proper archiving)
 
 **Mitigation**:
+
 1. ✅ Archive old docs (don't delete)
 2. ✅ Add MIGRATION-NOTES.md explaining rationale
 3. ✅ Version history in all updated files
 4. ✅ Git tags for v1.0 snapshot
 
 ### Risk 3: Scope Creep (Adding Non-Spec Features)
-**Impact**: High (timeline extension, budget overrun)
-**Probability**: Medium
+
+**Impact**: High (timeline extension, budget overrun) **Probability**: Medium
 
 **Mitigation**:
+
 1. ✅ Strict adherence to Spec v1.4 (use compliance checklist)
 2. ✅ "If it's not in the 29 validated indicators, defer to Phase 2" rule
 3. ✅ Weekly scope review in sprint planning
 4. ✅ Product Owner sign-off required for any new features
 
 ### Risk 4: FormSchemaBuilder Reuse Fails
-**Impact**: High (need to build from scratch)
-**Probability**: Low (drag-drop patterns are generic)
+
+**Impact**: High (need to build from scratch) **Probability**: Low (drag-drop patterns are generic)
 
 **Mitigation**:
+
 1. ✅ Proof-of-concept: Copy FormSchemaBuilder → MOVChecklistBuilder, test drag-drop
 2. ✅ Fallback: Use different drag-drop library (react-beautiful-dnd) if needed
 3. ✅ Time buffer: Allocate 1 extra week for unexpected rework
@@ -1838,29 +2002,34 @@ tasks/tasks-phase6-hierarchical-indicators/
 ## Success Criteria
 
 ### Documentation Restructure Success
+
 - [ ] All outdated files archived with clear migration notes
 - [ ] All updated files have version history sections
 - [ ] 5 new task files created and reviewed by team
 - [ ] Zero confusion during team onboarding (measured by questions in standup)
 
 ### Implementation Alignment Success
+
 - [ ] MOVChecklistBuilder.tsx implements all 9 MOV item types
 - [ ] All 8 advanced validation features implemented (OR logic, grace period, etc.)
 - [ ] FormSchemaBuilder drag-drop patterns successfully reused (80%+ code reuse)
 - [ ] BBI system functional (9 BBIs seeded, status determination working)
 
 ### Spec v1.4 Compliance Success
+
 - [ ] All 29 indicator examples from Spec v1.4 can be created in builder
 - [ ] All validation logic matches Spec v1.4 expected behavior
 - [ ] Compliance checklist 100% complete
 - [ ] Product Owner sign-off: "Implementation matches spec"
 
 ### Testing Success
+
 - [ ] Unit tests: 95%+ pass rate (MOV validation logic)
 - [ ] Integration tests: Full workflow (BLGU submission → Validator validation → BBI status update)
 - [ ] User acceptance testing: 80%+ satisfaction score from MLGOO admins
 
 ### Timeline Success
+
 - [ ] Migration complete within 6 weeks (by November 27, 2025)
 - [ ] No more than 1 week delay due to unforeseen issues
 - [ ] Weekly progress reports show consistent velocity
@@ -1903,7 +2072,6 @@ tasks/tasks-phase6-hierarchical-indicators/
 
 ---
 
-**Document prepared by**: SINAG Technical Documentation Specialist
-**Review requested from**: Tech Lead, Product Owner, QA Engineer
-**Target decision date**: November 14, 2025
-**Implementation start date**: November 15, 2025 (if approved)
+**Document prepared by**: SINAG Technical Documentation Specialist **Review requested from**: Tech
+Lead, Product Owner, QA Engineer **Target decision date**: November 14, 2025 **Implementation start
+date**: November 15, 2025 (if approved)

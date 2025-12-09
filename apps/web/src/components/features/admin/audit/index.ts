@@ -1,2 +1,1 @@
-export { AuditLogTable } from './AuditLogTable';
-
+export { AuditLogTable } from "./AuditLogTable";

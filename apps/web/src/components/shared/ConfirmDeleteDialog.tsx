@@ -1,7 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
 interface ConfirmDeleteDialogProps {
@@ -52,5 +58,3 @@ export function ConfirmDeleteDialog({
     </Dialog>
   );
 }
-
-

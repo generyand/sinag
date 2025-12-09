@@ -21,17 +21,21 @@ import { Lock, Eye, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 
-type AssessmentStatus = "DRAFT" | "SUBMITTED" | "IN_REVIEW" | "REWORK" | "COMPLETED" | "AWAITING_FINAL_VALIDATION" | "SUBMITTED_FOR_REVIEW";
+type AssessmentStatus =
+  | "DRAFT"
+  | "SUBMITTED"
+  | "IN_REVIEW"
+  | "REWORK"
+  | "COMPLETED"
+  | "AWAITING_FINAL_VALIDATION"
+  | "SUBMITTED_FOR_REVIEW";
 
 interface LockedStateBannerProps {
   status: AssessmentStatus;
   reworkCount?: number;
 }
 
-export function LockedStateBanner({
-  status,
-  reworkCount = 0,
-}: LockedStateBannerProps) {
+export function LockedStateBanner({ status, reworkCount = 0 }: LockedStateBannerProps) {
   // Don't show banner for DRAFT or REWORK statuses (assessment is editable)
   if (status === "DRAFT" || status === "REWORK") {
     return null;
@@ -45,8 +49,7 @@ export function LockedStateBanner({
           variant: "default" as const,
           icon: Lock,
           title: "Assessment Submitted",
-          description:
-            "Your assessment is under review. You cannot make edits at this time.",
+          description: "Your assessment is under review. You cannot make edits at this time.",
           showReworkWarning: reworkCount >= 1,
         };
 
@@ -65,7 +68,8 @@ export function LockedStateBanner({
           variant: "default" as const,
           icon: Eye,
           title: "Under Validator Review",
-          description: "Your assessment is being reviewed by validators. No edits allowed at this time.",
+          description:
+            "Your assessment is being reviewed by validators. No edits allowed at this time.",
           showReworkWarning: false,
         };
 
@@ -74,8 +78,7 @@ export function LockedStateBanner({
           variant: "default" as const,
           icon: CheckCircle2,
           title: "Assessment Completed",
-          description:
-            "This assessment has been finalized. No further edits allowed.",
+          description: "This assessment has been finalized. No further edits allowed.",
           showReworkWarning: false,
           isSuccess: true,
         };
@@ -108,12 +111,14 @@ export function LockedStateBanner({
         `}
       >
         <IconComponent
-          className={`h-4 w-4 ${
-            config.isSuccess ? "text-green-600" : "text-blue-600"
-          }`}
+          className={`h-4 w-4 ${config.isSuccess ? "text-green-600" : "text-blue-600"}`}
         />
         <AlertTitle
-          className={config.isSuccess ? "text-green-700 dark:text-green-400" : "text-blue-700 dark:text-blue-400"}
+          className={
+            config.isSuccess
+              ? "text-green-700 dark:text-green-400"
+              : "text-blue-700 dark:text-blue-400"
+          }
         >
           <div className="flex items-center gap-2">
             {config.title}
@@ -142,11 +147,12 @@ export function LockedStateBanner({
 
       {/* Rework Limit Warning (only shown when submitted with rework used) */}
       {config.showReworkWarning && (
-        <Alert variant="destructive" className="border-orange-600 bg-orange-50 dark:bg-orange-950/20">
+        <Alert
+          variant="destructive"
+          className="border-orange-600 bg-orange-50 dark:bg-orange-950/20"
+        >
           <AlertTriangle className="h-4 w-4 text-orange-600" />
-          <AlertTitle className="text-orange-700 dark:text-orange-400">
-            Final Submission
-          </AlertTitle>
+          <AlertTitle className="text-orange-700 dark:text-orange-400">Final Submission</AlertTitle>
           <AlertDescription className="text-orange-600 dark:text-orange-300">
             <strong>Note:</strong> You have used your one rework cycle. This is your final
             submission. The assessor cannot request further changes.

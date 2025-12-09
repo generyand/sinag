@@ -1,7 +1,7 @@
 # Tasks: High-Level Analytics & Reporting Feature
 
-> Generated from: `docs/prds/prd-analytics-reporting.md`
-> Status: Phase 3 - Atomic Tasks Generated ✅ **COMPLETE - All Epics Fully Detailed**
+> Generated from: `docs/prds/prd-analytics-reporting.md` Status: Phase 3 - Atomic Tasks Generated ✅
+> **COMPLETE - All Epics Fully Detailed**
 >
 > **Completion Status:**
 >
@@ -14,7 +14,8 @@
 >
 > **Total:** 163 atomic tasks completed for 47 stories across 6 epics
 >
-> **Note:** All epics now have comprehensive atomic task breakdowns following the established 3-tier methodology (Epic → Story → Atomic Task).
+> **Note:** All epics now have comprehensive atomic task breakdowns following the established 3-tier
+> methodology (Epic → Story → Atomic Task).
 
 ---
 
@@ -23,11 +24,14 @@
 This directory contains separate files for each epic to make the tasks more manageable:
 
 - [Epic 1.0: MLGOO-DILG Dashboard](./epic-1.0-mlgoo-dilg-dashboard.md) - _(FR-1 to FR-6)_
-- [Epic 2.0: Reports Page with Interactive Visualizations](./epic-2.0-reports-page.md) - _(FR-7 to FR-11)_
+- [Epic 2.0: Reports Page with Interactive Visualizations](./epic-2.0-reports-page.md) - _(FR-7 to
+  FR-11)_
 - [Epic 3.0: Gap Analysis Report System](./epic-3.0-gap-analysis.md) - _(FR-12 to FR-17)_
-- [Epic 4.0: AI Recommendations Display & Tracking](./epic-4.0-ai-recommendations.md) - _(FR-18 to FR-22)_
+- [Epic 4.0: AI Recommendations Display & Tracking](./epic-4.0-ai-recommendations.md) - _(FR-18 to
+  FR-22)_
 - [Epic 5.0: External API for Partner Institutions](./epic-5.0-external-api.md) - _(FR-23 to FR-30)_
-- [Epic 6.0: Analytics Infrastructure & Optimization](./epic-6.0-analytics-infrastructure.md) - _(FR-31 to FR-35)_
+- [Epic 6.0: Analytics Infrastructure & Optimization](./epic-6.0-analytics-infrastructure.md) -
+  _(FR-31 to FR-35)_
 
 ---
 
@@ -36,13 +40,11 @@ This directory contains separate files for each epic to make the tasks more mana
 **All atomic tasks have been successfully generated for all 6 epics:**
 
 - [x] **DONE: Generate Atomic Tasks for Epic 4.0** (AI Recommendations Display & Tracking)
-
   - Applied the same 3-tier methodology used in Epics 1.0-3.0
   - Broke down all 8 stories into 3-4 atomic tasks each
   - **Result:** 26 atomic tasks completed
 
 - [x] **DONE: Generate Atomic Tasks for Epic 5.0** (External API for Partner Institutions)
-
   - Applied the same 3-tier methodology used in Epics 1.0-3.0
   - Broke down all 8 stories into 2-4 atomic tasks each
   - **Result:** 25 atomic tasks completed
@@ -52,7 +54,9 @@ This directory contains separate files for each epic to make the tasks more mana
   - Broke down all 8 stories into 2-4 atomic tasks each
   - **Result:** 24 atomic tasks completed
 
-**Achievement:** All 6 epics now have comprehensive, actionable atomic tasks following the established 3-tier pattern. The project is ready for implementation with 163 clearly defined atomic tasks across 47 stories.
+**Achievement:** All 6 epics now have comprehensive, actionable atomic tasks following the
+established 3-tier pattern. The project is ready for implementation with 163 clearly defined atomic
+tasks across 47 stories.
 
 ---
 
@@ -81,10 +85,13 @@ Tech-stack specific file structure for the Analytics & Reporting feature:
 - `apps/api/app/schemas/external_api.py` - Pydantic schemas for external API responses
 - `apps/api/app/services/analytics_service.py` - Business logic for analytics calculations
 - `apps/api/app/services/gap_analysis_service.py` - Business logic for gap analysis
-- `apps/api/app/services/external_api_service.py` - Business logic for external API data anonymization
+- `apps/api/app/services/external_api_service.py` - Business logic for external API data
+  anonymization
 - `apps/api/app/api/v1/analytics.py` - FastAPI endpoints for analytics (tag: `analytics`)
-- `apps/api/app/api/v1/recommendations.py` - FastAPI endpoints for recommendations (tag: `recommendations`)
-- `apps/api/app/api/v1/external_api.py` - FastAPI endpoints for external partners (tag: `external-api`)
+- `apps/api/app/api/v1/recommendations.py` - FastAPI endpoints for recommendations (tag:
+  `recommendations`)
+- `apps/api/app/api/v1/external_api.py` - FastAPI endpoints for external partners (tag:
+  `external-api`)
 - `apps/api/app/core/cache.py` - Redis caching utilities for analytics data
 - `apps/api/app/core/rate_limiter.py` - Rate limiting middleware for external API
 - `apps/api/alembic/versions/xxxx_add_analytics_tables.py` - Alembic migration for new tables
@@ -104,7 +111,8 @@ Tech-stack specific file structure for the Analytics & Reporting feature:
 - `apps/web/src/components/features/reports/ExportControls.tsx` - CSV/PNG/PDF export UI
 - `apps/web/src/components/features/gap-analysis/GapAnalysisView.tsx` - Gap analysis drill-down UI
 - `apps/web/src/components/features/gap-analysis/ComparisonTable.tsx` - Before/after comparison
-- `apps/web/src/components/features/recommendations/RecommendationCard.tsx` - AI recommendation display
+- `apps/web/src/components/features/recommendations/RecommendationCard.tsx` - AI recommendation
+  display
 - `apps/web/src/components/features/recommendations/StatusTracker.tsx` - Implementation status UI
 - `apps/web/src/components/features/recommendations/PDFGenerator.tsx` - PDF export component
 - `apps/web/src/hooks/useAnalytics.ts` - Custom hook wrapping Orval-generated analytics hooks

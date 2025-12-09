@@ -1,4 +1,4 @@
-import { useGetLookupsGovernanceAreas } from '@sinag/shared';
+import { useGetLookupsGovernanceAreas } from "@sinag/shared";
 
 /**
  * Custom hook to fetch governance areas for the user management interface.
@@ -8,4 +8,4 @@ import { useGetLookupsGovernanceAreas } from '@sinag/shared';
  */
 export function useGovernanceAreas(options?: Parameters<typeof useGetLookupsGovernanceAreas>[0]) {
   return useGetLookupsGovernanceAreas(options);
-} 
+}

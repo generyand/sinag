@@ -108,7 +108,7 @@ export default function IndicatorsPage() {
                 <div className="flex items-center gap-6">
                   <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)]">
                     <div className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                      {indicators?.filter(i => i.is_active).length || 0}
+                      {indicators?.filter((i) => i.is_active).length || 0}
                     </div>
                     <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
                       Active
@@ -124,7 +124,7 @@ export default function IndicatorsPage() {
                   </div>
                   <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)]">
                     <div className="text-3xl font-bold bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] bg-clip-text text-transparent">
-                      {indicators?.filter(i => i.is_auto_calculable).length || 0}
+                      {indicators?.filter((i) => i.is_auto_calculable).length || 0}
                     </div>
                     <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
                       Auto-Calc

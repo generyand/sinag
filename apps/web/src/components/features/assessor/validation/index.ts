@@ -1,4 +1,2 @@
-export * from './AssessorValidationClient';
-export * from './ValidationWorkspace';
-
-
+export * from "./AssessorValidationClient";
+export * from "./ValidationWorkspace";

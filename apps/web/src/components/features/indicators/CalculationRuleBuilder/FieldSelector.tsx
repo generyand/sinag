@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import type { FormSchema } from '@sinag/shared';
-import { Label } from '@/components/ui/label';
+import type { FormSchema } from "@sinag/shared";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+} from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 interface FieldSelectorProps {
   fieldId: string;
@@ -35,7 +35,7 @@ export function FieldSelector({
   const availableFields =
     (formSchema as any)?.input_fields?.filter((field: any) => {
       if (fieldTypes.length === 0) return true;
-      return fieldTypes.includes(field.field_type || '');
+      return fieldTypes.includes(field.field_type || "");
     }) || [];
 
   // No form schema available
@@ -46,8 +46,7 @@ export function FieldSelector({
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            No form schema found. Please create a form schema first before adding calculation
-            rules.
+            No form schema found. Please create a form schema first before adding calculation rules.
           </AlertDescription>
         </Alert>
       </div>
@@ -62,8 +61,8 @@ export function FieldSelector({
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            No compatible fields found in the form schema. Required field types:{' '}
-            {fieldTypes.join(', ')}
+            No compatible fields found in the form schema. Required field types:{" "}
+            {fieldTypes.join(", ")}
           </AlertDescription>
         </Alert>
       </div>
@@ -82,17 +81,13 @@ export function FieldSelector({
             <SelectItem key={field.field_id} value={field.field_id}>
               <div className="flex items-center gap-2">
                 <span className="font-medium">{field.label}</span>
-                <span className="text-xs text-muted-foreground">
-                  ({field.field_type})
-                </span>
+                <span className="text-xs text-muted-foreground">({field.field_type})</span>
               </div>
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
-      <p className="text-xs text-muted-foreground">
-        Select the field to evaluate for this rule
-      </p>
+      <p className="text-xs text-muted-foreground">Select the field to evaluate for this rule</p>
     </div>
   );
 }

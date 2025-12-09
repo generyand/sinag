@@ -33,8 +33,10 @@ interface AssessmentDataTableProps {
 // Helper function to get status badge color
 const getStatusColor = (status: string): string => {
   const normalizedStatus = status.toLowerCase();
-  if (normalizedStatus.includes("pass")) return "text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30";
-  if (normalizedStatus.includes("fail")) return "text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/30";
+  if (normalizedStatus.includes("pass"))
+    return "text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30";
+  if (normalizedStatus.includes("fail"))
+    return "text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/30";
   if (normalizedStatus.includes("progress"))
     return "text-amber-700 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/30";
   return "text-slate-700 bg-slate-100 dark:text-slate-300 dark:bg-slate-800";
@@ -48,10 +50,7 @@ const getScoreColor = (score: number | null | undefined): string => {
   return "text-red-600 dark:text-red-400";
 };
 
-export function AssessmentDataTable({
-  data,
-  onRowClick,
-}: AssessmentDataTableProps) {
+export function AssessmentDataTable({ data, onRowClick }: AssessmentDataTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
 
@@ -63,17 +62,13 @@ export function AssessmentDataTable({
     {
       accessorKey: "barangay_name",
       header: "Barangay Name",
-      cell: ({ row }) => (
-        <div className="font-medium">{row.getValue("barangay_name")}</div>
-      ),
+      cell: ({ row }) => <div className="font-medium">{row.getValue("barangay_name")}</div>,
       enableSorting: true,
     },
     {
       accessorKey: "governance_area",
       header: "Governance Area",
-      cell: ({ row }) => (
-        <div className="text-sm">{row.getValue("governance_area")}</div>
-      ),
+      cell: ({ row }) => <div className="text-sm">{row.getValue("governance_area")}</div>,
       enableSorting: true,
     },
     {
@@ -100,9 +95,7 @@ export function AssessmentDataTable({
         const score = row.getValue("score") as number | null | undefined;
         return (
           <div className={`text-sm font-semibold ${getScoreColor(score)}`}>
-            {score !== null && score !== undefined
-              ? `${score.toFixed(1)}%`
-              : "N/A"}
+            {score !== null && score !== undefined ? `${score.toFixed(1)}%` : "N/A"}
           </div>
         );
       },
@@ -149,7 +142,10 @@ export function AssessmentDataTable({
       {/* Search Input */}
       <div className="flex items-center gap-4 flex-wrap">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[var(--muted-foreground)]" aria-hidden="true" />
+          <Search
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[var(--muted-foreground)]"
+            aria-hidden="true"
+          />
           <Input
             placeholder="Search barangays..."
             value={globalFilter}
@@ -180,10 +176,7 @@ export function AssessmentDataTable({
                         }
                         onClick={header.column.getToggleSortingHandler()}
                       >
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        {flexRender(header.column.columnDef.header, header.getContext())}
                         {header.column.getCanSort() && (
                           <span className="ml-auto">
                             {header.column.getIsSorted() === "asc" ? (
@@ -212,20 +205,14 @@ export function AssessmentDataTable({
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
+                <TableCell colSpan={columns.length} className="h-24 text-center">
                   No results found.
                 </TableCell>
               </TableRow>
@@ -237,8 +224,7 @@ export function AssessmentDataTable({
       {/* Pagination Controls */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-[var(--muted-foreground)]">
-          Page {table.getState().pagination.pageIndex + 1} of{" "}
-          {table.getPageCount()}
+          Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
         </div>
         <div className="flex items-center gap-2" role="navigation" aria-label="Table pagination">
           <Button

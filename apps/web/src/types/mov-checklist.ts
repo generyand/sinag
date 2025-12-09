@@ -35,7 +35,7 @@ export interface DisplayCondition {
   /** ID of field to check */
   field_id: string;
   /** Comparison operator */
-  operator: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than';
+  operator: "equals" | "not_equals" | "contains" | "greater_than" | "less_than";
   /** Value to compare against */
   value: any;
 }
@@ -78,7 +78,7 @@ export interface MOVItemBase {
  * Example: "BFR signed and stamped by C/M Accountant"
  */
 export interface MOVCheckboxItem extends MOVItemBase {
-  type: 'checkbox';
+  type: "checkbox";
   /** Default checked state */
   default_value: boolean;
 }
@@ -90,9 +90,9 @@ export interface MOVCheckboxItem extends MOVItemBase {
  * Example: "Posted financial documents (any 5 of 7)"
  */
 export interface MOVGroupItem extends MOVItemBase {
-  type: 'group';
+  type: "group";
   /** How to combine child validations */
-  logic_operator: 'AND' | 'OR';
+  logic_operator: "AND" | "OR";
   /** Minimum items required to pass (for OR logic) */
   min_required?: number;
   /** Child MOV items in this group */
@@ -109,7 +109,7 @@ export interface MOVGroupItem extends MOVItemBase {
  * - value < min_value → "Failed"
  */
 export interface MOVCurrencyInputItem extends MOVItemBase {
-  type: 'currency_input';
+  type: "currency_input";
   /** Minimum acceptable value */
   min_value?: number;
   /** Maximum acceptable value */
@@ -117,7 +117,7 @@ export interface MOVCurrencyInputItem extends MOVItemBase {
   /** Threshold for 'Passed' vs 'Considered' status */
   threshold?: number;
   /** Currency code (PHP only for now) */
-  currency_code: 'PHP';
+  currency_code: "PHP";
 }
 
 /**
@@ -126,7 +126,7 @@ export interface MOVCurrencyInputItem extends MOVItemBase {
  * Example: "Trees planted this year (threshold: 100)"
  */
 export interface MOVNumberInputItem extends MOVItemBase {
-  type: 'number_input';
+  type: "number_input";
   /** Minimum acceptable value */
   min_value?: number;
   /** Maximum acceptable value */
@@ -143,7 +143,7 @@ export interface MOVNumberInputItem extends MOVItemBase {
  * Example: "Barangay Resolution Number"
  */
 export interface MOVTextInputItem extends MOVItemBase {
-  type: 'text_input';
+  type: "text_input";
   /** Placeholder text */
   placeholder?: string;
   /** Maximum character count */
@@ -162,7 +162,7 @@ export interface MOVTextInputItem extends MOVItemBase {
  * - date after grace period → "Failed"
  */
 export interface MOVDateInputItem extends MOVItemBase {
-  type: 'date_input';
+  type: "date_input";
   /** Earliest acceptable date */
   min_date?: string; // ISO date string YYYY-MM-DD
   /** Latest acceptable date (deadline) */
@@ -182,9 +182,9 @@ export interface MOVDateInputItem extends MOVItemBase {
  * Example: "BDRRMC is organized and functional (Assessor judgment)"
  */
 export interface MOVAssessmentItem extends MOVItemBase {
-  type: 'assessment';
+  type: "assessment";
   /** Type of assessment judgment */
-  assessment_type: 'YES_NO' | 'COMPLIANT_NON_COMPLIANT';
+  assessment_type: "YES_NO" | "COMPLIANT_NON_COMPLIANT";
 }
 
 /**
@@ -193,7 +193,7 @@ export interface MOVAssessmentItem extends MOVItemBase {
  * Example: "Type of business permit: [New, Renewal, Amendment]"
  */
 export interface MOVRadioGroupItem extends MOVItemBase {
-  type: 'radio_group';
+  type: "radio_group";
   /** Radio button options */
   options: OptionItem[];
   /** Default selected option value */
@@ -206,7 +206,7 @@ export interface MOVRadioGroupItem extends MOVItemBase {
  * Example: "Select required documents: [Dropdown with 20+ options, searchable]"
  */
 export interface MOVDropdownItem extends MOVItemBase {
-  type: 'dropdown';
+  type: "dropdown";
   /** Dropdown options */
   options: OptionItem[];
   /** Allow selecting multiple options */
@@ -242,7 +242,7 @@ export interface MOVChecklistConfig {
   /** List of MOV items */
   items: MOVItem[];
   /** Validation mode: 'strict' requires all items, 'lenient' allows partial completion */
-  validation_mode: 'strict' | 'lenient';
+  validation_mode: "strict" | "lenient";
 }
 
 // =============================================================================
@@ -252,7 +252,12 @@ export interface MOVChecklistConfig {
 /**
  * Validation status type.
  */
-export type ValidationStatusType = 'Passed' | 'Considered' | 'Failed' | 'Not Applicable' | 'Pending';
+export type ValidationStatusType =
+  | "Passed"
+  | "Considered"
+  | "Failed"
+  | "Not Applicable"
+  | "Pending";
 
 /**
  * Result of MOV checklist validation.
@@ -273,37 +278,37 @@ export interface MOVValidationStatus {
 // =============================================================================
 
 export function isMOVCheckboxItem(item: MOVItem): item is MOVCheckboxItem {
-  return item.type === 'checkbox';
+  return item.type === "checkbox";
 }
 
 export function isMOVGroupItem(item: MOVItem): item is MOVGroupItem {
-  return item.type === 'group';
+  return item.type === "group";
 }
 
 export function isMOVCurrencyInputItem(item: MOVItem): item is MOVCurrencyInputItem {
-  return item.type === 'currency_input';
+  return item.type === "currency_input";
 }
 
 export function isMOVNumberInputItem(item: MOVItem): item is MOVNumberInputItem {
-  return item.type === 'number_input';
+  return item.type === "number_input";
 }
 
 export function isMOVTextInputItem(item: MOVItem): item is MOVTextInputItem {
-  return item.type === 'text_input';
+  return item.type === "text_input";
 }
 
 export function isMOVDateInputItem(item: MOVItem): item is MOVDateInputItem {
-  return item.type === 'date_input';
+  return item.type === "date_input";
 }
 
 export function isMOVAssessmentItem(item: MOVItem): item is MOVAssessmentItem {
-  return item.type === 'assessment';
+  return item.type === "assessment";
 }
 
 export function isMOVRadioGroupItem(item: MOVItem): item is MOVRadioGroupItem {
-  return item.type === 'radio_group';
+  return item.type === "radio_group";
 }
 
 export function isMOVDropdownItem(item: MOVItem): item is MOVDropdownItem {
-  return item.type === 'dropdown';
+  return item.type === "dropdown";
 }

@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetNotifications,
   useGetNotificationsCount,
@@ -7,9 +7,9 @@ import {
   usePostNotificationsMarkAllRead,
   getGetNotificationsQueryKey,
   getGetNotificationsCountQueryKey,
-} from '@sinag/shared';
-import { useNotificationStore } from '@/store/useNotificationStore';
-import { useAuthStore } from '@/store/useAuthStore';
+} from "@sinag/shared";
+import { useNotificationStore } from "@/store/useNotificationStore";
+import { useAuthStore } from "@/store/useAuthStore";
 
 /** Polling interval for notification count (30 seconds) */
 const POLLING_INTERVAL_MS = 30_000;
@@ -145,7 +145,7 @@ export function useNotifications({
   // Update error state
   useEffect(() => {
     if (notificationsError) {
-      setError('Failed to load notifications');
+      setError("Failed to load notifications");
     } else {
       setError(null);
     }

@@ -5,10 +5,7 @@ import html2canvas from "html2canvas";
  * @param elementId The ID of the DOM element to capture
  * @param filename Base filename (without extension)
  */
-export async function exportToPNG(
-  elementId: string,
-  filename: string
-): Promise<void> {
+export async function exportToPNG(elementId: string, filename: string): Promise<void> {
   const element = document.getElementById(elementId);
 
   if (!element) {
@@ -32,10 +29,7 @@ export async function exportToPNG(
       }
 
       // Generate filename with timestamp
-      const timestamp = new Date()
-        .toISOString()
-        .replace(/[:.]/g, "-")
-        .slice(0, -5);
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
       const fullFilename = `${filename}_${timestamp}.png`;
 
       // Create temporary anchor element for download

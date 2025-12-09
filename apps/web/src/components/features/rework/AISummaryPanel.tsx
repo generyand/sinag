@@ -171,8 +171,8 @@ export function AISummaryPanel({
                           index === 0
                             ? "bg-red-100 text-red-700"
                             : index === 1
-                            ? "bg-amber-100 text-amber-700"
-                            : "bg-gray-100 text-gray-700"
+                              ? "bg-amber-100 text-amber-700"
+                              : "bg-gray-100 text-gray-700"
                         }`}
                       >
                         {index + 1}
@@ -294,10 +294,7 @@ function IndicatorSummaryCard({ indicator, isExpanded, onToggle }: IndicatorSumm
               </h4>
               <div className="flex flex-wrap gap-2">
                 {indicator.affected_movs.map((mov, index) => (
-                  <span
-                    key={index}
-                    className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded"
-                  >
+                  <span key={index} className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded">
                     {mov}
                   </span>
                 ))}

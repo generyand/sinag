@@ -2,23 +2,25 @@
 
 ## Overview
 
-This guide documents the role structure changes implemented in November 2025 following DILG consultation. The changes affect user roles, database schema, API endpoints, and frontend components.
+This guide documents the role structure changes implemented in November 2025 following DILG
+consultation. The changes affect user roles, database schema, API endpoints, and frontend
+components.
 
 ## Summary of Changes
 
 ### Role Changes
 
-| Old Role | New Role | Notes |
-|----------|----------|-------|
-| `SUPERADMIN` | `MLGOO_DILG` | Renamed to better reflect DILG administrative role |
-| `AREA_ASSESSOR` | `ASSESSOR` | Renamed; no longer pre-assigned to governance areas |
-| N/A | `VALIDATOR` | **New role** - Validators assigned to specific governance areas |
-| `BLGU_USER` | `BLGU_USER` | Unchanged |
+| Old Role        | New Role     | Notes                                                           |
+| --------------- | ------------ | --------------------------------------------------------------- |
+| `SUPERADMIN`    | `MLGOO_DILG` | Renamed to better reflect DILG administrative role              |
+| `AREA_ASSESSOR` | `ASSESSOR`   | Renamed; no longer pre-assigned to governance areas             |
+| N/A             | `VALIDATOR`  | **New role** - Validators assigned to specific governance areas |
+| `BLGU_USER`     | `BLGU_USER`  | Unchanged                                                       |
 
 ### Field Changes
 
-| Old Field | New Field | Purpose |
-|-----------|-----------|---------|
+| Old Field            | New Field           | Purpose                                                       |
+| -------------------- | ------------------- | ------------------------------------------------------------- |
 | `governance_area_id` | `validator_area_id` | Renamed to better reflect that only Validators use this field |
 
 ## Breaking Changes
@@ -45,6 +47,7 @@ ALTER TABLE users RENAME COLUMN governance_area_id TO validator_area_id;
 #### Authentication Dependency
 
 **Old**:
+
 ```python
 def get_current_admin_user(current_user: User = Depends(get_current_active_user)):
     if current_user.role not in [UserRole.SUPERADMIN, UserRole.MLGOO_DILG]:
@@ -53,6 +56,7 @@ def get_current_admin_user(current_user: User = Depends(get_current_active_user)
 ```
 
 **New**:
+
 ```python
 def get_current_admin_user(current_user: User = Depends(get_current_active_user)):
     if current_user.role != UserRole.MLGOO_DILG:
@@ -63,6 +67,7 @@ def get_current_admin_user(current_user: User = Depends(get_current_active_user)
 #### User Service Validation
 
 **New behavior** in `user_service.py`:
+
 - `VALIDATOR` role requires `validator_area_id`
 - `BLGU_USER` role requires `barangay_id`
 - `ASSESSOR` and `MLGOO_DILG` roles clear both assignment fields
@@ -77,17 +82,17 @@ After running `pnpm generate-types`, the following types are updated:
 ```typescript
 // Old
 enum UserRole {
-  SUPERADMIN = 'SUPERADMIN',
-  AREA_ASSESSOR = 'AREA_ASSESSOR',
-  BLGU_USER = 'BLGU_USER',
+  SUPERADMIN = "SUPERADMIN",
+  AREA_ASSESSOR = "AREA_ASSESSOR",
+  BLGU_USER = "BLGU_USER",
 }
 
 // New
 enum UserRole {
-  MLGOO_DILG = 'MLGOO_DILG',
-  ASSESSOR = 'ASSESSOR',
-  VALIDATOR = 'VALIDATOR',
-  BLGU_USER = 'BLGU_USER',
+  MLGOO_DILG = "MLGOO_DILG",
+  ASSESSOR = "ASSESSOR",
+  VALIDATOR = "VALIDATOR",
+  BLGU_USER = "BLGU_USER",
 }
 ```
 
@@ -97,7 +102,7 @@ enum UserRole {
 interface User {
   // ... other fields
   role: UserRole;
-  validator_area_id?: number | null;  // Renamed from governance_area_id
+  validator_area_id?: number | null; // Renamed from governance_area_id
   barangay_id?: number | null;
 }
 ```
@@ -110,10 +115,10 @@ The `useAuthStore` version was bumped to `3` to force client-side cache reset:
 persist(
   // ... store implementation
   {
-    name: 'auth-storage',
+    name: "auth-storage",
     version: 3, // Increment forces reset on client side
   }
-)
+);
 ```
 
 ## Migration Steps
@@ -121,29 +126,34 @@ persist(
 ### For Developers
 
 1. **Pull latest code from `UserValidator` branch**
+
    ```bash
    git checkout UserValidator
    git pull origin UserValidator
    ```
 
 2. **Update backend dependencies** (if needed)
+
    ```bash
    cd apps/api
    uv sync
    ```
 
 3. **Run database migration**
+
    ```bash
    cd apps/api
    alembic upgrade head
    ```
 
 4. **Regenerate TypeScript types**
+
    ```bash
    pnpm generate-types
    ```
 
 5. **Clear frontend node_modules** (if experiencing issues)
+
    ```bash
    cd apps/web
    rm -rf node_modules .next
@@ -158,18 +168,21 @@ persist(
 ### For Production Deployment
 
 1. **Backup database before migration**
+
    ```bash
    # Example for PostgreSQL
    pg_dump -h localhost -U postgres -d sinag > backup_$(date +%Y%m%d).sql
    ```
 
 2. **Run migration during maintenance window**
+
    ```bash
    cd apps/api
    alembic upgrade head
    ```
 
 3. **Verify migration success**
+
    ```bash
    # Check that role enum is updated
    psql -d sinag -c "SELECT DISTINCT role FROM users;"
@@ -179,6 +192,7 @@ persist(
    ```
 
 4. **Deploy new backend code**
+
    ```bash
    # Deploy API with new role logic
    ```
@@ -195,24 +209,28 @@ persist(
 #### 1. Update Role Checks
 
 **Old**:
+
 ```python
 if user.role == UserRole.SUPERADMIN:
     # admin logic
 ```
 
 **New**:
+
 ```python
 if user.role == UserRole.MLGOO_DILG:
     # admin logic
 ```
 
 **Old**:
+
 ```python
 if user.role == UserRole.AREA_ASSESSOR:
     # assessor logic
 ```
 
 **New**:
+
 ```python
 if user.role == UserRole.ASSESSOR:
     # assessor logic
@@ -221,11 +239,13 @@ if user.role == UserRole.ASSESSOR:
 #### 2. Update Field References
 
 **Old**:
+
 ```python
 user.governance_area_id
 ```
 
 **New**:
+
 ```python
 user.validator_area_id
 ```
@@ -233,6 +253,7 @@ user.validator_area_id
 #### 3. Handle VALIDATOR Role
 
 **New**:
+
 ```python
 if user.role == UserRole.VALIDATOR:
     # Validator has validator_area_id
@@ -244,15 +265,17 @@ if user.role == UserRole.VALIDATOR:
 #### 1. Update Role Checks
 
 **Old**:
+
 ```typescript
-if (user.role === 'SUPERADMIN' || user.role === 'MLGOO_DILG') {
+if (user.role === "SUPERADMIN" || user.role === "MLGOO_DILG") {
   // admin UI
 }
 ```
 
 **New**:
+
 ```typescript
-if (user.role === 'MLGOO_DILG') {
+if (user.role === "MLGOO_DILG") {
   // admin UI
 }
 ```
@@ -260,6 +283,7 @@ if (user.role === 'MLGOO_DILG') {
 #### 2. Update Field References
 
 **Old**:
+
 ```typescript
 <FormField
   name="governance_area_id"
@@ -268,6 +292,7 @@ if (user.role === 'MLGOO_DILG') {
 ```
 
 **New**:
+
 ```typescript
 <FormField
   name="validator_area_id"
@@ -329,6 +354,7 @@ alembic downgrade -1
 ```
 
 **Warning**: This will:
+
 - Revert role enum to old values
 - Rename `validator_area_id` back to `governance_area_id`
 - Convert MLGOO_DILG → SUPERADMIN
@@ -338,13 +364,16 @@ alembic downgrade -1
 ## Support
 
 For questions or issues:
+
 - Check [CLAUDE.md](../../CLAUDE.md) for role documentation
-- Review PRD at [docs/prds/prd-phase1-core-user-authentication-and-management.md](../prds/prd-phase1-core-user-authentication-and-management.md)
+- Review PRD at
+  [docs/prds/prd-phase1-core-user-authentication-and-management.md](../prds/prd-phase1-core-user-authentication-and-management.md)
 - Contact development team
 
 ## Changelog
 
 **November 2025**
+
 - Initial role redefinition implementation
 - Database migration created and tested
 - Backend services updated

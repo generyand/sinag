@@ -16,17 +16,13 @@ interface FilterControlsProps {
     governance_area?: string[];
     barangay_id?: number[];
     status?: string;
-    phase?: 'phase1' | 'phase2' | 'all';
+    phase?: "phase1" | "phase2" | "all";
   };
   onFilterChange: (filters: FilterControlsProps["filters"]) => void;
   userRole?: string;
 }
 
-export function FilterControls({
-  filters,
-  onFilterChange,
-  userRole,
-}: FilterControlsProps) {
+export function FilterControls({ filters, onFilterChange, userRole }: FilterControlsProps) {
   // Handle status filter change
   const handleStatusChange = (value: string) => {
     onFilterChange({
@@ -36,7 +32,7 @@ export function FilterControls({
   };
 
   // Handle phase filter change
-  const handlePhaseChange = (value: 'phase1' | 'phase2' | 'all') => {
+  const handlePhaseChange = (value: "phase1" | "phase2" | "all") => {
     onFilterChange({
       ...filters,
       phase: value === "all" ? undefined : value,
@@ -87,10 +83,7 @@ export function FilterControls({
         {/* Phase Filter */}
         <div className="space-y-2">
           <label className="text-sm font-medium">Assessment Phase</label>
-          <Select
-            value={filters.phase || "all"}
-            onValueChange={handlePhaseChange}
-          >
+          <Select value={filters.phase || "all"} onValueChange={handlePhaseChange}>
             <SelectTrigger>
               <SelectValue placeholder="All phases" />
             </SelectTrigger>
@@ -105,10 +98,7 @@ export function FilterControls({
         {/* Status Filter */}
         <div className="space-y-2">
           <label className="text-sm font-medium">Status</label>
-          <Select
-            value={filters.status || "all"}
-            onValueChange={handleStatusChange}
-          >
+          <Select value={filters.status || "all"} onValueChange={handleStatusChange}>
             <SelectTrigger>
               <SelectValue placeholder="All statuses" />
             </SelectTrigger>
@@ -123,9 +113,7 @@ export function FilterControls({
 
         {/* Cycle Filter - Placeholder */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-muted-foreground">
-            Cycle (Coming Soon)
-          </label>
+          <label className="text-sm font-medium text-muted-foreground">Cycle (Coming Soon)</label>
           <Select disabled>
             <SelectTrigger>
               <SelectValue placeholder="Select cycle" />
@@ -165,9 +153,7 @@ export function FilterControls({
             Start Date (Coming Soon)
           </label>
           <div className="h-10 border border-input bg-muted/50 rounded-md flex items-center px-3">
-            <span className="text-sm text-muted-foreground">
-              Select start date
-            </span>
+            <span className="text-sm text-muted-foreground">Select start date</span>
           </div>
         </div>
 
@@ -176,9 +162,7 @@ export function FilterControls({
             End Date (Coming Soon)
           </label>
           <div className="h-10 border border-input bg-muted/50 rounded-md flex items-center px-3">
-            <span className="text-sm text-muted-foreground">
-              Select end date
-            </span>
+            <span className="text-sm text-muted-foreground">Select end date</span>
           </div>
         </div>
       </div>
@@ -188,16 +172,16 @@ export function FilterControls({
         <div className="pt-2">
           <div className="flex flex-wrap gap-2">
             {filters.phase && (
-              <div className={`text-xs px-2 py-1 rounded-md flex items-center gap-1 ${
-                filters.phase === 'phase1'
-                  ? 'bg-blue-100 text-blue-800'
-                  : 'bg-purple-100 text-purple-800'
-              }`}>
-                Phase: {filters.phase === 'phase1' ? 'Table Assessment' : 'Table Validation'}
+              <div
+                className={`text-xs px-2 py-1 rounded-md flex items-center gap-1 ${
+                  filters.phase === "phase1"
+                    ? "bg-blue-100 text-blue-800"
+                    : "bg-purple-100 text-purple-800"
+                }`}
+              >
+                Phase: {filters.phase === "phase1" ? "Table Assessment" : "Table Validation"}
                 <button
-                  onClick={() =>
-                    onFilterChange({ ...filters, phase: undefined })
-                  }
+                  onClick={() => onFilterChange({ ...filters, phase: undefined })}
                   className="hover:bg-primary/20 rounded-sm"
                 >
                   <X className="h-3 w-3" />
@@ -208,9 +192,7 @@ export function FilterControls({
               <div className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-md flex items-center gap-1">
                 Status: {filters.status}
                 <button
-                  onClick={() =>
-                    onFilterChange({ ...filters, status: undefined })
-                  }
+                  onClick={() => onFilterChange({ ...filters, status: undefined })}
                   className="hover:bg-primary/20 rounded-sm"
                 >
                   <X className="h-3 w-3" />
@@ -221,9 +203,7 @@ export function FilterControls({
               <div className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-md flex items-center gap-1">
                 Cycle: {filters.cycle_id}
                 <button
-                  onClick={() =>
-                    onFilterChange({ ...filters, cycle_id: undefined })
-                  }
+                  onClick={() => onFilterChange({ ...filters, cycle_id: undefined })}
                   className="hover:bg-primary/20 rounded-sm"
                 >
                   <X className="h-3 w-3" />

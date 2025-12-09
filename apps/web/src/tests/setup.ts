@@ -5,10 +5,10 @@
  * It sets up React Testing Library, mocks Next.js router, and configures TanStack Query for testing.
  */
 
-import '@testing-library/jest-dom';
-import { cleanup } from '@testing-library/react';
-import { afterEach, vi } from 'vitest';
-import React from 'react';
+import "@testing-library/jest-dom";
+import { cleanup } from "@testing-library/react";
+import { afterEach, vi } from "vitest";
+import React from "react";
 
 // Cleanup after each test
 afterEach(() => {
@@ -16,25 +16,25 @@ afterEach(() => {
 });
 
 // Mock Next.js router
-vi.mock('next/navigation', () => ({
+vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: vi.fn(),
     replace: vi.fn(),
     prefetch: vi.fn(),
     back: vi.fn(),
-    pathname: '/',
+    pathname: "/",
     query: {},
-    asPath: '/',
+    asPath: "/",
   }),
-  usePathname: () => '/',
+  usePathname: () => "/",
   useSearchParams: () => new URLSearchParams(),
   useParams: () => ({}),
 }));
 
 // Mock Next.js Link component
-vi.mock('next/link', () => ({
+vi.mock("next/link", () => ({
   default: ({ children, href }: { children: React.ReactNode; href: string }) => {
-    return React.createElement('a', { href }, children);
+    return React.createElement("a", { href }, children);
   },
 }));
 
@@ -46,7 +46,7 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
 }));
 
 // Mock window.matchMedia
-Object.defineProperty(window, 'matchMedia', {
+Object.defineProperty(window, "matchMedia", {
   writable: true,
   value: vi.fn().mockImplementation((query: string) => ({
     matches: false,

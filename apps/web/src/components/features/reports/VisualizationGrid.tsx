@@ -3,11 +3,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ReportsDataResponse } from "@sinag/shared";
-import {
-  AreaBreakdownBarChart,
-  ComplianceStatusPieChart,
-  TrendLineChart,
-} from "./ChartComponents";
+import { AreaBreakdownBarChart, ComplianceStatusPieChart, TrendLineChart } from "./ChartComponents";
 import { AssessmentDataTable } from "./DataTable";
 import type { BarangayMapPoint } from "@sinag/shared";
 
@@ -91,7 +87,11 @@ export function VisualizationGrid({ data, isLoading, showOnly }: VisualizationGr
 
             {/* Line Chart Card - Full width on mobile, spans 2 columns on desktop */}
             {shouldShow("line") && (
-              <Card className="md:col-span-2 rounded-sm" role="region" aria-labelledby="line-chart-title">
+              <Card
+                className="md:col-span-2 rounded-sm"
+                role="region"
+                aria-labelledby="line-chart-title"
+              >
                 <CardHeader>
                   <CardTitle id="line-chart-title">Trends Over Time</CardTitle>
                   <CardDescription>Historical pass rate across assessment cycles</CardDescription>
@@ -113,11 +113,11 @@ export function VisualizationGrid({ data, isLoading, showOnly }: VisualizationGr
             {(() => {
               const points = (data.map_data.barangays || []) as BarangayMapPoint[];
               const toStatus = (s?: string) => {
-                const v = (s || '').toLowerCase();
-                if (v === 'pass' || v === 'passed') return 'pass' as const;
-                if (v === 'fail' || v === 'failed') return 'fail' as const;
-                if (v === 'in_progress' || v === 'in progress') return 'in_progress' as const;
-                return 'not_started' as const;
+                const v = (s || "").toLowerCase();
+                if (v === "pass" || v === "passed") return "pass" as const;
+                if (v === "fail" || v === "failed") return "fail" as const;
+                if (v === "in_progress" || v === "in progress") return "in_progress" as const;
+                return "not_started" as const;
               };
               const barangays = points.map((p) => ({
                 id: String(p.barangay_id),
@@ -156,14 +156,8 @@ export function VisualizationGrid({ data, isLoading, showOnly }: VisualizationGr
       {/* Metadata Footer - Only show when not filtering */}
       {!showOnly && (
         <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-muted-foreground border-t pt-4">
-          <div>
-            Report generated: {new Date(data.metadata.generated_at).toLocaleString()}
-          </div>
-          {data.metadata.cycle_id && (
-            <div>
-              Cycle ID: {data.metadata.cycle_id}
-            </div>
-          )}
+          <div>Report generated: {new Date(data.metadata.generated_at).toLocaleString()}</div>
+          {data.metadata.cycle_id && <div>Cycle ID: {data.metadata.cycle_id}</div>}
         </div>
       )}
     </div>

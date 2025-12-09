@@ -65,9 +65,7 @@ export function SubmissionsMobileCard({
       {/* Meta info */}
       <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
         <div>
-          <span className="text-[var(--muted-foreground)] block mb-0.5">
-            Validators
-          </span>
+          <span className="text-[var(--muted-foreground)] block mb-0.5">Validators</span>
           <div className="flex items-center gap-1.5">
             {submission.assignedValidators.length > 0 ? (
               submission.assignedValidators.slice(0, 3).map((validator) => (
@@ -82,9 +80,7 @@ export function SubmissionsMobileCard({
                 </div>
               ))
             ) : (
-              <span className="text-[var(--muted-foreground)] italic">
-                None assigned
-              </span>
+              <span className="text-[var(--muted-foreground)] italic">None assigned</span>
             )}
             {submission.assignedValidators.length > 3 && (
               <span className="text-xs text-[var(--muted-foreground)]">
@@ -94,12 +90,8 @@ export function SubmissionsMobileCard({
           </div>
         </div>
         <div>
-          <span className="text-[var(--muted-foreground)] block mb-0.5">
-            Last Updated
-          </span>
-          <span className="text-[var(--foreground)]">
-            {submission.lastUpdated}
-          </span>
+          <span className="text-[var(--muted-foreground)] block mb-0.5">Last Updated</span>
+          <span className="text-[var(--foreground)]">{submission.lastUpdated}</span>
         </div>
       </div>
 

@@ -20,13 +20,13 @@ export default function UserNav() {
   // Function to humanize role text
   const humanizeRole = (role: string) => {
     const roleMap: Record<string, string> = {
-      'MLGOO_DILG': 'MLGOO DILG',
-      'ASSESSOR': 'Area Assessor',
-      'VALIDATOR': 'Validator',
-      'BLGU_USER': 'Barangay Official'
+      MLGOO_DILG: "MLGOO DILG",
+      ASSESSOR: "Area Assessor",
+      VALIDATOR: "Validator",
+      BLGU_USER: "Barangay Official",
     };
 
-    return roleMap[role] || role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return roleMap[role] || role.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
   // Debug: Log the user data
@@ -40,14 +40,14 @@ export default function UserNav() {
         // Clear auth store and force page reload to clear all state
         logout();
         // Force a page reload to clear any in-memory state
-        window.location.href = '/login';
+        window.location.href = "/login";
       },
       onError: (error) => {
         console.error("Logout failed:", error);
         // Even if logout fails on server, clear local auth state
         logout();
         // Force a page reload to clear any in-memory state
-        window.location.href = '/login';
+        window.location.href = "/login";
       },
     },
   });
@@ -79,10 +79,12 @@ export default function UserNav() {
       <div className="px-4 py-4 border-b border-[var(--border)]">
         <div className="flex items-center space-x-3">
           <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] flex items-center justify-center text-[var(--cityscape-accent-foreground)] font-semibold text-sm shadow-sm">
-            {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+            {user.name ? user.name.charAt(0).toUpperCase() : "U"}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-[var(--foreground)] truncate leading-tight">{user.name}</p>
+            <p className="text-sm font-semibold text-[var(--foreground)] truncate leading-tight">
+              {user.name}
+            </p>
             <p className="text-xs text-[var(--text-secondary)] truncate mt-0.5">{user.email}</p>
             <div className="mt-1.5">
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--hover)] text-[var(--foreground)] border border-[var(--border)]">
@@ -100,16 +102,16 @@ export default function UserNav() {
           <span className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
             Theme
           </span>
-          <ThemeToggle 
-            variant="ghost" 
+          <ThemeToggle
+            variant="ghost"
             size="icon"
             className="h-8 w-8 hover:bg-[var(--hover)] hover:text-[var(--foreground)]"
           />
         </div>
-        
+
         {/* Divider */}
         <div className="h-px bg-[var(--border)] mx-1"></div>
-        
+
         {/* Logout Button */}
         <button
           onClick={handleLogout}

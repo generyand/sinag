@@ -4,11 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  useDeleteMOV,
-  useUpdateIndicatorAnswer,
-  useUploadMOV,
-} from "@/hooks/useAssessment";
+import { useDeleteMOV, useUpdateIndicatorAnswer, useUploadMOV } from "@/hooks/useAssessment";
 import { cn } from "@/lib/utils";
 import { showError } from "@/lib/toast";
 import { ComplianceAnswer, Indicator } from "@/types/assessment";
@@ -126,20 +122,14 @@ export function IndicatorForm({ indicator, isLocked }: IndicatorFormProps) {
     <div className="space-y-6">
       {/* Indicator Description */}
       <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm p-4 mt-5">
-        <h3 className="font-semibold text-[var(--foreground)] mb-2">
-          Indicator Description
-        </h3>
+        <h3 className="font-semibold text-[var(--foreground)] mb-2">Indicator Description</h3>
         <p className="text-[var(--text-secondary)]">{indicator.description}</p>
       </div>
 
       {/* Technical Notes */}
       <div className="bg-[var(--cityscape-yellow)]/10 border border-[var(--cityscape-yellow)]/20 rounded-sm p-4">
-        <h3 className="font-semibold text-[var(--foreground)] mb-2">
-          Technical Notes
-        </h3>
-        <p className="text-[var(--text-secondary)] text-sm">
-          {indicator.technicalNotes}
-        </p>
+        <h3 className="font-semibold text-[var(--foreground)] mb-2">Technical Notes</h3>
+        <p className="text-[var(--text-secondary)] text-sm">{indicator.technicalNotes}</p>
       </div>
 
       {/* Assessor's Remarks (Conditional) */}
@@ -152,9 +142,7 @@ export function IndicatorForm({ indicator, isLocked }: IndicatorFormProps) {
                 <h3 className="font-semibold text-[var(--foreground)] mb-2">
                   Assessor&apos;s Comment for Rework
                 </h3>
-                <p className="text-[var(--text-secondary)]">
-                  {indicator.assessorComment}
-                </p>
+                <p className="text-[var(--text-secondary)]">{indicator.assessorComment}</p>
               </div>
             </div>
           </CardContent>
@@ -163,9 +151,7 @@ export function IndicatorForm({ indicator, isLocked }: IndicatorFormProps) {
 
       {/* Compliance Input */}
       <div className="space-y-4">
-        <h3 className="font-semibold text-[var(--foreground)]">
-          Compliance Assessment
-        </h3>
+        <h3 className="font-semibold text-[var(--foreground)]">Compliance Assessment</h3>
         <RadioGroup
           value={indicator.complianceAnswer || ""}
           onValueChange={handleAnswerChange}
@@ -205,16 +191,16 @@ export function IndicatorForm({ indicator, isLocked }: IndicatorFormProps) {
       {/* MOV Uploader (Conditional) */}
       {indicator.complianceAnswer === "yes" && (
         <div className="space-y-4">
-          <h3 className="font-semibold text-[var(--foreground)]">
-            Means of Verification (MOV)
-          </h3>
+          <h3 className="font-semibold text-[var(--foreground)]">Means of Verification (MOV)</h3>
           <p className="text-sm text-[var(--text-secondary)]">
-            Please upload supporting documents to verify your compliance.
-            Accepted formats: PDF, DOC, DOCX, JPG, PNG (Max 10MB per file)
+            Please upload supporting documents to verify your compliance. Accepted formats: PDF,
+            DOC, DOCX, JPG, PNG (Max 10MB per file)
           </p>
 
           {/* File Upload Area */}
           <div
+            role="region"
+            aria-label="File drop zone"
             className={cn(
               "border-2 border-dashed rounded-sm p-6 text-center transition-colors",
               dragActive
@@ -249,9 +235,7 @@ export function IndicatorForm({ indicator, isLocked }: IndicatorFormProps) {
                 click to browse
               </button>
             </p>
-            <p className="text-xs text-[var(--text-secondary)]">
-              Maximum file size: 10MB
-            </p>
+            <p className="text-xs text-[var(--text-secondary)]">Maximum file size: 10MB</p>
           </div>
 
           {/* Upload Progress */}
@@ -265,9 +249,7 @@ export function IndicatorForm({ indicator, isLocked }: IndicatorFormProps) {
           {/* Uploaded Files List */}
           {indicator.movFiles.length > 0 && (
             <div className="space-y-2">
-              <h4 className="font-medium text-[var(--foreground)]">
-                Uploaded Files
-              </h4>
+              <h4 className="font-medium text-[var(--foreground)]">Uploaded Files</h4>
               <div className="space-y-2">
                 {indicator.movFiles.map((file) => (
                   <div
@@ -277,12 +259,10 @@ export function IndicatorForm({ indicator, isLocked }: IndicatorFormProps) {
                     <div className="flex items-center space-x-3">
                       <FileText className="h-5 w-5 text-[var(--text-secondary)]" />
                       <div>
-                        <p className="text-sm font-medium text-[var(--foreground)]">
-                          {file.name}
-                        </p>
+                        <p className="text-sm font-medium text-[var(--foreground)]">{file.name}</p>
                         <p className="text-xs text-[var(--text-secondary)]">
                           {formatFileSize(file.size)} • Uploaded{" "}
-                          {file.uploadedAt ? formatDate(file.uploadedAt) : 'Just now'}
+                          {file.uploadedAt ? formatDate(file.uploadedAt) : "Just now"}
                         </p>
                       </div>
                     </div>

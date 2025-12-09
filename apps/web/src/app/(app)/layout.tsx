@@ -242,8 +242,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Mobile backdrop */}
       {sidebarOpen && (
         <div
+          role="button"
+          tabIndex={0}
+          aria-label="Close sidebar"
           className="fixed inset-0 bg-[var(--overlay)] z-40 md:hidden transition-opacity duration-300"
           onClick={() => setSidebarOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setSidebarOpen(false);
+            }
+          }}
         />
       )}
 
@@ -385,37 +394,36 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           sidebarCollapsed ? "md:pl-20" : "md:pl-64"
         }`}
       >
-        <div className="sticky top-0 z-40 md:hidden bg-[var(--card)] border-b border-[var(--border)] flex items-center px-4 py-3 gap-3 transition-colors duration-300 shadow-sm">
-          <button
-            aria-label="Open navigation menu"
-            aria-expanded={sidebarOpen}
-            className="p-2 -ml-2 rounded-md text-[var(--icon-default)] hover:text-[var(--foreground)] hover:bg-[var(--hover)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--cityscape-yellow)] transition-colors duration-200"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Menu className="h-6 w-6" aria-hidden="true" />
-          </button>
-
-          <div className="flex items-center gap-2">
-            <Image
-              src="/logo/logo.webp" // Correct path relative to public folder
-              alt="SINAG Logo"
-              width={28}
-              height={28}
-              className="w-7 h-7 object-contain flex-shrink-0"
-              unoptimized
-              priority
-            />
-            <span className="text-lg font-bold text-[var(--foreground)]">SINAG</span>
-          </div>
-        </div>
-
-        {/* Header */}
-        <header className="bg-[var(--card)] shadow-sm transition-colors duration-300">
+        {/* Combined Sticky Header */}
+        <header className="sticky top-0 z-40 bg-[var(--card)] shadow-sm border-b border-[var(--border)] transition-colors duration-300">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-6">
-              <div className="flex items-center">
-                <div>
-                  <h2 className="text-2xl font-bold leading-7 text-[var(--foreground)] sm:truncate">
+            <div className="flex justify-between items-center py-4">
+              <div className="flex items-center gap-3 md:gap-0">
+                {/* Mobile Menu Button */}
+                <button
+                  aria-label="Open navigation menu"
+                  aria-expanded={sidebarOpen}
+                  className="p-2 -ml-2 rounded-md md:hidden text-[var(--icon-default)] hover:text-[var(--foreground)] hover:bg-[var(--hover)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--cityscape-yellow)] transition-colors duration-200"
+                  onClick={() => setSidebarOpen(true)}
+                >
+                  <Menu className="h-6 w-6" aria-hidden="true" />
+                </button>
+
+                {/* Mobile Logo (Icon Only) */}
+                <div className="md:hidden flex items-center">
+                  <Image
+                    src="/logo/logo.webp"
+                    alt="SINAG Logo"
+                    width={28}
+                    height={28}
+                    className="w-7 h-7 object-contain"
+                    unoptimized
+                    priority
+                  />
+                </div>
+
+                <div className="md:ml-0">
+                  <h2 className="text-xl md:text-2xl font-bold leading-7 text-[var(--foreground)] sm:truncate">
                     {isAdmin
                       ? // Admin-specific titles
                         pathname === "/mlgoo/reports"
@@ -462,7 +470,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   </h2>
                   {/* Show context-specific subtitle for all users */}
                   {!isAdmin && pathname.startsWith("/blgu") && (
-                    <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                    <p className="mt-1 text-sm text-[var(--text-secondary)] hidden sm:block">
                       {pathname === "/blgu/dashboard" &&
                         "Monitor your SGLGB performance and track assessment progress"}
                       {pathname === "/blgu/assessments" &&
@@ -472,7 +480,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     </p>
                   )}
                   {isAssessor && pathname.startsWith("/assessor") && (
-                    <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                    <p className="mt-1 text-sm text-[var(--text-secondary)] hidden sm:block">
                       {pathname === "/assessor/submissions" &&
                         `Governance Area: ${governanceAreaName || "Loading..."}`}
                       {pathname === "/assessor/analytics" &&
@@ -482,7 +490,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     </p>
                   )}
                   {isAdmin && (
-                    <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                    <p className="mt-1 text-sm text-[var(--text-secondary)] hidden sm:block">
                       {pathname === "/mlgoo/dashboard" && "Welcome to your SINAG dashboard"}
                       {pathname === "/mlgoo/submissions" &&
                         "Review and manage submitted assessments from barangays"}
@@ -504,7 +512,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     </p>
                   )}
                   {isExternalUser && pathname.startsWith("/katuparan") && (
-                    <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                    <p className="mt-1 text-sm text-[var(--text-secondary)] hidden sm:block">
                       {pathname === "/katuparan/dashboard" &&
                         "High-level, anonymized insights into SGLGB performance across all barangays"}
                       {pathname === "/katuparan/reports" &&
@@ -525,7 +533,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     className="flex items-center justify-center space-x-0 sm:space-x-2 p-2 rounded-full text-[var(--icon-default)] hover:text-[var(--cityscape-yellow)] hover:bg-[var(--hover)] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--cityscape-yellow)] focus:ring-offset-2 aspect-square sm:aspect-auto"
                     onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                   >
-                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] flex items-center justify-center text-[var(--cityscape-accent-foreground)] font-semibold text-sm">
+                    <div className="h-8 w-8 rounded-full bg-linear-to-br from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] flex items-center justify-center text-[var(--cityscape-accent-foreground)] font-semibold text-sm">
                       {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
                     </div>
                     <span className="hidden sm:block text-sm font-medium text-[var(--foreground)]">
@@ -557,7 +565,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* Click outside to close dropdown */}
       {profileDropdownOpen && (
-        <div className="fixed inset-0 z-40" onClick={() => setProfileDropdownOpen(false)} />
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label="Close dropdown"
+          className="fixed inset-0 z-40"
+          onClick={() => setProfileDropdownOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " " || e.key === "Escape") {
+              e.preventDefault();
+              setProfileDropdownOpen(false);
+            }
+          }}
+        />
       )}
     </div>
   );

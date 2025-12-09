@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   FileText,
   FileSpreadsheet,
@@ -22,9 +22,9 @@ import {
   Loader2,
   CheckCircle2,
   AlertTriangle,
-} from 'lucide-react';
-import { api } from '@/lib/api';
-import { useToast } from '@/hooks/use-toast';
+} from "lucide-react";
+import { api } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 /**
  * Katuparan Center Reports Page
@@ -37,38 +37,38 @@ interface ReportType {
   id: string;
   name: string;
   description: string;
-  formats: ('pdf' | 'csv' | 'txt')[];
+  formats: ("pdf" | "csv" | "txt")[];
   icon: React.ReactNode;
   endpoint: string;
 }
 
 const REPORT_TYPES: ReportType[] = [
   {
-    id: 'performance-summary',
-    name: 'Municipal SGLGB Performance Summary',
+    id: "performance-summary",
+    name: "Municipal SGLGB Performance Summary",
     description:
-      'Contains aggregated data including overall pass/fail rates, governance area breakdowns, and compliance statistics.',
-    formats: ['pdf', 'csv'],
+      "Contains aggregated data including overall pass/fail rates, governance area breakdowns, and compliance statistics.",
+    formats: ["pdf", "csv"],
     icon: <FileText className="h-5 w-5" />,
-    endpoint: '/api/v1/external/analytics/export',
+    endpoint: "/api/v1/external/analytics/export",
   },
   {
-    id: 'failing-indicators',
-    name: 'Top Failing Indicators Report',
+    id: "failing-indicators",
+    name: "Top Failing Indicators Report",
     description:
-      'A detailed list of indicators ranked by failure rate across the municipality, useful for identifying systemic gaps.',
-    formats: ['csv'],
+      "A detailed list of indicators ranked by failure rate across the municipality, useful for identifying systemic gaps.",
+    formats: ["csv"],
     icon: <FileSpreadsheet className="h-5 w-5" />,
-    endpoint: '/api/v1/external/analytics/export/csv',
+    endpoint: "/api/v1/external/analytics/export/csv",
   },
   {
-    id: 'ai-insights',
-    name: 'Aggregated AI Insights',
+    id: "ai-insights",
+    name: "Aggregated AI Insights",
     description:
-      'A downloadable version of AI-generated recommendations and capacity development needs based on aggregated assessment data.',
-    formats: ['pdf'],
+      "A downloadable version of AI-generated recommendations and capacity development needs based on aggregated assessment data.",
+    formats: ["pdf"],
     icon: <FileText className="h-5 w-5" />,
-    endpoint: '/api/v1/external/analytics/export/pdf',
+    endpoint: "/api/v1/external/analytics/export/pdf",
   },
 ];
 
@@ -82,41 +82,41 @@ export default function KatuparanReportsPage() {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => (currentYear - i).toString());
 
-  const handleDownload = async (reportId: string, format: 'pdf' | 'csv' | 'txt') => {
+  const handleDownload = async (reportId: string, format: "pdf" | "csv" | "txt") => {
     setDownloadingReport(`${reportId}-${format}`);
     setDownloadSuccess(null);
     setDownloadError(null);
 
     try {
       // Map report type to appropriate endpoint
-      let endpoint = '';
-      if (format === 'csv') {
-        endpoint = '/api/v1/external/analytics/export/csv';
-      } else if (format === 'pdf') {
-        endpoint = '/api/v1/external/analytics/export/pdf';
+      let endpoint = "";
+      if (format === "csv") {
+        endpoint = "/api/v1/external/analytics/export/csv";
+      } else if (format === "pdf") {
+        endpoint = "/api/v1/external/analytics/export/pdf";
       }
 
       // Use axios instance which handles auth automatically
       const response = await api.get(endpoint, {
         params: { assessment_cycle: selectedYear },
-        responseType: 'blob',
+        responseType: "blob",
       });
 
       // Get the blob and create download
       const blob = new Blob([response.data], {
-        type: format === 'pdf' ? 'application/pdf' : 'text/csv',
+        type: format === "pdf" ? "application/pdf" : "text/csv",
       });
       const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = downloadUrl;
 
       // Get filename from Content-Disposition header or generate one
-      const contentDisposition = response.headers['content-disposition'];
+      const contentDisposition = response.headers["content-disposition"];
       let filename = `sinag_report_${reportId}_${selectedYear}.${format}`;
       if (contentDisposition) {
         const matches = contentDisposition.match(/filename=([^;]+)/);
         if (matches && matches[1]) {
-          filename = matches[1].replace(/"/g, '');
+          filename = matches[1].replace(/"/g, "");
         }
       }
 
@@ -128,18 +128,18 @@ export default function KatuparanReportsPage() {
 
       setDownloadSuccess(`${reportId}-${format}`);
       toast({
-        title: 'Download Complete',
+        title: "Download Complete",
         description: `${filename} has been downloaded successfully.`,
       });
       setTimeout(() => setDownloadSuccess(null), 3000);
     } catch (error) {
-      console.error('Download error:', error);
+      console.error("Download error:", error);
       const errorMessage =
-        error instanceof Error ? error.message : 'Failed to download report. Please try again.';
+        error instanceof Error ? error.message : "Failed to download report. Please try again.";
       setDownloadError(errorMessage);
       toast({
-        variant: 'destructive',
-        title: 'Download Failed',
+        variant: "destructive",
+        title: "Download Failed",
         description: errorMessage,
       });
     } finally {
@@ -149,11 +149,11 @@ export default function KatuparanReportsPage() {
 
   const getFormatIcon = (format: string) => {
     switch (format) {
-      case 'pdf':
+      case "pdf":
         return <FileText className="h-4 w-4" />;
-      case 'csv':
+      case "csv":
         return <FileSpreadsheet className="h-4 w-4" />;
-      case 'txt':
+      case "txt":
         return <FileText className="h-4 w-4" />;
       default:
         return <Download className="h-4 w-4" />;
@@ -162,12 +162,12 @@ export default function KatuparanReportsPage() {
 
   const getFormatLabel = (format: string) => {
     switch (format) {
-      case 'pdf':
-        return 'PDF Document';
-      case 'csv':
-        return 'CSV Spreadsheet';
-      case 'txt':
-        return 'Text File';
+      case "pdf":
+        return "PDF Document";
+      case "csv":
+        return "CSV Spreadsheet";
+      case "txt":
+        return "Text File";
       default:
         return format.toUpperCase();
     }
@@ -255,17 +255,17 @@ export default function KatuparanReportsPage() {
                     return (
                       <Button
                         key={format}
-                        variant={isSuccess ? 'default' : 'outline'}
+                        variant={isSuccess ? "default" : "outline"}
                         size="sm"
                         onClick={() => handleDownload(report.id, format)}
                         disabled={isDownloading}
-                        className={`min-w-[140px] ${isSuccess ? 'bg-green-600 hover:bg-green-600' : ''}`}
+                        className={`min-w-[140px] ${isSuccess ? "bg-green-600 hover:bg-green-600" : ""}`}
                         aria-label={
                           isDownloading
                             ? `Downloading ${report.name} as ${format.toUpperCase()}`
                             : isSuccess
-                            ? `${report.name} ${format.toUpperCase()} downloaded successfully`
-                            : `Download ${report.name} as ${format.toUpperCase()}`
+                              ? `${report.name} ${format.toUpperCase()} downloaded successfully`
+                              : `Download ${report.name} as ${format.toUpperCase()}`
                         }
                         aria-live="polite"
                       >

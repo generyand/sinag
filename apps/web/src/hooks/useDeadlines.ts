@@ -12,13 +12,13 @@
 import type {
   DeadlineOverrideCreate,
   DeadlineOverrideListResponse,
-  DeadlineStatusListResponse
-} from '@sinag/shared';
+  DeadlineStatusListResponse,
+} from "@sinag/shared";
 import {
   useGetAdminDeadlinesOverrides,
   useGetAdminDeadlinesStatus,
-  usePostAdminDeadlinesOverride
-} from '@sinag/shared';
+  usePostAdminDeadlinesOverride,
+} from "@sinag/shared";
 
 /**
  * Hook for managing deadline status and overrides.
@@ -133,16 +133,16 @@ export type DeadlineOverrideFormData = DeadlineOverrideCreate;
  */
 export function getStatusColor(status: string): string {
   switch (status) {
-    case 'submitted_on_time':
-      return 'green'; // Green: Submitted on time
-    case 'submitted_late':
-      return 'blue'; // Blue: Late but submitted
-    case 'pending':
-      return 'yellow'; // Yellow: Approaching deadline
-    case 'overdue':
-      return 'red'; // Red: Overdue
+    case "submitted_on_time":
+      return "green"; // Green: Submitted on time
+    case "submitted_late":
+      return "blue"; // Blue: Late but submitted
+    case "pending":
+      return "yellow"; // Yellow: Approaching deadline
+    case "overdue":
+      return "red"; // Red: Overdue
     default:
-      return 'gray';
+      return "gray";
   }
 }
 
@@ -151,14 +151,14 @@ export function getStatusColor(status: string): string {
  */
 export function getStatusLabel(status: string): string {
   switch (status) {
-    case 'submitted_on_time':
-      return 'On Time';
-    case 'submitted_late':
-      return 'Late (Submitted)';
-    case 'pending':
-      return 'Pending';
-    case 'overdue':
-      return 'Overdue';
+    case "submitted_on_time":
+      return "On Time";
+    case "submitted_late":
+      return "Late (Submitted)";
+    case "pending":
+      return "Pending";
+    case "overdue":
+      return "Overdue";
     default:
       return status;
   }
@@ -168,17 +168,17 @@ export function getStatusLabel(status: string): string {
  * Helper function to get status badge classes.
  */
 export function getStatusBadgeClasses(status: string): string {
-  const baseClasses = 'px-2 py-1 rounded-full text-xs font-medium';
+  const baseClasses = "px-2 py-1 rounded-full text-xs font-medium";
   const color = getStatusColor(status);
 
   switch (color) {
-    case 'green':
+    case "green":
       return `${baseClasses} bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400`;
-    case 'blue':
+    case "blue":
       return `${baseClasses} bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400`;
-    case 'yellow':
+    case "yellow":
       return `${baseClasses} bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400`;
-    case 'red':
+    case "red":
       return `${baseClasses} bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400`;
     default:
       return `${baseClasses} bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-400`;

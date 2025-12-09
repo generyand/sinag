@@ -280,7 +280,13 @@ export function SulopBarangayMapIntegrated({
               showDetailsPanel ? "md:w-2/3" : "md:w-full"
             }`}
           >
-            <div className="relative w-full aspect-[2.15/1] bg-gray-50 dark:bg-gray-900 rounded-sm overflow-hidden border-2 border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="relative w-full aspect-[2.15/1] min-h-[250px] md:min-h-0 bg-gray-50 dark:bg-gray-900 rounded-sm overflow-hidden border-2 border-gray-200 dark:border-gray-700 shadow-sm">
+              {/* Title Overlay */}
+              <div className="absolute top-4 left-0 right-0 text-center pointer-events-none z-10 w-full px-4">
+                <h3 className="text-xs md:text-lg lg:text-xl font-semibold text-gray-900 dark:text-gray-100 bg-white/50 dark:bg-black/50 backdrop-blur-sm py-1 px-3 rounded-full inline-block mx-auto shadow-sm">
+                  {displayedBarangay?.name || "Sulop, Davao del Sur"}
+                </h3>
+              </div>
               <svg
                 viewBox="0 0 1920 892"
                 className="w-full h-full"
@@ -303,17 +309,6 @@ export function SulopBarangayMapIntegrated({
                   onClick={() => setSelectedBarangay(null)}
                   aria-hidden="true"
                 />
-
-                {/* Title */}
-                <text
-                  x="960"
-                  y="30"
-                  textAnchor="middle"
-                  className="text-2xl font-semibold fill-gray-900 dark:fill-gray-100"
-                  aria-hidden="true"
-                >
-                  Sulop, Davao del Sur
-                </text>
 
                 {/* Barangay Paths - High Quality SVG with Bezier Curves */}
                 {Object.entries(BARANGAY_PATHS).map(([svgId, pathData]) => {

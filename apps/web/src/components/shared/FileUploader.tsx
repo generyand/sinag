@@ -49,9 +49,7 @@ export default function FileUploader({
 
     if (
       accept &&
-      !accept
-        .split(",")
-        .some((type) => file.name.toLowerCase().endsWith(type.trim()))
+      !accept.split(",").some((type) => file.name.toLowerCase().endsWith(type.trim()))
     ) {
       return `File type not supported. Accepted types: ${accept}`;
     }
@@ -90,8 +88,7 @@ export default function FileUploader({
         const file = validFiles[i];
         const uploadResult = await uploadWithProgress(uploadUrl, file, {
           onProgress: (progress) => {
-            const totalProgress =
-              (i * 100 + progress.percentage) / validFiles.length;
+            const totalProgress = (i * 100 + progress.percentage) / validFiles.length;
             setUploadProgress(Math.round(totalProgress));
           },
         });
@@ -168,11 +165,9 @@ export default function FileUploader({
           isDragOver
             ? "border-[var(--cityscape-yellow)] bg-[var(--cityscape-yellow)]/5 scale-[1.01]"
             : disabled || isUploading
-            ? "border-[var(--border)] bg-[var(--muted)] opacity-60"
-            : "border-[var(--border)] hover:border-[var(--cityscape-yellow)] hover:bg-[var(--hover)]"
-        } ${
-          !disabled && !isUploading ? "cursor-pointer" : "cursor-not-allowed"
-        }`}
+              ? "border-[var(--border)] bg-[var(--muted)] opacity-60"
+              : "border-[var(--border)] hover:border-[var(--cityscape-yellow)] hover:bg-[var(--hover)]"
+        } ${!disabled && !isUploading ? "cursor-pointer" : "cursor-not-allowed"}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -199,13 +194,10 @@ export default function FileUploader({
           </div>
         ) : (
           <div className="space-y-3 py-2">
-            <div className={`mx-auto h-12 w-12 rounded-full flex items-center justify-center transition-colors duration-200 ${isDragOver ? 'bg-[var(--cityscape-yellow)]/20 text-[var(--cityscape-yellow-dark)]' : 'bg-[var(--hover)] text-[var(--text-secondary)] group-hover:text-[var(--cityscape-yellow-dark)] group-hover:bg-[var(--cityscape-yellow)]/10'}`}>
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+            <div
+              className={`mx-auto h-12 w-12 rounded-full flex items-center justify-center transition-colors duration-200 ${isDragOver ? "bg-[var(--cityscape-yellow)]/20 text-[var(--cityscape-yellow-dark)]" : "bg-[var(--hover)] text-[var(--text-secondary)] group-hover:text-[var(--cityscape-yellow-dark)] group-hover:bg-[var(--cityscape-yellow)]/10"}`}
+            >
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -222,7 +214,8 @@ export default function FileUploader({
                 or drag and drop
               </p>
               <p className="text-sm text-[var(--text-secondary)] mt-1">
-                {accept.replace(/\./g, "").toUpperCase().split(",").join(", ")} files up to {maxSize}MB
+                {accept.replace(/\./g, "").toUpperCase().split(",").join(", ")} files up to{" "}
+                {maxSize}MB
                 {multiple ? " (multiple allowed)" : ""}
               </p>
             </div>
@@ -244,12 +237,7 @@ export default function FileUploader({
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="flex-shrink-0 w-8 h-8 rounded bg-[var(--hover)] flex items-center justify-center text-[var(--text-secondary)]">
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -281,12 +269,7 @@ export default function FileUploader({
                     className="flex-shrink-0 p-2 text-[var(--text-secondary)] hover:text-red-500 hover:bg-red-50 rounded-full transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
                     title="Delete file"
                   >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -316,12 +299,7 @@ export default function FileUploader({
               >
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -332,7 +310,9 @@ export default function FileUploader({
                   </div>
                   <div className="text-sm">
                     <p className="font-medium text-[var(--foreground)]">{file.name}</p>
-                    <p className="text-xs text-[var(--text-secondary)]">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <p className="text-xs text-[var(--text-secondary)]">
+                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
                   </div>
                 </div>
               </div>

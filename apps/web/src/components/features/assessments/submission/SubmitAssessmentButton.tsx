@@ -29,12 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { usePostAssessmentsAssessmentIdSubmit } from "@sinag/shared";
 import type { SubmissionValidationResult } from "@sinag/shared";
@@ -158,8 +153,8 @@ export function SubmitAssessmentButton({
                   <li>Your assessment will be locked for editing</li>
                   <li>An assessor will review your submission</li>
                   <li>
-                    You will only be able to edit if the assessor requests rework (one
-                    rework cycle allowed)
+                    You will only be able to edit if the assessor requests rework (one rework cycle
+                    allowed)
                   </li>
                 </ul>
                 <div className="flex items-start gap-2 p-3 bg-muted rounded-md mt-3">

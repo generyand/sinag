@@ -128,16 +128,9 @@ describe("ExportControls Error Handling", () => {
 
   describe("PDF Export Error Handling", () => {
     it("should show toast error when PDF export fails", async () => {
-      (exportReportToPDF as Mock).mockRejectedValue(
-        new Error("PDF generation failed")
-      );
+      (exportReportToPDF as Mock).mockRejectedValue(new Error("PDF generation failed"));
 
-      render(
-        <ExportControls
-          tableData={mockTableData}
-          reportsData={mockReportsData as any}
-        />
-      );
+      render(<ExportControls tableData={mockTableData} reportsData={mockReportsData as any} />);
 
       const pdfButton = screen.getByText("Export PDF");
       fireEvent.click(pdfButton);
@@ -161,12 +154,7 @@ describe("ExportControls Error Handling", () => {
 
       (exportReportToPDF as Mock).mockRejectedValue(new Error("Export failed"));
 
-      render(
-        <ExportControls
-          tableData={mockTableData}
-          reportsData={mockReportsData as any}
-        />
-      );
+      render(<ExportControls tableData={mockTableData} reportsData={mockReportsData as any} />);
 
       const pdfButton = screen.getByText("Export PDF");
       fireEvent.click(pdfButton);
@@ -182,24 +170,14 @@ describe("ExportControls Error Handling", () => {
 
   describe("Button States", () => {
     it("should enable CSV button when data is available", () => {
-      render(
-        <ExportControls
-          tableData={mockTableData}
-          reportsData={mockReportsData as any}
-        />
-      );
+      render(<ExportControls tableData={mockTableData} reportsData={mockReportsData as any} />);
 
       const csvButton = screen.getByText("Export CSV").closest("button");
       expect(csvButton).not.toBeDisabled();
     });
 
     it("should enable PDF button when reports data is available", () => {
-      render(
-        <ExportControls
-          tableData={mockTableData}
-          reportsData={mockReportsData as any}
-        />
-      );
+      render(<ExportControls tableData={mockTableData} reportsData={mockReportsData as any} />);
 
       const pdfButton = screen.getByText("Export PDF").closest("button");
       expect(pdfButton).not.toBeDisabled();
@@ -227,12 +205,7 @@ describe("ExportControls Error Handling", () => {
     it("should include helpful description in PDF error message", async () => {
       (exportReportToPDF as Mock).mockRejectedValue(new Error("Failed"));
 
-      render(
-        <ExportControls
-          tableData={mockTableData}
-          reportsData={mockReportsData as any}
-        />
-      );
+      render(<ExportControls tableData={mockTableData} reportsData={mockReportsData as any} />);
 
       const pdfButton = screen.getByText("Export PDF");
       fireEvent.click(pdfButton);
@@ -261,12 +234,7 @@ describe("ExportControls Error Handling", () => {
 
       // Test PDF error
       (exportReportToPDF as Mock).mockRejectedValue(new Error("PDF error"));
-      rerender(
-        <ExportControls
-          tableData={mockTableData}
-          reportsData={mockReportsData as any}
-        />
-      );
+      rerender(<ExportControls tableData={mockTableData} reportsData={mockReportsData as any} />);
       fireEvent.click(screen.getByText("Export PDF"));
 
       await waitFor(() => {

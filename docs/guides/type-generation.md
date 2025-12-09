@@ -4,7 +4,9 @@ This guide explains the automatic TypeScript type generation system in the SINAG
 
 ## Overview
 
-SINAG uses [Orval](https://orval.dev/) to automatically generate TypeScript types and React Query hooks from the FastAPI backend's OpenAPI specification. This ensures end-to-end type safety between the backend (Python/Pydantic) and frontend (TypeScript/React).
+SINAG uses [Orval](https://orval.dev/) to automatically generate TypeScript types and React Query
+hooks from the FastAPI backend's OpenAPI specification. This ensures end-to-end type safety between
+the backend (Python/Pydantic) and frontend (TypeScript/React).
 
 ## Architecture
 
@@ -38,6 +40,7 @@ Frontend imports from @sinag/shared
 6. ✅ Modifying database models that affect API responses
 
 **Command:**
+
 ```bash
 pnpm generate-types
 ```
@@ -47,11 +50,13 @@ pnpm generate-types
 ### Step 1: FastAPI OpenAPI Generation
 
 FastAPI automatically generates an OpenAPI specification based on:
+
 - Pydantic schema definitions in `apps/api/app/schemas/`
 - Endpoint definitions in `apps/api/app/api/v1/`
 - FastAPI tags for organization
 
 **Example Pydantic Schema:**
+
 ```python
 # apps/api/app/schemas/assessment.py
 from pydantic import BaseModel, Field
@@ -65,6 +70,7 @@ class SubmitAssessmentResponse(BaseModel):
 ```
 
 **Example FastAPI Endpoint:**
+
 ```python
 # apps/api/app/api/v1/assessments.py
 from app.schemas.assessment import SubmitAssessmentResponse
@@ -87,6 +93,7 @@ Orval reads the OpenAPI spec and generates:
 2. **React Query Hooks** (from FastAPI endpoints)
 
 **Generated TypeScript Type:**
+
 ```typescript
 // packages/shared/src/generated/schemas/assessments/index.ts
 export interface SubmitAssessmentResponse {
@@ -102,18 +109,17 @@ export interface SubmitAssessmentResponse {
 ```
 
 **Generated React Query Hook:**
+
 ```typescript
 // packages/shared/src/generated/endpoints/assessments/index.ts
-export const usePostAssessmentsAssessmentIdSubmit = <TError = HTTPValidationError>(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof postAssessments$AssessmentIdSubmit>>,
-      TError,
-      { assessmentId: number; },
-      unknown
-    >;
-  }
-) => {
+export const usePostAssessmentsAssessmentIdSubmit = <TError = HTTPValidationError>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof postAssessments$AssessmentIdSubmit>>,
+    TError,
+    { assessmentId: number },
+    unknown
+  >;
+}) => {
   // ... React Query mutation hook implementation
 };
 ```
@@ -123,6 +129,7 @@ export const usePostAssessmentsAssessmentIdSubmit = <TError = HTTPValidationErro
 Orval organizes generated files by FastAPI tags:
 
 **Schema Organization:**
+
 ```
 packages/shared/src/generated/schemas/
 ├── assessments/       ← tag="assessments"
@@ -135,6 +142,7 @@ packages/shared/src/generated/schemas/
 ```
 
 **Endpoint Organization:**
+
 ```
 packages/shared/src/generated/endpoints/
 ├── assessments/       ← tag="assessments"
@@ -152,17 +160,17 @@ Type generation is configured in [`orval.config.ts`](../../orval.config.ts):
 export default {
   sinag: {
     input: {
-      target: 'http://localhost:8000/openapi.json',
+      target: "http://localhost:8000/openapi.json",
     },
     output: {
-      target: 'packages/shared/src/generated/endpoints/index.ts',
-      schemas: 'packages/shared/src/generated/schemas',
-      client: 'react-query',
-      mode: 'tags-split',
+      target: "packages/shared/src/generated/endpoints/index.ts",
+      schemas: "packages/shared/src/generated/schemas",
+      client: "react-query",
+      mode: "tags-split",
       override: {
         mutator: {
-          path: 'apps/web/src/lib/api.ts',
-          name: 'customInstance',
+          path: "apps/web/src/lib/api.ts",
+          name: "customInstance",
         },
       },
     },
@@ -171,6 +179,7 @@ export default {
 ```
 
 **Key Settings:**
+
 - `input.target`: OpenAPI spec URL (backend must be running)
 - `output.target`: Where to generate endpoint hooks
 - `output.schemas`: Where to generate TypeScript types
@@ -183,10 +192,10 @@ export default {
 
 ```typescript
 // Import specific types
-import { SubmitAssessmentResponse } from '@sinag/shared';
+import { SubmitAssessmentResponse } from "@sinag/shared";
 
 // Import from specific tag
-import type { User, UserCreate } from '@sinag/shared/schemas/users';
+import type { User, UserCreate } from "@sinag/shared/schemas/users";
 ```
 
 ### Using Generated Hooks
@@ -222,6 +231,7 @@ function SubmitButton({ assessmentId }: { assessmentId: number }) {
 ### Epic 5.0 Submission & Rework Types
 
 **Schemas:**
+
 - `schemas/assessments/SubmitAssessmentResponse.ts`
 - `schemas/assessments/ResubmitAssessmentResponse.ts`
 - `schemas/requestrework/RequestReworkRequest.ts`
@@ -230,26 +240,27 @@ function SubmitButton({ assessmentId }: { assessmentId: number }) {
 - `schemas/system/SubmissionStatusResponse.ts`
 
 **Hooks:**
+
 - `endpoints/assessments/usePostAssessmentsAssessmentIdSubmit` - Submit assessment
 - `endpoints/assessments/usePostAssessmentsAssessmentIdRequestRework` - Request rework
 - `endpoints/blgu-dashboard/useGetBlguDashboardAssessmentId` - Get dashboard data
 
 ### Tag Summary (as of Epic 6 Story 6.2)
 
-| Tag | Schemas | Endpoints | Description |
-|-----|---------|-----------|-------------|
-| assessments | 50 | 15+ | Assessment CRUD, submission, validation |
-| users | 37 | 10+ | User management, authentication |
-| movs | 13 | 4 | MOV file upload and management |
-| blgu-dashboard | - | 2 | BLGU dashboard data |
-| assessor | 4 | 5+ | Assessor review and queue |
-| indicators | 59 | 12+ | Indicator management |
-| system | 46 | 8+ | System health, audit logs |
-| bbis | 31 | 8+ | BBI management |
-| auth | 2 | 2 | Authentication |
-| analytics | 2 | 3+ | Analytics and reporting |
-| admin | 8 | 6+ | Admin operations |
-| lookups | - | 5+ | Lookup data |
+| Tag            | Schemas | Endpoints | Description                             |
+| -------------- | ------- | --------- | --------------------------------------- |
+| assessments    | 50      | 15+       | Assessment CRUD, submission, validation |
+| users          | 37      | 10+       | User management, authentication         |
+| movs           | 13      | 4         | MOV file upload and management          |
+| blgu-dashboard | -       | 2         | BLGU dashboard data                     |
+| assessor       | 4       | 5+        | Assessor review and queue               |
+| indicators     | 59      | 12+       | Indicator management                    |
+| system         | 46      | 8+        | System health, audit logs               |
+| bbis           | 31      | 8+        | BBI management                          |
+| auth           | 2       | 2         | Authentication                          |
+| analytics      | 2       | 3+        | Analytics and reporting                 |
+| admin          | 8       | 6+        | Admin operations                        |
+| lookups        | -       | 5+        | Lookup data                             |
 
 **Total:** 352+ TypeScript types generated across 26 schema files
 
@@ -260,6 +271,7 @@ function SubmitButton({ assessmentId }: { assessmentId: number }) {
 **Cause:** Backend API is not running.
 
 **Solution:**
+
 ```bash
 # Start the backend first
 cd apps/api
@@ -274,6 +286,7 @@ pnpm generate-types
 **Cause:** Breaking changes in backend schema.
 
 **Solution:**
+
 1. Check what changed in the backend schema
 2. Update frontend code to match new types
 3. Fix any type errors in your IDE
@@ -284,11 +297,13 @@ pnpm generate-types
 **Cause:** Forgot to run type generation after backend changes.
 
 **Solution:**
+
 ```bash
 pnpm generate-types
 ```
 
 **Tip:** Add this to your workflow:
+
 1. Make backend changes
 2. Run `pnpm generate-types`
 3. Fix any frontend type errors
@@ -299,12 +314,13 @@ pnpm generate-types
 **Cause:** Same schema used in multiple tags.
 
 **Solution:** Orval handles this automatically by namespacing. Import from the correct tag:
+
 ```typescript
 // ✅ Good - specific import
-import { User } from '@sinag/shared/schemas/users';
+import { User } from "@sinag/shared/schemas/users";
 
 // ⚠️ Might work but less clear
-import { User } from '@sinag/shared';
+import { User } from "@sinag/shared";
 ```
 
 ### Generated hooks not working
@@ -312,9 +328,10 @@ import { User } from '@sinag/shared';
 **Cause:** Missing or incorrect API client configuration.
 
 **Solution:** Verify `apps/web/src/lib/api.ts` exports `customInstance`:
+
 ```typescript
 // apps/web/src/lib/api.ts
-import axios from 'axios';
+import axios from "axios";
 
 export const customInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_V1_URL,
@@ -327,13 +344,15 @@ export const customInstance = axios.create({
 ### ✅ DO
 
 1. **Run type generation after every backend change**
+
    ```bash
    pnpm generate-types
    ```
 
 2. **Use generated types everywhere**
+
    ```typescript
-   import { SubmitAssessmentResponse } from '@sinag/shared';
+   import { SubmitAssessmentResponse } from "@sinag/shared";
 
    function handleSubmit(data: SubmitAssessmentResponse) {
      // TypeScript knows all fields!
@@ -341,6 +360,7 @@ export const customInstance = axios.create({
    ```
 
 3. **Use generated hooks for API calls**
+
    ```typescript
    const { data, isLoading } = useGetAssessmentsList();
    ```
@@ -357,6 +377,7 @@ export const customInstance = axios.create({
    - They will be overwritten on next generation
 
 2. **Don't duplicate types manually**
+
    ```typescript
    // ❌ Bad - manual duplication
    interface SubmitResponse {
@@ -365,16 +386,17 @@ export const customInstance = axios.create({
    }
 
    // ✅ Good - use generated type
-   import { SubmitAssessmentResponse } from '@sinag/shared';
+   import { SubmitAssessmentResponse } from "@sinag/shared";
    ```
 
 3. **Don't skip type generation**
    - Frontend will break if types don't match backend
 
 4. **Don't use `any` to bypass type errors**
+
    ```typescript
    // ❌ Bad
-   const data: any = await fetch('/api/submit');
+   const data: any = await fetch("/api/submit");
 
    // ✅ Good
    const submitMutation = usePostAssessmentsSubmit();
@@ -386,6 +408,7 @@ export const customInstance = axios.create({
 For continuous integration, ensure type generation runs as part of your build:
 
 **In `.github/workflows/ci.yml`:**
+
 ```yaml
 - name: Generate Types
   run: pnpm generate-types
@@ -395,6 +418,7 @@ For continuous integration, ensure type generation runs as part of your build:
 ```
 
 **In production build:**
+
 ```bash
 # Type generation is included in web build
 cd apps/web
@@ -406,6 +430,7 @@ pnpm build  # Runs generate-types first
 If you have manual type definitions that should be replaced with generated types:
 
 1. **Find manual type definitions**
+
    ```typescript
    // Old manual type
    interface AssessmentResponse {
@@ -415,14 +440,16 @@ If you have manual type definitions that should be replaced with generated types
    ```
 
 2. **Check if type is generated**
+
    ```bash
    grep -r "AssessmentResponse" packages/shared/src/generated/
    ```
 
 3. **Replace with import**
+
    ```typescript
    // New generated import
-   import { AssessmentResponse } from '@sinag/shared';
+   import { AssessmentResponse } from "@sinag/shared";
    ```
 
 4. **Fix any type mismatches**

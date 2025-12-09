@@ -2,7 +2,9 @@
 description: Manage git worktrees for parallel development
 ---
 
-You are helping the user manage git worktrees for parallel development in the SINAG project. Git worktrees allow multiple branches to be checked out simultaneously in different directories, enabling true parallel development with separate Claude Code instances.
+You are helping the user manage git worktrees for parallel development in the SINAG project. Git
+worktrees allow multiple branches to be checked out simultaneously in different directories,
+enabling true parallel development with separate Claude Code instances.
 
 ## Understanding the Request
 
@@ -68,6 +70,7 @@ If the user runs `/worktree create <name>` or `/worktree create <type> <name>`:
 ```
 
 The script will:
+
 - Create the worktree with a new branch
 - Copy `.env` files from the main worktree
 - Configure unique ports (API and Web)
@@ -94,13 +97,15 @@ Other commands:
   pnpm dev:ports           # Show port configuration
 ```
 
-**Key Feature**: The `pnpm dev` command automatically detects if it's running in a worktree and uses the correct ports. No manual port configuration needed!
+**Key Feature**: The `pnpm dev` command automatically detects if it's running in a worktree and uses
+the correct ports. No manual port configuration needed!
 
 ## Action: List Worktrees
 
 If the user runs `/worktree list`:
 
 Run:
+
 ```bash
 ./scripts/worktree.sh list
 ```
@@ -112,13 +117,16 @@ Display the output showing all worktrees with their branches, paths, and port as
 If the user runs `/worktree remove <name>`:
 
 1. First list worktrees to confirm the target exists:
+
 ```bash
 ./scripts/worktree.sh list
 ```
 
-2. Ask for confirmation: "Are you sure you want to remove the worktree '<name>'? This will delete the directory but the branch can be preserved."
+2. Ask for confirmation: "Are you sure you want to remove the worktree '<name>'? This will delete
+   the directory but the branch can be preserved."
 
 3. If confirmed, run:
+
 ```bash
 ./scripts/worktree.sh remove <name>
 ```
@@ -130,6 +138,7 @@ If the user runs `/worktree remove <name>`:
 If the user runs `/worktree status`:
 
 Run:
+
 ```bash
 ./scripts/worktree.sh status
 ```
@@ -143,6 +152,7 @@ If the user runs `/worktree sync`:
 This syncs the CURRENT worktree (the one Claude Code is running in) with the develop branch.
 
 1. First check if there are uncommitted changes:
+
 ```bash
 git status --porcelain
 ```
@@ -150,11 +160,13 @@ git status --porcelain
 2. If there are uncommitted changes, warn the user and ask if they want to proceed.
 
 3. If clean or user confirms, run:
+
 ```bash
 git fetch origin && git merge origin/develop --no-edit
 ```
 
 4. Ask if they want to regenerate types:
+
 ```bash
 pnpm generate-types
 ```
@@ -164,6 +176,7 @@ pnpm generate-types
 If the user runs `/worktree ports`:
 
 Run:
+
 ```bash
 ./scripts/worktree.sh ports
 ```
@@ -175,21 +188,25 @@ Display a table of all worktrees and their assigned ports.
 If the user runs `/worktree env <path>` or `/worktree env --all`:
 
 This syncs .env files from the main worktree to other worktrees. This is useful when:
+
 - You've updated API keys or credentials in the main worktree
 - A worktree was created before the main .env was configured
 - You want to ensure all worktrees have consistent configuration
 
 **For a specific worktree:**
+
 ```bash
 ./scripts/worktree.sh env ../sinag-feature-analytics
 ```
 
 **For all worktrees:**
+
 ```bash
 ./scripts/worktree.sh env --all
 ```
 
 **What gets synced:**
+
 1. **API .env** (`apps/api/.env`): Copies all settings (database, secrets, API keys)
    - Prompts for confirmation if target already has an .env file
    - Adds a header comment indicating the worktree name and sync time
@@ -211,6 +228,7 @@ This merges the worktree's branch into develop and cleans up. Run:
 ```
 
 **What it does (in order):**
+
 1. Checks for uncommitted changes (fails if dirty)
 2. Fetches latest from remote
 3. Updates develop branch
@@ -219,11 +237,13 @@ This merges the worktree's branch into develop and cleans up. Run:
 6. Asks to remove worktree and delete branch
 
 **If merge conflicts occur:**
+
 - The script will stop and show the conflicts
 - User must resolve conflicts manually in the main worktree
 - Then commit and optionally clean up the worktree
 
 **Example output:**
+
 ```
 ✓ Worktree is clean
 ✓ Fetched latest
@@ -247,26 +267,31 @@ If the user runs `/worktree create` without a name, guide them interactively:
 ## Important Notes
 
 ### Automatic Port Configuration
+
 - **Zero manual configuration needed!** Just run `pnpm dev` in any worktree
 - The `dev-worktree.sh` script automatically reads `.worktree-info` for port assignments
 - Main worktree uses default ports (API: 8000, Web: 3000)
 - Each additional worktree gets unique ports (8001/3001, 8002/3002, etc.)
 
 ### Directory Structure
+
 - Worktrees are organized in `/home/kiedajhinn/Projects/sinag-worktrees/`
 - The main worktree at `/home/kiedajhinn/Projects/sinag` cannot be removed
 
 ### Environment Files
+
 - `.env` files are automatically copied from main worktree during creation
 - Web `.env.local` is auto-generated with correct API URLs for each worktree
 - Use `/worktree env --all` to sync .env updates to all worktrees at once
 
 ### Shared Resources
+
 - All worktrees share the same database (Supabase)
 - All worktrees share the same Redis container
 - Worktrees share the same git history but have independent working directories
 
 ### Development Tips
+
 - Dependencies are installed during creation (prompts to confirm)
 - Run `pnpm generate-types` in each worktree after API schema changes
 - Use `pnpm dev:ports` to check your current port configuration
@@ -274,6 +299,7 @@ If the user runs `/worktree create` without a name, guide them interactively:
 ## Error Handling
 
 If the script fails, check for common issues:
+
 - Branch already exists (offer to check it out instead)
 - Directory already exists
 - Uncommitted changes blocking merge

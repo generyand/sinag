@@ -2,8 +2,8 @@ import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
-} 
+  return twMerge(clsx(inputs));
+}
 
 // Build a public URL for a Supabase Storage object in the `movs` bucket.
 // Accepts either an absolute URL or a storage path like

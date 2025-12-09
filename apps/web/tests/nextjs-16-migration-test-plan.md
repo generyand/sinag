@@ -2,17 +2,21 @@
 
 ## Overview
 
-This document outlines the comprehensive testing strategy for validating the Next.js 15 to Next.js 16 migration in the SINAG application. The migration includes critical breaking changes that require thorough testing to ensure application stability.
+This document outlines the comprehensive testing strategy for validating the Next.js 15 to Next.js
+16 migration in the SINAG application. The migration includes critical breaking changes that require
+thorough testing to ensure application stability.
 
 ## Migration Changes Summary
 
 ### 1. Middleware to Proxy Migration
+
 - **File**: `middleware.ts` → `proxy.ts`
 - **Export**: `middleware` → `proxy`
 - **Runtime**: Edge → Node.js
 - **Impact**: ALL authentication, routing, and authorization logic
 
 ### 2. Async Request APIs
+
 - **Change**: Dynamic route params now require `await params`
 - **Files Affected**:
   - `apps/web/src/app/(app)/validator/submissions/[assessmentId]/validation/page.tsx`
@@ -20,6 +24,7 @@ This document outlines the comprehensive testing strategy for validating the Nex
 - **Impact**: Server components with dynamic routes
 
 ### 3. Turbopack Configuration
+
 - **Change**: Turbopack is now the default bundler
 - **Config**: Added `turbopack: {}` in `next.config.ts`
 - **Impact**: Build and development performance
@@ -28,20 +33,22 @@ This document outlines the comprehensive testing strategy for validating the Nex
 
 The SINAG application has 5 distinct user roles with different access permissions:
 
-| Role | Dashboard Route | Access Restrictions |
-|------|----------------|---------------------|
-| MLGOO_DILG | `/mlgoo/dashboard` | Full access to all routes |
-| ASSESSOR | `/assessor/submissions` | No BLGU, Validator, Katuparan, or admin routes |
-| VALIDATOR | `/validator/submissions` | No BLGU, Assessor, Katuparan, or admin routes |
-| BLGU_USER | `/blgu/dashboard` | Only BLGU routes |
-| KATUPARAN_CENTER_USER | `/katuparan/dashboard` | Only Katuparan routes (external analytics) |
+| Role                  | Dashboard Route          | Access Restrictions                            |
+| --------------------- | ------------------------ | ---------------------------------------------- |
+| MLGOO_DILG            | `/mlgoo/dashboard`       | Full access to all routes                      |
+| ASSESSOR              | `/assessor/submissions`  | No BLGU, Validator, Katuparan, or admin routes |
+| VALIDATOR             | `/validator/submissions` | No BLGU, Assessor, Katuparan, or admin routes  |
+| BLGU_USER             | `/blgu/dashboard`        | Only BLGU routes                               |
+| KATUPARAN_CENTER_USER | `/katuparan/dashboard`   | Only Katuparan routes (external analytics)     |
 
 ## Test Coverage Strategy
 
 ### Phase 1: Unit Tests (proxy.ts)
+
 Test the proxy function in isolation without requiring a full Next.js environment.
 
 **Coverage Areas:**
+
 1. Authentication checking (cookie presence)
 2. Token decoding and validation
 3. Role extraction from JWT
@@ -51,27 +58,33 @@ Test the proxy function in isolation without requiring a full Next.js environmen
 7. Boundary conditions
 
 ### Phase 2: Integration Tests (Dynamic Routes)
+
 Test server components with async params handling.
 
 **Coverage Areas:**
+
 1. Validator validation page with dynamic assessmentId
 2. MLGOO assessment detail page with dynamic id
 3. Proper param parsing and validation
 4. 404 handling for invalid params
 
 ### Phase 3: E2E Tests (Authentication Flows)
+
 Test complete user journeys through Playwright.
 
 **Coverage Areas:**
+
 1. Login flow for each role
 2. Automatic redirect to role-specific dashboard
 3. Session persistence across page refreshes
 4. Logout flow
 
 ### Phase 4: E2E Tests (Route Protection)
+
 Test role-based access control across all protected routes.
 
 **Coverage Areas:**
+
 1. Unauthorized access attempts (no token)
 2. Cross-role access attempts (wrong role for route)
 3. Proper redirects when accessing forbidden routes
@@ -82,6 +95,7 @@ Test role-based access control across all protected routes.
 ### A. Proxy Authentication Tests
 
 #### A1. Unauthenticated User Tests
+
 - [ ] Accessing `/mlgoo/dashboard` without token redirects to `/login?redirect=/mlgoo/dashboard`
 - [ ] Accessing `/blgu/dashboard` without token redirects to `/login?redirect=/blgu/dashboard`
 - [ ] Accessing `/assessor/submissions` without token redirects to login
@@ -92,6 +106,7 @@ Test role-based access control across all protected routes.
 - [ ] Public routes (like `/login`) are accessible without token
 
 #### A2. Token Validation Tests
+
 - [ ] Valid JWT token allows access to protected routes
 - [ ] Malformed token (invalid base64) allows request to proceed (fallback)
 - [ ] Token with missing parts allows request to proceed (fallback)
@@ -99,6 +114,7 @@ Test role-based access control across all protected routes.
 - [ ] Empty token string is treated as unauthenticated
 
 #### A3. Authenticated User Login Page Tests
+
 - [ ] MLGOO_DILG accessing `/login` redirects to `/mlgoo/dashboard`
 - [ ] ASSESSOR accessing `/login` redirects to `/assessor/submissions`
 - [ ] VALIDATOR accessing `/login` redirects to `/validator/submissions`
@@ -110,6 +126,7 @@ Test role-based access control across all protected routes.
 ### B. Role-Based Route Protection Tests
 
 #### B1. MLGOO_DILG (Admin) Access
+
 - [ ] Can access `/mlgoo/*` routes
 - [ ] Can access `/user-management`
 - [ ] Can access `/assessor/*` routes
@@ -118,6 +135,7 @@ Test role-based access control across all protected routes.
 - [ ] CANNOT access `/katuparan/*` routes (external only)
 
 #### B2. ASSESSOR Access
+
 - [ ] Can access `/assessor/*` routes
 - [ ] CANNOT access `/mlgoo/*` routes → redirects to `/assessor/submissions`
 - [ ] CANNOT access `/user-management` → redirects to `/assessor/submissions`
@@ -126,6 +144,7 @@ Test role-based access control across all protected routes.
 - [ ] CANNOT access `/katuparan/*` routes → redirects to `/assessor/submissions`
 
 #### B3. VALIDATOR Access
+
 - [ ] Can access `/validator/*` routes
 - [ ] CANNOT access `/mlgoo/*` routes → redirects to `/validator/submissions`
 - [ ] CANNOT access `/user-management` → redirects to `/validator/submissions`
@@ -134,6 +153,7 @@ Test role-based access control across all protected routes.
 - [ ] CANNOT access `/katuparan/*` routes → redirects to `/validator/submissions`
 
 #### B4. BLGU_USER Access
+
 - [ ] Can access `/blgu/*` routes
 - [ ] CANNOT access `/mlgoo/*` routes → redirects to `/blgu/dashboard`
 - [ ] CANNOT access `/user-management` → redirects to `/blgu/dashboard`
@@ -142,6 +162,7 @@ Test role-based access control across all protected routes.
 - [ ] CANNOT access `/katuparan/*` routes → redirects to `/blgu/dashboard`
 
 #### B5. KATUPARAN_CENTER_USER (External) Access
+
 - [ ] Can access `/katuparan/*` routes
 - [ ] CANNOT access `/mlgoo/*` routes → redirects to `/katuparan/dashboard`
 - [ ] CANNOT access `/user-management` → redirects to `/katuparan/dashboard`
@@ -150,6 +171,7 @@ Test role-based access control across all protected routes.
 - [ ] CANNOT access `/blgu/*` routes → redirects to `/katuparan/dashboard`
 
 #### B6. Critical Security Test: Immediate BLGU Route Blocking
+
 This is a CRITICAL security check in the proxy logic (lines 134-146).
 
 - [ ] ASSESSOR accessing `/blgu/dashboard` is IMMEDIATELY redirected (no flash)
@@ -160,6 +182,7 @@ This is a CRITICAL security check in the proxy logic (lines 134-146).
 ### C. Dynamic Route Async Params Tests
 
 #### C1. Validator Validation Page
+
 File: `apps/web/src/app/(app)/validator/submissions/[assessmentId]/validation/page.tsx`
 
 - [ ] Valid numeric assessmentId (e.g., `/validator/submissions/123/validation`) renders page
@@ -170,6 +193,7 @@ File: `apps/web/src/app/(app)/validator/submissions/[assessmentId]/validation/pa
 - [ ] Large assessmentId (e.g., "999999999") passes validation
 
 #### C2. MLGOO Assessment Detail Page
+
 File: `apps/web/src/app/(app)/mlgoo/assessments/[id]/page.tsx`
 
 - [ ] Valid string id (e.g., `/mlgoo/assessments/123`) renders page
@@ -179,6 +203,7 @@ File: `apps/web/src/app/(app)/mlgoo/assessments/[id]/page.tsx`
 ### D. Authentication Flow E2E Tests
 
 #### D1. Login & Session Management
+
 - [ ] User can log in with valid credentials
 - [ ] Invalid credentials show error message
 - [ ] Successful login redirects to role-specific dashboard
@@ -188,12 +213,14 @@ File: `apps/web/src/app/(app)/mlgoo/assessments/[id]/page.tsx`
 - [ ] Token expiry triggers re-authentication
 
 #### D2. Logout Flow
+
 - [ ] Logout clears auth token from cookies
 - [ ] Logout clears auth data from localStorage
 - [ ] After logout, accessing protected routes redirects to login
 - [ ] Logout from any page works consistently
 
 #### D3. Password Change Flow
+
 - [ ] Users with `must_change_password` flag are redirected to `/change-password`
 - [ ] Password change updates the flag
 - [ ] After password change, user can access normal routes
@@ -201,18 +228,21 @@ File: `apps/web/src/app/(app)/mlgoo/assessments/[id]/page.tsx`
 ### E. Edge Cases & Error Handling
 
 #### E1. Malformed Requests
+
 - [ ] Request with no pathname (edge case)
 - [ ] Request with extremely long pathname (>2000 chars)
 - [ ] Request with special characters in pathname
 - [ ] Request with encoded characters in pathname
 
 #### E2. Token Edge Cases
+
 - [ ] Token with extra dots (e.g., "a.b.c.d")
 - [ ] Token with one part (no dots)
 - [ ] Token with empty payload section
 - [ ] Token with non-base64 payload
 
 #### E3. Proxy Configuration
+
 - [ ] Proxy matcher excludes `/_next/static/*`
 - [ ] Proxy matcher excludes `/_next/image/*`
 - [ ] Proxy matcher excludes `/favicon.ico`
@@ -222,26 +252,34 @@ File: `apps/web/src/app/(app)/mlgoo/assessments/[id]/page.tsx`
 ## Test Implementation Plan
 
 ### 1. Unit Tests (Vitest)
+
 **File**: `apps/web/src/tests/proxy.test.ts`
+
 - Mock Next.js request/response objects
 - Test proxy function in isolation
 - Fast, deterministic, no external dependencies
 
 ### 2. Dynamic Route Tests (Vitest)
+
 **Files**:
+
 - `apps/web/src/app/(app)/validator/submissions/__tests__/validation-page.test.tsx`
 - `apps/web/src/app/(app)/mlgoo/assessments/__tests__/assessment-detail-page.test.tsx`
 - Test async params handling
 - Test 404 behavior
 
 ### 3. E2E Authentication Tests (Playwright)
+
 **File**: `apps/web/tests/e2e/authentication.spec.ts`
+
 - Full login/logout flows
 - Session persistence
 - All 5 user roles
 
 ### 4. E2E Route Protection Tests (Playwright)
+
 **File**: `apps/web/tests/e2e/route-protection.spec.ts`
+
 - Cross-role access attempts
 - Proper redirects
 - All protected routes
@@ -249,48 +287,52 @@ File: `apps/web/src/app/(app)/mlgoo/assessments/[id]/page.tsx`
 ## Test Data Requirements
 
 ### Mock Users for Testing
+
 ```typescript
 // Test user credentials (should exist in test database)
 const TEST_USERS = {
   MLGOO_DILG: {
-    email: 'admin@sinag-test.local',
-    password: 'TestAdmin123!',
-    role: 'MLGOO_DILG'
+    email: "admin@sinag-test.local",
+    password: "TestAdmin123!",
+    role: "MLGOO_DILG",
   },
   ASSESSOR: {
-    email: 'assessor@sinag-test.local',
-    password: 'TestAssessor123!',
-    role: 'ASSESSOR'
+    email: "assessor@sinag-test.local",
+    password: "TestAssessor123!",
+    role: "ASSESSOR",
   },
   VALIDATOR: {
-    email: 'validator@sinag-test.local',
-    password: 'TestValidator123!',
-    role: 'VALIDATOR'
+    email: "validator@sinag-test.local",
+    password: "TestValidator123!",
+    role: "VALIDATOR",
   },
   BLGU_USER: {
-    email: 'blgu@sinag-test.local',
-    password: 'TestBLGU123!',
-    role: 'BLGU_USER'
+    email: "blgu@sinag-test.local",
+    password: "TestBLGU123!",
+    role: "BLGU_USER",
   },
   KATUPARAN_CENTER_USER: {
-    email: 'katuparan@sinag-test.local',
-    password: 'TestKatuparan123!',
-    role: 'KATUPARAN_CENTER_USER'
-  }
+    email: "katuparan@sinag-test.local",
+    password: "TestKatuparan123!",
+    role: "KATUPARAN_CENTER_USER",
+  },
 };
 ```
 
 ### Mock JWT Tokens
+
 ```typescript
 // Helper to generate mock JWT tokens for unit tests
 function createMockToken(role: string, userId: number = 1): string {
-  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  const payload = btoa(JSON.stringify({
-    sub: userId,
-    role: role,
-    exp: Math.floor(Date.now() / 1000) + 3600
-  }));
-  const signature = 'mock-signature';
+  const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+  const payload = btoa(
+    JSON.stringify({
+      sub: userId,
+      role: role,
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    })
+  );
+  const signature = "mock-signature";
   return `${header}.${payload}.${signature}`;
 }
 ```
@@ -337,6 +379,7 @@ pnpm test:e2e tests/e2e/authentication.spec.ts
 ## CI/CD Integration
 
 ### GitHub Actions Workflow
+
 ```yaml
 # Add to .github/workflows/test.yml
 name: Test Next.js 16 Migration
@@ -365,6 +408,7 @@ jobs:
 ## Test Maintenance
 
 ### When to Update Tests
+
 - When adding new user roles
 - When adding new protected routes
 - When modifying authentication logic
@@ -372,6 +416,7 @@ jobs:
 - When updating Next.js version
 
 ### Test Review Checklist
+
 - [ ] All tests have clear, descriptive names
 - [ ] Tests are independent (no shared state)
 - [ ] Tests clean up after themselves

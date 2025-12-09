@@ -1,9 +1,9 @@
 // 🔔 Toast Utility Functions
 // Helper functions for displaying user-friendly notifications
 
-import { toast as sonnerToast } from 'sonner';
+import { toast as sonnerToast } from "sonner";
 
-type ToastType = 'success' | 'error' | 'warning' | 'info' | 'loading';
+type ToastType = "success" | "error" | "warning" | "info" | "loading";
 
 interface ToastOptions {
   description?: string;
@@ -62,7 +62,7 @@ export function showInfo(message: string, options?: ToastOptions) {
  * Display a loading toast notification
  * Returns a function to dismiss the toast
  */
-export function showLoading(message: string, options?: Omit<ToastOptions, 'duration'>) {
+export function showLoading(message: string, options?: Omit<ToastOptions, "duration">) {
   const toastId = sonnerToast.loading(message, {
     description: options?.description,
   });
@@ -87,28 +87,28 @@ export function showPromise<T>(
 // Error message mapping for common API errors
 const ERROR_MESSAGES: Record<string, string> = {
   // Authentication errors
-  'Invalid credentials': 'Invalid email or password. Please try again.',
-  'User not found': 'No account found with this email address.',
-  'Email already exists': 'An account with this email already exists.',
-  'Token expired': 'Your session has expired. Please log in again.',
-  'Invalid token': 'Your session is invalid. Please log in again.',
+  "Invalid credentials": "Invalid email or password. Please try again.",
+  "User not found": "No account found with this email address.",
+  "Email already exists": "An account with this email already exists.",
+  "Token expired": "Your session has expired. Please log in again.",
+  "Invalid token": "Your session is invalid. Please log in again.",
 
   // Authorization errors
-  'Not enough permissions': 'You do not have permission to perform this action.',
-  'Forbidden': 'Access denied. You do not have the required permissions.',
+  "Not enough permissions": "You do not have permission to perform this action.",
+  Forbidden: "Access denied. You do not have the required permissions.",
 
   // Validation errors
-  'Validation error': 'Please check your input and try again.',
-  'Required field missing': 'Please fill in all required fields.',
+  "Validation error": "Please check your input and try again.",
+  "Required field missing": "Please fill in all required fields.",
 
   // Server errors
-  'Internal server error': 'Something went wrong on our end. Please try again later.',
-  'Service unavailable': 'The service is temporarily unavailable. Please try again later.',
-  'Network error': 'Unable to connect to the server. Please check your internet connection.',
+  "Internal server error": "Something went wrong on our end. Please try again later.",
+  "Service unavailable": "The service is temporarily unavailable. Please try again later.",
+  "Network error": "Unable to connect to the server. Please check your internet connection.",
 
   // Rate limiting
-  'Rate limit exceeded': 'Too many requests. Please wait a moment and try again.',
-  'Too many requests': 'You\'ve made too many requests. Please slow down.',
+  "Rate limit exceeded": "Too many requests. Please wait a moment and try again.",
+  "Too many requests": "You've made too many requests. Please slow down.",
 };
 
 /**
@@ -127,19 +127,19 @@ export function getErrorMessage(error: any): string {
     }
 
     // Return the detail if it's user-friendly
-    if (typeof detail === 'string') {
+    if (typeof detail === "string") {
       return detail;
     }
   }
 
   // Check for network errors
-  if (error?.message === 'Network Error' || error?.code === 'ERR_NETWORK') {
-    return ERROR_MESSAGES['Network error'];
+  if (error?.message === "Network Error" || error?.code === "ERR_NETWORK") {
+    return ERROR_MESSAGES["Network error"];
   }
 
   // Check for timeout errors
-  if (error?.code === 'ECONNABORTED') {
-    return 'The request took too long. Please try again.';
+  if (error?.code === "ECONNABORTED") {
+    return "The request took too long. Please try again.";
   }
 
   // Check for status codes
@@ -148,30 +148,30 @@ export function getErrorMessage(error: any): string {
 
     switch (status) {
       case 400:
-        return 'Invalid request. Please check your input.';
+        return "Invalid request. Please check your input.";
       case 401:
-        return 'You need to log in to continue.';
+        return "You need to log in to continue.";
       case 403:
-        return ERROR_MESSAGES['Forbidden'];
+        return ERROR_MESSAGES["Forbidden"];
       case 404:
-        return 'The requested resource was not found.';
+        return "The requested resource was not found.";
       case 409:
-        return 'A conflict occurred. The resource may already exist.';
+        return "A conflict occurred. The resource may already exist.";
       case 422:
-        return ERROR_MESSAGES['Validation error'];
+        return ERROR_MESSAGES["Validation error"];
       case 429:
-        return ERROR_MESSAGES['Rate limit exceeded'];
+        return ERROR_MESSAGES["Rate limit exceeded"];
       case 500:
-        return ERROR_MESSAGES['Internal server error'];
+        return ERROR_MESSAGES["Internal server error"];
       case 503:
-        return ERROR_MESSAGES['Service unavailable'];
+        return ERROR_MESSAGES["Service unavailable"];
       default:
         return `An error occurred (${status}). Please try again.`;
     }
   }
 
   // Fallback to generic error message
-  return error?.message || 'An unexpected error occurred. Please try again.';
+  return error?.message || "An unexpected error occurred. Please try again.";
 }
 
 /**

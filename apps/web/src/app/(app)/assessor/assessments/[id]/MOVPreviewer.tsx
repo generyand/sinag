@@ -25,28 +25,24 @@ export function MOVPreviewer({ mov }: MOVPreviewerProps) {
 
   // Extract file type from content_type for better compatibility
   const getFileType = () => {
-    if (mov.content_type.startsWith('image/')) {
-      return mov.content_type.split('/')[1]; // e.g., 'jpeg', 'png'
-    } else if (mov.content_type === 'application/pdf') {
-      return 'pdf';
-    } else if (mov.content_type.startsWith('video/')) {
-      return mov.content_type.split('/')[1]; // e.g., 'mp4', 'webm'
-    } else if (mov.content_type.startsWith('text/')) {
-      return 'txt';
+    if (mov.content_type.startsWith("image/")) {
+      return mov.content_type.split("/")[1]; // e.g., 'jpeg', 'png'
+    } else if (mov.content_type === "application/pdf") {
+      return "pdf";
+    } else if (mov.content_type.startsWith("video/")) {
+      return mov.content_type.split("/")[1]; // e.g., 'mp4', 'webm'
+    } else if (mov.content_type.startsWith("text/")) {
+      return "txt";
     } else {
       // Extract extension from filename as fallback
-      const extension = mov.original_filename.split('.').pop()?.toLowerCase();
-      return extension || 'unknown';
+      const extension = mov.original_filename.split(".").pop()?.toLowerCase();
+      return extension || "unknown";
     }
   };
 
   return (
     <>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setIsPreviewOpen(true)}
-      >
+      <Button variant="outline" size="sm" onClick={() => setIsPreviewOpen(true)}>
         <Eye className="h-4 w-4 mr-2" />
         Preview
       </Button>
@@ -62,7 +58,19 @@ export function MOVPreviewer({ mov }: MOVPreviewerProps) {
   );
 }
 
-function SignedPreview({ open, onClose, storagePath, fileName, fileType }: { open: boolean; onClose: () => void; storagePath: string; fileName: string; fileType: string; }) {
+function SignedPreview({
+  open,
+  onClose,
+  storagePath,
+  fileName,
+  fileType,
+}: {
+  open: boolean;
+  onClose: () => void;
+  storagePath: string;
+  fileName: string;
+  fileType: string;
+}) {
   const [url, setUrl] = useState<string>(resolveMovUrl(storagePath) || "");
   useState(() => {
     let mounted = true;
@@ -74,7 +82,9 @@ function SignedPreview({ open, onClose, storagePath, fileName, fileType }: { ope
         // fallback keeps public URL if available
       }
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   });
   return (
     <FilePreviewerModal

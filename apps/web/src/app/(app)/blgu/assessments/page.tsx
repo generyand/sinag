@@ -51,16 +51,17 @@ export default function BLGUAssessmentsPage() {
   useEffect(() => {
     const indicatorParam = searchParams.get("indicator");
     if (indicatorParam && assessment) {
-      // Validate that indicator exists in assessment
       const result = findIndicatorById(assessment, indicatorParam);
-      if (result) {
+      if (result && selectedIndicatorId !== indicatorParam) {
         setSelectedIndicatorId(indicatorParam);
-      } else {
-        // Invalid indicator ID in URL, clear it
+      } else if (!result && selectedIndicatorId !== null) {
         router.replace("/blgu/assessments");
+        setSelectedIndicatorId(null);
       }
+    } else if (!indicatorParam && selectedIndicatorId !== null) {
+      setSelectedIndicatorId(null);
     }
-  }, [searchParams, assessment, router]);
+  }, [searchParams, assessment, router, selectedIndicatorId]);
 
   // Update URL when indicator is selected (without scrolling)
   const handleIndicatorSelect = (indicatorId: string) => {

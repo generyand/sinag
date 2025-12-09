@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { type CalculationRule } from '@/store/useCalculationRuleStore';
-import type { FormSchema } from '@sinag/shared';
-import { FieldSelector } from './FieldSelector';
-import { OperatorSelector } from './OperatorSelector';
-import { ValueInput } from './ValueInput';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { type CalculationRule } from "@/store/useCalculationRuleStore";
+import type { FormSchema } from "@sinag/shared";
+import { FieldSelector } from "./FieldSelector";
+import { OperatorSelector } from "./OperatorSelector";
+import { ValueInput } from "./ValueInput";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 interface RuleConfigFormProps {
   rule: CalculationRule;
@@ -31,7 +31,7 @@ export function RuleConfigForm({ rule, formSchema, onChange }: RuleConfigFormPro
       <Textarea
         id="description"
         placeholder="Human-readable description of this rule"
-        value={rule.description || ''}
+        value={rule.description || ""}
         onChange={(e) => onChange({ ...rule, description: e.target.value || undefined })}
         rows={2}
       />
@@ -42,7 +42,7 @@ export function RuleConfigForm({ rule, formSchema, onChange }: RuleConfigFormPro
   );
 
   switch (ruleType) {
-    case 'PERCENTAGE_THRESHOLD':
+    case "PERCENTAGE_THRESHOLD":
       return (
         <div className="space-y-4">
           <h3 className="font-semibold">Configure Percentage Threshold Rule</h3>
@@ -51,14 +51,14 @@ export function RuleConfigForm({ rule, formSchema, onChange }: RuleConfigFormPro
           <FieldSelector
             fieldId={rule.field_id}
             formSchema={formSchema}
-            fieldTypes={['number_input']}
+            fieldTypes={["number_input"]}
             onChange={(fieldId) => onChange({ ...rule, field_id: fieldId })}
           />
 
           {/* Operator Selector */}
           <OperatorSelector
             operator={rule.operator}
-            operators={['>=', '>', '<=', '<', '==']}
+            operators={[">=", ">", "<=", "<", "=="]}
             onChange={(operator) => onChange({ ...rule, operator } as any)}
           />
 
@@ -72,20 +72,16 @@ export function RuleConfigForm({ rule, formSchema, onChange }: RuleConfigFormPro
               max="100"
               step="0.1"
               value={rule.threshold}
-              onChange={(e) =>
-                onChange({ ...rule, threshold: parseFloat(e.target.value) || 0 })
-              }
+              onChange={(e) => onChange({ ...rule, threshold: parseFloat(e.target.value) || 0 })}
             />
-            <p className="text-xs text-muted-foreground">
-              Percentage value between 0 and 100
-            </p>
+            <p className="text-xs text-muted-foreground">Percentage value between 0 and 100</p>
           </div>
 
           {renderDescriptionField()}
         </div>
       );
 
-    case 'COUNT_THRESHOLD':
+    case "COUNT_THRESHOLD":
       return (
         <div className="space-y-4">
           <h3 className="font-semibold">Configure Count Threshold Rule</h3>
@@ -94,14 +90,14 @@ export function RuleConfigForm({ rule, formSchema, onChange }: RuleConfigFormPro
           <FieldSelector
             fieldId={rule.field_id}
             formSchema={formSchema}
-            fieldTypes={['checkbox_group']}
+            fieldTypes={["checkbox_group"]}
             onChange={(fieldId) => onChange({ ...rule, field_id: fieldId })}
           />
 
           {/* Operator Selector */}
           <OperatorSelector
             operator={rule.operator}
-            operators={['>=', '>', '<=', '<', '==']}
+            operators={[">=", ">", "<=", "<", "=="]}
             onChange={(operator) => onChange({ ...rule, operator } as any)}
           />
 
@@ -114,9 +110,7 @@ export function RuleConfigForm({ rule, formSchema, onChange }: RuleConfigFormPro
               min="0"
               step="1"
               value={rule.threshold}
-              onChange={(e) =>
-                onChange({ ...rule, threshold: parseInt(e.target.value) || 0 })
-              }
+              onChange={(e) => onChange({ ...rule, threshold: parseInt(e.target.value) || 0 })}
             />
             <p className="text-xs text-muted-foreground">
               Number of checkboxes that must be selected
@@ -127,7 +121,7 @@ export function RuleConfigForm({ rule, formSchema, onChange }: RuleConfigFormPro
         </div>
       );
 
-    case 'MATCH_VALUE':
+    case "MATCH_VALUE":
       return (
         <div className="space-y-4">
           <h3 className="font-semibold">Configure Match Value Rule</h3>
@@ -136,14 +130,14 @@ export function RuleConfigForm({ rule, formSchema, onChange }: RuleConfigFormPro
           <FieldSelector
             fieldId={rule.field_id}
             formSchema={formSchema}
-            fieldTypes={['text_input', 'text_area', 'radio_button', 'number_input']}
+            fieldTypes={["text_input", "text_area", "radio_button", "number_input"]}
             onChange={(fieldId) => onChange({ ...rule, field_id: fieldId })}
           />
 
           {/* Operator Selector */}
           <OperatorSelector
             operator={rule.operator}
-            operators={['==', '!=', 'contains', 'not_contains']}
+            operators={["==", "!=", "contains", "not_contains"]}
             onChange={(operator) => onChange({ ...rule, operator } as any)}
           />
 
@@ -157,7 +151,7 @@ export function RuleConfigForm({ rule, formSchema, onChange }: RuleConfigFormPro
         </div>
       );
 
-    case 'BBI_FUNCTIONALITY_CHECK':
+    case "BBI_FUNCTIONALITY_CHECK":
       return (
         <div className="space-y-4">
           <h3 className="font-semibold">Configure BBI Functionality Check Rule</h3>
@@ -188,7 +182,7 @@ export function RuleConfigForm({ rule, formSchema, onChange }: RuleConfigFormPro
               onChange={(e) =>
                 onChange({
                   ...rule,
-                  expected_status: e.target.value as 'Functional' | 'Non-Functional',
+                  expected_status: e.target.value as "Functional" | "Non-Functional",
                 })
               }
             >
@@ -205,10 +199,6 @@ export function RuleConfigForm({ rule, formSchema, onChange }: RuleConfigFormPro
       );
 
     default:
-      return (
-        <div className="text-sm text-muted-foreground">
-          Unknown rule type: {ruleType}
-        </div>
-      );
+      return <div className="text-sm text-muted-foreground">Unknown rule type: {ruleType}</div>;
   }
 }

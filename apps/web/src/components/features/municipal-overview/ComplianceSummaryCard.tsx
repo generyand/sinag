@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { Building2, Clock, FileSearch } from 'lucide-react';
-import { AnalyticsEmptyState } from '@/components/features/analytics';
-import type { MunicipalComplianceSummary } from '@sinag/shared';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Building2, Clock, FileSearch } from "lucide-react";
+import { AnalyticsEmptyState } from "@/components/features/analytics";
+import type { MunicipalComplianceSummary } from "@sinag/shared";
 
 interface ComplianceSummaryCardProps {
   data: MunicipalComplianceSummary | null | undefined;
@@ -20,12 +20,12 @@ interface ComplianceSummaryCardProps {
  */
 function getComplianceColor(rate: number): { text: string; progress: string } {
   if (rate >= 70) {
-    return { text: 'text-green-600', progress: '#16a34a' }; // green-600
+    return { text: "text-green-600", progress: "#16a34a" }; // green-600
   }
   if (rate >= 50) {
-    return { text: 'text-yellow-600', progress: '#ca8a04' }; // yellow-600
+    return { text: "text-yellow-600", progress: "#ca8a04" }; // yellow-600
   }
-  return { text: 'text-red-600', progress: '#dc2626' }; // red-600
+  return { text: "text-red-600", progress: "#dc2626" }; // red-600
 }
 
 /**
@@ -34,12 +34,12 @@ function getComplianceColor(rate: number): { text: string; progress: string } {
  */
 function getProgressColor(rate: number): { text: string; progress: string } {
   if (rate >= 70) {
-    return { text: 'text-blue-600', progress: '#2563eb' }; // blue-600
+    return { text: "text-blue-600", progress: "#2563eb" }; // blue-600
   }
   if (rate >= 50) {
-    return { text: 'text-blue-500', progress: '#3b82f6' }; // blue-500
+    return { text: "text-blue-500", progress: "#3b82f6" }; // blue-500
   }
-  return { text: 'text-blue-400', progress: '#60a5fa' }; // blue-400
+  return { text: "text-blue-400", progress: "#60a5fa" }; // blue-400
 }
 
 export function ComplianceSummaryCard({ data, isLoading }: ComplianceSummaryCardProps) {
@@ -67,7 +67,9 @@ export function ComplianceSummaryCard({ data, isLoading }: ComplianceSummaryCard
               aria-label="Compliance statistics"
             >
               <div className="text-center p-4 bg-[var(--muted)]/30 rounded-sm">
-                <p className="text-3xl font-bold text-[var(--foreground)]">{data.total_barangays}</p>
+                <p className="text-3xl font-bold text-[var(--foreground)]">
+                  {data.total_barangays}
+                </p>
                 <p className="text-sm text-[var(--muted-foreground)]">Total Barangays</p>
               </div>
               <div className="text-center p-4 bg-blue-500/10 rounded-sm">
@@ -88,7 +90,9 @@ export function ComplianceSummaryCard({ data, isLoading }: ComplianceSummaryCard
             <div className="space-y-4" role="group" aria-label="Progress indicators">
               <div>
                 <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium text-[var(--foreground)]">Compliance Rate</span>
+                  <span className="text-sm font-medium text-[var(--foreground)]">
+                    Compliance Rate
+                  </span>
                   <span className={`text-sm font-bold ${complianceColors?.text}`}>
                     {data.compliance_rate.toFixed(1)}%
                   </span>
@@ -102,7 +106,9 @@ export function ComplianceSummaryCard({ data, isLoading }: ComplianceSummaryCard
               </div>
               <div>
                 <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium text-[var(--foreground)]">Assessment Progress</span>
+                  <span className="text-sm font-medium text-[var(--foreground)]">
+                    Assessment Progress
+                  </span>
                   <span className={`text-sm font-bold ${progressColors?.text}`}>
                     {data.assessment_rate.toFixed(1)}%
                   </span>

@@ -1,12 +1,19 @@
 // 🛡️ Error Boundary Component
 // Catches JavaScript errors anywhere in the component tree and displays fallback UI
 
-'use client';
+"use client";
 
-import { Component, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Component, ReactNode } from "react";
+import { AlertTriangle, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 interface Props {
   children: ReactNode;
@@ -41,7 +48,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // Log error to error reporting service
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
 
     // Call optional error handler
     if (this.props.onError) {
@@ -79,14 +86,15 @@ export class ErrorBoundary extends Component<Props, State> {
                 <div>
                   <CardTitle>Something went wrong</CardTitle>
                   <CardDescription>
-                    An unexpected error occurred. Please try again or contact support if the problem persists.
+                    An unexpected error occurred. Please try again or contact support if the problem
+                    persists.
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
 
             <CardContent>
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+              {process.env.NODE_ENV === "development" && this.state.error && (
                 <div className="rounded-lg bg-muted p-4">
                   <p className="mb-2 font-mono text-sm font-semibold text-destructive">
                     {this.state.error.toString()}
@@ -104,7 +112,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 </div>
               )}
 
-              {process.env.NODE_ENV === 'production' && (
+              {process.env.NODE_ENV === "production" && (
                 <p className="text-sm text-muted-foreground">
                   Error ID: {Math.random().toString(36).substr(2, 9)}
                 </p>
@@ -116,10 +124,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Try Again
               </Button>
-              <Button
-                onClick={() => window.location.reload()}
-                variant="outline"
-              >
+              <Button onClick={() => window.location.reload()} variant="outline">
                 Reload Page
               </Button>
             </CardFooter>
@@ -142,7 +147,7 @@ export function ErrorBoundaryWrapper({
 }) {
   const handleError = (error: Error, errorInfo: React.ErrorInfo) => {
     // Log to error tracking service (e.g., Sentry)
-    console.error('Error caught by boundary:', {
+    console.error("Error caught by boundary:", {
       error: error.toString(),
       componentStack: errorInfo.componentStack,
       timestamp: new Date().toISOString(),

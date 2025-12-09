@@ -1,11 +1,14 @@
-'use client';
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Award, AlertTriangle } from 'lucide-react';
-import { AnalyticsEmptyState } from '@/components/features/analytics';
-import type { GovernanceAreaPerformanceList, AppSchemasMunicipalInsightsGovernanceAreaPerformance } from '@sinag/shared';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Award, AlertTriangle } from "lucide-react";
+import { AnalyticsEmptyState } from "@/components/features/analytics";
+import type {
+  GovernanceAreaPerformanceList,
+  AppSchemasMunicipalInsightsGovernanceAreaPerformance,
+} from "@sinag/shared";
 
 interface GovernanceAreaPerformanceCardProps {
   data: GovernanceAreaPerformanceList | null | undefined;
@@ -16,12 +19,12 @@ interface GovernanceAreaPerformanceCardProps {
  */
 function getPassRateColor(rate: number): { text: string; progress: string } {
   if (rate >= 70) {
-    return { text: 'text-green-600', progress: '#16a34a' };
+    return { text: "text-green-600", progress: "#16a34a" };
   }
   if (rate >= 50) {
-    return { text: 'text-yellow-600', progress: '#ca8a04' };
+    return { text: "text-yellow-600", progress: "#ca8a04" };
   }
-  return { text: 'text-red-600', progress: '#dc2626' };
+  return { text: "text-red-600", progress: "#dc2626" };
 }
 
 export function GovernanceAreaPerformanceCard({ data }: GovernanceAreaPerformanceCardProps) {
@@ -63,9 +66,9 @@ export function GovernanceAreaPerformanceCard({ data }: GovernanceAreaPerformanc
                       <span className="font-medium text-[var(--foreground)]">{area.name}</span>
                       <Badge
                         className={`rounded-sm ${
-                          area.area_type === 'CORE'
-                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
-                            : 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300'
+                          area.area_type === "CORE"
+                            ? "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300"
+                            : "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300"
                         }`}
                       >
                         {area.area_type}
@@ -94,7 +97,9 @@ export function GovernanceAreaPerformanceCard({ data }: GovernanceAreaPerformanc
                       </div>
                       <ul className="text-xs text-[var(--muted-foreground)] space-y-1">
                         {area.common_weaknesses.slice(0, 2).map((weakness: string, idx: number) => (
-                          <li key={idx} className="truncate">• {weakness}</li>
+                          <li key={idx} className="truncate">
+                            • {weakness}
+                          </li>
                         ))}
                       </ul>
                     </div>

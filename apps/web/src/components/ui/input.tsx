@@ -1,6 +1,6 @@
-import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "@/lib/utils";
 
 // Input variants for shape and size, using theme tokens from @styling.mdc and @globals.css
 const inputVariants = cva(
@@ -23,9 +23,9 @@ const inputVariants = cva(
       size: "md",
     },
   }
-)
+);
 
-type InputProps = React.ComponentProps<"input"> & VariantProps<typeof inputVariants>
+type InputProps = React.ComponentProps<"input"> & VariantProps<typeof inputVariants>;
 
 function Input({ className, shape, size, ...props }: InputProps) {
   return (
@@ -40,7 +40,7 @@ function Input({ className, shape, size, ...props }: InputProps) {
       )}
       {...props}
     />
-  )
+  );
 }
 
-export { Input, inputVariants }
+export { Input, inputVariants };

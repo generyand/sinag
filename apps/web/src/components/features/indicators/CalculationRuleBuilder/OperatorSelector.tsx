@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { Label } from '@/components/ui/label';
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 
 interface OperatorSelectorProps {
   operator: string;
@@ -25,14 +25,14 @@ interface OperatorSelectorProps {
 export function OperatorSelector({ operator, operators, onChange }: OperatorSelectorProps) {
   // Map operators to user-friendly labels
   const operatorLabels: Record<string, string> = {
-    '>=': 'Greater than or equal to (≥)',
-    '>': 'Greater than (>)',
-    '<=': 'Less than or equal to (≤)',
-    '<': 'Less than (<)',
-    '==': 'Equal to (=)',
-    '!=': 'Not equal to (≠)',
-    contains: 'Contains',
-    not_contains: 'Does not contain',
+    ">=": "Greater than or equal to (≥)",
+    ">": "Greater than (>)",
+    "<=": "Less than or equal to (≤)",
+    "<": "Less than (<)",
+    "==": "Equal to (=)",
+    "!=": "Not equal to (≠)",
+    contains: "Contains",
+    not_contains: "Does not contain",
   };
 
   return (

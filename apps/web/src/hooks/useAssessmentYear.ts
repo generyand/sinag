@@ -6,17 +6,17 @@
  * Zustand store for global state management.
  */
 
-import { useCallback, useEffect, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   useAssessmentYearStore,
   useEffectiveYear,
   useIsActiveYear,
-} from '@/store/useAssessmentYearStore';
-import { useAuthStore } from '@/store/useAuthStore';
+} from "@/store/useAssessmentYearStore";
+import { useAuthStore } from "@/store/useAuthStore";
 
 // API base URL from environment
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_V1_URL || 'http://localhost:8000/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_V1_URL || "http://localhost:8000/api/v1";
 
 /**
  * Response type for accessible years endpoint
@@ -48,10 +48,10 @@ interface AssessmentYearResponse {
  * Query keys for assessment year data
  */
 export const assessmentYearKeys = {
-  all: ['assessment-year'] as const,
-  accessible: () => [...assessmentYearKeys.all, 'accessible'] as const,
-  details: (year: number) => [...assessmentYearKeys.all, 'details', year] as const,
-  active: () => [...assessmentYearKeys.all, 'active'] as const,
+  all: ["assessment-year"] as const,
+  accessible: () => [...assessmentYearKeys.all, "accessible"] as const,
+  details: (year: number) => [...assessmentYearKeys.all, "details", year] as const,
+  active: () => [...assessmentYearKeys.all, "active"] as const,
 };
 
 /**
@@ -60,18 +60,18 @@ export const assessmentYearKeys = {
 async function fetchAccessibleYears(token: string | null): Promise<AccessibleYearsResponse> {
   // Require token for authenticated endpoints
   if (!token) {
-    throw new Error('Authentication required to fetch accessible years');
+    throw new Error("Authentication required to fetch accessible years");
   }
 
   const response = await fetch(`${API_BASE_URL}/assessment-years/accessible`, {
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
   });
 
   if (!response.ok) {
-    const errorBody = await response.text().catch(() => 'Unknown error');
+    const errorBody = await response.text().catch(() => "Unknown error");
     throw new Error(`Failed to fetch accessible years: ${response.status} - ${errorBody}`);
   }
 
@@ -87,18 +87,18 @@ async function fetchYearDetails(
 ): Promise<AssessmentYearResponse> {
   // Require token for authenticated endpoints
   if (!token) {
-    throw new Error('Authentication required to fetch year details');
+    throw new Error("Authentication required to fetch year details");
   }
 
   const response = await fetch(`${API_BASE_URL}/assessment-years/${year}`, {
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
   });
 
   if (!response.ok) {
-    const errorBody = await response.text().catch(() => 'Unknown error');
+    const errorBody = await response.text().catch(() => "Unknown error");
     throw new Error(`Failed to fetch year ${year} details: ${response.status} - ${errorBody}`);
   }
 
@@ -146,7 +146,7 @@ export function useAccessibleYears() {
     setLoading(isLoading);
 
     if (error) {
-      setError(error instanceof Error ? error.message : 'Failed to fetch years');
+      setError(error instanceof Error ? error.message : "Failed to fetch years");
     } else if (data) {
       initialize({
         years: data.years,
@@ -232,8 +232,7 @@ export function useCurrentYear() {
  * ```
  */
 export function useYearSelector() {
-  const { years, selectedYear, activeYear, setSelectedYear, isLoading } =
-    useAccessibleYears();
+  const { years, selectedYear, activeYear, setSelectedYear, isLoading } = useAccessibleYears();
 
   // Memoize options to prevent unnecessary re-renders
   const options = useMemo(
@@ -258,7 +257,7 @@ export function useYearSelector() {
 
   // Memoize the current value to prevent unnecessary string conversions
   const value = useMemo(
-    () => (selectedYear ?? activeYear)?.toString() ?? '',
+    () => (selectedYear ?? activeYear)?.toString() ?? "",
     [selectedYear, activeYear]
   );
 

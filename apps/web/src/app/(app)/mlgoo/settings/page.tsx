@@ -3,15 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAuthStore } from "@/store/useAuthStore";
-import {
-  Calendar,
-  Settings,
-  ExternalLink,
-  Database,
-  Users,
-  Shield,
-  Bell,
-} from "lucide-react";
+import { Calendar, Settings, ExternalLink, Database, Users, Shield, Bell } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SettingsSkeleton } from "@/components/features/settings/SettingsSkeleton";
 
@@ -100,7 +92,8 @@ export default function AdminSettingsPage() {
                     <div
                       className="w-12 h-12 rounded-sm flex items-center justify-center shadow-sm"
                       style={{
-                        background: 'linear-gradient(to bottom right, var(--cityscape-yellow), var(--cityscape-yellow-dark))'
+                        background:
+                          "linear-gradient(to bottom right, var(--cityscape-yellow), var(--cityscape-yellow-dark))",
                       }}
                     >
                       <Settings className="h-6 w-6 text-[var(--foreground)]" />
@@ -136,7 +129,9 @@ export default function AdminSettingsPage() {
               const content = (
                 <Card
                   className={`bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg overflow-hidden transition-all duration-200 ${
-                    section.isLink ? 'hover:shadow-xl hover:border-[var(--cityscape-yellow)]/50 cursor-pointer' : 'opacity-75'
+                    section.isLink
+                      ? "hover:shadow-xl hover:border-[var(--cityscape-yellow)]/50 cursor-pointer"
+                      : "opacity-75"
                   }`}
                 >
                   <CardHeader className="pb-4">
@@ -147,10 +142,7 @@ export default function AdminSettingsPage() {
                           backgroundColor: `${section.color}20`,
                         }}
                       >
-                        <Icon
-                          className="h-6 w-6"
-                          style={{ color: section.color }}
-                        />
+                        <Icon className="h-6 w-6" style={{ color: section.color }} />
                       </div>
                       {section.badge && (
                         <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
@@ -166,9 +158,7 @@ export default function AdminSettingsPage() {
                     <CardTitle className="text-lg font-semibold text-[var(--foreground)] mb-2">
                       {section.title}
                     </CardTitle>
-                    <p className="text-sm text-[var(--muted-foreground)]">
-                      {section.description}
-                    </p>
+                    <p className="text-sm text-[var(--muted-foreground)]">{section.description}</p>
                   </CardContent>
                 </Card>
               );

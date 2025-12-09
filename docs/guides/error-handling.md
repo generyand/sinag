@@ -1,10 +1,12 @@
 # Error Handling Guide
 
-This guide documents the standardized error handling patterns used in the SINAG frontend application.
+This guide documents the standardized error handling patterns used in the SINAG frontend
+application.
 
 ## Overview
 
 The SINAG frontend implements a comprehensive error handling system that:
+
 - Classifies errors by type (network, server, auth, validation, etc.)
 - Provides user-friendly, actionable error messages
 - Maintains consistency across all components
@@ -19,7 +21,13 @@ The SINAG frontend implements a comprehensive error handling system that:
 This utility provides functions for classifying and formatting error messages:
 
 ```typescript
-import { classifyError, getErrorMessage, isNetworkError, isAuthError, isValidationError } from '@/lib/error-utils';
+import {
+  classifyError,
+  getErrorMessage,
+  isNetworkError,
+  isAuthError,
+  isValidationError,
+} from "@/lib/error-utils";
 ```
 
 #### `classifyError(error)`
@@ -56,6 +64,7 @@ import { ErrorDisplay } from '@/components/shared/ErrorDisplay';
 ```
 
 Features:
+
 - Automatic icon selection based on error type
 - Color-coded by severity (orange for network, red for critical, amber for validation)
 - Dark mode support
@@ -63,39 +72,38 @@ Features:
 
 ## Error Types and User Messages
 
-| Error Type | Detection Criteria | User-Facing Message | Icon | Color |
-|------------|-------------------|---------------------|------|-------|
-| **Network** | `Network Error`, `Failed to fetch`, `ERR_NETWORK` | "Unable to connect to server" | WifiOff | Orange |
-| **Server** | HTTP 500+ | "Server error - try again later" | ServerCrash | Red |
-| **Auth** | HTTP 401 | "Authentication failed" | Lock | Red |
-| **Permission** | HTTP 403 | "Access denied" | ShieldAlert | Red |
-| **Validation** | HTTP 400, 422 | "Validation failed" + details | AlertCircle | Amber |
-| **Rate Limit** | HTTP 429 | "Too many requests" | Clock | Yellow |
-| **Unknown** | Everything else | Extracted error message | AlertTriangle | Red |
+| Error Type     | Detection Criteria                                | User-Facing Message              | Icon          | Color  |
+| -------------- | ------------------------------------------------- | -------------------------------- | ------------- | ------ |
+| **Network**    | `Network Error`, `Failed to fetch`, `ERR_NETWORK` | "Unable to connect to server"    | WifiOff       | Orange |
+| **Server**     | HTTP 500+                                         | "Server error - try again later" | ServerCrash   | Red    |
+| **Auth**       | HTTP 401                                          | "Authentication failed"          | Lock          | Red    |
+| **Permission** | HTTP 403                                          | "Access denied"                  | ShieldAlert   | Red    |
+| **Validation** | HTTP 400, 422                                     | "Validation failed" + details    | AlertCircle   | Amber  |
+| **Rate Limit** | HTTP 429                                          | "Too many requests"              | Clock         | Yellow |
+| **Unknown**    | Everything else                                   | Extracted error message          | AlertTriangle | Red    |
 
 ## Usage Patterns
 
 ### Mutation Error Handling
 
 **Before** (avoid this pattern):
+
 ```typescript
 onError: (error: any) => {
-  const errorMessage =
-    error?.response?.data?.detail ||
-    error?.message ||
-    "Failed to submit";
+  const errorMessage = error?.response?.data?.detail || error?.message || "Failed to submit";
 
   toast({
     title: "Submission Failed",
     description: errorMessage,
     variant: "destructive",
   });
-}
+};
 ```
 
 **After** (recommended pattern):
+
 ```typescript
-import { classifyError } from '@/lib/error-utils';
+import { classifyError } from "@/lib/error-utils";
 
 onError: (error: any) => {
   const errorInfo = classifyError(error);
@@ -105,7 +113,7 @@ onError: (error: any) => {
     description: errorInfo.message,
     variant: "destructive",
   });
-}
+};
 ```
 
 ### Persistent Error Display
@@ -134,9 +142,9 @@ For forms where certain errors should appear on specific fields:
 ```typescript
 const errorInfo = classifyError(error);
 
-if (errorInfo.type === 'auth') {
+if (errorInfo.type === "auth") {
   // Show on password field
-  form.setError('currentPassword', { message: 'Incorrect password' });
+  form.setError("currentPassword", { message: "Incorrect password" });
 } else {
   // Show as toast for other errors
   toast.error(`${errorInfo.title}: ${errorInfo.message}`);

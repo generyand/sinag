@@ -29,18 +29,16 @@ const mockUseGetIndicatorsIndicatorIdFormSchema =
   useGetIndicatorsIndicatorIdFormSchema as ReturnType<typeof vi.fn>;
 const mockUsePostAssessmentsAssessmentIdAnswers =
   usePostAssessmentsAssessmentIdAnswers as ReturnType<typeof vi.fn>;
-const mockUseGetAssessmentsAssessmentIdAnswers =
-  useGetAssessmentsAssessmentIdAnswers as ReturnType<typeof vi.fn>;
+const mockUseGetAssessmentsAssessmentIdAnswers = useGetAssessmentsAssessmentIdAnswers as ReturnType<
+  typeof vi.fn
+>;
 
 /**
  * Generate a large form schema for performance testing
  * @param numSections Number of sections to create
  * @param fieldsPerSection Number of fields per section
  */
-function generateLargeFormSchema(
-  numSections: number,
-  fieldsPerSection: number
-): FormSchema {
+function generateLargeFormSchema(numSections: number, fieldsPerSection: number): FormSchema {
   const fields: FormField[] = [];
 
   for (let section = 1; section <= numSections; section++) {
@@ -52,14 +50,14 @@ function generateLargeFormSchema(
         field % 6 === 0
           ? "text_area"
           : field % 5 === 0
-          ? "select"
-          : field % 4 === 0
-          ? "radio_button"
-          : field % 3 === 0
-          ? "checkbox"
-          : field % 2 === 0
-          ? "number_input"
-          : "text_input";
+            ? "select"
+            : field % 4 === 0
+              ? "radio_button"
+              : field % 3 === 0
+                ? "checkbox"
+                : field % 2 === 0
+                  ? "number_input"
+                  : "text_input";
 
       const baseField: FormField = {
         field_id: fieldId,
@@ -140,11 +138,7 @@ describe("Performance: Large Form Rendering", () => {
     const startTime = performance.now();
 
     renderWithQueryClient(
-      <DynamicFormRenderer
-        formSchema={largeSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+      <DynamicFormRenderer formSchema={largeSchema} assessmentId={1} indicatorId={1} />
     );
 
     const endTime = performance.now();
@@ -167,11 +161,7 @@ describe("Performance: Large Form Rendering", () => {
     const startTime = performance.now();
 
     renderWithQueryClient(
-      <DynamicFormRenderer
-        formSchema={veryLargeSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+      <DynamicFormRenderer formSchema={veryLargeSchema} assessmentId={1} indicatorId={1} />
     );
 
     const endTime = performance.now();
@@ -192,11 +182,7 @@ describe("Performance: Large Form Rendering", () => {
     const startTime = performance.now();
 
     renderWithQueryClient(
-      <DynamicFormRenderer
-        formSchema={manySectionsSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+      <DynamicFormRenderer formSchema={manySectionsSchema} assessmentId={1} indicatorId={1} />
     );
 
     const endTime = performance.now();
@@ -215,10 +201,13 @@ describe("Performance: Large Form Rendering", () => {
     expect(mixedSchema.fields.length).toBe(64);
 
     // Count field types to verify diversity
-    const fieldTypes = mixedSchema.fields.reduce((acc, field) => {
-      acc[field.field_type] = (acc[field.field_type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const fieldTypes = mixedSchema.fields.reduce(
+      (acc, field) => {
+        acc[field.field_type] = (acc[field.field_type] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     // Should have at least 4 different field types
     expect(Object.keys(fieldTypes).length).toBeGreaterThanOrEqual(4);
@@ -226,11 +215,7 @@ describe("Performance: Large Form Rendering", () => {
     const startTime = performance.now();
 
     renderWithQueryClient(
-      <DynamicFormRenderer
-        formSchema={mixedSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+      <DynamicFormRenderer formSchema={mixedSchema} assessmentId={1} indicatorId={1} />
     );
 
     const endTime = performance.now();
@@ -238,7 +223,9 @@ describe("Performance: Large Form Rendering", () => {
 
     expect(renderTime).toBeLessThan(2000);
 
-    console.log(`✅ Mixed field types form (64 fields, ${Object.keys(fieldTypes).length} types) rendered in ${renderTime.toFixed(2)}ms`);
+    console.log(
+      `✅ Mixed field types form (64 fields, ${Object.keys(fieldTypes).length} types) rendered in ${renderTime.toFixed(2)}ms`
+    );
   });
 
   it("should maintain performance with pre-populated data", () => {
@@ -251,10 +238,10 @@ describe("Performance: Large Form Rendering", () => {
         field.field_type === "number_input"
           ? index * 10
           : field.field_type === "select" || field.field_type === "radio_button"
-          ? "opt1"
-          : field.field_type === "checkbox"
-          ? ["check1"]
-          : `Saved value ${index}`,
+            ? "opt1"
+            : field.field_type === "checkbox"
+              ? ["check1"]
+              : `Saved value ${index}`,
     }));
 
     mockUseGetAssessmentsAssessmentIdAnswers.mockReturnValue({
@@ -272,11 +259,7 @@ describe("Performance: Large Form Rendering", () => {
     const startTime = performance.now();
 
     renderWithQueryClient(
-      <DynamicFormRenderer
-        formSchema={largeSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+      <DynamicFormRenderer formSchema={largeSchema} assessmentId={1} indicatorId={1} />
     );
 
     const endTime = performance.now();
@@ -300,11 +283,7 @@ describe("Performance: Large Form Rendering", () => {
 
     const { rerender } = render(
       <QueryClientProvider client={queryClient}>
-        <DynamicFormRenderer
-          formSchema={schema}
-          assessmentId={1}
-          indicatorId={1}
-        />
+        <DynamicFormRenderer formSchema={schema} assessmentId={1} indicatorId={1} />
       </QueryClientProvider>
     );
 
@@ -313,11 +292,7 @@ describe("Performance: Large Form Rendering", () => {
 
     rerender(
       <QueryClientProvider client={queryClient}>
-        <DynamicFormRenderer
-          formSchema={schema}
-          assessmentId={1}
-          indicatorId={1}
-        />
+        <DynamicFormRenderer formSchema={schema} assessmentId={1} indicatorId={1} />
       </QueryClientProvider>
     );
 
@@ -361,11 +336,7 @@ describe("Performance: Form Interaction Response Time", () => {
     const startTime = performance.now();
 
     const { container } = renderWithQueryClient(
-      <DynamicFormRenderer
-        formSchema={schema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+      <DynamicFormRenderer formSchema={schema} assessmentId={1} indicatorId={1} />
     );
 
     const endTime = performance.now();

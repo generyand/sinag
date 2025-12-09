@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { useState } from "react";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 interface PeaceAndOrderFormProps {
   onSubmit?: (data: FormData) => void;
@@ -19,45 +19,18 @@ interface FormData {
   notes: string;
 }
 
-export default function PeaceAndOrderForm({
-  onSubmit,
-  initialData,
-  isLoading = false,
-}: PeaceAndOrderFormProps) {
-  const [formData, setFormData] = useState<FormData>({
-    situationalAwareness: initialData?.situationalAwareness || 1,
-    riskAssessment: initialData?.riskAssessment || 1,
-    communicationClarity: initialData?.communicationClarity || 1,
-    decisionMaking: initialData?.decisionMaking || 1,
-    conflictResolution: initialData?.conflictResolution || 1,
-    notes: initialData?.notes || '',
-  });
+interface RatingScaleProps {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  description: string;
+}
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit?.(formData);
-  };
-
-  const handleRatingChange = (field: keyof FormData, value: number) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const RatingScale = ({ 
-    label, 
-    value, 
-    onChange, 
-    description 
-  }: { 
-    label: string; 
-    value: number; 
-    onChange: (value: number) => void;
-    description: string;
-  }) => (
+function RatingScale({ label, value, onChange, description }: RatingScaleProps) {
+  return (
     <div className="space-y-2">
       <div>
-        <Label className="block text-sm font-medium text-gray-700">
-          {label}
-        </Label>
+        <Label className="block text-sm font-medium text-gray-700">{label}</Label>
         <p className="text-xs text-gray-500">{description}</p>
       </div>
       <div className="flex items-center space-x-2">
@@ -69,8 +42,8 @@ export default function PeaceAndOrderForm({
             onClick={() => onChange(rating)}
             className={`w-8 h-8 rounded-full border-2 text-sm font-medium transition-colors ${
               value === rating
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-white text-gray-600 border-gray-300 hover:border-blue-300'
+                ? "bg-blue-600 text-white border-blue-600"
+                : "bg-white text-gray-600 border-gray-300 hover:border-blue-300"
             }`}
           >
             {rating}
@@ -80,13 +53,35 @@ export default function PeaceAndOrderForm({
       </div>
     </div>
   );
+}
+
+export default function PeaceAndOrderForm({
+  onSubmit,
+  initialData,
+  isLoading = false,
+}: PeaceAndOrderFormProps) {
+  const [formData, setFormData] = useState<FormData>({
+    situationalAwareness: initialData?.situationalAwareness || 1,
+    riskAssessment: initialData?.riskAssessment || 1,
+    communicationClarity: initialData?.communicationClarity || 1,
+    decisionMaking: initialData?.decisionMaking || 1,
+    conflictResolution: initialData?.conflictResolution || 1,
+    notes: initialData?.notes || "",
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit?.(formData);
+  };
+
+  const handleRatingChange = (field: keyof FormData, value: number) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   return (
     <div className="bg-white shadow rounded-lg p-6">
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">
-          Peace and Order Assessment
-        </h2>
+        <h2 className="text-xl font-semibold text-gray-900">Peace and Order Assessment</h2>
         <p className="mt-1 text-sm text-gray-600">
           Evaluate leadership performance in maintaining peace and order during critical situations.
         </p>
@@ -97,35 +92,35 @@ export default function PeaceAndOrderForm({
           <RatingScale
             label="Situational Awareness"
             value={formData.situationalAwareness}
-            onChange={(value) => handleRatingChange('situationalAwareness', value)}
+            onChange={(value) => handleRatingChange("situationalAwareness", value)}
             description="Ability to understand and assess the current situation quickly and accurately"
           />
 
           <RatingScale
             label="Risk Assessment"
             value={formData.riskAssessment}
-            onChange={(value) => handleRatingChange('riskAssessment', value)}
+            onChange={(value) => handleRatingChange("riskAssessment", value)}
             description="Capacity to identify potential threats and evaluate their severity"
           />
 
           <RatingScale
             label="Communication Clarity"
             value={formData.communicationClarity}
-            onChange={(value) => handleRatingChange('communicationClarity', value)}
+            onChange={(value) => handleRatingChange("communicationClarity", value)}
             description="Effectiveness in communicating instructions and information under pressure"
           />
 
           <RatingScale
             label="Decision Making"
             value={formData.decisionMaking}
-            onChange={(value) => handleRatingChange('decisionMaking', value)}
+            onChange={(value) => handleRatingChange("decisionMaking", value)}
             description="Quality and speed of critical decisions made during tense situations"
           />
 
           <RatingScale
             label="Conflict Resolution"
             value={formData.conflictResolution}
-            onChange={(value) => handleRatingChange('conflictResolution', value)}
+            onChange={(value) => handleRatingChange("conflictResolution", value)}
             description="Ability to de-escalate tensions and find peaceful solutions"
           />
         </div>
@@ -137,7 +132,7 @@ export default function PeaceAndOrderForm({
           <Textarea
             id="notes"
             value={formData.notes}
-            onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+            onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
             rows={4}
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:cursor-not-allowed"
             placeholder="Add any additional comments or observations here."
@@ -146,8 +141,16 @@ export default function PeaceAndOrderForm({
 
         <div className="flex items-center justify-between pt-6 border-t border-gray-200">
           <div className="text-sm text-gray-500">
-            Overall Score: <span className="font-medium">
-              {Math.round((Object.values(formData).slice(0, 5).reduce((a, b) => a + b, 0) / 5) * 20)}%
+            Overall Score:{" "}
+            <span className="font-medium">
+              {Math.round(
+                (Object.values(formData)
+                  .slice(0, 5)
+                  .reduce((a, b) => a + b, 0) /
+                  5) *
+                  20
+              )}
+              %
             </span>
           </div>
           <button
@@ -161,11 +164,11 @@ export default function PeaceAndOrderForm({
                 Saving Assessment...
               </>
             ) : (
-              'Save Assessment'
+              "Save Assessment"
             )}
           </button>
         </div>
       </form>
     </div>
   );
-} 
+}

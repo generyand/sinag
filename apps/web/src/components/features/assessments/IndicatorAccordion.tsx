@@ -82,7 +82,7 @@ export function IndicatorAccordion({
   const { mutate: deleteMOV, isPending: isDeleting } = useDeleteMOV();
 
   // Track compliance locally so UI reacts immediately on change
-  const [localCompliance, setLocalCompliance] = useState<ComplianceAnswer | undefined>(
+  const [localCompliance] = useState<ComplianceAnswer | undefined>(
     (indicator.complianceAnswer ||
       (indicator.responseData?.compliance as ComplianceAnswer | undefined)) as
       | ComplianceAnswer
@@ -184,45 +184,6 @@ export function IndicatorAccordion({
     }
     return created.id;
   }
-
-  const getStatusIcon = () => {
-    switch (indicator.status) {
-      case "completed":
-        return (
-          <div className="relative" title="Completed">
-            <CheckCircle className="h-6 w-6 text-green-600 fill-green-100" />
-            <span className="sr-only">Completed</span>
-          </div>
-        );
-      case "needs_rework":
-        return (
-          <div className="relative" title="Needs Rework - Action Required">
-            <AlertCircle className="h-6 w-6 text-orange-600 fill-orange-100 animate-pulse" />
-            <span className="sr-only">Needs Rework - Action Required</span>
-          </div>
-        );
-      case "not_started":
-      default:
-        return (
-          <div className="relative" title="Not Started">
-            <Circle className="h-6 w-6 text-gray-300" />
-            <span className="sr-only">Not Started</span>
-          </div>
-        );
-    }
-  };
-
-  const getStatusText = () => {
-    switch (indicator.status) {
-      case "completed":
-        return "Completed";
-      case "needs_rework":
-        return "Needs Rework";
-      case "not_started":
-      default:
-        return "Not Started";
-    }
-  };
 
   // Calculate completion metrics for progress display
   const calculateCompletionMetrics = () => {
@@ -331,7 +292,7 @@ export function IndicatorAccordion({
   };
 
   const getCompletionBadge = () => {
-    const { completedFields, totalFields, percentage } = calculateCompletionMetrics();
+    const { percentage } = calculateCompletionMetrics();
 
     if (indicator.status === "completed") {
       return (

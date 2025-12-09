@@ -14,7 +14,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "SINAG - SGLGB Analytics System",
-  description: "Strategic Insights Nurturing Assessments and Governance - SGLGB Analytics System for DILG",
+  description:
+    "Strategic Insights Nurturing Assessments and Governance - SGLGB Analytics System for DILG",
   icons: {
     icon: "/logo/logo.webp",
     apple: "/logo/logo.webp",
@@ -31,9 +32,7 @@ export default function RootLayout({
       <body className="antialiased">
         <SonnerToaster />
         <Toaster />
-        <Providers>
-        {children}
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

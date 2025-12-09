@@ -26,4 +26,4 @@ export interface AssessorData {
 export interface SeverityLevel {
   level: string;
   color: string;
-} 
+}

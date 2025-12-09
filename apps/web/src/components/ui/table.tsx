@@ -1,53 +1,44 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "@/lib/utils";
 
-const tableVariants = cva(
-  "w-full caption-bottom text-sm",
-  {
-    variants: {
-      size: {
-        sm: "text-xs",
-        md: "text-sm",
-        lg: "text-base",
-      },
+const tableVariants = cva("w-full caption-bottom text-sm", {
+  variants: {
+    size: {
+      sm: "text-xs",
+      md: "text-sm",
+      lg: "text-base",
     },
-    defaultVariants: {
-      size: "md",
-    },
-  }
-)
+  },
+  defaultVariants: {
+    size: "md",
+  },
+});
 
-const tableRowVariants = cva(
-  "border-b border-gray-200 transition-colors",
-  {
-    variants: {
-      shape: {
-        boxy: "rounded-none",
-        rounded: "rounded-md",
-      },
+const tableRowVariants = cva("border-b border-gray-200 transition-colors", {
+  variants: {
+    shape: {
+      boxy: "rounded-none",
+      rounded: "rounded-md",
     },
-    defaultVariants: {
-      shape: "boxy",
-    },
-  }
-)
+  },
+  defaultVariants: {
+    shape: "boxy",
+  },
+});
 
-function Table({ className, size, ...props }: React.ComponentProps<"table"> & VariantProps<typeof tableVariants>) {
+function Table({
+  className,
+  size,
+  ...props
+}: React.ComponentProps<"table"> & VariantProps<typeof tableVariants>) {
   return (
-    <div
-      data-slot="table-container"
-      className="relative w-full overflow-x-auto"
-    >
-      <table
-        data-slot="table"
-        className={cn(tableVariants({ size }), className)}
-        {...props}
-      />
+    <div data-slot="table-container" className="relative w-full overflow-x-auto">
+      <table data-slot="table" className={cn(tableVariants({ size }), className)} {...props} />
     </div>
-  )
+  );
 }
 
 function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
@@ -57,7 +48,7 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
       className={cn("[&_tr]:border-b [&_tr]:border-gray-200", className)}
       {...props}
     />
-  )
+  );
 }
 
 function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
@@ -67,7 +58,7 @@ function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
       className={cn("[&_tr:last-child]:border-0", className)}
       {...props}
     />
-  )
+  );
 }
 
 function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
@@ -80,10 +71,14 @@ function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
       )}
       {...props}
     />
-  )
+  );
 }
 
-function TableRow({ className, shape, ...props }: React.ComponentProps<"tr"> & VariantProps<typeof tableRowVariants>) {
+function TableRow({
+  className,
+  shape,
+  ...props
+}: React.ComponentProps<"tr"> & VariantProps<typeof tableRowVariants>) {
   return (
     <tr
       data-slot="table-row"
@@ -94,7 +89,7 @@ function TableRow({ className, shape, ...props }: React.ComponentProps<"tr"> & V
       )}
       {...props}
     />
-  )
+  );
 }
 
 function TableHead({ className, ...props }: React.ComponentProps<"th">) {
@@ -107,7 +102,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
       )}
       {...props}
     />
-  )
+  );
 }
 
 function TableCell({ className, ...props }: React.ComponentProps<"td">) {
@@ -120,20 +115,17 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
       )}
       {...props}
     />
-  )
+  );
 }
 
-function TableCaption({
-  className,
-  ...props
-}: React.ComponentProps<"caption">) {
+function TableCaption({ className, ...props }: React.ComponentProps<"caption">) {
   return (
     <caption
       data-slot="table-caption"
       className={cn("text-muted-foreground mt-4 text-sm", className)}
       {...props}
     />
-  )
+  );
 }
 
 export {
@@ -147,4 +139,4 @@ export {
   TableCaption,
   tableVariants,
   tableRowVariants,
-}
+};

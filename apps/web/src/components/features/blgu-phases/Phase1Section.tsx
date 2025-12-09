@@ -14,10 +14,7 @@
  */
 
 import { PhaseCard, PhaseStatus } from "./PhaseCard";
-import {
-  CompletionMetricsCard,
-  IndicatorNavigationList,
-} from "@/components/features/dashboard";
+import { CompletionMetricsCard, IndicatorNavigationList } from "@/components/features/dashboard";
 import {
   SubmitAssessmentButton,
   ResubmitAssessmentButton,
@@ -140,9 +137,7 @@ export function Phase1Section({
     area.indicators.map((indicator) => ({
       indicator_id: indicator.indicator_id,
       title: indicator.indicator_name,
-      completion_status: indicator.is_complete
-        ? ("complete" as const)
-        : ("incomplete" as const),
+      completion_status: indicator.is_complete ? ("complete" as const) : ("incomplete" as const),
       route_path: `/blgu/assessments?indicator=${indicator.indicator_id}`,
       governance_area_name: area.governance_area_name,
       governance_area_id: area.governance_area_id,
@@ -206,25 +201,19 @@ export function Phase1Section({
                 <div className="text-2xl font-bold text-green-700 dark:text-green-300">
                   {dashboardData.total_indicators}
                 </div>
-                <div className="text-xs text-green-600 dark:text-green-400">
-                  Total Indicators
-                </div>
+                <div className="text-xs text-green-600 dark:text-green-400">Total Indicators</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-green-700 dark:text-green-300">
                   {dashboardData.completed_indicators}
                 </div>
-                <div className="text-xs text-green-600 dark:text-green-400">
-                  Completed
-                </div>
+                <div className="text-xs text-green-600 dark:text-green-400">Completed</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-green-700 dark:text-green-300">
                   {dashboardData.completion_percentage.toFixed(0)}%
                 </div>
-                <div className="text-xs text-green-600 dark:text-green-400">
-                  Completion
-                </div>
+                <div className="text-xs text-green-600 dark:text-green-400">Completion</div>
               </div>
             </div>
           </div>

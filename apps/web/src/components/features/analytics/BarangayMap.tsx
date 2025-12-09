@@ -58,9 +58,7 @@ export function BarangayMap({ barangays }: BarangayMapProps) {
   if (!barangays || barangays.length === 0) {
     return (
       <div className="h-[400px] flex items-center justify-center bg-muted/30 rounded-md border border-dashed">
-        <p className="text-sm text-muted-foreground">
-          No barangay location data available
-        </p>
+        <p className="text-sm text-muted-foreground">No barangay location data available</p>
       </div>
     );
   }
@@ -83,8 +81,7 @@ export function BarangayMap({ barangays }: BarangayMapProps) {
     <div className="space-y-2">
       {missingCount > 0 && (
         <p className="text-xs text-muted-foreground">
-          Note: {missingCount} barangay{missingCount > 1 ? "s" : ""} without
-          location data
+          Note: {missingCount} barangay{missingCount > 1 ? "s" : ""} without location data
         </p>
       )}
       <div className="h-[400px] rounded-md overflow-hidden border border-border">
@@ -117,12 +114,9 @@ export function BarangayMap({ barangays }: BarangayMapProps) {
                       {barangay.status}
                     </span>
                   </p>
-                  {barangay.score !== null &&
-                    barangay.score !== undefined && (
-                      <p className="text-xs">
-                        Score: {barangay.score.toFixed(1)}%
-                      </p>
-                    )}
+                  {barangay.score !== null && barangay.score !== undefined && (
+                    <p className="text-xs">Score: {barangay.score.toFixed(1)}%</p>
+                  )}
                 </div>
               </Popup>
             </Marker>

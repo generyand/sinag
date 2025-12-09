@@ -10,5 +10,3 @@ export default async function AssessorDashboardPage() {
     </div>
   );
 }
-
-

@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { isTextInputField, useFormBuilderStore } from '@/store/useFormBuilderStore';
-import type { TextInputField } from '@sinag/shared';
-import { useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { isTextInputField, useFormBuilderStore } from "@/store/useFormBuilderStore";
+import type { TextInputField } from "@sinag/shared";
+import { useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
 
 interface TextInputPropertiesProps {
   fieldId: string;
@@ -37,10 +37,10 @@ export function TextInputProperties({ fieldId }: TextInputPropertiesProps) {
   const defaultValues = useMemo<FormValues>(() => {
     if (!textField) {
       return {
-        label: '',
-        field_id: '',
+        label: "",
+        field_id: "",
         required: false,
-        help_text: '',
+        help_text: "",
         max_length: undefined,
         placeholder: undefined,
         default_value: undefined,
@@ -51,7 +51,7 @@ export function TextInputProperties({ fieldId }: TextInputPropertiesProps) {
       label: textField.label,
       field_id: textField.field_id,
       required: textField.required ?? false,
-      help_text: textField.help_text || '',
+      help_text: textField.help_text || "",
       max_length: textField.max_length ?? undefined,
       placeholder: textField.placeholder ?? undefined,
       default_value: textField.default_value ?? undefined,
@@ -99,45 +99,74 @@ export function TextInputProperties({ fieldId }: TextInputPropertiesProps) {
   return (
     <form onSubmit={handleSubmit(onSave)} className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="label">Label <span className="text-red-600">*</span></Label>
-        <Input id="label" {...register('label', { required: 'Label is required' })} />
+        <Label htmlFor="label">
+          Label <span className="text-red-600">*</span>
+        </Label>
+        <Input id="label" {...register("label", { required: "Label is required" })} />
         {errors.label && <p className="text-sm text-red-600">{errors.label.message}</p>}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="field_id">Field ID <span className="text-red-600">*</span></Label>
-        <Input id="field_id" {...register('field_id', { required: 'Field ID is required', pattern: { value: /^[a-z0-9_]+$/, message: 'Only lowercase letters, numbers, and underscores' } })} />
+        <Label htmlFor="field_id">
+          Field ID <span className="text-red-600">*</span>
+        </Label>
+        <Input
+          id="field_id"
+          {...register("field_id", {
+            required: "Field ID is required",
+            pattern: {
+              value: /^[a-z0-9_]+$/,
+              message: "Only lowercase letters, numbers, and underscores",
+            },
+          })}
+        />
         {errors.field_id && <p className="text-sm text-red-600">{errors.field_id.message}</p>}
       </div>
 
       <div className="flex items-center justify-between rounded-lg border border-gray-200 p-3">
-        <Label htmlFor="required" className="cursor-pointer">Required field</Label>
-        <input id="required" type="checkbox" {...register('required')} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+        <Label htmlFor="required" className="cursor-pointer">
+          Required field
+        </Label>
+        <input
+          id="required"
+          type="checkbox"
+          {...register("required")}
+          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        />
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="help_text">Help text (optional)</Label>
-        <Textarea id="help_text" {...register('help_text')} rows={3} />
+        <Textarea id="help_text" {...register("help_text")} rows={3} />
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="max_length">Max length (optional)</Label>
-        <Input id="max_length" type="number" {...register('max_length', { valueAsNumber: true })} placeholder="255" />
+        <Input
+          id="max_length"
+          type="number"
+          {...register("max_length", { valueAsNumber: true })}
+          placeholder="255"
+        />
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="placeholder">Placeholder (optional)</Label>
-        <Input id="placeholder" {...register('placeholder')} placeholder="Enter text..." />
+        <Input id="placeholder" {...register("placeholder")} placeholder="Enter text..." />
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="default_value">Default value (optional)</Label>
-        <Input id="default_value" {...register('default_value')} />
+        <Input id="default_value" {...register("default_value")} />
       </div>
 
       <div className="flex gap-3 pt-4 border-t border-gray-200">
-        <Button type="submit" disabled={!hasChanges} className="flex-1">Save Changes</Button>
-        <Button type="button" variant="outline" onClick={onCancel} disabled={!hasChanges}>Cancel</Button>
+        <Button type="submit" disabled={!hasChanges} className="flex-1">
+          Save Changes
+        </Button>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={!hasChanges}>
+          Cancel
+        </Button>
       </div>
 
       {hasChanges && <p className="text-xs text-yellow-600">You have unsaved changes</p>}

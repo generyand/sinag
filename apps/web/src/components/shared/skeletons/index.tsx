@@ -5,8 +5,8 @@
  * Use these as fallbacks in Suspense boundaries or dynamic imports.
  */
 
-import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 interface SkeletonContainerProps {
   className?: string;
@@ -16,7 +16,7 @@ interface SkeletonContainerProps {
 
 function SkeletonContainer({ className, children, style }: SkeletonContainerProps) {
   return (
-    <div className={cn('animate-in fade-in-0 duration-300', className)} style={style}>
+    <div className={cn("animate-in fade-in-0 duration-300", className)} style={style}>
       {children}
     </div>
   );
@@ -119,11 +119,7 @@ export function ChartSkeleton({ height = 300 }: { height?: number }) {
         {/* Chart area */}
         <div className="flex-1 flex items-end gap-2 px-4">
           {[40, 65, 45, 80, 55, 70, 50].map((h, i) => (
-            <Skeleton
-              key={i}
-              className="flex-1"
-              style={{ height: `${h}%` }}
-            />
+            <Skeleton key={i} className="flex-1" style={{ height: `${h}%` }} />
           ))}
         </div>
 
@@ -247,7 +243,7 @@ export function PanelSkeleton({ lines = 5 }: { lines?: number }) {
     <SkeletonContainer className="space-y-4 p-4">
       <Skeleton className="h-6 w-1/2" />
       {Array.from({ length: lines }).map((_, i) => (
-        <Skeleton key={i} className="h-4 w-full" style={{ width: `${85 + Math.random() * 15}%` }} />
+        <Skeleton key={i} className="h-4 w-full" style={{ width: `${85 + ((i * 13) % 15)}%` }} />
       ))}
     </SkeletonContainer>
   );

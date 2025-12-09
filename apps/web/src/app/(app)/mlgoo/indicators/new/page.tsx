@@ -1,24 +1,24 @@
-'use client';
+"use client";
 
-import { FormSchemaBuilder } from '@/components/features/indicators/FormSchemaBuilder';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { FormSchemaBuilder } from "@/components/features/indicators/FormSchemaBuilder";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
-import { useFormBuilderStore } from '@/store/useFormBuilderStore';
-import { useGetLookupsGovernanceAreas, usePostIndicators } from '@sinag/shared';
-import { ChevronRight, FileText, Save } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { useFormBuilderStore } from "@/store/useFormBuilderStore";
+import { useGetLookupsGovernanceAreas, usePostIndicators } from "@sinag/shared";
+import { ChevronRight, FileText, Save } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 
 interface IndicatorFormData {
   name: string;
@@ -56,8 +56,8 @@ export default function NewIndicatorPage() {
     setValue,
   } = useForm<IndicatorFormData>({
     defaultValues: {
-      name: '',
-      description: '',
+      name: "",
+      description: "",
     },
   });
 
@@ -84,17 +84,17 @@ export default function NewIndicatorPage() {
       });
 
       toast({
-        title: 'Draft saved',
-        description: 'Indicator draft created successfully',
+        title: "Draft saved",
+        description: "Indicator draft created successfully",
       });
 
       markAsSaved();
       router.push(`/mlgoo/indicators/${result.id}`);
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: error?.message || 'Failed to save draft',
-        variant: 'destructive',
+        title: "Error",
+        description: error?.message || "Failed to save draft",
+        variant: "destructive",
       });
     } finally {
       setIsSaving(false);
@@ -106,9 +106,9 @@ export default function NewIndicatorPage() {
     // Validate governance area is selected
     if (!data.governance_area_id) {
       toast({
-        title: 'Validation Error',
-        description: 'Please select a Governance Area',
-        variant: 'destructive',
+        title: "Validation Error",
+        description: "Please select a Governance Area",
+        variant: "destructive",
       });
       return;
     }
@@ -116,9 +116,9 @@ export default function NewIndicatorPage() {
     // Validate that form has fields
     if (fields.length === 0) {
       toast({
-        title: 'Validation Error',
-        description: 'Please add at least one field to the form',
-        variant: 'destructive',
+        title: "Validation Error",
+        description: "Please add at least one field to the form",
+        variant: "destructive",
       });
       return;
     }
@@ -141,8 +141,8 @@ export default function NewIndicatorPage() {
       });
 
       toast({
-        title: 'Success',
-        description: 'Indicator created and published successfully',
+        title: "Success",
+        description: "Indicator created and published successfully",
       });
 
       markAsSaved();
@@ -150,9 +150,10 @@ export default function NewIndicatorPage() {
       router.push(`/mlgoo/indicators`);
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: error?.response?.data?.detail || error?.message || 'Failed to create indicator',
-        variant: 'destructive',
+        title: "Error",
+        description:
+          error?.response?.data?.detail || error?.message || "Failed to create indicator",
+        variant: "destructive",
       });
     } finally {
       setIsSaving(false);
@@ -260,65 +261,67 @@ export default function NewIndicatorPage() {
               <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-purple-100/20 to-pink-100/10 rounded-full translate-y-12 -translate-x-12"></div>
 
               <div className="relative z-10">
-            {/* Breadcrumb */}
-            <div className="flex items-center gap-3 text-sm text-[var(--text-secondary)] mb-4">
-              <button
-                onClick={() => router.push('/mlgoo/dashboard')}
-                className="hover:text-[var(--cityscape-yellow)] transition-colors font-medium px-2 py-1 rounded-sm hover:bg-[var(--cityscape-yellow)]/10"
-              >
-                Admin
-              </button>
-              <ChevronRight className="h-4 w-4" />
-              <button
-                onClick={() => router.push('/mlgoo/indicators')}
-                className="hover:text-[var(--cityscape-yellow)] transition-colors font-medium px-2 py-1 rounded-sm hover:bg-[var(--cityscape-yellow)]/10"
-              >
-                Indicators
-              </button>
-              <ChevronRight className="h-4 w-4" />
-              <span className="text-[var(--foreground)] font-semibold px-2 py-1">New</span>
-            </div>
+                {/* Breadcrumb */}
+                <div className="flex items-center gap-3 text-sm text-[var(--text-secondary)] mb-4">
+                  <button
+                    onClick={() => router.push("/mlgoo/dashboard")}
+                    className="hover:text-[var(--cityscape-yellow)] transition-colors font-medium px-2 py-1 rounded-sm hover:bg-[var(--cityscape-yellow)]/10"
+                  >
+                    Admin
+                  </button>
+                  <ChevronRight className="h-4 w-4" />
+                  <button
+                    onClick={() => router.push("/mlgoo/indicators")}
+                    className="hover:text-[var(--cityscape-yellow)] transition-colors font-medium px-2 py-1 rounded-sm hover:bg-[var(--cityscape-yellow)]/10"
+                  >
+                    Indicators
+                  </button>
+                  <ChevronRight className="h-4 w-4" />
+                  <span className="text-[var(--foreground)] font-semibold px-2 py-1">New</span>
+                </div>
 
-            {/* Header Content */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-              <div>
-                <h1 className="text-3xl font-bold text-[var(--foreground)]">
-                  Create{" "}
-                  <span className="bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] bg-clip-text text-transparent">
-                    New Indicator
-                  </span>
-                </h1>
-              </div>
+                {/* Header Content */}
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                  <div>
+                    <h1 className="text-3xl font-bold text-[var(--foreground)]">
+                      Create{" "}
+                      <span className="bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] bg-clip-text text-transparent">
+                        New Indicator
+                      </span>
+                    </h1>
+                  </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button
-                  variant="outline"
-                  onClick={handleSaveDraft}
-                  disabled={isSaving}
-                  className="px-6 py-2.5 hover:border-[var(--cityscape-yellow)] hover:text-[var(--cityscape-yellow)] transition-all font-medium"
-                >
-                  <FileText className="mr-2 h-4 w-4" />
-                  Save Draft
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handleSaveAndPublish}
-                  disabled={isSaving}
-                  className="px-6 py-2.5 bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] hover:shadow-lg transition-all text-[var(--foreground)] font-semibold"
-                >
-                  <Save className="mr-2 h-4 w-4" />
-                  Save & Publish
-                </Button>
-              </div>
-            </div>
+                  {/* Action Buttons */}
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={handleSaveDraft}
+                      disabled={isSaving}
+                      className="px-6 py-2.5 hover:border-[var(--cityscape-yellow)] hover:text-[var(--cityscape-yellow)] transition-all font-medium"
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      Save Draft
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleSaveAndPublish}
+                      disabled={isSaving}
+                      className="px-6 py-2.5 bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] hover:shadow-lg transition-all text-[var(--foreground)] font-semibold"
+                    >
+                      <Save className="mr-2 h-4 w-4" />
+                      Save & Publish
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Basic Information Section */}
           <div className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-6 sm:p-8">
-              <h2 className="text-2xl font-bold text-[var(--foreground)] mb-6 pb-4 border-b border-[var(--border)]">Basic Information</h2>
+            <h2 className="text-2xl font-bold text-[var(--foreground)] mb-6 pb-4 border-b border-[var(--border)]">
+              Basic Information
+            </h2>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Name */}
@@ -328,9 +331,9 @@ export default function NewIndicatorPage() {
                 </Label>
                 <Input
                   id="name"
-                  {...register('name', { required: 'Name is required', minLength: 3 })}
+                  {...register("name", { required: "Name is required", minLength: 3 })}
                   placeholder="Enter indicator name"
-                  className={`${errors.name ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                  className={`${errors.name ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                 />
                 {errors.name && (
                   <p className="text-sm text-red-600 flex items-center gap-1">
@@ -341,16 +344,19 @@ export default function NewIndicatorPage() {
 
               {/* Governance Area */}
               <div className="space-y-2">
-                <Label htmlFor="governance_area_id" className="text-sm font-semibold text-[var(--foreground)]">
+                <Label
+                  htmlFor="governance_area_id"
+                  className="text-sm font-semibold text-[var(--foreground)]"
+                >
                   Governance Area <span className="text-red-600">*</span>
                 </Label>
                 <Select
                   onValueChange={(value) => {
-                    setValue('governance_area_id', parseInt(value), { shouldValidate: true });
+                    setValue("governance_area_id", parseInt(value), { shouldValidate: true });
                   }}
                   required
                 >
-                  <SelectTrigger className={`${errors.governance_area_id ? 'border-red-500' : ''}`}>
+                  <SelectTrigger className={`${errors.governance_area_id ? "border-red-500" : ""}`}>
                     <SelectValue placeholder="Select governance area" />
                   </SelectTrigger>
                   <SelectContent>
@@ -370,12 +376,16 @@ export default function NewIndicatorPage() {
 
               {/* Description */}
               <div className="col-span-1 lg:col-span-2 space-y-2">
-                <Label htmlFor="description" className="text-sm font-semibold text-[var(--foreground)]">
-                  Description <span className="text-[var(--text-secondary)] font-normal">(optional)</span>
+                <Label
+                  htmlFor="description"
+                  className="text-sm font-semibold text-[var(--foreground)]"
+                >
+                  Description{" "}
+                  <span className="text-[var(--text-secondary)] font-normal">(optional)</span>
                 </Label>
                 <Textarea
                   id="description"
-                  {...register('description')}
+                  {...register("description")}
                   placeholder="Enter a brief description of this indicator..."
                   rows={4}
                   className="resize-none"
@@ -384,18 +394,18 @@ export default function NewIndicatorPage() {
                   Provide context and guidance for assessors completing this indicator
                 </p>
               </div>
-              </div>
             </div>
+          </div>
 
-            {/* Form Schema Builder Section */}
-            <div className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] overflow-hidden">
-              <div className="px-6 sm:px-8 py-5 border-b border-[var(--border)]">
-                <h2 className="text-2xl font-bold text-[var(--foreground)]">Form Schema Builder</h2>
-              </div>
-              <div className="p-6 sm:p-8">
-                <FormSchemaBuilder />
-              </div>
+          {/* Form Schema Builder Section */}
+          <div className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] overflow-hidden">
+            <div className="px-6 sm:px-8 py-5 border-b border-[var(--border)]">
+              <h2 className="text-2xl font-bold text-[var(--foreground)]">Form Schema Builder</h2>
             </div>
+            <div className="p-6 sm:p-8">
+              <FormSchemaBuilder />
+            </div>
+          </div>
         </div>
       </div>
     </div>

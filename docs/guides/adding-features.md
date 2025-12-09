@@ -1,6 +1,8 @@
 # Adding Features to SINAG: Complete Developer Guide
 
-This guide provides a comprehensive, step-by-step process for adding new features to the SINAG governance assessment platform. Follow the "Fat Services, Thin Routers" pattern and the established project conventions.
+This guide provides a comprehensive, step-by-step process for adding new features to the SINAG
+governance assessment platform. Follow the "Fat Services, Thin Routers" pattern and the established
+project conventions.
 
 ## Table of Contents
 
@@ -27,6 +29,7 @@ Before writing any code, clearly define:
 - **Dependencies**: Does this feature depend on other systems (Supabase, Gemini API, Celery)?
 
 **Example**: For a notifications feature, ask:
+
 - Who receives notifications? (BLGU users, Assessors, Validators)
 - What events trigger notifications? (Assessment submitted, rework requested, deadline approaching)
 - What delivery methods? (In-app, email, push notifications)
@@ -35,11 +38,13 @@ Before writing any code, clearly define:
 
 Check existing PRDs in `docs/prds/` to understand:
 
-- **Workflow stages**: Initial BLGU Submission → Assessor Review → Table Validation → Classification → Intelligence
+- **Workflow stages**: Initial BLGU Submission → Assessor Review → Table Validation → Classification
+  → Intelligence
 - **Role-based permissions**: MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER
 - **Business rules**: 3+1 scoring logic, one rework cycle allowed, grace period handling
 
 **Reference**: Read relevant PRDs:
+
 - `prd-phase1-core-user-authentication-and-management.md` - RBAC patterns
 - `prd-phase2-blgu-table-assessment-workflow.md` - BLGU submission workflow
 - `prd-phase3-assessor-validation-rework-cycle.md` - Assessor/Validator workflows
@@ -50,11 +55,13 @@ Check existing PRDs in `docs/prds/` to understand:
 Design your database tables:
 
 1. **Identify entities**: What new data do you need to store?
-2. **Define relationships**: How does this data relate to existing models (User, Assessment, Indicator)?
+2. **Define relationships**: How does this data relate to existing models (User, Assessment,
+   Indicator)?
 3. **Consider performance**: Add indexes for frequently queried fields
 4. **Plan for multi-tenancy**: Does data need to be isolated by barangay or governance area?
 
 **Example**: For notifications:
+
 - Entity: `Notification`
 - Relationships: `User` (recipient), `Assessment` (optional context)
 - Indexes: `user_id`, `is_read`, `created_at`
@@ -69,6 +76,7 @@ Design your API endpoints following RESTful conventions:
 - **Response structure**: Use consistent Pydantic schemas for request/response validation
 
 **Example**: For notifications:
+
 ```
 GET    /api/v1/notifications          - List notifications for current user
 GET    /api/v1/notifications/{id}     - Get specific notification
@@ -298,10 +306,12 @@ class NotificationListResponse(BaseModel):
 ```
 
 **Key Pydantic patterns**:
+
 - `NotificationBase`: Shared fields across schemas (DRY principle)
 - `NotificationCreate`: Request schema for creating notifications
 - `NotificationUpdate`: Request schema for updates (partial updates allowed)
-- `Notification`: Response schema with `model_config = ConfigDict(from_attributes=True)` for ORM compatibility
+- `Notification`: Response schema with `model_config = ConfigDict(from_attributes=True)` for ORM
+  compatibility
 - `NotificationListResponse`: Paginated list responses with metadata
 
 ### Step 4: Implement Service Layer (Fat Services, Thin Routers)
@@ -552,13 +562,15 @@ notification_service = NotificationService()
 ```
 
 **Service layer best practices**:
+
 - ✅ **Fat services**: All business logic lives here (authorization, validation, complex queries)
 - ✅ **Clear docstrings**: Google-style docstrings with Args, Returns, Raises, Example
 - ✅ **Type hints**: Full type annotations for IDE autocomplete and type checking
 - ✅ **Transaction management**: Services receive `db: Session` and commit transactions
 - ✅ **Reusability**: Methods can be called from routers, Celery tasks, or other services
 - ✅ **Testability**: Pure functions that are easy to unit test
-- ✅ **Singleton pattern**: Export a service instance (`notification_service = NotificationService()`)
+- ✅ **Singleton pattern**: Export a service instance
+  (`notification_service = NotificationService()`)
 
 ### Step 5: Create API Router (Thin Routers)
 
@@ -721,15 +733,17 @@ async def mark_all_notifications_as_read(
 ```
 
 **Router best practices**:
+
 - ✅ **Thin routers**: Just handle HTTP, call services, return responses
 - ✅ **Use dependency injection**: `Depends(deps.get_db)`, `Depends(deps.get_current_active_user)`
 - ✅ **Proper tags**: Tag all endpoints for Orval organization (`tags=["notifications"]`)
 - ✅ **Clear docstrings**: Explain authentication, authorization, parameters, returns, raises
-- ✅ **Response models**: Use Pydantic schemas for type-safe responses (`response_model=Notification`)
+- ✅ **Response models**: Use Pydantic schemas for type-safe responses
+  (`response_model=Notification`)
 - ✅ **HTTP status codes**: Use semantic status codes (200, 201, 204, 400, 403, 404)
 - ✅ **Error handling**: Raise HTTPException with descriptive messages
 
-### Step 6: Register Router in __init__.py
+### Step 6: Register Router in **init**.py
 
 **Location**: `apps/api/app/api/v1/__init__.py`
 
@@ -787,6 +801,7 @@ pnpm generate-types
 ```
 
 This command:
+
 1. Starts the FastAPI server
 2. Fetches the OpenAPI spec from `/openapi.json`
 3. Runs Orval to generate TypeScript code
@@ -829,10 +844,10 @@ export interface Notification {
 }
 
 export enum NotificationType {
-  ASSESSMENT_SUBMITTED = 'ASSESSMENT_SUBMITTED',
-  REWORK_REQUESTED = 'REWORK_REQUESTED',
-  ASSESSMENT_VALIDATED = 'ASSESSMENT_VALIDATED',
-  DEADLINE_REMINDER = 'DEADLINE_REMINDER',
+  ASSESSMENT_SUBMITTED = "ASSESSMENT_SUBMITTED",
+  REWORK_REQUESTED = "REWORK_REQUESTED",
+  ASSESSMENT_VALIDATED = "ASSESSMENT_VALIDATED",
+  DEADLINE_REMINDER = "DEADLINE_REMINDER",
 }
 
 export interface NotificationListResponse {
@@ -852,49 +867,52 @@ export interface NotificationListResponse {
  * Generated by orval v6.x.x
  * Do not edit manually.
  */
-import { useQuery, useMutation } from '@tanstack/react-query';
-import type { QueryFunction, QueryKey, UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
-import api from '@/lib/api';
+import { useQuery, useMutation } from "@tanstack/react-query";
+import type {
+  QueryFunction,
+  QueryKey,
+  UseQueryOptions,
+  UseMutationOptions,
+} from "@tanstack/react-query";
+import api from "@/lib/api";
 
-export const getNotifications = (
-  params?: GetNotificationsParams,
-  options?: AxiosRequestConfig
-) => {
-  return api.get<NotificationListResponse>(
-    `/api/v1/notifications`,
-    { ...options, params }
-  );
+export const getNotifications = (params?: GetNotificationsParams, options?: AxiosRequestConfig) => {
+  return api.get<NotificationListResponse>(`/api/v1/notifications`, { ...options, params });
 };
 
-export const useGetNotifications = <TData = Awaited<ReturnType<typeof getNotifications>>, TError = AxiosError>(
+export const useGetNotifications = <
+  TData = Awaited<ReturnType<typeof getNotifications>>,
+  TError = AxiosError,
+>(
   params?: GetNotificationsParams,
   options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof getNotifications>>, TError, TData> }
 ) => {
   return useQuery<Awaited<ReturnType<typeof getNotifications>>, TError, TData>(
-    ['notifications', params],
+    ["notifications", params],
     () => getNotifications(params),
     options?.query
   );
 };
 
-export const markNotificationAsRead = (
-  notificationId: number,
-  options?: AxiosRequestConfig
-) => {
-  return api.post<Notification>(
-    `/api/v1/notifications/${notificationId}/read`,
-    undefined,
-    options
-  );
+export const markNotificationAsRead = (notificationId: number, options?: AxiosRequestConfig) => {
+  return api.post<Notification>(`/api/v1/notifications/${notificationId}/read`, undefined, options);
 };
 
-export const useMarkNotificationAsRead = <TData = Awaited<ReturnType<typeof markNotificationAsRead>>, TError = AxiosError>(
-  options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof markNotificationAsRead>>, TError, { notificationId: number }> }
-) => {
-  return useMutation<Awaited<ReturnType<typeof markNotificationAsRead>>, TError, { notificationId: number }>(
-    ({ notificationId }) => markNotificationAsRead(notificationId),
-    options?.mutation
-  );
+export const useMarkNotificationAsRead = <
+  TData = Awaited<ReturnType<typeof markNotificationAsRead>>,
+  TError = AxiosError,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof markNotificationAsRead>>,
+    TError,
+    { notificationId: number }
+  >;
+}) => {
+  return useMutation<
+    Awaited<ReturnType<typeof markNotificationAsRead>>,
+    TError,
+    { notificationId: number }
+  >(({ notificationId }) => markNotificationAsRead(notificationId), options?.mutation);
 };
 ```
 
@@ -915,6 +933,7 @@ cat orval.config.ts
 ```
 
 **Common fixes**:
+
 - Ensure backend is running on port 8000
 - Fix any Pydantic schema validation errors
 - Check `orval.config.ts` has correct API URL and output paths
@@ -935,21 +954,19 @@ Use Server Components by default, Client Components only when needed.
 
 ```tsx
 // apps/web/src/app/(app)/notifications/page.tsx
-import { NotificationList } from '@/components/features/notifications';
-import { Metadata } from 'next';
+import { NotificationList } from "@/components/features/notifications";
+import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: 'Notifications | SINAG',
-  description: 'View and manage your notifications',
+  title: "Notifications | SINAG",
+  description: "View and manage your notifications",
 };
 
 export default function NotificationsPage() {
   return (
     <div className="container mx-auto py-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Notifications
-        </h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Notifications</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">
           Stay updated with your assessment workflow
         </p>
@@ -962,6 +979,7 @@ export default function NotificationsPage() {
 ```
 
 **Page best practices**:
+
 - ✅ Server Components by default (no `'use client'` directive unless needed)
 - ✅ Export metadata for SEO
 - ✅ Keep pages minimal, delegate to components
@@ -977,16 +995,20 @@ Build feature-specific components using the generated API hooks.
 
 ```tsx
 // apps/web/src/components/features/notifications/NotificationList.tsx
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useGetNotifications, useMarkNotificationAsRead, useMarkAllNotificationsAsRead } from '@sinag/shared';
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { formatDistanceToNow } from 'date-fns';
-import { Bell, CheckCheck, Trash2 } from 'lucide-react';
+import { useState } from "react";
+import {
+  useGetNotifications,
+  useMarkNotificationAsRead,
+  useMarkAllNotificationsAsRead,
+} from "@sinag/shared";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { formatDistanceToNow } from "date-fns";
+import { Bell, CheckCheck, Trash2 } from "lucide-react";
 
 export function NotificationList() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -1037,7 +1059,7 @@ export function NotificationList() {
   };
 
   const handleMarkAllAsRead = () => {
-    if (confirm('Mark all notifications as read?')) {
+    if (confirm("Mark all notifications as read?")) {
       markAllAsReadMutation.mutate({});
     }
   };
@@ -1064,11 +1086,11 @@ export function NotificationList() {
       </div>
 
       {/* Tabs for filtering */}
-      <Tabs defaultValue="all" onValueChange={(value) => setUnreadOnly(value === 'unread')}>
+      <Tabs defaultValue="all" onValueChange={(value) => setUnreadOnly(value === "unread")}>
         <TabsList>
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="unread">
-            Unread {data?.unread_count ? `(${data.unread_count})` : ''}
+            Unread {data?.unread_count ? `(${data.unread_count})` : ""}
           </TabsTrigger>
         </TabsList>
 
@@ -1084,7 +1106,7 @@ export function NotificationList() {
             data?.notifications.map((notification) => (
               <Card
                 key={notification.id}
-                className={notification.is_read ? 'opacity-60' : 'border-l-4 border-l-primary'}
+                className={notification.is_read ? "opacity-60" : "border-l-4 border-l-primary"}
               >
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start">
@@ -1092,7 +1114,9 @@ export function NotificationList() {
                       <CardTitle className="text-lg flex items-center gap-2">
                         {notification.title}
                         {!notification.is_read && (
-                          <Badge variant="default" className="text-xs">New</Badge>
+                          <Badge variant="default" className="text-xs">
+                            New
+                          </Badge>
                         )}
                       </CardTitle>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
@@ -1142,7 +1166,9 @@ export function NotificationList() {
                     <div className="flex-1">
                       <CardTitle className="text-lg flex items-center gap-2">
                         {notification.title}
-                        <Badge variant="default" className="text-xs">New</Badge>
+                        <Badge variant="default" className="text-xs">
+                          New
+                        </Badge>
                       </CardTitle>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                         {notification.message}
@@ -1204,10 +1230,11 @@ export function NotificationList() {
 
 ```typescript
 // apps/web/src/components/features/notifications/index.ts
-export { NotificationList } from './NotificationList';
+export { NotificationList } from "./NotificationList";
 ```
 
 **Component best practices**:
+
 - ✅ Use `'use client'` directive for Client Components
 - ✅ Import generated hooks from `@sinag/shared`
 - ✅ Use TanStack Query patterns (mutations with `onSuccess`)
@@ -1223,13 +1250,10 @@ If you have complex logic, wrap the generated hook.
 
 ```typescript
 // apps/web/src/hooks/useNotifications.ts
-import { useGetNotifications } from '@sinag/shared';
-import { useEffect } from 'react';
+import { useGetNotifications } from "@sinag/shared";
+import { useEffect } from "react";
 
-export function useNotifications(options?: {
-  unreadOnly?: boolean;
-  pollInterval?: number;
-}) {
+export function useNotifications(options?: { unreadOnly?: boolean; pollInterval?: number }) {
   const { data, isLoading, error, refetch } = useGetNotifications({
     page: 1,
     size: 20,
@@ -1265,8 +1289,8 @@ For global client state (not server state), use Zustand.
 
 ```typescript
 // apps/web/src/store/notificationStore.ts
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 interface NotificationPreferences {
   emailNotifications: boolean;
@@ -1293,7 +1317,7 @@ export const useNotificationStore = create<NotificationStore>()(
         })),
     }),
     {
-      name: 'notification-preferences',
+      name: "notification-preferences",
     }
   )
 );
@@ -1310,6 +1334,7 @@ Write comprehensive tests for backend and frontend.
 **Location**: `apps/api/tests/`
 
 **Test structure**:
+
 - `tests/services/test_{service}_service.py` - Unit tests for service layer
 - `tests/api/v1/test_{domain}.py` - Integration tests for API endpoints
 - `tests/conftest.py` - Shared fixtures
@@ -1750,11 +1775,12 @@ Update all relevant documentation after implementing your feature.
 
 ### 6.1 API Documentation
 
-**Already done**: Your FastAPI docstrings auto-generate Swagger UI docs at `http://localhost:8000/docs`
+**Already done**: Your FastAPI docstrings auto-generate Swagger UI docs at
+`http://localhost:8000/docs`
 
 **Additional**: If your feature has complex workflows, add documentation in `docs/api/`:
 
-```markdown
+````markdown
 # docs/api/notifications-api.md
 
 # Notifications API
@@ -1772,11 +1798,13 @@ Retrieve paginated notifications for the current user.
 **Authentication**: Required (all user roles)
 
 **Query Parameters**:
+
 - `page` (integer, default: 1): Page number
 - `size` (integer, default: 20, max: 100): Number of notifications per page
 - `unread_only` (boolean, default: false): Filter to show only unread notifications
 
 **Response**:
+
 ```json
 {
   "notifications": [
@@ -1799,9 +1827,11 @@ Retrieve paginated notifications for the current user.
   "total_pages": 2
 }
 ```
+````
 
 (Continue with other endpoints...)
-```
+
+````
 
 ### 6.2 Update CLAUDE.md
 
@@ -1839,7 +1869,7 @@ notification = notification_service.create_notification(
 - `REWORK_REQUESTED`: Sent to BLGU users when an assessor requests rework
 - `ASSESSMENT_VALIDATED`: Sent to BLGU users when their assessment is validated
 - `DEADLINE_REMINDER`: Sent to BLGU users when a deadline is approaching
-```
+````
 
 ### 6.3 Update CHANGELOG.md
 
@@ -1853,6 +1883,7 @@ All notable changes to SINAG will be documented in this file.
 ## [Unreleased]
 
 ### Added
+
 - Notifications system for real-time alerts
   - In-app notification center with read/unread tracking
   - Pagination and filtering by read status
@@ -1862,9 +1893,11 @@ All notable changes to SINAG will be documented in this file.
   - Frontend notification panel in dashboard header
 
 ### Changed
+
 - User model now includes `notifications` relationship
 
 ### Database
+
 - Added `notifications` table with user and assessment foreign keys
 - Added `notification_type_enum` enumeration type
 ```
@@ -1938,7 +1971,8 @@ except Exception as e:
 
 ### 7.4 Type Safety
 
-- [ ] **Backend**: All functions have type hints (`def func(db: Session, user_id: int) -> Notification`)
+- [ ] **Backend**: All functions have type hints
+      (`def func(db: Session, user_id: int) -> Notification`)
 - [ ] **Frontend**: TypeScript strict mode enabled (no `any` types without justification)
 - [ ] **Generated types**: Ran `pnpm generate-types` after backend changes
 - [ ] **Pydantic**: All schemas use proper type annotations
@@ -1955,24 +1989,33 @@ except Exception as e:
 
 ## 8. Complete End-to-End Example: Notifications Feature
 
-This section walks through implementing the Notifications feature from start to finish, demonstrating all concepts from this guide.
+This section walks through implementing the Notifications feature from start to finish,
+demonstrating all concepts from this guide.
 
 ### Step 1: Planning
 
-**Business requirement**: Users need to be notified about important events in the SGLGB assessment workflow.
+**Business requirement**: Users need to be notified about important events in the SGLGB assessment
+workflow.
 
 **User stories**:
-- As a BLGU user, I want to receive notifications when my assessment is reviewed, so I know when to take action.
-- As an assessor, I want to receive notifications when new assessments are submitted, so I can review them promptly.
-- As a BLGU user, I want to mark notifications as read, so I can track which alerts I've already seen.
+
+- As a BLGU user, I want to receive notifications when my assessment is reviewed, so I know when to
+  take action.
+- As an assessor, I want to receive notifications when new assessments are submitted, so I can
+  review them promptly.
+- As a BLGU user, I want to mark notifications as read, so I can track which alerts I've already
+  seen.
 
 **Success criteria**:
-- Notifications are created automatically when key events occur (submission, rework request, validation)
+
+- Notifications are created automatically when key events occur (submission, rework request,
+  validation)
 - Users can view paginated list of notifications
 - Users can mark individual or all notifications as read
 - Users can only see their own notifications (multi-tenancy)
 
 **Dependencies**:
+
 - Database: PostgreSQL via Supabase
 - No external APIs required
 - Future enhancement: Celery background jobs for email notifications
@@ -1982,6 +2025,7 @@ This section walks through implementing the Notifications feature from start to 
 **Entity**: `Notification`
 
 **Fields**:
+
 - `id` (int, primary key)
 - `title` (string, required)
 - `message` (text, required)
@@ -1993,10 +2037,12 @@ This section walks through implementing the Notifications feature from start to 
 - `created_at` (datetime, auto-set)
 
 **Relationships**:
+
 - `User` (many-to-one): Each notification belongs to one user
 - `Assessment` (many-to-one, optional): Notifications can optionally reference an assessment
 
 **Indexes**:
+
 - `user_id` (for filtering by user)
 - `created_at` (for sorting by date)
 - `is_read` (for filtering unread notifications)
@@ -2018,6 +2064,7 @@ POST   /api/v1/notifications/mark-all-read - Mark all as read
 ### Step 4: Implementation
 
 **See code examples in Steps 1-6 above for**:
+
 - SQLAlchemy model (`apps/api/app/db/models/notification.py`)
 - Alembic migration
 - Pydantic schemas (`apps/api/app/schemas/notification.py`)
@@ -2033,12 +2080,14 @@ pnpm generate-types
 ```
 
 **Generated files**:
+
 - `packages/shared/src/generated/schemas/notifications/notificationSchema.ts`
 - `packages/shared/src/generated/endpoints/notifications/notificationsController.ts`
 
 ### Step 6: Frontend Implementation
 
 **See code examples in Step 4.2 above for**:
+
 - Page component (`apps/web/src/app/(app)/notifications/page.tsx`)
 - Feature component (`apps/web/src/components/features/notifications/NotificationList.tsx`)
 - Custom hook (optional) (`apps/web/src/hooks/useNotifications.ts`)
@@ -2046,6 +2095,7 @@ pnpm generate-types
 ### Step 7: Testing
 
 **See code examples in Step 5.1 above for**:
+
 - Service tests (`apps/api/tests/services/test_notification_service.py`)
 - API endpoint tests (`apps/api/tests/api/v1/test_notifications.py`)
 
@@ -2098,6 +2148,7 @@ if assessment.assigned_assessor_id:
 ### Step 9: Documentation
 
 **Updated files**:
+
 - `CHANGELOG.md` - Added notification feature entry
 - `CLAUDE.md` - Added notification patterns and usage examples
 - `docs/api/notifications-api.md` - Created API documentation
@@ -2105,6 +2156,7 @@ if assessment.assigned_assessor_id:
 ### Step 10: Code Review
 
 **Checklist completed**:
+
 - ✅ Authentication on all endpoints
 - ✅ Authorization checks (users can only access their own notifications)
 - ✅ Pydantic validation on all inputs
@@ -2151,6 +2203,7 @@ This guide provided a complete, production-ready workflow for adding features to
 7. **Code Review**: Verify security, performance, error handling, type safety, documentation
 
 **Key Takeaways**:
+
 - ✅ Follow the established patterns in CLAUDE.md
 - ✅ Keep services fat (business logic) and routers thin (HTTP handling)
 - ✅ Use FastAPI tags for Orval organization
@@ -2159,6 +2212,7 @@ This guide provided a complete, production-ready workflow for adding features to
 - ✅ Document everything (docstrings, CHANGELOG, CLAUDE.md)
 
 **Resources**:
+
 - CLAUDE.md - Project conventions and patterns
 - docs/prds/ - Product requirements documents
 - docs/architecture/ - System architecture

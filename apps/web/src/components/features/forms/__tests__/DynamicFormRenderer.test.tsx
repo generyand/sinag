@@ -34,8 +34,9 @@ const mockUseGetIndicatorsIndicatorIdFormSchema =
   useGetIndicatorsIndicatorIdFormSchema as ReturnType<typeof vi.fn>;
 const mockUsePostAssessmentsAssessmentIdAnswers =
   usePostAssessmentsAssessmentIdAnswers as ReturnType<typeof vi.fn>;
-const mockUseGetAssessmentsAssessmentIdAnswers =
-  useGetAssessmentsAssessmentIdAnswers as ReturnType<typeof vi.fn>;
+const mockUseGetAssessmentsAssessmentIdAnswers = useGetAssessmentsAssessmentIdAnswers as ReturnType<
+  typeof vi.fn
+>;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -94,11 +95,7 @@ describe("DynamicFormRenderer - Simple Schema", () => {
 
   it("should render form with all fields from schema", () => {
     renderWithProviders(
-      <DynamicFormRenderer
-        formSchema={simpleSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+      <DynamicFormRenderer formSchema={simpleSchema} assessmentId={1} indicatorId={1} />
     );
 
     expect(screen.getByLabelText(/Full Name/i)).toBeInTheDocument();
@@ -108,11 +105,7 @@ describe("DynamicFormRenderer - Simple Schema", () => {
 
   it("should show required indicators for required fields", () => {
     renderWithProviders(
-      <DynamicFormRenderer
-        formSchema={simpleSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+      <DynamicFormRenderer formSchema={simpleSchema} assessmentId={1} indicatorId={1} />
     );
 
     // Check for asterisks (required indicators) - Full Name and Age are required
@@ -122,28 +115,18 @@ describe("DynamicFormRenderer - Simple Schema", () => {
 
   it("should show placeholder text", () => {
     renderWithProviders(
-      <DynamicFormRenderer
-        formSchema={simpleSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+      <DynamicFormRenderer formSchema={simpleSchema} assessmentId={1} indicatorId={1} />
     );
 
     expect(screen.getByPlaceholderText("Enter your name")).toBeInTheDocument();
-    expect(
-      screen.getByPlaceholderText("email@example.com")
-    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("email@example.com")).toBeInTheDocument();
   });
 
   it("should accept user input in text fields", async () => {
     const user = userEvent.setup();
 
     renderWithProviders(
-      <DynamicFormRenderer
-        formSchema={simpleSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+      <DynamicFormRenderer formSchema={simpleSchema} assessmentId={1} indicatorId={1} />
     );
 
     const nameInput = screen.getByLabelText(/Full Name/i);
@@ -156,11 +139,7 @@ describe("DynamicFormRenderer - Simple Schema", () => {
     const user = userEvent.setup();
 
     renderWithProviders(
-      <DynamicFormRenderer
-        formSchema={simpleSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+      <DynamicFormRenderer formSchema={simpleSchema} assessmentId={1} indicatorId={1} />
     );
 
     const ageInput = screen.getByLabelText(/Age/i);
@@ -171,11 +150,7 @@ describe("DynamicFormRenderer - Simple Schema", () => {
 
   it("should display progress indicator", () => {
     renderWithProviders(
-      <DynamicFormRenderer
-        formSchema={simpleSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+      <DynamicFormRenderer formSchema={simpleSchema} assessmentId={1} indicatorId={1} />
     );
 
     // Check for progress bar instead of save button (component uses auto-save)
@@ -221,11 +196,7 @@ describe("DynamicFormRenderer - Simple Schema", () => {
 
   it("should show progress feedback for incomplete required fields", async () => {
     renderWithProviders(
-      <DynamicFormRenderer
-        formSchema={simpleSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+      <DynamicFormRenderer formSchema={simpleSchema} assessmentId={1} indicatorId={1} />
     );
 
     // Check that progress bar shows 0% when no required fields are filled
@@ -253,11 +224,7 @@ describe("DynamicFormRenderer - Simple Schema", () => {
     });
 
     renderWithProviders(
-      <DynamicFormRenderer
-        formSchema={simpleSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+      <DynamicFormRenderer formSchema={simpleSchema} assessmentId={1} indicatorId={1} />
     );
 
     const nameInput = screen.getByLabelText(/Full Name/i) as HTMLInputElement;
@@ -320,11 +287,7 @@ describe("DynamicFormRenderer - Conditional Fields", () => {
 
   it("should hide conditional fields initially", () => {
     renderWithProviders(
-      <DynamicFormRenderer
-        formSchema={conditionalSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+      <DynamicFormRenderer formSchema={conditionalSchema} assessmentId={1} indicatorId={1} />
     );
 
     // Radio field label appears multiple times (in card title and field label)
@@ -333,23 +296,15 @@ describe("DynamicFormRenderer - Conditional Fields", () => {
     expect(questionLabels.length).toBeGreaterThan(0);
 
     // Verify conditional fields are NOT rendered
-    expect(
-      screen.queryByLabelText(/Years of Experience/i)
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByLabelText(/Why no experience?/i)
-    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Years of Experience/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Why no experience?/i)).not.toBeInTheDocument();
   });
 
   it("should show conditional field when condition is met", async () => {
     const user = userEvent.setup();
 
     renderWithProviders(
-      <DynamicFormRenderer
-        formSchema={conditionalSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+      <DynamicFormRenderer formSchema={conditionalSchema} assessmentId={1} indicatorId={1} />
     );
 
     const yesOption = screen.getByLabelText("Yes");
@@ -357,9 +312,7 @@ describe("DynamicFormRenderer - Conditional Fields", () => {
 
     await waitFor(() => {
       expect(screen.getByLabelText(/Years of Experience/i)).toBeInTheDocument();
-      expect(
-        screen.queryByLabelText(/Why no experience?/i)
-      ).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/Why no experience?/i)).not.toBeInTheDocument();
     });
   });
 
@@ -367,20 +320,14 @@ describe("DynamicFormRenderer - Conditional Fields", () => {
     const user = userEvent.setup();
 
     renderWithProviders(
-      <DynamicFormRenderer
-        formSchema={conditionalSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+      <DynamicFormRenderer formSchema={conditionalSchema} assessmentId={1} indicatorId={1} />
     );
 
     const noOption = screen.getByLabelText("No");
     await user.click(noOption);
 
     await waitFor(() => {
-      expect(
-        screen.queryByLabelText(/Years of Experience/i)
-      ).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/Years of Experience/i)).not.toBeInTheDocument();
       expect(screen.getByLabelText(/Why no experience?/i)).toBeInTheDocument();
     });
   });
@@ -389,11 +336,7 @@ describe("DynamicFormRenderer - Conditional Fields", () => {
     const user = userEvent.setup();
 
     renderWithProviders(
-      <DynamicFormRenderer
-        formSchema={conditionalSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+      <DynamicFormRenderer formSchema={conditionalSchema} assessmentId={1} indicatorId={1} />
     );
 
     // Select "Yes" first
@@ -409,20 +352,14 @@ describe("DynamicFormRenderer - Conditional Fields", () => {
     await user.click(noOption);
 
     await waitFor(() => {
-      expect(
-        screen.queryByLabelText(/Years of Experience/i)
-      ).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/Years of Experience/i)).not.toBeInTheDocument();
       expect(screen.getByLabelText(/Why no experience?/i)).toBeInTheDocument();
     });
   });
 
   it("should validate only visible fields", async () => {
     renderWithProviders(
-      <DynamicFormRenderer
-        formSchema={conditionalSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+      <DynamicFormRenderer formSchema={conditionalSchema} assessmentId={1} indicatorId={1} />
     );
 
     // Don't select any option - progress should be 0%
@@ -431,9 +368,7 @@ describe("DynamicFormRenderer - Conditional Fields", () => {
     expect(progressBar).toHaveAttribute("aria-label", expect.stringContaining("0%"));
 
     // Verify hidden fields are not in the document
-    expect(
-      screen.queryByLabelText(/Years of Experience/i)
-    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Years of Experience/i)).not.toBeInTheDocument();
   });
 });
 
@@ -465,11 +400,7 @@ describe("DynamicFormRenderer - Error Handling", () => {
     });
 
     renderWithProviders(
-      <DynamicFormRenderer
-        formSchema={simpleSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+      <DynamicFormRenderer formSchema={simpleSchema} assessmentId={1} indicatorId={1} />
     );
 
     // Component uses auto-save, type into field to trigger it
@@ -494,11 +425,7 @@ describe("DynamicFormRenderer - Error Handling", () => {
     });
 
     renderWithProviders(
-      <DynamicFormRenderer
-        formSchema={simpleSchema}
-        assessmentId={1}
-        indicatorId={1}
-      />
+      <DynamicFormRenderer formSchema={simpleSchema} assessmentId={1} indicatorId={1} />
     );
 
     // Component shows saving state via progress indicators

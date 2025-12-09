@@ -1,10 +1,10 @@
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
-import { Check, X } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { Check, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface ComplianceBadgeProps {
-  status: 'Passed' | 'Failed';
+  status: "Passed" | "Failed";
   assessmentId?: number;
   className?: string;
 }
@@ -18,20 +18,21 @@ export function ComplianceBadge({ status, assessmentId, className }: ComplianceB
     }
   };
 
-  const isPassed = status === 'Passed';
-  const baseStyles = 'rounded-sm px-3 py-1 text-xs font-semibold transition-all cursor-pointer hover:shadow-md';
-  
+  const isPassed = status === "Passed";
+  const baseStyles =
+    "rounded-sm px-3 py-1 text-xs font-semibold transition-all cursor-pointer hover:shadow-md";
+
   const getStyles = () => {
     if (isPassed) {
       return cn(
         baseStyles,
-        'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100',
+        "bg-green-50 text-green-700 border border-green-200 hover:bg-green-100",
         className
       );
     }
     return cn(
       baseStyles,
-      'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100',
+      "bg-red-50 text-red-700 border border-red-200 hover:bg-red-100",
       className
     );
   };
@@ -40,7 +41,7 @@ export function ComplianceBadge({ status, assessmentId, className }: ComplianceB
     <Badge
       onClick={handleClick}
       className={getStyles()}
-      role={assessmentId ? 'button' : undefined}
+      role={assessmentId ? "button" : undefined}
       tabIndex={assessmentId ? 0 : undefined}
     >
       {isPassed ? (

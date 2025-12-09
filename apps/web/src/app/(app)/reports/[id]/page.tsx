@@ -52,13 +52,14 @@ export default function ReportDetailsPage() {
   } = useIntelligence();
 
   // Transform area_results from API format to display format
+  const areaResultsData = assessmentData?.area_results;
   const areaResults = useMemo(() => {
-    if (!assessmentData?.area_results) return undefined;
+    if (!areaResultsData) return undefined;
 
     // Convert area_results object to the expected format
     const results: Record<string, string> = {};
-    if (typeof assessmentData.area_results === "object") {
-      Object.entries(assessmentData.area_results).forEach(([key, value]) => {
+    if (typeof areaResultsData === "object") {
+      Object.entries(areaResultsData).forEach(([key, value]) => {
         // Handle different possible formats
         if (typeof value === "string") {
           results[key] = value;
@@ -68,21 +69,22 @@ export default function ReportDetailsPage() {
       });
     }
     return Object.keys(results).length > 0 ? results : undefined;
-  }, [assessmentData?.area_results]);
+  }, [areaResultsData]);
 
   // Transform governance_areas to area_results format if area_results is not available
+  const governanceAreas = assessmentData?.governance_areas;
   const derivedAreaResults = useMemo(() => {
     if (areaResults) return areaResults;
-    if (!assessmentData?.governance_areas) return undefined;
+    if (!governanceAreas) return undefined;
 
     const results: Record<string, string> = {};
-    assessmentData.governance_areas.forEach((area) => {
+    governanceAreas.forEach((area) => {
       // Determine pass/fail based on area validation status
       const isPassed = area.indicators?.every((ind) => ind.validation_status === "PASSED") ?? false;
       results[area.name] = isPassed ? "Passed" : "Failed";
     });
     return Object.keys(results).length > 0 ? results : undefined;
-  }, [areaResults, assessmentData?.governance_areas]);
+  }, [areaResults, governanceAreas]);
 
   const handleGenerate = async () => {
     if (!assessmentId) return;

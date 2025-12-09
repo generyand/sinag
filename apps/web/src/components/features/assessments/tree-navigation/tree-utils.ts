@@ -52,10 +52,7 @@ export function findIndicatorById(
 /**
  * Find indicator in indicator tree (recursive)
  */
-function findInIndicatorTree(
-  indicators: Indicator[],
-  indicatorId: string
-): Indicator | null {
+function findInIndicatorTree(indicators: Indicator[], indicatorId: string): Indicator | null {
   for (const indicator of indicators) {
     if (indicator.id === indicatorId) {
       return indicator;
@@ -72,10 +69,7 @@ function findInIndicatorTree(
 /**
  * Get parent area ID for an indicator
  */
-export function getParentAreaId(
-  assessment: Assessment,
-  indicatorId: string
-): string | null {
+export function getParentAreaId(assessment: Assessment, indicatorId: string): string | null {
   const result = findIndicatorById(assessment, indicatorId);
   return result?.areaId || null;
 }

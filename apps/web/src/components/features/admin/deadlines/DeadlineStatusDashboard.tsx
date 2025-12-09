@@ -45,15 +45,10 @@ export function DeadlineStatusDashboard() {
   const { activeCycle, isLoadingActiveCycle } = useCycles();
 
   // Get deadline status with real-time updates (auto-refresh every 30s)
-  const {
-    deadlineStatus,
-    totalBarangays,
-    isLoadingStatus,
-    statusError,
-    refetchStatus,
-  } = useDeadlines({
-    cycleId: activeCycle?.id,
-  });
+  const { deadlineStatus, totalBarangays, isLoadingStatus, statusError, refetchStatus } =
+    useDeadlines({
+      cycleId: activeCycle?.id,
+    });
 
   // Filter state
   const [barangayFilter, setBarangayFilter] = React.useState("");
@@ -97,15 +92,16 @@ export function DeadlineStatusDashboard() {
 
     deadlineStatus.forEach((status) => {
       // Count by phase filter or all phases
-      const phases = phaseFilter === "all"
-        ? [status.phase1, status.rework, status.phase2, status.calibration]
-        : phaseFilter === "phase1"
-        ? [status.phase1]
-        : phaseFilter === "rework"
-        ? [status.rework]
-        : phaseFilter === "phase2"
-        ? [status.phase2]
-        : [status.calibration];
+      const phases =
+        phaseFilter === "all"
+          ? [status.phase1, status.rework, status.phase2, status.calibration]
+          : phaseFilter === "phase1"
+            ? [status.phase1]
+            : phaseFilter === "rework"
+              ? [status.rework]
+              : phaseFilter === "phase2"
+                ? [status.phase2]
+                : [status.calibration];
 
       phases.forEach((phase) => {
         if (phase.status === "submitted_on_time") totalSubmittedOnTime++;
@@ -130,9 +126,7 @@ export function DeadlineStatusDashboard() {
         <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm p-8">
           <div className="flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--cityscape-yellow)]"></div>
-            <span className="ml-3 text-[var(--muted-foreground)]">
-              Loading deadline status...
-            </span>
+            <span className="ml-3 text-[var(--muted-foreground)]">Loading deadline status...</span>
           </div>
         </div>
       </div>
@@ -196,24 +190,18 @@ export function DeadlineStatusDashboard() {
                 Track barangay submission status across all assessment phases
               </p>
               <p className="text-sm text-[var(--muted-foreground)] mt-1">
-                Active Cycle: <span className="font-medium">{activeCycle.name}</span> ({activeCycle.year})
+                Active Cycle: <span className="font-medium">{activeCycle.name}</span> (
+                {activeCycle.year})
               </p>
             </div>
 
             {/* Action Buttons */}
             <div className="flex gap-2 self-start lg:self-center">
-              <Button
-                onClick={() => router.push("/mlgoo/deadlines/audit")}
-                variant="outline"
-              >
+              <Button onClick={() => router.push("/mlgoo/deadlines/audit")} variant="outline">
                 <FileText className="w-4 h-4 mr-2" />
                 View Audit Log
               </Button>
-              <Button
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                variant="outline"
-              >
+              <Button onClick={handleRefresh} disabled={isRefreshing} variant="outline">
                 <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
                 {isRefreshing ? "Refreshing..." : "Refresh"}
               </Button>
@@ -228,7 +216,9 @@ export function DeadlineStatusDashboard() {
         <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-[var(--muted-foreground)]">Submitted On Time</p>
+              <p className="text-sm font-medium text-[var(--muted-foreground)]">
+                Submitted On Time
+              </p>
               <p className="text-3xl font-bold text-green-600 mt-2">
                 {statistics.totalSubmittedOnTime}
               </p>
@@ -242,9 +232,7 @@ export function DeadlineStatusDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-[var(--muted-foreground)]">Pending</p>
-              <p className="text-3xl font-bold text-yellow-600 mt-2">
-                {statistics.totalPending}
-              </p>
+              <p className="text-3xl font-bold text-yellow-600 mt-2">{statistics.totalPending}</p>
             </div>
             <Clock className="w-10 h-10 text-yellow-500 opacity-50" />
           </div>
@@ -255,9 +243,7 @@ export function DeadlineStatusDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-[var(--muted-foreground)]">Overdue</p>
-              <p className="text-3xl font-bold text-red-600 mt-2">
-                {statistics.totalOverdue}
-              </p>
+              <p className="text-3xl font-bold text-red-600 mt-2">{statistics.totalOverdue}</p>
             </div>
             <AlertCircle className="w-10 h-10 text-red-500 opacity-50" />
           </div>
@@ -268,9 +254,7 @@ export function DeadlineStatusDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-[var(--muted-foreground)]">Late (Submitted)</p>
-              <p className="text-3xl font-bold text-blue-600 mt-2">
-                {statistics.totalLate}
-              </p>
+              <p className="text-3xl font-bold text-blue-600 mt-2">{statistics.totalLate}</p>
             </div>
             <TrendingUp className="w-10 h-10 text-blue-500 opacity-50" />
           </div>

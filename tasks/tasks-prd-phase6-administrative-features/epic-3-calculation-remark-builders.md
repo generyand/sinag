@@ -1,22 +1,19 @@
 # Epic 3.0: Indicator Management - Calculation Schema Builder & Remark Builder
 
-**PRD Reference:** FR-4.1.3, FR-4.1.4
-**Duration:** 8-12 days
-**Dependencies:** Epic 1.0, Epic 2.0 (requires form_schema fields to reference)
-**Status:** ✅ 100% COMPLETE (38/45 tasks checked, 7 integrated, 45 tests passing)
-**Completed:** 2025-11-06
+**PRD Reference:** FR-4.1.3, FR-4.1.4 **Duration:** 8-12 days **Dependencies:** Epic 1.0, Epic 2.0
+(requires form_schema fields to reference) **Status:** ✅ 100% COMPLETE (38/45 tasks checked, 7
+integrated, 45 tests passing) **Completed:** 2025-11-06
 
 ---
 
 ## Story 3.1: Calculation Schema Data Models & Rule Engine Foundation ✅
 
-**Duration:** 2 days
-**Dependencies:** Epic 1.0 complete
-**Status:** Complete
+**Duration:** 2 days **Dependencies:** Epic 1.0 complete **Status:** Complete
 
 ### Atomic Tasks (8 tasks)
 
-- [x] **3.1.1** Create Pydantic models for 6 rule types (AndAllRule, OrAnyRule, PercentageThresholdRule, CountThresholdRule, MatchValueRule, BBIFunctionalityCheckRule)
+- [x] **3.1.1** Create Pydantic models for 6 rule types (AndAllRule, OrAnyRule,
+      PercentageThresholdRule, CountThresholdRule, MatchValueRule, BBIFunctionalityCheckRule)
   - **File:** `apps/api/app/schemas/calculation_schema.py`
   - **Criteria:** Each rule type with proper fields, discriminator, validation
   - **Completed:** All 6 rule types with discriminated union pattern
@@ -60,8 +57,7 @@
 
 ## Story 3.2: Backend Calculation Schema Validation & Test Endpoint ✅
 
-**Duration:** 1 day
-**Status:** Complete
+**Duration:** 1 day **Status:** Complete
 
 ### Atomic Tasks (4 tasks)
 
@@ -87,8 +83,7 @@
 
 ## Story 3.3: Frontend Calculation Rule Builder Core Architecture ✅
 
-**Duration:** 2 days
-**Dependencies:** Epic 2.0 (needs form_schema fields), `pnpm generate-types`
+**Duration:** 2 days **Dependencies:** Epic 2.0 (needs form_schema fields), `pnpm generate-types`
 **Status:** Complete
 
 ### Atomic Tasks (6 tasks)
@@ -98,7 +93,8 @@
   - **Completed:** Full Zustand store with condition groups, rules, nesting operations
 
 - [x] **3.3.2** Create CalculationRuleBuilder main component
-  - **File:** `apps/web/src/components/features/indicators/CalculationRuleBuilder/CalculationRuleBuilder.tsx`
+  - **File:**
+    `apps/web/src/components/features/indicators/CalculationRuleBuilder/CalculationRuleBuilder.tsx`
   - **Completed:** Tree UI with add/remove condition groups and visual hierarchy
 
 - [x] **3.3.3** Create ConditionGroup component with nesting
@@ -121,14 +117,15 @@
 
 ## Story 3.4: Frontend Calculation Rule Builder - Rule Type Components
 
-**Duration:** 2 days
-**Status:** ⏭️ Skipped (integrated into Story 3.3)
+**Duration:** 2 days **Status:** ⏭️ Skipped (integrated into Story 3.3)
 
 ### Atomic Tasks (7 tasks)
 
-All rule type components were integrated directly into the unified RuleComponent during Story 3.3 implementation:
+All rule type components were integrated directly into the unified RuleComponent during Story 3.3
+implementation:
 
-- [x] **3.4.1-3.4.6** Rule type components (AND_ALL, OR_ANY, PERCENTAGE_THRESHOLD, COUNT_THRESHOLD, MATCH_VALUE, BBI_FUNCTIONALITY_CHECK)
+- [x] **3.4.1-3.4.6** Rule type components (AND_ALL, OR_ANY, PERCENTAGE_THRESHOLD, COUNT_THRESHOLD,
+      MATCH_VALUE, BBI_FUNCTIONALITY_CHECK)
   - **File:** `CalculationRuleBuilder/RuleComponent.tsx`
   - **Completed:** All 6 rule types handled in single component with type-specific rendering
 
@@ -140,13 +137,13 @@ All rule type components were integrated directly into the unified RuleComponent
 
 ## Story 3.5: Frontend Calculation Rule Builder - Test Calculation Feature ✅
 
-**Duration:** 1 day
-**Status:** Complete
+**Duration:** 1 day **Status:** Complete
 
 ### Atomic Tasks (4 tasks)
 
 - [x] **3.5.1** Create TestCalculationPanel component
-  - **File:** `apps/web/src/components/features/indicators/CalculationRuleBuilder/TestCalculationPanel.tsx`
+  - **File:**
+    `apps/web/src/components/features/indicators/CalculationRuleBuilder/TestCalculationPanel.tsx`
   - **Completed:** Collapsible panel with dynamic form inputs from form_schema
 
 - [x] **3.5.2** Generate dynamic input fields from form_schema
@@ -165,8 +162,7 @@ All rule type components were integrated directly into the unified RuleComponent
 
 ## Story 3.6: Frontend Remark Schema Builder ✅
 
-**Duration:** 2 days
-**Status:** Complete
+**Duration:** 2 days **Status:** Complete
 
 ### Atomic Tasks (6 tasks)
 
@@ -175,7 +171,8 @@ All rule type components were integrated directly into the unified RuleComponent
   - **Completed:** ConditionalRemark and RemarkSchema models with Jinja2 template support
 
 - [x] **3.6.2** Create RemarkSchemaBuilder component
-  - **File:** `apps/web/src/components/features/indicators/RemarkSchemaBuilder/RemarkSchemaBuilder.tsx`
+  - **File:**
+    `apps/web/src/components/features/indicators/RemarkSchemaBuilder/RemarkSchemaBuilder.tsx`
   - **Completed:** Full builder with conditional remarks management and onChange callback
 
 - [x] **3.6.3** Create condition selector dropdown
@@ -198,8 +195,7 @@ All rule type components were integrated directly into the unified RuleComponent
 
 ## Story 3.7: Backend Remark Generation Service ✅
 
-**Duration:** 1 day
-**Status:** Complete
+**Duration:** 1 day **Status:** Complete
 
 ### Atomic Tasks (4 tasks)
 
@@ -223,14 +219,14 @@ All rule type components were integrated directly into the unified RuleComponent
 
 ## Story 3.8: Testing for Calculation & Remark Builders ✅
 
-**Duration:** 1 day
-**Status:** Complete
+**Duration:** 1 day **Status:** Complete
 
 ### Atomic Tasks (6 tasks)
 
 - [x] **3.8.1** Write tests for all 6 rule types evaluation
   - **File:** `apps/api/tests/services/test_calculation_and_remark.py`
-  - **Completed:** 13 tests covering MATCH_VALUE, PERCENTAGE_THRESHOLD, COUNT_THRESHOLD, AND_ALL, OR_ANY, BBI_FUNCTIONALITY_CHECK
+  - **Completed:** 13 tests covering MATCH_VALUE, PERCENTAGE_THRESHOLD, COUNT_THRESHOLD, AND_ALL,
+    OR_ANY, BBI_FUNCTIONALITY_CHECK
 
 - [x] **3.8.2** Write tests for nested condition group evaluation
   - **File:** Same as 3.8.1
@@ -238,21 +234,27 @@ All rule type components were integrated directly into the unified RuleComponent
 
 - [x] **3.8.3** Write tests for remark generation
   - **File:** Same as 3.8.1
-  - **Completed:** 5 tests for pass/fail status, default fallback, field placeholders, no schema cases
+  - **Completed:** 5 tests for pass/fail status, default fallback, field placeholders, no schema
+    cases
 
 - [x] **3.8.4** Write frontend tests for CalculationRuleBuilder
-  - **File:** `apps/web/src/components/features/indicators/CalculationRuleBuilder/__tests__/CalculationRuleBuilder.test.tsx`
-  - **Completed:** 11 tests covering initialization, schema loading, UI rendering, state management, onChange callbacks
+  - **File:**
+    `apps/web/src/components/features/indicators/CalculationRuleBuilder/__tests__/CalculationRuleBuilder.test.tsx`
+  - **Completed:** 11 tests covering initialization, schema loading, UI rendering, state management,
+    onChange callbacks
 
 - [x] **3.8.5** Write tests for TestCalculationPanel
-  - **File:** `apps/web/src/components/features/indicators/CalculationRuleBuilder/__tests__/TestCalculationPanel.test.tsx`
-  - **Completed:** 10 tests covering validation messages, API integration, Pass/Fail results, error handling, loading states
+  - **File:**
+    `apps/web/src/components/features/indicators/CalculationRuleBuilder/__tests__/TestCalculationPanel.test.tsx`
+  - **Completed:** 10 tests covering validation messages, API integration, Pass/Fail results, error
+    handling, loading states
 
 - [x] **3.8.6** Write integration test for calculation workflow
   - **File:** `apps/api/tests/services/test_calculation_and_remark.py`
   - **Completed:** 3 end-to-end tests for calculate status + generate remark workflow
 
 **Test Results:**
+
 - ✅ Backend: 24/24 tests passing
 - ✅ Frontend: 21/21 tests passing
 
@@ -260,11 +262,11 @@ All rule type components were integrated directly into the unified RuleComponent
 
 ## Summary
 
-**Epic 3.0 Total Atomic Tasks:** 45 tasks
-**Completion Status:** 38/45 complete (84%) - 100% FUNCTIONAL COMPLETE
-**Actual Duration:** 6 days (2025-11-06)
+**Epic 3.0 Total Atomic Tasks:** 45 tasks **Completion Status:** 38/45 complete (84%) - 100%
+FUNCTIONAL COMPLETE **Actual Duration:** 6 days (2025-11-06)
 
 ### Task Breakdown by Story:
+
 - Story 3.1 (Rule Engine): ✅ 8/8 tasks complete
 - Story 3.2 (Validation): ✅ 4/4 tasks complete
 - Story 3.3 (Builder Architecture): ✅ 6/6 tasks complete
@@ -275,7 +277,9 @@ All rule type components were integrated directly into the unified RuleComponent
 - Story 3.8 (Testing): ✅ 6/6 tasks complete
 
 ### Key Deliverables:
+
 ✅ **Backend (100% Complete)**
+
 - 6 rule types with discriminated unions
 - Recursive rule evaluation engine
 - Jinja2 template rendering for remarks
@@ -284,6 +288,7 @@ All rule type components were integrated directly into the unified RuleComponent
 - Comprehensive test suite (24 tests passing)
 
 ✅ **Frontend (100% Complete)**
+
 - Visual calculation rule builder with drag-drop
 - 6 rule type editors with nesting support
 - Test calculation panel with live preview
@@ -293,11 +298,13 @@ All rule type components were integrated directly into the unified RuleComponent
 - Complete test coverage (21 tests passing)
 
 ✅ **Testing (100% Complete)**
+
 - Backend: 24/24 tests passing
 - Frontend: 21/21 tests passing
 - Total: 45 tests covering all functionality
 
 ### Git Commits:
+
 1. `2007dc6` - Story 3.2: Calculation Schema Validation & Test Endpoints
 2. `d5d29ea` - Story 3.3: Calculation Rule Builder Core Frontend
 3. `6eb3114` - Story 3.5: Test Calculation Feature

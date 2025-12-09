@@ -2,14 +2,7 @@
 
 import { getGovernanceAreaLogo } from "@/lib/governance-area-logos";
 import { GovernanceArea, Indicator } from "@/types/assessment";
-import {
-    AlertCircle,
-    Building2,
-    CheckCircle,
-    ChevronRight,
-    Circle,
-    Folder
-} from "lucide-react";
+import { AlertCircle, Building2, CheckCircle, ChevronRight, Circle, Folder } from "lucide-react";
 import Image from "next/image";
 
 // BBI indicator codes per DILG MC 2024-417
@@ -82,7 +75,10 @@ export function AssessmentTreeNode({
             />
             {/* Completion badge overlay */}
             {progress && progress.percentage === 100 && (
-              <div className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-green-500 rounded-sm border-2 border-[var(--card)]" aria-hidden="true">
+              <div
+                className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-green-500 rounded-sm border-2 border-[var(--card)]"
+                aria-hidden="true"
+              >
                 <CheckCircle className="h-full w-full text-white" aria-hidden="true" />
               </div>
             )}
@@ -91,7 +87,8 @@ export function AssessmentTreeNode({
       }
 
       // Fallback to progress indicator if no logo
-      if (!progress) return <Folder className="h-4 w-4 text-[var(--text-secondary)]" aria-hidden="true" />;
+      if (!progress)
+        return <Folder className="h-4 w-4 text-[var(--text-secondary)]" aria-hidden="true" />;
       if (progress.percentage === 100) {
         return <CheckCircle className="h-4 w-4 text-green-500" aria-hidden="true" />;
       }
@@ -149,9 +146,10 @@ export function AssessmentTreeNode({
       tabIndex={0}
       className={`
         group relative flex items-center ${type === "area" ? "gap-2.5" : "gap-2"} cursor-pointer transition-colors duration-200 rounded-md mx-1
-        ${isActive 
-          ? "bg-[var(--cityscape-yellow)]/10 text-[var(--foreground)] font-medium" 
-          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+        ${
+          isActive
+            ? "bg-[var(--cityscape-yellow)]/10 text-[var(--foreground)] font-medium"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground"
         }
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--cityscape-yellow)]
       `}
@@ -170,8 +168,15 @@ export function AssessmentTreeNode({
 
       {/* Expand/Collapse Chevron (Areas only) */}
       {type === "area" && (
-        <div className="flex-shrink-0 w-4 h-4 flex items-center justify-center transition-transform duration-200" style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }} aria-hidden="true">
-          <ChevronRight className={`h-3.5 w-3.5 ${isActive ? "text-[var(--foreground)]" : "text-[var(--text-secondary)]"}`} aria-hidden="true" />
+        <div
+          className="flex-shrink-0 w-4 h-4 flex items-center justify-center transition-transform duration-200"
+          style={{ transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)" }}
+          aria-hidden="true"
+        >
+          <ChevronRight
+            className={`h-3.5 w-3.5 ${isActive ? "text-[var(--foreground)]" : "text-[var(--text-secondary)]"}`}
+            aria-hidden="true"
+          />
         </div>
       )}
 
@@ -186,17 +191,16 @@ export function AssessmentTreeNode({
               {(item as GovernanceArea).name}
             </span>
             {progress && (
-              <span className={`text-xs ${isActive ? "text-[var(--foreground)]/70" : "text-[var(--text-secondary)]"} flex-shrink-0 ml-auto`}>
+              <span
+                className={`text-xs ${isActive ? "text-[var(--foreground)]/70" : "text-[var(--text-secondary)]"} flex-shrink-0 ml-auto`}
+              >
                 {progress.completed}/{progress.total}
               </span>
             )}
           </>
         ) : (
           <>
-            <span
-              className="truncate text-xs"
-              title={item.name}
-            >
+            <span className="truncate text-xs" title={item.name}>
               {(item as Indicator).code || item.name}
             </span>
             {/* BBI Badge - Shows for indicators that affect Barangay-Based Institutions */}

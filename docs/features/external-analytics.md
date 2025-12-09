@@ -1,20 +1,21 @@
 # External Stakeholder Analytics
 
-The platform provides read-only analytics access for external stakeholders from Katuparan Center for research purposes. All data is aggregated and anonymized to protect individual barangay privacy.
+The platform provides read-only analytics access for external stakeholders from Katuparan Center for
+research purposes. All data is aggregated and anonymized to protect individual barangay privacy.
 
 ## Endpoints
 
 Available at `/api/v1/external/analytics/`:
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET /overall` | Municipal-wide SGLGB compliance statistics |
-| `GET /governance-areas` | Aggregated pass/fail rates for all 6 governance areas |
-| `GET /top-failing-indicators` | Top 5 most frequently failed indicators |
-| `GET /ai-insights/summary` | Anonymized AI-generated recommendations |
-| `GET /dashboard` | Complete dashboard data in single request |
-| `GET /export/csv` | Download aggregated analytics as CSV |
-| `GET /export/pdf` | Download aggregated analytics as PDF |
+| Endpoint                      | Description                                           |
+| ----------------------------- | ----------------------------------------------------- |
+| `GET /overall`                | Municipal-wide SGLGB compliance statistics            |
+| `GET /governance-areas`       | Aggregated pass/fail rates for all 6 governance areas |
+| `GET /top-failing-indicators` | Top 5 most frequently failed indicators               |
+| `GET /ai-insights/summary`    | Anonymized AI-generated recommendations               |
+| `GET /dashboard`              | Complete dashboard data in single request             |
+| `GET /export/csv`             | Download aggregated analytics as CSV                  |
+| `GET /export/pdf`             | Download aggregated analytics as PDF                  |
 
 ## Privacy Protections
 

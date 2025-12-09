@@ -366,15 +366,14 @@ export default function AdminSubmissionsPage() {
                         return (
                           <tr
                             key={submission.id}
-                            role="row"
                             className="hover:bg-[var(--cityscape-yellow)]/5 transition-colors"
                           >
-                            <td role="cell" className="px-6 py-4">
+                            <td className="px-6 py-4">
                               <div className="text-sm font-medium text-[var(--foreground)]">
                                 {submission.barangayName}
                               </div>
                             </td>
-                            <td role="cell" className="px-6 py-4">
+                            <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
                                 <div
                                   className="flex-1 bg-[var(--border)] rounded-sm h-4 min-w-[100px]"
@@ -397,7 +396,7 @@ export default function AdminSubmissionsPage() {
                                 </span>
                               </div>
                             </td>
-                            <td role="cell" className="px-6 py-4">
+                            <td className="px-6 py-4">
                               <div
                                 id={`status-${submission.id}`}
                                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-sm text-xs font-medium"
@@ -410,7 +409,7 @@ export default function AdminSubmissionsPage() {
                                 {submission.currentStatus}
                               </div>
                             </td>
-                            <td role="cell" className="px-6 py-4">
+                            <td className="px-6 py-4">
                               <div className="flex items-center gap-2">
                                 {submission.assignedValidators.length > 0 ? (
                                   submission.assignedValidators.map((validator) => (
@@ -431,12 +430,12 @@ export default function AdminSubmissionsPage() {
                                 )}
                               </div>
                             </td>
-                            <td role="cell" className="px-6 py-4">
+                            <td className="px-6 py-4">
                               <div className="text-sm text-[var(--muted-foreground)]">
                                 {submission.lastUpdated}
                               </div>
                             </td>
-                            <td role="cell" className="px-6 py-4">
+                            <td className="px-6 py-4">
                               <div className="flex items-center gap-2">
                                 <Button
                                   size="sm"

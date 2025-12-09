@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import type { IndicatorResponse } from '@sinag/shared';
-import { Badge } from '@/components/ui/badge';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import type { IndicatorResponse } from "@sinag/shared";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,9 +19,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
-import { MoreVertical, Edit, History, Ban, Eye } from 'lucide-react';
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { MoreVertical, Edit, History, Ban, Eye } from "lucide-react";
 
 interface IndicatorTableRowProps {
   indicator: IndicatorResponse;
@@ -68,7 +68,7 @@ export function IndicatorTableRow({ indicator, onDeactivate }: IndicatorTableRow
         {/* Governance Area */}
         <td className="px-6 py-4">
           <div className="text-sm text-muted-foreground">
-            {indicator.governance_area?.name || 'N/A'}
+            {indicator.governance_area?.name || "N/A"}
           </div>
         </td>
 
@@ -78,17 +78,17 @@ export function IndicatorTableRow({ indicator, onDeactivate }: IndicatorTableRow
             variant="outline"
             style={{
               backgroundColor: indicator.is_active
-                ? 'var(--analytics-success-bg)'
-                : 'var(--analytics-neutral-bg)',
+                ? "var(--analytics-success-bg)"
+                : "var(--analytics-neutral-bg)",
               color: indicator.is_active
-                ? 'var(--analytics-success-text)'
-                : 'var(--analytics-neutral-text)',
+                ? "var(--analytics-success-text)"
+                : "var(--analytics-neutral-text)",
               borderColor: indicator.is_active
-                ? 'var(--analytics-success-border)'
-                : 'var(--analytics-neutral-border)',
+                ? "var(--analytics-success-border)"
+                : "var(--analytics-neutral-border)",
             }}
           >
-            {indicator.is_active ? 'Active' : 'Inactive'}
+            {indicator.is_active ? "Active" : "Inactive"}
           </Badge>
         </td>
 
@@ -98,9 +98,9 @@ export function IndicatorTableRow({ indicator, onDeactivate }: IndicatorTableRow
             <Badge
               variant="outline"
               style={{
-                backgroundColor: 'var(--kpi-purple-from)',
-                color: 'var(--kpi-purple-text)',
-                borderColor: 'var(--kpi-purple-border, var(--border))',
+                backgroundColor: "var(--kpi-purple-from)",
+                color: "var(--kpi-purple-text)",
+                borderColor: "var(--kpi-purple-border, var(--border))",
               }}
             >
               ⚡ Yes
@@ -116,9 +116,9 @@ export function IndicatorTableRow({ indicator, onDeactivate }: IndicatorTableRow
             <Badge
               variant="outline"
               style={{
-                backgroundColor: 'var(--analytics-warning-bg)',
-                color: 'var(--analytics-warning-text)',
-                borderColor: 'var(--analytics-warning-border)',
+                backgroundColor: "var(--analytics-warning-bg)",
+                color: "var(--analytics-warning-text)",
+                borderColor: "var(--analytics-warning-border)",
               }}
             >
               Profiling
@@ -133,9 +133,9 @@ export function IndicatorTableRow({ indicator, onDeactivate }: IndicatorTableRow
           <Badge
             variant="outline"
             style={{
-              backgroundColor: 'var(--analytics-info-bg)',
-              color: 'var(--analytics-info-text)',
-              borderColor: 'var(--analytics-info-border)',
+              backgroundColor: "var(--analytics-info-bg)",
+              color: "var(--analytics-info-text)",
+              borderColor: "var(--analytics-info-border)",
             }}
           >
             v{indicator.version}
@@ -152,9 +152,7 @@ export function IndicatorTableRow({ indicator, onDeactivate }: IndicatorTableRow
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => router.push(`/mlgoo/indicators/${indicator.id}`)}
-              >
+              <DropdownMenuItem onClick={() => router.push(`/mlgoo/indicators/${indicator.id}`)}>
                 <Eye className="mr-2 h-4 w-4" />
                 View Details
               </DropdownMenuItem>
@@ -190,8 +188,8 @@ export function IndicatorTableRow({ indicator, onDeactivate }: IndicatorTableRow
           <AlertDialogHeader>
             <AlertDialogTitle>Deactivate Indicator?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to deactivate "{indicator.name}"? This indicator will no longer be
-              available for new assessments, but existing assessment data will be preserved.
+              Are you sure you want to deactivate "{indicator.name}"? This indicator will no longer
+              be available for new assessments, but existing assessment data will be preserved.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

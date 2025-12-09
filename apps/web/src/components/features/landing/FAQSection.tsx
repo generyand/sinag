@@ -55,9 +55,7 @@ export function FAQSection() {
                 className="w-full px-6 py-4 text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-[#fbbf24] focus:ring-opacity-50 rounded-xl"
                 onClick={() => toggleFAQ(index)}
               >
-                <span className="text-lg font-semibold text-gray-900">
-                  {faq.question}
-                </span>
+                <span className="text-lg font-semibold text-gray-900">{faq.question}</span>
                 <ChevronDown
                   className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${
                     openIndex === index ? "rotate-180" : ""

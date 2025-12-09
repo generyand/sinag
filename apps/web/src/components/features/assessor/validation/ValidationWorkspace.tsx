@@ -1,26 +1,32 @@
 "use client";
 
-import { StatusBadge } from '@/components/shared';
-import { ValidationPanelSkeleton } from '@/components/shared/skeletons';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useQueryClient } from '@tanstack/react-query';
-import type { AssessmentDetailsResponse } from '@sinag/shared';
+import { StatusBadge } from "@/components/shared";
+import { ValidationPanelSkeleton } from "@/components/shared/skeletons";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useQueryClient } from "@tanstack/react-query";
+import type { AssessmentDetailsResponse } from "@sinag/shared";
 import {
   usePostAssessorAssessmentResponsesResponseIdValidate,
   usePostAssessorAssessmentsAssessmentIdFinalize,
   usePostAssessorAssessmentsAssessmentIdRework,
-} from '@sinag/shared';
-import { ChevronLeft } from 'lucide-react';
-import dynamic from 'next/dynamic';
-import Link from 'next/link';
-import * as React from 'react';
-import { LeftSubmissionView } from './LeftSubmissionView';
-import { MiddleMovFilesPanel } from './MiddleMovFilesPanel';
+} from "@sinag/shared";
+import { ChevronLeft } from "lucide-react";
+import dynamic from "next/dynamic";
+import Link from "next/link";
+import * as React from "react";
+import { LeftSubmissionView } from "./LeftSubmissionView";
+import { MiddleMovFilesPanel } from "./MiddleMovFilesPanel";
 
 // Lazy load heavy RightAssessorPanel component (1400+ LOC)
 const RightAssessorPanel = dynamic(
-  () => import('./RightAssessorPanel').then(mod => ({ default: mod.RightAssessorPanel })),
+  () => import("./RightAssessorPanel").then((mod) => ({ default: mod.RightAssessorPanel })),
   {
     loading: () => <ValidationPanelSkeleton />,
     ssr: false,
@@ -49,20 +55,22 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
   const reworkRequestedAt: string | null = (core?.rework_requested_at ?? null) as string | null;
 
   // Prefer assessor payload structure: assessment.blgu_user.barangay.name
-  const barangayName: string = (core?.blgu_user?.barangay?.name
-    ?? core?.barangay?.name
-    ?? core?.barangay_name
-    ?? '') as string;
+  const barangayName: string = (core?.blgu_user?.barangay?.name ??
+    core?.barangay?.name ??
+    core?.barangay_name ??
+    "") as string;
   // Governance area name can be derived from the first response's indicator
-  const governanceArea: string = (responses[0]?.indicator?.governance_area?.name
-    ?? core?.governance_area?.name
-    ?? core?.governance_area_name
-    ?? '') as string;
-  const cycleYear: string = String(core?.cycle_year ?? core?.year ?? '');
-  const statusText: string = core?.status ?? core?.assessment_status ?? '';
-  const normalizedStatus = String(statusText || '').toLowerCase();
+  const governanceArea: string = (responses[0]?.indicator?.governance_area?.name ??
+    core?.governance_area?.name ??
+    core?.governance_area_name ??
+    "") as string;
+  const cycleYear: string = String(core?.cycle_year ?? core?.year ?? "");
+  const statusText: string = core?.status ?? core?.assessment_status ?? "";
+  const normalizedStatus = String(statusText || "").toLowerCase();
 
-  const [form, setForm] = React.useState<Record<number, { status?: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string }>>({});
+  const [form, setForm] = React.useState<
+    Record<number, { status?: "Pass" | "Fail" | "Conditional"; publicComment?: string }>
+  >({});
 
   // Track checklist data separately for each response
   const [checklistData, setChecklistData] = React.useState<Record<string, any>>({});
@@ -74,7 +82,7 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
       const resp = r as AnyRecord;
       if (resp.validation_status) {
         initialForm[resp.id] = {
-          status: resp.validation_status as 'Pass' | 'Fail' | 'Conditional' | undefined,
+          status: resp.validation_status as "Pass" | "Fail" | "Conditional" | undefined,
           publicComment: undefined, // Comments are in feedback_comments, not loaded here
         };
       }
@@ -88,7 +96,7 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
   // - Indicators with requires_rework=false are already "completed"
   // - Indicators with requires_rework=true need assessor review
   const hasReworkIndicators = responses.some((r) => (r as AnyRecord).requires_rework === true);
-  const reworkMode = hasReworkIndicators || normalizedStatus === 'rework';
+  const reworkMode = hasReworkIndicators || normalizedStatus === "rework";
 
   // For bottom counter: Only count indicators requiring review
   const responsesToReview = reworkMode
@@ -106,15 +114,16 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
     return !!form[r.id]?.status;
   }).length;
 
-  const allReviewed = responsesToReview.length > 0 && responsesToReview.every((r) => !!form[r.id]?.status);
-  const anyFail = responses.some((r) => form[r.id]?.status === 'Fail');
+  const allReviewed =
+    responsesToReview.length > 0 && responsesToReview.every((r) => !!form[r.id]?.status);
+  const anyFail = responses.some((r) => form[r.id]?.status === "Fail");
   const dirty = Object.keys(form).length > 0;
   const progressPct = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   const missingRequiredComments = responsesToReview.filter((r) => {
     const v = form[r.id];
     if (!v?.status) return false;
-    if (v.status === 'Fail' || v.status === 'Conditional') {
+    if (v.status === "Fail" || v.status === "Conditional") {
       return !(v.publicComment && v.publicComment.trim().length > 0);
     }
     return false;
@@ -133,15 +142,15 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
     if (!expandedId) return;
     const leftEl = document.querySelector(`[data-left-item-id="${expandedId}"]`);
     const rightEl = document.querySelector(`[data-right-item-id="${expandedId}"]`);
-    leftEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    rightEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    leftEl?.scrollIntoView({ behavior: "smooth", block: "start" });
+    rightEl?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [expandedId]);
 
   // Helpers for grouped navigation
   const getSectionKey = React.useCallback((label: string): string => {
     // Extract leading number(s) like "1." or "2.3" → "1" or "2"
     const match = label.match(/^(\d+)/);
-    return match ? match[1] : 'Other';
+    return match ? match[1] : "Other";
   }, []);
 
   const sections = React.useMemo(() => {
@@ -164,7 +173,10 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
   const onSaveDraft = async () => {
     const payloads = responses
       .map((r) => ({ id: r.id as number, v: form[r.id] }))
-      .filter((x) => x.v && x.v.status) as { id: number; v: { status: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string } }[];
+      .filter((x) => x.v && x.v.status) as {
+      id: number;
+      v: { status: "Pass" | "Fail" | "Conditional"; publicComment?: string };
+    }[];
     if (payloads.length === 0) return;
 
     await Promise.all(
@@ -192,7 +204,8 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
           data: {
             validation_status: p.v.status!,
             public_comment: p.v.publicComment ?? null,
-            response_data: Object.keys(responseChecklistData).length > 0 ? responseChecklistData : null,
+            response_data:
+              Object.keys(responseChecklistData).length > 0 ? responseChecklistData : null,
           },
         });
       })
@@ -226,12 +239,14 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
             </Button>
             <div className="min-w-0">
               <div className="text-sm font-medium truncate">
-                {barangayName ? `Barangay: ${barangayName}` : ''}
-                {barangayName && governanceArea ? ' — ' : ''}
-                {governanceArea ? `Governance Area: ${governanceArea}` : ''}
-                {cycleYear ? ` ${barangayName || governanceArea ? '' : ''}(CY ${cycleYear})` : ''}
+                {barangayName ? `Barangay: ${barangayName}` : ""}
+                {barangayName && governanceArea ? " — " : ""}
+                {governanceArea ? `Governance Area: ${governanceArea}` : ""}
+                {cycleYear ? ` ${barangayName || governanceArea ? "" : ""}(CY ${cycleYear})` : ""}
               </div>
-              <div className="text-xs text-muted-foreground truncate">Barangay - Governance Area Assessment Validation</div>
+              <div className="text-xs text-muted-foreground truncate">
+                Barangay - Governance Area Assessment Validation
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -277,12 +292,23 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
                     className={
                       `text-xs px-2 py-1 rounded border transition-colors ` +
                       (active
-                        ? 'border-transparent'
-                        : 'text-foreground border-black/10 hover:bg-black/5')
+                        ? "border-transparent"
+                        : "text-foreground border-black/10 hover:bg-black/5")
                     }
                     title={label}
                   >
-                    <span className={active ? 'text-[var(--cityscape-accent-foreground)]' : ''} style={active ? { background: 'var(--cityscape-yellow)', borderRadius: 4, padding: '2px 6px' } : undefined}>
+                    <span
+                      className={active ? "text-[var(--cityscape-accent-foreground)]" : ""}
+                      style={
+                        active
+                          ? {
+                              background: "var(--cityscape-yellow)",
+                              borderRadius: 4,
+                              padding: "2px 6px",
+                            }
+                          : undefined
+                      }
+                    >
                       {label}
                     </span>
                   </button>
@@ -298,7 +324,11 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
           <div className="grid grid-cols-1 md:grid-cols-[280px,320px,1fr] gap-6">
             {/* Left Panel - Indicator Tree */}
             <div className="rounded-sm shadow-md border border-black/5 overflow-hidden min-w-0 w-full min-h-[600px] bg-white">
-              <LeftSubmissionView assessment={assessment} expandedId={expandedId ?? undefined} onToggle={(id) => setExpandedId((curr) => (curr === id ? null : id))} />
+              <LeftSubmissionView
+                assessment={assessment}
+                expandedId={expandedId ?? undefined}
+                onToggle={(id) => setExpandedId((curr) => (curr === id ? null : id))}
+              />
             </div>
 
             {/* Middle Panel - MOV Files */}
@@ -348,7 +378,12 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
               style={{ width: `${progressPct}%` }}
             />
           </div>
-          <div className="text-xs text-muted-foreground">Indicators Completed: {completed}/{total} {missingRequiredComments > 0 ? `• Missing required comments: ${missingRequiredComments}` : ''}</div>
+          <div className="text-xs text-muted-foreground">
+            Indicators Completed: {completed}/{total}{" "}
+            {missingRequiredComments > 0
+              ? `• Missing required comments: ${missingRequiredComments}`
+              : ""}
+          </div>
           <div className="flex flex-col sm:flex-row w-full sm:w-auto items-stretch sm:items-center gap-2 sm:gap-3">
             <Button
               variant="ghost"
@@ -383,7 +418,7 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
                 reworkMut.isPending
               }
               className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90"
-              style={{ background: 'var(--cityscape-yellow)' }}
+              style={{ background: "var(--cityscape-yellow)" }}
             >
               Compile and Send for Rework
             </Button>
@@ -399,7 +434,7 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
                 (reworkCount === 0 && anyFail)
               }
               className="w-full sm:w-auto text-white hover:opacity-90"
-              style={{ background: 'var(--success)' }}
+              style={{ background: "var(--success)" }}
             >
               Finalize Validation
             </Button>
@@ -419,7 +454,9 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
             <li>Completed: {completed}</li>
             <li>Incomplete: {Math.max(0, total - completed)}</li>
             {reworkMode && <li>Requiring review: {responsesToReview.length}</li>}
-            <li>Marked Fail: {responsesToReview.filter((r) => form[r.id]?.status === 'Fail').length}</li>
+            <li>
+              Marked Fail: {responsesToReview.filter((r) => form[r.id]?.status === "Fail").length}
+            </li>
             <li>Missing required comments: {missingRequiredComments}</li>
           </ul>
         </DialogContent>
@@ -427,5 +464,3 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
     </div>
   );
 }
-
-

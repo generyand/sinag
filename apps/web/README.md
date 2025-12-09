@@ -1,6 +1,7 @@
 # SINAG Web (NextJS Frontend)
 
-Frontend application for the SINAG system built with **NextJS 15**, **TypeScript**, and **Tailwind CSS**.
+Frontend application for the SINAG system built with **NextJS 15**, **TypeScript**, and **Tailwind
+CSS**.
 
 ## 🚀 **Quick Start**
 
@@ -17,6 +18,7 @@ The web app will be available at `http://localhost:3000`
 ## 📋 **Available Commands**
 
 ### **Development**
+
 ```bash
 # Start development server with Turbopack
 pnpm dev
@@ -29,6 +31,7 @@ pnpm dev:webpack
 ```
 
 ### **Building**
+
 ```bash
 # Build for production
 pnpm build
@@ -41,6 +44,7 @@ pnpm build --filter=web
 ```
 
 ### **Type Safety & Linting**
+
 ```bash
 # Run TypeScript type checking
 pnpm type-check
@@ -56,6 +60,7 @@ pnpm generate-types
 ```
 
 ### **Testing**
+
 ```bash
 # Run tests (when implemented)
 # pnpm test
@@ -72,7 +77,7 @@ pnpm generate-types
 This frontend uses the auto-generated API client from `@sinag/shared`:
 
 ```typescript
-import { ApiClient, type User, type LoginRequest } from '@sinag/shared';
+import { ApiClient, type User, type LoginRequest } from "@sinag/shared";
 
 // Create API client
 const api = new ApiClient({ BASE: process.env.NEXT_PUBLIC_API_URL });
@@ -83,6 +88,7 @@ const auth = await api.auth.loginApiAuthLoginPost({ requestBody: credentials });
 ```
 
 ### **Sync API Types**
+
 ```bash
 # Generate TypeScript types from FastAPI backend
 pnpm generate-types
@@ -96,12 +102,14 @@ pnpm generate-types
 ## 🛠️ **Development Tools**
 
 ### **Built-in Tools**
+
 - **Hot Reload**: File changes automatically reload
 - **TypeScript**: Full type checking and IntelliSense
 - **Tailwind CSS**: Utility-first styling with JIT compilation
 - **ESLint**: Code linting with NextJS recommended config
 
 ### **Browser DevTools**
+
 - React DevTools (install browser extension)
 - Tailwind CSS DevTools (install browser extension)
 
@@ -147,6 +155,7 @@ NODE_ENV=development
 ```
 
 ### **Environment Files**
+
 - `.env.local` - Local development (ignored by git)
 - `.env.development` - Development defaults (committed)
 - `.env.production` - Production settings (committed)
@@ -155,23 +164,26 @@ NODE_ENV=development
 ## 🎨 **Styling Guidelines**
 
 ### **Tailwind CSS**
+
 - Use utility classes for styling
 - Create component classes in `globals.css` for complex patterns
 - Use `cn()` utility for conditional class merging
 
 ### **Components**
+
 - Use shadcn/ui components from `components/ui/`
 - Follow the established component patterns
 - Maintain consistent spacing and typography
 
 Example:
+
 ```typescript
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 export function CustomButton({ className, ...props }) {
   return (
-    <Button 
+    <Button
       className={cn("bg-primary hover:bg-primary/90", className)}
       {...props}
     />
@@ -182,6 +194,7 @@ export function CustomButton({ className, ...props }) {
 ## 📱 **Responsive Design**
 
 Use Tailwind's responsive prefixes:
+
 - `sm:` - Small screens (640px+)
 - `md:` - Medium screens (768px+)
 - `lg:` - Large screens (1024px+)
@@ -189,9 +202,10 @@ Use Tailwind's responsive prefixes:
 
 ## 🧪 **Testing Guidelines**
 
-*To be documented when testing framework is added*
+_To be documented when testing framework is added_
 
 Recommended setup:
+
 - **Unit Tests**: Jest + React Testing Library
 - **E2E Tests**: Playwright or Cypress
 - **Component Tests**: Storybook (when component library grows)
@@ -199,28 +213,33 @@ Recommended setup:
 ## 📦 **Key Dependencies**
 
 ### **Framework**
+
 - `next` - NextJS framework
 - `react` & `react-dom` - React library
 - `typescript` - TypeScript support
 
 ### **Styling**
+
 - `tailwindcss` - Utility-first CSS framework
 - `@tailwindcss/postcss` - PostCSS integration
 - `class-variance-authority` - Component variant management
 - `clsx` & `tailwind-merge` - Conditional class handling
 
 ### **UI Components**
+
 - `@radix-ui/react-*` - Headless UI primitives
 - `lucide-react` - Icon library
 
 ### **Type Safety**
+
 - `@sinag/shared` - Auto-generated API types and client
 
 ## 🚀 **Deployment Notes**
 
-*To be documented when deployment pipeline is implemented*
+_To be documented when deployment pipeline is implemented_
 
 Recommended platforms:
+
 - **Vercel** (recommended for NextJS)
 - **Netlify**
 - **AWS Amplify**

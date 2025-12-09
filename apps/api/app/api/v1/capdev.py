@@ -473,3 +473,67 @@ async def generate_capdev_language(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate CapDev insights: {str(e)}",
         )
+
+
+@router.get(
+    "/circuit-breaker/status",
+    summary="Get Circuit Breaker Status",
+    description="Check the current state of the Gemini API circuit breaker. MLGOO only.",
+)
+async def get_circuit_breaker_status(
+    current_user: User = Depends(get_current_admin_user),
+):
+    """
+    Get the current circuit breaker status for the Gemini API.
+
+    **Access:** MLGOO_DILG only
+
+    Returns the circuit breaker state: closed (normal), open (blocking), or half-open (testing).
+    """
+    from app.services.intelligence_service import gemini_circuit_breaker
+
+    return {
+        "state": gemini_circuit_breaker.current_state,
+        "fail_count": gemini_circuit_breaker.fail_counter,
+        "fail_max": gemini_circuit_breaker.fail_max,
+        "reset_timeout": gemini_circuit_breaker.reset_timeout,
+        "message": {
+            "closed": "Circuit breaker is healthy. API calls are allowed.",
+            "open": "Circuit breaker is OPEN due to repeated failures. API calls are blocked.",
+            "half-open": "Circuit breaker is testing. Next call will determine if it closes or opens again.",
+        }.get(gemini_circuit_breaker.current_state, "Unknown state"),
+    }
+
+
+@router.post(
+    "/circuit-breaker/reset",
+    summary="Reset Circuit Breaker",
+    description="Manually reset the Gemini API circuit breaker. MLGOO only.",
+)
+async def reset_circuit_breaker(
+    current_user: User = Depends(get_current_admin_user),
+):
+    """
+    Manually reset the circuit breaker to closed state.
+
+    **Access:** MLGOO_DILG only
+
+    Use this if the circuit breaker is stuck open and you've verified the Gemini API is working.
+    """
+    from app.services.intelligence_service import gemini_circuit_breaker
+
+    previous_state = gemini_circuit_breaker.current_state
+
+    # Reset the circuit breaker by closing it
+    gemini_circuit_breaker.close()
+
+    logger.info(
+        f"MLGOO {current_user.email} manually reset circuit breaker from {previous_state} to closed"
+    )
+
+    return {
+        "success": True,
+        "previous_state": previous_state,
+        "current_state": gemini_circuit_breaker.current_state,
+        "message": "Circuit breaker has been reset to closed state. API calls are now allowed.",
+    }

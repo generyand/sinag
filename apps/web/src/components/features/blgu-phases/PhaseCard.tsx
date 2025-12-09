@@ -160,8 +160,8 @@ export function PhaseCard({
               status === "completed" || status === "available"
                 ? "bg-green-500 text-white"
                 : status === "not_started" || status === "pending"
-                ? "bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300"
-                : "bg-yellow-500 text-white"
+                  ? "bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300"
+                  : "bg-yellow-500 text-white"
             )}
           >
             {status === "completed" || status === "available" ? (
@@ -172,9 +172,7 @@ export function PhaseCard({
           </div>
 
           {/* Title */}
-          <span className="font-semibold text-[var(--foreground)] text-left">
-            {title}
-          </span>
+          <span className="font-semibold text-[var(--foreground)] text-left">{title}</span>
         </div>
 
         <div className="flex items-center gap-3">
@@ -195,9 +193,7 @@ export function PhaseCard({
 
       {/* Content - Collapsible */}
       {isExpanded && (
-        <div className="border-t border-[var(--border)] bg-[var(--card)] p-4">
-          {children}
-        </div>
+        <div className="border-t border-[var(--border)] bg-[var(--card)] p-4">{children}</div>
       )}
     </div>
   );

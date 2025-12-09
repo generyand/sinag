@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * NavIcon Component
@@ -20,7 +20,7 @@ import {
   Building2,
   Clock,
   type LucideIcon,
-} from 'lucide-react';
+} from "lucide-react";
 
 /**
  * Mapping of icon names to lucide-react components
@@ -47,7 +47,7 @@ interface NavIconProps {
 /**
  * Renders a navigation icon with proper accessibility
  */
-export function NavIcon({ name, className = 'w-5 h-5' }: NavIconProps) {
+export function NavIcon({ name, className = "w-5 h-5" }: NavIconProps) {
   const IconComponent = ICON_MAP[name];
 
   if (!IconComponent) {

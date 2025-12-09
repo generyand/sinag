@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import type { FormSchemaFieldsItem } from '@sinag/shared';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
+import type { FormSchemaFieldsItem } from "@sinag/shared";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface DynamicFormInputProps {
   field: FormSchemaFieldsItem;
@@ -27,7 +27,7 @@ export function DynamicFormInput({ field, value, onChange }: DynamicFormInputPro
   const fieldType = field.field_type;
 
   switch (fieldType) {
-    case 'text_input':
+    case "text_input":
       return (
         <div className="space-y-2">
           <Label htmlFor={field.field_id}>
@@ -38,17 +38,15 @@ export function DynamicFormInput({ field, value, onChange }: DynamicFormInputPro
             id={field.field_id}
             type="text"
             placeholder={field.placeholder || `Enter ${field.label}`}
-            value={value || ''}
+            value={value || ""}
             onChange={(e) => onChange(e.target.value)}
             maxLength={field.max_length as any}
           />
-          {field.help_text && (
-            <p className="text-xs text-muted-foreground">{field.help_text}</p>
-          )}
+          {field.help_text && <p className="text-xs text-muted-foreground">{field.help_text}</p>}
         </div>
       );
 
-    case 'text_area':
+    case "text_area":
       return (
         <div className="space-y-2">
           <Label htmlFor={field.field_id}>
@@ -58,18 +56,16 @@ export function DynamicFormInput({ field, value, onChange }: DynamicFormInputPro
           <Textarea
             id={field.field_id}
             placeholder={field.placeholder || `Enter ${field.label}`}
-            value={value || ''}
+            value={value || ""}
             onChange={(e) => onChange(e.target.value)}
             rows={field.rows || 3}
             maxLength={field.max_length as any}
           />
-          {field.help_text && (
-            <p className="text-xs text-muted-foreground">{field.help_text}</p>
-          )}
+          {field.help_text && <p className="text-xs text-muted-foreground">{field.help_text}</p>}
         </div>
       );
 
-    case 'number_input':
+    case "number_input":
       return (
         <div className="space-y-2">
           <Label htmlFor={field.field_id}>
@@ -80,20 +76,16 @@ export function DynamicFormInput({ field, value, onChange }: DynamicFormInputPro
             id={field.field_id}
             type="number"
             placeholder={field.placeholder || `Enter ${field.label}`}
-            value={value ?? ''}
-            onChange={(e) =>
-              onChange(e.target.value === '' ? null : parseFloat(e.target.value))
-            }
+            value={value ?? ""}
+            onChange={(e) => onChange(e.target.value === "" ? null : parseFloat(e.target.value))}
             min={field.min_value as any}
             max={field.max_value as any}
           />
-          {field.help_text && (
-            <p className="text-xs text-muted-foreground">{field.help_text}</p>
-          )}
+          {field.help_text && <p className="text-xs text-muted-foreground">{field.help_text}</p>}
         </div>
       );
 
-    case 'checkbox_group':
+    case "checkbox_group":
       return (
         <div className="space-y-2">
           <Label>
@@ -127,13 +119,11 @@ export function DynamicFormInput({ field, value, onChange }: DynamicFormInputPro
               );
             })}
           </div>
-          {field.help_text && (
-            <p className="text-xs text-muted-foreground">{field.help_text}</p>
-          )}
+          {field.help_text && <p className="text-xs text-muted-foreground">{field.help_text}</p>}
         </div>
       );
 
-    case 'radio_button':
+    case "radio_button":
       return (
         <div className="space-y-2">
           <Label>
@@ -161,13 +151,11 @@ export function DynamicFormInput({ field, value, onChange }: DynamicFormInputPro
               </div>
             ))}
           </div>
-          {field.help_text && (
-            <p className="text-xs text-muted-foreground">{field.help_text}</p>
-          )}
+          {field.help_text && <p className="text-xs text-muted-foreground">{field.help_text}</p>}
         </div>
       );
 
-    case 'date_picker':
+    case "date_picker":
       return (
         <div className="space-y-2">
           <Label htmlFor={field.field_id}>
@@ -177,18 +165,16 @@ export function DynamicFormInput({ field, value, onChange }: DynamicFormInputPro
           <Input
             id={field.field_id}
             type="date"
-            value={value || ''}
+            value={value || ""}
             onChange={(e) => onChange(e.target.value)}
             min={field.min_date as any}
             max={field.max_date as any}
           />
-          {field.help_text && (
-            <p className="text-xs text-muted-foreground">{field.help_text}</p>
-          )}
+          {field.help_text && <p className="text-xs text-muted-foreground">{field.help_text}</p>}
         </div>
       );
 
-    case 'file_upload':
+    case "file_upload":
       return (
         <div className="space-y-2">
           <Label>
@@ -196,13 +182,9 @@ export function DynamicFormInput({ field, value, onChange }: DynamicFormInputPro
             {field.required && <span className="text-red-500 ml-1">*</span>}
           </Label>
           <div className="rounded-lg border border-gray-300 bg-gray-50 p-4 text-center">
-            <p className="text-sm text-muted-foreground">
-              File upload not supported in test mode
-            </p>
+            <p className="text-sm text-muted-foreground">File upload not supported in test mode</p>
           </div>
-          {field.help_text && (
-            <p className="text-xs text-muted-foreground">{field.help_text}</p>
-          )}
+          {field.help_text && <p className="text-xs text-muted-foreground">{field.help_text}</p>}
         </div>
       );
 
@@ -210,9 +192,7 @@ export function DynamicFormInput({ field, value, onChange }: DynamicFormInputPro
       return (
         <div className="space-y-2">
           <Label>{field.label}</Label>
-          <p className="text-sm text-muted-foreground">
-            Unsupported field type: {fieldType}
-          </p>
+          <p className="text-sm text-muted-foreground">Unsupported field type: {fieldType}</p>
         </div>
       );
   }

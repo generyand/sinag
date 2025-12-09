@@ -1,12 +1,17 @@
 # SINAG API Documentation
 
-Complete reference for the SINAG REST API - the backend service powering the Seal of Good Local Governance for Barangays (SGLGB) governance assessment platform.
+Complete reference for the SINAG REST API - the backend service powering the Seal of Good Local
+Governance for Barangays (SGLGB) governance assessment platform.
 
 ## Overview
 
-The SINAG API is a FastAPI-based RESTful service that handles assessment submissions, validator workflows, classification, and analytics for the DILG SGLGB program. It features end-to-end type safety with auto-generated TypeScript types, role-based access control, and comprehensive validation.
+The SINAG API is a FastAPI-based RESTful service that handles assessment submissions, validator
+workflows, classification, and analytics for the DILG SGLGB program. It features end-to-end type
+safety with auto-generated TypeScript types, role-based access control, and comprehensive
+validation.
 
 **Key Features:**
+
 - JWT-based authentication with role-based access control (RBAC)
 - Auto-generated OpenAPI documentation and TypeScript types
 - Service layer architecture for maintainable business logic
@@ -46,7 +51,8 @@ NEXT_PUBLIC_API_V1_URL=http://localhost:8000/api/v1
 
 **Current Version**: `v1`
 
-All endpoints are prefixed with `/api/v1`. Future versions will use `/api/v2`, `/api/v3`, etc., allowing backward compatibility.
+All endpoints are prefixed with `/api/v1`. Future versions will use `/api/v2`, `/api/v3`, etc.,
+allowing backward compatibility.
 
 ## Interactive Documentation
 
@@ -65,7 +71,8 @@ FastAPI provides auto-generated, interactive API documentation:
   - Machine-readable API specification
   - Used by Orval to generate TypeScript types
 
-**Workflow**: When adding or modifying endpoints, the OpenAPI spec updates automatically, and running `pnpm generate-types` creates TypeScript types and React Query hooks for the frontend.
+**Workflow**: When adding or modifying endpoints, the OpenAPI spec updates automatically, and
+running `pnpm generate-types` creates TypeScript types and React Query hooks for the frontend.
 
 ## Authentication
 
@@ -106,9 +113,11 @@ Authenticate user and receive JWT access token.
 ```
 
 **Fields:**
+
 - `access_token`: JWT token to use in subsequent requests
 - `token_type`: Always `"bearer"` (for Authorization header format)
-- `expires_in`: Token expiration time in seconds (604800 = 7 days, or 2592000 = 30 days if `remember_me` is true)
+- `expires_in`: Token expiration time in seconds (604800 = 7 days, or 2592000 = 30 days if
+  `remember_me` is true)
 
 **Error Responses:**
 
@@ -137,16 +146,16 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 **JavaScript Example (Axios):**
 
 ```typescript
-import axios from 'axios';
+import axios from "axios";
 
 // Configure axios instance with token
 const api = axios.create({
-  baseURL: 'http://localhost:8000/api/v1',
+  baseURL: "http://localhost:8000/api/v1",
 });
 
 // Add token to all requests
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
+  const token = localStorage.getItem("access_token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -154,7 +163,7 @@ api.interceptors.request.use((config) => {
 });
 
 // Make authenticated request
-const response = await api.get('/users/me');
+const response = await api.get("/users/me");
 ```
 
 **cURL Example:**
@@ -170,19 +179,21 @@ The JWT payload contains:
 
 ```json
 {
-  "sub": "123",                      // User ID
-  "role": "MLGOO_DILG",              // User role
-  "must_change_password": false,     // Password change required
-  "exp": 1700000000                  // Expiration timestamp (Unix epoch)
+  "sub": "123", // User ID
+  "role": "MLGOO_DILG", // User role
+  "must_change_password": false, // Password change required
+  "exp": 1700000000 // Expiration timestamp (Unix epoch)
 }
 ```
 
 **Token Expiration:**
+
 - **Standard login**: 7 days (604,800 seconds)
 - **Remember me**: 30 days (2,592,000 seconds)
 - Expiration is enforced server-side; expired tokens return `401 Unauthorized`
 
 **Token Security:**
+
 - Tokens are signed with `HS256` (HMAC-SHA256) algorithm
 - Secret key is configured via `SECRET_KEY` environment variable
 - Tokens cannot be forged without the secret key
@@ -226,6 +237,7 @@ Change the authenticated user's password.
 ```
 
 **Side Effects:**
+
 - User's hashed password is updated in the database
 - `must_change_password` flag is set to `false`
 - User remains logged in (existing token is still valid)
@@ -244,7 +256,9 @@ Logout user session (client-side token cleanup).
 }
 ```
 
-**Note**: The current implementation does not blacklist tokens server-side. Logout is handled client-side by discarding the token. In production, consider implementing token blacklisting via Redis.
+**Note**: The current implementation does not blacklist tokens server-side. Logout is handled
+client-side by discarding the token. In production, consider implementing token blacklisting via
+Redis.
 
 ## Role-Based Access Control
 
@@ -252,16 +266,17 @@ The SINAG API implements six user roles with distinct permissions and access lev
 
 ### User Roles
 
-| Role | Description | Access Level | Required Fields |
-|------|-------------|--------------|-----------------|
-| **MLGOO_DILG** | System administrators | Full system access | None |
-| **VALIDATOR** | DILG validators | Assessments in assigned governance area | `validator_area_id` |
-| **ASSESSOR** | DILG assessors | Arbitrary barangay selection | None (optional `validator_area_id`) |
-| **BLGU_USER** | Barangay users | Own barangay's assessments | `barangay_id` |
+| Role           | Description           | Access Level                            | Required Fields                     |
+| -------------- | --------------------- | --------------------------------------- | ----------------------------------- |
+| **MLGOO_DILG** | System administrators | Full system access                      | None                                |
+| **VALIDATOR**  | DILG validators       | Assessments in assigned governance area | `validator_area_id`                 |
+| **ASSESSOR**   | DILG assessors        | Arbitrary barangay selection            | None (optional `validator_area_id`) |
+| **BLGU_USER**  | Barangay users        | Own barangay's assessments              | `barangay_id`                       |
 
 ### Role Permissions
 
 **MLGOO_DILG** (Admin):
+
 - Create, read, update, and deactivate all users
 - Access all barangays and assessments
 - Manage system configuration (indicators, BBIs, deadlines)
@@ -269,18 +284,21 @@ The SINAG API implements six user roles with distinct permissions and access lev
 - Assign validators to governance areas
 
 **VALIDATOR**:
+
 - View and validate assessments within assigned governance area
 - Submit validation reports and recommendations
 - Access only barangays within their governance area
 - Cannot access other governance areas
 
 **ASSESSOR**:
+
 - Select any barangay to validate (flexible assignment)
 - Perform in-person table validation
 - Submit compliance checklists
 - View all assessment data (not restricted by governance area)
 
 **BLGU_USER**:
+
 - Submit self-assessments for assigned barangay
 - Upload Means of Verification (MOVs)
 - View own assessment status and history
@@ -290,35 +308,32 @@ The SINAG API implements six user roles with distinct permissions and access lev
 
 ```typescript
 // Public endpoints (no authentication required)
-POST /api/v1/auth/login
+POST / api / v1 / auth / login;
 
 // Authenticated user endpoints (any role)
-GET  /api/v1/users/me
-PUT  /api/v1/users/me
-POST /api/v1/auth/change-password
-POST /api/v1/auth/logout
+GET / api / v1 / users / me;
+PUT / api / v1 / users / me;
+POST / api / v1 / auth / change - password;
+POST / api / v1 / auth / logout;
 
 // Admin-only endpoints (MLGOO_DILG role required)
-GET    /api/v1/users/
-POST   /api/v1/users/
-GET    /api/v1/users/{user_id}
-PUT    /api/v1/users/{user_id}
-DELETE /api/v1/users/{user_id}
-POST   /api/v1/users/{user_id}/activate
-POST   /api/v1/users/{user_id}/reset-password
-GET    /api/v1/users/stats/dashboard
+GET / api / v1 / users / POST / api / v1 / users / GET / api / v1 / users / { user_id };
+PUT / api / v1 / users / { user_id };
+DELETE / api / v1 / users / { user_id };
+POST / api / v1 / users / { user_id } / activate;
+POST / api / v1 / users / { user_id } / reset - password;
+GET / api / v1 / users / stats / dashboard;
 
 // Validator endpoints (VALIDATOR role required)
-GET  /api/v1/assessor/assignments
-POST /api/v1/assessor/assessments/{assessment_id}/validate
+GET / api / v1 / assessor / assignments;
+POST / api / v1 / assessor / assessments / { assessment_id } / validate;
 
 // Assessor endpoints (ASSESSOR or VALIDATOR role required)
-GET  /api/v1/assessor/barangays
-POST /api/v1/assessor/table-validation
+GET / api / v1 / assessor / barangays;
+POST / api / v1 / assessor / table - validation;
 
 // BLGU endpoints (BLGU_USER role required)
-POST /api/v1/assessments/
-GET  /api/v1/assessments/my-barangay
+POST / api / v1 / assessments / GET / api / v1 / assessments / my - barangay;
 ```
 
 ### Authorization Error Responses
@@ -405,11 +420,11 @@ Endpoints that return lists support pagination via query parameters.
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `page` | integer | 1 | Page number (1-indexed) |
-| `size` | integer | 10 | Items per page (max: 100) |
-| `search` | string | null | Search query (varies by endpoint) |
+| Parameter | Type    | Default | Description                       |
+| --------- | ------- | ------- | --------------------------------- |
+| `page`    | integer | 1       | Page number (1-indexed)           |
+| `size`    | integer | 10      | Items per page (max: 100)         |
+| `search`  | string  | null    | Search query (varies by endpoint) |
 
 **Example Request:**
 
@@ -433,7 +448,9 @@ GET /api/v1/users/?page=2&size=20&search=john HTTP/1.1
 ```
 
 **Response Fields:**
-- `users`: Array of items for current page (key varies by endpoint: `users`, `assessments`, `barangays`)
+
+- `users`: Array of items for current page (key varies by endpoint: `users`, `assessments`,
+  `barangays`)
 - `total`: Total number of items across all pages
 - `page`: Current page number
 - `size`: Items per page (as requested)
@@ -442,14 +459,14 @@ GET /api/v1/users/?page=2&size=20&search=john HTTP/1.1
 **JavaScript Example:**
 
 ```typescript
-const response = await api.get('/users/', {
+const response = await api.get("/users/", {
   params: {
     page: 2,
     size: 20,
-    search: 'john',
-    role: 'VALIDATOR',
-    is_active: true
-  }
+    search: "john",
+    role: "VALIDATOR",
+    is_active: true,
+  },
 });
 
 console.log(`Showing ${response.data.users.length} of ${response.data.total} users`);
@@ -462,11 +479,11 @@ Many list endpoints support filtering via query parameters.
 
 **Common Filter Parameters:**
 
-| Endpoint | Filter Parameters |
-|----------|-------------------|
-| `GET /users/` | `search`, `role`, `is_active` |
-| `GET /assessments/` | `barangay_id`, `status`, `year` |
-| `GET /barangays/` | `search`, `province`, `city_municipality` |
+| Endpoint            | Filter Parameters                         |
+| ------------------- | ----------------------------------------- |
+| `GET /users/`       | `search`, `role`, `is_active`             |
+| `GET /assessments/` | `barangay_id`, `status`, `year`           |
+| `GET /barangays/`   | `search`, `province`, `city_municipality` |
 
 **Example: Filter users by role and active status**
 
@@ -491,12 +508,12 @@ const createdAt = new Date("2025-11-19T10:30:00Z");
 **Formatting for Display:**
 
 ```typescript
-const formatted = new Date(createdAt).toLocaleDateString('en-PH', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit'
+const formatted = new Date(createdAt).toLocaleDateString("en-PH", {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
 });
 // "November 19, 2025, 10:30 AM"
 ```
@@ -507,16 +524,16 @@ The API uses standard HTTP status codes and returns detailed error messages.
 
 ### HTTP Status Codes
 
-| Status Code | Meaning | When Used |
-|-------------|---------|-----------|
-| **200** | OK | Successful GET, PUT, POST request |
-| **201** | Created | Resource successfully created (rarely used; most POST return 200) |
-| **400** | Bad Request | Validation error, invalid request data |
-| **401** | Unauthorized | Missing, invalid, or expired authentication token |
-| **403** | Forbidden | Valid authentication but insufficient permissions |
-| **404** | Not Found | Resource does not exist |
-| **422** | Unprocessable Entity | Request syntax valid but semantically incorrect |
-| **500** | Internal Server Error | Server-side error (logged for debugging) |
+| Status Code | Meaning               | When Used                                                         |
+| ----------- | --------------------- | ----------------------------------------------------------------- |
+| **200**     | OK                    | Successful GET, PUT, POST request                                 |
+| **201**     | Created               | Resource successfully created (rarely used; most POST return 200) |
+| **400**     | Bad Request           | Validation error, invalid request data                            |
+| **401**     | Unauthorized          | Missing, invalid, or expired authentication token                 |
+| **403**     | Forbidden             | Valid authentication but insufficient permissions                 |
+| **404**     | Not Found             | Resource does not exist                                           |
+| **422**     | Unprocessable Entity  | Request syntax valid but semantically incorrect                   |
+| **500**     | Internal Server Error | Server-side error (logged for debugging)                          |
 
 ### Error Response Structure
 
@@ -548,6 +565,7 @@ The API uses standard HTTP status codes and returns detailed error messages.
 ```
 
 **Validation Error Fields:**
+
 - `loc`: Location of error (e.g., `["body", "email"]` for request body field)
 - `msg`: Human-readable error message
 - `type`: Error type (useful for programmatic handling)
@@ -641,11 +659,11 @@ The API uses standard HTTP status codes and returns detailed error messages.
 **TypeScript Example with Axios:**
 
 ```typescript
-import axios, { AxiosError } from 'axios';
+import axios, { AxiosError } from "axios";
 
 try {
-  const response = await api.post('/users/', userData);
-  console.log('User created:', response.data);
+  const response = await api.post("/users/", userData);
+  console.log("User created:", response.data);
 } catch (error) {
   if (axios.isAxiosError(error)) {
     const axiosError = error as AxiosError<{ detail: string | any[] }>;
@@ -655,8 +673,8 @@ try {
       const detail = axiosError.response.data.detail;
       if (Array.isArray(detail)) {
         // Field-specific errors
-        detail.forEach(err => {
-          console.error(`${err.loc.join('.')}: ${err.msg}`);
+        detail.forEach((err) => {
+          console.error(`${err.loc.join(".")}: ${err.msg}`);
         });
       } else {
         // Simple error message
@@ -664,10 +682,10 @@ try {
       }
     } else if (axiosError.response?.status === 401) {
       // Redirect to login
-      router.push('/login');
+      router.push("/login");
     } else if (axiosError.response?.status === 403) {
       // Show permission denied message
-      toast.error('You do not have permission to perform this action');
+      toast.error("You do not have permission to perform this action");
     }
   }
 }
@@ -680,6 +698,7 @@ Cross-Origin Resource Sharing (CORS) is configured to allow frontend access from
 ### Allowed Origins
 
 **Development:**
+
 - `http://localhost:3000`
 - `http://localhost:3001`
 - `https://localhost:3000`
@@ -688,6 +707,7 @@ Cross-Origin Resource Sharing (CORS) is configured to allow frontend access from
 - `http://172.25.0.40:3000` (Docker network)
 
 **Production:**
+
 - Add your production domain to `BACKEND_CORS_ORIGINS` in `apps/api/.env`
 
 ### Configuration
@@ -710,7 +730,8 @@ BACKEND_CORS_ORIGINS: List[str] = [
 
 ### CORS Preflight Requests
 
-The browser automatically sends `OPTIONS` preflight requests for cross-origin requests with custom headers:
+The browser automatically sends `OPTIONS` preflight requests for cross-origin requests with custom
+headers:
 
 ```http
 OPTIONS /api/v1/users/ HTTP/1.1
@@ -747,30 +768,33 @@ packages/shared/src/generated/
 
 **Current Tags:**
 
-| Tag | Description | Generated Hooks Location |
-|-----|-------------|-------------------------|
-| `auth` | Authentication | `endpoints/auth/` |
-| `users` | User management | `endpoints/users/` |
-| `assessments` | Assessment CRUD | `endpoints/assessments/` |
-| `assessor` | Assessor/validator workflows | `endpoints/assessor/` |
-| `analytics` | Analytics and reporting | `endpoints/analytics/` |
-| `lookups` | Lookup data (barangays, areas) | `endpoints/lookups/` |
-| `system` | System health and config | `endpoints/system/` |
+| Tag           | Description                    | Generated Hooks Location |
+| ------------- | ------------------------------ | ------------------------ |
+| `auth`        | Authentication                 | `endpoints/auth/`        |
+| `users`       | User management                | `endpoints/users/`       |
+| `assessments` | Assessment CRUD                | `endpoints/assessments/` |
+| `assessor`    | Assessor/validator workflows   | `endpoints/assessor/`    |
+| `analytics`   | Analytics and reporting        | `endpoints/analytics/`   |
+| `lookups`     | Lookup data (barangays, areas) | `endpoints/lookups/`     |
+| `system`      | System health and config       | `endpoints/system/`      |
 
 ### Naming Conventions
 
 **Endpoints:**
+
 - Use plural nouns: `/users/`, `/assessments/`, `/barangays/`
 - Use kebab-case for multi-word resources: `/governance-areas/`
 - RESTful verbs via HTTP methods (not in URLs): `POST /users/` not `/users/create`
 - Actions use verb suffixes: `/users/{id}/activate`, `/users/{id}/reset-password`
 
 **Request/Response Schemas:**
+
 - Pydantic models in `apps/api/app/schemas/`
 - Naming pattern: `[Entity]Create`, `[Entity]Update`, `[Entity]Response`
 - Example: `UserAdminCreate`, `UserAdminUpdate`, `User` (response)
 
 **Database Models:**
+
 - SQLAlchemy models in `apps/api/app/db/models/`
 - Singular nouns: `User`, `Assessment`, `Barangay`
 - Table names auto-generated as plural: `users`, `assessments`, `barangays`
@@ -785,6 +809,7 @@ pnpm generate-types
 ```
 
 This command:
+
 1. Starts the FastAPI server (if not running)
 2. Fetches OpenAPI spec from `http://localhost:8000/openapi.json`
 3. Runs Orval to generate TypeScript types and React Query hooks
@@ -821,12 +846,14 @@ function UserList() {
 The API follows **"Fat Services, Thin Routers"** architecture:
 
 **Routers** (`apps/api/app/api/v1/`):
+
 - Handle HTTP concerns (request parsing, response formatting)
 - Validate authentication and authorization
 - Call service methods
 - Return responses
 
 **Services** (`apps/api/app/services/`):
+
 - Implement business logic
 - Interact with database
 - Handle complex operations
@@ -945,6 +972,7 @@ Returns detailed health status for monitoring and load balancers.
 ```
 
 **Use Cases:**
+
 - Kubernetes liveness/readiness probes
 - Load balancer health checks
 - Monitoring dashboards
@@ -955,6 +983,7 @@ Returns detailed health status for monitoring and load balancers.
 The API includes rate limiting middleware to prevent abuse.
 
 **Current Configuration** (development):
+
 - **Rate**: 100 requests per minute per IP address
 - **Headers**: Response includes rate limit headers
 - **Behavior**: Returns `429 Too Many Requests` when exceeded
@@ -975,7 +1004,8 @@ X-RateLimit-Reset: 1700000000
 }
 ```
 
-**Note**: Rate limiting is configurable per environment and can be adjusted for production workloads.
+**Note**: Rate limiting is configurable per environment and can be adjusted for production
+workloads.
 
 ## Security Headers
 
@@ -990,14 +1020,17 @@ Strict-Transport-Security: max-age=31536000; includeSubDomains
 
 ## Background Jobs
 
-Long-running operations (AI classification, bulk operations) are processed asynchronously via Celery.
+Long-running operations (AI classification, bulk operations) are processed asynchronously via
+Celery.
 
 **Architecture:**
+
 - **Broker**: Redis
 - **Workers**: Celery workers (`celery -A app.core.celery_app worker`)
 - **Queues**: `default`, `notifications`, `classification`, `intelligence`
 
 **Workflow:**
+
 1. API endpoint creates background job
 2. Returns immediately with job ID
 3. Client polls job status endpoint
@@ -1021,10 +1054,14 @@ const { data } = useGetJobStatus(jobId, {
 ## Further Reading
 
 - **[CLAUDE.md](/home/kiedajhinn/Projects/sinag/CLAUDE.md)** - Development guidelines and patterns
-- **[Architecture Documentation](/home/kiedajhinn/Projects/sinag/docs/architecture.md)** - System architecture overview
-- **[PRD Phase 1: Authentication](/home/kiedajhinn/Projects/sinag/docs/prds/prd-phase1-core-user-authentication-and-management.md)** - Authentication requirements
-- **[PRD Phase 3: Assessor Validation](/home/kiedajhinn/Projects/sinag/docs/prds/prd-phase3-assessor-validation-rework-cycle.md)** - Validator workflow details
-- **[Indicator Builder Specification](/home/kiedajhinn/Projects/sinag/docs/indicator-builder-specification.md)** - SGLGB indicator structure
+- **[Architecture Documentation](/home/kiedajhinn/Projects/sinag/docs/architecture.md)** - System
+  architecture overview
+- **[PRD Phase 1: Authentication](/home/kiedajhinn/Projects/sinag/docs/prds/prd-phase1-core-user-authentication-and-management.md)** -
+  Authentication requirements
+- **[PRD Phase 3: Assessor Validation](/home/kiedajhinn/Projects/sinag/docs/prds/prd-phase3-assessor-validation-rework-cycle.md)** -
+  Validator workflow details
+- **[Indicator Builder Specification](/home/kiedajhinn/Projects/sinag/docs/indicator-builder-specification.md)** -
+  SGLGB indicator structure
 
 ## Support and Contribution
 

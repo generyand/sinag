@@ -23,7 +23,7 @@ interface IndicatorListProps {
 export default function IndicatorList({
   indicators,
   onCreateNew,
-  isLoading = false
+  isLoading = false,
 }: IndicatorListProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
@@ -34,20 +34,19 @@ export default function IndicatorList({
   const governanceAreas = Array.from(
     new Map(
       indicators
-        .filter(i => i.governance_area)
-        .map(i => [i.governance_area!.id, i.governance_area!])
+        .filter((i) => i.governance_area)
+        .map((i) => [i.governance_area!.id, i.governance_area!])
     ).values()
   );
 
   // Filter indicators
   const filteredIndicators = indicators.filter((indicator) => {
-    const matchesSearch = indicator.name
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const matchesArea = filterArea === "all" ||
-                       indicator.governance_area_id.toString() === filterArea;
-    const matchesStatus = filterStatus === "all" ||
-                         (filterStatus === "active" ? indicator.is_active : !indicator.is_active);
+    const matchesSearch = indicator.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesArea =
+      filterArea === "all" || indicator.governance_area_id.toString() === filterArea;
+    const matchesStatus =
+      filterStatus === "all" ||
+      (filterStatus === "active" ? indicator.is_active : !indicator.is_active);
 
     return matchesSearch && matchesArea && matchesStatus;
   });
@@ -189,14 +188,18 @@ export default function IndicatorList({
               </div>
             </div>
           </div>
-
         </div>
 
         {/* Results count */}
         <div className="mt-4 pt-4 border-t border-[var(--border)]">
           <div className="flex items-center justify-between text-sm">
             <span className="text-[var(--text-secondary)]">
-              Showing <span className="font-semibold text-[var(--foreground)]">{filteredIndicators.length}</span> of <span className="font-semibold text-[var(--foreground)]">{indicators.length}</span> indicators
+              Showing{" "}
+              <span className="font-semibold text-[var(--foreground)]">
+                {filteredIndicators.length}
+              </span>{" "}
+              of <span className="font-semibold text-[var(--foreground)]">{indicators.length}</span>{" "}
+              indicators
             </span>
             {(searchQuery || filterArea !== "all" || filterStatus !== "all") && (
               <button
@@ -266,9 +269,9 @@ export default function IndicatorList({
                           variant="outline"
                           className="px-3 py-1.5 rounded-sm font-medium text-xs"
                           style={{
-                            backgroundColor: 'var(--kpi-blue-from)',
-                            color: 'var(--kpi-blue-text)',
-                            borderColor: 'var(--kpi-blue-border, var(--border))'
+                            backgroundColor: "var(--kpi-blue-from)",
+                            color: "var(--kpi-blue-text)",
+                            borderColor: "var(--kpi-blue-border, var(--border))",
                           }}
                         >
                           {indicator.governance_area.name}
@@ -280,9 +283,9 @@ export default function IndicatorList({
                         variant="outline"
                         className="px-3 py-1.5 rounded-sm font-medium text-xs"
                         style={{
-                          backgroundColor: 'var(--analytics-info-bg)',
-                          color: 'var(--analytics-info-text)',
-                          borderColor: 'var(--analytics-info-border)'
+                          backgroundColor: "var(--analytics-info-bg)",
+                          color: "var(--analytics-info-text)",
+                          borderColor: "var(--analytics-info-border)",
                         }}
                       >
                         v{indicator.version}
@@ -294,17 +297,17 @@ export default function IndicatorList({
                         className="px-3 py-1.5 rounded-sm font-medium text-xs"
                         style={{
                           backgroundColor: indicator.is_active
-                            ? 'var(--analytics-success-bg)'
-                            : 'var(--analytics-neutral-bg)',
+                            ? "var(--analytics-success-bg)"
+                            : "var(--analytics-neutral-bg)",
                           color: indicator.is_active
-                            ? 'var(--analytics-success-text)'
-                            : 'var(--analytics-neutral-text)',
+                            ? "var(--analytics-success-text)"
+                            : "var(--analytics-neutral-text)",
                           borderColor: indicator.is_active
-                            ? 'var(--analytics-success-border)'
-                            : 'var(--analytics-neutral-border)'
+                            ? "var(--analytics-success-border)"
+                            : "var(--analytics-neutral-border)",
                         }}
                       >
-                        {indicator.is_active ? '● Active' : '○ Inactive'}
+                        {indicator.is_active ? "● Active" : "○ Inactive"}
                       </Badge>
 
                       {/* Auto-calculable */}
@@ -313,9 +316,9 @@ export default function IndicatorList({
                           variant="outline"
                           className="px-3 py-1.5 rounded-sm font-medium text-xs"
                           style={{
-                            backgroundColor: 'var(--kpi-purple-from)',
-                            color: 'var(--kpi-purple-text)',
-                            borderColor: 'var(--kpi-purple-border, var(--border))'
+                            backgroundColor: "var(--kpi-purple-from)",
+                            color: "var(--kpi-purple-text)",
+                            borderColor: "var(--kpi-purple-border, var(--border))",
                           }}
                         >
                           ⚡ Auto-calculable
@@ -328,9 +331,9 @@ export default function IndicatorList({
                           variant="outline"
                           className="px-3 py-1.5 rounded-sm font-medium text-xs"
                           style={{
-                            backgroundColor: 'var(--analytics-warning-bg)',
-                            color: 'var(--analytics-warning-text)',
-                            borderColor: 'var(--analytics-warning-border)'
+                            backgroundColor: "var(--analytics-warning-bg)",
+                            color: "var(--analytics-warning-text)",
+                            borderColor: "var(--analytics-warning-border)",
                           }}
                         >
                           📊 Profiling Only

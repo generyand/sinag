@@ -9,12 +9,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const ALLOWED_FILE_TYPES = {
   "application/pdf": [".pdf"],
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [
-    ".docx",
-  ],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
-    ".xlsx",
-  ],
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
   "image/jpeg": [".jpg", ".jpeg"],
   "image/png": [".png"],
   "video/mp4": [".mp4"],
@@ -49,13 +45,9 @@ export function FileUpload({
       if (rejectedFiles.length > 0) {
         const rejection = rejectedFiles[0];
         if (rejection.errors?.[0]?.code === "file-too-large") {
-          setValidationError(
-            `File size exceeds 50MB limit. Please select a smaller file.`
-          );
+          setValidationError(`File size exceeds 50MB limit. Please select a smaller file.`);
         } else if (rejection.errors?.[0]?.code === "file-invalid-type") {
-          setValidationError(
-            `Invalid file type. Allowed types: PDF, DOCX, XLSX, JPG, PNG, MP4`
-          );
+          setValidationError(`Invalid file type. Allowed types: PDF, DOCX, XLSX, JPG, PNG, MP4`);
         } else {
           setValidationError(`File rejected: ${rejection.errors?.[0]?.message}`);
         }
@@ -107,22 +99,27 @@ export function FileUpload({
             isDragActive
               ? "border-blue-500 bg-blue-50 scale-[1.02]"
               : "border-[var(--border)] hover:border-blue-400 hover:bg-[var(--hover)]",
-            disabled && "opacity-50 cursor-not-allowed hover:border-[var(--border)] hover:bg-transparent",
+            disabled &&
+              "opacity-50 cursor-not-allowed hover:border-[var(--border)] hover:bg-transparent",
             displayError && "border-red-500 bg-red-50"
           )}
         >
           <input {...getInputProps()} />
-          <Upload className={cn(
-            "mx-auto h-12 w-12 mb-4 transition-colors",
-            isDragActive ? "text-blue-500" : "text-[var(--text-secondary)]"
-          )} />
+          <Upload
+            className={cn(
+              "mx-auto h-12 w-12 mb-4 transition-colors",
+              isDragActive ? "text-blue-500" : "text-[var(--text-secondary)]"
+            )}
+          />
           <p className="text-sm font-medium text-[var(--text-primary)] mb-1">
             {isDragActive ? (
               "Drop files here"
             ) : (
               <>
                 Drag and drop files here, or{" "}
-                <span className="text-blue-600 hover:text-blue-700 font-semibold">click to browse</span>
+                <span className="text-blue-600 hover:text-blue-700 font-semibold">
+                  click to browse
+                </span>
               </>
             )}
           </p>

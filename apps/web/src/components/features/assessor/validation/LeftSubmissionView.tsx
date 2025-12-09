@@ -1,16 +1,22 @@
 "use client";
 
-import { getSignedUrl } from '@/lib/uploadMov';
-import { resolveMovUrl } from '@/lib/utils';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { AssessmentTreeNode } from '@/components/features/assessments/tree-navigation/AssessmentTreeNode';
-import type { AssessmentDetailsResponse } from '@sinag/shared';
-import type { GovernanceArea, Indicator } from '@/types/assessment';
-import { useMovAnnotations } from '@/hooks/useMovAnnotations';
-import * as React from 'react';
-import dynamic from 'next/dynamic';
-const PdfAnnotator = dynamic(() => import('@/components/shared/PdfAnnotator'), { ssr: false });
+import { getSignedUrl } from "@/lib/uploadMov";
+import { resolveMovUrl } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { AssessmentTreeNode } from "@/components/features/assessments/tree-navigation/AssessmentTreeNode";
+import type { AssessmentDetailsResponse } from "@sinag/shared";
+import type { GovernanceArea, Indicator } from "@/types/assessment";
+import { useMovAnnotations } from "@/hooks/useMovAnnotations";
+import * as React from "react";
+import dynamic from "next/dynamic";
+const PdfAnnotator = dynamic(() => import("@/components/shared/PdfAnnotator"), { ssr: false });
 
 interface LeftSubmissionViewProps {
   assessment: AssessmentDetailsResponse;
@@ -26,17 +32,22 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
 
   // Modal state for in-app MOV preview with next/prev
   const [modalOpen, setModalOpen] = React.useState(false);
-  const [modalIndicatorTitle, setModalIndicatorTitle] = React.useState<string>('');
+  const [modalIndicatorTitle, setModalIndicatorTitle] = React.useState<string>("");
   const [modalMovs, setModalMovs] = React.useState<AnyRecord[]>([]);
   const [modalIndex, setModalIndex] = React.useState<number>(0);
-  const [currentUrl, setCurrentUrl] = React.useState<string>('');
-  const [currentExt, setCurrentExt] = React.useState<string>('');
+  const [currentUrl, setCurrentUrl] = React.useState<string>("");
+  const [currentExt, setCurrentExt] = React.useState<string>("");
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const [annotateMode, setAnnotateMode] = React.useState<boolean>(false);
   const [focusAnnotationId, setFocusAnnotationId] = React.useState<string | null>(null);
   const imgRef = React.useRef<HTMLImageElement | null>(null);
   const drawingRef = React.useRef<{ startX: number; startY: number; active: boolean } | null>(null);
-  const [previewRect, setPreviewRect] = React.useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const [previewRect, setPreviewRect] = React.useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
   const [imageReady, setImageReady] = React.useState<boolean>(false);
 
   // Get current MOV file ID for database-backed annotations
@@ -50,19 +61,19 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
     annotations: dbAnnotations,
     createAnnotation,
     deleteAnnotation,
-    isLoading: annotationsLoading
+    isLoading: annotationsLoading,
   } = useMovAnnotations(currentMovFileId);
 
   // Transform database annotations to component format
   const annotations = React.useMemo(() => {
     return dbAnnotations.map((ann: any) => ({
       id: String(ann.id),
-      type: ann.annotation_type === 'pdfRect' ? 'pdfRect' : 'rect',
+      type: ann.annotation_type === "pdfRect" ? "pdfRect" : "rect",
       page: ann.page,
       rect: ann.rect,
       rects: ann.rects,
       comment: ann.comment,
-      createdAt: ann.created_at
+      createdAt: ann.created_at,
     }));
   }, [dbAnnotations]);
 
@@ -73,60 +84,62 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
   // Transform API response data to match BLGU Assessment tree structure
   // NOTE: Removed useMemo to ensure fresh calculation on every render
   // This is necessary because requires_rework flag changes don't trigger dependency updates
-  console.log('[LeftSubmissionView] Starting to process responses, count:', responses.length);
+  console.log("[LeftSubmissionView] Starting to process responses, count:", responses.length);
   const areaMap: Record<string, GovernanceArea> = {};
 
   responses.forEach((r) => {
-      const indicator = (r.indicator as AnyRecord) ?? {};
-      const govArea = (indicator.governance_area as AnyRecord) ?? {};
-      const areaId = String(govArea.id || 0);
-      const areaName = govArea.name || 'Unknown Area';
-      // Generate 2-letter code from area name for logo lookup (e.g., "Financial Administration" -> "FI")
-      const areaCode = areaName.substring(0, 2).toUpperCase();
+    const indicator = (r.indicator as AnyRecord) ?? {};
+    const govArea = (indicator.governance_area as AnyRecord) ?? {};
+    const areaId = String(govArea.id || 0);
+    const areaName = govArea.name || "Unknown Area";
+    // Generate 2-letter code from area name for logo lookup (e.g., "Financial Administration" -> "FI")
+    const areaCode = areaName.substring(0, 2).toUpperCase();
 
-      // Create governance area if not exists
-      if (!areaMap[areaId]) {
-        areaMap[areaId] = {
-          id: areaId,
-          name: areaName,
-          code: areaCode,
-          description: '',
-          isCore: true,
-          indicators: [],
-        };
-      }
-
-      // Create indicator in BLGU tree format
-      // Status logic for assessor view:
-      // - 'needs_rework': Indicator requires re-validation after rework (requires_rework = true)
-      //   Shows orange alert icon to indicate assessor needs to re-review
-      // - 'completed': Indicator was already validated in first review (requires_rework = false)
-      //   Shows green checkmark - assessor doesn't need to re-review
-      const requiresRework = Boolean(r.requires_rework);
-      const computedStatus = requiresRework ? 'needs_rework' : 'completed';
-
-      console.log(`[LeftSubmissionView] Response ${r.id}:`, {
-        requires_rework: r.requires_rework,
-        requiresRework,
-        computedStatus
-      });
-
-      const treeIndicator: Indicator = {
-        id: String(r.id), // Use response ID as indicator ID for selection
-        name: indicator.name || `Indicator ${r.indicator_id}`,
-        code: indicator.code || '',
-        status: computedStatus,
-        description: indicator.description || '',
-        technicalNotes: indicator.technical_notes || '',
-        governanceAreaId: areaId,
-        movFiles: [],
-        formSchema: { fields: [] } as any,
+    // Create governance area if not exists
+    if (!areaMap[areaId]) {
+      areaMap[areaId] = {
+        id: areaId,
+        name: areaName,
+        code: areaCode,
+        description: "",
+        isCore: true,
+        indicators: [],
       };
+    }
 
-      areaMap[areaId].indicators.push(treeIndicator);
+    // Create indicator in BLGU tree format
+    // Status logic for assessor view:
+    // - 'needs_rework': Indicator requires re-validation after rework (requires_rework = true)
+    //   Shows orange alert icon to indicate assessor needs to re-review
+    // - 'completed': Indicator was already validated in first review (requires_rework = false)
+    //   Shows green checkmark - assessor doesn't need to re-review
+    const requiresRework = Boolean(r.requires_rework);
+    const computedStatus = requiresRework ? "needs_rework" : "completed";
+
+    console.log(`[LeftSubmissionView] Response ${r.id}:`, {
+      requires_rework: r.requires_rework,
+      requiresRework,
+      computedStatus,
     });
 
-  const governanceAreas: GovernanceArea[] = Object.values(areaMap).sort((a, b) => Number(a.id) - Number(b.id));
+    const treeIndicator: Indicator = {
+      id: String(r.id), // Use response ID as indicator ID for selection
+      name: indicator.name || `Indicator ${r.indicator_id}`,
+      code: indicator.code || "",
+      status: computedStatus,
+      description: indicator.description || "",
+      technicalNotes: indicator.technical_notes || "",
+      governanceAreaId: areaId,
+      movFiles: [],
+      formSchema: { fields: [] } as any,
+    };
+
+    areaMap[areaId].indicators.push(treeIndicator);
+  });
+
+  const governanceAreas: GovernanceArea[] = Object.values(areaMap).sort(
+    (a, b) => Number(a.id) - Number(b.id)
+  );
 
   const resolveMov = async (mov: AnyRecord): Promise<string> => {
     const key: string | null = mov?.storage_path || mov?.url || null;
@@ -156,8 +169,11 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
     if (!modalOpen || !modalMovs.length) return;
     const mov = modalMovs[modalIndex];
     if (!mov) return;
-    const name: string = mov.original_filename || mov.filename || '';
-    const ext = typeof name === 'string' && name.includes('.') ? String(name.split('.').pop() || '').toLowerCase() : '';
+    const name: string = mov.original_filename || mov.filename || "";
+    const ext =
+      typeof name === "string" && name.includes(".")
+        ? String(name.split(".").pop() || "").toLowerCase()
+        : "";
     setCurrentExt(ext);
     setIsLoading(true);
     resolveMov(mov)
@@ -168,12 +184,17 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
       .finally(() => setIsLoading(false));
 
     // Enable annotate mode for PDFs by default
-    setAnnotateMode(ext === 'pdf');
+    setAnnotateMode(ext === "pdf");
   }, [modalOpen, modalMovs, modalIndex]);
 
   // No need for saveAnnotations or persistAnnotateMode - database hook handles persistence
 
-  const imageToNaturalRect = (rect: { x: number; y: number; w: number; h: number }): { x: number; y: number; w: number; h: number } => {
+  const imageToNaturalRect = (rect: {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  }): { x: number; y: number; w: number; h: number } => {
     const img = imgRef.current;
     if (!img || !img.naturalWidth || !img.naturalHeight) return rect;
     const scaleX = img.naturalWidth / img.clientWidth;
@@ -181,7 +202,12 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
     return { x: rect.x * scaleX, y: rect.y * scaleY, w: rect.w * scaleX, h: rect.h * scaleY };
   };
 
-  const naturalToImageRect = (rect: { x: number; y: number; w: number; h: number }): { x: number; y: number; w: number; h: number } => {
+  const naturalToImageRect = (rect: {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  }): { x: number; y: number; w: number; h: number } => {
     const img = imgRef.current;
     if (!img || !img.naturalWidth || !img.naturalHeight) return rect;
     const scaleX = img.clientWidth / img.naturalWidth;
@@ -220,22 +246,22 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
       x: (x / containerWidth) * 100,
       y: (y / containerHeight) * 100,
       w: (w / containerWidth) * 100,
-      h: (h / containerHeight) * 100
+      h: (h / containerHeight) * 100,
     };
 
-    const comment = window.prompt('Add a comment for this highlight (optional):', '') || '';
+    const comment = window.prompt("Add a comment for this highlight (optional):", "") || "";
 
     // Save to database
     try {
       await createAnnotation({
         mov_file_id: currentMovFileId,
-        annotation_type: 'imageRect',
+        annotation_type: "imageRect",
         page: 0,
         rect: pctRect,
-        comment
+        comment,
       });
     } catch (error) {
-      console.error('Failed to create annotation:', error);
+      console.error("Failed to create annotation:", error);
     }
   };
 
@@ -262,25 +288,25 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
     try {
       await deleteAnnotation(Number(id));
     } catch (error) {
-      console.error('Failed to delete annotation:', error);
+      console.error("Failed to delete annotation:", error);
     }
   };
 
   const formatPrimitive = (val: unknown): string => {
-    if (typeof val === 'boolean') return val ? 'Yes' : 'No';
-    if (val === null || val === undefined) return '';
+    if (typeof val === "boolean") return val ? "Yes" : "No";
+    if (val === null || val === undefined) return "";
     if (val instanceof Date) return val.toLocaleString();
     return String(val);
   };
 
   const humanizeKey = (key: string): string => {
     try {
-      const spaced = key.replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+      const spaced = key.replace(/_/g, " ").replace(/\s+/g, " ").trim();
       return spaced
         .toLowerCase()
-        .split(' ')
+        .split(" ")
         .map((w) => (w.length ? w[0].toUpperCase() + w.slice(1) : w))
-        .join(' ');
+        .join(" ");
     } catch {
       return key;
     }
@@ -292,30 +318,38 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
       return (
         <ul className="list-disc pl-5 space-y-1">
           {val.map((item, i) => (
-            <li key={i}>{typeof item === 'object' ? renderValue(item, depth + 1) : formatPrimitive(item)}</li>
+            <li key={i}>
+              {typeof item === "object" ? renderValue(item, depth + 1) : formatPrimitive(item)}
+            </li>
           ))}
         </ul>
       );
     }
-    if (val && typeof val === 'object') {
+    if (val && typeof val === "object") {
       const entries = Object.entries(val as Record<string, unknown>);
       if (entries.length === 0) return <span className="text-muted-foreground">Empty</span>;
       return (
         <dl className="grid grid-cols-1 gap-y-2">
           {entries.map(([k, v]) => (
             <div key={k} className="grid grid-cols-[240px_1fr] items-start gap-4">
-              <dt className="text-[12px] font-medium tracking-wide text-muted-foreground break-words">{humanizeKey(k)}</dt>
+              <dt className="text-[12px] font-medium tracking-wide text-muted-foreground break-words">
+                {humanizeKey(k)}
+              </dt>
               <dd className="text-[13px] leading-5 break-words">{renderValue(v, depth + 1)}</dd>
             </div>
           ))}
         </dl>
       );
     }
-    if (typeof val === 'boolean') {
+    if (typeof val === "boolean") {
       return (
         <span
-          className={val ? 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-white' : 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-white'}
-          style={{ background: val ? 'var(--success)' : 'var(--destructive, #ef4444)' }}
+          className={
+            val
+              ? "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-white"
+              : "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-white"
+          }
+          style={{ background: val ? "var(--success)" : "var(--destructive, #ef4444)" }}
         >
           {formatPrimitive(val)}
         </span>
@@ -342,7 +376,7 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
       <div className="px-4 py-3 border-b border-border flex-shrink-0">
         <div className="text-sm font-medium text-foreground">BLGU Submission</div>
         <div className="text-xs text-muted-foreground mt-0.5">
-          {responses.length} indicator{responses.length === 1 ? '' : 's'} submitted
+          {responses.length} indicator{responses.length === 1 ? "" : "s"} submitted
         </div>
       </div>
 
@@ -396,9 +430,12 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
       </div>
 
       {/* MOV Previewer Modal */}
-      <Dialog open={modalOpen} onOpenChange={(open) => {
-        setModalOpen(open);
-      }}>
+      <Dialog
+        open={modalOpen}
+        onOpenChange={(open) => {
+          setModalOpen(open);
+        }}
+      >
         <DialogContent className="max-w-5xl h-[90vh] bg-white border-0 outline-none focus:outline-none focus-visible:ring-0 overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>MOV Preview</DialogTitle>
@@ -427,143 +464,209 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
             </Button>
           </div>
           <div className="flex-1 overflow-y-auto pr-1 pb-4">
-          <div className="h-[70vh] w-full border border-black/10 rounded bg-muted/20 overflow-hidden">
-            {isLoading ? (
-              <div className="text-sm text-muted-foreground">Loading…</div>
-            ) : currentUrl ? (
-              currentExt === 'pdf' ? (
-                <PdfAnnotator
-                  url={currentUrl}
-                  annotateEnabled={annotateMode}
-                  annotations={annotations.filter((a) => a.type === 'pdfRect') as any}
-                  focusAnnotationId={focusAnnotationId || undefined}
-                  onAdd={async (a: any) => {
-                    if (!currentMovFileId) return;
-                    try {
-                      await createAnnotation({
-                        mov_file_id: currentMovFileId,
-                        annotation_type: 'pdfRect',
-                        page: a.page,
-                        rect: a.rect,
-                        rects: a.rects,
-                        comment: a.comment
-                      });
-                    } catch (error) {
-                      console.error('Failed to create PDF annotation:', error);
-                    }
-                  }}
-                />
-              ) : currentExt === 'png' || currentExt === 'jpg' || currentExt === 'jpeg' || currentExt === 'webp' ? (
-                <div
-                  className="relative w-full h-full flex items-center justify-center select-none"
-                  onMouseDown={onImageMouseDown}
-                  onMouseUp={onImageMouseUp}
-                  onMouseMove={onImageMouseMove}
-                  onContextMenu={onImageContextMenu}
-                  style={{ cursor: annotateMode ? 'crosshair' : 'default' }}
-                >
-                  <img ref={imgRef} src={currentUrl} alt="MOV preview" className="max-h-full max-w-full object-contain" onLoad={() => setImageReady(true)} onContextMenu={onImageContextMenu} />
-                  {/* Render annotation rectangles */}
-                  {(() => {
-                    const img = imgRef.current;
-                    if (!img || !imageReady) return null;
-                    const container = img.parentElement;
-                    if (!container) return null;
-                    const containerRect = container.getBoundingClientRect();
+            <div className="h-[70vh] w-full border border-black/10 rounded bg-muted/20 overflow-hidden">
+              {isLoading ? (
+                <div className="text-sm text-muted-foreground">Loading…</div>
+              ) : currentUrl ? (
+                currentExt === "pdf" ? (
+                  <PdfAnnotator
+                    url={currentUrl}
+                    annotateEnabled={annotateMode}
+                    annotations={annotations.filter((a) => a.type === "pdfRect") as any}
+                    focusAnnotationId={focusAnnotationId || undefined}
+                    onAdd={async (a: any) => {
+                      if (!currentMovFileId) return;
+                      try {
+                        await createAnnotation({
+                          mov_file_id: currentMovFileId,
+                          annotation_type: "pdfRect",
+                          page: a.page,
+                          rect: a.rect,
+                          rects: a.rects,
+                          comment: a.comment,
+                        });
+                      } catch (error) {
+                        console.error("Failed to create PDF annotation:", error);
+                      }
+                    }}
+                  />
+                ) : currentExt === "png" ||
+                  currentExt === "jpg" ||
+                  currentExt === "jpeg" ||
+                  currentExt === "webp" ? (
+                  <div
+                    className="relative w-full h-full flex items-center justify-center select-none"
+                    onMouseDown={onImageMouseDown}
+                    onMouseUp={onImageMouseUp}
+                    onMouseMove={onImageMouseMove}
+                    onContextMenu={onImageContextMenu}
+                    style={{ cursor: annotateMode ? "crosshair" : "default" }}
+                  >
+                    <img
+                      ref={imgRef}
+                      src={currentUrl}
+                      alt="MOV preview"
+                      className="max-h-full max-w-full object-contain"
+                      onLoad={() => setImageReady(true)}
+                      onContextMenu={onImageContextMenu}
+                    />
+                    {/* Render annotation rectangles */}
+                    {(() => {
+                      const img = imgRef.current;
+                      if (!img || !imageReady) return null;
+                      const container = img.parentElement;
+                      if (!container) return null;
+                      const containerRect = container.getBoundingClientRect();
 
-                    return (
-                      <div className="absolute inset-0 pointer-events-none">
-                        {annotations.map((a, idx) => {
-                          if (a.type !== 'rect') return null;
-                          // Convert from percentage to pixels
-                          const rect = a.rect as { x: number; y: number; w: number; h: number };
-                          const pixelRect = {
-                            x: (rect.x / 100) * containerRect.width,
-                            y: (rect.y / 100) * containerRect.height,
-                            w: (rect.w / 100) * containerRect.width,
-                            h: (rect.h / 100) * containerRect.height
-                          };
-                          return (
-                            <div
-                              key={a.id}
-                              className="absolute border-2 border-yellow-400 bg-yellow-300/20"
-                              style={{ left: pixelRect.x, top: pixelRect.y, width: pixelRect.w, height: pixelRect.h }}
-                            >
-                              {/* Badge + inline comment label for visibility */}
-                              <div className="absolute -top-2 -left-2 text-[10px] px-1.5 py-0.5 rounded bg-yellow-400 text-black shadow" style={{ pointerEvents: 'none' }}>{idx + 1}</div>
-                              {a.comment ? (
+                      return (
+                        <div className="absolute inset-0 pointer-events-none">
+                          {annotations.map((a, idx) => {
+                            if (a.type !== "rect") return null;
+                            // Convert from percentage to pixels
+                            const rect = a.rect as { x: number; y: number; w: number; h: number };
+                            const pixelRect = {
+                              x: (rect.x / 100) * containerRect.width,
+                              y: (rect.y / 100) * containerRect.height,
+                              w: (rect.w / 100) * containerRect.width,
+                              h: (rect.h / 100) * containerRect.height,
+                            };
+                            return (
+                              <div
+                                key={a.id}
+                                className="absolute border-2 border-yellow-400 bg-yellow-300/20"
+                                style={{
+                                  left: pixelRect.x,
+                                  top: pixelRect.y,
+                                  width: pixelRect.w,
+                                  height: pixelRect.h,
+                                }}
+                              >
+                                {/* Badge + inline comment label for visibility */}
                                 <div
-                                  className="absolute left-0 bottom-0 max-w-[70%] m-1 px-1.5 py-0.5 rounded bg-yellow-200/90 text-[11px] text-black shadow line-clamp-2"
-                                  style={{ pointerEvents: 'none' }}
+                                  className="absolute -top-2 -left-2 text-[10px] px-1.5 py-0.5 rounded bg-yellow-400 text-black shadow"
+                                  style={{ pointerEvents: "none" }}
                                 >
-                                  {String(a.comment)}
+                                  {idx + 1}
                                 </div>
-                              ) : null}
-                            </div>
-                          );
-                        })}
-                        {previewRect ? (
-                          <div
-                            className="absolute border-2 border-blue-400 bg-blue-300/10"
-                            style={{ left: previewRect.x, top: previewRect.y, width: previewRect.w, height: previewRect.h }}
-                          />
-                        ) : null}
-                      </div>
-                    );
-                  })()}
-                </div>
-              ) : (
-                <div className="p-4 text-sm text-center">
-                  Preview not available. <a href={currentUrl} target="_blank" rel="noreferrer" className="underline">Open in new tab</a>
-                </div>
-              )
-            ) : (
-              <div className="text-sm text-muted-foreground">No preview available.</div>
-            )}
-          </div>
-          {/* Toolbar and comments (images + pdf) */}
-          {currentExt ? (
-            <div className="mt-3 flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <label className="text-sm inline-flex items-center gap-2">
-                  <input type="checkbox" checked={annotateMode} onChange={(e) => setAnnotateMode(e.target.checked)} />
-                  Enable highlight & comment {currentExt === 'pdf' ? '(select text)' : '(drag to draw rectangle)'}
-                </label>
-              </div>
-              {annotations.length > 0 ? (
-                <div className="rounded border border-black/10">
-                  <div className="px-3 py-2 text-sm font-medium bg-muted/40">Highlights & Comments</div>
-                  <ul className="max-h-52 overflow-y-auto divide-y">
-                    {annotations.map((a) => (
-                      <li key={a.id} className="px-3 py-2 text-sm flex items-start justify-between gap-3">
-                        <div className="min-w-0 cursor-pointer" onClick={() => setFocusAnnotationId(a.id)} title="Click to locate highlight">
-                          <div className="text-xs text-muted-foreground">
-                            {a.type === 'pdfRect' ? (() => {
-                              const first = Array.isArray(a.rects) && a.rects.length > 0 ? a.rects[0] : a.rect;
-                              return (
-                                <>Page {a.page} — Rect: x{Math.round(first.x)}, y{Math.round(first.y)}, w{Math.round(first.w)}, h{Math.round(first.h)}{Array.isArray(a.rects) && a.rects.length > 1 ? ` (+${a.rects.length - 1} more)` : ''}</>
-                              );
-                            })() : (
-                              <>Rect: x{Math.round(a.rect.x)}, y{Math.round(a.rect.y)}, w{Math.round(a.rect.w)}, h{Math.round(a.rect.h)}</>
-                            )}
-                          </div>
-                          <div className="break-words">{a.comment || <span className="text-muted-foreground">(no comment)</span>}</div>
+                                {a.comment ? (
+                                  <div
+                                    className="absolute left-0 bottom-0 max-w-[70%] m-1 px-1.5 py-0.5 rounded bg-yellow-200/90 text-[11px] text-black shadow line-clamp-2"
+                                    style={{ pointerEvents: "none" }}
+                                  >
+                                    {String(a.comment)}
+                                  </div>
+                                ) : null}
+                              </div>
+                            );
+                          })}
+                          {previewRect ? (
+                            <div
+                              className="absolute border-2 border-blue-400 bg-blue-300/10"
+                              style={{
+                                left: previewRect.x,
+                                top: previewRect.y,
+                                width: previewRect.w,
+                                height: previewRect.h,
+                              }}
+                            />
+                          ) : null}
                         </div>
-                        <Button type="button" variant="ghost" size="sm" onClick={() => onDeleteAnnotation(a.id)}>Delete</Button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <div className="p-4 text-sm text-center">
+                    Preview not available.{" "}
+                    <a href={currentUrl} target="_blank" rel="noreferrer" className="underline">
+                      Open in new tab
+                    </a>
+                  </div>
+                )
               ) : (
-                <div className="text-xs text-muted-foreground">No highlights yet.</div>
+                <div className="text-sm text-muted-foreground">No preview available.</div>
               )}
             </div>
-          ) : null}
+            {/* Toolbar and comments (images + pdf) */}
+            {currentExt ? (
+              <div className="mt-3 flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={annotateMode}
+                      onChange={(e) => setAnnotateMode(e.target.checked)}
+                    />
+                    Enable highlight & comment{" "}
+                    {currentExt === "pdf" ? "(select text)" : "(drag to draw rectangle)"}
+                  </label>
+                </div>
+                {annotations.length > 0 ? (
+                  <div className="rounded border border-black/10">
+                    <div className="px-3 py-2 text-sm font-medium bg-muted/40">
+                      Highlights & Comments
+                    </div>
+                    <ul className="max-h-52 overflow-y-auto divide-y">
+                      {annotations.map((a) => (
+                        <li
+                          key={a.id}
+                          className="px-3 py-2 text-sm flex items-start justify-between gap-3"
+                        >
+                          <div
+                            className="min-w-0 cursor-pointer"
+                            onClick={() => setFocusAnnotationId(a.id)}
+                            title="Click to locate highlight"
+                          >
+                            <div className="text-xs text-muted-foreground">
+                              {a.type === "pdfRect" ? (
+                                (() => {
+                                  const first =
+                                    Array.isArray(a.rects) && a.rects.length > 0
+                                      ? a.rects[0]
+                                      : a.rect;
+                                  return (
+                                    <>
+                                      Page {a.page} — Rect: x{Math.round(first.x)}, y
+                                      {Math.round(first.y)}, w{Math.round(first.w)}, h
+                                      {Math.round(first.h)}
+                                      {Array.isArray(a.rects) && a.rects.length > 1
+                                        ? ` (+${a.rects.length - 1} more)`
+                                        : ""}
+                                    </>
+                                  );
+                                })()
+                              ) : (
+                                <>
+                                  Rect: x{Math.round(a.rect.x)}, y{Math.round(a.rect.y)}, w
+                                  {Math.round(a.rect.w)}, h{Math.round(a.rect.h)}
+                                </>
+                              )}
+                            </div>
+                            <div className="break-words">
+                              {a.comment || (
+                                <span className="text-muted-foreground">(no comment)</span>
+                              )}
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onDeleteAnnotation(a.id)}
+                          >
+                            Delete
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <div className="text-xs text-muted-foreground">No highlights yet.</div>
+                )}
+              </div>
+            ) : null}
           </div>
         </DialogContent>
       </Dialog>
     </div>
   );
 }
-
-

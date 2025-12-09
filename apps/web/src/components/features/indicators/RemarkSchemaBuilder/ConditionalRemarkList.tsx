@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { ConditionalRemarkItem } from './ConditionalRemarkItem';
+import { ConditionalRemarkItem } from "./ConditionalRemarkItem";
 
 interface ConditionalRemark {
   condition: string;
@@ -19,11 +19,7 @@ interface ConditionalRemarkListProps {
  *
  * Displays the list of conditional remarks with edit and delete capabilities.
  */
-export function ConditionalRemarkList({
-  remarks,
-  onUpdate,
-  onDelete,
-}: ConditionalRemarkListProps) {
+export function ConditionalRemarkList({ remarks, onUpdate, onDelete }: ConditionalRemarkListProps) {
   return (
     <div className="space-y-4">
       {remarks.map((remark, index) => (

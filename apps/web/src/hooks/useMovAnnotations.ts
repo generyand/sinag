@@ -7,7 +7,7 @@ import {
   usePatchAssessorAnnotationsAnnotationId,
   useDeleteAssessorAnnotationsAnnotationId,
   type AnnotationCreate,
-  type AnnotationUpdate
+  type AnnotationUpdate,
 } from "@sinag/shared";
 
 /**
@@ -17,14 +17,15 @@ export function useMovAnnotations(movFileId: number | null) {
   const queryClient = useQueryClient();
 
   // Fetch annotations for the MOV file
-  const { data: annotationsData, isLoading, error } = useGetAssessorMovsMovFileIdAnnotations(
-    movFileId ?? 0,
-    {
-      query: {
-        enabled: movFileId != null && movFileId > 0,
-      },
-    } as any
-  );
+  const {
+    data: annotationsData,
+    isLoading,
+    error,
+  } = useGetAssessorMovsMovFileIdAnnotations(movFileId ?? 0, {
+    query: {
+      enabled: movFileId != null && movFileId > 0,
+    },
+  } as any);
 
   // Create annotation mutation
   const createMutation = usePostAssessorMovsMovFileIdAnnotations({

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Global Error Page
@@ -7,7 +7,7 @@
  * It must define its own html and body tags since it replaces the root layout.
  */
 
-import { AlertOctagon, RefreshCw } from 'lucide-react';
+import { AlertOctagon, RefreshCw } from "lucide-react";
 
 interface GlobalErrorProps {
   error: Error & { digest?: string };
@@ -29,19 +29,17 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
             </h1>
 
             <p className="mb-6 text-gray-600 dark:text-gray-400">
-              A critical error occurred while loading the application.
-              Please try refreshing the page.
+              A critical error occurred while loading the application. Please try refreshing the
+              page.
             </p>
 
-            {process.env.NODE_ENV === 'development' && (
+            {process.env.NODE_ENV === "development" && (
               <div className="mb-6 rounded-lg bg-red-50 dark:bg-red-900/20 p-4 text-left">
                 <p className="font-mono text-sm text-red-700 dark:text-red-300 break-words">
                   {error.message}
                 </p>
                 {error.digest && (
-                  <p className="mt-2 text-xs text-red-500">
-                    Digest: {error.digest}
-                  </p>
+                  <p className="mt-2 text-xs text-red-500">Digest: {error.digest}</p>
                 )}
               </div>
             )}
@@ -63,10 +61,8 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
               </button>
             </div>
 
-            {error.digest && process.env.NODE_ENV === 'production' && (
-              <p className="mt-6 text-xs text-gray-500">
-                Error Reference: {error.digest}
-              </p>
+            {error.digest && process.env.NODE_ENV === "production" && (
+              <p className="mt-6 text-xs text-gray-500">Error Reference: {error.digest}</p>
             )}
           </div>
         </div>

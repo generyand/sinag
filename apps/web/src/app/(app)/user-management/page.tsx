@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/useAuthStore';
-import { UserListSection } from '@/components/features/users';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/useAuthStore";
+import { UserListSection } from "@/components/features/users";
 
 export default function UserManagementPage() {
   const router = useRouter();
@@ -12,20 +12,20 @@ export default function UserManagementPage() {
   // Redirect unauthenticated users to login
   useEffect(() => {
     if (!isAuthenticated) {
-      router.replace('/login');
+      router.replace("/login");
     }
   }, [isAuthenticated, router]);
 
   // Redirect non-admin users to their appropriate dashboard
   useEffect(() => {
     if (isAuthenticated && user) {
-      const isAdmin = user.role === 'MLGOO_DILG';
+      const isAdmin = user.role === "MLGOO_DILG";
       if (!isAdmin) {
         // Redirect to appropriate dashboard based on role
-        if (user.role === 'ASSESSOR' || user.role === 'VALIDATOR') {
-          router.replace('/assessor/submissions');
+        if (user.role === "ASSESSOR" || user.role === "VALIDATOR") {
+          router.replace("/assessor/submissions");
         } else {
-          router.replace('/blgu/dashboard');
+          router.replace("/blgu/dashboard");
         }
       }
     }
@@ -44,12 +44,14 @@ export default function UserManagementPage() {
   }
 
   // Show loading if user is not admin
-  if (user && user.role !== 'MLGOO_DILG') {
+  if (user && user.role !== "MLGOO_DILG") {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[var(--background)]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>
-          <p className="text-[var(--muted-foreground)]">Access denied. Redirecting to your dashboard...</p>
+          <p className="text-[var(--muted-foreground)]">
+            Access denied. Redirecting to your dashboard...
+          </p>
         </div>
       </div>
     );
@@ -62,4 +64,4 @@ export default function UserManagementPage() {
       </div>
     </div>
   );
-} 
+}

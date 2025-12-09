@@ -37,9 +37,7 @@ export default function IndicatorHistory({
     return (
       <div className="text-center py-12 bg-[var(--card)] border border-[var(--border)] rounded-sm">
         <Clock className="h-12 w-12 mx-auto text-[var(--muted-foreground)] mb-4" />
-        <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">
-          No Version History
-        </h3>
+        <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">No Version History</h3>
         <p className="text-[var(--muted-foreground)]">
           This indicator has no archived versions yet.
         </p>
@@ -52,7 +50,8 @@ export default function IndicatorHistory({
       <div className="mb-4">
         <h2 className="text-2xl font-bold text-[var(--foreground)]">Version History</h2>
         <p className="text-[var(--muted-foreground)] mt-1">
-          {history.length} archived version{history.length !== 1 ? 's' : ''} • Current version: {currentVersion}
+          {history.length} archived version{history.length !== 1 ? "s" : ""} • Current version:{" "}
+          {currentVersion}
         </p>
       </div>
 
@@ -63,16 +62,14 @@ export default function IndicatorHistory({
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
-                    <CardTitle className="text-xl">
-                      {version.name}
-                    </CardTitle>
+                    <CardTitle className="text-xl">{version.name}</CardTitle>
                     <Badge
                       variant="outline"
                       className="px-3 py-1 rounded-sm font-medium"
                       style={{
-                        backgroundColor: 'var(--analytics-info-bg)',
-                        color: 'var(--analytics-info-text)',
-                        borderColor: 'var(--analytics-info-border)'
+                        backgroundColor: "var(--analytics-info-bg)",
+                        color: "var(--analytics-info-text)",
+                        borderColor: "var(--analytics-info-border)",
                       }}
                     >
                       Version {version.version}
@@ -80,9 +77,7 @@ export default function IndicatorHistory({
                   </div>
 
                   {version.description && (
-                    <CardDescription className="text-sm">
-                      {version.description}
-                    </CardDescription>
+                    <CardDescription className="text-sm">{version.description}</CardDescription>
                   )}
                 </div>
 
@@ -92,26 +87,26 @@ export default function IndicatorHistory({
                     className="px-3 py-1 rounded-sm font-medium"
                     style={{
                       backgroundColor: version.is_active
-                        ? 'var(--analytics-success-bg)'
-                        : 'var(--analytics-neutral-bg)',
+                        ? "var(--analytics-success-bg)"
+                        : "var(--analytics-neutral-bg)",
                       color: version.is_active
-                        ? 'var(--analytics-success-text)'
-                        : 'var(--analytics-neutral-text)',
+                        ? "var(--analytics-success-text)"
+                        : "var(--analytics-neutral-text)",
                       borderColor: version.is_active
-                        ? 'var(--analytics-success-border)'
-                        : 'var(--analytics-neutral-border)'
+                        ? "var(--analytics-success-border)"
+                        : "var(--analytics-neutral-border)",
                     }}
                   >
-                    {version.is_active ? 'Active' : 'Inactive'}
+                    {version.is_active ? "Active" : "Inactive"}
                   </Badge>
                   {version.is_auto_calculable && (
                     <Badge
                       variant="outline"
                       className="px-3 py-1 rounded-sm font-medium text-xs"
                       style={{
-                        backgroundColor: 'var(--kpi-purple-from)',
-                        color: 'var(--kpi-purple-text)',
-                        borderColor: 'var(--kpi-purple-border, var(--border))'
+                        backgroundColor: "var(--kpi-purple-from)",
+                        color: "var(--kpi-purple-text)",
+                        borderColor: "var(--kpi-purple-border, var(--border))",
                       }}
                     >
                       Auto-calc

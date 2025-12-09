@@ -30,31 +30,19 @@ export default function IndicatorDetail({
       {/* Header with actions */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            onClick={handleBack}
-            className="flex items-center gap-2"
-          >
+          <Button variant="outline" onClick={handleBack} className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
             Back to List
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-[var(--foreground)]">
-              {indicator.name}
-            </h1>
-            <p className="text-[var(--muted-foreground)] mt-1">
-              Version {indicator.version}
-            </p>
+            <h1 className="text-3xl font-bold text-[var(--foreground)]">{indicator.name}</h1>
+            <p className="text-[var(--muted-foreground)] mt-1">Version {indicator.version}</p>
           </div>
         </div>
 
         <div className="flex gap-2">
           {onViewHistory && (
-            <Button
-              variant="outline"
-              onClick={onViewHistory}
-              className="flex items-center gap-2"
-            >
+            <Button variant="outline" onClick={onViewHistory} className="flex items-center gap-2">
               <History className="h-4 w-4" />
               View History
             </Button>
@@ -64,8 +52,9 @@ export default function IndicatorDetail({
               onClick={onEdit}
               className="flex items-center gap-2"
               style={{
-                background: 'linear-gradient(to bottom right, var(--kpi-blue-from), var(--kpi-blue-to))',
-                color: 'var(--kpi-blue-text)',
+                background:
+                  "linear-gradient(to bottom right, var(--kpi-blue-from), var(--kpi-blue-to))",
+                color: "var(--kpi-blue-text)",
               }}
             >
               <Edit className="h-4 w-4" />
@@ -82,9 +71,9 @@ export default function IndicatorDetail({
             variant="outline"
             className="px-3 py-1 rounded-sm font-medium"
             style={{
-              backgroundColor: 'var(--kpi-blue-from)',
-              color: 'var(--kpi-blue-text)',
-              borderColor: 'var(--kpi-blue-border, var(--border))'
+              backgroundColor: "var(--kpi-blue-from)",
+              color: "var(--kpi-blue-text)",
+              borderColor: "var(--kpi-blue-border, var(--border))",
             }}
           >
             {indicator.governance_area.name}
@@ -96,17 +85,17 @@ export default function IndicatorDetail({
           className="px-3 py-1 rounded-sm font-medium"
           style={{
             backgroundColor: indicator.is_active
-              ? 'var(--analytics-success-bg)'
-              : 'var(--analytics-neutral-bg)',
+              ? "var(--analytics-success-bg)"
+              : "var(--analytics-neutral-bg)",
             color: indicator.is_active
-              ? 'var(--analytics-success-text)'
-              : 'var(--analytics-neutral-text)',
+              ? "var(--analytics-success-text)"
+              : "var(--analytics-neutral-text)",
             borderColor: indicator.is_active
-              ? 'var(--analytics-success-border)'
-              : 'var(--analytics-neutral-border)'
+              ? "var(--analytics-success-border)"
+              : "var(--analytics-neutral-border)",
           }}
         >
-          {indicator.is_active ? 'Active' : 'Inactive'}
+          {indicator.is_active ? "Active" : "Inactive"}
         </Badge>
 
         {indicator.is_auto_calculable && (
@@ -114,9 +103,9 @@ export default function IndicatorDetail({
             variant="outline"
             className="px-3 py-1 rounded-sm font-medium"
             style={{
-              backgroundColor: 'var(--kpi-purple-from)',
-              color: 'var(--kpi-purple-text)',
-              borderColor: 'var(--kpi-purple-border, var(--border))'
+              backgroundColor: "var(--kpi-purple-from)",
+              color: "var(--kpi-purple-text)",
+              borderColor: "var(--kpi-purple-border, var(--border))",
             }}
           >
             Auto-calculable
@@ -128,9 +117,9 @@ export default function IndicatorDetail({
             variant="outline"
             className="px-3 py-1 rounded-sm font-medium"
             style={{
-              backgroundColor: 'var(--analytics-warning-bg)',
-              color: 'var(--analytics-warning-text)',
-              borderColor: 'var(--analytics-warning-border)'
+              backgroundColor: "var(--analytics-warning-bg)",
+              color: "var(--analytics-warning-text)",
+              borderColor: "var(--analytics-warning-border)",
             }}
           >
             Profiling Only
@@ -157,9 +146,7 @@ export default function IndicatorDetail({
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="text-sm font-medium text-[var(--muted-foreground)]">
-                    Name
-                  </label>
+                  <label className="text-sm font-medium text-[var(--muted-foreground)]">Name</label>
                   <p className="text-[var(--foreground)] mt-1">{indicator.name}</p>
                 </div>
 
@@ -168,7 +155,7 @@ export default function IndicatorDetail({
                     Governance Area
                   </label>
                   <p className="text-[var(--foreground)] mt-1">
-                    {indicator.governance_area?.name || 'N/A'}
+                    {indicator.governance_area?.name || "N/A"}
                   </p>
                 </div>
 
@@ -177,7 +164,7 @@ export default function IndicatorDetail({
                     Description
                   </label>
                   <p className="text-[var(--foreground)] mt-1">
-                    {indicator.description || 'No description provided'}
+                    {indicator.description || "No description provided"}
                   </p>
                 </div>
 
@@ -279,7 +266,7 @@ export default function IndicatorDetail({
               ) : (
                 <p className="text-[var(--muted-foreground)]">
                   No calculation schema defined
-                  {!indicator.is_auto_calculable && ' (not auto-calculable)'}
+                  {!indicator.is_auto_calculable && " (not auto-calculable)"}
                 </p>
               )}
             </CardContent>

@@ -1,8 +1,6 @@
 # Deployment and Smoke Testing Checklist
 
-**Epic 6.0 - Story 6.19**
-**Version:** 1.0
-**Date:** 2025-11-09
+**Epic 6.0 - Story 6.19** **Version:** 1.0 **Date:** 2025-11-09
 
 ---
 
@@ -158,8 +156,8 @@ curl -I https://api.sinag.gov.ph/docs
 # Expected: HTTP 200 OK
 ```
 
-**✅ PASS Criteria:** All endpoints return 200 OK
-**❌ FAIL Action:** Check load balancer, DNS, SSL certificate
+**✅ PASS Criteria:** All endpoints return 200 OK **❌ FAIL Action:** Check load balancer, DNS, SSL
+certificate
 
 ---
 
@@ -179,8 +177,8 @@ curl https://api.sinag.gov.ph/api/v1/system/db-status
 }
 ```
 
-**✅ PASS Criteria:** Database healthy, latency < 100ms
-**❌ FAIL Action:** Check database connection string, connection pool
+**✅ PASS Criteria:** Database healthy, latency < 100ms **❌ FAIL Action:** Check database
+connection string, connection pool
 
 ---
 
@@ -189,18 +187,20 @@ curl https://api.sinag.gov.ph/api/v1/system/db-status
 **Objective:** Verify users can log in
 
 **Manual Steps:**
+
 1. Navigate to https://sinag.dilg.gov.ph/login
 2. Enter valid test user credentials
 3. Click "Login"
 
 **Expected:**
+
 - ✅ Login successful
 - ✅ Redirected to dashboard
 - ✅ User name displayed in header
 - ✅ JWT token stored in session
 
-**✅ PASS Criteria:** Successful login and redirect
-**❌ FAIL Action:** Check auth service, JWT configuration, session storage
+**✅ PASS Criteria:** Successful login and redirect **❌ FAIL Action:** Check auth service, JWT
+configuration, session storage
 
 ---
 
@@ -209,18 +209,20 @@ curl https://api.sinag.gov.ph/api/v1/system/db-status
 **Objective:** Verify BLGU dashboard loads with data
 
 **Manual Steps:**
+
 1. Log in as BLGU user
 2. Observe dashboard
 
 **Expected:**
+
 - ✅ Dashboard loads within 3 seconds
 - ✅ Barangay name displayed correctly
 - ✅ Assessment statistics visible
 - ✅ "New Assessment" button visible
 - ✅ Recent assessments list populated
 
-**✅ PASS Criteria:** Dashboard loads completely with data
-**❌ FAIL Action:** Check API response time, database queries
+**✅ PASS Criteria:** Dashboard loads completely with data **❌ FAIL Action:** Check API response
+time, database queries
 
 ---
 
@@ -229,19 +231,21 @@ curl https://api.sinag.gov.ph/api/v1/system/db-status
 **Objective:** Verify BLGU can create new assessment
 
 **Manual Steps:**
+
 1. Log in as BLGU user
 2. Click "New Assessment"
 3. Observe form
 
 **Expected:**
+
 - ✅ New assessment created in DRAFT status
 - ✅ Assessment ID assigned
 - ✅ Form renders with all governance areas
 - ✅ Form fields are editable
 - ✅ No errors in console
 
-**✅ PASS Criteria:** Assessment created successfully
-**❌ FAIL Action:** Check assessment service, database permissions
+**✅ PASS Criteria:** Assessment created successfully **❌ FAIL Action:** Check assessment service,
+database permissions
 
 ---
 
@@ -250,20 +254,22 @@ curl https://api.sinag.gov.ph/api/v1/system/db-status
 **Objective:** Verify dynamic form works
 
 **Manual Steps:**
+
 1. Open assessment form
 2. Fill a text field
 3. Change a select dropdown
 4. Toggle a conditional field
 
 **Expected:**
+
 - ✅ Text input accepts text
 - ✅ Changes are reflected immediately
 - ✅ Conditional fields appear/disappear correctly
 - ✅ Auto-save triggers after 500ms
 - ✅ No lag or freezing
 
-**✅ PASS Criteria:** Form responsive and functional
-**❌ FAIL Action:** Check form validation, React performance
+**✅ PASS Criteria:** Form responsive and functional **❌ FAIL Action:** Check form validation,
+React performance
 
 ---
 
@@ -272,6 +278,7 @@ curl https://api.sinag.gov.ph/api/v1/system/db-status
 **Objective:** Verify MOV file upload works
 
 **Manual Steps:**
+
 1. Open assessment form
 2. Navigate to an indicator
 3. Click "Upload MOV"
@@ -279,6 +286,7 @@ curl https://api.sinag.gov.ph/api/v1/system/db-status
 5. Observe upload
 
 **Expected:**
+
 - ✅ File upload dialog opens
 - ✅ File upload starts
 - ✅ Progress indicator shows
@@ -286,8 +294,8 @@ curl https://api.sinag.gov.ph/api/v1/system/db-status
 - ✅ File appears in file list
 - ✅ File is downloadable
 
-**✅ PASS Criteria:** File uploads and downloads successfully
-**❌ FAIL Action:** Check storage service, file upload API, CORS
+**✅ PASS Criteria:** File uploads and downloads successfully **❌ FAIL Action:** Check storage
+service, file upload API, CORS
 
 ---
 
@@ -296,6 +304,7 @@ curl https://api.sinag.gov.ph/api/v1/system/db-status
 **Objective:** Verify BLGU can submit assessment
 
 **Manual Steps:**
+
 1. Complete all required fields
 2. Upload required MOV files
 3. Click "Check Completeness"
@@ -303,6 +312,7 @@ curl https://api.sinag.gov.ph/api/v1/system/db-status
 5. Confirm submission
 
 **Expected:**
+
 - ✅ Completeness validation passes
 - ✅ Confirmation dialog appears
 - ✅ Submission succeeds
@@ -310,8 +320,8 @@ curl https://api.sinag.gov.ph/api/v1/system/db-status
 - ✅ Form becomes read-only
 - ✅ Success message displayed
 
-**✅ PASS Criteria:** Submission successful and form locked
-**❌ FAIL Action:** Check validation service, submission API
+**✅ PASS Criteria:** Submission successful and form locked **❌ FAIL Action:** Check validation
+service, submission API
 
 ---
 
@@ -320,11 +330,13 @@ curl https://api.sinag.gov.ph/api/v1/system/db-status
 **Objective:** Verify assessor can view submissions
 
 **Manual Steps:**
+
 1. Log in as ASSESSOR user
 2. View assessor dashboard
 3. Open a submitted assessment
 
 **Expected:**
+
 - ✅ Assessor dashboard loads
 - ✅ Submitted assessments list appears
 - ✅ Assessment details load
@@ -332,8 +344,8 @@ curl https://api.sinag.gov.ph/api/v1/system/db-status
 - ✅ calculated_remark visible
 - ✅ All form data readable
 
-**✅ PASS Criteria:** Assessor sees compliance data
-**❌ FAIL Action:** Check role-based filtering, compliance calculation
+**✅ PASS Criteria:** Assessor sees compliance data **❌ FAIL Action:** Check role-based filtering,
+compliance calculation
 
 ---
 
@@ -342,18 +354,20 @@ curl https://api.sinag.gov.ph/api/v1/system/db-status
 **Objective:** Verify BLGU does NOT see compliance data
 
 **Manual Steps:**
+
 1. Log in as BLGU user
 2. View submitted assessment
 3. Inspect page source (F12 Developer Tools)
 
 **Expected:**
+
 - ✅ No "calculated_status" in response
 - ✅ No "calculated_remark" in response
 - ✅ No "PASS/FAIL/CONDITIONAL" visible
 - ✅ Only "SUBMITTED" status visible
 
-**✅ PASS Criteria:** Compliance completely hidden from BLGU
-**❌ FAIL Action:** CRITICAL - Fix response filtering immediately
+**✅ PASS Criteria:** Compliance completely hidden from BLGU **❌ FAIL Action:** CRITICAL - Fix
+response filtering immediately
 
 ---
 
@@ -362,6 +376,7 @@ curl https://api.sinag.gov.ph/api/v1/system/db-status
 **Objective:** Verify rework request works
 
 **Manual Steps:**
+
 1. Log in as ASSESSOR
 2. Open submitted assessment
 3. Click "Request Rework"
@@ -369,14 +384,15 @@ curl https://api.sinag.gov.ph/api/v1/system/db-status
 5. Submit rework request
 
 **Expected:**
+
 - ✅ Rework request form appears
 - ✅ Comments saved per indicator
 - ✅ Request submitted successfully
 - ✅ Status changes to REWORK
 - ✅ BLGU receives notification
 
-**✅ PASS Criteria:** Rework request successful
-**❌ FAIL Action:** Check rework service, notification system
+**✅ PASS Criteria:** Rework request successful **❌ FAIL Action:** Check rework service,
+notification system
 
 ---
 
@@ -385,17 +401,19 @@ curl https://api.sinag.gov.ph/api/v1/system/db-status
 **Objective:** Verify Celery workers processing jobs
 
 **Manual Steps:**
+
 1. Trigger a background job (e.g., compliance calculation)
 2. Check Celery worker logs
 
 **Expected:**
+
 - ✅ Worker receives task
 - ✅ Task executes successfully
 - ✅ Task completes within expected time
 - ✅ No errors in logs
 
-**✅ PASS Criteria:** Background jobs processing
-**❌ FAIL Action:** Check Celery workers, Redis connection
+**✅ PASS Criteria:** Background jobs processing **❌ FAIL Action:** Check Celery workers, Redis
+connection
 
 ---
 
@@ -404,19 +422,21 @@ curl https://api.sinag.gov.ph/api/v1/system/db-status
 **Objective:** Verify graceful error handling
 
 **Manual Steps:**
+
 1. Submit invalid form data
 2. Upload oversized file (> 50MB)
 3. Access unauthorized endpoint
 
 **Expected:**
+
 - ✅ Validation errors displayed clearly
 - ✅ File size error message shown
 - ✅ 403 Forbidden for unauthorized access
 - ✅ No server crashes
 - ✅ Error logged to monitoring system
 
-**✅ PASS Criteria:** Errors handled gracefully
-**❌ FAIL Action:** Check error handling middleware, monitoring
+**✅ PASS Criteria:** Errors handled gracefully **❌ FAIL Action:** Check error handling middleware,
+monitoring
 
 ---
 
@@ -425,18 +445,20 @@ curl https://api.sinag.gov.ph/api/v1/system/db-status
 **Objective:** Verify acceptable performance
 
 **Metrics to Check:**
+
 - ✅ Page load time < 3 seconds
 - ✅ API response time < 500ms
 - ✅ Database query time < 100ms
 - ✅ File upload (10MB) < 10 seconds
 
 **Tools:**
+
 - Chrome DevTools (Network, Performance tabs)
 - Lighthouse audit
 - Backend logs for query times
 
-**✅ PASS Criteria:** All metrics within targets
-**❌ FAIL Action:** Identify slow queries, optimize as needed
+**✅ PASS Criteria:** All metrics within targets **❌ FAIL Action:** Identify slow queries, optimize
+as needed
 
 ---
 
@@ -445,6 +467,7 @@ curl https://api.sinag.gov.ph/api/v1/system/db-status
 **Objective:** Verify security measures active
 
 **Checks:**
+
 - ✅ HTTPS enforced (no HTTP access)
 - ✅ JWT tokens expire correctly
 - ✅ CORS configured properly
@@ -453,30 +476,30 @@ curl https://api.sinag.gov.ph/api/v1/system/db-status
 - ✅ File upload validation working
 - ✅ RBAC properly enforced
 
-**✅ PASS Criteria:** No security vulnerabilities found
-**❌ FAIL Action:** CRITICAL - Fix security issues immediately
+**✅ PASS Criteria:** No security vulnerabilities found **❌ FAIL Action:** CRITICAL - Fix security
+issues immediately
 
 ---
 
 ## Smoke Test Summary
 
-| Test # | Test Name | Status | Notes |
-|--------|-----------|--------|-------|
-| 1 | Application Accessibility | ☐ | |
-| 2 | Database Connectivity | ☐ | |
-| 3 | Authentication Flow | ☐ | |
-| 4 | BLGU Dashboard Load | ☐ | |
-| 5 | Assessment Creation | ☐ | |
-| 6 | Form Interaction | ☐ | |
-| 7 | File Upload | ☐ | |
-| 8 | Assessment Submission | ☐ | |
-| 9 | Assessor Access | ☐ | |
-| 10 | Compliance Separation | ☐ | |
-| 11 | Rework Workflow | ☐ | |
-| 12 | Background Jobs | ☐ | |
-| 13 | Error Handling | ☐ | |
-| 14 | Performance | ☐ | |
-| 15 | Security | ☐ | |
+| Test # | Test Name                 | Status | Notes |
+| ------ | ------------------------- | ------ | ----- |
+| 1      | Application Accessibility | ☐      |       |
+| 2      | Database Connectivity     | ☐      |       |
+| 3      | Authentication Flow       | ☐      |       |
+| 4      | BLGU Dashboard Load       | ☐      |       |
+| 5      | Assessment Creation       | ☐      |       |
+| 6      | Form Interaction          | ☐      |       |
+| 7      | File Upload               | ☐      |       |
+| 8      | Assessment Submission     | ☐      |       |
+| 9      | Assessor Access           | ☐      |       |
+| 10     | Compliance Separation     | ☐      |       |
+| 11     | Rework Workflow           | ☐      |       |
+| 12     | Background Jobs           | ☐      |       |
+| 13     | Error Handling            | ☐      |       |
+| 14     | Performance               | ☐      |       |
+| 15     | Security                  | ☐      |       |
 
 **Overall Result:** ☐ PASS ☐ FAIL
 
@@ -561,12 +584,12 @@ tail -f /var/log/postgresql/postgresql.log
 
 ### Deployment Approval
 
-| Role | Name | Signature | Date |
-|------|------|-----------|------|
-| DevOps Lead | _________________ | _________________ | ________ |
-| Technical Lead | _________________ | _________________ | ________ |
-| QA Lead | _________________ | _________________ | ________ |
-| Project Manager | _________________ | _________________ | ________ |
+| Role            | Name                       | Signature                  | Date         |
+| --------------- | -------------------------- | -------------------------- | ------------ |
+| DevOps Lead     | **\*\*\*\***\_**\*\*\*\*** | **\*\*\*\***\_**\*\*\*\*** | **\_\_\_\_** |
+| Technical Lead  | **\*\*\*\***\_**\*\*\*\*** | **\*\*\*\***\_**\*\*\*\*** | **\_\_\_\_** |
+| QA Lead         | **\*\*\*\***\_**\*\*\*\*** | **\*\*\*\***\_**\*\*\*\*** | **\_\_\_\_** |
+| Project Manager | **\*\*\*\***\_**\*\*\*\*** | **\*\*\*\***\_**\*\*\*\*** | **\_\_\_\_** |
 
 ### Smoke Test Result
 
@@ -574,11 +597,11 @@ tail -f /var/log/postgresql/postgresql.log
 - [ ] **MINOR ISSUES** - Deploy with monitoring and issue tracking
 - [ ] **CRITICAL ISSUES** - Rollback immediately
 
-**Deployment Status:** ________________
+**Deployment Status:** **\*\***\_\_\_\_**\*\***
 
-**Deployed By:** ________________
+**Deployed By:** **\*\***\_\_\_\_**\*\***
 
-**Deployment Date/Time:** ________________
+**Deployment Date/Time:** **\*\***\_\_\_\_**\*\***
 
 **Production URL:** https://sinag.dilg.gov.ph
 
@@ -587,6 +610,7 @@ tail -f /var/log/postgresql/postgresql.log
 ---
 
 **Next Steps:**
+
 1. Begin hypercare monitoring period (48 hours)
 2. Daily stakeholder status updates
 3. Monitor error rates and performance

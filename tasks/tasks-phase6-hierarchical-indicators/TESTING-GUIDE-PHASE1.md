@@ -1,20 +1,20 @@
 # Phase 1 Testing Guide - Split-Pane Schema Configuration
 
-**Date:** January 10, 2025
-**Version:** 1.0
-**Status:** Ready for Testing
+**Date:** January 10, 2025 **Version:** 1.0 **Status:** Ready for Testing
 
 ---
 
 ## Test Environment Setup
 
 ### Prerequisites
+
 1. ✅ All UI components installed (scroll-area, sheet)
 2. ✅ Backend API running on `http://localhost:8000`
 3. ✅ Frontend running on `http://localhost:3000`
 4. ✅ User logged in with appropriate permissions
 
 ### Test Data Requirements
+
 - At least one governance area with indicators
 - Ideally 5-10 indicators in a hierarchical structure (parents and children)
 - Mix of complete and incomplete schemas
@@ -28,12 +28,14 @@
 **Objective:** Verify split-pane layout renders correctly on desktop viewports
 
 **Steps:**
+
 1. Navigate to `/mlgoo/indicators/builder`
 2. Create or load a draft with indicators
 3. Click "Continue" to reach Step 3 (Configure Schemas)
 4. Observe the layout
 
 **Expected Results:**
+
 - [ ] Left panel (tree navigator) is visible and takes ~300-350px width
 - [ ] Right panel (schema editor) takes remaining space
 - [ ] Border separator between panels is visible
@@ -42,8 +44,7 @@
 
 **Pass Criteria:** All checkboxes checked
 
-**Notes:**
-_Record any issues here_
+**Notes:** _Record any issues here_
 
 ---
 
@@ -52,6 +53,7 @@ _Record any issues here_
 **Objective:** Verify mobile drawer opens and closes correctly
 
 **Steps:**
+
 1. Resize browser window to mobile size (<768px) or use DevTools mobile emulation
 2. Navigate to Step 3 (Configure Schemas)
 3. Click the "Indicators (X/Y)" button in the header
@@ -60,6 +62,7 @@ _Record any issues here_
 6. Observe the drawer closing
 
 **Expected Results:**
+
 - [ ] On mobile, tree navigator is hidden by default
 - [ ] "Indicators (X/Y)" button shows in header with current progress
 - [ ] Clicking button opens Sheet drawer from left
@@ -69,8 +72,7 @@ _Record any issues here_
 
 **Pass Criteria:** All checkboxes checked
 
-**Notes:**
-_Record any issues here_
+**Notes:** _Record any issues here_
 
 ---
 
@@ -79,10 +81,12 @@ _Record any issues here_
 **Objective:** Verify tree navigator displays indicators hierarchically
 
 **Steps:**
+
 1. Navigate to Step 3 with a draft containing hierarchical indicators
 2. Observe the tree structure in left panel
 
 **Expected Results:**
+
 - [ ] Indicators display in hierarchical tree structure
 - [ ] Parent indicators show expand/collapse chevron icon
 - [ ] Child indicators are indented correctly (16px per level)
@@ -94,8 +98,7 @@ _Record any issues here_
 
 **Pass Criteria:** All checkboxes checked
 
-**Notes:**
-_Record any issues here_
+**Notes:** _Record any issues here_
 
 ---
 
@@ -104,6 +107,7 @@ _Record any issues here_
 **Objective:** Verify status icons update when schemas are modified
 
 **Steps:**
+
 1. Select an indicator with incomplete schemas (gray circle ○)
 2. Switch to Form tab
 3. Add at least one field to the form schema
@@ -114,6 +118,7 @@ _Record any issues here_
 8. Observe status icon changes in tree navigator
 
 **Expected Results:**
+
 - [ ] Initially shows ○ (gray, incomplete)
 - [ ] After completing form schema, form tab badge shows checkmark
 - [ ] After completing calculation schema, calculation tab badge shows checkmark
@@ -124,8 +129,7 @@ _Record any issues here_
 
 **Pass Criteria:** All checkboxes checked
 
-**Notes:**
-_Record any issues here_
+**Notes:** _Record any issues here_
 
 ---
 
@@ -134,6 +138,7 @@ _Record any issues here_
 **Objective:** Verify clicking indicators switches the schema editor
 
 **Steps:**
+
 1. Navigate to Step 3 with multiple indicators
 2. Click on Indicator "1" in tree navigator
 3. Observe schema editor loads for Indicator "1"
@@ -142,6 +147,7 @@ _Record any issues here_
 6. Verify indicator name displays in editor header
 
 **Expected Results:**
+
 - [ ] Clicking indicator in tree switches editor context
 - [ ] Schema editor header shows correct indicator code and name
 - [ ] Tab content loads correct schemas for selected indicator
@@ -152,8 +158,7 @@ _Record any issues here_
 
 **Pass Criteria:** All checkboxes checked
 
-**Notes:**
-_Record any issues here_
+**Notes:** _Record any issues here_
 
 ---
 
@@ -162,6 +167,7 @@ _Record any issues here_
 **Objective:** Verify search and filter features work correctly
 
 **Steps:**
+
 1. Navigate to Step 3 with multiple indicators
 2. Type "budget" in search box
 3. Observe filtered results
@@ -172,6 +178,7 @@ _Record any issues here_
 8. Select "Show All" filter
 
 **Expected Results:**
+
 - [ ] Typing in search filters indicators by name/code
 - [ ] Search is case-insensitive
 - [ ] Filtered results maintain hierarchical structure
@@ -185,8 +192,7 @@ _Record any issues here_
 
 **Pass Criteria:** All checkboxes checked
 
-**Notes:**
-_Record any issues here_
+**Notes:** _Record any issues here_
 
 ---
 
@@ -195,6 +201,7 @@ _Record any issues here_
 **Objective:** Verify all keyboard shortcuts work correctly
 
 **Steps:**
+
 1. Navigate to Step 3 with multiple indicators
 2. Select an indicator
 3. Press **↓** (Arrow Down)
@@ -210,6 +217,7 @@ _Record any issues here_
 13. Press **↑** again (should now navigate)
 
 **Expected Results:**
+
 - [ ] **↑** navigates to previous indicator (when not in input)
 - [ ] **↓** navigates to next indicator (when not in input)
 - [ ] **Alt + ←** navigates to previous indicator
@@ -223,8 +231,7 @@ _Record any issues here_
 
 **Pass Criteria:** All checkboxes checked
 
-**Notes:**
-_Record any issues here_
+**Notes:** _Record any issues here_
 
 ---
 
@@ -233,6 +240,7 @@ _Record any issues here_
 **Objective:** Verify progress tracking displays correctly
 
 **Steps:**
+
 1. Navigate to Step 3 with draft containing 10 indicators
 2. Complete schemas for 3 indicators (form + calculation + remark)
 3. Observe progress display in tree footer
@@ -240,10 +248,11 @@ _Record any issues here_
 5. Verify progress percentage
 
 **Expected Results:**
+
 - [ ] Footer shows "X/Y complete (Z%)" format
 - [ ] Numerator (X) matches completed indicators
 - [ ] Denominator (Y) matches total indicators
-- [ ] Percentage (Z%) is accurate (X/Y * 100)
+- [ ] Percentage (Z%) is accurate (X/Y \* 100)
 - [ ] Progress bar fills proportionally to completion
 - [ ] "Next Incomplete" button is enabled when incomplete indicators exist
 - [ ] "Next Incomplete" button is disabled when all complete
@@ -251,8 +260,7 @@ _Record any issues here_
 
 **Pass Criteria:** All checkboxes checked
 
-**Notes:**
-_Record any issues here_
+**Notes:** _Record any issues here_
 
 ---
 
@@ -261,6 +269,7 @@ _Record any issues here_
 **Objective:** Verify validation errors display correctly
 
 **Steps:**
+
 1. Select an indicator
 2. Go to Form tab
 3. Add a field but leave "Field Name" empty
@@ -271,6 +280,7 @@ _Record any issues here_
 8. Observe validation error displays
 
 **Expected Results:**
+
 - [ ] Tree navigator shows ⚠ (amber warning) icon for indicator
 - [ ] Error count badge shows next to indicator name
 - [ ] SchemaEditorPanel footer shows error count: "X error(s)"
@@ -281,8 +291,7 @@ _Record any issues here_
 
 **Pass Criteria:** All checkboxes checked
 
-**Notes:**
-_Record any issues here_
+**Notes:** _Record any issues here_
 
 ---
 
@@ -291,6 +300,7 @@ _Record any issues here_
 **Objective:** Verify tabs switch correctly and preserve content
 
 **Steps:**
+
 1. Select an indicator
 2. Go to Form tab, add 2 fields
 3. Switch to Calculation tab, add formula
@@ -301,6 +311,7 @@ _Record any issues here_
 8. Verify formula is still there
 
 **Expected Results:**
+
 - [ ] Clicking tab header switches tab content
 - [ ] Tab content displays correct schema builder for each type
 - [ ] Form tab shows FormSchemaBuilder with drag-and-drop fields
@@ -313,8 +324,7 @@ _Record any issues here_
 
 **Pass Criteria:** All checkboxes checked
 
-**Notes:**
-_Record any issues here_
+**Notes:** _Record any issues here_
 
 ---
 
@@ -323,6 +333,7 @@ _Record any issues here_
 ### Verify No Breaking Changes
 
 **Test existing functionality:**
+
 - [ ] Step 1 (Select Governance Area) still works
 - [ ] Step 2 (Build Structure) tree editor still works
 - [ ] Adding/removing/editing indicators in Step 2 still works
@@ -339,6 +350,7 @@ _Record any issues here_
 ### Load Time & Responsiveness
 
 **Test with 50 indicators:**
+
 1. Create draft with 50 indicators (5 levels deep)
 2. Navigate to Step 3
 3. Measure initial render time
@@ -346,20 +358,21 @@ _Record any issues here_
 5. Measure indicator switch time
 
 **Expected Results:**
+
 - [ ] Initial render < 500ms
 - [ ] Indicator switch < 150ms
 - [ ] Tree search filters < 100ms
 - [ ] No UI freezing or stuttering
 - [ ] Smooth scrolling with 50+ indicators
 
-**Notes:**
-_Record performance measurements here_
+**Notes:** _Record performance measurements here_
 
 ---
 
 ## Browser Compatibility
 
 Test on multiple browsers:
+
 - [ ] Chrome/Chromium (latest)
 - [ ] Firefox (latest)
 - [ ] Safari (latest, if available)
@@ -372,12 +385,14 @@ Test on multiple browsers:
 ## Accessibility Testing
 
 ### Keyboard Navigation
+
 - [ ] All interactive elements are keyboard accessible
 - [ ] Tab order is logical (tree → editor → footer)
 - [ ] Focus indicators are visible
 - [ ] Esc, Enter, Arrow keys work as expected
 
 ### Screen Reader Compatibility
+
 - [ ] Status icons have ARIA labels
 - [ ] Navigation buttons have descriptive titles
 - [ ] Form inputs have associated labels
@@ -390,21 +405,25 @@ Test on multiple browsers:
 **Total Tests:** 10 core scenarios + regression + performance + accessibility
 
 **Status:**
-- ✅ Passed: ___ / 10
-- ❌ Failed: ___ / 10
-- ⚠️ Partial: ___ / 10
+
+- ✅ Passed: \_\_\_ / 10
+- ❌ Failed: \_\_\_ / 10
+- ⚠️ Partial: \_\_\_ / 10
 
 **Critical Issues Found:**
+
 1. _List critical bugs here_
 2.
 3.
 
 **Minor Issues Found:**
+
 1. _List minor bugs here_
 2.
 3.
 
 **Suggestions for Improvement:**
+
 1. _List enhancement ideas here_
 2.
 3.
@@ -413,10 +432,7 @@ Test on multiple browsers:
 
 ## Sign-Off
 
-**Tested By:** _________________
-**Date:** _________________
-**Environment:** Development / Staging
-**Overall Status:** ✅ Pass / ❌ Fail / ⚠️ Needs Fixes
+**Tested By:** **\*\*\*\***\_**\*\*\*\*** **Date:** **\*\*\*\***\_**\*\*\*\*** **Environment:**
+Development / Staging **Overall Status:** ✅ Pass / ❌ Fail / ⚠️ Needs Fixes
 
-**Notes:**
-_Final testing comments_
+**Notes:** _Final testing comments_

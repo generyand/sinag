@@ -1,26 +1,27 @@
 "use client";
 
-import { TreeNavigator } from '@/components/features/assessments/tree-navigation';
-import { StatusBadge } from '@/components/shared';
-import { ValidationPanelSkeleton } from '@/components/shared/skeletons';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { useAuthStore } from '@/store/useAuthStore';
+import { TreeNavigator } from "@/components/features/assessments/tree-navigation";
+import { StatusBadge } from "@/components/shared";
+import { ValidationPanelSkeleton } from "@/components/shared/skeletons";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { useAuthStore } from "@/store/useAuthStore";
 import {
-    useGetAssessorAssessmentsAssessmentId, usePostAssessorAssessmentResponsesResponseIdValidate,
-    usePostAssessorAssessmentsAssessmentIdFinalize,
-    usePostAssessorAssessmentsAssessmentIdRework
-} from '@sinag/shared';
-import { useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft } from 'lucide-react';
-import dynamic from 'next/dynamic';
-import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { MiddleMovFilesPanel } from './MiddleMovFilesPanel';
+  useGetAssessorAssessmentsAssessmentId,
+  usePostAssessorAssessmentResponsesResponseIdValidate,
+  usePostAssessorAssessmentsAssessmentIdFinalize,
+  usePostAssessorAssessmentsAssessmentIdRework,
+} from "@sinag/shared";
+import { useQueryClient } from "@tanstack/react-query";
+import { ChevronLeft } from "lucide-react";
+import dynamic from "next/dynamic";
+import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { MiddleMovFilesPanel } from "./MiddleMovFilesPanel";
 
 // Lazy load heavy RightAssessorPanel component (1400+ LOC)
 const RightAssessorPanel = dynamic(
-  () => import('./RightAssessorPanel').then(mod => ({ default: mod.RightAssessorPanel })),
+  () => import("./RightAssessorPanel").then((mod) => ({ default: mod.RightAssessorPanel })),
   {
     loading: () => <ValidationPanelSkeleton />,
     ssr: false,
@@ -34,7 +35,8 @@ interface AssessorValidationClientProps {
 type AnyRecord = Record<string, any>;
 
 export function AssessorValidationClient({ assessmentId }: AssessorValidationClientProps) {
-  const { data, isLoading, isError, error, dataUpdatedAt } = useGetAssessorAssessmentsAssessmentId(assessmentId);
+  const { data, isLoading, isError, error, dataUpdatedAt } =
+    useGetAssessorAssessmentsAssessmentId(assessmentId);
   const qc = useQueryClient();
   const validateMut = usePostAssessorAssessmentResponsesResponseIdValidate();
   const reworkMut = usePostAssessorAssessmentsAssessmentIdRework();
@@ -43,14 +45,16 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
   // Get user role to determine workflow behavior
   const { user } = useAuthStore();
-  const userRole = user?.role || '';
-  const isValidator = userRole === 'VALIDATOR';
-  const isAssessor = userRole === 'ASSESSOR';
+  const userRole = user?.role || "";
+  const isValidator = userRole === "VALIDATOR";
+  const isAssessor = userRole === "ASSESSOR";
 
   // All hooks must be called before any conditional returns
   const [selectedIndicatorId, setSelectedIndicatorId] = useState<string | null>(null);
-  const [form, setForm] = useState<Record<number, { status?: 'Pass' | 'Fail' | 'Conditional'; publicComment?: string }>>({});
-  const [checklistData, setChecklistData] = useState<Record<string, any>>({});  // Store checklist checkbox/input data
+  const [form, setForm] = useState<
+    Record<number, { status?: "Pass" | "Fail" | "Conditional"; publicComment?: string }>
+  >({});
+  const [checklistData, setChecklistData] = useState<Record<string, any>>({}); // Store checklist checkbox/input data
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false); // Local loading state instead of relying on mutation
   const isSavingRef = useRef(false); // Prevent multiple concurrent saves
@@ -85,38 +89,47 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
           requires_rework: resp.requires_rework,
           validation_status: resp.validation_status,
           has_response_data: !!resp.response_data,
-          user_role: userRole
+          user_role: userRole,
         });
 
         // CRITICAL: Skip loading checklist data for indicators requiring rework (ASSESSOR only)
         // - ASSESSOR: These indicators need fresh/clean checklists for assessor to review
         // - VALIDATOR: Validators need to see the assessor's checklist work (don't skip)
         if (resp.requires_rework && !isValidator) {
-          console.log(`[useEffect] ⚠️  Skipping checklist data load for response ${responseId} (requires_rework=true, user is ASSESSOR)`);
+          console.log(
+            `[useEffect] ⚠️  Skipping checklist data load for response ${responseId} (requires_rework=true, user is ASSESSOR)`
+          );
           return; // Don't load any checklist data for this indicator
         }
 
         if (resp.requires_rework && isValidator) {
-          console.log(`[useEffect] ✓ Loading checklist data for response ${responseId} (requires_rework=true, user is VALIDATOR)`);
+          console.log(
+            `[useEffect] ✓ Loading checklist data for response ${responseId} (requires_rework=true, user is VALIDATOR)`
+          );
         }
 
         // For indicators that passed (requires_rework=false), load their old checklist data
         const responseData = resp.response_data || {};
 
         // Find all assessor_val_ prefixed fields and convert them to checklist format
-        Object.keys(responseData).forEach(key => {
-          if (key.startsWith('assessor_val_')) {
+        Object.keys(responseData).forEach((key) => {
+          if (key.startsWith("assessor_val_")) {
             // Remove the assessor_val_ prefix
-            const fieldName = key.replace('assessor_val_', '');
+            const fieldName = key.replace("assessor_val_", "");
             // Convert to checklist format: checklist_{responseId}_{fieldName}
             const checklistKey = `checklist_${responseId}_${fieldName}`;
             initialChecklistData[checklistKey] = responseData[key];
-            console.log(`[useEffect] ✓ Loading data for response ${responseId}: ${checklistKey} = ${responseData[key]}`);
+            console.log(
+              `[useEffect] ✓ Loading data for response ${responseId}: ${checklistKey} = ${responseData[key]}`
+            );
           }
         });
       });
 
-      console.log('[useEffect] Final checklist data to load (dataUpdatedAt=' + dataUpdatedAt + '):', initialChecklistData);
+      console.log(
+        "[useEffect] Final checklist data to load (dataUpdatedAt=" + dataUpdatedAt + "):",
+        initialChecklistData
+      );
 
       // IMPORTANT: Replace the entire checklistData state (don't merge with old data)
       // This ensures old data for requires_rework indicators is completely cleared
@@ -127,19 +140,21 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   // Extract and prepare data (BEFORE conditional returns to maintain hook order)
   const assessment: AnyRecord = (data as unknown as AnyRecord) ?? {};
   const core = (assessment.assessment as AnyRecord) ?? assessment;
-  const responses: AnyRecord[] = useMemo(() =>
-    ((core.responses as AnyRecord[]) ?? []).sort((a: any, b: any) => {
-      // Sort by governance_area.id first, then by indicator_code
-      const areaA = a.indicator?.governance_area?.id || 999;
-      const areaB = b.indicator?.governance_area?.id || 999;
-      if (areaA !== areaB) return areaA - areaB;
+  const responses: AnyRecord[] = useMemo(
+    () =>
+      ((core.responses as AnyRecord[]) ?? []).sort((a: any, b: any) => {
+        // Sort by governance_area.id first, then by indicator_code
+        const areaA = a.indicator?.governance_area?.id || 999;
+        const areaB = b.indicator?.governance_area?.id || 999;
+        if (areaA !== areaB) return areaA - areaB;
 
-      // Within same area, sort by indicator_code (e.g., "3.2.1", "3.2.2", "3.2.3")
-      const codeA = a.indicator?.indicator_code || '';
-      const codeB = b.indicator?.indicator_code || '';
-      return codeA.localeCompare(codeB, undefined, { numeric: true, sensitivity: 'base' });
-    })
-  , [core.responses]);
+        // Within same area, sort by indicator_code (e.g., "3.2.1", "3.2.2", "3.2.3")
+        const codeA = a.indicator?.indicator_code || "";
+        const codeB = b.indicator?.indicator_code || "";
+        return codeA.localeCompare(codeB, undefined, { numeric: true, sensitivity: "base" });
+      }),
+    [core.responses]
+  );
 
   const reworkCount: number = core.rework_count ?? 0;
 
@@ -147,16 +162,16 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   // For assessors: rework_requested_at shows files uploaded after assessor's previous rework request
   const reworkRequestedAt: string | null = (core?.rework_requested_at ?? null) as string | null;
 
-  const barangayName: string = (core?.blgu_user?.barangay?.name
-    ?? core?.barangay?.name
-    ?? core?.barangay_name
-    ?? '') as string;
-  const governanceArea: string = (responses[0]?.indicator?.governance_area?.name
-    ?? core?.governance_area?.name
-    ?? core?.governance_area_name
-    ?? '') as string;
-  const cycleYear: string = String(core?.cycle_year ?? core?.year ?? '');
-  const statusText: string = core?.status ?? core?.assessment_status ?? '';
+  const barangayName: string = (core?.blgu_user?.barangay?.name ??
+    core?.barangay?.name ??
+    core?.barangay_name ??
+    "") as string;
+  const governanceArea: string = (responses[0]?.indicator?.governance_area?.name ??
+    core?.governance_area?.name ??
+    core?.governance_area_name ??
+    "") as string;
+  const cycleYear: string = String(core?.cycle_year ?? core?.year ?? "");
+  const statusText: string = core?.status ?? core?.assessment_status ?? "";
 
   // Transform to match BLGU assessment structure for TreeNavigator
   // Memoize this so it recalculates when checklistData or form changes
@@ -167,158 +182,185 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     return {
       id: assessmentId,
       completedIndicators: responses.filter((r: any) => {
-      const localStatus = form[r.id]?.status;
+        const localStatus = form[r.id]?.status;
 
-      // For validators: Check if status is Pass
-      if (localStatus) {
-        return localStatus === 'Pass';
-      }
-      if (r.validation_status === 'PASS') {
-        return true;
-      }
-
-      // Check if assessor has done work on this indicator
-      const publicComment = form[r.id]?.publicComment;
-      const hasComments = publicComment ? publicComment.trim().length > 0 : false;
-
-      const hasChecklistData = Object.keys(checklistData).some(key => {
-        if (!key.startsWith(`checklist_${r.id}_`)) return false;
-        const value = checklistData[key];
-        return value === true || (typeof value === 'string' && value.trim().length > 0);
-      });
-
-      // REWORK SCENARIO: If this assessment has rework indicators
-      if (hasReworkCycle) {
-        // Indicators with requires_rework=false are already completed (passed in first review)
-        if (!r.requires_rework) {
+        // For validators: Check if status is Pass
+        if (localStatus) {
+          return localStatus === "Pass";
+        }
+        if (r.validation_status === "PASS") {
           return true;
         }
-        // Indicators with requires_rework=true need assessor work
-        return hasComments || hasChecklistData;
-      }
 
-      // FRESH ASSESSMENT: Count as completed only if assessor has done work
-      return hasComments || hasChecklistData;
-    }).length,
-    totalIndicators: responses.length, // ALWAYS 86 total indicators
-    governanceAreas: responses.reduce((acc: any[], resp: any) => {
-      const indicator = resp.indicator || {};
-      const area = indicator.governance_area || {};
-      const areaId = String(area.id || 'unknown');
-      const areaName = area.name || 'Unknown Area';
-      // Generate 2-letter code from area name for logo lookup (e.g., "Financial Administration" -> "FI")
-      const areaCode = areaName.substring(0, 2).toUpperCase();
+        // Check if assessor has done work on this indicator
+        const publicComment = form[r.id]?.publicComment;
+        const hasComments = publicComment ? publicComment.trim().length > 0 : false;
 
-      let existingArea = acc.find((a: any) => a.id === areaId);
-      if (!existingArea) {
-        existingArea = {
-          id: areaId,
-          code: areaCode,
-          name: areaName,
-          indicators: [],
-        };
-        acc.push(existingArea);
-      }
-
-      // Determine status - priority order:
-      // 1. Validators' status (Pass/Fail/Conditional)
-      // 2. Assessor completed work (checklist/comments) → 'completed'
-      // 3. Requires rework but no work done yet → 'needs_rework'
-      // 4. Otherwise → 'not_started'
-      let status = 'not_started';
-      const localStatus = form[resp.id]?.status;
-
-      // For validators: Use validation_status (Pass/Fail/Conditional)
-      if (localStatus) {
-        status = localStatus === 'Pass' ? 'completed' : (localStatus === 'Fail' ? 'needs_rework' : 'not_started');
-      } else if (resp.validation_status) {
-        status = resp.validation_status === 'PASS' ? 'completed' : (resp.validation_status === 'FAIL' ? 'needs_rework' : 'not_started');
-      }
-      // For assessors: Check if they've completed their work
-      else {
-        // CRITICAL: Always check for NEW local data (current session work)
-        // But skip OLD persisted data if requires_rework is true
-
-        // Check NEW local checklist data (always, regardless of requires_rework)
-        const hasChecklistData = Object.keys(checklistData).some(key => {
-          if (!key.startsWith(`checklist_${resp.id}_`)) return false;
+        const hasChecklistData = Object.keys(checklistData).some((key) => {
+          if (!key.startsWith(`checklist_${r.id}_`)) return false;
           const value = checklistData[key];
-          return value === true || (typeof value === 'string' && value.trim().length > 0);
+          return value === true || (typeof value === "string" && value.trim().length > 0);
         });
 
-        // Check NEW local comments (always, regardless of requires_rework)
-        const hasLocalComments = form[resp.id]?.publicComment && form[resp.id]!.publicComment!.trim().length > 0;
+        // REWORK SCENARIO: If this assessment has rework indicators
+        if (hasReworkCycle) {
+          // Indicators with requires_rework=false are already completed (passed in first review)
+          if (!r.requires_rework) {
+            return true;
+          }
+          // Indicators with requires_rework=true need assessor work
+          return hasComments || hasChecklistData;
+        }
 
-        // Only check OLD persisted data if NOT requiring rework
-        let hasPersistedChecklistData = false;
-        let hasPersistedComments = false;
+        // FRESH ASSESSMENT: Count as completed only if assessor has done work
+        return hasComments || hasChecklistData;
+      }).length,
+      totalIndicators: responses.length, // ALWAYS 86 total indicators
+      governanceAreas: responses
+        .reduce((acc: any[], resp: any) => {
+          const indicator = resp.indicator || {};
+          const area = indicator.governance_area || {};
+          const areaId = String(area.id || "unknown");
+          const areaName = area.name || "Unknown Area";
+          // Generate 2-letter code from area name for logo lookup (e.g., "Financial Administration" -> "FI")
+          const areaCode = areaName.substring(0, 2).toUpperCase();
 
-        if (!resp.requires_rework) {
-          // Check backend response_data for persisted ASSESSOR checklist data
-          const responseData = (resp as AnyRecord).response_data || {};
-          hasPersistedChecklistData = Object.keys(responseData).some(key => {
-            if (!key.startsWith('assessor_val_')) return false;
-            const value = responseData[key];
-            return value === true || (typeof value === 'string' && value.trim().length > 0);
+          let existingArea = acc.find((a: any) => a.id === areaId);
+          if (!existingArea) {
+            existingArea = {
+              id: areaId,
+              code: areaCode,
+              name: areaName,
+              indicators: [],
+            };
+            acc.push(existingArea);
+          }
+
+          // Determine status - priority order:
+          // 1. Validators' status (Pass/Fail/Conditional)
+          // 2. Assessor completed work (checklist/comments) → 'completed'
+          // 3. Requires rework but no work done yet → 'needs_rework'
+          // 4. Otherwise → 'not_started'
+          let status = "not_started";
+          const localStatus = form[resp.id]?.status;
+
+          // For validators: Use validation_status (Pass/Fail/Conditional)
+          if (localStatus) {
+            status =
+              localStatus === "Pass"
+                ? "completed"
+                : localStatus === "Fail"
+                  ? "needs_rework"
+                  : "not_started";
+          } else if (resp.validation_status) {
+            status =
+              resp.validation_status === "PASS"
+                ? "completed"
+                : resp.validation_status === "FAIL"
+                  ? "needs_rework"
+                  : "not_started";
+          }
+          // For assessors: Check if they've completed their work
+          else {
+            // CRITICAL: Always check for NEW local data (current session work)
+            // But skip OLD persisted data if requires_rework is true
+
+            // Check NEW local checklist data (always, regardless of requires_rework)
+            const hasChecklistData = Object.keys(checklistData).some((key) => {
+              if (!key.startsWith(`checklist_${resp.id}_`)) return false;
+              const value = checklistData[key];
+              return value === true || (typeof value === "string" && value.trim().length > 0);
+            });
+
+            // Check NEW local comments (always, regardless of requires_rework)
+            const hasLocalComments =
+              form[resp.id]?.publicComment && form[resp.id]!.publicComment!.trim().length > 0;
+
+            // Only check OLD persisted data if NOT requiring rework
+            let hasPersistedChecklistData = false;
+            let hasPersistedComments = false;
+
+            if (!resp.requires_rework) {
+              // Check backend response_data for persisted ASSESSOR checklist data
+              const responseData = (resp as AnyRecord).response_data || {};
+              hasPersistedChecklistData = Object.keys(responseData).some((key) => {
+                if (!key.startsWith("assessor_val_")) return false;
+                const value = responseData[key];
+                return value === true || (typeof value === "string" && value.trim().length > 0);
+              });
+
+              // Check for persisted comments (from first review cycle)
+              const feedbackComments = (resp as AnyRecord).feedback_comments || [];
+              hasPersistedComments = feedbackComments.some(
+                (fc: any) =>
+                  fc.comment_type === "validation" &&
+                  !fc.is_internal_note &&
+                  fc.comment &&
+                  fc.comment.trim().length > 0
+              );
+            }
+
+            console.log(`[Status Calc] Response ${resp.id}:`, {
+              requires_rework: resp.requires_rework,
+              hasChecklistData,
+              hasLocalComments,
+              hasPersistedComments,
+              hasPersistedChecklistData,
+              willSetCompleted:
+                hasChecklistData ||
+                hasLocalComments ||
+                hasPersistedComments ||
+                hasPersistedChecklistData,
+            });
+
+            // If assessor has done work → mark as completed (green checkmark)
+            if (
+              hasChecklistData ||
+              hasLocalComments ||
+              hasPersistedComments ||
+              hasPersistedChecklistData
+            ) {
+              status = "completed";
+              console.log(`[Status Calc] Response ${resp.id} → 'completed' (green checkmark)`);
+            }
+            // Only show needs_rework (orange alert) if NO work done yet AND requires_rework is true
+            else if (resp.requires_rework) {
+              status = "needs_rework";
+              console.log(`[Status Calc] Response ${resp.id} → 'needs_rework' (orange alert)`);
+            }
+          }
+
+          existingArea.indicators.push({
+            id: String(resp.id),
+            code: indicator.indicator_code || indicator.code || String(resp.id),
+            name: indicator.name || "Unnamed Indicator",
+            status: status,
+            // Store indicator_id for sorting
+            indicator_id: indicator.id || 0,
           });
 
-          // Check for persisted comments (from first review cycle)
-          const feedbackComments = (resp as AnyRecord).feedback_comments || [];
-          hasPersistedComments = feedbackComments.some((fc: any) =>
-            fc.comment_type === 'validation' && !fc.is_internal_note && fc.comment && fc.comment.trim().length > 0
+          return acc;
+        }, [])
+        .sort((a: any, b: any) => {
+          // Sort governance areas by ID (FI=1, DI=2, SA=3, SO=4, BU=5, EN=6)
+          return Number(a.id) - Number(b.id);
+        })
+        .map((area: any) => {
+          // Sort indicators by code (e.g., "3.2.1", "3.2.2", "3.2.3") for proper ordering
+          area.indicators.sort((a: any, b: any) =>
+            a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: "base" })
           );
-        }
-
-        console.log(`[Status Calc] Response ${resp.id}:`, {
-          requires_rework: resp.requires_rework,
-          hasChecklistData,
-          hasLocalComments,
-          hasPersistedComments,
-          hasPersistedChecklistData,
-          willSetCompleted: hasChecklistData || hasLocalComments || hasPersistedComments || hasPersistedChecklistData
-        });
-
-        // If assessor has done work → mark as completed (green checkmark)
-        if (hasChecklistData || hasLocalComments || hasPersistedComments || hasPersistedChecklistData) {
-          status = 'completed';
-          console.log(`[Status Calc] Response ${resp.id} → 'completed' (green checkmark)`);
-        }
-        // Only show needs_rework (orange alert) if NO work done yet AND requires_rework is true
-        else if (resp.requires_rework) {
-          status = 'needs_rework';
-          console.log(`[Status Calc] Response ${resp.id} → 'needs_rework' (orange alert)`);
-        }
-      }
-
-      existingArea.indicators.push({
-        id: String(resp.id),
-        code: indicator.indicator_code || indicator.code || String(resp.id),
-        name: indicator.name || 'Unnamed Indicator',
-        status: status,
-        // Store indicator_id for sorting
-        indicator_id: indicator.id || 0,
-      });
-
-      return acc;
-    }, [])
-    .sort((a: any, b: any) => {
-      // Sort governance areas by ID (FI=1, DI=2, SA=3, SO=4, BU=5, EN=6)
-      return Number(a.id) - Number(b.id);
-    })
-    .map((area: any) => {
-      // Sort indicators by code (e.g., "3.2.1", "3.2.2", "3.2.3") for proper ordering
-      area.indicators.sort((a: any, b: any) =>
-        a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: 'base' })
-      );
-      return area;
-    }),
+          return area;
+        }),
     };
   }, [responses, checklistData, form, dataUpdatedAt]); // Add dataUpdatedAt to force recalc when data refetches
 
   // Conditional returns AFTER all hooks to maintain hook order
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-7xl px-6 py-10 text-sm text-muted-foreground">Loading assessment…</div>
+      <div className="mx-auto max-w-7xl px-6 py-10 text-sm text-muted-foreground">
+        Loading assessment…
+      </div>
     );
   }
 
@@ -328,7 +370,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         <div className="rounded-md border p-4">
           <div className="font-medium mb-1">Unable to load assessment</div>
           <div className="text-muted-foreground break-words">
-            {String((error as any)?.message || 'Please verify access and try again.')}
+            {String((error as any)?.message || "Please verify access and try again.")}
           </div>
         </div>
       </div>
@@ -366,10 +408,10 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       const hasComments = publicComment ? publicComment.trim().length > 0 : false;
 
       // Has checklist data
-      const hasChecklistData = Object.keys(checklistData).some(key => {
+      const hasChecklistData = Object.keys(checklistData).some((key) => {
         if (!key.startsWith(`checklist_${r.id}_`)) return false;
         const value = checklistData[key];
-        return value === true || (typeof value === 'string' && value.trim().length > 0);
+        return value === true || (typeof value === "string" && value.trim().length > 0);
       });
 
       return hasComments || hasChecklistData;
@@ -380,73 +422,81 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   }
 
   // Check if any indicator is marked as Fail (only relevant for validators)
-  const anyFail = isValidator && responses.some((r) => {
-    const localFail = form[r.id]?.status === 'Fail';
-    const persistedFail = (r as AnyRecord).validation_status === 'FAIL';
-    return localFail || persistedFail;
-  });
+  const anyFail =
+    isValidator &&
+    responses.some((r) => {
+      const localFail = form[r.id]?.status === "Fail";
+      const persistedFail = (r as AnyRecord).validation_status === "FAIL";
+      return localFail || persistedFail;
+    });
 
   // Check if assessor has any indicators with comments (for rework button)
-  const hasCommentsForRework = isAssessor && responses.some((r) => {
-    const publicComment = form[r.id]?.publicComment;
-    return publicComment ? publicComment.trim().length > 0 : false;
-  });
+  const hasCommentsForRework =
+    isAssessor &&
+    responses.some((r) => {
+      const publicComment = form[r.id]?.publicComment;
+      return publicComment ? publicComment.trim().length > 0 : false;
+    });
 
   const progressPct = total > 0 ? Math.round((reviewed / total) * 100) : 0;
 
   // Validators must provide comments for Fail/Conditional status
-  const missingRequiredComments = isValidator ? responses.filter((r) => {
-    const v = form[r.id];
-    if (!v?.status) return false;
-    if (v.status === 'Fail' || v.status === 'Conditional') {
-      return !(v.publicComment && v.publicComment.trim().length > 0);
-    }
-    return false;
-  }).length : 0;
+  const missingRequiredComments = isValidator
+    ? responses.filter((r) => {
+        const v = form[r.id];
+        if (!v?.status) return false;
+        if (v.status === "Fail" || v.status === "Conditional") {
+          return !(v.publicComment && v.publicComment.trim().length > 0);
+        }
+        return false;
+      }).length
+    : 0;
 
   const onSaveDraft = async () => {
-    console.log('========================================');
-    console.log('[onSaveDraft] SAVE DRAFT CLICKED');
-    console.log('[onSaveDraft] Current checklistData state:', checklistData);
-    console.log('[onSaveDraft] Current form state:', form);
-    console.log('[onSaveDraft] Total responses:', responses.length);
-    console.log('========================================');
+    console.log("========================================");
+    console.log("[onSaveDraft] SAVE DRAFT CLICKED");
+    console.log("[onSaveDraft] Current checklistData state:", checklistData);
+    console.log("[onSaveDraft] Current form state:", form);
+    console.log("[onSaveDraft] Total responses:", responses.length);
+    console.log("========================================");
 
     // Prevent concurrent saves
     if (isSavingRef.current) {
-      console.log('[onSaveDraft] Save already in progress, ignoring duplicate call');
+      console.log("[onSaveDraft] Save already in progress, ignoring duplicate call");
       return;
     }
 
     // Get all responses that have ANY data to save (status for validators, checklist/comments for all)
-    const responsesToSave = responses.filter(r => {
+    const responsesToSave = responses.filter((r) => {
       const formData = form[r.id];
 
       // Has validation status (Pass/Fail/Conditional) - ONLY for validators
       const hasStatus = isValidator && !!formData?.status;
 
       // Has checklist data
-      const hasChecklistData = Object.keys(checklistData).some(key => {
+      const hasChecklistData = Object.keys(checklistData).some((key) => {
         if (!key.startsWith(`checklist_${r.id}_`)) return false;
         const value = checklistData[key];
-        return value === true || (typeof value === 'string' && value.trim().length > 0);
+        return value === true || (typeof value === "string" && value.trim().length > 0);
       });
 
       // Has comments
       const hasComments = formData?.publicComment && formData.publicComment.trim().length > 0;
 
-      console.log(`[onSaveDraft] Response ${r.id}: hasStatus=${hasStatus}, hasChecklistData=${hasChecklistData}, hasComments=${hasComments}`);
+      console.log(
+        `[onSaveDraft] Response ${r.id}: hasStatus=${hasStatus}, hasChecklistData=${hasChecklistData}, hasComments=${hasComments}`
+      );
 
       return hasStatus || hasChecklistData || hasComments;
     });
 
-    const allResponseIds = new Set(responsesToSave.map(r => r.id));
+    const allResponseIds = new Set(responsesToSave.map((r) => r.id));
 
-    console.log('[onSaveDraft] Responses to save:', allResponseIds.size);
-    console.log('[onSaveDraft] Response IDs:', Array.from(allResponseIds));
+    console.log("[onSaveDraft] Responses to save:", allResponseIds.size);
+    console.log("[onSaveDraft] Response IDs:", Array.from(allResponseIds));
 
     if (allResponseIds.size === 0) {
-      console.log('[onSaveDraft] No data to save, exiting');
+      console.log("[onSaveDraft] No data to save, exiting");
       return;
     }
 
@@ -464,24 +514,30 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
         // Extract checklist data for this response
         const responseChecklistData: Record<string, any> = {};
-        Object.keys(checklistData).forEach(key => {
+        Object.keys(checklistData).forEach((key) => {
           if (key.startsWith(`checklist_${responseId}_`)) {
             // Remove the checklist_${responseId}_ prefix to get the field name
             // For assessment_field items, keep the _yes/_no suffix
-            const fieldName = key.replace(`checklist_${responseId}_`, '');
+            const fieldName = key.replace(`checklist_${responseId}_`, "");
 
             // PREFIX with "assessor_val_" to avoid conflicts with BLGU assessment data
             const prefixedFieldName = `assessor_val_${fieldName}`;
             responseChecklistData[prefixedFieldName] = checklistData[key];
-            console.log(`[onSaveDraft] Extracted checklist: ${key} -> ${prefixedFieldName} = ${checklistData[key]}`);
+            console.log(
+              `[onSaveDraft] Extracted checklist: ${key} -> ${prefixedFieldName} = ${checklistData[key]}`
+            );
           }
         });
 
         const payloadData = {
           // Convert to uppercase to match backend ValidationStatus enum (PASS, FAIL, CONDITIONAL)
-          validation_status: isValidator && formData?.status ? formData.status.toUpperCase() as 'PASS' | 'FAIL' | 'CONDITIONAL' : undefined,
+          validation_status:
+            isValidator && formData?.status
+              ? (formData.status.toUpperCase() as "PASS" | "FAIL" | "CONDITIONAL")
+              : undefined,
           public_comment: formData?.publicComment ?? null,
-          response_data: Object.keys(responseChecklistData).length > 0 ? responseChecklistData : undefined,
+          response_data:
+            Object.keys(responseChecklistData).length > 0 ? responseChecklistData : undefined,
         };
 
         console.log(`[onSaveDraft] Payload for response ${responseId}:`, payloadData);
@@ -492,9 +548,9 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         });
       });
 
-      console.log('[onSaveDraft] Waiting for all save promises to complete...');
+      console.log("[onSaveDraft] Waiting for all save promises to complete...");
       await Promise.all(savePromises);
-      console.log('[onSaveDraft] All saves completed successfully');
+      console.log("[onSaveDraft] All saves completed successfully");
 
       // Show success toast with better styling
       toast({
@@ -505,10 +561,10 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       });
 
       // Invalidate queries to refresh data with saved changes
-      console.log('[onSaveDraft] Invalidating queries to refresh UI...');
-      await qc.invalidateQueries({ queryKey: ['assessor', 'assessments', assessmentId] });
+      console.log("[onSaveDraft] Invalidating queries to refresh UI...");
+      await qc.invalidateQueries({ queryKey: ["assessor", "assessments", assessmentId] });
     } catch (error) {
-      console.error('Error saving validation data:', error);
+      console.error("Error saving validation data:", error);
       // Reset mutation state to allow retry
       validateMut.reset();
 
@@ -540,7 +596,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       // Show success toast
       toast({
         title: "✅ Sent for Rework",
-        description: "Assessment has been sent back to BLGU for rework with your feedback comments.",
+        description:
+          "Assessment has been sent back to BLGU for rework with your feedback comments.",
         duration: 3000,
         className: "bg-orange-600 text-white border-none",
       });
@@ -550,11 +607,14 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
       // Redirect to submissions queue after short delay
       setTimeout(() => {
-        window.location.href = '/assessor/submissions';
+        window.location.href = "/assessor/submissions";
       }, 1500);
     } catch (error: any) {
-      console.error('Error sending for rework:', error);
-      const errorMessage = error?.response?.data?.detail || error?.message || "Failed to send for rework. Please try again.";
+      console.error("Error sending for rework:", error);
+      const errorMessage =
+        error?.response?.data?.detail ||
+        error?.message ||
+        "Failed to send for rework. Please try again.";
       toast({
         title: "❌ Error",
         description: errorMessage,
@@ -580,7 +640,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       } else {
         toast({
           title: "Validation Complete",
-          description: "Assessment validation has been finalized. This is now the authoritative result.",
+          description:
+            "Assessment validation has been finalized. This is now the authoritative result.",
           duration: 3000,
           className: "bg-green-600 text-white border-none",
         });
@@ -592,13 +653,13 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       // Redirect to submissions queue after short delay
       setTimeout(() => {
         if (isAssessor) {
-          window.location.href = '/assessor/submissions';
+          window.location.href = "/assessor/submissions";
         } else {
-          window.location.href = '/validator/submissions';
+          window.location.href = "/validator/submissions";
         }
       }, 1500);
     } catch (error) {
-      console.error('Error finalizing assessment:', error);
+      console.error("Error finalizing assessment:", error);
       toast({
         title: "Error",
         description: "Failed to finalize assessment. Please try again.",
@@ -619,7 +680,12 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       <div className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
         <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4 min-w-0">
-            <Button asChild variant="ghost" size="sm" className="shrink-0 gap-1 text-muted-foreground hover:text-foreground px-2">
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="shrink-0 gap-1 text-muted-foreground hover:text-foreground px-2"
+            >
               <Link href="/assessor/submissions">
                 <ChevronLeft className="h-4 w-4" />
                 <span className="font-medium">Queue</span>
@@ -628,15 +694,20 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             <div className="h-8 w-px bg-border shrink-0" />
             <div className="min-w-0 flex flex-col justify-center">
               <div className="text-sm font-bold text-foreground truncate leading-tight">
-                {barangayName} <span className="text-muted-foreground font-medium mx-1">/</span> {governanceArea}
+                {barangayName} <span className="text-muted-foreground font-medium mx-1">/</span>{" "}
+                {governanceArea}
               </div>
               <div className="text-xs text-muted-foreground truncate leading-tight mt-0.5">
-                Assessor Validation Workspace {cycleYear ? `• CY ${cycleYear}` : ''}
+                Assessor Validation Workspace {cycleYear ? `• CY ${cycleYear}` : ""}
               </div>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {statusText ? <div className="scale-90 origin-right"><StatusBadge status={statusText} /></div> : null}
+            {statusText ? (
+              <div className="scale-90 origin-right">
+                <StatusBadge status={statusText} />
+              </div>
+            ) : null}
             <Button
               variant="outline"
               size="sm"
@@ -645,7 +716,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               disabled={isSaving}
               className="ml-2"
             >
-              {isSaving ? 'Saving...' : 'Save as Draft'}
+              {isSaving ? "Saving..." : "Save as Draft"}
             </Button>
           </div>
         </div>
@@ -695,13 +766,13 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                     }));
                   }}
                   onChecklistChange={(key, value) => {
-                    console.log('[onChecklistChange] Checkbox changed:', { key, value });
+                    console.log("[onChecklistChange] Checkbox changed:", { key, value });
                     setChecklistData((prev) => {
                       const newData = {
                         ...prev,
                         [key]: value,
                       };
-                      console.log('[onChecklistChange] Updated checklistData:', newData);
+                      console.log("[onChecklistChange] Updated checklistData:", newData);
                       return newData;
                     });
                   }}
@@ -723,7 +794,9 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
           </div>
           <div className="text-xs text-muted-foreground">
             Indicators Reviewed: {reviewed}/{total}
-            {missingRequiredComments > 0 ? ` • Missing required comments: ${missingRequiredComments}` : ''}
+            {missingRequiredComments > 0
+              ? ` • Missing required comments: ${missingRequiredComments}`
+              : ""}
           </div>
           <div className="flex flex-col sm:flex-row w-full sm:w-auto items-stretch sm:items-center gap-2 sm:gap-3">
             <Button
@@ -734,7 +807,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               disabled={isSaving}
               className="w-full sm:w-auto"
             >
-              {isSaving ? 'Saving...' : 'Save as Draft'}
+              {isSaving ? "Saving..." : "Save as Draft"}
             </Button>
             {/* Send for Rework - Assessors only, requires comments */}
             {isAssessor && (
@@ -743,25 +816,41 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 size="default"
                 type="button"
                 onClick={onSendRework}
-                disabled={
-                  !hasCommentsForRework ||
-                  reworkCount !== 0 ||
-                  reworkMut.isPending
-                }
+                disabled={!hasCommentsForRework || reworkCount !== 0 || reworkMut.isPending}
                 className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90"
-                style={{ background: 'var(--cityscape-yellow)' }}
-                title={!hasCommentsForRework ? "Add feedback comments on at least one indicator to send for rework" : undefined}
+                style={{ background: "var(--cityscape-yellow)" }}
+                title={
+                  !hasCommentsForRework
+                    ? "Add feedback comments on at least one indicator to send for rework"
+                    : undefined
+                }
               >
                 {reworkMut.isPending ? (
                   <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg
+                      className="animate-spin -ml-1 mr-2 h-4 w-4 inline-block"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
                     </svg>
                     Compiling...
                   </>
                 ) : (
-                  'Compile and Send for Rework'
+                  "Compile and Send for Rework"
                 )}
               </Button>
             )}
@@ -773,26 +862,41 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 size="default"
                 type="button"
                 onClick={onSendRework}
-                disabled={
-                  !allReviewed ||
-                  !anyFail ||
-                  reworkCount !== 0 ||
-                  reworkMut.isPending
-                }
+                disabled={!allReviewed || !anyFail || reworkCount !== 0 || reworkMut.isPending}
                 className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90"
-                style={{ background: 'var(--cityscape-yellow)' }}
-                title={!anyFail && allReviewed ? "At least one indicator must be marked as 'Unmet' to send for rework" : undefined}
+                style={{ background: "var(--cityscape-yellow)" }}
+                title={
+                  !anyFail && allReviewed
+                    ? "At least one indicator must be marked as 'Unmet' to send for rework"
+                    : undefined
+                }
               >
                 {reworkMut.isPending ? (
                   <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg
+                      className="animate-spin -ml-1 mr-2 h-4 w-4 inline-block"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
                     </svg>
                     Compiling...
                   </>
                 ) : (
-                  'Compile and Send for Rework'
+                  "Compile and Send for Rework"
                 )}
               </Button>
             )}
@@ -803,12 +907,9 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 size="default"
                 type="button"
                 onClick={onFinalize}
-                disabled={
-                  !allReviewed ||
-                  finalizeMut.isPending
-                }
+                disabled={!allReviewed || finalizeMut.isPending}
                 className="w-full sm:w-auto text-white hover:opacity-90"
-                style={{ background: 'var(--success)' }}
+                style={{ background: "var(--success)" }}
                 title={!allReviewed ? "Review all indicators before finalizing" : undefined}
               >
                 Finalize and Send to Validator
@@ -821,14 +922,14 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 size="default"
                 type="button"
                 onClick={onFinalize}
-                disabled={
-                  !allReviewed ||
-                  (anyFail && reworkCount === 0) ||
-                  finalizeMut.isPending
-                }
+                disabled={!allReviewed || (anyFail && reworkCount === 0) || finalizeMut.isPending}
                 className="w-full sm:w-auto text-white hover:opacity-90"
-                style={{ background: 'var(--success)' }}
-                title={anyFail && reworkCount === 0 ? "Cannot finalize with 'Unmet' indicators. Send for Rework first." : undefined}
+                style={{ background: "var(--success)" }}
+                title={
+                  anyFail && reworkCount === 0
+                    ? "Cannot finalize with 'Unmet' indicators. Send for Rework first."
+                    : undefined
+                }
               >
                 Finalize Validation
               </Button>
@@ -839,5 +940,3 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     </div>
   );
 }
-
-

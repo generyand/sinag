@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useAuthStore } from '@/store/useAuthStore';
-import { ProfileForm, ProfileSkeleton } from '@/components/features/profile';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Building2, ShieldCheck } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useAuthStore } from "@/store/useAuthStore";
+import { ProfileForm, ProfileSkeleton } from "@/components/features/profile";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Building2, ShieldCheck } from "lucide-react";
 
 /**
  * Katuparan Center Profile Page

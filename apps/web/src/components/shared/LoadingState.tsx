@@ -1,50 +1,44 @@
 // ⏳ Loading State Components
 // Reusable loading indicators for different UI contexts
 
-import { Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface LoadingSpinnerProps {
-  size?: 'sm' | 'md' | 'lg';
+  size?: "sm" | "md" | "lg";
   className?: string;
 }
 
-export function LoadingSpinner({ size = 'md', className }: LoadingSpinnerProps) {
+export function LoadingSpinner({ size = "md", className }: LoadingSpinnerProps) {
   const sizeClasses = {
-    sm: 'h-4 w-4',
-    md: 'h-6 w-6',
-    lg: 'h-8 w-8',
+    sm: "h-4 w-4",
+    md: "h-6 w-6",
+    lg: "h-8 w-8",
   };
 
   return (
-    <Loader2
-      className={cn('animate-spin text-muted-foreground', sizeClasses[size], className)}
-    />
+    <Loader2 className={cn("animate-spin text-muted-foreground", sizeClasses[size], className)} />
   );
 }
 
 interface LoadingStateProps {
   message?: string;
   description?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: "sm" | "md" | "lg";
   className?: string;
 }
 
 export function LoadingState({
-  message = 'Loading...',
+  message = "Loading...",
   description,
-  size = 'md',
+  size = "md",
   className,
 }: LoadingStateProps) {
   return (
-    <div className={cn('flex flex-col items-center justify-center gap-3 py-8', className)}>
+    <div className={cn("flex flex-col items-center justify-center gap-3 py-8", className)}>
       <LoadingSpinner size={size} />
-      {message && (
-        <p className="text-sm font-medium text-foreground">{message}</p>
-      )}
-      {description && (
-        <p className="text-xs text-muted-foreground">{description}</p>
-      )}
+      {message && <p className="text-sm font-medium text-foreground">{message}</p>}
+      {description && <p className="text-xs text-muted-foreground">{description}</p>}
     </div>
   );
 }
@@ -54,7 +48,7 @@ interface LoadingOverlayProps {
   show: boolean;
 }
 
-export function LoadingOverlay({ message = 'Loading...', show }: LoadingOverlayProps) {
+export function LoadingOverlay({ message = "Loading...", show }: LoadingOverlayProps) {
   if (!show) return null;
 
   return (
@@ -71,11 +65,7 @@ interface SkeletonProps {
 }
 
 export function Skeleton({ className }: SkeletonProps) {
-  return (
-    <div
-      className={cn('animate-pulse rounded-md bg-muted', className)}
-    />
-  );
+  return <div className={cn("animate-pulse rounded-md bg-muted", className)} />;
 }
 
 export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; columns?: number }) {
@@ -113,7 +103,7 @@ interface InlineLoadingProps {
 
 export function InlineLoading({ message, className }: InlineLoadingProps) {
   return (
-    <div className={cn('flex items-center gap-2 text-sm text-muted-foreground', className)}>
+    <div className={cn("flex items-center gap-2 text-sm text-muted-foreground", className)}>
       <LoadingSpinner size="sm" />
       {message && <span>{message}</span>}
     </div>
