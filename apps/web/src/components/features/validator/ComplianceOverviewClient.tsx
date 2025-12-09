@@ -183,7 +183,7 @@ export function ComplianceOverviewClient({ assessmentId }: ComplianceOverviewCli
               <span className="font-semibold text-lg">Failed to load compliance overview</span>
             </div>
             <p className="text-red-600 dark:text-red-400 mt-2">
-              {error?.message || "An unexpected error occurred"}
+              {(error as any)?.message || "An unexpected error occurred"}
             </p>
           </div>
         </div>
