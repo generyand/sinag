@@ -17,6 +17,7 @@ from app.db.models import (
     FeedbackComment,
     GovernanceArea,
     Indicator,
+    MOVFile,
     User,
 )
 from app.schemas.assessment import (
@@ -30,7 +31,6 @@ from app.schemas.assessment import (
     FormSchemaValidation,
     GovernanceAreaProgress,
     MOVCreate,
-    MOVFile,
     ProgressSummary,
 )
 from app.services.completeness_validation_service import completeness_validation_service
@@ -1133,6 +1133,7 @@ class AssessmentService:
                 from sqlalchemy.orm import joinedload
 
                 from app.db.models.assessment import MOVFile
+
                 # Note: For strict CREATE, mov_files might be empty unless uploaded before response creation
                 # But since frontend can upload first, we should check.
                 if assessment:
@@ -1142,7 +1143,7 @@ class AssessmentService:
                         .filter(
                             MOVFile.assessment_id == assessment.id,
                             MOVFile.indicator_id == response_create.indicator_id,
-                            MOVFile.deleted_at.is_(None)
+                            MOVFile.deleted_at.is_(None),
                         )
                         .all()
                     )
@@ -1157,8 +1158,12 @@ class AssessmentService:
                     mov_files=mov_files,
                     assessment_status=assessment.status.value if assessment else None,
                     rework_requested_at=assessment.rework_requested_at if assessment else None,
-                    is_mlgoo_recalibration=assessment.is_mlgoo_recalibration if assessment else False,
-                    mlgoo_recalibration_requested_at=assessment.mlgoo_recalibration_requested_at if assessment else None,
+                    is_mlgoo_recalibration=assessment.is_mlgoo_recalibration
+                    if assessment
+                    else False,
+                    mlgoo_recalibration_requested_at=assessment.mlgoo_recalibration_requested_at
+                    if assessment
+                    else None,
                 )
             else:
                 db_response.is_completed = bool(initial_data)
@@ -1210,19 +1215,20 @@ class AssessmentService:
         # Epic 4.0: Fetch MOVFiles for validation (supports granular rework)
         mov_files = []
         try:
-             from sqlalchemy.orm import joinedload
+            from sqlalchemy.orm import joinedload
 
-             from app.db.models.assessment import MOVFile
-             mov_files = (
-                 db.query(MOVFile)
-                 .options(joinedload(MOVFile.annotations))
-                 .filter(
-                     MOVFile.assessment_id == db_response.assessment_id,
-                     MOVFile.indicator_id == db_response.indicator_id,
-                     MOVFile.deleted_at.is_(None)
-                 )
-                 .all()
-             )
+            from app.db.models.assessment import MOVFile
+
+            mov_files = (
+                db.query(MOVFile)
+                .options(joinedload(MOVFile.annotations))
+                .filter(
+                    MOVFile.assessment_id == db_response.assessment_id,
+                    MOVFile.indicator_id == db_response.indicator_id,
+                    MOVFile.deleted_at.is_(None),
+                )
+                .all()
+            )
         except Exception:
             pass
 
@@ -1236,7 +1242,9 @@ class AssessmentService:
                 assessment_status=assessment.status.value if assessment else None,
                 rework_requested_at=assessment.rework_requested_at if assessment else None,
                 is_mlgoo_recalibration=assessment.is_mlgoo_recalibration if assessment else False,
-                mlgoo_recalibration_requested_at=assessment.mlgoo_recalibration_requested_at if assessment else None,
+                mlgoo_recalibration_requested_at=assessment.mlgoo_recalibration_requested_at
+                if assessment
+                else None,
             )
 
         # Generate remark if response is completed and indicator has calculation_schema
@@ -1335,11 +1343,11 @@ class AssessmentService:
         1. If Annotations exist: Invalidate ONLY annotated/old files (Granular). Unannotated old files are KEPT.
         2. If NO Annotations but YES Comments: Invalidate ALL old files (Strict).
         3. If NO Feedback: Keep ALL files.
-        
+
         Effective Rework Timestamp logic:
         - If is_mlgoo_recalibration is True, use mlgoo_recalibration_requested_at
         - Else, use rework_requested_at
-        
+
         This supports the granular rework workflow where unflagged files don't need re-uploading.
 
         Args:
@@ -1371,7 +1379,9 @@ class AssessmentService:
                 self.uploaded_at = obj.uploaded_at
                 self.storage_path = getattr(obj, "storage_path", "") or getattr(obj, "file_url", "")
                 # Only MOVFile (new) has annotations
-                self.has_annotations = len(getattr(obj, "annotations", [])) > 0 if not is_legacy else False
+                self.has_annotations = (
+                    len(getattr(obj, "annotations", [])) > 0 if not is_legacy else False
+                )
 
         all_movs = []
         if movs:
@@ -1393,7 +1403,7 @@ class AssessmentService:
             and all_movs
         ):
             # Hybrid Granular Rework Logic
-            annotation_count = sum(1 for m in all_movs if m.has_annotations) # From UnifiedMOV
+            annotation_count = sum(1 for m in all_movs if m.has_annotations)  # From UnifiedMOV
 
             if annotation_count > 0:
                 # Case 1: Specific Annotations -> Granular Filter
@@ -1405,21 +1415,26 @@ class AssessmentService:
 
                     if is_new or is_valid_old:
                         filtered_movs.append(mov)
-                print(f"[DEBUG] _check_response_completion: REWORK - Granular Filter (Annotations={annotation_count})")
+                print(
+                    f"[DEBUG] _check_response_completion: REWORK - Granular Filter (Annotations={annotation_count})"
+                )
 
             elif feedback_count > 0:
                 # Case 2: General Comment Only -> Strict Filter
                 # Drop ALL old files
                 filtered_movs = [
-                    m for m in all_movs
+                    m
+                    for m in all_movs
                     if m.uploaded_at and m.uploaded_at >= effective_rework_requested_at
                 ]
-                print(f"[DEBUG] _check_response_completion: REWORK - Strict Filter (Comments={feedback_count})")
+                print(
+                    f"[DEBUG] _check_response_completion: REWORK - Strict Filter (Comments={feedback_count})"
+                )
 
             else:
-                 # Case 3: No Feedback -> Keep All
-                 # (filtered_movs is already all_movs)
-                 pass
+                # Case 3: No Feedback -> Keep All
+                # (filtered_movs is already all_movs)
+                pass
 
             print(
                 f"[DEBUG] _check_response_completion: Result - {len(all_movs)} total MOVs -> {len(filtered_movs)} valid MOVs"
@@ -1500,7 +1515,9 @@ class AssessmentService:
 
                 if not all(mov_section_hits.values()):
                     missing = [s for s, hit in mov_section_hits.items() if not hit]
-                    print(f"[DEBUG] _check_response_completion: Missing MOVs for 'yes' sections: {missing}")
+                    print(
+                        f"[DEBUG] _check_response_completion: Missing MOVs for 'yes' sections: {missing}"
+                    )
                     return False
 
             return True
@@ -1600,18 +1617,19 @@ class AssessmentService:
         # Epic 4.0: Fetch MOVFiles for this indicator to support granular rework
         mov_files = []
         try:
-             # Need a session to query MOVFiles. Since this method is usually called within a session context
-             # via object_session(response), we can assume a session exists if response is attached.
-             # However, response might be detached or this might be called without session.
-             # For now, we attempt to access via relationship if possible, or query if session available.
+            # Need a session to query MOVFiles. Since this method is usually called within a session context
+            # via object_session(response), we can assume a session exists if response is attached.
+            # However, response might be detached or this might be called without session.
+            # For now, we attempt to access via relationship if possible, or query if session available.
 
-             # Assuming assessment and indicator are loaded, check if we can get mov_files
-             # Assessment generally eager loads mov_files in some flows.
-             # But here we are on Response.
+            # Assuming assessment and indicator are loaded, check if we can get mov_files
+            # Assessment generally eager loads mov_files in some flows.
+            # But here we are on Response.
 
-             from sqlalchemy.orm import object_session
-             db = object_session(response)
-             if db:
+            from sqlalchemy.orm import object_session
+
+            db = object_session(response)
+            if db:
                 from sqlalchemy.orm import joinedload
 
                 from app.db.models.assessment import MOVFile
@@ -1622,12 +1640,12 @@ class AssessmentService:
                     .filter(
                         MOVFile.assessment_id == response.assessment_id,
                         MOVFile.indicator_id == response.indicator_id,
-                        MOVFile.deleted_at.is_(None)
+                        MOVFile.deleted_at.is_(None),
                     )
                     .all()
                 )
         except Exception as e:
-             print(f"[WARN] recompute_response_completion: Failed to fetch MOVFiles: {e}")
+            print(f"[WARN] recompute_response_completion: Failed to fetch MOVFiles: {e}")
 
         # Get assessment status and rework timestamp
         assessment_status = None
@@ -1653,14 +1671,15 @@ class AssessmentService:
         except Exception:
             pass
 
-
         # Check for feedback comments (for Hybrid Rework Logic)
         feedback_count = 0
         try:
             from sqlalchemy.orm import object_session
+
             db = object_session(response)
             if db:
                 from app.db.models.assessment import FeedbackComment
+
                 feedback_count = (
                     db.query(FeedbackComment)
                     .filter(
@@ -1681,7 +1700,7 @@ class AssessmentService:
             rework_requested_at=rework_requested_at,
             is_mlgoo_recalibration=is_mlgoo_recalibration,
             mlgoo_recalibration_requested_at=mlgoo_recalibration_requested_at,
-            feedback_count=feedback_count
+            feedback_count=feedback_count,
         )
 
         # Debug: trace recompute outputs
@@ -1769,10 +1788,21 @@ class AssessmentService:
 
         if validation_result.is_valid:
             # Check if this is a resubmission after rework/calibration
-            is_rework_resubmission = assessment.rework_requested_at is not None and not assessment.is_calibration_rework
-            is_calibration_resubmission = assessment.is_calibration_rework and assessment.calibration_requested_at is not None
-            is_mlgoo_recalibration_resubmission = assessment.is_mlgoo_recalibration and assessment.mlgoo_recalibration_requested_at is not None
-            is_resubmission = is_rework_resubmission or is_calibration_resubmission or is_mlgoo_recalibration_resubmission
+            is_rework_resubmission = (
+                assessment.rework_requested_at is not None and not assessment.is_calibration_rework
+            )
+            is_calibration_resubmission = (
+                assessment.is_calibration_rework and assessment.calibration_requested_at is not None
+            )
+            is_mlgoo_recalibration_resubmission = (
+                assessment.is_mlgoo_recalibration
+                and assessment.mlgoo_recalibration_requested_at is not None
+            )
+            is_resubmission = (
+                is_rework_resubmission
+                or is_calibration_resubmission
+                or is_mlgoo_recalibration_resubmission
+            )
 
             # Update assessment status
             assessment.status = AssessmentStatus.SUBMITTED_FOR_REVIEW
@@ -2935,23 +2965,19 @@ class AssessmentService:
             barangay_name=barangay_name,
             performance_year=current_year,
             assessment_year=current_year,
-
             # Status & Workflow
             status=assessment.status,
             submitted_at=assessment.submitted_at,
             validated_at=assessment.validated_at,
             rework_requested_at=assessment.rework_requested_at,
             rework_count=assessment.rework_count,
-
             # Calibration & Rework
             is_calibration_rework=assessment.is_calibration_rework,
             calibration_governance_area_name=calibration_governance_area_name,
             is_mlgoo_recalibration=assessment.is_mlgoo_recalibration,
             mlgoo_recalibration_requested_at=assessment.mlgoo_recalibration_requested_at,
-
             # Insights
             ai_summary=current_ai_summary,
-
             stats=dashboard_stats,
             feedback=recent_feedback_data,
             upcoming_deadlines=[],  # TODO: Implement deadline logic if needed
