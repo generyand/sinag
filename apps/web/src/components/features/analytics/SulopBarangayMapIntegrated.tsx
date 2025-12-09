@@ -369,9 +369,10 @@ export function SulopBarangayMapIntegrated({
     }
   };
 
-  // Get currently displayed barangay (hovered or selected) - includes placeholder for barangays without data
+  // Get currently displayed barangay - when panel is open, only show selected barangay (not hovered)
   const getDisplayedBarangay = (): BarangayData | null => {
-    const targetId = hoveredBarangay || selectedBarangay;
+    // When details panel is open, only show the selected barangay (ignore hover)
+    const targetId = selectedBarangay ? selectedBarangay : hoveredBarangay;
     if (!targetId) return null;
 
     const existing = svgIdToBarangayMap.get(targetId);
