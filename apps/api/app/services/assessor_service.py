@@ -17,6 +17,8 @@ from app.db.models.assessment import (
     Assessment,
     AssessmentResponse,
     FeedbackComment,
+    MOVAnnotation,
+    MOVFile,
 )
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
@@ -354,30 +356,31 @@ class AssessorService:
             print(f"response.response_data AFTER merge: {response.response_data}")
 
         # Generate remark if indicator has calculation_schema and remark_schema
-        if response.indicator.calculation_schema and response.is_completed:
-            try:
-                from app.services.intelligence_service import intelligence_service
-
-                # Calculate indicator status based on response data
-                indicator_status = intelligence_service.calculate_indicator_status(
-                    db=db,
-                    indicator_id=response.indicator_id,
-                    assessment_data=response.response_data or {},
-                )
-
-                # Generate remark
-                generated_remark = intelligence_service.generate_indicator_remark(
-                    db=db,
-                    indicator_id=response.indicator_id,
-                    indicator_status=indicator_status,
-                    assessment_data=response.response_data or {},
-                )
-
-                if generated_remark:
-                    response.generated_remark = generated_remark
-            except Exception as e:
-                # Log error but don't fail the validation
-                print(f"Failed to generate remark for response {response_id}: {str(e)}")
+        # DISABLED TEMPORARILY: Causing "Unable to add filesystem" crash on some environments
+        # if response.indicator.calculation_schema and response.is_completed:
+        #     try:
+        #         from app.services.intelligence_service import intelligence_service
+        #
+        #         # Calculate indicator status based on response data
+        #         indicator_status = intelligence_service.calculate_indicator_status(
+        #             db=db,
+        #             indicator_id=response.indicator_id,
+        #             assessment_data=response.response_data or {},
+        #         )
+        #
+        #         # Generate remark
+        #         generated_remark = intelligence_service.generate_indicator_remark(
+        #             db=db,
+        #             indicator_id=response.indicator_id,
+        #             indicator_status=indicator_status,
+        #             assessment_data=response.response_data or {},
+        #         )
+        #
+        #         if generated_remark:
+        #             response.generated_remark = generated_remark
+        #     except Exception as e:
+        #         # Log error but don't fail the validation
+        #         print(f"Failed to generate remark for response {response_id}: {str(e)}")
 
         db.commit()
 
@@ -642,8 +645,8 @@ class AssessorService:
                         FeedbackComment.assessor
                     ),
                 ),
-                # Epic 4.0: Load MOV files from the new mov_files table
-                selectinload(Assessment.mov_files),
+                # Epic 4.0: Load MOV files from the new mov_files table with annotations
+                selectinload(Assessment.mov_files).selectinload(MOVFile.annotations),
             )
             .filter(Assessment.id == assessment_id)
             .first()
@@ -764,24 +767,46 @@ class AssessorService:
                 f"total_movs={len(all_movs_for_indicator)}"
             )
 
-            # Apply rework filtering based on assessment status:
+            # GHOST REWORK FILTER (Same as BLGU Dashboard):
+            # During calibration (Phase 2), ignore stale 'requires_rework' flags from Phase 1
+            # unless the indicator belongs to the currently calibrated governance area.
+            is_calibration_rework = assessment.is_calibration_rework or (
+                assessment.status == AssessmentStatus.REWORK and assessment.pending_calibrations
+            )
+            effective_requires_rework = response.requires_rework
+
+            if is_calibration_rework and effective_requires_rework:
+                # Find active calibration governance area
+                calibration_ga_id = None
+                if assessment.pending_calibrations:
+                    for pc in assessment.pending_calibrations:
+                        if not pc.get("approved", False):
+                            calibration_ga_id = pc.get("governance_area_id")
+                            break
+
+                # If we found an active calibration area, and this indicator is NOT in it,
+                # then this is a "Ghost Rework" flag - ignore it.
+                if calibration_ga_id is not None and response.indicator.governance_area_id != calibration_ga_id:
+                    effective_requires_rework = False
+                    self.logger.info(
+                        f"[GHOST REWORK FIX] Ignoring stale rework flag for Indicator {response.indicator_id} "
+                        f"(Area {response.indicator.governance_area_id} != Calibration Area {calibration_ga_id})"
+                    )
+
+            # Apply rework filtering based on assessment status and EFFECTIVE rework flag:
             # - If status is AWAITING_FINAL_VALIDATION: Rework cycle is COMPLETE - show all files for validators
             # - If status is REWORK or SUBMITTED_FOR_REVIEW and requires_rework = True: Show only new files for assessor review
             # - Otherwise: Show all files
 
-            from app.db.enums import AssessmentStatus
+            # from app.db.enums import AssessmentStatus (Removed - already imported globally)
 
             if assessment.status == AssessmentStatus.AWAITING_FINAL_VALIDATION:
                 # Rework cycle is complete - validators see all files that exist
                 filtered_movs = all_movs_for_indicator
-
-                if response.requires_rework:
-                    self.logger.info(
-                        f"[VALIDATOR FILTER] Indicator {response.indicator_id} (requires_rework=True, status=AWAITING_FINAL_VALIDATION): "
-                        f"Showing all {len(filtered_movs)} MOVs (rework cycle complete)"
-                    )
+                if effective_requires_rework:
+                     pass # Logging omitted for brevity
             elif (
-                response.requires_rework
+                effective_requires_rework
                 and assessment.rework_requested_at
                 and assessment.status
                 in [
@@ -828,7 +853,7 @@ class AssessorService:
             response_data = {
                 "id": response.id,
                 "is_completed": response.is_completed,
-                "requires_rework": response.requires_rework,
+                "requires_rework": effective_requires_rework,
                 "validation_status": response.validation_status.value
                 if response.validation_status
                 else None,
@@ -931,6 +956,9 @@ class AssessorService:
                     }
                     for comment in response.feedback_comments
                 ],
+                "has_mov_annotations": any(
+                    len(mov.annotations) > 0 for mov in all_movs_for_indicator
+                ),
             }
             # DEBUG: Log requires_rework status
             self.logger.info(
@@ -1001,7 +1029,6 @@ class AssessorService:
         )
 
         # Check for MOV annotations
-        from app.db.models.assessment import MOVAnnotation
 
         mov_file_ids = [mf.id for mf in assessment.mov_files]
         has_annotations = False
@@ -1416,8 +1443,12 @@ class AssessorService:
         # Determine if this is Phase 1 (Assessor) or Phase 2 (Validator)
         is_validator = assessor.validator_area_id is not None
 
+        # [DEBUG] Start
+        self.logger.info(f"[FINALIZE DEBUG] Starting finalize for {assessment_id}")
+
         if is_validator:
             # ===== PHASE 2: VALIDATORS (Table Validation) =====
+            self.logger.info("[FINALIZE DEBUG] Phase 2: Validator check")
             # Handle cases where finalization is called on an already-processed assessment
             if assessment.status == AssessmentStatus.AWAITING_MLGOO_APPROVAL:
                 # Assessment already fully validated - return success (idempotent)
@@ -1540,6 +1571,15 @@ class AssessorService:
             # They can override the assessor's decisions if needed
             # DO NOT clear validation_status or checklist data here
 
+            # HOWEVER, we MUST clear the 'requires_rework' flag.
+            # If the assessor is finalizing, it means they are satisfied with the current state (or waived issues).
+            # If we don't clear this, these flags will persist and cause "Zombie Rework" items
+            # to appear if the assessment is later returned for Calibration (Phase 2).
+            for response in assessment.responses:
+                response.requires_rework = False
+
+        self.logger.info("[FINALIZE DEBUG] Validation checks passed. Committing to DB...")
+
         # Set validated_at timestamp
         assessment.validated_at = (
             db.query(Assessment).filter(Assessment.id == assessment_id).first().updated_at
@@ -1548,6 +1588,7 @@ class AssessorService:
 
         db.commit()
         db.refresh(assessment)
+        self.logger.info("[FINALIZE DEBUG] DB Commit success")
 
         # Notification #4: If assessor finalized (moved to AWAITING_FINAL_VALIDATION),
         # notify validators for all governance areas in the assessment
@@ -1576,6 +1617,7 @@ class AssessorService:
 
         # Run classification algorithm synchronously
         # This must complete in <5 seconds to ensure real-time user experience
+        self.logger.info("[FINALIZE DEBUG] Importing/Running classification...")
         from app.services.intelligence_service import intelligence_service
 
         try:

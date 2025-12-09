@@ -7,8 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { isFieldRequired } from "@/lib/forms/formSchemaParser";
 import type { FormSchema, FormSchemaFieldsItem, MOVFileResponse } from "@sinag/shared";
 import {
-  useGetAssessmentsMyAssessment,
-  useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles,
+    useGetAssessmentsMyAssessment
 } from "@sinag/shared";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { useMemo } from "react";
@@ -22,6 +21,8 @@ interface CompletionFeedbackPanelProps {
   assessmentId: number;
   /** Indicator ID for fetching uploaded files */
   indicatorId: number;
+  /** Pre-filtered files that count towards completion (handles Hybrid Rework Logic) */
+  completionValidFiles: MOVFileResponse[];
 }
 
 export function CompletionFeedbackPanel({
@@ -29,20 +30,13 @@ export function CompletionFeedbackPanel({
   formSchema,
   assessmentId,
   indicatorId,
+  completionValidFiles,
 }: CompletionFeedbackPanelProps) {
-  // Fetch uploaded MOV files for this indicator
-  const { data: filesResponse } = useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles(
-    assessmentId,
-    indicatorId,
-    {
-      query: {
-        // Refetch when window regains focus to ensure fresh data
-        refetchOnWindowFocus: true,
-      },
-    } as any
-  );
+  // Use passed files directly - no need to fetch again
+  // also no need to re-filter for rework as completionValidFiles is already filtered
+  const uploadedFiles = completionValidFiles;
 
-  // Fetch assessment details to get status and rework timestamp
+  // Fetch assessment details to get status (still needed for logic related to status display if any)
   const { data: myAssessmentData } = useGetAssessmentsMyAssessment({
     query: {
       cacheTime: 0,
@@ -50,7 +44,7 @@ export function CompletionFeedbackPanel({
     } as any,
   } as any);
 
-  const uploadedFiles = filesResponse?.files || [];
+
 
   // Get rework status and timestamp
   const assessmentData = myAssessmentData as any;
@@ -103,21 +97,12 @@ export function CompletionFeedbackPanel({
       const isFileField = field.field_type === "file_upload";
 
       if (isFileField) {
-        let fieldFiles = uploadedFiles.filter(
+        // Check if filtered valid files contain an entry for this field
+        const hasValidFile = uploadedFiles.some(
           (file: MOVFileResponse) => file.field_id === field.field_id && !file.deleted_at
         );
 
-        // During rework status, only count files uploaded AFTER rework was requested
-        if (isReworkStatus && reworkRequestedAt) {
-          const reworkDate = new Date(reworkRequestedAt);
-          fieldFiles = fieldFiles.filter((file: MOVFileResponse) => {
-            if (!file.uploaded_at) return false;
-            const uploadDate = new Date(file.uploaded_at);
-            return uploadDate >= reworkDate;
-          });
-        }
-
-        return fieldFiles.length > 0;
+        return hasValidFile;
       }
 
       const value = formValues[field.field_id];

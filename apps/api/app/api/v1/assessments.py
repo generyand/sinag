@@ -234,6 +234,7 @@ async def update_assessment_response(
     if assessment.status not in [
         assessment.status.DRAFT,
         assessment.status.NEEDS_REWORK,
+        assessment.status.REWORK,
     ]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

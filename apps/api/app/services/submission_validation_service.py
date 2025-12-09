@@ -174,29 +174,25 @@ class SubmissionValidationService:
         """
         Validate that all indicators in the assessment are complete.
 
-        During REWORK status:
-        - Indicators WITH feedback: Only count files uploaded AFTER rework_requested_at
-        - Indicators WITHOUT feedback: Count ALL files (old files still valid)
-
-        During MLGOO RE-calibration:
-        - ONLY validate the specific indicators in mlgoo_indicator_ids
-        - Other indicators are NOT checked (they already passed validation)
-
-        Recalculates completion on-the-fly to ensure correct validation during rework.
+        During REWORK status, we Apply "Hybrid Granular Logic":
+        1. If Annotations exist: Invalidate ONLY annotated/old files (Granular). Unannotated old files are KEPT.
+        2. If NO Annotations but YES Comments: Invalidate ALL old files (Strict).
+        3. If NO Feedback: Keep ALL files.
 
         Args:
             assessment_id: The ID of the assessment to validate
             db: SQLAlchemy database session
-            assessment_status: Current assessment status (for rework filtering)
-            rework_requested_at: Timestamp when rework was requested (for filtering)
+            assessment_status: Current assessment status
+            rework_requested_at: Timestamp when rework was requested
             is_mlgoo_recalibration: True if this is an MLGOO RE-calibration
             mlgoo_indicator_ids: List of indicator IDs to validate for MLGOO RE-calibration
 
         Returns:
-            List of indicator names/IDs that are incomplete (empty list if all complete)
+            List of indicator names/IDs that are incomplete
         """
-        from app.db.models.assessment import FeedbackComment, MOVAnnotation
+        from sqlalchemy.orm import joinedload
 
+        from app.db.models.assessment import FeedbackComment
         incomplete_indicators = []
         mlgoo_indicator_ids = mlgoo_indicator_ids or []
 
@@ -206,41 +202,22 @@ class SubmissionValidationService:
             "NEEDS_REWORK",
         )
 
-        # DEBUG: Log what we received
-        self.logger.info(
-            f"[COMPLETENESS DEBUG] assessment_status='{assessment_status}', "
-            f"rework_requested_at={rework_requested_at}, is_rework={is_rework}"
-        )
-
-        # Get all assessment responses for this assessment
-        # Only check indicators that have responses (not all active indicators in system)
         responses = db.query(AssessmentResponse).filter_by(assessment_id=assessment_id).all()
-        self.logger.info(
-            f"[COMPLETENESS DEBUG] Found {len(responses)} responses for assessment {assessment_id}"
-        )
 
-        # Check each response's indicator
         for response in responses:
-            # Get the indicator for this response
             indicator = db.query(Indicator).filter_by(id=response.indicator_id).first()
             if not indicator:
-                self.logger.warning(
-                    f"[COMPLETENESS DEBUG] Response {response.id} has invalid indicator_id {response.indicator_id}"
-                )
                 continue
 
-            # For MLGOO RE-calibration: ONLY validate the specific indicators
-            # Skip all other indicators (they already passed validation)
+            # MLGOO Filter
             if is_mlgoo_recalibration and mlgoo_indicator_ids:
                 if indicator.id not in mlgoo_indicator_ids:
-                    self.logger.info(
-                        f"[COMPLETENESS] Skipping indicator {indicator.id} - not in MLGOO recalibration list"
-                    )
                     continue
 
-            # Get MOV files for this indicator (needed for both normal and rework paths)
+            # Fetch MOVs with annotations
             mov_files = (
                 db.query(MOVFile)
+                .options(joinedload(MOVFile.annotations))
                 .filter(
                     MOVFile.assessment_id == assessment_id,
                     MOVFile.indicator_id == indicator.id,
@@ -249,11 +226,11 @@ class SubmissionValidationService:
                 .all()
             )
 
-            # During REWORK: Apply selective filtering based on feedback
+            # Apply Hybrid Filter
+            valid_movs = mov_files
             if is_rework and rework_requested_at:
-                self.logger.info(
-                    f"[COMPLETENESS DEBUG] Indicator {indicator.id}: Taking REWORK path"
-                )
+                annotation_count = sum(1 for m in mov_files if m.annotations)
+
                 feedback_count = (
                     db.query(FeedbackComment)
                     .filter(
@@ -263,54 +240,40 @@ class SubmissionValidationService:
                     .count()
                 )
 
-                annotation_count = (
-                    db.query(MOVAnnotation)
-                    .join(MOVFile)
-                    .filter(
-                        MOVFile.assessment_id == assessment_id,
-                        MOVFile.indicator_id == indicator.id,
-                    )
-                    .count()
-                )
+                if annotation_count > 0:
+                    # Case 1: Specific Annotations -> Granular Filter
+                    # Keep New files OR Unannotated Old files
+                    valid_movs = []
+                    for m in mov_files:
+                        is_new = m.uploaded_at and m.uploaded_at >= rework_requested_at
+                        has_note = len(m.annotations) > 0
+                        if is_new or (not has_note):
+                            valid_movs.append(m)
+                    self.logger.info(f"Indicator {indicator.id}: Granular Filter Applied (Annotations present)")
 
-                has_feedback = feedback_count > 0 or annotation_count > 0
-
-                # Apply selective filtering based on feedback
-                if has_feedback:
-                    # Only count files uploaded after rework
-                    mov_files = [
-                        m
-                        for m in mov_files
+                elif feedback_count > 0:
+                    # Case 2: General Comment Only -> Strict Filter
+                    # Drop ALL old files
+                    valid_movs = [
+                        m for m in mov_files
                         if m.uploaded_at and m.uploaded_at >= rework_requested_at
                     ]
-                    self.logger.info(
-                        f"[COMPLETENESS] Indicator {indicator.id} has feedback - counting only new files: {len(mov_files)}"
-                    )
-                else:
-                    # No feedback - count all files (old + new)
-                    self.logger.info(
-                        f"[COMPLETENESS] Indicator {indicator.id} has NO feedback - counting all files: {len(mov_files)}"
-                    )
-            else:
-                # Normal path (not rework) - use all MOV files
-                self.logger.info(
-                    f"[COMPLETENESS DEBUG] Indicator {indicator.id}: Taking NORMAL path - {len(mov_files)} MOV files"
-                )
+                    self.logger.info(f"Indicator {indicator.id}: Strict Filter Applied (Comment only)")
 
-            # Use completeness_validation_service to check completion
+                # Case 3: No Feedback -> Keep All
+
+            # Check Completeness
             validation_result = completeness_validation_service.validate_completeness(
                 form_schema=indicator.form_schema,
                 response_data=response.response_data,
-                uploaded_movs=mov_files,
+                uploaded_movs=valid_movs,
             )
+            # Re-map valid_movs for correctness if using simple list
+            # But wait, validate_completeness expects 'uploaded_movs' which are objects with storage_path
+            # so passing 'valid_movs' (MOVFile objects) is correct.
 
-            is_complete = validation_result["is_complete"]
-
-            if not is_complete:
+            if not validation_result["is_complete"]:
                 incomplete_indicators.append(indicator.name)
-                self.logger.info(
-                    f"[INCOMPLETE] Indicator ID {indicator.id}: '{indicator.name}' is INCOMPLETE"
-                )
 
         return incomplete_indicators
 
@@ -324,72 +287,42 @@ class SubmissionValidationService:
         mlgoo_indicator_ids: list[int] = None,
     ) -> list[str]:
         """
-        Validate that all required MOV files (Epic 4.0) are uploaded.
-
-        During REWORK status, the filtering logic is:
-        - Indicators WITH assessor feedback/comments: Only count files uploaded AFTER rework_requested_at
-        - Indicators WITHOUT assessor feedback: Count ALL files (old files are still valid)
-
-        During MLGOO RE-calibration:
-        - ONLY validate the specific indicators in mlgoo_indicator_ids
-        - Other indicators are NOT checked (they already passed validation)
-
-        This allows BLGU users to only re-upload files for indicators the assessor flagged,
-        while keeping the old files for indicators that passed the first review.
-
-        Args:
-            assessment_id: The ID of the assessment to validate
-            db: SQLAlchemy database session
-            assessment_status: Current assessment status (for rework filtering)
-            rework_requested_at: Timestamp when rework was requested (for filtering)
-            is_mlgoo_recalibration: True if this is an MLGOO RE-calibration
-            mlgoo_indicator_ids: List of indicator IDs to validate for MLGOO RE-calibration
-
-        Returns:
-            List of indicator names/IDs missing required MOV files (empty list if all present)
+        Validate that all required MOV files are uploaded (Hybrid Logic).
         """
-        from app.db.models.assessment import FeedbackComment, MOVAnnotation
+        from sqlalchemy.orm import joinedload
+
+        from app.db.models.assessment import FeedbackComment
 
         missing_movs = []
         mlgoo_indicator_ids = mlgoo_indicator_ids or []
+        is_rework = assessment_status and assessment_status.upper() in ("REWORK", "NEEDS_REWORK")
 
-        # Check if we're in REWORK mode
-        is_rework = assessment_status and assessment_status.upper() in (
-            "REWORK",
-            "NEEDS_REWORK",
-        )
-
-        if is_rework and rework_requested_at:
-            self.logger.info(
-                "[MOV VALIDATION] REWORK mode - will apply selective filtering based on assessor feedback"
-            )
-
-        # Get all indicators that have file upload fields
-        # We need to check the form_schema for each indicator to determine
-        # if it requires file uploads
         responses = db.query(AssessmentResponse).filter_by(assessment_id=assessment_id).all()
 
         for response in responses:
-            # Get the indicator
             indicator = db.query(Indicator).filter_by(id=response.indicator_id).first()
-            if not indicator:
-                continue
+            if not indicator: continue
 
-            # For MLGOO RE-calibration: ONLY validate the specific indicators
-            # Skip all other indicators (they already passed validation)
             if is_mlgoo_recalibration and mlgoo_indicator_ids:
-                if indicator.id not in mlgoo_indicator_ids:
-                    self.logger.debug(
-                        f"[MOV VALIDATION] Skipping indicator {indicator.id} - not in MLGOO recalibration list"
-                    )
-                    continue
+                if indicator.id not in mlgoo_indicator_ids: continue
 
-            # Check if this indicator's form schema has file upload fields
             if self._has_file_upload_fields(indicator.form_schema):
-                # During REWORK: Check if this indicator has assessor feedback
-                has_feedback = False
+                # Fetch MOVs with annotations
+                mov_files = (
+                    db.query(MOVFile)
+                    .options(joinedload(MOVFile.annotations))
+                    .filter(
+                        MOVFile.assessment_id == assessment_id,
+                        MOVFile.indicator_id == indicator.id,
+                        MOVFile.deleted_at.is_(None),
+                    )
+                    .all()
+                )
+
+                # Apply Hybrid Filter
+                mov_count = len(mov_files)
                 if is_rework and rework_requested_at:
-                    # Check for feedback comments (non-internal)
+                    annotation_count = sum(1 for m in mov_files if m.annotations)
                     feedback_count = (
                         db.query(FeedbackComment)
                         .filter(
@@ -399,54 +332,25 @@ class SubmissionValidationService:
                         .count()
                     )
 
-                    # Check for MOV annotations
-                    annotation_count = (
-                        db.query(MOVAnnotation)
-                        .join(MOVFile)
-                        .filter(
-                            MOVFile.assessment_id == assessment_id,
-                            MOVFile.indicator_id == indicator.id,
+                    if annotation_count > 0:
+                        # Granular: Keep New OR Unannotated
+                        valid_count = 0
+                        for m in mov_files:
+                            is_new = m.uploaded_at and m.uploaded_at >= rework_requested_at
+                            has_note = len(m.annotations) > 0
+                            if is_new or (not has_note):
+                                valid_count += 1
+                        mov_count = valid_count
+
+                    elif feedback_count > 0:
+                        # Strict: Keep New Only
+                        mov_count = sum(
+                            1 for m in mov_files
+                            if m.uploaded_at and m.uploaded_at >= rework_requested_at
                         )
-                        .count()
-                    )
-
-                    has_feedback = feedback_count > 0 or annotation_count > 0
-
-                    self.logger.debug(
-                        f"[MOV VALIDATION] Indicator {indicator.id} ({indicator.name}): "
-                        f"has_feedback={has_feedback} (comments={feedback_count}, annotations={annotation_count})"
-                    )
-
-                # Build query for MOVFiles for this indicator
-                mov_query = db.query(MOVFile).filter(
-                    MOVFile.assessment_id == assessment_id,
-                    MOVFile.indicator_id == indicator.id,
-                    MOVFile.deleted_at.is_(None),  # Only count non-deleted files
-                )
-
-                # During REWORK: Only filter if indicator has assessor feedback
-                # If no feedback, old files are still valid
-                if is_rework and rework_requested_at and has_feedback:
-                    mov_query = mov_query.filter(MOVFile.uploaded_at >= rework_requested_at)
-                    self.logger.debug(
-                        f"[MOV VALIDATION] Indicator {indicator.id}: Applying rework filter (only new files)"
-                    )
-                elif is_rework and rework_requested_at and not has_feedback:
-                    self.logger.debug(
-                        f"[MOV VALIDATION] Indicator {indicator.id}: No feedback - accepting all files (old+new)"
-                    )
-
-                mov_count = mov_query.count()
-
-                self.logger.debug(
-                    f"[MOV VALIDATION] Indicator {indicator.id} ({indicator.name}): {mov_count} MOV files"
-                )
 
                 if mov_count == 0:
                     missing_movs.append(indicator.name)
-                    self.logger.warning(
-                        f"[MOV VALIDATION] Indicator {indicator.id} ({indicator.name}) is missing MOV files"
-                    )
 
         return missing_movs
 
