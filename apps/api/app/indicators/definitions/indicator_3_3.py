@@ -2,7 +2,7 @@
 Indicator 3.3: Functionality of the Lupong Tagapamayapa (LT)
 
 Governance Area: 3 (Safety, Peace and Order)
-BBI Status: Yes (Lupong Tagapamayapa is one of the 9 mandatory barangay-based institutions)
+BBI Status: NO - Lupong Tagapamayapa is NOT one of the official 7 BBIs per DILG MC 2024-417
 
 IMPORTANT NOTES FOR PHASE 9 (VALIDATION SERVICE):
 
@@ -35,9 +35,9 @@ IMPORTANT NOTES FOR PHASE 9 (VALIDATION SERVICE):
    - Validator verifies training attendance (CY 2020 or later)
    - All four sub-indicators must pass for overall indicator to pass
 
-6. BBI Status Update:
-   - Since this is a BBI indicator (is_bbi=True), passing means LT is "Functional"
-   - Failing means LT is "Non-Functional"
+6. Note on BBI Status:
+   - This indicator is NOT a BBI per DILG MC 2024-417 (is_bbi=False)
+   - The official 7 BBIs are: BDRRMC, BADAC, BPOC, VAW Desk, BDC, BCPC, BESWMC
 """
 
 from app.indicators.base import ChecklistItem, Indicator, SubIndicator
@@ -47,7 +47,7 @@ INDICATOR_3_3 = Indicator(
     code="3.3",
     name="Functionality of the Lupong Tagapamayapa (LT)",
     governance_area_id=3,  # Safety, Peace and Order
-    is_bbi=True,  # Lupong Tagapamayapa is a mandatory BBI
+    is_bbi=False,  # NOT a BBI per DILG MC 2024-417 (official 7 BBIs only)
     sort_order=3,
     description="Functionality of the Lupong Tagapamayapa (LT)",
     children=[

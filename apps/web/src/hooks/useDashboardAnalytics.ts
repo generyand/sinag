@@ -1,9 +1,46 @@
 import { useGetAnalyticsDashboard } from "@sinag/shared";
-import type { DashboardKPIResponse } from "@sinag/shared";
+import type { DashboardKPIResponse, BBIAnalyticsData } from "@sinag/shared";
 import type { BBIFunctionalityData } from "@/components/features/dashboard-analytics/BBIFunctionalityWidget";
 
 export interface DashboardAnalyticsResponse extends DashboardKPIResponse {
   bbi_functionality?: BBIFunctionalityData;
+}
+
+/**
+ * Transform backend BBIAnalyticsData to frontend BBIFunctionalityData format
+ */
+function transformBBIAnalytics(
+  bbiAnalytics: BBIAnalyticsData | null | undefined
+): BBIFunctionalityData | undefined {
+  if (!bbiAnalytics || !bbiAnalytics.bbi_breakdown || bbiAnalytics.bbi_breakdown.length === 0) {
+    return undefined;
+  }
+
+  const { summary, bbi_breakdown } = bbiAnalytics;
+
+  // Transform bbi_breakdown to bbi_statuses
+  const bbi_statuses = bbi_breakdown.map((item) => ({
+    bbi_code: item.bbi_abbreviation,
+    bbi_name: item.bbi_abbreviation,
+    bbi_full_name: item.bbi_name,
+    // Consider "functional" if average compliance >= 50%
+    is_functional: item.average_compliance >= 50,
+    // Contributing indicators not available from aggregated data
+    contributing_indicators: [],
+  }));
+
+  // Calculate functional counts based on highly + moderately functional
+  const functional_count = summary.total_highly_functional + summary.total_moderately_functional;
+  const non_functional_count = summary.total_low_functional;
+  const total = functional_count + non_functional_count;
+
+  return {
+    total_bbis: bbi_breakdown.length,
+    functional_count,
+    non_functional_count,
+    functionality_percentage: total > 0 ? (functional_count / total) * 100 : 0,
+    bbi_statuses,
+  };
 }
 
 /**
@@ -61,7 +98,7 @@ export function useDashboardAnalytics(year?: number | null) {
           calibration_rate: 0,
         },
         total_barangays: rawData.total_barangays || 0,
-        bbi_functionality: rawData.bbi_functionality,
+        bbi_functionality: transformBBIAnalytics(rawData.bbi_analytics),
       }
     : undefined;
 

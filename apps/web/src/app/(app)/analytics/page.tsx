@@ -8,7 +8,7 @@ import {
   type AnalyticsTabId,
 } from "@/components/features/analytics";
 import { YearSelector } from "@/components/features/assessment-year/YearSelector";
-import { BBIFunctionalityWidget } from "@/components/features/dashboard-analytics";
+import { BBIStatusTab, type MunicipalityBBIAnalyticsData } from "@/components/features/reports";
 import {
   AggregatedCapDevCard,
   BarangayStatusTable,
@@ -34,6 +34,8 @@ import {
   useGetMunicipalOverviewDashboard,
   useGetUsersMe,
 } from "@sinag/shared";
+import { api } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
 import { AlertCircle, BarChart3, Filter, RefreshCw } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -92,6 +94,24 @@ export default function AnalyticsPage() {
     error: municipalError,
   } = useGetMunicipalOverviewDashboard({
     year: selectedYear ?? undefined,
+  });
+
+  // BBI Analytics data hook for municipality-wide BBI status matrix
+  // OPTIMIZED: Long cache times since BBI data is relatively stable
+  const { data: bbiAnalytics, isLoading: isBBILoading } = useQuery<MunicipalityBBIAnalyticsData>({
+    queryKey: ["bbis", "analytics", "municipality", selectedYear],
+    queryFn: async () => {
+      const response = await api.get(`/api/v1/bbis/analytics/municipality`, {
+        params: { year: selectedYear },
+      });
+      return response.data as MunicipalityBBIAnalyticsData;
+    },
+    enabled: !!selectedYear && activeTab === "bbi",
+    // PERFORMANCE: BBI data doesn't change frequently
+    staleTime: 10 * 60 * 1000, // 10 minutes - data is stable
+    gcTime: 30 * 60 * 1000, // 30 minutes - matches backend cache TTL
+    refetchOnWindowFocus: false, // Don't refetch on tab focus for analytics
+    placeholderData: (previousData: MunicipalityBBIAnalyticsData | undefined) => previousData, // Keep showing old data while fetching
   });
 
   // Handler for viewing CapDev insights - navigates to submissions detail page
@@ -391,12 +411,15 @@ export default function AnalyticsPage() {
               />
             )}
 
-            {/* BBI Tab */}
-            {activeTab === "bbi" && dashboardData && dashboardData.bbi_functionality && (
-              <BBIFunctionalityWidget
-                data={dashboardData.bbi_functionality}
-                barangays={municipalData?.barangay_statuses?.barangays}
-              />
+            {/* BBI Tab - Municipality-wide BBI Status Matrix */}
+            {activeTab === "bbi" && (
+              <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-sm p-6">
+                <BBIStatusTab
+                  data={bbiAnalytics ?? null}
+                  isLoading={isBBILoading}
+                  municipalityName="Sulop"
+                />
+              </div>
             )}
 
             {/* Table Tab - Verdict Results (formerly Detailed Results) */}

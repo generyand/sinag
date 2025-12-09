@@ -33,6 +33,10 @@ cd apps/api
 alembic revision --autogenerate -m "description"
 alembic upgrade head
 
+# Migration health check (IMPORTANT - run after creating migrations)
+./scripts/test-migration.sh              # Test all migrations
+./scripts/test-migration.sh <revision>   # Test specific migration
+
 # Testing
 pnpm test                    # All tests
 cd apps/api && pytest        # Backend only
@@ -84,11 +88,12 @@ See `docs/architecture/project-structure.md` for full structure.
 
 1. **Model** (`app/db/models/`): Define SQLAlchemy model
 2. **Migration**: `alembic revision --autogenerate -m "desc"` → `alembic upgrade head`
-3. **Schema** (`app/schemas/`): Define Pydantic models
-4. **Service** (`app/services/`): Implement business logic
-5. **Router** (`app/api/v1/`): Expose via API (keep thin!)
-6. **Generate**: `pnpm generate-types`
-7. **Test** (`tests/api/v1/`): Write pytest tests
+3. **Test Migration**: `./scripts/test-migration.sh` (IMPORTANT!)
+4. **Schema** (`app/schemas/`): Define Pydantic models
+5. **Service** (`app/services/`): Implement business logic
+6. **Router** (`app/api/v1/`): Expose via API (keep thin!)
+7. **Generate**: `pnpm generate-types`
+8. **Test** (`tests/api/v1/`): Write pytest tests
 
 ### Adding a Frontend Feature
 
@@ -153,6 +158,34 @@ See `docs/architecture/user-roles.md` for details.
 | `intelligence_service` | AI/Gemini integration   |
 | `mlgoo_service`        | MLGOO approval workflow |
 | `bbi_service`          | BBI functionality       |
+
+## Database Migrations (IMPORTANT)
+
+**ALWAYS test migrations before committing!** Use the migration health check:
+
+```bash
+./scripts/test-migration.sh              # Test all pending migrations
+./scripts/test-migration.sh <revision>   # Test specific migration
+```
+
+Or use the slash command: `/test-migration`
+
+### Migration Best Practices
+
+1. **Test upgrade AND downgrade**: Migrations must be reversible
+2. **Avoid data loss**: Downgrade should preserve data where possible
+3. **Check constraints**: Foreign keys, unique, NOT NULL constraints
+4. **Use transactions**: Wrap data migrations in transactions
+5. **Handle edge cases**: Empty tables, NULL values, existing data
+
+### Common Migration Issues
+
+| Issue                | Solution                                               |
+| -------------------- | ------------------------------------------------------ |
+| Multiple heads       | `alembic merge heads -m "merge"`                       |
+| Missing dependency   | Check `down_revision` in migration file                |
+| Constraint violation | Add data migration before schema change                |
+| Trailing whitespace  | Use `op.execute()` with parentheses, not triple quotes |
 
 ## Key Patterns
 

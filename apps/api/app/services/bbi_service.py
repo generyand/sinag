@@ -25,7 +25,8 @@ from loguru import logger
 from sqlalchemy import and_
 from sqlalchemy.orm import Session, joinedload
 
-from app.db.enums import BBIStatus, ValidationStatus
+from app.core.cache import CACHE_TTL_INTERNAL_ANALYTICS, cache
+from app.db.enums import AssessmentStatus, BBIStatus, ValidationStatus
 from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.bbi import BBI, BBIResult
 from app.db.models.governance_area import ChecklistItem, GovernanceArea, Indicator
@@ -701,6 +702,8 @@ class BBIService:
         assessment_year = assessment.assessment_year
 
         # Find all BBI indicators (is_bbi=True)
+        # Note: Only the official 7 BBIs per DILG MC 2024-417 should have is_bbi=True:
+        # BDRRMC (2.1), BADAC (3.1), BPOC (3.2), VAW Desk (4.1), BDC (4.3), BCPC (4.5), BESWMC (6.1)
         bbi_indicators = (
             db.query(Indicator)
             .filter(
@@ -1122,6 +1125,13 @@ class BBIService:
         - Per-BBI breakdown with distribution counts
         - Overall summary statistics
 
+        IMPORTANT: Only includes data from COMPLETED assessments to ensure
+        accuracy and consistency. Assessments in other states (DRAFT, SUBMITTED,
+        IN_REVIEW, etc.) are excluded from the analytics.
+
+        PERFORMANCE: Results are cached in Redis for 15 minutes to reduce
+        database load. Cache is invalidated when new BBI results are calculated.
+
         Args:
             db: Database session
             year: Assessment year
@@ -1165,15 +1175,32 @@ class BBIService:
                 }
             }
         """
+        # Check cache first
+        cache_key = f"bbi_municipality_analytics:year_{year}"
+        if cache.is_available:
+            cached_data = cache.get(cache_key)
+            if cached_data is not None:
+                logger.info(f"🎯 BBI municipality analytics cache HIT for {cache_key}")
+                return cached_data
+
+        logger.info(f"📊 Computing BBI municipality analytics (cache miss for {cache_key})")
+
         # Get all BBIResults for the year with eager loading
+        # IMPORTANT: Only include results from COMPLETED assessments
         results = (
             db.query(BBIResult)
+            .join(Assessment, BBIResult.assessment_id == Assessment.id)
             .options(
                 joinedload(BBIResult.bbi),
                 joinedload(BBIResult.barangay),
                 joinedload(BBIResult.indicator),
             )
-            .filter(BBIResult.assessment_year == year)
+            .filter(
+                and_(
+                    BBIResult.assessment_year == year,
+                    Assessment.status == AssessmentStatus.COMPLETED,
+                )
+            )
             .all()
         )
 
@@ -1271,13 +1298,23 @@ class BBIService:
             "overall_non_functional": total_non,
         }
 
-        return {
+        result = {
             "assessment_year": year,
             "bbis": bbis,
             "barangays": barangays,
             "bbi_distributions": bbi_distributions,
             "summary": summary,
         }
+
+        # Cache the result for 15 minutes
+        if cache.is_available:
+            try:
+                cache.set(cache_key, result, ttl=CACHE_TTL_INTERNAL_ANALYTICS)
+                logger.info(f"💾 Cached BBI municipality analytics for {cache_key}")
+            except Exception as e:
+                logger.warning(f"⚠️ Failed to cache BBI municipality analytics: {e}")
+
+        return result
 
 
 # Singleton instance
