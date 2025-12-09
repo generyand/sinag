@@ -40,7 +40,7 @@ export const ANALYTICS_TABS: readonly AnalyticsTab[] = [
   },
   {
     id: "gar",
-    label: "GAR Report",
+    label: "GAR",
     icon: FileSpreadsheet,
     description: "Governance Assessment Report",
   },

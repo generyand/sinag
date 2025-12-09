@@ -283,7 +283,7 @@ export function SulopBarangayMapIntegrated({
             <div className="relative w-full aspect-[2.15/1] min-h-[250px] md:min-h-0 bg-gray-50 dark:bg-gray-900 rounded-sm overflow-hidden border-2 border-gray-200 dark:border-gray-700 shadow-sm">
               {/* Title Overlay */}
               <div className="absolute top-4 left-0 right-0 text-center pointer-events-none z-10 w-full px-4">
-                <h3 className="text-xs md:text-lg lg:text-xl font-semibold text-gray-900 dark:text-gray-100 bg-white/50 dark:bg-black/50 backdrop-blur-sm py-1 px-3 rounded-full inline-block mx-auto shadow-sm">
+                <h3 className="text-xs md:text-lg lg:text-xl font-semibold text-gray-900 dark:text-gray-100 bg-white/50 dark:bg-black/50 backdrop-blur-sm py-1 px-3 rounded-full inline-block mx-auto">
                   {displayedBarangay?.name || "Sulop, Davao del Sur"}
                 </h3>
               </div>

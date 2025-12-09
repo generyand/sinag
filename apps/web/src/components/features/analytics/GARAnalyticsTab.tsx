@@ -212,7 +212,7 @@ export function GARAnalyticsTab({ year }: GARAnalyticsTabProps) {
             Select an Assessment
           </h3>
           <p className="text-[var(--muted-foreground)]">
-            Choose a completed assessment from the dropdown above to view its GAR report for {year}.
+            Choose a completed assessment from the dropdown above to view its GAR for {year}.
           </p>
         </div>
       ) : loadingGar ? (

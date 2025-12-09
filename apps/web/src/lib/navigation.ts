@@ -14,7 +14,7 @@ export interface NavItem {
 export const mlgooNavigation: NavItem[] = [
   { name: "Dashboard", href: "/mlgoo/dashboard", icon: "home" },
   { name: "Submission Queue", href: "/mlgoo/submissions", icon: "clipboard" },
-  { name: "GAR Reports", href: "/mlgoo/gar", icon: "clipboard" },
+
   { name: "Analytics & Reports", href: "/analytics", icon: "chart" },
   { name: "Assessment Cycles", href: "/mlgoo/cycles", icon: "calendar" },
   { name: "User Management", href: "/user-management", icon: "users" },
