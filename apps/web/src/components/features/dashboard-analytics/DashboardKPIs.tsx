@@ -1,17 +1,17 @@
 "use client";
 
-import type {
-  ComplianceRate,
-  AreaBreakdown,
-  FailedIndicator,
-  BarangayRanking,
-} from "@sinag/shared";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AnalyticsEmptyState } from "@/components/features/analytics";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { CheckCircle2, XCircle, AlertCircle, TrendingUp, TrendingDown, Info } from "lucide-react";
-import { AnalyticsEmptyState } from "@/components/features/analytics";
+import type {
+  AreaBreakdown,
+  BarangayRanking,
+  ComplianceRate,
+  FailedIndicator,
+} from "@sinag/shared";
+import { AlertCircle, CheckCircle2, Info, TrendingDown, TrendingUp, XCircle } from "lucide-react";
 
 /**
  * Returns semantic color based on percentage value.
@@ -335,7 +335,7 @@ export function TopFailedIndicatorsCard({ data }: TopFailedIndicatorsCardProps) 
 }
 
 /**
- * BarangayRankingsCard - Shows barangays ranked by compliance score
+ * BarangayRankingsCard - Shows barangays ranked by compliance rate
  */
 interface BarangayRankingsCardProps {
   data: BarangayRanking[];
@@ -352,7 +352,7 @@ export function BarangayRankingsCard({ data }: BarangayRankingsCardProps) {
           <TrendingUp className="h-5 w-5 text-blue-600" aria-hidden="true" />
           Barangay Rankings
         </CardTitle>
-        <CardDescription>Top performing barangays by compliance score</CardDescription>
+        <CardDescription>Top performing barangays by compliance rate</CardDescription>
       </CardHeader>
       <CardContent>
         {topRankings.length === 0 ? (

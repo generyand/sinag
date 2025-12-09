@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AnalyticsEmptyState } from "@/components/features/analytics";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -14,22 +13,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Search,
-  Building,
-  CheckCircle,
-  XCircle,
-  Lightbulb,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-  ExternalLink,
-} from "lucide-react";
-import { CapDevStatusBadge } from "../capdev";
-import { AnalyticsEmptyState } from "@/components/features/analytics";
-import type { BarangayStatusList, BarangayAssessmentStatus } from "@sinag/shared";
+import type { BarangayAssessmentStatus, BarangayStatusList } from "@sinag/shared";
+import { ArrowDown, ArrowUp, ArrowUpDown, Search } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useMemo, useState } from "react";
 
-type SortField = "barangay_name" | "status" | "compliance_status" | "overall_score";
+interface ExtendedBarangayAssessmentStatus extends BarangayAssessmentStatus {
+  governance_areas_passed?: number;
+  total_governance_areas?: number;
+  pass_count?: number;
+  conditional_count?: number;
+  total_responses?: number;
+}
+
+type SortField = "barangay_name" | "status" | "governance_areas" | "indicators";
 type SortDirection = "asc" | "desc";
 
 interface BarangayStatusTableProps {
@@ -112,15 +109,30 @@ export function BarangayStatusTable({
   const [sortField, setSortField] = useState<SortField>("barangay_name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
+  const hasData = (data?.barangays?.length ?? 0) > 0;
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
   // Filter and sort barangays
   const filteredBarangays = useMemo(() => {
     if (!data?.barangays) return [];
 
-    let result = data.barangays.filter((barangay: BarangayAssessmentStatus) => {
-      const matchesSearch = barangay.barangay_name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === "all" || barangay.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
+    let result = data.barangays
+      .map((b) => b as ExtendedBarangayAssessmentStatus)
+      .filter((barangay) => {
+        const matchesSearch = barangay.barangay_name
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+        const matchesStatus = statusFilter === "all" || barangay.status === statusFilter;
+        return matchesSearch && matchesStatus;
+      });
 
     // Sort
     result = [...result].sort((a, b) => {
@@ -130,17 +142,17 @@ export function BarangayStatusTable({
           comparison = a.barangay_name.localeCompare(b.barangay_name);
           break;
         case "status":
+          // Simplified priority: Pass/Fail (1), In Progress (2), Others (3)
+          // For now reusing getStatusPriority but it might need tweaking for merged status
           comparison = getStatusPriority(a.status) - getStatusPriority(b.status);
           break;
-        case "compliance_status":
-          const aCompliance = a.compliance_status ?? "";
-          const bCompliance = b.compliance_status ?? "";
-          comparison = aCompliance.localeCompare(bCompliance);
+        case "governance_areas":
+          comparison = (a.governance_areas_passed || 0) - (b.governance_areas_passed || 0);
           break;
-        case "overall_score":
-          const aScore = a.overall_score ?? -1;
-          const bScore = b.overall_score ?? -1;
-          comparison = aScore - bScore;
+        case "indicators":
+          const aInd = (a.pass_count || 0) + (a.conditional_count || 0);
+          const bInd = (b.pass_count || 0) + (b.conditional_count || 0);
+          comparison = aInd - bInd;
           break;
       }
       return sortDirection === "asc" ? comparison : -comparison;
@@ -149,37 +161,42 @@ export function BarangayStatusTable({
     return result;
   }, [data?.barangays, searchTerm, statusFilter, sortField, sortDirection]);
 
-  const getStatusBadge = (status: string) => {
-    const config = STATUS_CONFIG[status] || {
-      label: status,
-      className: "border border-[var(--border)]",
-    };
-    return <Badge className={`rounded-sm ${config.className}`}>{config.label}</Badge>;
-  };
+  const getUnifiedStatusBadge = (barangay: ExtendedBarangayAssessmentStatus) => {
+    // Check for Pass/Fail first (Completed)
+    if (barangay.status === "COMPLETED") {
+      if (barangay.compliance_status === "PASSED") {
+        return (
+          <Badge className="bg-green-100 text-green-800 rounded-sm hover:bg-green-200 border-0">
+            Pass
+          </Badge>
+        );
+      }
+      if (barangay.compliance_status === "FAILED") {
+        return (
+          <Badge className="bg-red-100 text-red-800 rounded-sm hover:bg-red-200 border-0">
+            Fail
+          </Badge>
+        );
+      }
+    }
 
-  const getComplianceBadge = (status: string | null) => {
-    if (!status) return null;
-    if (status === "PASSED") {
+    // Default to "In Progress" style for others mostly
+    // or map specific statuses
+    const label = "In Progress";
+    // You might want to distinguish "No Assessment" or "Draft"
+    if (barangay.status === "NO_ASSESSMENT" || barangay.status === "NO_USER_ASSIGNED") {
       return (
-        <Badge className="bg-green-100 text-green-800 rounded-sm">
-          <CheckCircle className="h-3 w-3 mr-1" aria-hidden="true" />
-          Passed
+        <Badge variant="outline" className="text-gray-500 border-gray-300">
+          No Data
         </Badge>
       );
     }
+
     return (
-      <Badge className="bg-red-100 text-red-800 rounded-sm">
-        <XCircle className="h-3 w-3 mr-1" aria-hidden="true" />
-        Failed
+      <Badge className="bg-yellow-100 text-yellow-800 rounded-sm hover:bg-yellow-200 border-0">
+        {label}
       </Badge>
     );
-  };
-
-  const getScoreColor = (score: number | null | undefined) => {
-    if (score === null || score === undefined) return "";
-    if (score >= 70) return "text-green-600";
-    if (score >= 50) return "text-yellow-600";
-    return "text-red-600";
   };
 
   // Handle view details - navigate to submission detail
@@ -197,18 +214,10 @@ export function BarangayStatusTable({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Building className="h-5 w-5" aria-hidden="true" />
-          Barangay Assessment Status
-        </CardTitle>
-        {hasData && (
-          <p className="text-sm text-[var(--muted-foreground)]">
-            {data.total_count} barangays total
-            {filteredBarangays.length !== data.total_count && (
-              <span className="ml-1">({filteredBarangays.length} shown)</span>
-            )}
-          </p>
-        )}
+        <CardTitle className="flex items-center gap-2">Assessment Data</CardTitle>
+        <p className="text-sm text-[var(--muted-foreground)]">
+          Detailed assessment results for all barangays
+        </p>
       </CardHeader>
       <CardContent>
         {!hasData ? (
@@ -299,104 +308,35 @@ export function BarangayStatusTable({
                         aria-label={`Sort by status, currently ${sortField === "status" ? sortDirection : "unsorted"}`}
                       >
                         Status
-                        <SortIndicator
-                          field="status"
-                          sortField={sortField}
-                          sortDirection={sortDirection}
-                        />
                       </button>
                     </TableHead>
-                    <TableHead>
-                      <button
-                        className="flex items-center font-medium hover:text-[var(--foreground)] transition-colors"
-                        onClick={() => handleSort("compliance_status")}
-                        aria-label={`Sort by compliance, currently ${sortField === "compliance_status" ? sortDirection : "unsorted"}`}
-                      >
-                        Compliance
-                        <SortIndicator
-                          field="compliance_status"
-                          sortField={sortField}
-                          sortDirection={sortDirection}
-                        />
-                      </button>
-                    </TableHead>
-                    <TableHead>
-                      <button
-                        className="flex items-center font-medium hover:text-[var(--foreground)] transition-colors"
-                        onClick={() => handleSort("overall_score")}
-                        aria-label={`Sort by score, currently ${sortField === "overall_score" ? sortDirection : "unsorted"}`}
-                      >
-                        Score
-                        <SortIndicator
-                          field="overall_score"
-                          sortField={sortField}
-                          sortDirection={sortDirection}
-                        />
-                      </button>
-                    </TableHead>
-                    <TableHead>CapDev</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="text-right">Governance Areas Passed</TableHead>
+                    <TableHead className="text-right">Indicators Passed</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredBarangays.map((barangay: BarangayAssessmentStatus) => (
+                  {filteredBarangays.map((barangay) => (
                     <TableRow key={barangay.barangay_id}>
                       <TableCell className="font-medium text-[var(--foreground)]">
-                        {barangay.barangay_name}
+                        <button
+                          onClick={() =>
+                            barangay.assessment_id && handleViewDetails(barangay.assessment_id)
+                          }
+                          className="hover:underline focus:outline-none"
+                        >
+                          {barangay.barangay_name}
+                        </button>
                       </TableCell>
-                      <TableCell>{getStatusBadge(barangay.status)}</TableCell>
-                      <TableCell>
-                        {barangay.compliance_status ? (
-                          getComplianceBadge(barangay.compliance_status)
-                        ) : (
-                          <span className="text-[var(--muted-foreground)] text-sm">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {barangay.overall_score !== null && barangay.overall_score !== undefined ? (
-                          <span className={`font-medium ${getScoreColor(barangay.overall_score)}`}>
-                            {barangay.overall_score.toFixed(1)}%
-                          </span>
-                        ) : (
-                          <span className="text-[var(--muted-foreground)] text-sm">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {barangay.has_capdev_insights ? (
-                          <CapDevStatusBadge status={barangay.capdev_status || "completed"} />
-                        ) : (
-                          <span className="text-[var(--muted-foreground)] text-sm">—</span>
-                        )}
+                      <TableCell>{getUnifiedStatusBadge(barangay)}</TableCell>
+                      <TableCell className="text-right">
+                        {barangay.governance_areas_passed !== undefined
+                          ? `${barangay.governance_areas_passed}/${barangay.total_governance_areas}`
+                          : "-"}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          {barangay.assessment_id && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleViewDetails(barangay.assessment_id!)}
-                              className="rounded-sm"
-                              aria-label={`View details for ${barangay.barangay_name}`}
-                            >
-                              <ExternalLink className="h-4 w-4 mr-1" aria-hidden="true" />
-                              View
-                            </Button>
-                          )}
-                          {barangay.assessment_id &&
-                            barangay.has_capdev_insights &&
-                            onViewCapDev && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => onViewCapDev(barangay.assessment_id!)}
-                                className="rounded-sm"
-                                aria-label={`View CapDev insights for ${barangay.barangay_name}`}
-                              >
-                                <Lightbulb className="h-4 w-4 mr-1" aria-hidden="true" />
-                                CapDev
-                              </Button>
-                            )}
-                        </div>
+                        {barangay.total_responses
+                          ? `${(barangay.pass_count || 0) + (barangay.conditional_count || 0)}/${barangay.total_responses}`
+                          : "-"}
                       </TableCell>
                     </TableRow>
                   ))}

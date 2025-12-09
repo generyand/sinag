@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -9,7 +10,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 
 interface OfficialPerformanceData {
   totalBarangays: number;
@@ -157,7 +157,7 @@ export function OfficialPerformanceWidget({ data, period }: OfficialPerformanceW
                 <TableHeader>
                   <TableRow>
                     <TableHead>Barangay</TableHead>
-                    <TableHead>Score</TableHead>
+                    <TableHead>Compliance Rate</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>

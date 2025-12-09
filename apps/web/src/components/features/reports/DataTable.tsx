@@ -1,16 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import {
-  useReactTable,
-  getCoreRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  flexRender,
-  SortingState,
-  ColumnDef,
-} from "@tanstack/react-table";
+import { AnalyticsEmptyState } from "@/components/features/analytics";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -19,15 +11,30 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { TableData, AssessmentRow } from "@sinag/shared";
-import { ChevronUp, ChevronDown, ChevronsUpDown, Search } from "lucide-react";
-import { AnalyticsEmptyState } from "@/components/features/analytics";
+import { AssessmentRow, TableData } from "@sinag/shared";
+import {
+  ColumnDef,
+  SortingState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import { ChevronDown, ChevronUp, ChevronsUpDown, Search } from "lucide-react";
+import { useState } from "react";
+
+interface ExtendedAssessmentRow extends AssessmentRow {
+  governance_areas_passed?: number | null;
+  total_governance_areas?: number | null;
+  indicators_passed?: number | null;
+  total_indicators?: number | null;
+}
 
 interface AssessmentDataTableProps {
   data: TableData;
-  onRowClick?: (row: AssessmentRow) => void;
+  onRowClick?: (row: ExtendedAssessmentRow) => void;
 }
 
 // Helper function to get status badge color
@@ -58,17 +65,11 @@ export function AssessmentDataTable({ data, onRowClick }: AssessmentDataTablePro
   const rows = data.rows || [];
 
   // Column definitions
-  const columns: ColumnDef<AssessmentRow>[] = [
+  const columns: ColumnDef<ExtendedAssessmentRow>[] = [
     {
       accessorKey: "barangay_name",
       header: "Barangay Name",
       cell: ({ row }) => <div className="font-medium">{row.getValue("barangay_name")}</div>,
-      enableSorting: true,
-    },
-    {
-      accessorKey: "governance_area",
-      header: "Governance Area",
-      cell: ({ row }) => <div className="text-sm">{row.getValue("governance_area")}</div>,
       enableSorting: true,
     },
     {
@@ -89,22 +90,41 @@ export function AssessmentDataTable({ data, onRowClick }: AssessmentDataTablePro
       enableSorting: true,
     },
     {
-      accessorKey: "score",
-      header: "Score",
-      cell: ({ row }) => {
-        const score = row.getValue("score") as number | null | undefined;
-        return (
-          <div className={`text-sm font-semibold ${getScoreColor(score)}`}>
-            {score !== null && score !== undefined ? `${score.toFixed(1)}%` : "N/A"}
-          </div>
-        );
+      id: "governance_areas",
+      header: () => <div className="flex w-full justify-end">Governance Areas Passed</div>,
+      accessorFn: (row) => {
+        if (
+          row.governance_areas_passed !== undefined &&
+          row.governance_areas_passed !== null &&
+          row.total_governance_areas !== undefined &&
+          row.total_governance_areas !== null
+        ) {
+          return `${row.governance_areas_passed}/${row.total_governance_areas}`;
+        }
+        return "-";
       },
-      enableSorting: true,
+      cell: ({ row }) => <div className="text-right">{row.getValue("governance_areas")}</div>,
+    },
+    {
+      id: "indicators",
+      header: () => <div className="flex w-full justify-end">Indicators Passed</div>,
+      accessorFn: (row) => {
+        if (
+          row.indicators_passed !== undefined &&
+          row.indicators_passed !== null &&
+          row.total_indicators !== undefined &&
+          row.total_indicators !== null
+        ) {
+          return `${row.indicators_passed}/${row.total_indicators}`;
+        }
+        return "-";
+      },
+      cell: ({ row }) => <div className="text-right">{row.getValue("indicators")}</div>,
     },
   ];
 
   const table = useReactTable({
-    data: rows,
+    data: rows as ExtendedAssessmentRow[],
     columns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),

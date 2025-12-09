@@ -1,15 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useAuthStore } from "@/store/useAuthStore";
 import {
-  useGetUsersMe,
-  useGetAnalyticsReports,
-  useGetMunicipalOverviewDashboard,
-} from "@sinag/shared";
+  ANALYTICS_TABS,
+  ActiveFilterPills,
+  useAnalyticsFilters,
+  type AnalyticsTabId,
+} from "@/components/features/analytics";
+import { YearSelector } from "@/components/features/assessment-year/YearSelector";
+import { BBIFunctionalityWidget } from "@/components/features/dashboard-analytics";
+import {
+  AggregatedCapDevCard,
+  BarangayStatusTable,
+  ComplianceSummaryCard,
+  GovernanceAreaPerformanceCard,
+  TopFailingIndicatorsCard,
+} from "@/components/features/municipal-overview";
+import { ExportControls, VisualizationGrid } from "@/components/features/reports";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -17,31 +24,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, RefreshCw, Filter, BarChart3 } from "lucide-react";
-import { YearSelector } from "@/components/features/assessment-year/YearSelector";
 import { useDashboardAnalytics } from "@/hooks/useDashboardAnalytics";
+import { useAuthStore } from "@/store/useAuthStore";
 import {
-  ComplianceRateCard,
-  CompletionStatusCard,
-  AreaBreakdownCard,
-  TopFailedIndicatorsCard,
-  BBIFunctionalityWidget,
-} from "@/components/features/dashboard-analytics";
-import { VisualizationGrid, ExportControls } from "@/components/features/reports";
-import {
-  ComplianceSummaryCard,
-  GovernanceAreaPerformanceCard,
-  TopFailingIndicatorsCard,
-  AggregatedCapDevCard,
-  BarangayStatusTable,
-} from "@/components/features/municipal-overview";
-import {
-  useAnalyticsFilters,
-  ActiveFilterPills,
-  ANALYTICS_TABS,
-  type AnalyticsTabId,
-} from "@/components/features/analytics";
+  useGetAnalyticsReports,
+  useGetMunicipalOverviewDashboard,
+  useGetUsersMe,
+} from "@sinag/shared";
+import { AlertCircle, BarChart3, Filter, RefreshCw } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function AnalyticsPage() {
   const router = useRouter();
@@ -381,29 +375,6 @@ export default function AnalyticsPage() {
               </>
             )}
 
-            {/* KPIs Tab - Original KPI Cards */}
-            {activeTab === "kpis" && dashboardData && (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <ComplianceRateCard data={dashboardData.overall_compliance_rate} />
-                  <CompletionStatusCard data={dashboardData.completion_status} />
-                  <TopFailedIndicatorsCard data={dashboardData.top_failed_indicators || []} />
-                </div>
-                <div className="grid grid-cols-1 gap-6">
-                  <AreaBreakdownCard data={dashboardData.area_breakdown || []} />
-                </div>
-              </>
-            )}
-
-            {/* Charts Tab - Bar, Pie, Line Charts */}
-            {activeTab === "charts" && reportsData && (
-              <VisualizationGrid
-                data={reportsData}
-                isLoading={isReportsLoading}
-                showOnly={["bar", "pie", "line"]}
-              />
-            )}
-
             {/* Map Tab - Geographic Distribution */}
             {activeTab === "map" && reportsData && (
               <VisualizationGrid
@@ -413,18 +384,21 @@ export default function AnalyticsPage() {
               />
             )}
 
-            {/* Table Tab - Detailed Results */}
+            {/* BBI Tab */}
+            {activeTab === "bbi" && dashboardData && dashboardData.bbi_functionality && (
+              <BBIFunctionalityWidget
+                data={dashboardData.bbi_functionality}
+                barangays={municipalData?.barangay_statuses?.barangays}
+              />
+            )}
+
+            {/* Table Tab - Verdict Results (formerly Detailed Results) */}
             {activeTab === "table" && reportsData && (
               <VisualizationGrid
                 data={reportsData}
                 isLoading={isReportsLoading}
                 showOnly={["table"]}
               />
-            )}
-
-            {/* BBI Tab */}
-            {activeTab === "bbi" && dashboardData && dashboardData.bbi_functionality && (
-              <BBIFunctionalityWidget data={dashboardData.bbi_functionality} />
             )}
           </div>
         </div>

@@ -73,7 +73,9 @@ class MLGOOService:
             db.query(Assessment)
             .options(
                 joinedload(Assessment.blgu_user).joinedload(User.barangay),
-                selectinload(Assessment.responses).joinedload(AssessmentResponse.indicator),
+                selectinload(Assessment.responses)
+                .joinedload(AssessmentResponse.indicator)
+                .joinedload(Indicator.governance_area),
             )
             .filter(Assessment.status.in_(statuses))
             .order_by(Assessment.updated_at.desc())
@@ -106,11 +108,44 @@ class MLGOOService:
                     elif status_upper == "CONDITIONAL":
                         conditional_count += 1
 
-            # Calculate overall score from pass/total ratio
+            # Calculate overall score and governance area stats
             total_responses = len(assessment.responses)
             overall_score = (
-                round((pass_count / total_responses * 100), 2) if total_responses > 0 else None
+                round(((pass_count + conditional_count) / total_responses * 100), 2)
+                if total_responses > 0
+                else None
             )
+
+            # Group by governance area to determine passed areas
+            areas_data = {}
+            for response in assessment.responses:
+                if not response.indicator or not response.indicator.governance_area:
+                    continue
+
+                area_id = response.indicator.governance_area_id
+                if area_id not in areas_data:
+                    areas_data[area_id] = {"pass": 0, "total": 0}
+
+                areas_data[area_id]["total"] += 1
+
+                # Check status
+                if response.validation_status:
+                    status_val = (
+                        response.validation_status.value
+                        if hasattr(response.validation_status, "value")
+                        else response.validation_status
+                    )
+                    status_upper = status_val.upper() if isinstance(status_val, str) else status_val
+                    if status_upper in ["PASS", "CONDITIONAL"]:
+                        areas_data[area_id]["pass"] += 1
+
+            # Count passed governance areas (using >= 70% threshold as per overall score logic)
+            governance_areas_passed = 0
+            for area_stats in areas_data.values():
+                if area_stats["total"] > 0:
+                    area_score = (area_stats["pass"] / area_stats["total"]) * 100
+                    if area_score >= 70:
+                        governance_areas_passed += 1
 
             results.append(
                 {
@@ -135,6 +170,8 @@ class MLGOOService:
                     "can_recalibrate": assessment.can_request_mlgoo_recalibration,
                     "mlgoo_recalibration_count": assessment.mlgoo_recalibration_count,
                     "is_mlgoo_recalibration": assessment.is_mlgoo_recalibration,
+                    "governance_areas_passed": governance_areas_passed,
+                    "total_governance_areas": len(areas_data),
                 }
             )
 
@@ -544,12 +581,15 @@ class MLGOOService:
 
         # Calculate overall score from governance area data
         total_pass = sum(area["pass_count"] for area in areas_data.values())
+        total_conditional = sum(area["conditional_count"] for area in areas_data.values())
         total_indicators = sum(
             area["pass_count"] + area["fail_count"] + area["conditional_count"]
             for area in areas_data.values()
         )
         overall_score = (
-            round((total_pass / total_indicators * 100), 2) if total_indicators > 0 else None
+            round(((total_pass + total_conditional) / total_indicators * 100), 2)
+            if total_indicators > 0
+            else None
         )
 
         return {

@@ -268,6 +268,14 @@ class AssessmentRow(BaseModel):
     governance_area: str = Field(..., description="Governance area code")
     status: str = Field(..., description="Assessment status (Pass/Fail/In Progress)")
     score: float | None = Field(None, description="Compliance score", ge=0, le=100)
+    governance_areas_passed: int | None = Field(
+        None, description="Number of governance areas passed"
+    )
+    total_governance_areas: int | None = Field(None, description="Total number of governance areas")
+    indicators_passed: int | None = Field(
+        None, description="Number of indicators passed (Pass/Conditional)"
+    )
+    total_indicators: int | None = Field(None, description="Total number of indicators")
 
 
 class TableData(BaseModel):

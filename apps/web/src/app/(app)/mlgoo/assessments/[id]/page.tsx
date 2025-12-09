@@ -71,7 +71,7 @@ export default async function AssessmentDetailPage({ params }: PageProps) {
             <div className="flex items-center space-x-4">
               <div className="text-right">
                 <div className="text-2xl font-bold text-gray-900">{assessment.score}%</div>
-                <div className="text-sm text-gray-500">Overall Score</div>
+                <div className="text-sm text-gray-500">Overall Compliance Rate</div>
               </div>
               <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
                 Completed
@@ -84,7 +84,7 @@ export default async function AssessmentDetailPage({ params }: PageProps) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Score Breakdown */}
             <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Score Breakdown</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Compliance Rate Breakdown</h3>
               <div className="space-y-4">
                 {assessment.categories.map((category) => (
                   <div key={category.name} className="flex items-center justify-between">
