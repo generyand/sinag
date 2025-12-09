@@ -7,7 +7,21 @@ import logging
 import re
 from datetime import UTC, datetime, timedelta
 
+# -----------------------------------------------------------------------------
+# Patch for passlib compatibility with bcrypt >= 4.0.0
+# -----------------------------------------------------------------------------
+# passlib <= 1.7.4 expects bcrypt.__about__.__version__ to exist, but it was
+# removed in bcrypt 4.0.0. We monkeypatch it back to avoid AttributeError.
+import bcrypt
 from jose import JWTError, jwt  # type: ignore
+
+if not hasattr(bcrypt, "__about__"):
+
+    class _About:
+        __version__ = bcrypt.__version__
+
+    bcrypt.__about__ = _About()
+
 from passlib.context import CryptContext  # type: ignore
 
 from app.core.config import settings
