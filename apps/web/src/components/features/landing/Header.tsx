@@ -41,6 +41,32 @@ export function Header() {
   const [showLoginAnimation, setShowLoginAnimation] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
+  const scrollToSection = (sectionId: string) => {
+    const section = document.getElementById(sectionId);
+    if (section) {
+      const headerOffset = 80;
+      const elementPosition = section.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth",
+      });
+      setIsOpen(false);
+    }
+  };
+
+  const handleLoginClick = () => {
+    setShowLoginAnimation(true);
+    setTimeout(() => {
+      window.location.href = "/auth/login";
+    }, 800);
+  };
+
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
+
   return (
     <header className="border-b border-gray-200 sticky top-0 z-50 shadow-sm backdrop-blur-md bg-white/80 supports-[backdrop-filter]:bg-white/60">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
