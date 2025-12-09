@@ -458,10 +458,11 @@ export function SulopBarangayMapIntegrated({
       </CardHeader>
 
       <CardContent>
-        <div className="flex flex-col md:flex-row gap-4">
+        {/* Main container with equal heights for map and details */}
+        <div className="flex flex-col md:flex-row md:items-stretch gap-4">
           {/* Map Container - Expands/Shrinks based on selection */}
           <div
-            className={`transition-all duration-500 ease-in-out w-full ${
+            className={`transition-all duration-500 ease-in-out w-full flex items-center ${
               showDetailsPanel ? "md:w-2/3" : "md:w-full"
             }`}
           >
@@ -556,13 +557,15 @@ export function SulopBarangayMapIntegrated({
 
           {/* Details Panel - Slides in from right when barangay is selected */}
           <aside
-            className={`transition-all duration-500 ease-in-out overflow-hidden w-full ${
-              showDetailsPanel ? "h-auto opacity-100 md:w-1/3" : "h-0 opacity-0 md:w-0"
+            className={`transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] w-full ${
+              showDetailsPanel
+                ? "opacity-100 md:w-1/3 translate-x-0"
+                : "opacity-0 md:w-0 md:translate-x-4 h-0 md:h-auto overflow-hidden"
             }`}
             aria-label="Barangay details panel"
             aria-hidden={!showDetailsPanel}
           >
-            <div className="bg-gray-50 rounded-sm p-4 border-2 border-gray-200 shadow-sm h-full min-w-[280px]">
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-sm p-4 border-2 border-gray-200 dark:border-gray-700 shadow-sm h-full min-w-[280px] transition-transform duration-300">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold" id="details-panel-heading">
                   Barangay Details
