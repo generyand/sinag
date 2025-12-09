@@ -647,8 +647,11 @@ class MunicipalAnalyticsService:
                     assessment_id=assessment.id,
                     status=assessment.status.value,
                     compliance_status=(
+                        # Only show compliance status if assessment is COMPLETED
+                        # This ensures consistency between overview and verdict results tabs
                         assessment.final_compliance_status.value
-                        if assessment.final_compliance_status
+                        if assessment.status == AssessmentStatus.COMPLETED
+                        and assessment.final_compliance_status
                         else None
                     ),
                     submitted_at=assessment.submitted_at,

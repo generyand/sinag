@@ -920,14 +920,25 @@ class AnalyticsService:
         if not assessments:
             return []
 
-        # Count assessments by status
+        # Count assessments by status - only count Pass/Fail for COMPLETED assessments
         passed_count = sum(
-            1 for a in assessments if a.final_compliance_status == ComplianceStatus.PASSED
+            1
+            for a in assessments
+            if a.status == AssessmentStatus.COMPLETED
+            and a.final_compliance_status == ComplianceStatus.PASSED
         )
         failed_count = sum(
-            1 for a in assessments if a.final_compliance_status == ComplianceStatus.FAILED
+            1
+            for a in assessments
+            if a.status == AssessmentStatus.COMPLETED
+            and a.final_compliance_status == ComplianceStatus.FAILED
         )
-        in_progress_count = sum(1 for a in assessments if a.final_compliance_status is None)
+        # In progress includes: non-completed OR completed without final status
+        in_progress_count = sum(
+            1
+            for a in assessments
+            if a.status != AssessmentStatus.COMPLETED or a.final_compliance_status is None
+        )
 
         total = len(assessments)
 
@@ -996,7 +1007,11 @@ class AnalyticsService:
             )
 
             monthly_data[month_key]["total"] += 1
-            if assessment.final_compliance_status == ComplianceStatus.PASSED:
+            # Only count as passed if assessment is COMPLETED
+            if (
+                assessment.status == AssessmentStatus.COMPLETED
+                and assessment.final_compliance_status == ComplianceStatus.PASSED
+            ):
                 monthly_data[month_key]["passed"] += 1
 
         # Convert to TrendData objects
@@ -1053,10 +1068,16 @@ class AnalyticsService:
             if barangay_id in barangay_map:
                 continue
 
-            # Determine status
-            if assessment.final_compliance_status == ComplianceStatus.PASSED:
+            # Determine status - only show Pass/Fail if assessment is COMPLETED
+            if (
+                assessment.status == AssessmentStatus.COMPLETED
+                and assessment.final_compliance_status == ComplianceStatus.PASSED
+            ):
                 status = "Pass"
-            elif assessment.final_compliance_status == ComplianceStatus.FAILED:
+            elif (
+                assessment.status == AssessmentStatus.COMPLETED
+                and assessment.final_compliance_status == ComplianceStatus.FAILED
+            ):
                 status = "Fail"
             else:
                 status = "In Progress"
@@ -1167,37 +1188,32 @@ class AnalyticsService:
                 if area:
                     governance_area = area.name
 
-            # Determine status
-            if assessment.final_compliance_status == ComplianceStatus.PASSED:
+            # Determine status - only show Pass/Fail if assessment is COMPLETED
+            # This ensures consistency with overview tab
+            if (
+                assessment.status == AssessmentStatus.COMPLETED
+                and assessment.final_compliance_status == ComplianceStatus.PASSED
+            ):
                 status = "Pass"
-            elif assessment.final_compliance_status == ComplianceStatus.FAILED:
+            elif (
+                assessment.status == AssessmentStatus.COMPLETED
+                and assessment.final_compliance_status == ComplianceStatus.FAILED
+            ):
                 status = "Fail"
             else:
                 status = "In Progress"
 
-            # Calculate score and new counts based on indicators met (Pass/Conditional) vs total validated
-            # This aligns with GAR methodology
+            # Calculate score and metrics based on indicators
+            # Only calculate detailed metrics for COMPLETED assessments
+            # For in-progress assessments, these fields should remain None/0
             score = None
             indicators_passed = 0
             total_indicators = 0
-            # Note: Calculating governance areas passed requires more complex logic joining back to indicators/areas
-            # For table view optimization, we'll do a simplified calculation or fetch standard calculation
-            # To avoid N+1, we rely on what's available or simple aggregation
-
-            # Since strict governance area passing logic (70% per area) is complex to do here without pre-fetching,
-            # we will approximate or leave as None if too expensive, but user wants it.
-            # Let's try to do it right. We need to group responses by governance area.
-
             governance_areas_passed = 0
             total_governance_areas = 0
 
-            # Get all governance areas (cached/fetched earlier ideally, but simple count here)
-            # We can infer total governance areas from the municipality/system config, usually static
-            # For passed: we need to group indicators by area.
-            # Assessment responses -> indicator -> governance_area_id
-
-            # Use a helper if available, or do inline aggregation if responses are loaded
-            if assessment.responses:
+            # Only calculate metrics if assessment is COMPLETED
+            if assessment.status == AssessmentStatus.COMPLETED and assessment.responses:
                 total_indicators = len(assessment.responses)
 
                 # Group by governance area
@@ -1209,8 +1225,6 @@ class AnalyticsService:
                         indicators_passed += 1
 
                     # Grouping for governance areas
-                    # Requires r.indicator.governance_area_id which might not be eager loaded
-                    # If indicator relationship is loaded:
                     if r.indicator and r.indicator.governance_area_id:
                         ga_id = r.indicator.governance_area_id
                         if ga_id not in area_stats:
@@ -1231,7 +1245,7 @@ class AnalyticsService:
                         if (stats["passed"] / stats["total"] * 100) >= 70:
                             governance_areas_passed += 1
 
-                # Score calc
+                # Score calculation
                 total_validated = sum(
                     1 for r in assessment.responses if r.validation_status is not None
                 )

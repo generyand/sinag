@@ -208,28 +208,22 @@ export function BarangayStatusTable({
   }, [data?.barangays, searchTerm, statusFilter, sortField, sortDirection]);
 
   const getUnifiedStatusBadge = (barangay: ExtendedBarangayAssessmentStatus) => {
-    // Check for Pass/Fail first (Completed)
-    if (barangay.status === "COMPLETED") {
-      if (barangay.compliance_status === "PASSED") {
-        return (
-          <Badge className="bg-green-100 text-green-800 rounded-sm hover:bg-green-200 border-0">
-            Pass
-          </Badge>
-        );
-      }
-      if (barangay.compliance_status === "FAILED") {
-        return (
-          <Badge className="bg-red-100 text-red-800 rounded-sm hover:bg-red-200 border-0">
-            Fail
-          </Badge>
-        );
-      }
+    // Backend now only sets compliance_status when status === COMPLETED
+    // So we can trust compliance_status directly for Pass/Fail
+    if (barangay.compliance_status === "PASSED") {
+      return (
+        <Badge className="bg-green-100 text-green-800 rounded-sm hover:bg-green-200 border-0">
+          Pass
+        </Badge>
+      );
+    }
+    if (barangay.compliance_status === "FAILED") {
+      return (
+        <Badge className="bg-red-100 text-red-800 rounded-sm hover:bg-red-200 border-0">Fail</Badge>
+      );
     }
 
-    // Default to "In Progress" style for others mostly
-    // or map specific statuses
-    const label = "In Progress";
-    // You might want to distinguish "No Assessment" or "Draft"
+    // All other cases are "In Progress" or "No Data"
     if (barangay.status === "NO_ASSESSMENT" || barangay.status === "NO_USER_ASSIGNED") {
       return (
         <Badge variant="outline" className="text-gray-500 border-gray-300">
@@ -238,9 +232,10 @@ export function BarangayStatusTable({
       );
     }
 
+    // Default: In Progress (includes DRAFT, SUBMITTED, IN_REVIEW, REWORK, etc.)
     return (
       <Badge className="bg-yellow-100 text-yellow-800 rounded-sm hover:bg-yellow-200 border-0">
-        {label}
+        In Progress
       </Badge>
     );
   };
