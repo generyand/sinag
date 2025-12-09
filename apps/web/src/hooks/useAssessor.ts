@@ -69,6 +69,13 @@ export function useAssessorReworkMutation(assessmentId: string) {
         queryClient.invalidateQueries({
           queryKey: assessorKeys.queue(),
         });
+        // Invalidate BLGU-side queries so their dashboard updates immediately
+        queryClient.invalidateQueries({
+          queryKey: ["/api/v1/assessments/my-assessment"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: [`/api/v1/blgu-dashboard/${assessmentId}`],
+        });
       },
     },
   });
@@ -87,6 +94,13 @@ export function useAssessorFinalizeMutation(assessmentId: string) {
         // Also invalidate the queue to reflect status changes
         queryClient.invalidateQueries({
           queryKey: assessorKeys.queue(),
+        });
+        // Invalidate BLGU-side queries so their dashboard updates immediately
+        queryClient.invalidateQueries({
+          queryKey: ["/api/v1/assessments/my-assessment"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: [`/api/v1/blgu-dashboard/${assessmentId}`],
         });
       },
     },

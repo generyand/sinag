@@ -32,7 +32,7 @@ class CacheHeadersMiddleware(BaseHTTPMiddleware):
         "/api/v1/users/me": {"cache": False},
         # Short cache - dashboards (private, user-specific)
         "/api/v1/analytics": {"max_age": 900, "public": False, "swr": 300},
-        "/api/v1/blgu-dashboard": {"max_age": 300, "public": False, "swr": 60},
+        "/api/v1/blgu-dashboard": {"cache": False},  # No cache - status changes must be immediate
         "/api/v1/assessor-dashboard": {"max_age": 300, "public": False, "swr": 60},
         "/api/v1/mlgoo-dashboard": {"max_age": 300, "public": False, "swr": 60},
         "/api/v1/validator-dashboard": {"max_age": 300, "public": False, "swr": 60},
