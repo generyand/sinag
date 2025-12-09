@@ -1,29 +1,29 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
-  useGetComplianceAssessmentsAssessmentIdComplianceOverview,
-  usePostAssessorAssessmentResponsesResponseIdValidate,
+    useGetComplianceAssessmentsAssessmentIdComplianceOverview,
+    usePostAssessorAssessmentResponsesResponseIdValidate,
 } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Progress } from "@/components/ui/progress";
 import {
-  ChevronLeft,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  Clock,
-  RotateCcw,
-  Sparkles,
-  TrendingUp,
-  FileCheck,
-  Info,
+    AlertTriangle,
+    CheckCircle2,
+    ChevronLeft,
+    Clock,
+    FileCheck,
+    Info,
+    RotateCcw,
+    Sparkles,
+    TrendingUp,
+    XCircle,
 } from "lucide-react";
 import Link from "next/link";
-import { toast } from "sonner";
 import { useMemo } from "react";
+import { toast } from "sonner";
 
 interface ComplianceOverviewClientProps {
   assessmentId: number;
@@ -60,6 +60,8 @@ const BBI_LEVEL_CONFIG = {
     icon: "✗",
   },
 };
+
+import { formatIndicatorName } from "@/lib/utils/text-formatter";
 
 export function ComplianceOverviewClient({ assessmentId }: ComplianceOverviewClientProps) {
   const queryClient = useQueryClient();
@@ -181,7 +183,7 @@ export function ComplianceOverviewClient({ assessmentId }: ComplianceOverviewCli
               <span className="font-semibold text-lg">Failed to load compliance overview</span>
             </div>
             <p className="text-red-600 dark:text-red-400 mt-2">
-              {error?.message || "An unexpected error occurred"}
+              {(error as any)?.message || "An unexpected error occurred"}
             </p>
           </div>
         </div>
@@ -350,7 +352,8 @@ export function ComplianceOverviewClient({ assessmentId }: ComplianceOverviewCli
                     <div className="flex items-start justify-between gap-4 mb-4">
                       <div className="flex-1">
                         <div className="font-medium text-slate-900 dark:text-slate-100">
-                          {indicator.indicator_code}. {indicator.name}
+                          {indicator.indicator_code}.{" "}
+                          {formatIndicatorName(indicator.name, assessment_year)}
                         </div>
                         <div className="flex items-center gap-3 mt-2 text-sm">
                           <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
@@ -452,7 +455,8 @@ export function ComplianceOverviewClient({ assessmentId }: ComplianceOverviewCli
                                 className="flex items-center justify-between text-sm py-2 px-3 rounded-lg hover:bg-white dark:hover:bg-slate-700/50 transition-colors group"
                               >
                                 <span className="text-slate-600 dark:text-slate-300 truncate flex-1 mr-4">
-                                  {sub.indicator_code}. {sub.name}
+                                  {sub.indicator_code}.{" "}
+                                  {formatIndicatorName(sub.name, assessment_year)}
                                 </span>
                                 <div className="flex items-center gap-2">
                                   {/* Status hint */}
