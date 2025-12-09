@@ -569,7 +569,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           role="button"
           tabIndex={0}
           aria-label="Close dropdown"
-          className="fixed inset-0 z-40"
+          className="fixed inset-0 z-30"
           onClick={() => setProfileDropdownOpen(false)}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " " || e.key === "Escape") {

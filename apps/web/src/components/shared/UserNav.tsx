@@ -1,9 +1,9 @@
 // 🚀 Modern component using auto-generated React Query hooks
 "use client";
 
-import { usePostAuthLogout } from "@sinag/shared";
 import { useAuthStore } from "@/store/useAuthStore";
-import { User, LogOut, Loader2 } from "lucide-react";
+import { usePostAuthLogout } from "@sinag/shared";
+import { Loader2, LogOut, User } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 
 /**
@@ -52,9 +52,25 @@ export default function UserNav() {
     },
   });
 
-  const handleLogout = () => {
-    // Trigger the logout mutation
-    logoutMutation.mutate();
+  const handleLogout = (e?: React.MouseEvent) => {
+    // Prevent default and bubbling
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    try {
+      // Attempt server-side logout (fire and forget)
+      logoutMutation.mutate();
+    } catch (error) {
+      console.error("Logout mutation triggering error:", error);
+    }
+
+    // Always perform local logout immediately
+    logout();
+
+    // Force redirect to login
+    window.location.href = "/login";
   };
 
   if (!user) {
@@ -115,10 +131,9 @@ export default function UserNav() {
         {/* Logout Button */}
         <button
           onClick={handleLogout}
-          disabled={logoutMutation.isPending}
-          className="w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-[var(--foreground)] hover:text-[var(--cityscape-yellow)] hover:bg-[var(--hover)] rounded-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group border border-[var(--border)] hover:border-[var(--cityscape-yellow)]"
+          className="w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-[var(--foreground)] hover:text-[var(--cityscape-yellow)] hover:bg-[var(--hover)] rounded-sm transition-all duration-200 group border border-[var(--border)] hover:border-[var(--cityscape-yellow)] cursor-pointer"
         >
-          {logoutMutation.isPending ? (
+          {false ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin text-[var(--cityscape-yellow)]" />
               Signing out...
