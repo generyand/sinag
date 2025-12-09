@@ -4,26 +4,25 @@
 "use client";
 
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getSections, getVisibleFields, type Section } from "@/lib/forms/formSchemaParser";
+import { classifyError } from "@/lib/error-utils";
+import { getSections, getVisibleFields, isFieldRequired, type Section } from "@/lib/forms/formSchemaParser";
 import { generateValidationSchema } from "@/lib/forms/generateValidationSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { FormSchema, FormSchemaFieldsItem, FormNotes, MOVFileResponse } from "@sinag/shared";
+import type { FormNotes, FormSchema, FormSchemaFieldsItem, MOVFileResponse } from "@sinag/shared";
 import {
-  useGetAssessmentsAssessmentIdAnswers,
-  usePostAssessmentsAssessmentIdAnswers,
-  useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles,
-  useGetAssessmentsMyAssessment,
+    useGetAssessmentsAssessmentIdAnswers,
+    useGetAssessmentsMyAssessment,
+    useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles,
+    usePostAssessmentsAssessmentIdAnswers,
 } from "@sinag/shared";
-import { isFieldRequired } from "@/lib/forms/formSchemaParser";
-import { classifyError } from "@/lib/error-utils";
 import { AlertCircle, Info } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { Control, FieldValues, FormProvider, useForm } from "react-hook-form";
@@ -31,13 +30,13 @@ import { toast } from "sonner";
 import { IndicatorNavigationFooter } from "../assessments/IndicatorNavigationFooter";
 import { CompletionFeedbackPanel } from "./CompletionFeedbackPanel";
 import {
-  CheckboxFieldComponent,
-  DateFieldComponent,
-  FileFieldComponent,
-  NumberFieldComponent,
-  RadioFieldComponent,
-  TextAreaFieldComponent,
-  TextFieldComponent,
+    CheckboxFieldComponent,
+    DateFieldComponent,
+    FileFieldComponent,
+    NumberFieldComponent,
+    RadioFieldComponent,
+    TextAreaFieldComponent,
+    TextFieldComponent,
 } from "./fields";
 
 interface DynamicFormRendererProps {
@@ -308,7 +307,7 @@ export function DynamicFormRenderer({
       const optionBFields: FormSchemaFieldsItem[] = [];
 
       requiredFields.forEach((field) => {
-        const completionGroup = (field as any).completion_group;
+        const completionGroup = (field as any).option_group || (field as any).completion_group;
         if (completionGroup === "shared") {
           sharedFields.push(field);
         } else if (completionGroup === "option_a") {
@@ -738,9 +737,9 @@ function SectionRenderer({
     return groupFieldsByOptionGroup(visibleFields);
   }, [visibleFields]);
 
-  // Check if accordion UI should be used (can be disabled via form_schema)
-  // Default is true if option groups exist, but can be overridden by use_accordion_ui: false
-  const useAccordionUI = (formSchema as any)?.use_accordion_ui !== false;
+  const validationRule = (formSchema as any).validation_rule;
+  // Use accordion based on validation rule (mainly for 1.6.1)
+  const useAccordionUI = (formSchema as any)?.use_accordion_ui ?? validationRule === "ANY_OPTION_GROUP_REQUIRED";
 
   // Don't render empty sections
   if (visibleFields.length === 0) {
