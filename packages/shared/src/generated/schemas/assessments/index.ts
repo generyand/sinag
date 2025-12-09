@@ -6,6 +6,7 @@
 import type { NotificationResult } from '../notifications';
 import type { AppSchemasBbiBBIComplianceResult } from '../bbis';
 import type { AppSchemasBbiBBIComplianceSummary } from '../bbis';
+import type { CalibrationSummaryResponse } from '../system';
 import type { ProgressSummary } from '../common';
 import type { GovernanceAreaProgress } from '../common';
 import type { GovernanceAreaDetailItem } from '../common';
@@ -190,10 +191,39 @@ export interface AssessmentDashboardResponse {
   barangay_name: string;
   performance_year: number;
   assessment_year: number;
+  status: AssessmentStatus;
+  submitted_at?: AssessmentDashboardResponseSubmittedAt;
+  validated_at?: AssessmentDashboardResponseValidatedAt;
+  rework_requested_at?: AssessmentDashboardResponseReworkRequestedAt;
+  rework_count?: number;
+  is_calibration_rework?: boolean;
+  calibration_governance_area_name?: AssessmentDashboardResponseCalibrationGovernanceAreaName;
+  is_mlgoo_recalibration?: boolean;
+  mlgoo_recalibration_requested_at?: AssessmentDashboardResponseMlgooRecalibrationRequestedAt;
+  ai_summary?: AssessmentDashboardResponseAiSummary;
+  ai_summary_available_languages?: string[];
   stats: AssessmentDashboardStats;
   feedback?: AssessmentDashboardResponseFeedbackItem[];
   upcoming_deadlines?: AssessmentDashboardResponseUpcomingDeadlinesItem[];
 }
+
+
+/**
+ * AssessmentDashboardResponseAiSummary
+ */
+export type AssessmentDashboardResponseAiSummary = CalibrationSummaryResponse | AssessmentDashboardResponseAiSummaryAnyOf | null;
+
+
+/**
+ * AssessmentDashboardResponseAiSummaryAnyOf
+ */
+export type AssessmentDashboardResponseAiSummaryAnyOf = { [key: string]: unknown };
+
+
+/**
+ * AssessmentDashboardResponseCalibrationGovernanceAreaName
+ */
+export type AssessmentDashboardResponseCalibrationGovernanceAreaName = string | null;
 
 
 /**
@@ -203,9 +233,33 @@ export type AssessmentDashboardResponseFeedbackItem = { [key: string]: unknown }
 
 
 /**
+ * AssessmentDashboardResponseMlgooRecalibrationRequestedAt
+ */
+export type AssessmentDashboardResponseMlgooRecalibrationRequestedAt = string | null;
+
+
+/**
+ * AssessmentDashboardResponseReworkRequestedAt
+ */
+export type AssessmentDashboardResponseReworkRequestedAt = string | null;
+
+
+/**
+ * AssessmentDashboardResponseSubmittedAt
+ */
+export type AssessmentDashboardResponseSubmittedAt = string | null;
+
+
+/**
  * AssessmentDashboardResponseUpcomingDeadlinesItem
  */
 export type AssessmentDashboardResponseUpcomingDeadlinesItem = { [key: string]: unknown };
+
+
+/**
+ * AssessmentDashboardResponseValidatedAt
+ */
+export type AssessmentDashboardResponseValidatedAt = string | null;
 
 
 /**
@@ -251,10 +305,18 @@ export interface AssessmentDetailResponse {
   governance_areas: GovernanceAreaDetailItem[];
   can_approve: boolean;
   can_recalibrate: boolean;
+  rework_requested_at: AssessmentDetailResponseReworkRequestedAt;
+  rework_submitted_at: AssessmentDetailResponseReworkSubmittedAt;
+  rework_count: number;
+  calibration_requested_at: AssessmentDetailResponseCalibrationRequestedAt;
+  calibration_submitted_at: AssessmentDetailResponseCalibrationSubmittedAt;
   mlgoo_recalibration_count: number;
   is_mlgoo_recalibration: boolean;
+  mlgoo_recalibration_requested_at: AssessmentDetailResponseMlgooRecalibrationRequestedAt;
+  mlgoo_recalibration_submitted_at: AssessmentDetailResponseMlgooRecalibrationSubmittedAt;
   mlgoo_recalibration_indicator_ids: AssessmentDetailResponseMlgooRecalibrationIndicatorIds;
   mlgoo_recalibration_comments: AssessmentDetailResponseMlgooRecalibrationComments;
+  mlgoo_approved_at: AssessmentDetailResponseMlgooApprovedAt;
   grace_period_expires_at: AssessmentDetailResponseGracePeriodExpiresAt;
   is_locked_for_deadline: boolean;
 }
@@ -285,6 +347,18 @@ export type AssessmentDetailResponseBlguUserName = string | null;
 
 
 /**
+ * AssessmentDetailResponseCalibrationRequestedAt
+ */
+export type AssessmentDetailResponseCalibrationRequestedAt = string | null;
+
+
+/**
+ * AssessmentDetailResponseCalibrationSubmittedAt
+ */
+export type AssessmentDetailResponseCalibrationSubmittedAt = string | null;
+
+
+/**
  * AssessmentDetailResponseComplianceStatus
  */
 export type AssessmentDetailResponseComplianceStatus = string | null;
@@ -303,6 +377,12 @@ export type AssessmentDetailResponseGracePeriodExpiresAt = string | null;
 
 
 /**
+ * AssessmentDetailResponseMlgooApprovedAt
+ */
+export type AssessmentDetailResponseMlgooApprovedAt = string | null;
+
+
+/**
  * AssessmentDetailResponseMlgooRecalibrationComments
  */
 export type AssessmentDetailResponseMlgooRecalibrationComments = string | null;
@@ -315,9 +395,33 @@ export type AssessmentDetailResponseMlgooRecalibrationIndicatorIds = number[] | 
 
 
 /**
+ * AssessmentDetailResponseMlgooRecalibrationRequestedAt
+ */
+export type AssessmentDetailResponseMlgooRecalibrationRequestedAt = string | null;
+
+
+/**
+ * AssessmentDetailResponseMlgooRecalibrationSubmittedAt
+ */
+export type AssessmentDetailResponseMlgooRecalibrationSubmittedAt = string | null;
+
+
+/**
  * AssessmentDetailResponseOverallScore
  */
 export type AssessmentDetailResponseOverallScore = number | null;
+
+
+/**
+ * AssessmentDetailResponseReworkRequestedAt
+ */
+export type AssessmentDetailResponseReworkRequestedAt = string | null;
+
+
+/**
+ * AssessmentDetailResponseReworkSubmittedAt
+ */
+export type AssessmentDetailResponseReworkSubmittedAt = string | null;
 
 
 /**

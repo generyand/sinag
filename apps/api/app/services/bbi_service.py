@@ -1109,6 +1109,176 @@ class BBIService:
 
         return summary
 
+    def get_municipality_bbi_analytics(
+        self,
+        db: Session,
+        year: int,
+    ) -> dict[str, Any]:
+        """
+        Get BBI analytics across all barangays for a municipality in a given year.
+
+        This provides the data needed for the MLGOO BBI Status tab:
+        - Matrix of barangays × BBIs with compliance ratings
+        - Per-BBI breakdown with distribution counts
+        - Overall summary statistics
+
+        Args:
+            db: Database session
+            year: Assessment year
+
+        Returns:
+            Dictionary with municipality-wide BBI analytics:
+            {
+                "assessment_year": 2025,
+                "bbis": [
+                    {"bbi_id": 1, "abbreviation": "BDRRMC", "name": "...", "indicator_code": "2.1"},
+                    ...
+                ],
+                "barangays": [
+                    {
+                        "barangay_id": 1,
+                        "barangay_name": "Poblacion",
+                        "bbi_statuses": {
+                            "BDRRMC": {"rating": "HIGHLY_FUNCTIONAL", "percentage": 100.0},
+                            "BADAC": {"rating": "LOW_FUNCTIONAL", "percentage": 30.0},
+                            ...
+                        }
+                    },
+                    ...
+                ],
+                "bbi_distributions": {
+                    "BDRRMC": {
+                        "highly_functional": [{"barangay_id": 1, "barangay_name": "..."}],
+                        "moderately_functional": [...],
+                        "low_functional": [...],
+                        "non_functional": [...]
+                    },
+                    ...
+                },
+                "summary": {
+                    "total_barangays": 25,
+                    "total_bbis": 7,
+                    "overall_highly_functional": 50,
+                    "overall_moderately_functional": 30,
+                    "overall_low_functional": 15,
+                    "overall_non_functional": 5
+                }
+            }
+        """
+        # Get all BBIResults for the year with eager loading
+        results = (
+            db.query(BBIResult)
+            .options(
+                joinedload(BBIResult.bbi),
+                joinedload(BBIResult.barangay),
+                joinedload(BBIResult.indicator),
+            )
+            .filter(BBIResult.assessment_year == year)
+            .all()
+        )
+
+        # Initialize data structures
+        bbis_map: dict[int, dict[str, Any]] = {}
+        barangays_map: dict[int, dict[str, Any]] = {}
+        bbi_distributions: dict[str, dict[str, list[dict[str, Any]]]] = {}
+
+        # Single pass through results to build all data structures
+        for result in results:
+            # Build BBIs map and initialize distribution
+            if result.bbi and result.bbi_id not in bbis_map:
+                abbr = result.bbi.abbreviation
+                bbis_map[result.bbi_id] = {
+                    "bbi_id": result.bbi_id,
+                    "abbreviation": abbr,
+                    "name": result.bbi.name,
+                    "indicator_code": result.indicator.indicator_code if result.indicator else None,
+                }
+                # Initialize distribution for this BBI
+                bbi_distributions[abbr] = {
+                    "highly_functional": [],
+                    "moderately_functional": [],
+                    "low_functional": [],
+                    "non_functional": [],
+                }
+
+            if not result.barangay or not result.bbi:
+                continue
+
+            barangay_id = result.barangay_id
+            abbr = result.bbi.abbreviation
+
+            # Build barangays map
+            if barangay_id not in barangays_map:
+                barangays_map[barangay_id] = {
+                    "barangay_id": barangay_id,
+                    "barangay_name": result.barangay.name,
+                    "bbi_statuses": {},
+                }
+
+            barangays_map[barangay_id]["bbi_statuses"][abbr] = {
+                "rating": result.compliance_rating,
+                "percentage": result.compliance_percentage,
+            }
+
+            # Build distribution
+            barangay_info = {
+                "barangay_id": barangay_id,
+                "barangay_name": result.barangay.name,
+                "percentage": result.compliance_percentage,
+            }
+
+            rating = result.compliance_rating
+            if rating == BBIStatus.HIGHLY_FUNCTIONAL.value:
+                bbi_distributions[abbr]["highly_functional"].append(barangay_info)
+            elif rating == BBIStatus.MODERATELY_FUNCTIONAL.value:
+                bbi_distributions[abbr]["moderately_functional"].append(barangay_info)
+            elif rating == BBIStatus.LOW_FUNCTIONAL.value:
+                bbi_distributions[abbr]["low_functional"].append(barangay_info)
+            elif rating == BBIStatus.NON_FUNCTIONAL.value:
+                bbi_distributions[abbr]["non_functional"].append(barangay_info)
+
+        # Sort BBIs by indicator_code for consistent ordering
+        bbis = sorted(bbis_map.values(), key=lambda x: x.get("indicator_code") or "")
+
+        # Sort barangays by name
+        barangays = sorted(barangays_map.values(), key=lambda x: x["barangay_name"])
+
+        # Sort barangays within each distribution by name
+        for abbr in bbi_distributions:
+            for rating_key in bbi_distributions[abbr]:
+                bbi_distributions[abbr][rating_key].sort(key=lambda x: x["barangay_name"])
+
+        # Calculate summary statistics
+        total_highly = sum(
+            len(bbi_distributions[abbr]["highly_functional"]) for abbr in bbi_distributions
+        )
+        total_moderately = sum(
+            len(bbi_distributions[abbr]["moderately_functional"]) for abbr in bbi_distributions
+        )
+        total_low = sum(
+            len(bbi_distributions[abbr]["low_functional"]) for abbr in bbi_distributions
+        )
+        total_non = sum(
+            len(bbi_distributions[abbr]["non_functional"]) for abbr in bbi_distributions
+        )
+
+        summary = {
+            "total_barangays": len(barangays),
+            "total_bbis": len(bbis),
+            "overall_highly_functional": total_highly,
+            "overall_moderately_functional": total_moderately,
+            "overall_low_functional": total_low,
+            "overall_non_functional": total_non,
+        }
+
+        return {
+            "assessment_year": year,
+            "bbis": bbis,
+            "barangays": barangays,
+            "bbi_distributions": bbi_distributions,
+            "summary": summary,
+        }
+
 
 # Singleton instance
 bbi_service = BBIService()

@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 
 from app.api import deps
-from app.db.enums import BBIStatus
+from app.db.enums import BBIStatus, UserRole
 from app.db.models.assessment import Assessment
 from app.db.models.barangay import Barangay
 from app.db.models.user import User
@@ -24,6 +24,7 @@ from app.schemas.bbi import (
     BBIResultResponse,
     BBIUpdate,
     BBIWithGovernanceArea,
+    MunicipalityBBIAnalyticsResponse,
     SubIndicatorResult,
     TestBBICalculationRequest,
     TestBBICalculationResponse,
@@ -646,3 +647,37 @@ async def get_barangay_bbi_compliance(
         bbi_results=summary_data["bbi_results"],
         summary=summary,
     )
+
+
+@router.get(
+    "/analytics/municipality",
+    response_model=MunicipalityBBIAnalyticsResponse,
+    tags=["bbis"],
+)
+async def get_municipality_bbi_analytics(
+    year: int = Query(..., description="Assessment year"),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """
+    Get municipality-wide BBI analytics for the MLGOO BBI Status tab.
+
+    Accessible by MLGOO_DILG and KATUPARAN_CENTER_USER roles only.
+
+    Returns:
+    - Matrix of barangays × BBIs with compliance ratings (for table view)
+    - Per-BBI distribution by functionality level (for donut charts)
+    - Summary statistics
+
+    This endpoint powers the BBI Status tab in the MLGOO Analytics & Reports page.
+    """
+    # Restrict access to MLGOO and analytics-focused roles
+    allowed_roles = {UserRole.MLGOO_DILG, UserRole.KATUPARAN_CENTER_USER}
+    if current_user.role not in allowed_roles:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions. MLGOO or analytics access required.",
+        )
+
+    analytics = bbi_service.get_municipality_bbi_analytics(db, year)
+    return analytics

@@ -204,6 +204,97 @@ class BarangayBBIComplianceResponse(BaseModel):
 
 
 # ============================================================================
+# Municipality BBI Analytics Schemas
+# ============================================================================
+
+
+class BBIInfo(BaseModel):
+    """Basic BBI information."""
+
+    bbi_id: int = Field(..., description="BBI ID")
+    abbreviation: str = Field(..., description="BBI abbreviation (e.g., BDRRMC)")
+    name: str = Field(..., description="Full BBI name")
+    indicator_code: str | None = Field(None, description="Indicator code (e.g., 2.1)")
+
+
+class BBIStatusInfo(BaseModel):
+    """BBI status for a single barangay-BBI combination."""
+
+    rating: str = Field(..., description="4-tier rating")
+    percentage: float = Field(..., description="Compliance percentage")
+
+
+class BarangayBBIStatus(BaseModel):
+    """BBI statuses for a single barangay."""
+
+    barangay_id: int = Field(..., description="Barangay ID")
+    barangay_name: str = Field(..., description="Barangay name")
+    bbi_statuses: dict[str, BBIStatusInfo] = Field(
+        ..., description="BBI abbreviation -> status mapping"
+    )
+
+
+class BarangayDistributionItem(BaseModel):
+    """Barangay info within a distribution category."""
+
+    barangay_id: int = Field(..., description="Barangay ID")
+    barangay_name: str = Field(..., description="Barangay name")
+    percentage: float = Field(..., description="Compliance percentage")
+
+
+class BBIDistribution(BaseModel):
+    """Distribution of functionality levels for a single BBI."""
+
+    highly_functional: list[BarangayDistributionItem] = Field(
+        default_factory=list, description="Barangays with HIGHLY_FUNCTIONAL rating"
+    )
+    moderately_functional: list[BarangayDistributionItem] = Field(
+        default_factory=list, description="Barangays with MODERATELY_FUNCTIONAL rating"
+    )
+    low_functional: list[BarangayDistributionItem] = Field(
+        default_factory=list, description="Barangays with LOW_FUNCTIONAL rating"
+    )
+    non_functional: list[BarangayDistributionItem] = Field(
+        default_factory=list, description="Barangays with NON_FUNCTIONAL rating"
+    )
+
+
+class MunicipalityBBIAnalyticsSummary(BaseModel):
+    """Summary statistics for municipality-wide BBI analytics."""
+
+    total_barangays: int = Field(..., description="Total number of barangays with BBI data")
+    total_bbis: int = Field(..., description="Total number of BBIs tracked")
+    overall_highly_functional: int = Field(
+        ..., description="Total HIGHLY_FUNCTIONAL ratings across all BBIs"
+    )
+    overall_moderately_functional: int = Field(
+        ..., description="Total MODERATELY_FUNCTIONAL ratings across all BBIs"
+    )
+    overall_low_functional: int = Field(
+        ..., description="Total LOW_FUNCTIONAL ratings across all BBIs"
+    )
+    overall_non_functional: int = Field(
+        ..., description="Total NON_FUNCTIONAL ratings across all BBIs"
+    )
+
+
+class MunicipalityBBIAnalyticsResponse(BaseModel):
+    """Complete municipality-wide BBI analytics response for MLGOO reports."""
+
+    assessment_year: int = Field(..., description="Assessment year")
+    bbis: list[BBIInfo] = Field(..., description="List of BBIs with their info")
+    barangays: list[BarangayBBIStatus] = Field(
+        ..., description="List of barangays with their BBI statuses"
+    )
+    bbi_distributions: dict[str, BBIDistribution] = Field(
+        ..., description="BBI abbreviation -> distribution mapping for donut charts"
+    )
+    summary: MunicipalityBBIAnalyticsSummary = Field(
+        ..., description="Summary statistics"
+    )
+
+
+# ============================================================================
 # Supporting Schemas
 # ============================================================================
 
