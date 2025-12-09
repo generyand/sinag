@@ -103,8 +103,15 @@ if [ "$MIGRATION_REVISION" != "head" ]; then
     # If specific revision provided, get its down_revision
     PREVIOUS_REVISION=$(uv run alembic show "$MIGRATION_REVISION" 2>/dev/null | grep "Rev:" | head -1 | sed 's/.*-> \([^,]*\).*/\1/' | awk '{print $1}')
 else
-    # Get the revision before current
-    PREVIOUS_REVISION=$(uv run alembic history -r-1:current 2>/dev/null | tail -1 | awk '{print $3}' | tr -d ',')
+    # Get the down_revision from the current migration
+    # First try to get Parent (regular revision), then try Merges (merge point)
+    SHOW_OUTPUT=$(uv run alembic show "$CURRENT_REVISION" 2>/dev/null)
+    PREVIOUS_REVISION=$(echo "$SHOW_OUTPUT" | grep "^Parent:" | head -1 | awk -F': ' '{print $2}' | awk -F',' '{print $1}' | tr -d ' ')
+
+    # If no Parent found, try Merges (for merge points - use first parent)
+    if [ -z "$PREVIOUS_REVISION" ]; then
+        PREVIOUS_REVISION=$(echo "$SHOW_OUTPUT" | grep "^Merges:" | head -1 | awk -F': ' '{print $2}' | awk -F',' '{print $1}' | tr -d ' ')
+    fi
 fi
 
 if [ -n "$PREVIOUS_REVISION" ] && [ "$PREVIOUS_REVISION" != "None" ] && [ "$PREVIOUS_REVISION" != "(head)" ]; then
