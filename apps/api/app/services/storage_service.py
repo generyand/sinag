@@ -866,19 +866,51 @@ class StorageService:
                 expires_in=expires_in,
             )
 
-            # The result contains the signed URL
-            if isinstance(result, dict) and "signedURL" in result:
-                signed_url = result["signedURL"]
+            # Check for error response from Supabase
+            if isinstance(result, dict):
+                # Handle error responses
+                if "error" in result:
+                    error_msg = result.get("error", "Unknown error")
+                    error_str = str(error_msg).lower()
+                    if "not found" in error_str or "object not found" in error_str:
+                        logger.warning(
+                            f"File not found in storage: {storage_path}. "
+                            f"The physical file may have been deleted."
+                        )
+                        raise FileNotFoundError(f"File not found in storage: {storage_path}")
+                    raise Exception(f"Supabase error: {error_msg}")
+
+                # Extract signed URL from successful response
+                if "signedURL" in result:
+                    signed_url = result["signedURL"]
+                elif "signedUrl" in result:
+                    signed_url = result["signedUrl"]
+                else:
+                    # Unexpected response format
+                    logger.warning(f"Unexpected response format from create_signed_url: {result}")
+                    raise Exception("Failed to extract signed URL from response")
             elif hasattr(result, "signed_url"):
                 signed_url = result.signed_url
             else:
                 # Handle different response formats from supabase-py
                 signed_url = str(result)
 
+            # Validate the signed URL is not empty or an error message
+            if not signed_url or signed_url.startswith("Error"):
+                raise Exception(f"Invalid signed URL received: {signed_url}")
+
             logger.debug(f"Generated signed URL for {storage_path}, expires in {expires_in}s")
             return signed_url
 
+        except FileNotFoundError:
+            # Re-raise FileNotFoundError to be handled by caller
+            raise
         except Exception as e:
+            error_str = str(e).lower()
+            # Check if error indicates file not found
+            if "not found" in error_str or "object not found" in error_str or "404" in error_str:
+                logger.warning(f"File not found in storage: {storage_path}. Error: {str(e)}")
+                raise FileNotFoundError(f"File not found in storage: {storage_path}")
             logger.error(f"Failed to generate signed URL for {storage_path}: {str(e)}")
             raise Exception(f"Failed to generate signed URL: {str(e)}")
 
@@ -957,7 +989,19 @@ class StorageService:
         # ASSESSOR and MLGOO_DILG have access to all files (no additional restrictions)
 
         # Generate and return signed URL
-        return self.get_signed_url(mov_file.file_url, expires_in)
+        try:
+            return self.get_signed_url(mov_file.file_url, expires_in)
+        except FileNotFoundError:
+            # File record exists in database but physical file is missing from storage
+            logger.error(
+                f"Physical file missing from storage for MOV file {file_id}. "
+                f"URL: {mov_file.file_url}. The file may have been deleted from storage."
+            )
+            raise HTTPException(
+                status_code=404,
+                detail="File not found in storage. The physical file may have been deleted. "
+                "Please re-upload the file.",
+            )
 
 
 # Create a singleton instance

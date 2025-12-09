@@ -55,16 +55,27 @@ function SecureFileContent({
   }
 
   if (urlError || !signedUrl) {
+    // Check if error is a 404 (file not found in storage)
+    const errorMessage = urlError?.message || "";
+    const is404 =
+      errorMessage.includes("404") ||
+      errorMessage.toLowerCase().includes("not found") ||
+      (urlError as any)?.response?.status === 404;
+
     return (
       <div className="flex flex-col items-center justify-center h-full text-center p-6">
         <FileIcon className="h-16 w-16 text-red-400 mb-4" />
         <p className="text-sm text-red-600 mb-2">Failed to load file</p>
-        <p className="text-xs text-muted-foreground">
-          {urlError?.message || "Unable to generate secure URL"}
+        <p className="text-xs text-muted-foreground max-w-xs">
+          {is404
+            ? "This file is no longer available in storage. It may have been deleted."
+            : urlError?.message || "Unable to generate secure URL"}
         </p>
-        <Button variant="outline" onClick={() => refetch()} className="mt-4">
-          Try Again
-        </Button>
+        {!is404 && (
+          <Button variant="outline" onClick={() => refetch()} className="mt-4">
+            Try Again
+          </Button>
+        )}
       </div>
     );
   }
