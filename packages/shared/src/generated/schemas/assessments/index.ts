@@ -599,13 +599,45 @@ export interface AssessmentRow {
   status: string;
   /** Compliance score */
   score?: AssessmentRowScore;
+  /** Number of governance areas passed */
+  governance_areas_passed?: AssessmentRowGovernanceAreasPassed;
+  /** Total number of governance areas */
+  total_governance_areas?: AssessmentRowTotalGovernanceAreas;
+  /** Number of indicators passed (Pass/Conditional) */
+  indicators_passed?: AssessmentRowIndicatorsPassed;
+  /** Total number of indicators */
+  total_indicators?: AssessmentRowTotalIndicators;
 }
+
+
+/**
+ * AssessmentRowGovernanceAreasPassed
+ */
+export type AssessmentRowGovernanceAreasPassed = number | null;
+
+
+/**
+ * AssessmentRowIndicatorsPassed
+ */
+export type AssessmentRowIndicatorsPassed = number | null;
 
 
 /**
  * AssessmentRowScore
  */
 export type AssessmentRowScore = number | null;
+
+
+/**
+ * AssessmentRowTotalGovernanceAreas
+ */
+export type AssessmentRowTotalGovernanceAreas = number | null;
+
+
+/**
+ * AssessmentRowTotalIndicators
+ */
+export type AssessmentRowTotalIndicators = number | null;
 
 
 /**

@@ -1120,9 +1120,17 @@ class AnalyticsService:
         # Get total count before pagination
         total_count = query.count()
 
-        # Apply pagination
+        # Apply pagination with eager loading for responses and indicators
+        # This is critical for calculating governance areas and indicators passed
         offset = (page - 1) * page_size
-        assessments = query.offset(offset).limit(page_size).all()
+        assessments = (
+            query.options(
+                selectinload(Assessment.responses).selectinload(AssessmentResponse.indicator)
+            )
+            .offset(offset)
+            .limit(page_size)
+            .all()
+        )
 
         if not assessments:
             return TableData(
@@ -1167,27 +1175,77 @@ class AnalyticsService:
             else:
                 status = "In Progress"
 
-            # Calculate score based on indicators met (Pass/Conditional) vs total validated
+            # Calculate score and new counts based on indicators met (Pass/Conditional) vs total validated
             # This aligns with GAR methodology
             score = None
+            indicators_passed = 0
+            total_indicators = 0
+            # Note: Calculating governance areas passed requires more complex logic joining back to indicators/areas
+            # For table view optimization, we'll do a simplified calculation or fetch standard calculation
+            # To avoid N+1, we rely on what's available or simple aggregation
+
+            # Since strict governance area passing logic (70% per area) is complex to do here without pre-fetching,
+            # we will approximate or leave as None if too expensive, but user wants it.
+            # Let's try to do it right. We need to group responses by governance area.
+
+            governance_areas_passed = 0
+            total_governance_areas = 0
+
+            # Get all governance areas (cached/fetched earlier ideally, but simple count here)
+            # We can infer total governance areas from the municipality/system config, usually static
+            # For passed: we need to group indicators by area.
+            # Assessment responses -> indicator -> governance_area_id
+
+            # Use a helper if available, or do inline aggregation if responses are loaded
             if assessment.responses:
-                # Count indicators by validation status
-                met_count = sum(
-                    1
-                    for r in assessment.responses
-                    if r.validation_status in (ValidationStatus.PASS, ValidationStatus.CONDITIONAL)
-                )
+                total_indicators = len(assessment.responses)
+
+                # Group by governance area
+                area_stats = {}  # {area_id: {total: 0, passed: 0}}
+
+                for r in assessment.responses:
+                    # Indicators passed count
+                    if r.validation_status in (ValidationStatus.PASS, ValidationStatus.CONDITIONAL):
+                        indicators_passed += 1
+
+                    # Grouping for governance areas
+                    # Requires r.indicator.governance_area_id which might not be eager loaded
+                    # If indicator relationship is loaded:
+                    if r.indicator and r.indicator.governance_area_id:
+                        ga_id = r.indicator.governance_area_id
+                        if ga_id not in area_stats:
+                            area_stats[ga_id] = {"total": 0, "passed": 0}
+
+                        area_stats[ga_id]["total"] += 1
+                        if r.validation_status in (
+                            ValidationStatus.PASS,
+                            ValidationStatus.CONDITIONAL,
+                        ):
+                            area_stats[ga_id]["passed"] += 1
+
+                # Calculate governance areas passed
+                total_governance_areas = len(area_stats)
+                for ga_id, stats in area_stats.items():
+                    if stats["total"] > 0:
+                        # Threshold 70%
+                        if (stats["passed"] / stats["total"] * 100) >= 70:
+                            governance_areas_passed += 1
+
+                # Score calc
                 total_validated = sum(
                     1 for r in assessment.responses if r.validation_status is not None
                 )
 
                 if total_validated > 0:
-                    score = round((met_count / total_validated * 100), 2)
+                    score = round((indicators_passed / total_validated * 100), 2)
                 else:
                     # Fallback to completion percentage if no validation status yet
                     completed = sum(1 for r in assessment.responses if r.is_completed)
-                    total = len(assessment.responses)
-                    score = round((completed / total * 100), 2) if total > 0 else 0.0
+                    score = (
+                        round((completed / total_indicators * 100), 2)
+                        if total_indicators > 0
+                        else 0.0
+                    )
 
             rows.append(
                 AssessmentRow(
@@ -1196,6 +1254,10 @@ class AnalyticsService:
                     governance_area=governance_area,
                     status=status,
                     score=score,
+                    governance_areas_passed=governance_areas_passed,
+                    total_governance_areas=total_governance_areas,
+                    indicators_passed=indicators_passed,
+                    total_indicators=total_indicators,
                 )
             )
 

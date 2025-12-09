@@ -97,6 +97,8 @@ class ApprovalQueueItem(BaseModel):
     can_recalibrate: bool
     mlgoo_recalibration_count: int
     is_mlgoo_recalibration: bool
+    governance_areas_passed: int
+    total_governance_areas: int
 
     class Config:
         from_attributes = True

@@ -180,6 +180,8 @@ export interface ApprovalQueueItem {
   can_recalibrate: boolean;
   mlgoo_recalibration_count: number;
   is_mlgoo_recalibration: boolean;
+  governance_areas_passed: number;
+  total_governance_areas: number;
 }
 
 

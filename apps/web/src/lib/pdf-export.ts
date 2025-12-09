@@ -267,7 +267,11 @@ export async function exportReportToPDF(
     pdf.text("Barangay Name", margin, headerY);
     pdf.text("Governance Area", margin + colWidths.barangay, headerY);
     pdf.text("Status", margin + colWidths.barangay + colWidths.area, headerY);
-    pdf.text("Score", margin + colWidths.barangay + colWidths.area + colWidths.status, headerY);
+    pdf.text(
+      "Comp. Rate",
+      margin + colWidths.barangay + colWidths.area + colWidths.status,
+      headerY
+    );
 
     // Header underline
     pdf.setLineWidth(1);
@@ -297,7 +301,7 @@ export async function exportReportToPDF(
         pdf.text("Governance Area", margin + colWidths.barangay, tableYPos);
         pdf.text("Status", margin + colWidths.barangay + colWidths.area, tableYPos);
         pdf.text(
-          "Score",
+          "Comp. Rate",
           margin + colWidths.barangay + colWidths.area + colWidths.status,
           tableYPos
         );

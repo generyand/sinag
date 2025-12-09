@@ -1,4 +1,4 @@
-import { Building2, BarChart3, PieChart, Map, Table2, Layers, type LucideIcon } from "lucide-react";
+import { Building2, Layers, Map, Table2, type LucideIcon } from "lucide-react";
 
 /**
  * Analytics tab configuration.
@@ -21,34 +21,22 @@ export const ANALYTICS_TABS: readonly AnalyticsTab[] = [
     description: "Municipal compliance summary and key metrics",
   },
   {
-    id: "kpis",
-    label: "KPIs",
-    icon: BarChart3,
-    description: "Key performance indicators and statistics",
-  },
-  {
-    id: "charts",
-    label: "Charts",
-    icon: PieChart,
-    description: "Visual charts and graphs",
-  },
-  {
     id: "map",
     label: "Geographic",
     icon: Map,
     description: "Geographic distribution view",
   },
   {
-    id: "table",
-    label: "Detailed Results",
-    icon: Table2,
-    description: "Detailed tabular data",
-  },
-  {
     id: "bbi",
     label: "BBI Status",
     icon: Layers,
     description: "Barangay-based institution functionality",
+  },
+  {
+    id: "table",
+    label: "Verdict Results",
+    icon: Table2,
+    description: "Final verdict results per barangay",
   },
 ] as const;
 

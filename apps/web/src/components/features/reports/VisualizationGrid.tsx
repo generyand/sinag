@@ -2,10 +2,10 @@ import { SulopBarangayMapIntegrated } from "@/components/features/analytics";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { BarangayMapPoint } from "@sinag/shared";
 import { ReportsDataResponse } from "@sinag/shared";
 import { AreaBreakdownBarChart, ComplianceStatusPieChart, TrendLineChart } from "./ChartComponents";
 import { AssessmentDataTable } from "./DataTable";
-import type { BarangayMapPoint } from "@sinag/shared";
 
 type VisualizationType = "bar" | "pie" | "line" | "map" | "table";
 
@@ -157,7 +157,7 @@ export function VisualizationGrid({ data, isLoading, showOnly }: VisualizationGr
       {!showOnly && (
         <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-muted-foreground border-t pt-4">
           <div>Report generated: {new Date(data.metadata.generated_at).toLocaleString()}</div>
-          {data.metadata.cycle_id && <div>Cycle ID: {data.metadata.cycle_id}</div>}
+          {data.metadata.assessment_year && <div>Year: {data.metadata.assessment_year}</div>}
         </div>
       )}
     </div>
