@@ -673,12 +673,16 @@ class AnalyticsService:
             bbi = data["bbi"]
             results = data["results"]
 
-            # Count by tier (using compliance_rating string field)
-            highly_count = sum(1 for r in results if r.compliance_rating == "HIGHLY_FUNCTIONAL")
-            moderately_count = sum(
-                1 for r in results if r.compliance_rating == "MODERATELY_FUNCTIONAL"
+            # Count by tier (compliance_rating is a string matching BBIStatus values)
+            highly_count = sum(
+                1 for r in results if r.compliance_rating == BBIStatus.HIGHLY_FUNCTIONAL.value
             )
-            low_count = sum(1 for r in results if r.compliance_rating == "LOW_FUNCTIONAL")
+            moderately_count = sum(
+                1 for r in results if r.compliance_rating == BBIStatus.MODERATELY_FUNCTIONAL.value
+            )
+            low_count = sum(
+                1 for r in results if r.compliance_rating == BBIStatus.LOW_FUNCTIONAL.value
+            )
 
             # Calculate average compliance for this BBI
             compliance_values = [
