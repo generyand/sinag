@@ -605,11 +605,8 @@ export function SulopBarangayMapIntegrated({
                 ) : (
                   /* Details for barangays with assessment data */
                   <div className="space-y-3">
-                    <div>
-                      <div className="text-lg font-bold text-gray-900">
-                        {displayedBarangay.name}
-                      </div>
-                      <div className="text-xs text-gray-500">ID: {displayedBarangay.id}</div>
+                    <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                      {displayedBarangay.name}
                     </div>
 
                     <div className="pt-2 border-t">
