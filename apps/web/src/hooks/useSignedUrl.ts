@@ -6,8 +6,8 @@
  */
 
 import {
-  useGetMovsFilesFileIdSignedUrl,
   getGetMovsFilesFileIdSignedUrlQueryKey,
+  useGetMovsFilesFileIdSignedUrl,
 } from "@sinag/shared";
 
 interface UseSignedUrlOptions {
@@ -37,14 +37,17 @@ interface UseSignedUrlOptions {
 export function useSignedUrl(fileId: number | null | undefined, options: UseSignedUrlOptions = {}) {
   const { staleTime = 1000 * 60 * 30, enabled = true } = options;
 
-  const { data, isLoading, error, refetch } = useGetMovsFilesFileIdSignedUrl(fileId ?? 0, {
-    query: {
-      queryKey: getGetMovsFilesFileIdSignedUrlQueryKey(fileId ?? 0),
-      enabled: enabled && !!fileId,
-      staleTime,
-      retry: 2,
-    },
-  });
+  const { data, isLoading, error, refetch } = useGetMovsFilesFileIdSignedUrl(
+    fileId ? parseInt(String(fileId), 10) : 0,
+    {
+      query: {
+        queryKey: getGetMovsFilesFileIdSignedUrlQueryKey(fileId ?? 0),
+        enabled: enabled && !!fileId,
+        staleTime,
+        retry: 2,
+      },
+    }
+  );
 
   return {
     signedUrl: data?.signed_url ?? null,

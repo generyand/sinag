@@ -15,20 +15,20 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useUploadStore } from "@/store/useUploadStore";
 import type { FileUploadField } from "@sinag/shared";
 import {
+  MOVFileResponse,
   getGetAssessmentsMyAssessmentQueryKey,
   getGetBlguDashboardAssessmentIdQueryKey,
   getGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFilesQueryKey,
   getGetMovsFilesFileIdSignedUrlQueryKey,
-  MOVFileResponse,
   useGetAssessmentsMyAssessment,
   useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles,
-  usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload,
   useGetMovsFilesFileIdSignedUrl,
+  usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload,
 } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, CheckCircle2, FileIcon, Info, Loader2, X } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 // Dynamically import annotators to avoid SSR issues
@@ -56,7 +56,7 @@ function SecureFilePreview({ file, annotations }: { file: MOVFileResponse; annot
     isLoading,
     error,
     refetch,
-  } = useGetMovsFilesFileIdSignedUrl(file.id, {
+  } = useGetMovsFilesFileIdSignedUrl(parseInt(String(file.id), 10), {
     query: {
       queryKey: getGetMovsFilesFileIdSignedUrlQueryKey(file.id),
       staleTime: 1000 * 60 * 30, // Cache for 30 minutes

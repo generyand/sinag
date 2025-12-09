@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useMovAnnotations } from "@/hooks/useMovAnnotations";
 import { useSignedUrl } from "@/hooks/useSignedUrl";
 import type { AssessmentDetailsResponse } from "@sinag/shared";
-import { FileIcon, X, Loader2 } from "lucide-react";
+import { FileIcon, Loader2, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import * as React from "react";
 
@@ -191,7 +191,7 @@ export function MiddleMovFilesPanel({
       const isNew = separationDate ? uploadDate > separationDate : false;
 
       return {
-        id: mov.id,
+        id: parseInt(String(mov.id), 10),
         assessment_id: selectedResponse.assessment_id,
         indicator_id: selectedResponse.indicator_id,
         file_name: mov.original_filename || mov.filename || "Unknown file",
@@ -471,7 +471,7 @@ export function MiddleMovFilesPanel({
               </div>
 
               {/* File Content - Uses signed URLs for secure access */}
-              <div className="flex-1" style={{ minHeight: 0 }}>
+              <div className="flex-1 relative overflow-hidden bg-slate-100 dark:bg-slate-950/50 rounded-sm">
                 <SecureFileContent
                   file={selectedFile}
                   annotationsLoading={annotationsLoading}

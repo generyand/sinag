@@ -1,30 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import {
-  File,
-  Trash2,
-  Download,
-  Eye,
-  FileText,
-  Image,
-  FileIcon,
-  MessageSquare,
-  Highlighter,
-  Loader2,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { formatDistanceToNow } from "date-fns";
 import {
   MOVFileResponse,
-  useGetMovsFilesFileIdSignedUrl,
   getGetMovsFilesFileIdSignedUrlQueryKey,
+  useGetMovsFilesFileIdSignedUrl,
 } from "@sinag/shared";
+import { formatDistanceToNow } from "date-fns";
+import {
+  Download,
+  Eye,
+  File,
+  FileIcon,
+  FileText,
+  Image,
+  Loader2,
+  MessageSquare,
+  Trash2,
+} from "lucide-react";
 import dynamic from "next/dynamic";
+import { useState } from "react";
 
 // Dynamically import annotators to avoid SSR issues
 const PdfAnnotator = dynamic(() => import("@/components/shared/PdfAnnotator"), {
@@ -96,7 +95,7 @@ function SecureFileViewer({
     isLoading,
     error,
     refetch,
-  } = useGetMovsFilesFileIdSignedUrl(file.id, {
+  } = useGetMovsFilesFileIdSignedUrl(parseInt(String(file.id), 10), {
     query: {
       queryKey: getGetMovsFilesFileIdSignedUrlQueryKey(file.id),
       staleTime: 1000 * 60 * 30, // Cache for 30 minutes (URL valid for 1 hour)
