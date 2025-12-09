@@ -613,10 +613,36 @@ class MLGOOService:
             "governance_areas": list(areas_data.values()),
             "can_approve": assessment.status == AssessmentStatus.AWAITING_MLGOO_APPROVAL,
             "can_recalibrate": assessment.can_request_mlgoo_recalibration,
+            # Rework tracking (Assessor stage)
+            "rework_requested_at": assessment.rework_requested_at.isoformat()
+            if assessment.rework_requested_at
+            else None,
+            "rework_submitted_at": assessment.rework_submitted_at.isoformat()
+            if assessment.rework_submitted_at
+            else None,
+            "rework_count": assessment.rework_count,
+            # Calibration tracking (Validator stage)
+            "calibration_requested_at": assessment.calibration_requested_at.isoformat()
+            if assessment.calibration_requested_at
+            else None,
+            "calibration_submitted_at": assessment.calibration_submitted_at.isoformat()
+            if assessment.calibration_submitted_at
+            else None,
+            # MLGOO RE-calibration tracking
             "mlgoo_recalibration_count": assessment.mlgoo_recalibration_count,
             "is_mlgoo_recalibration": assessment.is_mlgoo_recalibration,
+            "mlgoo_recalibration_requested_at": assessment.mlgoo_recalibration_requested_at.isoformat()
+            if assessment.mlgoo_recalibration_requested_at
+            else None,
+            "mlgoo_recalibration_submitted_at": assessment.mlgoo_recalibration_submitted_at.isoformat()
+            if assessment.mlgoo_recalibration_submitted_at
+            else None,
             "mlgoo_recalibration_indicator_ids": assessment.mlgoo_recalibration_indicator_ids,
             "mlgoo_recalibration_comments": assessment.mlgoo_recalibration_comments,
+            # MLGOO approval
+            "mlgoo_approved_at": assessment.mlgoo_approved_at.isoformat()
+            if assessment.mlgoo_approved_at
+            else None,
             "grace_period_expires_at": (
                 assessment.grace_period_expires_at.isoformat()
                 if assessment.grace_period_expires_at

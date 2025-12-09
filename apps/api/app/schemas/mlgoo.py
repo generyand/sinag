@@ -166,10 +166,22 @@ class AssessmentDetailResponse(BaseModel):
     governance_areas: list[GovernanceAreaDetailItem]
     can_approve: bool
     can_recalibrate: bool
+    # Rework tracking (Assessor stage)
+    rework_requested_at: str | None
+    rework_submitted_at: str | None  # When BLGU resubmitted after rework
+    rework_count: int
+    # Calibration tracking (Validator stage)
+    calibration_requested_at: str | None
+    calibration_submitted_at: str | None  # When BLGU resubmitted after calibration
+    # MLGOO RE-calibration tracking
     mlgoo_recalibration_count: int
     is_mlgoo_recalibration: bool
+    mlgoo_recalibration_requested_at: str | None
+    mlgoo_recalibration_submitted_at: str | None  # When BLGU resubmitted after MLGOO RE-calibration
     mlgoo_recalibration_indicator_ids: list[int] | None
     mlgoo_recalibration_comments: str | None
+    # MLGOO approval
+    mlgoo_approved_at: str | None
     grace_period_expires_at: str | None
     is_locked_for_deadline: bool
 

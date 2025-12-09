@@ -49,6 +49,7 @@ class Assessment(Base):
     # Files uploaded AFTER this timestamp are shown as "New Files (After Rework)" in Assessor view
     rework_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     rework_requested_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    rework_submitted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)  # When BLGU resubmitted after rework
     rework_requested_by: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
@@ -66,6 +67,7 @@ class Assessment(Base):
     # IMPORTANT: In Validator view, use calibration_requested_at for calibrated indicators (validation_status=null),
     # and rework_requested_at for non-calibrated indicators (to show files from Assessor rework stage)
     calibration_requested_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    calibration_submitted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)  # When BLGU resubmitted after calibration
     calibration_count: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0
     )  # Legacy: global count (deprecated)
@@ -96,6 +98,9 @@ class Assessment(Base):
     mlgoo_recalibration_requested_at: Mapped[datetime | None] = mapped_column(
         DateTime, nullable=True
     )
+    mlgoo_recalibration_submitted_at: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True
+    )  # When BLGU resubmitted after MLGOO RE-calibration
     mlgoo_recalibration_count: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0
     )  # Max 1

@@ -1581,12 +1581,23 @@ class AssessmentService:
         validation_result = self._run_preliminary_compliance_check(assessment)
 
         if validation_result.is_valid:
-            # Check if this is a resubmission after rework
-            is_resubmission = assessment.rework_requested_at is not None
+            # Check if this is a resubmission after rework/calibration
+            is_rework_resubmission = assessment.rework_requested_at is not None and not assessment.is_calibration_rework
+            is_calibration_resubmission = assessment.is_calibration_rework and assessment.calibration_requested_at is not None
+            is_mlgoo_recalibration_resubmission = assessment.is_mlgoo_recalibration and assessment.mlgoo_recalibration_requested_at is not None
+            is_resubmission = is_rework_resubmission or is_calibration_resubmission or is_mlgoo_recalibration_resubmission
 
             # Update assessment status
             assessment.status = AssessmentStatus.SUBMITTED_FOR_REVIEW
             assessment.submitted_at = datetime.utcnow()
+
+            # Set specific resubmission timestamps for timeline tracking
+            if is_rework_resubmission:
+                assessment.rework_submitted_at = datetime.utcnow()
+            if is_calibration_resubmission:
+                assessment.calibration_submitted_at = datetime.utcnow()
+            if is_mlgoo_recalibration_resubmission:
+                assessment.mlgoo_recalibration_submitted_at = datetime.utcnow()
 
             # CRITICAL: If resubmitting after rework, clear checklist data for reworked indicators
             # This ensures assessors review them with clean checklists
