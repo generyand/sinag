@@ -972,10 +972,14 @@ class StorageService:
             assessment = (
                 db.query(Assessment).filter(Assessment.id == mov_file.assessment_id).first()
             )
-            if assessment and assessment.barangay_id != user.barangay_id:
-                raise HTTPException(
-                    status_code=403, detail="You don't have permission to access this file"
-                )
+            if assessment:
+                # Get the barangay_id through the assessment's blgu_user
+                # Assessment doesn't have barangay_id directly - it's linked via blgu_user_id
+                blgu_user = db.query(User).filter(User.id == assessment.blgu_user_id).first()
+                if blgu_user and blgu_user.barangay_id != user.barangay_id:
+                    raise HTTPException(
+                        status_code=403, detail="You don't have permission to access this file"
+                    )
 
         # VALIDATORs can only access files within their assigned governance area
         if user.role == UserRole.VALIDATOR and user.validator_area_id:
