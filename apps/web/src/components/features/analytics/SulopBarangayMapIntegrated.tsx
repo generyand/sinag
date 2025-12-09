@@ -2,12 +2,51 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ClipboardList, X } from "lucide-react";
+import { CheckCircle2, Circle, ClipboardList, Clock, X, XCircle } from "lucide-react";
 import React, { useState } from "react";
 import { BARANGAY_PATHS } from "./sulop-barangay-paths";
 
 /**
- * Barangay data structure
+ * Core indicator codes for governance assessment
+ */
+type CoreIndicatorCode = "FAS" | "DP" | "SPO";
+
+/**
+ * Essential indicator codes for governance assessment
+ */
+type EssentialIndicatorCode = "SPS" | "BFC" | "EM";
+
+/**
+ * Status for individual indicators
+ */
+type IndicatorStatus = "passed" | "failed" | "pending";
+
+/**
+ * Assessment status containing Core and Essential indicator results
+ */
+interface AssessmentStatus {
+  core: {
+    passed: number;
+    total: number;
+    indicators: Record<CoreIndicatorCode, IndicatorStatus>;
+  };
+  essential: {
+    passed: number;
+    total: number;
+    indicators: Record<EssentialIndicatorCode, IndicatorStatus>;
+  };
+}
+
+/**
+ * Workflow status showing current phase and action needed
+ */
+interface WorkflowStatus {
+  currentPhase: string;
+  actionNeeded: string;
+}
+
+/**
+ * Barangay data structure with assessment and workflow status
  */
 interface BarangayData {
   id: string; // e.g., "1katipunan", "2tanwalang"
@@ -15,6 +54,8 @@ interface BarangayData {
   status: "pass" | "fail" | "in_progress" | "not_started";
   compliance_rate?: number;
   submission_count?: number;
+  assessmentStatus?: AssessmentStatus;
+  workflowStatus?: WorkflowStatus;
 }
 
 interface SulopBarangayMapProps {
@@ -128,6 +169,130 @@ const findSvgIdFromBarangay = (barangayId: string, barangayName: string): string
 
   return null;
 };
+
+/**
+ * Assessment Status Section - Displays Core and Essential indicator results
+ * Modern design with glass effects and gradient accents
+ */
+function AssessmentStatusSection({ assessmentStatus }: { assessmentStatus: AssessmentStatus }) {
+  const getIndicatorIcon = (status: IndicatorStatus) => {
+    switch (status) {
+      case "passed":
+        return <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />;
+      case "failed":
+        return <XCircle className="w-3.5 h-3.5 text-red-500" />;
+      default:
+        return <Circle className="w-3.5 h-3.5 text-gray-400" />;
+    }
+  };
+
+  const coreIndicators: CoreIndicatorCode[] = ["FAS", "DP", "SPO"];
+  const essentialIndicators: EssentialIndicatorCode[] = ["SPS", "BFC", "EM"];
+
+  return (
+    <div className="space-y-3">
+      <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+        Assessment Status
+      </h4>
+
+      {/* Core Indicators */}
+      <div className="bg-linear-to-br from-emerald-50/50 to-teal-50/50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-lg p-3 border border-emerald-100 dark:border-emerald-800/30">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Core:</span>
+          <Badge
+            variant="outline"
+            className={`text-xs px-2 py-0.5 ${
+              assessmentStatus.core.passed === assessmentStatus.core.total
+                ? "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-700"
+                : "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700"
+            }`}
+          >
+            {assessmentStatus.core.passed}/{assessmentStatus.core.total} Passed
+            {assessmentStatus.core.passed === assessmentStatus.core.total && (
+              <CheckCircle2 className="w-3 h-3 ml-1 inline" />
+            )}
+          </Badge>
+        </div>
+        <div className="flex items-center gap-3">
+          {coreIndicators.map((code) => (
+            <div key={code} className="flex items-center gap-1">
+              {getIndicatorIcon(assessmentStatus.core.indicators[code])}
+              <span className="text-xs text-gray-600 dark:text-gray-400">{code}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Essential Indicators */}
+      <div className="bg-linear-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-3 border border-blue-100 dark:border-blue-800/30">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Essential:</span>
+          <Badge
+            variant="outline"
+            className={`text-xs px-2 py-0.5 ${
+              assessmentStatus.essential.passed === assessmentStatus.essential.total
+                ? "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-700"
+                : "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700"
+            }`}
+          >
+            {assessmentStatus.essential.passed}/{assessmentStatus.essential.total} Passed
+            {assessmentStatus.essential.passed === assessmentStatus.essential.total && (
+              <CheckCircle2 className="w-3 h-3 ml-1 inline" />
+            )}
+          </Badge>
+        </div>
+        <div className="flex items-center gap-3">
+          {essentialIndicators.map((code) => (
+            <div key={code} className="flex items-center gap-1">
+              {getIndicatorIcon(assessmentStatus.essential.indicators[code])}
+              <span className="text-xs text-gray-600 dark:text-gray-400">{code}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Workflow Status Section - Displays current phase and action needed
+ * Features gradient styling and clear visual hierarchy
+ */
+function WorkflowStatusSection({ workflowStatus }: { workflowStatus: WorkflowStatus }) {
+  return (
+    <div className="space-y-3">
+      <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+        Workflow Status
+      </h4>
+
+      <div className="bg-linear-to-br from-purple-50/50 to-violet-50/50 dark:from-purple-900/20 dark:to-violet-900/20 rounded-lg p-3 border border-purple-100 dark:border-purple-800/30 space-y-2">
+        {/* Current Phase */}
+        <div className="flex items-start gap-2">
+          <Clock className="w-4 h-4 text-purple-500 dark:text-purple-400 mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block">Current Phase:</span>
+            <span className="text-sm font-medium text-gray-800 dark:text-gray-200 block truncate">
+              {workflowStatus.currentPhase}
+            </span>
+          </div>
+        </div>
+
+        {/* Action Needed */}
+        <div className="flex items-start gap-2 pt-2 border-t border-purple-100 dark:border-purple-800/30">
+          <div className="w-4 h-4 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mt-0.5 shrink-0">
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block">Action Needed:</span>
+            <span className="text-sm font-medium text-amber-700 dark:text-amber-400 block truncate">
+              {workflowStatus.actionNeeded}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Sulop Barangay Map - Fully Integrated with Your SVG Data
@@ -455,6 +620,22 @@ export function SulopBarangayMapIntegrated({
                         </div>
                       )}
                     </div>
+
+                    {/* Assessment Status Section */}
+                    {displayedBarangay.assessmentStatus && (
+                      <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                        <AssessmentStatusSection
+                          assessmentStatus={displayedBarangay.assessmentStatus}
+                        />
+                      </div>
+                    )}
+
+                    {/* Workflow Status Section */}
+                    {displayedBarangay.workflowStatus && (
+                      <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                        <WorkflowStatusSection workflowStatus={displayedBarangay.workflowStatus} />
+                      </div>
+                    )}
                   </div>
                 )
               ) : (

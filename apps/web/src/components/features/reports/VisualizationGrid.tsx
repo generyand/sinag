@@ -119,12 +119,88 @@ export function VisualizationGrid({ data, isLoading, showOnly }: VisualizationGr
                 if (v === "in_progress" || v === "in progress") return "in_progress" as const;
                 return "not_started" as const;
               };
-              const barangays = points.map((p) => ({
-                id: String(p.barangay_id),
-                name: p.name,
-                status: toStatus(p.status),
-                compliance_rate: p.score ?? undefined,
-              }));
+
+              // Generate simulated assessment and workflow status based on barangay status
+              const generateAssessmentStatus = (status: ReturnType<typeof toStatus>) => {
+                if (status === "not_started") return undefined;
+
+                // Generate indicator statuses based on overall status
+                const generateIndicatorStatus = (
+                  isPass: boolean,
+                  idx: number
+                ): "passed" | "failed" | "pending" => {
+                  if (status === "pass") return "passed";
+                  if (status === "fail")
+                    return idx === 0 ? "passed" : idx === 1 ? "failed" : "pending";
+                  // in_progress: mix of passed and pending
+                  return idx < 2 ? "passed" : "pending";
+                };
+
+                const coreIndicators = ["FAS", "DP", "SPO"] as const;
+                const essentialIndicators = ["SPS", "BFC", "EM"] as const;
+
+                const coreStatuses = coreIndicators.map((_, idx) =>
+                  generateIndicatorStatus(status === "pass", idx)
+                );
+                const essentialStatuses = essentialIndicators.map((_, idx) =>
+                  generateIndicatorStatus(status === "pass", idx)
+                );
+
+                return {
+                  core: {
+                    passed: coreStatuses.filter((s) => s === "passed").length,
+                    total: 3,
+                    indicators: {
+                      FAS: coreStatuses[0],
+                      DP: coreStatuses[1],
+                      SPO: coreStatuses[2],
+                    },
+                  },
+                  essential: {
+                    passed: essentialStatuses.filter((s) => s === "passed").length,
+                    total: 3,
+                    indicators: {
+                      SPS: essentialStatuses[0],
+                      BFC: essentialStatuses[1],
+                      EM: essentialStatuses[2],
+                    },
+                  },
+                };
+              };
+
+              const generateWorkflowStatus = (status: ReturnType<typeof toStatus>) => {
+                if (status === "not_started") return undefined;
+
+                const workflows = {
+                  pass: {
+                    currentPhase: "Completed",
+                    actionNeeded: "None - Assessment Finalized",
+                  },
+                  fail: {
+                    currentPhase: "Phase 2: Table Validation",
+                    actionNeeded: "Rework Required",
+                  },
+                  in_progress: {
+                    currentPhase: "Phase 2: Table Validation",
+                    actionNeeded: "Waiting for Calibration",
+                  },
+                };
+
+                return workflows[status];
+              };
+
+              const barangays = points.map((p) => {
+                const status = toStatus(p.status);
+                return {
+                  id: String(p.barangay_id),
+                  name: p.name,
+                  status,
+                  compliance_rate: p.score ?? undefined,
+                  assessmentStatus: generateAssessmentStatus(status),
+                  workflowStatus: generateWorkflowStatus(status),
+                };
+              });
+
               return (
                 <SulopBarangayMapIntegrated
                   barangays={barangays as any}
