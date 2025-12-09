@@ -59,7 +59,7 @@ export function Header() {
   const handleLoginClick = () => {
     setShowLoginAnimation(true);
     setTimeout(() => {
-      window.location.href = "/auth/login";
+      window.location.href = "/login";
     }, 800);
   };
 
