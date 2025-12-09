@@ -425,7 +425,7 @@ export function SulopBarangayMapIntegrated({
   }, [barangays]);
 
   return (
-    <Card className="w-full rounded-sm" role="region" aria-label={title}>
+    <Card className="w-full rounded-sm mb-12" role="region" aria-label={title}>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
@@ -457,7 +457,7 @@ export function SulopBarangayMapIntegrated({
         </div>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="pb-12">
         {/* Main container with equal heights for map and details */}
         <div className="flex flex-col md:flex-row md:items-stretch gap-4">
           {/* Map Container - Expands/Shrinks based on selection */}
