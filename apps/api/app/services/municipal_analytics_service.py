@@ -602,17 +602,43 @@ class MunicipalAnalyticsService:
                 )
                 continue
 
-            # Calculate overall score from area_results
+            # Only calculate detailed metrics for COMPLETED assessments
+            # For in-progress assessments, these fields should remain None
             overall_score = None
-            if assessment.area_results:
-                passed_areas = sum(
-                    1
-                    for result in assessment.area_results.values()
-                    if isinstance(result, dict) and result.get("passed", False)
+            governance_areas_passed = None
+            total_governance_areas = None
+            pass_count = None
+            conditional_count = None
+            total_responses = None
+
+            if assessment.status == AssessmentStatus.COMPLETED:
+                # Calculate governance areas from area_results
+                # area_results is a dict with area names as keys and "Passed"/"Failed" as values
+                if assessment.area_results:
+                    passed_areas = sum(
+                        1 for result in assessment.area_results.values() if result == "Passed"
+                    )
+                    total_areas = len(assessment.area_results)
+                    if total_areas > 0:
+                        overall_score = round(passed_areas / total_areas * 100, 2)
+                        governance_areas_passed = passed_areas
+                        total_governance_areas = total_areas
+
+                # Calculate indicator counts from assessment responses
+                responses = (
+                    db.query(AssessmentResponse)
+                    .filter(AssessmentResponse.assessment_id == assessment.id)
+                    .all()
                 )
-                total_areas = len(assessment.area_results)
-                if total_areas > 0:
-                    overall_score = round(passed_areas / total_areas * 100, 2)
+
+                if responses:
+                    pass_count = sum(
+                        1 for r in responses if r.validation_status == ValidationStatus.PASS
+                    )
+                    conditional_count = sum(
+                        1 for r in responses if r.validation_status == ValidationStatus.CONDITIONAL
+                    )
+                    total_responses = len(responses)
 
             barangay_statuses.append(
                 BarangayAssessmentStatus(
@@ -630,6 +656,11 @@ class MunicipalAnalyticsService:
                     overall_score=overall_score,
                     has_capdev_insights=bool(assessment.capdev_insights),
                     capdev_status=assessment.capdev_insights_status,
+                    governance_areas_passed=governance_areas_passed,
+                    total_governance_areas=total_governance_areas,
+                    pass_count=pass_count,
+                    conditional_count=conditional_count,
+                    total_responses=total_responses,
                 )
             )
 

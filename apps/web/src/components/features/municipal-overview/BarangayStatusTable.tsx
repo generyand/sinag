@@ -378,7 +378,8 @@ export function BarangayStatusTable({
                       </TableCell>
                       <TableCell>{getUnifiedStatusBadge(barangay)}</TableCell>
                       <TableCell className="text-right">
-                        {barangay.governance_areas_passed !== undefined
+                        {barangay.governance_areas_passed !== undefined &&
+                        barangay.governance_areas_passed !== null
                           ? `${barangay.governance_areas_passed}/${barangay.total_governance_areas}`
                           : "-"}
                       </TableCell>

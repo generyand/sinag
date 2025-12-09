@@ -1066,6 +1066,16 @@ export interface BarangayAssessmentStatus {
   has_capdev_insights?: boolean;
   /** CapDev insights generation status */
   capdev_status?: BarangayAssessmentStatusCapdevStatus;
+  /** Number of governance areas passed */
+  governance_areas_passed?: BarangayAssessmentStatusGovernanceAreasPassed;
+  /** Total number of governance areas assessed */
+  total_governance_areas?: BarangayAssessmentStatusTotalGovernanceAreas;
+  /** Number of indicators passed */
+  pass_count?: BarangayAssessmentStatusPassCount;
+  /** Number of conditional indicators */
+  conditional_count?: BarangayAssessmentStatusConditionalCount;
+  /** Total number of indicator responses */
+  total_responses?: BarangayAssessmentStatusTotalResponses;
 }
 
 
@@ -1088,6 +1098,18 @@ export type BarangayAssessmentStatusComplianceStatus = string | null;
 
 
 /**
+ * BarangayAssessmentStatusConditionalCount
+ */
+export type BarangayAssessmentStatusConditionalCount = number | null;
+
+
+/**
+ * BarangayAssessmentStatusGovernanceAreasPassed
+ */
+export type BarangayAssessmentStatusGovernanceAreasPassed = number | null;
+
+
+/**
  * BarangayAssessmentStatusMlgooApprovedAt
  */
 export type BarangayAssessmentStatusMlgooApprovedAt = string | null;
@@ -1100,9 +1122,27 @@ export type BarangayAssessmentStatusOverallScore = number | null;
 
 
 /**
+ * BarangayAssessmentStatusPassCount
+ */
+export type BarangayAssessmentStatusPassCount = number | null;
+
+
+/**
  * BarangayAssessmentStatusSubmittedAt
  */
 export type BarangayAssessmentStatusSubmittedAt = string | null;
+
+
+/**
+ * BarangayAssessmentStatusTotalGovernanceAreas
+ */
+export type BarangayAssessmentStatusTotalGovernanceAreas = number | null;
+
+
+/**
+ * BarangayAssessmentStatusTotalResponses
+ */
+export type BarangayAssessmentStatusTotalResponses = number | null;
 
 
 /**

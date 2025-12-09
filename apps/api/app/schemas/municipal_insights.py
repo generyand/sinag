@@ -155,6 +155,17 @@ class BarangayAssessmentStatus(BaseModel):
     )
     capdev_status: str | None = Field(None, description="CapDev insights generation status")
 
+    # Additional fields for detailed assessment data
+    governance_areas_passed: int | None = Field(
+        None, description="Number of governance areas passed"
+    )
+    total_governance_areas: int | None = Field(
+        None, description="Total number of governance areas assessed"
+    )
+    pass_count: int | None = Field(None, description="Number of indicators passed")
+    conditional_count: int | None = Field(None, description="Number of conditional indicators")
+    total_responses: int | None = Field(None, description="Total number of indicator responses")
+
 
 class BarangayStatusList(BaseModel):
     """Schema for list of barangay assessment statuses."""
