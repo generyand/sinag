@@ -3,6 +3,7 @@
 import {
   ANALYTICS_TABS,
   ActiveFilterPills,
+  GARAnalyticsTab,
   useAnalyticsFilters,
   type AnalyticsTabId,
 } from "@/components/features/analytics";
@@ -245,6 +246,7 @@ export default function AnalyticsPage() {
                         status: filters.status,
                       }}
                       reportsData={reportsData}
+                      activeTab={activeTab}
                     />
                   </div>
                 )}
@@ -258,6 +260,11 @@ export default function AnalyticsPage() {
               <TabsList className="w-full flex flex-wrap gap-1 bg-transparent h-auto p-0">
                 {ANALYTICS_TABS.map((tab) => {
                   const Icon = tab.icon;
+                  // Hide GAR tab for non-MLGOO users
+                  if (tab.id === "gar" && user?.role !== "MLGOO_DILG") {
+                    return null;
+                  }
+
                   return (
                     <TabsTrigger
                       key={tab.id}
@@ -399,6 +406,11 @@ export default function AnalyticsPage() {
                 isLoading={isReportsLoading}
                 showOnly={["table"]}
               />
+            )}
+
+            {/* GAR Report Tab - MLGOO Only */}
+            {activeTab === "gar" && (
+              <GARAnalyticsTab year={selectedYear ?? new Date().getFullYear()} />
             )}
           </div>
         </div>

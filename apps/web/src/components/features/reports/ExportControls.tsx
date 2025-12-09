@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { AnalyticsTabId } from "@/components/features/analytics";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -8,20 +8,27 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Download, FileText, Image, Loader2, ChevronDown } from "lucide-react";
 import { exportToCSV } from "@/lib/csv-export";
+import { FilterState, exportReportToPDF } from "@/lib/pdf-export";
 import { exportToPNG } from "@/lib/png-export";
-import { exportReportToPDF, FilterState } from "@/lib/pdf-export";
 import { showError, showWarning } from "@/lib/toast";
 import { AssessmentRow, ReportsDataResponse } from "@sinag/shared";
+import { ChevronDown, Download, FileText, Image, Loader2 } from "lucide-react";
+import { useState } from "react";
 
 interface ExportControlsProps {
   tableData: AssessmentRow[];
   currentFilters?: FilterState;
   reportsData?: ReportsDataResponse;
+  activeTab: AnalyticsTabId;
 }
 
-export function ExportControls({ tableData, currentFilters, reportsData }: ExportControlsProps) {
+export function ExportControls({
+  tableData,
+  currentFilters,
+  reportsData,
+  activeTab,
+}: ExportControlsProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [exportType, setExportType] = useState<string | null>(null);
 
@@ -123,34 +130,27 @@ export function ExportControls({ tableData, currentFilters, reportsData }: Expor
         Export CSV
       </Button>
 
-      {/* PNG Export Dropdown */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" disabled={isExporting}>
-            {isExporting && exportType === "PNG" ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Image className="h-4 w-4 mr-2" />
-            )}
-            Export PNG
-            <ChevronDown className="h-4 w-4 ml-2" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => handlePNGExport("bar_chart", "bar-chart-container")}>
-            Bar Chart
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handlePNGExport("pie_chart", "pie-chart-container")}>
-            Pie Chart
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handlePNGExport("line_chart", "line-chart-container")}>
-            Line Chart
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handlePNGExport("map", "map-container")}>
-            Map
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {/* PNG Export Dropdown - Only show on Map tab */}
+      {activeTab === "map" && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" disabled={isExporting}>
+              {isExporting && exportType === "PNG" ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Image className="h-4 w-4 mr-2" />
+              )}
+              Export PNG
+              <ChevronDown className="h-4 w-4 ml-2" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handlePNGExport("map", "map-container")}>
+              Map
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
 
       {/* PDF Export Button */}
       <Button

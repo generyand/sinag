@@ -1,4 +1,4 @@
-import { Building2, Layers, Map, Table2, type LucideIcon } from "lucide-react";
+import { Building2, FileSpreadsheet, Layers, Map, Table2, type LucideIcon } from "lucide-react";
 
 /**
  * Analytics tab configuration.
@@ -37,6 +37,12 @@ export const ANALYTICS_TABS: readonly AnalyticsTab[] = [
     label: "Verdict Results",
     icon: Table2,
     description: "Final verdict results per barangay",
+  },
+  {
+    id: "gar",
+    label: "GAR Report",
+    icon: FileSpreadsheet,
+    description: "Governance Assessment Report",
   },
 ] as const;
 
