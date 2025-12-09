@@ -203,7 +203,7 @@ class ComplianceService:
                 f"Indicator {indicator.indicator_code}: option_groups={option_groups}, "
                 f"completed={completed_item_ids}, any_group_complete={any_group_complete}"
             )
-        elif validation_rule == "OR_LOGIC_AT_LEAST_1_REQUIRED":
+        elif validation_rule in ["OR_LOGIC_AT_LEAST_1_REQUIRED", "SHARED_PLUS_OR_LOGIC"]:
             # Special logic for indicators like 4.5.6 (Physical OR Financial)
             # 1. Must satisfy any unconditionally REQUIRED items (like shared uploads)
             # 2. Must satisfy at least one OPTIONAL assessment field (YES result)
