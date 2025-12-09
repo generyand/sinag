@@ -172,82 +172,86 @@ const findSvgIdFromBarangay = (barangayId: string, barangayName: string): string
 
 /**
  * Assessment Status Section - Displays Core and Essential indicator results
- * Modern design with glass effects and gradient accents
+ * Clean card layout with balanced visual hierarchy
  */
 function AssessmentStatusSection({ assessmentStatus }: { assessmentStatus: AssessmentStatus }) {
   const getIndicatorIcon = (status: IndicatorStatus) => {
     switch (status) {
       case "passed":
-        return <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />;
+        return <CheckCircle2 className="w-4 h-4 text-emerald-500" />;
       case "failed":
-        return <XCircle className="w-3.5 h-3.5 text-red-500" />;
+        return <XCircle className="w-4 h-4 text-red-500" />;
       default:
-        return <Circle className="w-3.5 h-3.5 text-gray-400" />;
+        return <Circle className="w-4 h-4 text-gray-300 dark:text-gray-600" />;
     }
   };
 
   const coreIndicators: CoreIndicatorCode[] = ["FAS", "DP", "SPO"];
   const essentialIndicators: EssentialIndicatorCode[] = ["SPS", "BFC", "EM"];
 
+  const allCorePassed = assessmentStatus.core.passed === assessmentStatus.core.total;
+  const allEssentialPassed = assessmentStatus.essential.passed === assessmentStatus.essential.total;
+
   return (
-    <div className="space-y-3">
-      <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+    <div className="space-y-4">
+      <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
         Assessment Status
       </h4>
 
-      {/* Core Indicators */}
-      <div className="bg-linear-to-br from-emerald-50/50 to-teal-50/50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-lg p-3 border border-emerald-100 dark:border-emerald-800/30">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Core:</span>
-          <Badge
-            variant="outline"
-            className={`text-xs px-2 py-0.5 ${
-              assessmentStatus.core.passed === assessmentStatus.core.total
-                ? "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-700"
-                : "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700"
-            }`}
-          >
-            {assessmentStatus.core.passed}/{assessmentStatus.core.total} Passed
-            {assessmentStatus.core.passed === assessmentStatus.core.total && (
-              <CheckCircle2 className="w-3 h-3 ml-1 inline" />
-            )}
-          </Badge>
+      {/* Two-column grid for Core and Essential */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* Core Card */}
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Core</span>
+            <span
+              className={`text-xs font-bold ${allCorePassed ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}
+            >
+              {assessmentStatus.core.passed}/{assessmentStatus.core.total}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-1">
+            {coreIndicators.map((code) => (
+              <div
+                key={code}
+                className="flex flex-col items-center gap-0.5 flex-1"
+                title={`${code}: ${assessmentStatus.core.indicators[code]}`}
+              >
+                {getIndicatorIcon(assessmentStatus.core.indicators[code])}
+                <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">
+                  {code}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          {coreIndicators.map((code) => (
-            <div key={code} className="flex items-center gap-1">
-              {getIndicatorIcon(assessmentStatus.core.indicators[code])}
-              <span className="text-xs text-gray-600 dark:text-gray-400">{code}</span>
-            </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Essential Indicators */}
-      <div className="bg-linear-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-3 border border-blue-100 dark:border-blue-800/30">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Essential:</span>
-          <Badge
-            variant="outline"
-            className={`text-xs px-2 py-0.5 ${
-              assessmentStatus.essential.passed === assessmentStatus.essential.total
-                ? "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-700"
-                : "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700"
-            }`}
-          >
-            {assessmentStatus.essential.passed}/{assessmentStatus.essential.total} Passed
-            {assessmentStatus.essential.passed === assessmentStatus.essential.total && (
-              <CheckCircle2 className="w-3 h-3 ml-1 inline" />
-            )}
-          </Badge>
-        </div>
-        <div className="flex items-center gap-3">
-          {essentialIndicators.map((code) => (
-            <div key={code} className="flex items-center gap-1">
-              {getIndicatorIcon(assessmentStatus.essential.indicators[code])}
-              <span className="text-xs text-gray-600 dark:text-gray-400">{code}</span>
-            </div>
-          ))}
+        {/* Essential Card */}
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+              Essential
+            </span>
+            <span
+              className={`text-xs font-bold ${allEssentialPassed ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}
+            >
+              {assessmentStatus.essential.passed}/{assessmentStatus.essential.total}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-1">
+            {essentialIndicators.map((code) => (
+              <div
+                key={code}
+                className="flex flex-col items-center gap-0.5 flex-1"
+                title={`${code}: ${assessmentStatus.essential.indicators[code]}`}
+              >
+                {getIndicatorIcon(assessmentStatus.essential.indicators[code])}
+                <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">
+                  {code}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -256,38 +260,53 @@ function AssessmentStatusSection({ assessmentStatus }: { assessmentStatus: Asses
 
 /**
  * Workflow Status Section - Displays current phase and action needed
- * Features gradient styling and clear visual hierarchy
+ * Clean card layout matching Assessment Status section
  */
 function WorkflowStatusSection({ workflowStatus }: { workflowStatus: WorkflowStatus }) {
+  const isCompleted = workflowStatus.currentPhase.toLowerCase().includes("completed");
+  const noActionNeeded = workflowStatus.actionNeeded.toLowerCase().includes("none");
+
   return (
-    <div className="space-y-3">
-      <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+    <div className="space-y-4">
+      <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
         Workflow Status
       </h4>
 
-      <div className="bg-linear-to-br from-purple-50/50 to-violet-50/50 dark:from-purple-900/20 dark:to-violet-900/20 rounded-lg p-3 border border-purple-100 dark:border-purple-800/30 space-y-2">
-        {/* Current Phase */}
-        <div className="flex items-start gap-2">
-          <Clock className="w-4 h-4 text-purple-500 dark:text-purple-400 mt-0.5 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <span className="text-xs text-gray-500 dark:text-gray-400 block">Current Phase:</span>
-            <span className="text-sm font-medium text-gray-800 dark:text-gray-200 block truncate">
-              {workflowStatus.currentPhase}
+      {/* Two-column grid for balanced layout */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* Current Phase Card */}
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 space-y-1">
+          <div className="flex items-center gap-1.5">
+            <Clock className="w-3 h-3 text-gray-400" />
+            <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">
+              Phase
             </span>
           </div>
+          <p
+            className={`text-xs font-semibold truncate ${isCompleted ? "text-emerald-600 dark:text-emerald-400" : "text-gray-700 dark:text-gray-300"}`}
+            title={workflowStatus.currentPhase}
+          >
+            {workflowStatus.currentPhase}
+          </p>
         </div>
 
-        {/* Action Needed */}
-        <div className="flex items-start gap-2 pt-2 border-t border-purple-100 dark:border-purple-800/30">
-          <div className="w-4 h-4 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mt-0.5 shrink-0">
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <span className="text-xs text-gray-500 dark:text-gray-400 block">Action Needed:</span>
-            <span className="text-sm font-medium text-amber-700 dark:text-amber-400 block truncate">
-              {workflowStatus.actionNeeded}
+        {/* Action Needed Card */}
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 space-y-1">
+          <div className="flex items-center gap-1.5">
+            {!noActionNeeded && (
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            )}
+            {noActionNeeded && <CheckCircle2 className="w-3 h-3 text-emerald-500" />}
+            <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">
+              Action
             </span>
           </div>
+          <p
+            className={`text-xs font-semibold truncate ${noActionNeeded ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}
+            title={workflowStatus.actionNeeded}
+          >
+            {noActionNeeded ? "None" : workflowStatus.actionNeeded}
+          </p>
         </div>
       </div>
     </div>
