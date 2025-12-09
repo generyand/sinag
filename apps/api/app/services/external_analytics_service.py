@@ -8,7 +8,7 @@ from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from app.core.cache import CACHE_TTL_EXTERNAL_ANALYTICS, cache
-from app.db.enums import ComplianceStatus, ValidationStatus
+from app.db.enums import AssessmentStatus, ComplianceStatus, ValidationStatus
 from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.schemas.external_analytics import (
@@ -142,8 +142,8 @@ class ExternalAnalyticsService:
         Raises:
             ValueError: If fewer than minimum threshold barangays assessed
         """
-        # Query for completed assessments
-        query = db.query(Assessment).filter(Assessment.final_compliance_status.isnot(None))
+        # Query for completed assessments (status == COMPLETED ensures assessment is finalized)
+        query = db.query(Assessment).filter(Assessment.status == AssessmentStatus.COMPLETED)
 
         # Apply cycle filter if specified
         if assessment_cycle:
@@ -221,11 +221,11 @@ class ExternalAnalyticsService:
             if assessment_cycle:
                 query = query.join(Assessment).filter(
                     Assessment.assessment_cycle == assessment_cycle,
-                    Assessment.final_compliance_status.isnot(None),
+                    Assessment.status == AssessmentStatus.COMPLETED,
                 )
             else:
                 query = query.join(Assessment).filter(
-                    Assessment.final_compliance_status.isnot(None)
+                    Assessment.status == AssessmentStatus.COMPLETED
                 )
 
             responses = query.all()
@@ -328,11 +328,11 @@ class ExternalAnalyticsService:
             if assessment_cycle:
                 query = query.join(Assessment).filter(
                     Assessment.assessment_cycle == assessment_cycle,
-                    Assessment.final_compliance_status.isnot(None),
+                    Assessment.status == AssessmentStatus.COMPLETED,
                 )
             else:
                 query = query.join(Assessment).filter(
-                    Assessment.final_compliance_status.isnot(None)
+                    Assessment.status == AssessmentStatus.COMPLETED
                 )
 
             responses = query.all()
@@ -397,7 +397,7 @@ class ExternalAnalyticsService:
             .join(AssessmentResponse, AssessmentResponse.indicator_id == Indicator.id)
             .join(Assessment, Assessment.id == AssessmentResponse.assessment_id)
             .join(GovernanceArea, GovernanceArea.id == Indicator.governance_area_id)
-            .filter(Assessment.final_compliance_status.isnot(None))
+            .filter(Assessment.status == AssessmentStatus.COMPLETED)
         )
 
         if assessment_cycle:
@@ -464,9 +464,9 @@ class ExternalAnalyticsService:
         Returns:
             AnonymizedAIInsightsResponse with aggregated insights
         """
-        # Query for assessments with AI recommendations
+        # Query for assessments with AI recommendations (only completed assessments)
         query = db.query(Assessment).filter(
-            Assessment.final_compliance_status.isnot(None),
+            Assessment.status == AssessmentStatus.COMPLETED,
             Assessment.ai_recommendations.isnot(None),
         )
 

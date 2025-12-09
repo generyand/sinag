@@ -28,9 +28,11 @@ import type {
   BBIUpdate,
   BBIWithGovernanceArea,
   BarangayBBIComplianceResponse,
+  GetBbisAnalyticsMunicipalityParams,
   GetBbisComplianceBarangayBarangayIdParams,
   GetBbisParams,
   HTTPValidationError,
+  MunicipalityBBIAnalyticsResponse,
   TestBBICalculationRequest,
   TestBBICalculationResponse
 } from '../../schemas';
@@ -786,6 +788,85 @@ export function useGetBbisComplianceBarangayBarangayId<TData = Awaited<ReturnTyp
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetBbisComplianceBarangayBarangayIdQueryOptions(barangayId,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
+ * Get municipality-wide BBI analytics for the MLGOO BBI Status tab.
+
+Accessible by MLGOO_DILG and KATUPARAN_CENTER_USER roles only.
+
+Returns:
+- Matrix of barangays × BBIs with compliance ratings (for table view)
+- Per-BBI distribution by functionality level (for donut charts)
+- Summary statistics
+
+This endpoint powers the BBI Status tab in the MLGOO Analytics & Reports page.
+ * @summary Get Municipality Bbi Analytics
+ */
+export const getBbisAnalyticsMunicipality = (
+    params: GetBbisAnalyticsMunicipalityParams,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<MunicipalityBBIAnalyticsResponse>(
+      {url: `/api/v1/bbis/analytics/municipality`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetBbisAnalyticsMunicipalityQueryKey = (params?: GetBbisAnalyticsMunicipalityParams,) => {
+    return [
+    `/api/v1/bbis/analytics/municipality`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getGetBbisAnalyticsMunicipalityQueryOptions = <TData = Awaited<ReturnType<typeof getBbisAnalyticsMunicipality>>, TError = HTTPValidationError>(params: GetBbisAnalyticsMunicipalityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBbisAnalyticsMunicipality>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBbisAnalyticsMunicipalityQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBbisAnalyticsMunicipality>>> = ({ signal }) => getBbisAnalyticsMunicipality(params, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBbisAnalyticsMunicipality>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBbisAnalyticsMunicipalityQueryResult = NonNullable<Awaited<ReturnType<typeof getBbisAnalyticsMunicipality>>>
+export type GetBbisAnalyticsMunicipalityQueryError = HTTPValidationError
+
+
+/**
+ * @summary Get Municipality Bbi Analytics
+ */
+
+export function useGetBbisAnalyticsMunicipality<TData = Awaited<ReturnType<typeof getBbisAnalyticsMunicipality>>, TError = HTTPValidationError>(
+ params: GetBbisAnalyticsMunicipalityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBbisAnalyticsMunicipality>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBbisAnalyticsMunicipalityQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

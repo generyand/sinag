@@ -175,16 +175,33 @@ class MunicipalAnalyticsService:
             )
 
             # Calculate pass/fail counts from area_results in assessments
+            # Note: area_results can store keys as either area ID (str) or area name
             passed_count = 0
             failed_count = 0
 
             for assessment in completed_assessments:
-                if assessment.area_results and str(ga.id) in assessment.area_results:
+                if not assessment.area_results:
+                    continue
+
+                # Try matching by ID first, then by name
+                area_result = None
+                if str(ga.id) in assessment.area_results:
                     area_result = assessment.area_results[str(ga.id)]
-                    if area_result.get("passed", False):
-                        passed_count += 1
-                    else:
-                        failed_count += 1
+                elif ga.name in assessment.area_results:
+                    area_result = assessment.area_results[ga.name]
+
+                if area_result is not None:
+                    # Handle both dict format {"passed": True} and string format "Passed"/"Failed"
+                    if isinstance(area_result, dict):
+                        if area_result.get("passed", False):
+                            passed_count += 1
+                        else:
+                            failed_count += 1
+                    elif isinstance(area_result, str):
+                        if area_result.lower() == "passed":
+                            passed_count += 1
+                        else:
+                            failed_count += 1
 
             total_assessed = passed_count + failed_count
             pass_rate = (passed_count / total_assessed * 100) if total_assessed > 0 else 0.0

@@ -28,6 +28,7 @@ import type { BarangayRanking } from '../common';
 import type { StatusDistributionItem } from '../common';
 import type { ReworkStats } from '../common';
 import type { DashboardKPIResponseBbiAnalytics } from '../analytics';
+import type { TopReworkReasons } from '../common';
 import type { DeadlineOverrideResponse } from '../deadlineoverride';
 import type { ReportMetadataAssessmentYear } from '../assessments';
 import type { ChartData } from '../common';
@@ -533,11 +534,19 @@ export interface DashboardKPIResponse {
   status_distribution?: StatusDistributionItem[];
   /** Rework and calibration usage statistics */
   rework_stats: ReworkStats;
+  /** Top AI-generated reasons for rework/calibration */
+  top_rework_reasons?: DashboardKPIResponseTopReworkReasons;
   /** BBI compliance analytics per DILG MC 2024-417 */
   bbi_analytics?: DashboardKPIResponseBbiAnalytics;
   /** Total number of barangays in the municipality */
   total_barangays: number;
 }
+
+
+/**
+ * DashboardKPIResponseTopReworkReasons
+ */
+export type DashboardKPIResponseTopReworkReasons = TopReworkReasons | null;
 
 
 /**

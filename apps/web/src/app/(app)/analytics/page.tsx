@@ -13,9 +13,9 @@ import {
   AggregatedCapDevCard,
   BarangayStatusTable,
   ComplianceSummaryCard,
-  GovernanceAreaPerformanceCard,
   TopFailingIndicatorsCard,
 } from "@/components/features/municipal-overview";
+import { GovernanceAreaBreakdown } from "@/components/features/dashboard/GovernanceAreaBreakdown";
 import { ExportControls, VisualizationGrid } from "@/components/features/reports";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -381,7 +381,17 @@ export default function AnalyticsPage() {
 
                 {/* Two Column Layout for Analytics */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <GovernanceAreaPerformanceCard data={municipalData.governance_area_performance} />
+                  <GovernanceAreaBreakdown
+                    data={
+                      municipalData.governance_area_performance?.areas?.map((area) => ({
+                        areaCode: area.id.toString(),
+                        areaName: area.name,
+                        passed: area.passed_count,
+                        failed: area.failed_count,
+                        percentage: area.pass_rate,
+                      })) ?? []
+                    }
+                  />
                   <TopFailingIndicatorsCard data={municipalData.top_failing_indicators} />
                 </div>
 

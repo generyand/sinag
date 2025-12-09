@@ -37,6 +37,21 @@ export interface BBIAnalyticsData {
   bbi_breakdown: BBIAnalyticsItem[];
 }
 
+// Top Rework Reasons types (AI-generated)
+export interface TopReworkReason {
+  reason: string;
+  count: number;
+  source: "rework" | "calibration";
+  governance_area: string | null;
+}
+
+export interface TopReworkReasons {
+  reasons: TopReworkReason[];
+  total_rework_assessments: number;
+  total_calibration_assessments: number;
+  generated_by_ai: boolean;
+}
+
 // Types for the administrator dashboard (frontend-friendly format)
 export interface AdminDashboardData {
   kpiData: {
@@ -75,6 +90,7 @@ export interface AdminDashboardData {
     assessmentsWithCalibration: number;
     calibrationRate: number;
   };
+  topReworkReasons?: TopReworkReasons;
   bbiAnalytics?: BBIAnalyticsData;
   municipality: string;
   performanceYear: string;
@@ -141,6 +157,9 @@ function transformDashboardData(apiData: DashboardKPIResponse): AdminDashboardDa
   // Transform BBI analytics (pass through as-is since it matches our interface)
   const bbiAnalytics = apiData.bbi_analytics || undefined;
 
+  // Transform top rework reasons (pass through as-is since it matches our interface)
+  const topReworkReasons = apiData.top_rework_reasons || undefined;
+
   return {
     kpiData: {
       barangaySubmissions: {
@@ -162,6 +181,7 @@ function transformDashboardData(apiData: DashboardKPIResponse): AdminDashboardDa
       assessmentsWithCalibration: reworkStats.assessments_with_calibration,
       calibrationRate: reworkStats.calibration_rate,
     },
+    topReworkReasons,
     bbiAnalytics,
     municipality: "Municipality of Sulop", // Could be fetched from user context
     performanceYear: "2023",

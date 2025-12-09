@@ -8,7 +8,7 @@ import {
   GovernanceAreaBreakdown,
   KPICards,
   MunicipalProgressChart,
-  ReworkStatsCard,
+  TopReworkReasonsCard,
 } from "@/components/features/dashboard";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -251,11 +251,11 @@ export default function AdminDashboardPage() {
           </div>
         </section>
 
-        {/* Governance Area & Rework Stats */}
-        <section className="mb-6" aria-label="Governance Area Breakdown and Rework Statistics">
+        {/* Governance Area & Top Rework Reasons */}
+        <section className="mb-6" aria-label="Governance Area Breakdown and Top Rework Reasons">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <GovernanceAreaBreakdown data={dashboardData.areaBreakdown} />
-            <ReworkStatsCard data={dashboardData.reworkStats} />
+            <TopReworkReasonsCard data={dashboardData.topReworkReasons} />
           </div>
         </section>
 

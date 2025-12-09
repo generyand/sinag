@@ -7,6 +7,9 @@ import type { OverallComplianceResponse } from '../compliance';
 import type { GovernanceAreaPerformanceResponse } from '../governanceareaperformance';
 import type { TopFailingIndicatorsResponse } from '../indicators';
 import type { AnonymizedAIInsightsResponse } from '../system';
+import type { BBIInfo } from '../bbis';
+import type { BarangayBBIStatus } from '../bbis';
+import type { BBIDistribution } from '../bbis';
 
 /**
  * AppSchemasExternalAnalyticsGovernanceAreaPerformance
@@ -207,6 +210,17 @@ page_size?: number;
 
 
 /**
+ * GetBbisAnalyticsMunicipalityParams
+ */
+export type GetBbisAnalyticsMunicipalityParams = {
+/**
+ * Assessment year
+ */
+year: number;
+};
+
+
+/**
  * GetExternalAnalyticsAiInsightsSummaryParams
  */
 export type GetExternalAnalyticsAiInsightsSummaryParams = {
@@ -287,3 +301,45 @@ assessment_cycle?: string | null;
  */
 limit?: number;
 };
+
+
+/**
+ * MunicipalityBBIAnalyticsResponse
+ */
+export interface MunicipalityBBIAnalyticsResponse {
+  /** Assessment year */
+  assessment_year: number;
+  /** List of BBIs with their info */
+  bbis: BBIInfo[];
+  /** List of barangays with their BBI statuses */
+  barangays: BarangayBBIStatus[];
+  /** BBI abbreviation -> distribution mapping for donut charts */
+  bbi_distributions: MunicipalityBBIAnalyticsResponseBbiDistributions;
+  /** Summary statistics */
+  summary: MunicipalityBBIAnalyticsSummary;
+}
+
+
+/**
+ * MunicipalityBBIAnalyticsResponseBbiDistributions
+ */
+export type MunicipalityBBIAnalyticsResponseBbiDistributions = {[key: string]: BBIDistribution};
+
+
+/**
+ * MunicipalityBBIAnalyticsSummary
+ */
+export interface MunicipalityBBIAnalyticsSummary {
+  /** Total number of barangays with BBI data */
+  total_barangays: number;
+  /** Total number of BBIs tracked */
+  total_bbis: number;
+  /** Total HIGHLY_FUNCTIONAL ratings across all BBIs */
+  overall_highly_functional: number;
+  /** Total MODERATELY_FUNCTIONAL ratings across all BBIs */
+  overall_moderately_functional: number;
+  /** Total LOW_FUNCTIONAL ratings across all BBIs */
+  overall_low_functional: number;
+  /** Total NON_FUNCTIONAL ratings across all BBIs */
+  overall_non_functional: number;
+}

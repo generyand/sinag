@@ -108,6 +108,12 @@ export type AppSchemasBlguDashboardSubIndicatorResultValidationRule = string | n
 
 
 /**
+ * BBIInfoIndicatorCode
+ */
+export type BBIInfoIndicatorCode = string | null;
+
+
+/**
  * BBIResultResponseIndicatorId
  */
 export type BBIResultResponseIndicatorId = number | null;

@@ -14,6 +14,7 @@ export { AssessorCommentsPanel } from "./AssessorCommentsPanel";
 export { CompletionStatusBadge } from "./CompletionStatusBadge";
 export { GovernanceAreaBreakdown } from "./GovernanceAreaBreakdown";
 export { ReworkStatsCard } from "./ReworkStatsCard";
+export { TopReworkReasonsCard } from "./TopReworkReasonsCard";
 export {
   BBIAnalyticsCard,
   type BBIAnalyticsData,

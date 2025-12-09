@@ -13,22 +13,6 @@ interface ComplianceSummaryCardProps {
 }
 
 /**
- * Returns the appropriate color based on rate value.
- * - Green (≥70%): Healthy compliance
- * - Yellow (50-69%): Needs attention
- * - Red (<50%): Critical
- */
-function getComplianceColor(rate: number): { text: string; progress: string } {
-  if (rate >= 70) {
-    return { text: "text-green-600", progress: "#16a34a" }; // green-600
-  }
-  if (rate >= 50) {
-    return { text: "text-yellow-600", progress: "#ca8a04" }; // yellow-600
-  }
-  return { text: "text-red-600", progress: "#dc2626" }; // red-600
-}
-
-/**
  * Returns the appropriate color for assessment progress.
  * Uses blue for progress (neutral/informational).
  */
@@ -44,7 +28,6 @@ function getProgressColor(rate: number): { text: string; progress: string } {
 
 export function ComplianceSummaryCard({ data, isLoading }: ComplianceSummaryCardProps) {
   const hasData = data && data.total_barangays > 0;
-  const complianceColors = hasData ? getComplianceColor(data.compliance_rate) : null;
   const progressColors = hasData ? getProgressColor(data.assessment_rate) : null;
 
   return (
@@ -88,22 +71,6 @@ export function ComplianceSummaryCard({ data, isLoading }: ComplianceSummaryCard
 
             {/* Progress Bars */}
             <div className="space-y-4" role="group" aria-label="Progress indicators">
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium text-[var(--foreground)]">
-                    Compliance Rate
-                  </span>
-                  <span className={`text-sm font-bold ${complianceColors?.text}`}>
-                    {data.compliance_rate.toFixed(1)}%
-                  </span>
-                </div>
-                <Progress
-                  value={data.compliance_rate}
-                  className="h-2"
-                  progressColor={complianceColors?.progress}
-                  aria-label={`Compliance rate: ${data.compliance_rate.toFixed(1)}%`}
-                />
-              </div>
               <div>
                 <div className="flex justify-between mb-1">
                   <span className="text-sm font-medium text-[var(--foreground)]">

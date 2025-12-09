@@ -5,7 +5,7 @@ import logging
 from dataclasses import dataclass
 from datetime import date, datetime
 
-from sqlalchemy import case, desc, func
+from sqlalchemy import case, desc, func, or_
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.core.cache import CACHE_TTL_DASHBOARD, cache
@@ -40,6 +40,8 @@ from app.schemas.analytics import (
     ReportsDataResponse,
     ReworkStats,
     StatusDistributionItem,
+    TopReworkReason,
+    TopReworkReasons,
     TrendData,
 )
 
@@ -102,6 +104,7 @@ class AnalyticsService:
         barangay_rankings = self._calculate_barangay_rankings(db, assessment_year)
         status_distribution = self._calculate_status_distribution(db, assessment_year)
         rework_stats = self._calculate_rework_stats(db, assessment_year)
+        top_rework_reasons = self._calculate_top_rework_reasons(db, assessment_year)
         bbi_analytics = self._calculate_bbi_analytics(db, assessment_year)
         total_barangays = self._get_total_barangays(db)
 
@@ -114,6 +117,7 @@ class AnalyticsService:
             barangay_rankings=barangay_rankings,
             status_distribution=status_distribution,
             rework_stats=rework_stats,
+            top_rework_reasons=top_rework_reasons,
             bbi_analytics=bbi_analytics,
             total_barangays=total_barangays,
         )
@@ -137,6 +141,8 @@ class AnalyticsService:
         """
         Calculate overall compliance rate (pass/fail statistics).
 
+        Only counts COMPLETED assessments for compliance statistics.
+
         Args:
             db: Database session
             assessment_year: Optional assessment year
@@ -144,8 +150,8 @@ class AnalyticsService:
         Returns:
             ComplianceRate schema with total, passed, failed counts and percentage
         """
-        # Build base query for validated assessments
-        query = db.query(Assessment).filter(Assessment.final_compliance_status.isnot(None))
+        # Build base query for COMPLETED assessments only
+        query = db.query(Assessment).filter(Assessment.status == AssessmentStatus.COMPLETED)
 
         # Filter by assessment year
         if assessment_year is not None:
@@ -238,12 +244,13 @@ class AnalyticsService:
         if not governance_areas:
             return []
 
-        # Get validated assessments with eager loaded responses
+        # Get COMPLETED assessments with eager loaded responses
+        # Only completed assessments count for governance area performance
         # PERFORMANCE FIX: Eager load responses to prevent N+1 queries
         assessment_query = (
             db.query(Assessment)
             .options(selectinload(Assessment.responses))
-            .filter(Assessment.final_compliance_status.isnot(None))
+            .filter(Assessment.status == AssessmentStatus.COMPLETED)
         )
 
         # Filter by assessment year
@@ -340,7 +347,7 @@ class AnalyticsService:
         Calculate top 5 most frequently failed indicators.
 
         Uses validation_status (FAIL) to determine failed indicators,
-        aligned with GAR methodology.
+        aligned with GAR methodology. Only considers COMPLETED assessments.
 
         Args:
             db: Database session
@@ -349,7 +356,7 @@ class AnalyticsService:
         Returns:
             List of FailedIndicator schemas (max 5)
         """
-        # Build query for FAILED validation status responses
+        # Build query for FAILED validation status responses from COMPLETED assessments
         query = (
             db.query(
                 Indicator.id,
@@ -357,12 +364,14 @@ class AnalyticsService:
                 func.count(AssessmentResponse.id).label("failure_count"),
             )
             .join(AssessmentResponse, AssessmentResponse.indicator_id == Indicator.id)
+            .join(Assessment, AssessmentResponse.assessment_id == Assessment.id)
             .filter(AssessmentResponse.validation_status == ValidationStatus.FAIL)
+            .filter(Assessment.status == AssessmentStatus.COMPLETED)
         )
 
-        # Filter by assessment year via Assessment join
+        # Filter by assessment year
         if assessment_year is not None:
-            query = query.join(Assessment).filter(Assessment.assessment_year == assessment_year)
+            query = query.filter(Assessment.assessment_year == assessment_year)
 
         # Group by indicator, order by count descending, limit to 5
         results = (
@@ -420,6 +429,8 @@ class AnalyticsService:
         """
         Calculate barangay rankings by compliance score.
 
+        Only considers COMPLETED assessments for rankings.
+
         Args:
             db: Database session
             assessment_year: Optional assessment year
@@ -427,7 +438,7 @@ class AnalyticsService:
         Returns:
             List of BarangayRanking schemas ordered by score (highest first)
         """
-        # Build base query for validated assessments with scores
+        # Build base query for COMPLETED assessments with scores
         query = (
             db.query(
                 Barangay.id.label("barangay_id"),
@@ -448,7 +459,7 @@ class AnalyticsService:
             )
             .join(User, Assessment.blgu_user_id == User.id)
             .join(Barangay, User.barangay_id == Barangay.id)
-            .filter(Assessment.final_compliance_status.isnot(None))
+            .filter(Assessment.status == AssessmentStatus.COMPLETED)
             .group_by(Barangay.id, Barangay.name)
         )
 
@@ -593,6 +604,179 @@ class AnalyticsService:
             rework_rate=round(rework_rate, 2),
             assessments_with_calibration=assessments_with_calibration,
             calibration_rate=round(calibration_rate, 2),
+        )
+
+    def _calculate_top_rework_reasons(
+        self, db: Session, assessment_year: int | None = None
+    ) -> TopReworkReasons | None:
+        """
+        Calculate top reasons for rework and calibration from AI-generated summaries.
+
+        Aggregates priority_actions from rework_summary and calibration_summary
+        fields across all assessments to identify the most common reasons.
+
+        Args:
+            db: Database session
+            assessment_year: Optional assessment year
+
+        Returns:
+            TopReworkReasons or None if no rework/calibration data available
+        """
+        from collections import Counter
+
+        from app.db.models.assessment import FeedbackComment
+
+        # PERFORMANCE FIX: Use SQL COUNT instead of loading all assessments
+        # Build year filter condition
+        year_filter = (
+            Assessment.assessment_year == assessment_year if assessment_year is not None else True
+        )
+
+        # Count assessments with rework/calibration at database level
+        rework_count = (
+            db.query(func.count(Assessment.id))
+            .filter(Assessment.rework_count > 0, year_filter)
+            .scalar()
+            or 0
+        )
+
+        calibration_count = (
+            db.query(func.count(Assessment.id))
+            .filter(Assessment.calibration_count > 0, year_filter)
+            .scalar()
+            or 0
+        )
+
+        if rework_count == 0 and calibration_count == 0:
+            return None
+
+        # PERFORMANCE FIX: Only query assessments that actually have rework OR calibration
+        # This avoids loading all assessments into memory
+        assessments = (
+            db.query(Assessment)
+            .filter(
+                or_(Assessment.rework_count > 0, Assessment.calibration_count > 0),
+                year_filter,
+            )
+            .all()
+        )
+
+        # Collect REASONS (key_issues) from AI summaries - NOT actions/recommendations
+        # key_issues = the actual problems identified (reasons for rework/calibration)
+        # priority_actions = what to do to fix them (NOT what we want here)
+        #
+        # Summary structure is multi-language:
+        # {"ceb": {"indicator_summaries": [{"key_issues": [...]}]}, "en": {...}}
+        rework_reasons: list[str] = []
+        calibration_reasons: list[str] = []
+
+        def extract_key_issues_from_summary(summary: dict) -> list[str]:
+            """Extract key_issues from a multi-language summary structure."""
+            issues: list[str] = []
+            if not isinstance(summary, dict):
+                return issues
+
+            # Check for language keys (ceb, en, fil) at top level
+            for lang_key in ["ceb", "en", "fil"]:
+                lang_data = summary.get(lang_key)
+                if isinstance(lang_data, dict):
+                    indicator_summaries = lang_data.get("indicator_summaries", [])
+                    if isinstance(indicator_summaries, list):
+                        for ind_summary in indicator_summaries:
+                            if isinstance(ind_summary, dict):
+                                key_issues = ind_summary.get("key_issues", [])
+                                if isinstance(key_issues, list):
+                                    issues.extend(key_issues)
+                    # Only use one language to avoid duplicates
+                    if issues:
+                        break
+
+            # Fallback: check for indicator_summaries at top level (legacy format)
+            if not issues:
+                indicator_summaries = summary.get("indicator_summaries", [])
+                if isinstance(indicator_summaries, list):
+                    for ind_summary in indicator_summaries:
+                        if isinstance(ind_summary, dict):
+                            key_issues = ind_summary.get("key_issues", [])
+                            if isinstance(key_issues, list):
+                                issues.extend(key_issues)
+
+            return issues
+
+        for assessment in assessments:
+            # Extract key_issues from rework_summary
+            if assessment.rework_summary and isinstance(assessment.rework_summary, dict):
+                rework_reasons.extend(extract_key_issues_from_summary(assessment.rework_summary))
+
+            # Extract key_issues from calibration_summary
+            if assessment.calibration_summary and isinstance(assessment.calibration_summary, dict):
+                calibration_reasons.extend(
+                    extract_key_issues_from_summary(assessment.calibration_summary)
+                )
+
+            # Extract key_issues from calibration_summaries_by_area
+            if assessment.calibration_summaries_by_area and isinstance(
+                assessment.calibration_summaries_by_area, dict
+            ):
+                for area_id, area_summary in assessment.calibration_summaries_by_area.items():
+                    if isinstance(area_summary, dict):
+                        calibration_reasons.extend(extract_key_issues_from_summary(area_summary))
+
+        # If no AI-generated reasons, fall back to feedback comments
+        if not rework_reasons and not calibration_reasons:
+            # Get feedback comments from assessments with rework
+            assessment_ids_with_rework = [
+                a.id for a in assessments if a.rework_count and a.rework_count > 0
+            ]
+            if assessment_ids_with_rework:
+                feedback_comments = (
+                    db.query(FeedbackComment)
+                    .join(AssessmentResponse)
+                    .filter(AssessmentResponse.assessment_id.in_(assessment_ids_with_rework))
+                    .filter(FeedbackComment.is_internal_note == False)  # noqa: E712
+                    .limit(50)
+                    .all()
+                )
+                rework_reasons = [fc.comment for fc in feedback_comments if fc.comment]
+
+        # Count occurrences and get top reasons
+        all_reasons: list[TopReworkReason] = []
+
+        # Process rework reasons
+        rework_counter = Counter(rework_reasons)
+        for reason, count in rework_counter.most_common(5):
+            if reason and reason.strip():
+                all_reasons.append(
+                    TopReworkReason(
+                        reason=reason.strip(),
+                        count=count,
+                        source="rework",
+                        governance_area=None,
+                    )
+                )
+
+        # Process calibration reasons
+        calibration_counter = Counter(calibration_reasons)
+        for reason, count in calibration_counter.most_common(5):
+            if reason and reason.strip():
+                all_reasons.append(
+                    TopReworkReason(
+                        reason=reason.strip(),
+                        count=count,
+                        source="calibration",
+                        governance_area=None,
+                    )
+                )
+
+        # Sort by count descending and take top 10
+        all_reasons.sort(key=lambda x: x.count, reverse=True)
+        top_reasons = all_reasons[:10]
+
+        return TopReworkReasons(
+            reasons=top_reasons,
+            total_rework_assessments=rework_count,
+            total_calibration_assessments=calibration_count,
+            generated_by_ai=bool(rework_reasons or calibration_reasons),
         )
 
     def _get_total_barangays(self, db: Session) -> int:
