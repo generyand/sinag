@@ -203,6 +203,48 @@ class ComplianceService:
                 f"Indicator {indicator.indicator_code}: option_groups={option_groups}, "
                 f"completed={completed_item_ids}, any_group_complete={any_group_complete}"
             )
+        elif validation_rule == "OR_LOGIC_AT_LEAST_1_REQUIRED":
+            # Special logic for indicators like 4.5.6 (Physical OR Financial)
+            # 1. Must satisfy any unconditionally REQUIRED items (like shared uploads)
+            # 2. Must satisfy at least one OPTIONAL assessment field (YES result)
+
+            # 1. Check unconditionally required items
+            required_items = [item for item in checklist_items_data if item.get("required", True)]
+            required_item_ids = {item.get("item_id") for item in required_items}
+            completed_item_ids = completed_keys_normalized
+
+            shared_requirements_met = required_item_ids.issubset(completed_item_ids)
+
+            # 2. Check for at least one successful assessment option (YES result)
+            # We look for "assessment_field" types in the definition, or infer from keys ending in "_yes"
+            # In response_data, a YES validation is stored as "validator_val_{id}_yes": True
+
+            # Find all assessment fields (the options)
+            # We can identify them by checking if any key in response_data ends with "_yes"
+            # and matches an item defined for this indicator
+
+            has_passing_option = False
+
+            # Get all item IDs defined for this indicator
+            all_item_ids = {item.get("item_id") for item in checklist_items_data}
+
+            for key, value in response_data.items():
+                if key.startswith("validator_val_") and key.endswith("_yes") and value is True:
+                    # Extract item_id from key: validator_val_{item_id}_yes
+                    item_id = key.replace("validator_val_", "").replace("_yes", "")
+                    if item_id in all_item_ids:
+                        has_passing_option = True
+                        break
+
+            is_complete = shared_requirements_met and has_passing_option
+
+            self.logger.debug(
+                f"Indicator {indicator.indicator_code} (OR_LOGIC): "
+                f"shared_met={shared_requirements_met}, "
+                f"has_passing_option={has_passing_option}, "
+                f"is_complete={is_complete}"
+            )
+
         elif validation_rule == "ANY_ITEM_REQUIRED":
             # Simple OR logic: at least one checkbox checked = complete
             is_complete = has_any_checked
