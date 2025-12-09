@@ -133,6 +133,17 @@ export function DynamicFormRenderer({
   const isReworkStatus = normalizedStatus === "REWORK" || normalizedStatus === "NEEDS_REWORK";
   const reworkRequestedAt = assessmentData?.assessment?.rework_requested_at;
 
+  // Epic 5.0: Support for MLGOO Recalibration
+  // If this is a recalibration, we need to use a different timestamp for filtering files
+  const isMlgooRecalibration = (assessmentData as any)?.assessment?.is_mlgoo_recalibration === true;
+  const mlgooRecalibrationRequestedAt = (assessmentData as any)?.assessment
+    ?.mlgoo_recalibration_requested_at;
+
+  const effectiveReworkTimestamp =
+    isMlgooRecalibration && mlgooRecalibrationRequestedAt
+      ? mlgooRecalibrationRequestedAt
+      : reworkRequestedAt;
+
   // Check if THIS specific indicator requires rework (has assessor feedback)
   // Indicators need rework if they have:
   // 1. Rework comments from dashboard API (most reliable - text feedback from assessor)
@@ -176,20 +187,50 @@ export function DynamicFormRenderer({
   const completionValidFiles = useMemo(() => {
     // Only filter files if:
     // 1. Assessment is in rework status
-    // 2. We have a rework timestamp
+    // 2. We have a rework timestamp (or recalibration timestamp)
     // 3. THIS specific indicator requires rework (has assessor feedback)
-    if (!isReworkStatus || !reworkRequestedAt || !indicatorRequiresRework) {
+    if (!isReworkStatus || !effectiveReworkTimestamp || !indicatorRequiresRework) {
       return uploadedFiles;
     }
-    // During rework, only count files uploaded AFTER rework was requested
-    // This only applies to indicators that received assessor feedback
-    const reworkDate = new Date(reworkRequestedAt);
+    // During rework, count files uploaded AFTER rework was requested (or recalibration requested)
+    // AND existing files that do NOT have annotations (meaning they were not flagged for rework)
+    const reworkDate = new Date(effectiveReworkTimestamp);
+    
+    // Check for feedback types (Hybrid Logic)
+    const hasSpecificAnnotations = movAnnotations && movAnnotations.length > 0;
+    const hasGeneralComments = reworkComments && reworkComments.length > 0;
+    
     return uploadedFiles.filter((file: MOVFileResponse) => {
       if (!file.uploaded_at) return false;
       const uploadDate = new Date(file.uploaded_at);
-      return uploadDate >= reworkDate;
+      
+      // If it's a new file (uploaded during rework), it's valid
+      if (uploadDate >= reworkDate) {
+         return true;
+      }
+
+      // If it's an old file (uploaded before rework):
+      
+      // 1. If specific annotations exist, we trust them (Granular Mode)
+      // Only invalidate the specifically annotated files
+      if (hasSpecificAnnotations) {
+        const isThisFileAnnotated = movAnnotations.some(
+          (ann: any) => String(ann.mov_file_id) === String(file.id)
+        );
+        return !isThisFileAnnotated; // Keep clean files
+      }
+      
+      // 2. If NO annotations but general comments exist (Strict Mode)
+      // Invalidate ALL old files because the feedback is general
+      if (hasGeneralComments) {
+        return false;
+      }
+      
+      // 3. If no feedback at all (shouldn't happen if indicatorRequiresRework is true)
+      // Keep everything
+      return true;
     });
-  }, [uploadedFiles, isReworkStatus, reworkRequestedAt, indicatorRequiresRework]);
+  }, [uploadedFiles, isReworkStatus, effectiveReworkTimestamp, indicatorRequiresRework, movAnnotations, reworkComments]);
 
   // Get backend's is_completed value for this indicator
   const backendIsCompleted = useMemo(() => {
@@ -501,6 +542,7 @@ export function DynamicFormRenderer({
           formSchema={formSchema}
           assessmentId={assessmentId}
           indicatorId={indicatorId}
+          completionValidFiles={completionValidFiles}
         />
 
         {/* Notes Section - Display before form fields so users see requirements before uploading */}
@@ -575,6 +617,7 @@ interface SectionRendererProps {
   indicatorId: number;
   isLocked: boolean;
   movAnnotations: any[];
+  reworkComments: any[]; // Epic 5.0: Added for Hybrid Logic
   uploadedFiles: MOVFileResponse[];
   /** Files that count towards completion (filtered by rework timestamp if in rework status) */
   completionValidFiles: MOVFileResponse[];
@@ -723,6 +766,7 @@ function SectionRenderer({
   indicatorId,
   isLocked,
   movAnnotations,
+  reworkComments,
   // uploadedFiles is kept in props for potential future UI use (showing all files)
   // but for completion tracking we use completionValidFiles (filtered by rework)
   completionValidFiles,
@@ -831,6 +875,7 @@ function SectionRenderer({
                           indicatorId={indicatorId}
                           isLocked={isLocked}
                           movAnnotations={movAnnotations}
+                          reworkComments={reworkComments}
                         />
                       ))}
                     </div>
@@ -866,6 +911,7 @@ function SectionRenderer({
             indicatorId={indicatorId}
             isLocked={isLocked}
             movAnnotations={movAnnotations}
+            reworkComments={reworkComments}
           />
         ))}
       </CardContent>
@@ -885,6 +931,7 @@ interface FieldRendererProps {
   indicatorId: number;
   isLocked: boolean;
   movAnnotations: any[];
+  reworkComments: any[]; // Epic 5.0: Added for Hybrid Logic
 }
 
 function FieldRenderer({
@@ -895,6 +942,7 @@ function FieldRenderer({
   indicatorId,
   isLocked,
   movAnnotations,
+  reworkComments,
 }: FieldRendererProps) {
   // Render appropriate field component based on field type
   switch (field.field_type) {
@@ -1009,6 +1057,7 @@ function FieldRenderer({
           indicatorId={indicatorId}
           disabled={isLocked}
           movAnnotations={movAnnotations}
+          reworkComments={reworkComments}
         />
       );
 

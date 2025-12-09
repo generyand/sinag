@@ -15,15 +15,15 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useUploadStore } from "@/store/useUploadStore";
 import type { FileUploadField } from "@sinag/shared";
 import {
-  MOVFileResponse,
-  getGetAssessmentsMyAssessmentQueryKey,
-  getGetBlguDashboardAssessmentIdQueryKey,
-  getGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFilesQueryKey,
-  getGetMovsFilesFileIdSignedUrlQueryKey,
-  useGetAssessmentsMyAssessment,
-  useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles,
-  useGetMovsFilesFileIdSignedUrl,
-  usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload,
+    MOVFileResponse,
+    getGetAssessmentsMyAssessmentQueryKey,
+    getGetBlguDashboardAssessmentIdQueryKey,
+    getGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFilesQueryKey,
+    getGetMovsFilesFileIdSignedUrlQueryKey,
+    useGetAssessmentsMyAssessment,
+    useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles,
+    useGetMovsFilesFileIdSignedUrl,
+    usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload,
 } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, CheckCircle2, FileIcon, Info, Loader2, X } from "lucide-react";
@@ -164,6 +164,7 @@ interface FileFieldComponentProps {
   indicatorId: number;
   disabled?: boolean;
   movAnnotations?: any[];
+  reworkComments?: any[]; // Epic 5.0: Added for Hybrid Logic
 }
 
 /**
@@ -184,6 +185,7 @@ export function FileFieldComponent({
   indicatorId,
   disabled = false,
   movAnnotations = [],
+  reworkComments = [],
 }: FileFieldComponentProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -539,27 +541,6 @@ export function FileFieldComponent({
   if (isReworkStatus && effectiveReworkTimestamp) {
     const reworkDate = new Date(effectiveReworkTimestamp);
 
-    console.log("[FileFieldComponent] Rework filtering debug:", {
-      field_id: field.field_id,
-      reworkRequestedAt,
-      reworkDate: reworkDate.toISOString(),
-      reworkDateTime: reworkDate.getTime(),
-      activeFilesCount: activeFiles.length,
-      activeFiles: activeFiles.map((f: any) => {
-        const uploadDate = new Date(f.uploaded_at);
-        return {
-          id: f.id,
-          name: f.file_name,
-          uploaded_at: f.uploaded_at,
-          uploadDate: uploadDate.toISOString(),
-          uploadDateTime: uploadDate.getTime(),
-          timeDiff: uploadDate.getTime() - reworkDate.getTime(),
-          isAfterRework: uploadDate >= reworkDate,
-          comparison: `${uploadDate.getTime()} >= ${reworkDate.getTime()}`,
-        };
-      }),
-    });
-
     // Files uploaded BEFORE rework was requested are "old" (from before rework)
     const oldFiles = activeFiles.filter((f: any) => {
       const uploadDate = new Date(f.uploaded_at);
@@ -572,14 +553,37 @@ export function FileFieldComponent({
       return uploadDate >= reworkDate;
     });
 
-    console.log("[FileFieldComponent] Filtered results:", {
-      field_id: field.field_id,
-      oldFilesCount: oldFiles.length,
-      recentFilesCount: recentFiles.length,
-    });
+    // Hybrid Logic Implementation for Visual Filtering
+    const hasSpecificAnnotations = movAnnotations && movAnnotations.length > 0;
+    const hasGeneralComments = reworkComments && reworkComments.length > 0;
 
-    previousFiles = [...deletedFiles, ...oldFiles];
-    newFiles = recentFiles;
+    // Filter old files:
+    let invalidOldFiles = [];
+    let validOldFiles = [];
+
+    if (hasSpecificAnnotations) {
+      // Case 1: Granular Mode (Annotations exist)
+      // Only invalid files are the ones with annotations
+      invalidOldFiles = oldFiles.filter((f: any) => 
+        movAnnotations.some((ann: any) => String(ann.mov_file_id) === String(f.id))
+      );
+      validOldFiles = oldFiles.filter((f: any) => 
+        !movAnnotations.some((ann: any) => String(ann.mov_file_id) === String(f.id))
+      );
+    } else if (hasGeneralComments) {
+      // Case 2: Strict Mode (No annotations, but General Note exists)
+      // ALL old files are invalid
+      invalidOldFiles = oldFiles;
+      validOldFiles = [];
+    } else {
+      // Case 3: No Feedback -> All valid
+      invalidOldFiles = [];
+      validOldFiles = oldFiles;
+    }
+
+    previousFiles = [...deletedFiles, ...invalidOldFiles];
+    // Active files = Recent uploads + Valid old files (not flagged)
+    newFiles = [...recentFiles, ...validOldFiles];
   } else {
     // Not in rework status, show all active files as new
     newFiles = activeFiles;
@@ -692,9 +696,8 @@ export function FileFieldComponent({
             <p className="font-medium mb-1">Assessor feedback on your files</p>
             <p className="text-sm dark:text-orange-300">
               The assessor has left {fieldAnnotations.length} comment
-              {fieldAnnotations.length !== 1 ? "s" : ""} on your uploaded files. Please review the
-              feedback by clicking the eye icon on each file. You can upload new corrected files and
-              delete old ones as needed.
+              {fieldAnnotations.length !== 1 ? "s" : ""} on specific files. Please review the
+              feedback and upload corrected versions for the flagged files. Unflagged files are still valid.
             </p>
           </AlertDescription>
         </Alert>
@@ -912,7 +915,7 @@ export function FileFieldComponent({
                       .filter((ann: any) => ann.mov_file_id === selectedFileForPreview.id)
                       .map((ann: any, idx: number) => (
                         <div
-                          key={ann.id}
+                          key={ann.id || `ann-${idx}`}
                           className="p-3 rounded-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700"
                         >
                           <div className="flex items-start gap-2 mb-2">

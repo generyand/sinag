@@ -3,21 +3,21 @@
 import FileUploader from "@/components/shared/FileUploader";
 import { IndicatorFormSkeleton } from "@/components/shared/skeletons";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
-  useCurrentAssessment,
-  useDeleteMOV,
-  useUpdateResponse,
-  useUploadMOV,
+    useCurrentAssessment,
+    useDeleteMOV,
+    useUpdateResponse,
+    useUploadMOV,
 } from "@/hooks/useAssessment";
 import { uploadMovFile } from "@/lib/uploadMov";
 import { Assessment, ComplianceAnswer, Indicator } from "@/types/assessment";
 import { postAssessmentsResponses, useGetAssessmentsMyAssessment } from "@sinag/shared";
-import { AlertCircle, CheckCircle, Circle } from "lucide-react";
+import { AlertCircle, CheckCircle } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useCallback, useState } from "react";
 import { DynamicFormRenderer } from "../forms/DynamicFormRenderer";
@@ -493,6 +493,7 @@ export function IndicatorAccordion({
                   indicatorId={parseInt(indicator.id)}
                   isLocked={isLocked}
                   movAnnotations={movAnnotations}
+                  reworkComments={(indicator as any).rework_comments}
                   currentCode={currentCode}
                   currentPosition={currentPosition}
                   totalIndicators={totalIndicators}

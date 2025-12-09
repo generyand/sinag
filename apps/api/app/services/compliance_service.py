@@ -236,6 +236,44 @@ class ComplianceService:
                         has_passing_option = True
                         break
 
+            # Fallback: Auto-calculate compliance from values if explicit CHECKBOX is missing
+            # For indicators: 2.1.4, 3.2.3, 4.1.6, 4.3.4, 4.5.6, 4.8.4, 6.1.4
+            if not has_passing_option and indicator.indicator_code in [
+                "2.1.4",
+                "3.2.3",
+                "4.1.6",
+                "4.3.4",
+                "4.5.6",
+                "4.8.4",
+                "6.1.4",
+            ]:
+                code_safe = indicator.indicator_code.replace(".", "_")
+
+                # Check Physical (Option A) keys
+                phy_acc_key = f"validator_val_{code_safe}_physical_accomplished"
+                phy_ref_key = f"validator_val_{code_safe}_physical_reflected"
+
+                try:
+                    p_acc = float(str(response_data.get(phy_acc_key, 0)).replace(",", ""))
+                    p_ref = float(str(response_data.get(phy_ref_key, 0)).replace(",", ""))
+                    if p_ref > 0 and (p_acc / p_ref) * 100 >= 50:
+                        has_passing_option = True
+                except (ValueError, TypeError):
+                    pass
+
+                # Check Financial (Option B) keys (only if Physical didn't pass)
+                if not has_passing_option:
+                    fin_util_key = f"validator_val_{code_safe}_financial_utilized"
+                    fin_alloc_key = f"validator_val_{code_safe}_financial_allocated"
+
+                    try:
+                        f_util = float(str(response_data.get(fin_util_key, 0)).replace(",", ""))
+                        f_alloc = float(str(response_data.get(fin_alloc_key, 0)).replace(",", ""))
+                        if f_alloc > 0 and (f_util / f_alloc) * 100 >= 50:
+                            has_passing_option = True
+                    except (ValueError, TypeError):
+                        pass
+
             is_complete = shared_requirements_met and has_passing_option
 
             self.logger.debug(

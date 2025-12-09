@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthStore } from "@/store/useAuthStore";
 import {
-  useGetAssessorAssessmentsAssessmentId,
-  usePostAssessorAssessmentResponsesResponseIdValidate,
-  usePostAssessorAssessmentsAssessmentIdFinalize,
-  usePostAssessorAssessmentsAssessmentIdRework,
+    useGetAssessorAssessmentsAssessmentId,
+    usePostAssessorAssessmentResponsesResponseIdValidate,
+    usePostAssessorAssessmentsAssessmentIdFinalize,
+    usePostAssessorAssessmentsAssessmentIdRework,
 } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft } from "lucide-react";
@@ -435,7 +435,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     isAssessor &&
     responses.some((r) => {
       const publicComment = form[r.id]?.publicComment;
-      return publicComment ? publicComment.trim().length > 0 : false;
+      const hasComment = publicComment ? publicComment.trim().length > 0 : false;
+      return hasComment || (r as any).has_mov_annotations;
     });
 
   const progressPct = total > 0 ? Math.round((reviewed / total) * 100) : 0;
@@ -821,7 +822,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 style={{ background: "var(--cityscape-yellow)" }}
                 title={
                   !hasCommentsForRework
-                    ? "Add feedback comments on at least one indicator to send for rework"
+                    ? "Add feedback comments or file annotations on at least one indicator to send for rework"
                     : undefined
                 }
               >

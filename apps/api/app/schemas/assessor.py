@@ -39,6 +39,7 @@ class ValidationResponse(BaseModel):
     message: str
     assessment_response_id: int
     validation_status: ValidationStatus | None = None
+    has_mov_annotations: bool = False
 
 
 class MOVUploadResponse(BaseModel):

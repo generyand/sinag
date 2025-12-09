@@ -341,7 +341,16 @@ async def finalize_assessment(
     except ValueError as e:
         from fastapi import HTTPException
 
-        logger.error(f"[FINALIZE ROUTE] ValueError for assessment {assessment_id}: {str(e)}")
+        logger.error(f"[FINALIZE ERROR] ValueError caught for assessment {assessment_id}")
+        logger.error(f"[FINALIZE ERROR] Message: {str(e)}")
+        logger.error(f"[FINALIZE ERROR] Type: {type(e).__name__}")
+        logger.error(f"[FINALIZE ERROR] Module: {e.__class__.__module__}")
+        # Log potentially helpful attributes if available (e.g., from library-specific errors)
+        if hasattr(e, "message"):
+            logger.error(f"[FINALIZE ERROR] e.message: {getattr(e, 'message')}")
+        if hasattr(e, "details"):
+            logger.error(f"[FINALIZE ERROR] e.details: {getattr(e, 'details')}")
+
         raise HTTPException(status_code=400, detail=str(e))
     except PermissionError as e:
         from fastapi import HTTPException
@@ -350,7 +359,7 @@ async def finalize_assessment(
         raise HTTPException(status_code=403, detail=str(e))
     except Exception as e:
         logger.error(
-            f"[FINALIZE ROUTE] Unexpected error for assessment {assessment_id}: {type(e).__name__}: {str(e)}",
+            f"[FINALIZE ROUTE] Unexpected error for assessment {assessment_id}: {type(e).__name__} ({e.__class__.__module__}): {str(e)}",
             exc_info=True,
         )
         raise
