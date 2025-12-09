@@ -1,20 +1,20 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/store/useAuthStore";
-import { useGetUsersMe } from "@sinag/shared";
 import {
-  DashboardHeader,
-  KPICards,
-  MunicipalProgressChart,
-  GovernanceAreaBreakdown,
-  ReworkStatsCard,
-  FailedIndicators,
   AdminDashboardSkeleton,
   BBIAnalyticsCard,
+  DashboardHeader,
+  FailedIndicators,
+  GovernanceAreaBreakdown,
+  KPICards,
+  MunicipalProgressChart,
+  ReworkStatsCard,
 } from "@/components/features/dashboard";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useGetUsersMe } from "@sinag/shared";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -123,10 +123,7 @@ export default function AdminDashboardPage() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Section */}
         <header className="mb-6">
-          <DashboardHeader
-            municipality={dashboardData.municipality}
-            performanceYear={dashboardData.performanceYear}
-          />
+          <DashboardHeader municipality={dashboardData.municipality} />
         </header>
 
         {/* KPI Cards Section */}

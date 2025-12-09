@@ -9,14 +9,13 @@ import {
 } from "@/components/ui/select";
 import { useIsActiveYear, useYearSelector } from "@/hooks/useAssessmentYear";
 import { cn } from "@/lib/utils";
-import { BarChart3, Building2, Calendar, Loader2 } from "lucide-react";
+import { Building2, Calendar, Loader2 } from "lucide-react";
 
 interface DashboardHeaderProps {
   municipality: string;
-  performanceYear: string;
 }
 
-export function DashboardHeader({ municipality, performanceYear }: DashboardHeaderProps) {
+export function DashboardHeader({ municipality }: DashboardHeaderProps) {
   const { options, value, onChange, isLoading, hasMultipleYears } = useYearSelector();
   const isActiveYear = useIsActiveYear();
 
@@ -49,11 +48,6 @@ export function DashboardHeader({ municipality, performanceYear }: DashboardHead
                 <Building2 className="h-4 w-4" style={{ color: "var(--cityscape-yellow)" }} />
                 <span className="font-medium text-[var(--text-secondary)]">Municipality:</span>
                 <span className="font-semibold text-[var(--foreground)]">{municipality}</span>
-              </div>
-              <div className="flex items-center justify-center sm:justify-start gap-2 bg-[var(--card)]/60 backdrop-blur-sm px-3 py-2 sm:py-1.5 rounded-sm border border-[var(--border)] w-full sm:w-auto">
-                <BarChart3 className="h-4 w-4" style={{ color: "var(--cityscape-yellow)" }} />
-                <span className="font-medium text-[var(--text-secondary)]">Performance Year:</span>
-                <span className="font-semibold text-[var(--foreground)]">{performanceYear}</span>
               </div>
             </div>
           </div>
