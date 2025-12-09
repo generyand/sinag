@@ -1,5 +1,6 @@
 "use client";
 
+import { formatIndicatorName } from "@/lib/utils/text-formatter";
 import { GARResponse } from "@sinag/shared";
 import React from "react";
 import { BBIComplianceData, BBIComplianceSection } from "./BBIComplianceSection";
@@ -16,6 +17,13 @@ interface GARReportDisplayProps {
  * This component simply renders what it receives.
  */
 export function GARReportDisplay({ data }: GARReportDisplayProps) {
+  // Extract year from cycle_year string (e.g., "CY 2025 SGLGB..." -> 2025)
+  // Default to current year if extraction fails
+  const displayYear = React.useMemo(() => {
+    const match = data.cycle_year?.match(/\b20\d{2}\b/);
+    return match ? parseInt(match[0]) : new Date().getFullYear();
+  }, [data.cycle_year]);
+
   return (
     <div className="space-y-6">
       {/* Report Header */}
@@ -76,7 +84,8 @@ export function GARReportDisplay({ data }: GARReportDisplayProps) {
                         className={`px-4 py-2 ${indicator.is_header ? "font-bold" : ""}`}
                         style={{ paddingLeft: `${16 + (indicator.indent_level || 0) * 16}px` }}
                       >
-                        {indicator.indicator_code} {indicator.indicator_name}
+                        {indicator.indicator_code}{" "}
+                        {formatIndicatorName(indicator.indicator_name, displayYear)}
                       </td>
                       <td className="px-4 py-2">
                         {!indicator.is_header && (
@@ -96,7 +105,7 @@ export function GARReportDisplay({ data }: GARReportDisplayProps) {
                         className="border-b border-[var(--border)]"
                       >
                         <td className="px-4 py-1.5 text-sm" style={{ paddingLeft: "48px" }}>
-                          {item.label}
+                          {formatIndicatorName(item.label, displayYear)}
                         </td>
                         <td className="px-4 py-1.5">
                           <div
