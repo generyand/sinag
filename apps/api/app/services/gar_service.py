@@ -306,7 +306,12 @@ class GARService:
                 overall_result = "Passed"
 
         # Determine area type and number
-        area_type = area.area_type or ("Core" if area.id <= 3 else "Essential")
+        # Convert enum value to title case ("CORE" -> "Core") for consistent display
+        area_type = (
+            area.area_type.value.title()
+            if area.area_type
+            else ("Core" if area.id <= 3 else "Essential")
+        )
         area_number = area.id
 
         # Map area code
