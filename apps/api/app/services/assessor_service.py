@@ -786,7 +786,10 @@ class AssessorService:
 
                 # If we found an active calibration area, and this indicator is NOT in it,
                 # then this is a "Ghost Rework" flag - ignore it.
-                if calibration_ga_id is not None and response.indicator.governance_area_id != calibration_ga_id:
+                if (
+                    calibration_ga_id is not None
+                    and response.indicator.governance_area_id != calibration_ga_id
+                ):
                     effective_requires_rework = False
                     self.logger.info(
                         f"[GHOST REWORK FIX] Ignoring stale rework flag for Indicator {response.indicator_id} "
@@ -804,7 +807,7 @@ class AssessorService:
                 # Rework cycle is complete - validators see all files that exist
                 filtered_movs = all_movs_for_indicator
                 if effective_requires_rework:
-                     pass # Logging omitted for brevity
+                    pass  # Logging omitted for brevity
             elif (
                 effective_requires_rework
                 and assessment.rework_requested_at

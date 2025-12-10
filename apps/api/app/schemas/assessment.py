@@ -395,8 +395,6 @@ class AssessmentDashboardStats(BaseModel):
     submitted_at: datetime | None = None
 
 
-
-
 class IndicatorSummary(BaseModel):
     """Summary of rework required for a single indicator.
 
@@ -747,9 +745,6 @@ class SubmissionStatusResponse(BaseModel):
 # ============================================================================
 
 
-
-
-
 class ReworkSummaryResponse(BaseModel):
     """AI-generated comprehensive summary of rework requirements.
 
@@ -780,9 +775,6 @@ class ReworkSummaryResponse(BaseModel):
         None,
         description="Language code of this summary (ceb=Bisaya, fil=Tagalog, en=English)",
     )
-
-
-
 
 
 # ============================================================================

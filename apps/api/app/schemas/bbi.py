@@ -289,9 +289,7 @@ class MunicipalityBBIAnalyticsResponse(BaseModel):
     bbi_distributions: dict[str, BBIDistribution] = Field(
         ..., description="BBI abbreviation -> distribution mapping for donut charts"
     )
-    summary: MunicipalityBBIAnalyticsSummary = Field(
-        ..., description="Summary statistics"
-    )
+    summary: MunicipalityBBIAnalyticsSummary = Field(..., description="Summary statistics")
 
 
 # ============================================================================

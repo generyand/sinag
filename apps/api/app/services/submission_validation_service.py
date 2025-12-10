@@ -193,6 +193,7 @@ class SubmissionValidationService:
         from sqlalchemy.orm import joinedload
 
         from app.db.models.assessment import FeedbackComment
+
         incomplete_indicators = []
         mlgoo_indicator_ids = mlgoo_indicator_ids or []
 
@@ -249,16 +250,21 @@ class SubmissionValidationService:
                         has_note = len(m.annotations) > 0
                         if is_new or (not has_note):
                             valid_movs.append(m)
-                    self.logger.info(f"Indicator {indicator.id}: Granular Filter Applied (Annotations present)")
+                    self.logger.info(
+                        f"Indicator {indicator.id}: Granular Filter Applied (Annotations present)"
+                    )
 
                 elif feedback_count > 0:
                     # Case 2: General Comment Only -> Strict Filter
                     # Drop ALL old files
                     valid_movs = [
-                        m for m in mov_files
+                        m
+                        for m in mov_files
                         if m.uploaded_at and m.uploaded_at >= rework_requested_at
                     ]
-                    self.logger.info(f"Indicator {indicator.id}: Strict Filter Applied (Comment only)")
+                    self.logger.info(
+                        f"Indicator {indicator.id}: Strict Filter Applied (Comment only)"
+                    )
 
                 # Case 3: No Feedback -> Keep All
 
@@ -347,7 +353,8 @@ class SubmissionValidationService:
                     elif feedback_count > 0:
                         # Strict: Keep New Only
                         mov_count = sum(
-                            1 for m in mov_files
+                            1
+                            for m in mov_files
                             if m.uploaded_at and m.uploaded_at >= rework_requested_at
                         )
 
