@@ -66,11 +66,12 @@ class ComplianceService:
         indicator_code_safe = (indicator.indicator_code or "").replace(".", "_")
 
         for key, value in response_data.items():
-            # Check if this is a NO response for this indicator
-            # Key format: validator_val_{item_id}_no OR assessor_val_{item_id}_no
+            # Check if this is a NO response for this indicator from VALIDATOR only
+            # Key format: validator_val_{item_id}_no (NOT assessor - we only care about validator's decision)
             # where item_id contains indicator code
             if (
-                key.endswith("_no")
+                key.startswith("validator_val_")
+                and key.endswith("_no")
                 and indicator_code_safe in key
                 and (value is True or value == 1 or str(value).lower() in ("true", "1"))
             ):
