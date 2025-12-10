@@ -65,10 +65,12 @@ class AssessorService:
 
         # Base query with eager loading to prevent N+1 queries
         # PERFORMANCE FIX: Load governance_area to avoid lazy loading in loop
+        # FIX: Use LEFT OUTER JOIN so assessments with no responses still appear
+        # (prevents filtering out empty/incomplete submissions)
         query = (
             db.query(Assessment)
-            .join(AssessmentResponse, AssessmentResponse.assessment_id == Assessment.id)
-            .join(Indicator, Indicator.id == AssessmentResponse.indicator_id)
+            .outerjoin(AssessmentResponse, AssessmentResponse.assessment_id == Assessment.id)
+            .outerjoin(Indicator, Indicator.id == AssessmentResponse.indicator_id)
             .options(
                 joinedload(Assessment.blgu_user).joinedload(User.barangay),
                 selectinload(Assessment.responses)

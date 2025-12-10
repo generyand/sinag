@@ -1786,7 +1786,27 @@ class AssessmentService:
                 ],
             )
 
-        # Run preliminary compliance check
+        # FIX: Run full completeness validation BEFORE proceeding
+        # This prevents submission of assessments with 0% completion
+        from app.services.submission_validation_service import submission_validation_service
+
+        full_validation = submission_validation_service.validate_submission(
+            assessment_id=assessment_id, db=db
+        )
+        if not full_validation.is_valid:
+            return AssessmentSubmissionValidation(
+                is_valid=False,
+                errors=[
+                    {
+                        "error": full_validation.error_message
+                        or "Assessment validation failed: incomplete indicators or missing MOVs",
+                        "incomplete_indicators": full_validation.incomplete_indicators,
+                        "missing_movs": full_validation.missing_movs,
+                    }
+                ],
+            )
+
+        # Run preliminary compliance check (for additional MOV checks)
         validation_result = self._run_preliminary_compliance_check(assessment)
 
         if validation_result.is_valid:
