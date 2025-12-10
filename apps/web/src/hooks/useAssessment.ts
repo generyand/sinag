@@ -1,5 +1,4 @@
 import { Assessment } from "@/types/assessment";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   AssessmentResponseUpdate,
   AssessmentStatus,
@@ -11,6 +10,7 @@ import {
   putAssessmentsResponses$ResponseId,
   useGetAssessmentsMyAssessment,
 } from "@sinag/shared";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 // Custom debounce implementation
 function debounce<TArgs extends unknown[], TReturn>(
@@ -481,9 +481,10 @@ export function useAssessmentValidation(assessment: Assessment | null) {
     }
 
     const missingIndicators: string[] = [];
-    const missingMOVs: string[] = [];
+    const missingMOVs: string[] = []; // Intentionally left empty as we group everything under missingIndicators
 
     // Recursively check all indicators (including children) across all governance areas
+    // Trust backend's status which handles all complex validation logic
     const checkIndicator = (indicator: any) => {
       // If indicator has children, check children instead of parent
       if (indicator.children && indicator.children.length > 0) {
@@ -491,152 +492,11 @@ export function useAssessmentValidation(assessment: Assessment | null) {
         return;
       }
 
-      // For leaf indicators, extract complianceAnswer from responseData (same logic as counting)
-      const responseData = indicator.responseData || {};
-      let complianceAnswer: string | undefined = indicator.complianceAnswer;
-
-      // If not already set, extract from responseData
-      if (!complianceAnswer) {
-        // Check for fields ending in _compliance (for areas 1-6)
-        const complianceFields: string[] = [];
-        for (const key in responseData) {
-          if (key.endsWith("_compliance") && typeof responseData[key] === "string") {
-            const val = String(responseData[key]).toLowerCase();
-            if (val === "yes" || val === "no" || val === "na") {
-              complianceFields.push(val);
-            }
-          }
-        }
-
-        if (complianceFields.length > 0) {
-          // Check form schema to see how many compliance fields are required
-          const formSchema = indicator.formSchema || {};
-          const requiredFields = formSchema.required || [];
-          const complianceRequiredFields = requiredFields.filter((f: string) =>
-            f.endsWith("_compliance")
-          );
-
-          // If we have all required compliance fields answered
-          if (
-            complianceFields.length >= complianceRequiredFields.length ||
-            complianceRequiredFields.length === 0
-          ) {
-            // If any field is "yes", return "yes" (need MOVs)
-            if (complianceFields.some((v) => v === "yes")) {
-              complianceAnswer = "yes";
-            } else {
-              // All fields answered, use first one
-              complianceAnswer = complianceFields[0];
-            }
-          }
-        } else {
-          // Fall back to common compliance field names
-          const val = responseData.compliance || responseData.is_compliant || responseData.answer;
-          if (typeof val === "string") {
-            complianceAnswer = val.toLowerCase();
-          } else if (typeof val === "boolean") {
-            complianceAnswer = val ? "yes" : "no";
-          }
-        }
-      }
-
-      if (!complianceAnswer) {
+      // Check the indicator's status field (derived from backend is_completed)
+      // "completed" means it passed all validations (structure, data, movs)
+      if (indicator.status !== "completed") {
         missingIndicators.push(`${indicator.code} - ${indicator.name}`);
-        return;
       }
-
-      // Check MOVs only for sections with "yes" answers
-      // Sections with "no" or "na" don't need MOVs
-      // Note: responseData is already defined above
-      const props = (indicator.formSchema as any)?.properties || {};
-
-      // Build map of field_name -> section for fields with mov_upload_section
-      const fieldToSection: Record<string, string> = {};
-      for (const [fieldName, fieldProps] of Object.entries(props)) {
-        const section = (fieldProps as any)?.mov_upload_section;
-        if (typeof section === "string") {
-          fieldToSection[fieldName] = section;
-        }
-      }
-
-      // Only require MOVs for sections where the answer is "yes"
-      const requiredSectionsWithYes = new Set<string>();
-      for (const [fieldName, section] of Object.entries(fieldToSection)) {
-        const value = responseData[fieldName];
-        if (typeof value === "string" && value.toLowerCase() === "yes") {
-          requiredSectionsWithYes.add(section);
-        }
-      }
-
-      if (requiredSectionsWithYes.size > 0) {
-        // Check all required sections (with "yes" answers) have at least one MOV
-        const present = new Set<string>();
-        const movFilesList = indicator.movFiles || [];
-
-        console.log(`[VALIDATION] Checking indicator ${indicator.code}:`, {
-          requiredSectionsWithYes: Array.from(requiredSectionsWithYes),
-          movCount: movFilesList.length,
-          movs: movFilesList.map((m: any) => ({
-            storagePath: (m as any).storagePath,
-            section: (m as any).section,
-          })),
-        });
-
-        for (const mov of movFilesList) {
-          const sp =
-            (mov as any).storagePath || (mov as any).storage_path || (mov as any).url || "";
-          const movSection = (mov as any).section;
-
-          // Check both explicit section field and storage path
-          for (const rs of requiredSectionsWithYes) {
-            // If MOV has explicit section metadata, use that
-            if (movSection === rs) {
-              present.add(rs);
-              continue;
-            }
-            // Otherwise, check if section name appears in storage path
-            // Storage path format from frontend: "assessmentId/responseId/section/timestamp-filename"
-            // e.g., "1/123/bdrrmc_documents/1234567890-file.pdf"
-            if (typeof sp === "string" && sp.length > 0) {
-              // Remove any URL prefixes and get just the path
-              const pathOnly = sp.split("?")[0]; // Remove query params if present
-              // Check various patterns: /section/, /section (at end), section/ (after /)
-              const hasSection =
-                pathOnly.includes(`/${rs}/`) || // Matches: /bdrrmc_documents/
-                pathOnly.endsWith(`/${rs}`) || // Matches: .../bdrrmc_documents
-                pathOnly.includes(`/${rs}-`) || // Matches: /bdrrmc_documents-timestamp
-                pathOnly.includes(`${rs}/`) || // Matches: bdrrmc_documents/
-                new RegExp(`[/_-]${rs.replace(/_/g, "[_/]")}[_/-]`).test(pathOnly); // Flexible matching
-
-              if (hasSection) {
-                present.add(rs);
-              }
-            }
-          }
-        }
-
-        const missingSections = Array.from(requiredSectionsWithYes).filter((s) => !present.has(s));
-        console.log(`[VALIDATION] Indicator ${indicator.code} sections:`, {
-          required: Array.from(requiredSectionsWithYes),
-          present: Array.from(present),
-          missing: missingSections,
-        });
-
-        const allSectionsHaveMOVs = Array.from(requiredSectionsWithYes).every((s) =>
-          present.has(s)
-        );
-        if (!allSectionsHaveMOVs) {
-          missingMOVs.push(
-            `${indicator.code} - ${indicator.name} (missing sections: ${missingSections.join(", ")})`
-          );
-        }
-      } else if (complianceAnswer === "yes") {
-        // Has "yes" but no section-based uploads, so require at least one MOV overall
-        if ((indicator.movFiles || []).length === 0) {
-          missingMOVs.push(`${indicator.code} - ${indicator.name}`);
-        }
-      }
-      // "no" or "na" - no MOVs needed, so no validation needed
     };
 
     // Check all indicators across all governance areas
@@ -650,8 +510,6 @@ export function useAssessmentValidation(assessment: Assessment | null) {
       });
     }
 
-    // OVERRIDE: Trust backend's is_completed flags instead of frontend logic
-    // The backend handles ALL validation including grouped OR logic, conditional MOVs, etc.
     const isComplete = assessment.completedIndicators === assessment.totalIndicators;
 
     // Status comparison should be case-insensitive since backend returns lowercase
@@ -662,21 +520,10 @@ export function useAssessmentValidation(assessment: Assessment | null) {
         normalizedStatus === "rework" ||
         normalizedStatus === "needs-rework");
 
-    console.log("[VALIDATION] Trusting backend is_completed flags:", {
-      isComplete,
-      canSubmit,
-      status: assessment.status,
-      totalIndicators: assessment.totalIndicators,
-      completedIndicators: assessment.completedIndicators,
-      remainingIndicators: assessment.totalIndicators - assessment.completedIndicators,
-    });
-
     return {
       isComplete,
-      missingIndicators: isComplete
-        ? []
-        : [`${assessment.totalIndicators - assessment.completedIndicators} indicators remaining`],
-      missingMOVs: [],
+      missingIndicators,
+      missingMOVs, // Always empty now
       canSubmit,
     };
   }, [assessment]);

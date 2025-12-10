@@ -10,7 +10,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { classifyError } from "@/lib/error-utils";
 import {
@@ -575,6 +574,7 @@ export function DynamicFormRenderer({
             indicatorId={indicatorId}
             isLocked={isLocked}
             movAnnotations={movAnnotations}
+            reworkComments={reworkComments}
             uploadedFiles={uploadedFiles}
             completionValidFiles={completionValidFiles}
           />
@@ -803,6 +803,21 @@ function SectionRenderer({
     return null;
   }
 
+  // Helper: Get user-friendly section title
+  const getFriendlyTitle = (title: string) => {
+    if (title === "Form Fields" || title === "Assessment Form") {
+      return {
+        title: "Upload Requirements",
+        description: "Please upload the required documents below to complete this indicator.",
+      };
+    }
+    return { title, description: section.description };
+  };
+
+  const { title: friendlyTitle, description: friendlyDescription } = getFriendlyTitle(
+    section.title
+  );
+
   // Render with accordion if option groups detected AND accordion UI is enabled
   if (optionGroups && optionGroups.length > 0 && useAccordionUI) {
     // Calculate overall completion: need at least 1 option group complete
@@ -813,34 +828,39 @@ function SectionRenderer({
     const overallComplete = completedGroups >= 1;
 
     return (
-      <Card className="border-none shadow-none bg-transparent mb-8 last:mb-0">
-        <CardHeader className="px-0 pb-6">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold text-[var(--foreground)]">
-              {section.title}
-            </CardTitle>
+      <div className="mb-10 last:mb-0">
+        <div className="mb-6 pb-4 border-b border-zinc-200 dark:border-zinc-800">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                {friendlyTitle}
+              </h2>
+              {friendlyDescription && (
+                <p className="text-base text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-4xl">
+                  {friendlyDescription}
+                </p>
+              )}
+            </div>
             {/* Overall completion indicator */}
             <div
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide border shrink-0 ${
                 overallComplete
-                  ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                  : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                  ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800"
+                  : "bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700"
               }`}
             >
               <span>Required:</span>
-              <span className="font-bold">{overallComplete ? "1" : "0"}/1</span>
+              <span className="font-bold">{overallComplete ? "1" : "0"}/1 Option</span>
             </div>
           </div>
-          {section.description && (
-            <CardDescription className="text-base mt-2">{section.description}</CardDescription>
-          )}
-        </CardHeader>
-        <CardContent className="px-0">
+        </div>
+
+        <div>
           {/* Info alert for OR logic */}
-          <Alert className="mb-6 border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
-            <Info className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-            <AlertDescription className="text-amber-800 dark:text-amber-200">
-              <strong>Choose ONE option</strong> that applies to your barangay&apos;s situation. You
+          <Alert className="mb-6 border-blue-200 bg-blue-50/50 dark:border-blue-900/50 dark:bg-blue-950/20">
+            <Info className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <AlertDescription className="text-blue-800 dark:text-blue-300">
+              <strong>Select ONE option</strong> that applies to your barangay&apos;s situation. You
               only need to upload documents for the option that matches your case.
             </AlertDescription>
           </Alert>
@@ -855,29 +875,31 @@ function SectionRenderer({
                 <AccordionItem
                   key={group.name}
                   value={group.name}
-                  className={`border rounded-lg overflow-hidden bg-card ${
+                  className={`border rounded-lg overflow-hidden bg-white dark:bg-zinc-900 shadow-sm transition-all ${
                     progress.isComplete
-                      ? "border-green-300 dark:border-green-700"
-                      : "border-gray-200 dark:border-gray-700"
+                      ? "border-green-200 dark:border-green-900"
+                      : "border-zinc-200 dark:border-zinc-800"
                   }`}
                 >
-                  <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/50 [&[data-state=open]]:bg-muted/30">
-                    <div className="flex items-center justify-between w-full pr-2">
-                      <span className="font-semibold text-base text-left">{group.label}</span>
+                  <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-zinc-50 dark:hover:bg-zinc-800/50 [&[data-state=open]]:bg-zinc-50 dark:[&[data-state=open]]:bg-zinc-800/50">
+                    <div className="flex items-center justify-between w-full pr-4 gap-4">
+                      <span className="text-base font-semibold text-zinc-900 dark:text-zinc-100 text-left">
+                        {group.label}
+                      </span>
                       {/* Progress indicator for this option */}
                       <span
-                        className={`text-sm font-medium px-2 py-0.5 rounded ${
+                        className={`text-xs font-medium px-2.5 py-1 rounded-full border ${
                           progress.isComplete
-                            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                            : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                            ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-900/50"
+                            : "bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700"
                         }`}
                       >
-                        {progress.current}/{progress.required}
+                        {progress.current}/{progress.required} uploaded
                       </span>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="px-4 pt-4 pb-6">
-                    <div className="space-y-6">
+                  <AccordionContent className="px-5 pt-6 pb-8 bg-white dark:bg-zinc-900">
+                    <div className="space-y-10">
                       {group.fields.map((field) => (
                         <FieldRenderer
                           key={field.field_id}
@@ -897,38 +919,53 @@ function SectionRenderer({
               );
             })}
           </Accordion>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   // Default flat rendering (no option groups)
   return (
-    <Card className="border-none shadow-none bg-transparent mb-8 last:mb-0">
-      <CardHeader className="px-0 pb-6">
-        <CardTitle className="text-xl font-bold text-[var(--foreground)]">
-          {section.title}
-        </CardTitle>
-        {section.description && (
-          <CardDescription className="text-base mt-2">{section.description}</CardDescription>
-        )}
-      </CardHeader>
-      <CardContent className="space-y-8 px-0">
-        {visibleFields.map((field) => (
-          <FieldRenderer
-            key={field.field_id}
-            field={field}
-            control={control as any}
-            error={errors[field.field_id]?.message as string | undefined}
-            assessmentId={assessmentId}
-            indicatorId={indicatorId}
-            isLocked={isLocked}
-            movAnnotations={movAnnotations}
-            reworkComments={reworkComments}
-          />
-        ))}
-      </CardContent>
-    </Card>
+    <div className="mb-10 last:mb-0">
+      <div className="mb-6 pb-4 border-b border-zinc-200 dark:border-zinc-800">
+        <div className="space-y-1">
+          <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+            {friendlyTitle}
+          </h2>
+          {friendlyDescription && (
+            <p className="text-base text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-4xl">
+              {friendlyDescription}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-8">
+        {visibleFields.map((field) => {
+          // Determine if this field should be wrapped (inputs) or standout (headers/info)
+          const isInput = !["section_header", "info_text"].includes(field.field_type);
+          const Wrapper = isInput ? "div" : "div";
+          const wrapperClasses = isInput
+            ? "p-6 border border-[var(--border)] rounded-xl bg-[var(--card)] shadow-sm space-y-4 transition-all hover:shadow-md"
+            : "py-2";
+
+          return (
+            <Wrapper key={field.field_id} className={wrapperClasses}>
+              <FieldRenderer
+                field={field}
+                control={control as any}
+                error={errors[field.field_id]?.message as string | undefined}
+                assessmentId={assessmentId}
+                indicatorId={indicatorId}
+                isLocked={isLocked}
+                movAnnotations={movAnnotations}
+                reworkComments={reworkComments}
+              />
+            </Wrapper>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

@@ -719,7 +719,7 @@ export function FileFieldComponent({
   const hasAnnotations = fieldAnnotations.length > 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" id={`file-upload-${field.field_id}`}>
       {/* Field Label and Help Text */}
       <div className="space-y-1">
         <Label

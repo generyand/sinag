@@ -263,6 +263,7 @@ export default function AdminDashboardPage() {
           <FailedIndicators
             data={dashboardData.failedIndicators}
             totalBarangays={dashboardData.totalBarangays}
+            year={dashboardQuery.year ?? undefined}
           />
         </section>
       </div>

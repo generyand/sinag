@@ -1125,6 +1125,17 @@ class AssessorService:
         db.commit()
         db.refresh(assessment)
 
+        # Invalidate dashboard cache immediately so status changes are visible
+        try:
+            from app.core.cache import cache
+
+            cache.delete_pattern("dashboard_kpis:*")
+            self.logger.info(
+                f"[SEND REWORK] Dashboard cache invalidated for assessment {assessment_id}"
+            )
+        except Exception as cache_error:
+            self.logger.warning(f"Failed to invalidate dashboard cache: {cache_error}")
+
         # Trigger AI rework summary generation asynchronously using Celery
         summary_result = {"success": False, "skipped": True}
         try:
@@ -1355,6 +1366,17 @@ class AssessorService:
 
         db.commit()
         db.refresh(assessment)
+
+        # Invalidate dashboard cache immediately so calibration status is visible
+        try:
+            from app.core.cache import cache
+
+            cache.delete_pattern("dashboard_kpis:*")
+            self.logger.info(
+                f"[CALIBRATION] Dashboard cache invalidated for assessment {assessment_id}"
+            )
+        except Exception as cache_error:
+            self.logger.warning(f"Failed to invalidate dashboard cache: {cache_error}")
 
         # Trigger notification asynchronously using Celery
         notification_result = {"success": False, "skipped": True}

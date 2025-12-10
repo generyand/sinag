@@ -381,9 +381,9 @@ export function IndicatorAccordion({
     >
       <AccordionItem
         value={indicator.id}
-        className="border border-[var(--border)] rounded-lg mb-4 bg-[var(--card)] shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md"
+        className="border border-[var(--border)] rounded-md mb-4 bg-[var(--card)] shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md"
       >
-        <AccordionTrigger className="group px-3 sm:px-6 py-4 sm:py-5 hover:no-underline transition-all duration-200 focus-visible:outline-none data-[state=open]:bg-[var(--muted)]/30">
+        <AccordionTrigger className="group px-3 sm:px-6 py-4 sm:py-5 hover:no-underline transition-all duration-200 focus-visible:outline-none data-[state=open]:bg-[var(--muted)]/30 data-[state=open]:rounded-b-none">
           <div className="flex items-start justify-between w-full gap-6">
             {/* Left: Status + Content */}
             <div className="flex items-start gap-4 flex-1 min-w-0">
@@ -394,7 +394,7 @@ export function IndicatorAccordion({
                   <div className="flex items-center gap-2.5">
                     {/* Code - Monospace, subdued badge */}
                     {indicator.code && (
-                      <span className="text-[10px] font-mono text-[var(--text-secondary)] tracking-wider uppercase font-bold bg-[var(--muted)] px-2 py-0.5 rounded border border-[var(--border)]">
+                      <span className="text-[10px] font-mono text-[var(--text-secondary)] tracking-wider uppercase font-bold bg-[var(--muted)] px-2 py-0.5 rounded-sm border border-[var(--border)]">
                         {indicator.code}
                       </span>
                     )}

@@ -1,9 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, ChevronDown, CheckCircle2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { formatIndicatorName } from "@/lib/utils/text-formatter";
+import { cn } from "@/lib/utils";
 
 interface FailedIndicator {
   id: string;
@@ -18,231 +22,259 @@ interface FailedIndicator {
 interface FailedIndicatorsProps {
   data: FailedIndicator[];
   totalBarangays: number;
+  year?: number;
 }
 
-const getSeverityColor = (percentage: number) => {
-  if (percentage >= 50)
-    return { color: "var(--analytics-danger-text)", bgColor: "var(--analytics-danger-bg)" };
-  if (percentage >= 30)
-    return { color: "var(--analytics-warning-text)", bgColor: "var(--analytics-warning-bg)" };
-  return { color: "var(--analytics-neutral-text)", bgColor: "var(--analytics-neutral-bg)" };
+const getSeverityColor = (percentage: number): string => {
+  if (percentage >= 50) return "var(--analytics-danger)";
+  if (percentage >= 30) return "var(--analytics-warning)";
+  return "var(--analytics-neutral)";
+};
+
+const getSeverityLabel = (percentage: number): string => {
+  if (percentage >= 50) return "Critical";
+  if (percentage >= 30) return "High";
+  return "Moderate";
+};
+
+const getSeverityBgColor = (percentage: number): string => {
+  if (percentage >= 50) return "var(--analytics-danger-bg)";
+  if (percentage >= 30) return "var(--analytics-warning-bg)";
+  return "transparent";
 };
 
 const getGovernanceAreaColor = (area: string) => {
-  const colors = {
+  const colors: Record<string, { color: string; bgColor: string }> = {
     "Environmental Management": {
       color: "var(--analytics-success-text)",
       bgColor: "var(--analytics-success-bg)",
     },
-    "Financial Administration": { color: "var(--kpi-blue-text)", bgColor: "var(--kpi-blue-from)" },
-    "Disaster Preparedness": { color: "var(--kpi-purple-text)", bgColor: "var(--kpi-purple-from)" },
-    "Social Protection": { color: "var(--kpi-purple-text)", bgColor: "var(--kpi-purple-from)" },
+    "Financial Administration and Sustainability": {
+      color: "#1d4ed8",
+      bgColor: "#dbeafe",
+    },
+    "Financial Administration": {
+      color: "#1d4ed8",
+      bgColor: "#dbeafe",
+    },
+    "Disaster Preparedness": {
+      color: "#9333ea",
+      bgColor: "#f3e8ff",
+    },
+    "Social Protection": {
+      color: "#db2777",
+      bgColor: "#fce7f3",
+    },
     "Safety, Peace and Order": {
       color: "var(--analytics-danger-text)",
       bgColor: "var(--analytics-danger-bg)",
     },
-    "Business-Friendliness": { color: "var(--kpi-blue-text)", bgColor: "var(--kpi-blue-from)" },
+    "Business-Friendliness": {
+      color: "#0891b2",
+      bgColor: "#cffafe",
+    },
   };
   return (
-    colors[area as keyof typeof colors] || {
+    colors[area] || {
       color: "var(--analytics-neutral-text)",
       bgColor: "var(--analytics-neutral-bg)",
     }
   );
 };
 
-export function FailedIndicators({ data, totalBarangays }: FailedIndicatorsProps) {
+export function FailedIndicators({ data, totalBarangays, year }: FailedIndicatorsProps) {
+  const [showAll, setShowAll] = useState(false);
   const criticalIssues = data.filter((item) => item.percentage >= 30).length;
   const totalFailures = data.reduce((sum, item) => sum + item.failedCount, 0);
+  const displayYear = year ?? new Date().getFullYear();
 
-  return (
-    <Card className="bg-[var(--card)] border border-[var(--border)] shadow-lg hover:shadow-xl transition-shadow duration-300">
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-xl font-bold text-[var(--foreground)]">
-              Most Commonly Failed Indicators
-            </CardTitle>
-            <p className="text-sm text-[var(--muted-foreground)] mt-1">
-              Systemic weaknesses requiring municipal-level training
+  const displayedData = showAll ? data : data.slice(0, 5);
+
+  // Empty state
+  if (data.length === 0) {
+    return (
+      <Card className="border border-[var(--border)]">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg font-semibold tracking-tight text-[var(--foreground)]">
+            Top Failing Indicators
+          </CardTitle>
+          <p className="text-sm text-[var(--muted-foreground)]">
+            Systemic weaknesses requiring intervention
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-12">
+            <CheckCircle2 className="h-12 w-12 mx-auto text-[var(--muted-foreground)]/50 mb-3" />
+            <h3 className="font-semibold text-lg mb-1 text-[var(--foreground)]">
+              No Critical Issues
+            </h3>
+            <p className="text-sm text-[var(--muted-foreground)]">
+              All indicators are performing well across barangays
             </p>
           </div>
-          <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)]">
-            <div className="text-3xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
-              {criticalIssues}
-            </div>
-            <div className="text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wide">
-              Critical Issues
-            </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="border border-[var(--border)]">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <CardTitle className="text-lg font-semibold tracking-tight text-[var(--foreground)]">
+              Top Failing Indicators
+            </CardTitle>
+            <p className="text-sm text-[var(--muted-foreground)]">
+              Systemic weaknesses requiring intervention
+            </p>
           </div>
+          {criticalIssues > 0 && (
+            <Badge variant="destructive" className="h-fit shrink-0">
+              {criticalIssues} Critical
+            </Badge>
+          )}
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          {criticalIssues > 0 && (
-            <div
-              className="rounded-sm p-4 backdrop-blur-sm border"
-              style={{
-                backgroundColor: "var(--analytics-warning-bg)",
-                borderColor: "var(--analytics-warning-border)",
-              }}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-8 h-8 rounded-sm flex items-center justify-center"
-                  style={{ backgroundColor: "var(--analytics-warning-bg)" }}
-                >
-                  <AlertTriangle
-                    className="h-4 w-4"
-                    style={{ color: "var(--analytics-warning-text)" }}
-                  />
-                </div>
-                <p
-                  className="text-sm font-medium"
-                  style={{ color: "var(--analytics-warning-text)" }}
-                >
-                  {criticalIssues} indicator{criticalIssues > 1 ? "s" : ""} with 30%+ failure rate -
-                  consider organizing focused training sessions
-                </p>
-              </div>
-            </div>
-          )}
 
-          <div className="space-y-4">
-            {data.slice(0, 8).map((indicator) => (
+      <CardContent className="space-y-4">
+        {/* Critical alert banner */}
+        {criticalIssues > 0 && (
+          <div className="flex items-center gap-3 p-3 rounded-md bg-[var(--destructive)]/10 border border-[var(--destructive)]/20">
+            <AlertTriangle className="h-4 w-4 text-[var(--destructive)] shrink-0" />
+            <p className="text-sm text-[var(--destructive)]">
+              {criticalIssues} indicator{criticalIssues > 1 ? "s" : ""} with 30%+ failure rate —
+              consider organizing focused training sessions
+            </p>
+          </div>
+        )}
+
+        {/* Indicator cards */}
+        <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+          {displayedData.map((indicator) => {
+            const severityColor = getSeverityColor(indicator.percentage);
+            const isCritical = indicator.percentage >= 30;
+
+            const areaColors = getGovernanceAreaColor(indicator.governanceArea);
+
+            return (
               <div
                 key={indicator.id}
-                className="p-4 rounded-sm border transition-all duration-200 hover:shadow-md"
+                className="group border-l-4 border border-[var(--border)] rounded-r-lg p-4 hover:shadow-md transition-all duration-200"
                 style={{
-                  backgroundColor:
-                    indicator.percentage >= 30
-                      ? "var(--analytics-danger-bg)"
-                      : indicator.percentage >= 15
-                        ? "var(--analytics-warning-bg)"
-                        : "var(--hover)",
-                  borderColor:
-                    indicator.percentage >= 30
-                      ? "var(--analytics-danger-border)"
-                      : indicator.percentage >= 15
-                        ? "var(--analytics-warning-border)"
-                        : "var(--border)",
+                  borderLeftColor: severityColor,
+                  backgroundColor: getSeverityBgColor(indicator.percentage),
                 }}
               >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      {indicator.governanceArea && (
+                <div className="space-y-3">
+                  {/* Header row */}
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      {/* Metadata row */}
+                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                         <Badge
                           variant="secondary"
-                          className="text-xs font-medium rounded-sm"
-                          style={getGovernanceAreaColor(indicator.governanceArea)}
+                          className="text-xs font-medium px-2 py-0.5"
+                          style={{
+                            color: areaColors.color,
+                            backgroundColor: areaColors.bgColor,
+                          }}
                         >
                           {indicator.governanceArea}
                         </Badge>
-                      )}
-                      <span className="text-xs font-mono text-[var(--muted-foreground)] bg-[var(--hover)] px-2 py-1 rounded-sm">
-                        {indicator.code}
-                      </span>
+                        <span className="text-xs font-mono text-[var(--muted-foreground)] bg-[var(--muted)]/50 px-1.5 py-0.5 rounded">
+                          {indicator.code}
+                        </span>
+                      </div>
+                      {/* Indicator name - primary focus */}
+                      <h4 className="font-semibold text-sm leading-tight text-[var(--foreground)]">
+                        {formatIndicatorName(indicator.name, displayYear)}
+                      </h4>
                     </div>
-                    <h4 className="font-semibold text-sm text-[var(--foreground)] leading-relaxed">
-                      {indicator.name}
-                    </h4>
-                  </div>
-                  <div className="text-right ml-4">
-                    <div
-                      className="text-2xl font-bold"
-                      style={{ color: getSeverityColor(indicator.percentage).color }}
-                    >
-                      {indicator.failedCount}
-                    </div>
-                    <div className="text-xs text-[var(--muted-foreground)]">
-                      of {totalBarangays}
-                    </div>
-                  </div>
-                </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-[var(--foreground)]">Failure Rate</span>
-                    <span
-                      className="font-bold text-sm"
-                      style={{ color: getSeverityColor(indicator.percentage).color }}
-                    >
-                      {indicator.percentage}%
-                    </span>
-                  </div>
-                  <div className="relative">
-                    <Progress value={indicator.percentage} className="h-2 bg-[var(--border)]" />
-                    <div
-                      className="absolute top-0 left-0 h-2 rounded-sm transition-all duration-500"
-                      style={{
-                        backgroundColor:
-                          indicator.percentage >= 50
-                            ? "var(--analytics-danger)"
-                            : indicator.percentage >= 30
-                              ? "var(--analytics-danger)"
-                              : indicator.percentage >= 15
-                                ? "var(--analytics-warning)"
-                                : "var(--analytics-neutral-border)",
-                        width: `${indicator.percentage}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {indicator.percentage >= 30 && (
-                  <div
-                    className="mt-3 p-3 bg-[var(--hover)] backdrop-blur-sm rounded-sm border"
-                    style={{ borderColor: "var(--analytics-danger-border)" }}
-                  >
-                    <div className="flex items-start gap-2">
-                      <span className="text-sm" style={{ color: "var(--analytics-danger-text)" }}>
-                        🎯
-                      </span>
-                      <p
-                        className="text-xs leading-relaxed"
-                        style={{ color: "var(--analytics-danger-text)" }}
+                    {/* Failure metric */}
+                    <div className="text-right shrink-0">
+                      <div
+                        className="text-2xl font-bold tabular-nums"
+                        style={{ color: severityColor }}
                       >
-                        <span className="font-semibold">Priority:</span> High failure rate suggests
-                        need for municipal-level training on {indicator.name.toLowerCase()}
-                      </p>
+                        {indicator.failedCount}
+                      </div>
+                      <div className="text-xs text-[var(--muted-foreground)]">
+                        of {totalBarangays}
+                      </div>
                     </div>
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
 
-          {data.length > 8 && (
-            <div className="text-center py-3 bg-[var(--hover)] rounded-sm">
-              <p className="text-sm text-[var(--muted-foreground)]">
-                Showing top 8 indicators • <span className="font-semibold">{data.length - 8}</span>{" "}
-                more indicators available
-              </p>
-            </div>
-          )}
+                  {/* Progress bar */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-[var(--muted-foreground)]">Failure rate</span>
+                      <span
+                        className="text-sm font-semibold tabular-nums"
+                        style={{ color: severityColor }}
+                      >
+                        {indicator.percentage}%
+                      </span>
+                    </div>
+                    <div className="relative h-2 w-full overflow-hidden rounded-full bg-[var(--muted)]">
+                      <div
+                        className="h-full transition-all duration-500 rounded-full"
+                        style={{
+                          width: `${indicator.percentage}%`,
+                          backgroundColor: severityColor,
+                        }}
+                      />
+                    </div>
+                  </div>
 
-          <div className="bg-[var(--hover)] rounded-sm p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: "var(--analytics-danger)" }}
-                ></div>
-                <span className="text-sm font-medium text-[var(--foreground)]">
-                  Total Failures: {totalFailures}
-                </span>
+                  {/* Priority hint for critical items */}
+                  {isCritical && (
+                    <div className="flex items-center gap-2 text-xs text-[var(--muted-foreground)] pt-1">
+                      <AlertTriangle className="h-3.5 w-3.5" style={{ color: severityColor }} />
+                      <span>
+                        <span className="font-medium" style={{ color: severityColor }}>
+                          {getSeverityLabel(indicator.percentage)} priority
+                        </span>{" "}
+                        — recommended for municipal training
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Screen reader only severity */}
+                  <span className="sr-only">
+                    {getSeverityLabel(indicator.percentage)} severity indicator
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-2 h-2 rounded-full animate-pulse"
-                  style={{ backgroundColor: "var(--analytics-success)" }}
-                ></div>
-                <span className="text-sm text-[var(--muted-foreground)]">
-                  Last updated: {new Date().toLocaleTimeString()}
-                </span>
-              </div>
-            </div>
+            );
+          })}
+        </div>
+
+        {/* Show more/less button */}
+        {data.length > 5 && (
+          <Button
+            variant="ghost"
+            className="w-full text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+            onClick={() => setShowAll(!showAll)}
+          >
+            {showAll ? "Show Less" : `Show ${data.length - 5} More Indicators`}
+            <ChevronDown
+              className={cn("ml-2 h-4 w-4 transition-transform", showAll && "rotate-180")}
+            />
+          </Button>
+        )}
+
+        {/* Summary footer */}
+        <div className="flex items-center justify-between pt-3 border-t border-[var(--border)]">
+          <div className="flex items-center gap-2">
+            <div
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: "var(--analytics-danger)" }}
+            />
+            <span className="text-sm font-medium text-[var(--foreground)]">
+              {totalFailures} total failures across {data.length} indicators
+            </span>
           </div>
         </div>
       </CardContent>
