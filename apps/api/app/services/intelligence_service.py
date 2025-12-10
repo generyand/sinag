@@ -178,7 +178,16 @@ LANGUAGE REQUIREMENTS:
 1. Gamita ang CONVERSATIONAL Bisaya - ang klase nga ginasulti sa adlaw-adlaw
 2. Isulat nga daw nagpasabot sa barangay kagawad sa regular meeting
 3. Ayaw gamita ang deep/literary Bisaya - simple lang nga mga pulong
-4. Gamita ang active voice: "Kinahanglan nimo..." dili "Kinahanglan nga..."
+
+CRITICAL - DUAL AUDIENCE CONSIDERATION:
+4. Para sa "key_issues": Gamita ang 3rd person POV (ikatolong tawo)
+   - TAMA: "Kulang ang Annual Budget sa barangay"
+   - SAYOP: "Kulang ang imong Annual Budget"
+   - NGANO: Ang "key_issues" makita sa dashboard sa MLGOO officials nga nagtan-aw sa DAGHANG barangay
+
+5. Para sa "suggested_actions": Gamita ang 2nd person active voice (ikaduhang tawo)
+   - TAMA: "Kinahanglan nimo i-upload ang updated Annual Budget"
+   - NGANO: Ang "suggested_actions" direkta nga gipakita sa BLGU users
 
 TECHNICAL TERMS - Gamita kini nga mga translation:
 - governance area = "lugar sa pagdumala"
@@ -199,14 +208,30 @@ PABILIN SA ENGLISH (ayaw i-translate):
 - Proper nouns: pangalan sa barangay, pangalan sa tawo
 - JSON keys (e.g., "area_name", "description", "severity")
 
-EXAMPLES SA MAAYO NGA BISAYA OUTPUT:
-- "Ang barangay kinahanglan mag-update sa ilang budget records aron mas klaro ang paggamit sa pondo."
-- "Importante nga ang barangay treasurer mag-attend sa training mahitungod sa financial management."
-- "Kulang ang dokumentasyon sa disaster preparedness plan - kinahanglan ma-update."
+SPECIFICITY REQUIREMENTS (IMPORTANTE KAAYO):
+- SEMPRE isulat ang ngalan sa specific indicator/document/plan sa key_issues
+- AYAW paggamit sa vague terms nga walay context
+- TAMA: "Kulang ang Disaster Preparedness Plan sa barangay"
+- SAYOP: "walay husto nga plano" (UNSA NGA plano?)
+- TAMA: "Wala gi-upload ang Annual Investment Plan 2024"
+- SAYOP: "Missing documents" (UNSA NGA dokumento?)
+
+EXAMPLES SA MAAYO NGA KEY_ISSUES (3rd person, specific):
+- "Kulang ang Disaster Preparedness Plan sa barangay"
+- "Wala gi-upload ang Annual Budget Ordinance para sa 2024"
+- "Ang Barangay Development Plan wala'y klaro nga timeline"
+- "Incomplete ang dokumentasyon sa BDRRMC training records"
+
+EXAMPLES SA MAAYO NGA SUGGESTED_ACTIONS (2nd person, actionable):
+- "Kinahanglan nimo i-upload ang updated Disaster Preparedness Plan"
+- "Importante nga ang barangay treasurer mag-attend sa training mahitungod sa financial management"
+- "I-update ang Barangay Development Plan ug ibutang ang timeline para sa matag proyekto"
 
 EXAMPLES SA DILI MAAYO (ayaw sunda):
-- "Ang barangay kinabahala nga mag-update..." (sobra ka formal)
-- "Importante ang pag-update sa budget records" (passive voice, dili klaro)
+- "walay husto nga plano" (vague - unsa nga plano?)
+- "Kinahanglan ang barangay mag-update sa ilang records" (2nd person sa key_issues - SAYOP)
+- "Missing documents" (vague - unsa nga dokumento?)
+- "Kulang ang imong budget" (2nd person sa key_issues - SAYOP)
 
 JSON VALUES: Kinahanglan sa Bisaya. JSON KEYS: Pabilin sa English.
 """,
@@ -217,7 +242,16 @@ LANGUAGE REQUIREMENTS:
 1. Gumamit ng NATURAL na Filipino - ang Filipino na ginagamit sa pang-araw-araw na usapan
 2. Isulat na parang nagpapaliwanag sa isang barangay kagawad sa regular na pulong
 3. Iwasan ang malalim o pormal na Tagalog - simple lang
-4. Gamitin ang active voice: "Kailangan mong..." hindi "Kailangan na..."
+
+CRITICAL - DUAL AUDIENCE CONSIDERATION:
+4. Para sa "key_issues": Gumamit ng 3rd person POV (ikatlong panauhan)
+   - TAMA: "Kulang ang Annual Budget ng barangay"
+   - MALI: "Kulang ang iyong Annual Budget"
+   - BAKIT: Ang "key_issues" ay makikita sa dashboard ng MLGOO officials na tumitingin sa MARAMING barangay
+
+5. Para sa "suggested_actions": Gumamit ng 2nd person active voice (ikalawang panauhan)
+   - TAMA: "Kailangan mong i-upload ang updated Annual Budget"
+   - BAKIT: Ang "suggested_actions" ay direktang ipinapakita sa BLGU users
 
 TECHNICAL TERMS - Gamitin ang mga sumusunod:
 - governance area = "larangan ng pamamahala"
@@ -238,14 +272,30 @@ PANATILIHING ENGLISH (walang salin):
 - Proper nouns: pangalan ng barangay, pangalan ng tao
 - JSON keys (e.g., "area_name", "description", "severity")
 
-HALIMBAWA NG MAGANDANG FILIPINO OUTPUT:
-- "Kailangan ng barangay na i-update ang kanilang budget records para mas malinaw ang paggamit ng pondo."
-- "Mahalagang mag-attend ang barangay treasurer sa training tungkol sa financial management."
-- "Kulang ang dokumentasyon ng disaster preparedness plan - kailangang i-update."
+SPECIFICITY REQUIREMENTS (NAPAKA-IMPORTANTE):
+- PALAGING isulat ang pangalan ng specific indicator/document/plan sa key_issues
+- HUWAG gumamit ng vague terms na walang context
+- TAMA: "Kulang ang Disaster Preparedness Plan ng barangay"
+- MALI: "walang wastong plano" (ALING plano?)
+- TAMA: "Hindi pa na-upload ang Annual Investment Plan 2024"
+- MALI: "Missing documents" (ALING dokumento?)
+
+HALIMBAWA NG MAGANDANG KEY_ISSUES (3rd person, specific):
+- "Kulang ang Disaster Preparedness Plan ng barangay"
+- "Hindi pa na-upload ang Annual Budget Ordinance para sa 2024"
+- "Ang Barangay Development Plan ay walang malinaw na timeline"
+- "Incomplete ang dokumentasyon ng BDRRMC training records"
+
+HALIMBAWA NG MAGANDANG SUGGESTED_ACTIONS (2nd person, actionable):
+- "Kailangan mong i-upload ang updated Disaster Preparedness Plan"
+- "Mahalagang mag-attend ang barangay treasurer sa training tungkol sa financial management"
+- "I-update ang Barangay Development Plan at lagyan ng timeline ang bawat proyekto"
 
 HALIMBAWA NG DI-MAGANDA (iwasan):
-- "Ang barangay ay nararapat na..." (masyadong pormal)
-- "Mahalaga ang pag-update ng budget records" (passive voice)
+- "walang wastong plano" (vague - aling plano?)
+- "Kailangan ng barangay na mag-update ng kanilang records" (2nd person sa key_issues - MALI)
+- "Missing documents" (vague - aling dokumento?)
+- "Kulang ang iyong budget" (2nd person sa key_issues - MALI)
 
 JSON VALUES: Dapat Filipino. JSON KEYS: Panatilihing English.
 """,
@@ -255,20 +305,46 @@ IMPORTANT: Generate ALL text output in clear, simple English.
 LANGUAGE REQUIREMENTS:
 1. Use PLAIN English - avoid jargon and bureaucratic language
 2. Write at a 10th-grade reading level
-3. Use active voice: "You should update..." not "It is required that updates be..."
-4. Write as if explaining to a barangay official during a meeting
+3. Write as if explaining to a barangay official during a meeting
+
+CRITICAL - DUAL AUDIENCE CONSIDERATION:
+4. For "key_issues": Use 3rd person POV (third person)
+   - CORRECT: "Barangay lacks Annual Budget documentation"
+   - WRONG: "You need to provide Annual Budget documentation"
+   - WHY: "key_issues" are aggregated and shown on the MLGOO dashboard where DILG officials view data ABOUT multiple barangays
+
+5. For "suggested_actions": Use 2nd person active voice (second person)
+   - CORRECT: "You should upload the updated Annual Budget"
+   - WHY: "suggested_actions" are shown directly TO the BLGU users
 
 TARGET AUDIENCE: Barangay officials with varying education levels
 
-EXAMPLES OF GOOD ENGLISH OUTPUT:
-- "The barangay needs to update its budget records to show clearer fund usage."
-- "The barangay treasurer should attend training on financial management."
-- "The disaster preparedness plan lacks proper documentation and needs updating."
+SPECIFICITY REQUIREMENTS (CRITICAL):
+- ALWAYS include the specific indicator/document/plan name in key_issues
+- NEVER use vague terms without context
+- CORRECT: "Barangay lacks Disaster Preparedness Plan"
+- WRONG: "no proper plan" (WHICH plan?)
+- CORRECT: "Annual Investment Plan 2024 not uploaded"
+- WRONG: "Missing documents" (WHICH documents?)
+
+EXAMPLES OF GOOD KEY_ISSUES (3rd person, specific):
+- "Barangay lacks Disaster Preparedness Plan"
+- "Annual Budget Ordinance for 2024 not uploaded"
+- "Barangay Development Plan missing clear timeline"
+- "BDRRMC training records documentation incomplete"
+
+EXAMPLES OF GOOD SUGGESTED_ACTIONS (2nd person, actionable):
+- "Upload the updated Disaster Preparedness Plan with evacuation routes"
+- "The barangay treasurer should attend training on financial management"
+- "Update the Barangay Development Plan and add timeline for each project"
 
 EXAMPLES OF BAD OUTPUT (avoid these):
+- "no proper plan" (vague - which plan?)
+- "The barangay needs to update its records" (2nd person in key_issues - WRONG)
+- "Missing documents" (vague - which documents?)
+- "Your budget is incomplete" (2nd person in key_issues - WRONG)
 - "The barangay must facilitate the updating of budgetary allocations..." (too formal)
 - "Compliance with financial management protocols requires..." (bureaucratic)
-- "It is recommended that documentation be improved" (passive voice)
 
 JSON KEYS: Keep in English. JSON VALUES: Must be in clear, simple English.
 """,
@@ -1845,23 +1921,27 @@ Based on the assessor feedback above, generate a comprehensive rework summary in
       "indicator_id": 1,
       "indicator_name": "Full indicator name",
       "key_issues": [
-        "Specific issue 1 identified by assessor",
-        "Specific issue 2 identified by assessor"
+        "Barangay lacks Disaster Preparedness Plan with evacuation routes",
+        "Annual Budget Ordinance for 2024 not uploaded"
       ],
       "suggested_actions": [
-        "Actionable step 1 the BLGU should take",
-        "Actionable step 2 the BLGU should take"
+        "Upload the updated Disaster Preparedness Plan including evacuation routes and emergency contact list",
+        "Submit the Annual Budget Ordinance 2024 with revenue and expenditure breakdown"
       ],
-      "affected_movs": ["filename1.pdf", "filename2.jpg"]
+      "affected_movs": ["disaster_plan.pdf", "budget_ordinance_2024.pdf"]
     }
   ],
   "priority_actions": [
-    "Most critical action 1",
-    "Most critical action 2",
-    "Most critical action 3"
+    "Upload missing Annual Budget Ordinance for 2024",
+    "Complete Disaster Preparedness Plan with all required sections",
+    "Submit BDRRMC training attendance records"
   ],
   "estimated_time": "Estimated time to complete all rework (e.g., '30-45 minutes', '1-2 hours')"
 }
+
+REMEMBER:
+- key_issues: 3rd person, specific document/indicator names (e.g., "Barangay lacks X", "X not uploaded")
+- suggested_actions: 2nd person, actionable steps (e.g., "Upload X", "You should Y")
 
 GUIDELINES:
 1. Be clear and specific - avoid vague language
@@ -1872,6 +1952,26 @@ GUIDELINES:
 6. Suggest concrete actions (e.g., "Reupload budget ordinance with clearer dates" not "Fix budget document")
 7. List only the top 3-5 priority actions that address the most critical issues
 8. Estimate time realistically based on the complexity and number of issues
+
+CRITICAL - POV AND SPECIFICITY REQUIREMENTS:
+9. For "key_issues": Use 3rd person POV because these are aggregated on the MLGOO dashboard
+   - CORRECT: "Barangay lacks Disaster Preparedness Plan"
+   - WRONG: "You need to provide Disaster Preparedness Plan"
+   - WHY: MLGOO officials view aggregated issues ABOUT multiple barangays
+
+10. For "suggested_actions": Use 2nd person active voice because these are shown TO the BLGU
+   - CORRECT: "Upload the updated Disaster Preparedness Plan"
+   - WHY: BLGU users see these as direct instructions for their barangay
+
+11. ALWAYS include specific indicator/document/plan names in "key_issues"
+   - CORRECT: "Annual Budget Ordinance for 2024 not uploaded"
+   - WRONG: "Missing budget document" (WHICH document?)
+   - CORRECT: "BDRRMC training records incomplete"
+   - WRONG: "Incomplete documentation" (WHICH documentation?)
+
+12. Include governance area context when relevant to help MLGOO officials understand the domain
+   - GOOD: "Disaster Preparedness Plan lacks evacuation routes (Safety, Peace and Order)"
+   - BETTER: "Barangay Disaster Preparedness Plan lacks evacuation routes"
 """
 
         return prompt, indicator_data
@@ -2196,23 +2296,27 @@ Based on the validator feedback above, generate a comprehensive calibration summ
       "indicator_id": 1,
       "indicator_name": "Full indicator name",
       "key_issues": [
-        "Specific issue 1 identified by validator",
-        "Specific issue 2 identified by validator"
+        "Barangay Annual Budget Ordinance missing revenue breakdown",
+        "Investment Plan 2024 lacks project implementation timeline"
       ],
       "suggested_actions": [
-        "Actionable step 1 the BLGU should take",
-        "Actionable step 2 the BLGU should take"
+        "Upload revised Annual Budget Ordinance with detailed revenue sources and amounts",
+        "Update Investment Plan to include quarter-by-quarter timeline for each project"
       ],
-      "affected_movs": ["filename1.pdf", "filename2.jpg"]
+      "affected_movs": ["budget_ordinance.pdf", "investment_plan_2024.pdf"]
     }}
   ],
   "priority_actions": [
-    "Most critical action 1",
-    "Most critical action 2",
-    "Most critical action 3"
+    "Add revenue breakdown to Annual Budget Ordinance",
+    "Include project timelines in Investment Plan 2024",
+    "Submit signed certification from Municipal Accountant"
   ],
   "estimated_time": "Estimated time to complete calibration corrections (e.g., '15-30 minutes', '30-45 minutes')"
 }}
+
+REMEMBER:
+- key_issues: 3rd person, specific document/indicator names (e.g., "Barangay X missing Y", "X lacks Y")
+- suggested_actions: 2nd person, actionable steps (e.g., "Upload X with Y", "Update X to include Y")
 
 GUIDELINES:
 1. Be clear and specific - avoid vague language
@@ -2224,6 +2328,26 @@ GUIDELINES:
 7. List only the top 3 priority actions that address the most critical issues
 8. Estimate time realistically - calibrations are typically faster than full reworks
 9. Remember this is only for the {governance_area_name} governance area, not all indicators
+
+CRITICAL - POV AND SPECIFICITY REQUIREMENTS:
+10. For "key_issues": Use 3rd person POV because these are aggregated on the MLGOO dashboard
+   - CORRECT: "Barangay lacks Annual Budget Ordinance"
+   - WRONG: "You need to provide Annual Budget Ordinance"
+   - WHY: MLGOO officials view aggregated issues ABOUT multiple barangays
+
+11. For "suggested_actions": Use 2nd person active voice because these are shown TO the BLGU
+   - CORRECT: "Upload the Annual Budget Ordinance with revenue breakdown"
+   - WHY: BLGU users see these as direct instructions for their barangay
+
+12. ALWAYS include specific indicator/document/plan names in "key_issues"
+   - CORRECT: "Barangay Investment Plan 2024 missing project timelines"
+   - WRONG: "Missing timelines" (FOR WHICH document?)
+   - CORRECT: "BDRRMC training attendance records not documented"
+   - WRONG: "No documentation" (WHAT documentation?)
+
+13. Since calibration is area-specific, include the governance area context naturally
+   - GOOD: "Annual Budget Ordinance (Financial Administration) missing revenue details"
+   - BETTER: "Barangay Annual Budget Ordinance missing revenue details"
 """
 
         return prompt, indicator_data
