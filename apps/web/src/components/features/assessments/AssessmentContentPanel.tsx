@@ -78,25 +78,23 @@ export function AssessmentContentPanel({
     <div className="h-full flex flex-col bg-[var(--background)]">
       {/* Scrollable Content */}
       <div ref={contentRef} className="flex-1 overflow-y-auto">
-        <div className="max-w-5xl mx-auto px-0 sm:px-6 lg:px-8 py-0 sm:py-8">
-          <div className="bg-[var(--background)] sm:bg-[var(--card)] sm:rounded-xl sm:shadow-sm sm:border sm:border-[var(--border)] overflow-hidden min-h-screen sm:min-h-0">
-            {/* Form Content */}
-            <div className="p-2 sm:p-8">
-              <RecursiveIndicator
-                indicator={selectedIndicator}
-                isLocked={indicatorLocked}
-                updateAssessmentData={updateAssessmentData}
-                currentCode={navigation.current?.indicator.code}
-                currentPosition={navigation.position}
-                totalIndicators={navigation.total}
-                hasPrevious={navigation.hasPrevious}
-                hasNext={navigation.hasNext}
-                onPrevious={navigation.navigatePrevious}
-                onNext={navigation.navigateNext}
-                level={0}
-                movAnnotations={indicatorAnnotations}
-              />
-            </div>
+        <div className="max-w-5xl mx-auto px-0 sm:px-6 lg:px-8 py-6 sm:py-8">
+          {/* Form Content */}
+          <div className="space-y-6">
+            <RecursiveIndicator
+              indicator={selectedIndicator}
+              isLocked={indicatorLocked}
+              updateAssessmentData={updateAssessmentData}
+              currentCode={navigation.current?.indicator.code}
+              currentPosition={navigation.position}
+              totalIndicators={navigation.total}
+              hasPrevious={navigation.hasPrevious}
+              hasNext={navigation.hasNext}
+              onPrevious={navigation.navigatePrevious}
+              onNext={navigation.navigateNext}
+              level={0}
+              movAnnotations={indicatorAnnotations}
+            />
           </div>
 
           {/* Rework Alert Banner - Shows indicator-specific assessor feedback at the bottom */}

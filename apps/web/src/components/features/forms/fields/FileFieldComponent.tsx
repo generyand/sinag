@@ -15,15 +15,15 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useUploadStore } from "@/store/useUploadStore";
 import type { FileUploadField } from "@sinag/shared";
 import {
-    MOVFileResponse,
-    getGetAssessmentsMyAssessmentQueryKey,
-    getGetBlguDashboardAssessmentIdQueryKey,
-    getGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFilesQueryKey,
-    getGetMovsFilesFileIdSignedUrlQueryKey,
-    useGetAssessmentsMyAssessment,
-    useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles,
-    useGetMovsFilesFileIdSignedUrl,
-    usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload,
+  MOVFileResponse,
+  getGetAssessmentsMyAssessmentQueryKey,
+  getGetBlguDashboardAssessmentIdQueryKey,
+  getGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFilesQueryKey,
+  getGetMovsFilesFileIdSignedUrlQueryKey,
+  useGetAssessmentsMyAssessment,
+  useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles,
+  useGetMovsFilesFileIdSignedUrl,
+  usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload,
 } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, CheckCircle2, FileIcon, Info, Loader2, X } from "lucide-react";
@@ -564,11 +564,11 @@ export function FileFieldComponent({
     if (hasSpecificAnnotations) {
       // Case 1: Granular Mode (Annotations exist)
       // Only invalid files are the ones with annotations
-      invalidOldFiles = oldFiles.filter((f: any) => 
+      invalidOldFiles = oldFiles.filter((f: any) =>
         movAnnotations.some((ann: any) => String(ann.mov_file_id) === String(f.id))
       );
-      validOldFiles = oldFiles.filter((f: any) => 
-        !movAnnotations.some((ann: any) => String(ann.mov_file_id) === String(f.id))
+      validOldFiles = oldFiles.filter(
+        (f: any) => !movAnnotations.some((ann: any) => String(ann.mov_file_id) === String(f.id))
       );
     } else if (hasGeneralComments) {
       // Case 2: Strict Mode (No annotations, but General Note exists)
@@ -634,7 +634,7 @@ export function FileFieldComponent({
   const hasAnnotations = fieldAnnotations.length > 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" id={`file-upload-${field.field_id}`}>
       {/* Field Label and Help Text */}
       <div className="space-y-1">
         <Label
@@ -697,7 +697,8 @@ export function FileFieldComponent({
             <p className="text-sm dark:text-orange-300">
               The assessor has left {fieldAnnotations.length} comment
               {fieldAnnotations.length !== 1 ? "s" : ""} on specific files. Please review the
-              feedback and upload corrected versions for the flagged files. Unflagged files are still valid.
+              feedback and upload corrected versions for the flagged files. Unflagged files are
+              still valid.
             </p>
           </AlertDescription>
         </Alert>

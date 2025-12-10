@@ -7,16 +7,16 @@ import {
 } from "@/components/features/assessments";
 import { AssessmentContentPanel } from "@/components/features/assessments/AssessmentContentPanel";
 import {
-  TreeNavigator,
-  MobileTreeDrawer,
   MobileNavButton,
+  MobileTreeDrawer,
+  TreeNavigator,
   findIndicatorById,
 } from "@/components/features/assessments/tree-navigation";
 import { useAssessmentValidation, useCurrentAssessment } from "@/hooks/useAssessment";
 import { useAuthStore } from "@/store/useAuthStore";
-import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import { useGetBlguDashboardAssessmentId } from "@sinag/shared";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function BLGUAssessmentsPage() {
   const { isAuthenticated, user, token } = useAuthStore();
@@ -208,7 +208,7 @@ export default function BLGUAssessmentsPage() {
 
       {/* Header (Full Width) */}
       <header className="border-b border-[var(--border)] bg-[var(--card)]">
-        <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-[1920px] mx-auto">
           <AssessmentHeader
             assessment={displayAssessment}
             validation={validation}

@@ -3,12 +3,10 @@
 
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { isFieldRequired } from "@/lib/forms/formSchemaParser";
 import type { FormSchema, FormSchemaFieldsItem, MOVFileResponse } from "@sinag/shared";
-import {
-    useGetAssessmentsMyAssessment
-} from "@sinag/shared";
+import { useGetAssessmentsMyAssessment } from "@sinag/shared";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { useMemo } from "react";
 
@@ -43,8 +41,6 @@ export function CompletionFeedbackPanel({
       staleTime: 0,
     } as any,
   } as any);
-
-
 
   // Get rework status and timestamp
   const assessmentData = myAssessmentData as any;
@@ -279,42 +275,58 @@ export function CompletionFeedbackPanel({
   }
 
   return (
-    <Card className="border border-[var(--border)] shadow-sm bg-[var(--card)] rounded-lg overflow-hidden">
-      <CardHeader className="pb-4 border-b border-[var(--border)] bg-[var(--muted)]/20">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-bold uppercase tracking-wide text-[var(--foreground)]">
-            Form Completion
-          </CardTitle>
-          <span className="text-xs font-medium text-[var(--text-secondary)] bg-[var(--muted)] px-2 py-0.5 rounded border border-[var(--border)]">
-            {completed} / {totalRequired} Required
-          </span>
+    <div className="mb-10 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 py-2">
+        <div className="space-y-1">
+          <h3 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-3">
+            Submission Status
+            {percentage === 100 ? (
+              <span className="inline-flex items-center gap-1.5 rounded-md bg-green-50 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-green-700 ring-1 ring-inset ring-green-600/20 dark:bg-green-900/20 dark:text-green-400 dark:ring-green-900/50">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Ready
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-50 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-amber-700 ring-1 ring-inset ring-amber-600/20 dark:bg-amber-900/20 dark:text-amber-400 dark:ring-amber-900/50">
+                <div className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                In Progress
+              </span>
+            )}
+          </h3>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            Complete all requirements below to proceed.
+          </p>
         </div>
-      </CardHeader>
-      <CardContent className="p-6 space-y-6">
+
+        <div className="flex items-center">
+          <div className="text-right">
+            <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1">
+              Progress
+            </div>
+            <div className="text-base font-bold text-zinc-900 dark:text-zinc-100 tabular-nums">
+              {percentage}% <span className="text-zinc-300 dark:text-zinc-700 mx-2">|</span>{" "}
+              {completed}/{totalRequired} Required
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-6">
         {/* Progress Bar */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <span id="progress-label" className="font-medium text-[var(--text-secondary)]">
-              Overall Progress
-            </span>
-            <span className="font-bold text-[var(--foreground)]" aria-live="polite">
-              {percentage}% Complete
-            </span>
-          </div>
           <div
-            className="h-2.5 w-full bg-[var(--muted)] rounded-full overflow-hidden"
+            className="h-3 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden"
             role="progressbar"
             aria-valuenow={percentage}
             aria-valuemin={0}
             aria-valuemax={100}
-            aria-labelledby="progress-label"
-            aria-label={`Form completion: ${percentage}% complete`}
+            aria-label={`Submission status: ${percentage}% complete`}
           >
             <div
-              className="h-full transition-all duration-500 ease-out rounded-full"
+              className={`h-full transition-all duration-500 ease-out rounded-full ${
+                percentage === 100 ? "bg-green-600" : "bg-amber-500"
+              }`}
               style={{
                 width: `${percentage}%`,
-                backgroundColor: getProgressColor(),
               }}
               aria-hidden="true"
             />
@@ -323,19 +335,18 @@ export function CompletionFeedbackPanel({
 
         {/* Success Message for 100% Completion */}
         {percentage === 100 && (
-          <div
-            className="flex items-start gap-3 p-3 rounded-sm bg-green-500/10 border border-green-500/20"
-            role="status"
-            aria-live="polite"
-          >
+          <div className="flex gap-4 p-5 rounded-md bg-green-50 border border-green-100 dark:bg-green-900/10 dark:border-green-900/10">
             <CheckCircle2
-              className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0"
+              className="h-6 w-6 text-green-600 dark:text-green-500 shrink-0"
               aria-hidden="true"
             />
-            <div>
-              <h4 className="text-sm font-bold text-green-700">All set!</h4>
-              <p className="text-xs text-green-600/90 mt-0.5">
-                All required fields have been completed. You can now proceed to the next indicator.
+            <div className="space-y-1">
+              <h4 className="text-base font-semibold text-green-900 dark:text-green-300">
+                Requirement Met
+              </h4>
+              <p className="text-sm text-green-700 dark:text-green-400 leading-relaxed">
+                You have uploaded all the required documents. You can now verify your uploads or
+                proceed to the next indicator.
               </p>
             </div>
           </div>
@@ -343,40 +354,45 @@ export function CompletionFeedbackPanel({
 
         {/* Incomplete Required Fields List */}
         {percentage < 100 && incompleteFields.length > 0 && (
-          <section
-            className="space-y-3 pt-2 border-t border-[var(--border)]"
-            aria-labelledby="missing-requirements-title"
-          >
-            <h4
-              id="missing-requirements-title"
-              className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] flex items-center gap-2"
-            >
-              <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
-              Missing Requirements
-            </h4>
-            <ul
-              className="grid grid-cols-1 sm:grid-cols-2 gap-2"
-              role="list"
-              aria-label="List of missing required fields"
-            >
+          <div className="pt-2">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-500">
+                <AlertCircle className="h-4 w-4" />
+              </div>
+              <h4 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                Action Required ({incompleteFields.length})
+              </h4>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3">
               {incompleteFields.map((field) => (
-                <li
+                <div
                   key={field.field_id}
-                  className="flex items-center gap-2 text-xs text-red-600 bg-red-50 dark:bg-red-900/10 px-2 py-1.5 rounded-sm border border-red-100 dark:border-red-900/20"
+                  className="group flex items-center justify-between p-4 rounded-md border border-zinc-200 bg-white hover:border-amber-300 hover:shadow-sm transition-all dark:bg-zinc-900 dark:border-zinc-800 dark:hover:border-amber-700"
                 >
-                  <div
-                    className="h-1.5 w-1.5 rounded-sm bg-red-500 flex-shrink-0"
-                    aria-hidden="true"
-                  />
-                  <span className="truncate" title={field.label}>
-                    {field.label}
-                  </span>
-                </li>
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <div className="h-2 w-2 rounded-full bg-amber-400 shrink-0 ring-2 ring-amber-50 dark:ring-amber-900/20" />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors">
+                        {field.label}
+                      </span>
+                      <span className="text-xs text-zinc-500 truncate">Missing document</span>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="ml-4 h-9 text-xs font-semibold border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800 hover:border-amber-300 dark:border-amber-900/50 dark:text-amber-400 dark:hover:bg-amber-900/20 uppercase tracking-wide"
+                    asChild
+                  >
+                    <a href={`#file-upload-${field.field_id}`}>Upload</a>
+                  </Button>
+                </div>
               ))}
-            </ul>
-          </section>
+            </div>
+          </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

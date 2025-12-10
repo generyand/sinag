@@ -3,13 +3,13 @@
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+import { classifyError } from "@/lib/error-utils";
 import { Assessment, AssessmentValidation } from "@/types/assessment";
 import {
-  usePostAssessmentsAssessmentIdSubmit,
   usePostAssessmentsAssessmentIdResubmit,
+  usePostAssessmentsAssessmentIdSubmit,
   usePostAssessmentsAssessmentIdSubmitForCalibration,
 } from "@sinag/shared";
-import { classifyError } from "@/lib/error-utils";
 import { AlertCircle, CheckCircle, Clock, Info, Send } from "lucide-react";
 
 interface AssessmentHeaderProps {
@@ -212,7 +212,7 @@ export function AssessmentHeader({
     if (validation.missingIndicators.length > 0) {
       return (
         <div>
-          <p className="font-medium mb-2">Missing indicator responses:</p>
+          <p className="font-medium mb-2">Incomplete indicators:</p>
           <ul className="text-sm space-y-1">
             {validation.missingIndicators.slice(0, 3).map((indicator, index) => (
               <li key={index}>• {indicator}</li>
@@ -225,23 +225,7 @@ export function AssessmentHeader({
       );
     }
 
-    if (validation.missingMOVs.length > 0) {
-      return (
-        <div>
-          <p className="font-medium mb-2">Missing MOV files:</p>
-          <ul className="text-sm space-y-1">
-            {validation.missingMOVs.slice(0, 3).map((indicator, index) => (
-              <li key={index}>• {indicator}</li>
-            ))}
-            {validation.missingMOVs.length > 3 && (
-              <li>• ... and {validation.missingMOVs.length - 3} more</li>
-            )}
-          </ul>
-        </div>
-      );
-    }
-
-    return "Please complete all indicators and upload required MOVs before submitting.";
+    return "Please complete all indicators before submitting.";
   };
 
   const progressPercentage = Math.round(
@@ -449,16 +433,12 @@ export function AssessmentHeader({
           </div>
 
           {/* Validation Info */}
-          {!validation.canSubmit &&
-            (validation.missingIndicators.length > 0 || validation.missingMOVs.length > 0) && (
-              <div className="mt-4 flex items-start gap-2 text-sm text-amber-600 bg-amber-50 p-3 rounded-md border border-amber-100">
-                <Info className="h-5 w-5 flex-shrink-0" />
-                <span>
-                  You have {validation.missingIndicators.length} missing responses and{" "}
-                  {validation.missingMOVs.length} missing required files.
-                </span>
-              </div>
-            )}
+          {!validation.canSubmit && validation.missingIndicators.length > 0 && (
+            <div className="mt-4 flex items-start gap-2 text-sm text-amber-600 bg-amber-50 p-3 rounded-md border border-amber-100">
+              <Info className="h-5 w-5 flex-shrink-0" />
+              <span>You have {validation.missingIndicators.length} incomplete indicators.</span>
+            </div>
+          )}
         </div>
       </div>
     </div>
