@@ -579,6 +579,7 @@ export interface AssessmentResponse {
   response_data?: AssessmentResponseResponseData;
   is_completed: boolean;
   requires_rework: boolean;
+  flagged_for_calibration?: boolean;
   validation_status?: AssessmentResponseValidationStatus;
   generated_remark?: AssessmentResponseGeneratedRemark;
   assessor_remarks?: AssessmentResponseAssessorRemarks;
@@ -642,6 +643,7 @@ export interface AssessmentResponseUpdate {
   response_data?: AssessmentResponseUpdateResponseData;
   is_completed?: AssessmentResponseUpdateIsCompleted;
   requires_rework?: AssessmentResponseUpdateRequiresRework;
+  flagged_for_calibration?: AssessmentResponseUpdateFlaggedForCalibration;
   validation_status?: AssessmentResponseUpdateValidationStatus;
   assessor_remarks?: AssessmentResponseUpdateAssessorRemarks;
 }
@@ -651,6 +653,12 @@ export interface AssessmentResponseUpdate {
  * AssessmentResponseUpdateAssessorRemarks
  */
 export type AssessmentResponseUpdateAssessorRemarks = string | null;
+
+
+/**
+ * AssessmentResponseUpdateFlaggedForCalibration
+ */
+export type AssessmentResponseUpdateFlaggedForCalibration = boolean | null;
 
 
 /**

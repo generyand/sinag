@@ -3,16 +3,16 @@
 import FileUploader from "@/components/shared/FileUploader";
 import { IndicatorFormSkeleton } from "@/components/shared/skeletons";
 import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
-    useCurrentAssessment,
-    useDeleteMOV,
-    useUpdateResponse,
-    useUploadMOV,
+  useCurrentAssessment,
+  useDeleteMOV,
+  useUpdateResponse,
+  useUploadMOV,
 } from "@/hooks/useAssessment";
 import { uploadMovFile } from "@/lib/uploadMov";
 import { Assessment, ComplianceAnswer, Indicator } from "@/types/assessment";

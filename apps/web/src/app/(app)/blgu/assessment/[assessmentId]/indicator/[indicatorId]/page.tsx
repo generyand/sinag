@@ -62,7 +62,7 @@ export default function IndicatorFormPage() {
   );
 
   // Determine if assessment is locked (SUBMITTED, IN_REVIEW, AWAITING_FINAL_VALIDATION, COMPLETED)
-  const isLocked =
+  const isStatusLocked =
     dashboardData?.status &&
     [
       "SUBMITTED",
@@ -71,6 +71,22 @@ export default function IndicatorFormPage() {
       "COMPLETED",
       "SUBMITTED_FOR_REVIEW",
     ].includes(dashboardData.status);
+
+  // Calibration rework lock - only calibrated governance areas should be editable
+  const isCalibrationRework = (dashboardData as any)?.is_calibration_rework === true;
+  const calibrationGovernanceAreaIds: number[] = (
+    (dashboardData as any)?.calibration_governance_areas || []
+  ).map((a: any) => Number(a.governance_area_id));
+  const indicatorGovernanceAreaId = indicatorData?.governance_area_id;
+
+  // During calibration rework, lock indicators NOT in calibration areas
+  const isLockedDueToCalibration =
+    isCalibrationRework &&
+    calibrationGovernanceAreaIds.length > 0 &&
+    indicatorGovernanceAreaId !== undefined &&
+    !calibrationGovernanceAreaIds.includes(Number(indicatorGovernanceAreaId));
+
+  const isLocked = isStatusLocked || isLockedDueToCalibration;
 
   // Epic 5.0: Rework workflow context
   const reworkContext = useReworkContext(dashboardData as any, indicatorId, assessmentId);

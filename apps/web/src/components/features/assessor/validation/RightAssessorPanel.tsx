@@ -18,11 +18,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuthStore } from "@/store/useAuthStore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { AssessmentDetailsResponse } from "@sinag/shared";
-import { FileTextIcon, Info } from "lucide-react";
+import { AlertCircle, FileTextIcon, Info } from "lucide-react";
 import * as React from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -37,6 +38,9 @@ interface RightAssessorPanelProps {
   // Optional: External checklist state for persistence (if parent wants to track it)
   checklistState?: Record<string, any>;
   onChecklistChange?: (key: string, value: any) => void;
+  // Calibration flag state (validators only)
+  calibrationFlags?: Record<number, boolean>;
+  onCalibrationFlagChange?: (responseId: number, flagged: boolean) => void;
 }
 
 type AnyRecord = Record<string, any>;
@@ -443,6 +447,8 @@ export function RightAssessorPanel({
   onIndicatorSelect,
   checklistState,
   onChecklistChange,
+  calibrationFlags,
+  onCalibrationFlagChange,
 }: RightAssessorPanelProps) {
   const data: AnyRecord = (assessment as unknown as AnyRecord) ?? {};
   const core = (data.assessment as AnyRecord) ?? data;
@@ -1521,6 +1527,40 @@ export function RightAssessorPanel({
                           }
                           return null;
                         })()}
+
+                      {/* Flag for Calibration toggle (validators only) */}
+                      {isValidator && (
+                        <div className="border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20 rounded-md p-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-start gap-2">
+                              <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400 mt-0.5 shrink-0" />
+                              <div>
+                                <Label
+                                  htmlFor={`calibration-flag-${r.id}`}
+                                  className="text-sm font-medium text-orange-900 dark:text-orange-100 cursor-pointer"
+                                >
+                                  Flag for Calibration
+                                </Label>
+                                <p className="text-xs text-orange-700 dark:text-orange-300 mt-0.5">
+                                  Mark this indicator for BLGU to revise
+                                </p>
+                              </div>
+                            </div>
+                            <Switch
+                              id={`calibration-flag-${r.id}`}
+                              checked={
+                                calibrationFlags?.[r.id] ??
+                                (r as AnyRecord).flagged_for_calibration ??
+                                false
+                              }
+                              onCheckedChange={(checked) => {
+                                onCalibrationFlagChange?.(r.id, checked);
+                              }}
+                              className="data-[state=unchecked]:border-2 data-[state=unchecked]:border-orange-400 data-[state=unchecked]:bg-orange-100"
+                            />
+                          </div>
+                        </div>
+                      )}
 
                       <div className="pt-2 flex items-center justify-between">
                         <Button

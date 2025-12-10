@@ -24,7 +24,15 @@ import {
 } from "@sinag/shared";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { Activity, AlertCircle, Brain, Building2, LayoutDashboard, Target, Zap } from "lucide-react";
+import {
+  Activity,
+  AlertCircle,
+  Brain,
+  Building2,
+  LayoutDashboard,
+  Target,
+  Zap,
+} from "lucide-react";
 import { useState } from "react";
 
 // Municipality name - TODO: fetch from user context or configuration when multi-municipality support is added
@@ -290,238 +298,360 @@ export default function ReportsPage() {
 
             {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-8">
-          {/* Main Analytics Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Official SGLGB Performance - 2 columns */}
-            <div className="lg:col-span-2">
-              <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg overflow-hidden">
-                <div className="p-6 border-b border-[var(--border)]">
-                  <h3 className="text-xl font-bold text-[var(--foreground)] mb-2">
-                    {analyticsData.officialPerformance.title}
-                  </h3>
+              {/* Main Analytics Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Official SGLGB Performance - 2 columns */}
+                <div className="lg:col-span-2">
+                  <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg overflow-hidden">
+                    <div className="p-6 border-b border-[var(--border)]">
+                      <h3 className="text-xl font-bold text-[var(--foreground)] mb-2">
+                        {analyticsData.officialPerformance.title}
+                      </h3>
 
-                  {/* Donut Chart and Stats */}
-                  <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8 mb-6">
-                    {/* Donut Chart Representation */}
-                    <div className="relative w-32 h-32 shrink-0">
-                      <div className="absolute inset-0 rounded-full border-8 border-gray-200"></div>
-                      <div
-                        className="absolute inset-0 rounded-full border-8 border-green-500 transform -rotate-90"
-                        style={{
-                          borderTopColor: "transparent",
-                          borderRightColor: "transparent",
-                          borderBottomColor: "transparent",
-                          clipPath: `polygon(50% 50%, 50% 0%, ${50 + (analyticsData.officialPerformance.passRate / 100) * 50}% 0%, 100% 50%, 50% 50%)`,
-                        }}
-                      ></div>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-[var(--foreground)]">
-                            {analyticsData.officialPerformance.totalBarangays}
+                      {/* Donut Chart and Stats */}
+                      <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8 mb-6">
+                        {/* Donut Chart Representation */}
+                        <div className="relative w-32 h-32 shrink-0">
+                          <div className="absolute inset-0 rounded-full border-8 border-gray-200"></div>
+                          <div
+                            className="absolute inset-0 rounded-full border-8 border-green-500 transform -rotate-90"
+                            style={{
+                              borderTopColor: "transparent",
+                              borderRightColor: "transparent",
+                              borderBottomColor: "transparent",
+                              clipPath: `polygon(50% 50%, 50% 0%, ${50 + (analyticsData.officialPerformance.passRate / 100) * 50}% 0%, 100% 50%, 50% 50%)`,
+                            }}
+                          ></div>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-[var(--foreground)]">
+                                {analyticsData.officialPerformance.totalBarangays}
+                              </div>
+                              <div className="text-xs text-[var(--muted-foreground)]">Total</div>
+                            </div>
                           </div>
-                          <div className="text-xs text-[var(--muted-foreground)]">Total</div>
+                        </div>
+
+                        {/* Legend */}
+                        <div className="space-y-2 w-full max-w-xs">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full shrink-0"
+                              style={{ backgroundColor: "var(--analytics-success)" }}
+                            ></div>
+                            <span className="text-sm text-[var(--foreground)]">
+                              Passed ({analyticsData.officialPerformance.passed})
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full shrink-0"
+                              style={{ backgroundColor: "var(--analytics-danger)" }}
+                            ></div>
+                            <span className="text-sm text-[var(--foreground)]">
+                              Failed ({analyticsData.officialPerformance.failed})
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full shrink-0"
+                              style={{ backgroundColor: "var(--analytics-warning)" }}
+                            ></div>
+                            <span className="text-sm text-[var(--foreground)]">
+                              In Progress ({analyticsData.officialPerformance.inProgress})
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Pass Rate */}
+                        <div className="md:ml-auto w-full md:w-auto text-center md:text-right p-4 bg-[var(--muted)]/10 rounded-sm">
+                          <div className="text-sm font-medium text-[var(--foreground)] mb-1">
+                            Officially Passed Barangays
+                          </div>
+                          <div className="text-sm text-[var(--muted-foreground)]">
+                            Pass Rate:{" "}
+                            <span
+                              className="font-bold text-lg block sm:inline"
+                              style={{ color: "var(--analytics-success-text-light)" }}
+                            >
+                              {analyticsData.officialPerformance.passRate}%
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Legend */}
-                    <div className="space-y-2 w-full max-w-xs">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-3 h-3 rounded-full shrink-0"
-                          style={{ backgroundColor: "var(--analytics-success)" }}
-                        ></div>
-                        <span className="text-sm text-[var(--foreground)]">
-                          Passed ({analyticsData.officialPerformance.passed})
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-3 h-3 rounded-full shrink-0"
-                          style={{ backgroundColor: "var(--analytics-danger)" }}
-                        ></div>
-                        <span className="text-sm text-[var(--foreground)]">
-                          Failed ({analyticsData.officialPerformance.failed})
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-3 h-3 rounded-full shrink-0"
-                          style={{ backgroundColor: "var(--analytics-warning)" }}
-                        ></div>
-                        <span className="text-sm text-[var(--foreground)]">
-                          In Progress ({analyticsData.officialPerformance.inProgress})
-                        </span>
-                      </div>
-                    </div>
+                    {/* Barangay List */}
+                    <div className="p-6">
+                      <div className="space-y-3 max-h-96 overflow-y-auto">
+                        <div className="grid grid-cols-3 gap-4 text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wide pb-2 border-b border-[var(--border)]">
+                          <div>Barangay</div>
+                          <div>Score</div>
+                          <div>Status</div>
+                        </div>
 
-                    {/* Pass Rate */}
-                    <div className="md:ml-auto w-full md:w-auto text-center md:text-right p-4 bg-[var(--muted)]/10 rounded-sm">
-                      <div className="text-sm font-medium text-[var(--foreground)] mb-1">
-                        Officially Passed Barangays
-                      </div>
-                      <div className="text-sm text-[var(--muted-foreground)]">
-                        Pass Rate:{" "}
-                        <span
-                          className="font-bold text-lg block sm:inline"
-                          style={{ color: "var(--analytics-success-text-light)" }}
-                        >
-                          {analyticsData.officialPerformance.passRate}%
-                        </span>
+                        {/* Show real assessment data when available, fallback to mock data */}
+                        {safeAssessments.length > 0
+                          ? safeAssessments.map((raw) => {
+                              const assessment = raw as unknown as {
+                                id: number | string;
+                                barangay_name?: string;
+                                final_compliance_status?: string;
+                              };
+                              // Convert compliance status to display format
+                              const complianceStatus: "Passed" | "Failed" | null =
+                                assessment.final_compliance_status === "Passed"
+                                  ? "Passed"
+                                  : assessment.final_compliance_status === "Failed"
+                                    ? "Failed"
+                                    : null;
+
+                              // Mock score for now - could be calculated from area_results
+                              const mockScore = 85;
+
+                              return (
+                                <div
+                                  key={String(assessment.id)}
+                                  className="grid grid-cols-3 gap-4 items-center py-2 hover:bg-[var(--hover)] rounded-sm transition-colors"
+                                >
+                                  <div className="text-sm font-medium text-[var(--foreground)]">
+                                    {assessment.barangay_name || "Unknown"}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex-1 bg-[var(--border)] rounded-sm h-2">
+                                      <div
+                                        className="h-2 rounded-sm"
+                                        style={{
+                                          backgroundColor: getScoreBarColor(mockScore),
+                                          width: `${mockScore}%`,
+                                        }}
+                                      ></div>
+                                    </div>
+                                    <span className="text-sm font-medium text-[var(--foreground)] w-8">
+                                      {mockScore}%
+                                    </span>
+                                  </div>
+                                  <div>
+                                    {complianceStatus && (
+                                      <ComplianceBadge
+                                        status={complianceStatus}
+                                        assessmentId={
+                                          typeof assessment.id === "number"
+                                            ? assessment.id
+                                            : undefined
+                                        }
+                                      />
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })
+                          : // Fallback to mock data if no real assessments
+                            analyticsData.officialPerformance.barangays.map((barangay, index) => (
+                              <div
+                                key={index}
+                                className="grid grid-cols-3 gap-4 items-center py-2 hover:bg-[var(--hover)] rounded-sm transition-colors"
+                              >
+                                <div className="text-sm font-medium text-[var(--foreground)]">
+                                  {barangay.name}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1 bg-[var(--border)] rounded-sm h-2">
+                                    <div
+                                      className="h-2 rounded-sm"
+                                      style={{
+                                        backgroundColor: getScoreBarColor(barangay.score),
+                                        width: `${barangay.score}%`,
+                                      }}
+                                    ></div>
+                                  </div>
+                                  <span className="text-sm font-medium text-[var(--foreground)] w-8">
+                                    {barangay.score}%
+                                  </span>
+                                </div>
+                                <div>
+                                  <span
+                                    className="px-2 py-1 rounded-sm text-xs font-medium"
+                                    style={getStatusColor(barangay.status)}
+                                  >
+                                    {barangay.status === "passed" ? "✓" : "✗"}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Barangay List */}
-                <div className="p-6">
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    <div className="grid grid-cols-3 gap-4 text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wide pb-2 border-b border-[var(--border)]">
-                      <div>Barangay</div>
-                      <div>Score</div>
-                      <div>Status</div>
+                {/* Municipality-Wide Performance Hotspots */}
+                <div>
+                  <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg overflow-hidden">
+                    <div className="p-6 border-b border-[var(--border)]">
+                      <h3 className="text-lg font-bold text-[var(--foreground)]">
+                        Municipality-Wide Performance Hotspots
+                      </h3>
                     </div>
 
-                    {/* Show real assessment data when available, fallback to mock data */}
-                    {safeAssessments.length > 0
-                      ? safeAssessments.map((raw) => {
-                          const assessment = raw as unknown as {
-                            id: number | string;
-                            barangay_name?: string;
-                            final_compliance_status?: string;
-                          };
-                          // Convert compliance status to display format
-                          const complianceStatus: "Passed" | "Failed" | null =
-                            assessment.final_compliance_status === "Passed"
-                              ? "Passed"
-                              : assessment.final_compliance_status === "Failed"
-                                ? "Failed"
-                                : null;
-
-                          // Mock score for now - could be calculated from area_results
-                          const mockScore = 85;
-
-                          return (
+                    <div className="p-6 space-y-4">
+                      {analyticsData.municipalityPerformance.hotspots.map((hotspot, index) => (
+                        <div
+                          key={index}
+                          className="rounded-sm p-4 border"
+                          style={{
+                            backgroundColor: "var(--analytics-danger-bg)",
+                            borderColor: "var(--analytics-danger-border)",
+                          }}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1">
+                              <div className="text-sm font-semibold text-[var(--foreground)] mb-1">
+                                {hotspot.indicator}
+                              </div>
+                              <div className="text-xs text-[var(--muted-foreground)]">
+                                Failed by {hotspot.score.split("/")[1]} barangays ({hotspot.score})
+                              </div>
+                            </div>
                             <div
-                              key={String(assessment.id)}
-                              className="grid grid-cols-3 gap-4 items-center py-2 hover:bg-[var(--hover)] rounded-sm transition-colors"
+                              className="px-2 py-1 rounded-sm text-xs font-bold"
+                              style={getStatusColor(hotspot.status)}
                             >
-                              <div className="text-sm font-medium text-[var(--foreground)]">
-                                {assessment.barangay_name || "Unknown"}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="flex-1 bg-[var(--border)] rounded-sm h-2">
-                                  <div
-                                    className="h-2 rounded-sm"
-                                    style={{
-                                      backgroundColor: getScoreBarColor(mockScore),
-                                      width: `${mockScore}%`,
-                                    }}
-                                  ></div>
-                                </div>
-                                <span className="text-sm font-medium text-[var(--foreground)] w-8">
-                                  {mockScore}%
-                                </span>
-                              </div>
-                              <div>
-                                {complianceStatus && (
-                                  <ComplianceBadge
-                                    status={complianceStatus}
-                                    assessmentId={
-                                      typeof assessment.id === "number" ? assessment.id : undefined
-                                    }
-                                  />
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })
-                      : // Fallback to mock data if no real assessments
-                        analyticsData.officialPerformance.barangays.map((barangay, index) => (
-                          <div
-                            key={index}
-                            className="grid grid-cols-3 gap-4 items-center py-2 hover:bg-[var(--hover)] rounded-sm transition-colors"
-                          >
-                            <div className="text-sm font-medium text-[var(--foreground)]">
-                              {barangay.name}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="flex-1 bg-[var(--border)] rounded-sm h-2">
-                                <div
-                                  className="h-2 rounded-sm"
-                                  style={{
-                                    backgroundColor: getScoreBarColor(barangay.score),
-                                    width: `${barangay.score}%`,
-                                  }}
-                                ></div>
-                              </div>
-                              <span className="text-sm font-medium text-[var(--foreground)] w-8">
-                                {barangay.score}%
-                              </span>
-                            </div>
-                            <div>
-                              <span
-                                className="px-2 py-1 rounded-sm text-xs font-medium"
-                                style={getStatusColor(barangay.status)}
-                              >
-                                {barangay.status === "passed" ? "✓" : "✗"}
-                              </span>
+                              {hotspot.score}
                             </div>
                           </div>
-                        ))}
+                        </div>
+                      ))}
+
+                      {/* Capacity Development Priority */}
+                      <div
+                        className="mt-6 rounded-sm p-4 border"
+                        style={{
+                          backgroundColor: "var(--kpi-blue-from)",
+                          borderColor: "var(--kpi-blue-border, var(--border))",
+                        }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <Target
+                            className="h-5 w-5 mt-0.5 flex-shrink-0"
+                            style={{ color: "var(--kpi-blue-text)" }}
+                          />
+                          <div>
+                            <h4
+                              className="text-sm font-semibold mb-1"
+                              style={{ color: "var(--kpi-blue-text)" }}
+                            >
+                              {analyticsData.capacityDevelopment.title}
+                            </h4>
+                            <p
+                              className="text-xs leading-relaxed"
+                              style={{ color: "var(--kpi-blue-text)" }}
+                            >
+                              {analyticsData.capacityDevelopment.description}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Municipality-Wide Performance Hotspots */}
-            <div>
+              {/* Pre-Assessment Effectiveness Analysis */}
               <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg overflow-hidden">
                 <div className="p-6 border-b border-[var(--border)]">
-                  <h3 className="text-lg font-bold text-[var(--foreground)]">
-                    Municipality-Wide Performance Hotspots
+                  <h3 className="text-xl font-bold text-[var(--foreground)] mb-1">
+                    Pre-Assessment Effectiveness Analysis
                   </h3>
                 </div>
 
-                <div className="p-6 space-y-4">
-                  {analyticsData.municipalityPerformance.hotspots.map((hotspot, index) => (
+                <div className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    {/* Prediction Accuracy */}
                     <div
-                      key={index}
-                      className="rounded-sm p-4 border"
+                      className="rounded-sm p-6 text-center border"
+                      style={{
+                        backgroundColor: "var(--analytics-success-bg)",
+                        borderColor: "var(--analytics-success-border)",
+                      }}
+                    >
+                      <div
+                        className="text-4xl font-bold mb-2"
+                        style={{ color: "var(--analytics-success-text-light)" }}
+                      >
+                        {analyticsData.preAssessmentAnalysis.predictionAccuracy}%
+                      </div>
+                      <div
+                        className="text-sm font-semibold mb-1"
+                        style={{ color: "var(--analytics-success-text)" }}
+                      >
+                        Prediction Accuracy
+                      </div>
+                      <div className="text-xs" style={{ color: "var(--analytics-success-text)" }}>
+                        21 total predictions
+                      </div>
+                    </div>
+
+                    {/* False Positives */}
+                    <div
+                      className="rounded-sm p-6 text-center border"
+                      style={{
+                        backgroundColor: "var(--analytics-warning-bg)",
+                        borderColor: "var(--analytics-warning-border)",
+                      }}
+                    >
+                      <div
+                        className="text-4xl font-bold mb-2"
+                        style={{ color: "var(--analytics-warning-text-light)" }}
+                      >
+                        {analyticsData.preAssessmentAnalysis.falsePositives}
+                      </div>
+                      <div
+                        className="text-sm font-semibold mb-1"
+                        style={{ color: "var(--analytics-warning-text)" }}
+                      >
+                        False Positives
+                      </div>
+                      <div className="text-xs" style={{ color: "var(--analytics-warning-text)" }}>
+                        Predicted Pass, Actually Failed
+                      </div>
+                    </div>
+
+                    {/* False Negatives */}
+                    <div
+                      className="rounded-sm p-6 text-center border"
                       style={{
                         backgroundColor: "var(--analytics-danger-bg)",
                         borderColor: "var(--analytics-danger-border)",
                       }}
                     >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <div className="text-sm font-semibold text-[var(--foreground)] mb-1">
-                            {hotspot.indicator}
-                          </div>
-                          <div className="text-xs text-[var(--muted-foreground)]">
-                            Failed by {hotspot.score.split("/")[1]} barangays ({hotspot.score})
-                          </div>
-                        </div>
-                        <div
-                          className="px-2 py-1 rounded-sm text-xs font-bold"
-                          style={getStatusColor(hotspot.status)}
-                        >
-                          {hotspot.score}
-                        </div>
+                      <div
+                        className="text-4xl font-bold mb-2"
+                        style={{ color: "var(--analytics-danger-text-light)" }}
+                      >
+                        {analyticsData.preAssessmentAnalysis.falseNegatives}
+                      </div>
+                      <div
+                        className="text-sm font-semibold mb-1"
+                        style={{ color: "var(--analytics-danger-text)" }}
+                      >
+                        False Negatives
+                      </div>
+                      <div className="text-xs" style={{ color: "var(--analytics-danger-text)" }}>
+                        Predicted Fail, Actually Passed
                       </div>
                     </div>
-                  ))}
+                  </div>
 
-                  {/* Capacity Development Priority */}
+                  {/* Analysis Summary */}
                   <div
-                    className="mt-6 rounded-sm p-4 border"
+                    className="rounded-sm p-4 border"
                     style={{
                       backgroundColor: "var(--kpi-blue-from)",
                       borderColor: "var(--kpi-blue-border, var(--border))",
                     }}
                   >
                     <div className="flex items-start gap-3">
-                      <Target
+                      <Activity
                         className="h-5 w-5 mt-0.5 flex-shrink-0"
                         style={{ color: "var(--kpi-blue-text)" }}
                       />
@@ -530,193 +660,73 @@ export default function ReportsPage() {
                           className="text-sm font-semibold mb-1"
                           style={{ color: "var(--kpi-blue-text)" }}
                         >
-                          {analyticsData.capacityDevelopment.title}
+                          Analysis Summary
                         </h4>
                         <p
                           className="text-xs leading-relaxed"
                           style={{ color: "var(--kpi-blue-text)" }}
                         >
-                          {analyticsData.capacityDevelopment.description}
+                          {analyticsData.preAssessmentAnalysis.summary}
                         </p>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Pre-Assessment Effectiveness Analysis */}
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg overflow-hidden">
-            <div className="p-6 border-b border-[var(--border)]">
-              <h3 className="text-xl font-bold text-[var(--foreground)] mb-1">
-                Pre-Assessment Effectiveness Analysis
-              </h3>
-            </div>
-
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                {/* Prediction Accuracy */}
-                <div
-                  className="rounded-sm p-6 text-center border"
-                  style={{
-                    backgroundColor: "var(--analytics-success-bg)",
-                    borderColor: "var(--analytics-success-border)",
-                  }}
-                >
-                  <div
-                    className="text-4xl font-bold mb-2"
-                    style={{ color: "var(--analytics-success-text-light)" }}
-                  >
-                    {analyticsData.preAssessmentAnalysis.predictionAccuracy}%
+              {/* AI-Powered CapDev Report Generator */}
+              <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg overflow-hidden">
+                <div className="p-6 border-b border-[var(--border)]">
+                  <div className="flex items-center gap-3">
+                    <Brain className="h-6 w-6" style={{ color: "var(--kpi-purple-text)" }} />
+                    <h3 className="text-xl font-bold text-[var(--foreground)]">
+                      {analyticsData.aiReport.title}
+                    </h3>
                   </div>
-                  <div
-                    className="text-sm font-semibold mb-1"
-                    style={{ color: "var(--analytics-success-text)" }}
-                  >
-                    Prediction Accuracy
-                  </div>
-                  <div className="text-xs" style={{ color: "var(--analytics-success-text)" }}>
-                    21 total predictions
-                  </div>
+                  <p className="text-sm text-[var(--muted-foreground)] mt-1">
+                    {analyticsData.aiReport.description}
+                  </p>
                 </div>
 
-                {/* False Positives */}
-                <div
-                  className="rounded-sm p-6 text-center border"
-                  style={{
-                    backgroundColor: "var(--analytics-warning-bg)",
-                    borderColor: "var(--analytics-warning-border)",
-                  }}
-                >
-                  <div
-                    className="text-4xl font-bold mb-2"
-                    style={{ color: "var(--analytics-warning-text-light)" }}
-                  >
-                    {analyticsData.preAssessmentAnalysis.falsePositives}
-                  </div>
-                  <div
-                    className="text-sm font-semibold mb-1"
-                    style={{ color: "var(--analytics-warning-text)" }}
-                  >
-                    False Positives
-                  </div>
-                  <div className="text-xs" style={{ color: "var(--analytics-warning-text)" }}>
-                    Predicted Pass, Actually Failed
-                  </div>
-                </div>
+                <div className="p-6">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-grow">
+                      <span className="text-sm font-medium text-[var(--foreground)] whitespace-nowrap">
+                        Select a Barangay:
+                      </span>
+                      <Select value={selectedBarangay} onValueChange={setSelectedBarangay}>
+                        <SelectTrigger className="w-full sm:w-64 bg-[var(--background)] border-[var(--border)] rounded-sm">
+                          <SelectValue placeholder="Choose a barangay..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[var(--card)] border border-[var(--border)] shadow-xl rounded-sm z-50">
+                          {analyticsData.aiReport.availableBarangays.map((barangay) => (
+                            <SelectItem
+                              key={barangay}
+                              value={barangay}
+                              className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
+                            >
+                              {barangay}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                {/* False Negatives */}
-                <div
-                  className="rounded-sm p-6 text-center border"
-                  style={{
-                    backgroundColor: "var(--analytics-danger-bg)",
-                    borderColor: "var(--analytics-danger-border)",
-                  }}
-                >
-                  <div
-                    className="text-4xl font-bold mb-2"
-                    style={{ color: "var(--analytics-danger-text-light)" }}
-                  >
-                    {analyticsData.preAssessmentAnalysis.falseNegatives}
-                  </div>
-                  <div
-                    className="text-sm font-semibold mb-1"
-                    style={{ color: "var(--analytics-danger-text)" }}
-                  >
-                    False Negatives
-                  </div>
-                  <div className="text-xs" style={{ color: "var(--analytics-danger-text)" }}>
-                    Predicted Fail, Actually Passed
-                  </div>
-                </div>
-              </div>
-
-              {/* Analysis Summary */}
-              <div
-                className="rounded-sm p-4 border"
-                style={{
-                  backgroundColor: "var(--kpi-blue-from)",
-                  borderColor: "var(--kpi-blue-border, var(--border))",
-                }}
-              >
-                <div className="flex items-start gap-3">
-                  <Activity
-                    className="h-5 w-5 mt-0.5 flex-shrink-0"
-                    style={{ color: "var(--kpi-blue-text)" }}
-                  />
-                  <div>
-                    <h4
-                      className="text-sm font-semibold mb-1"
-                      style={{ color: "var(--kpi-blue-text)" }}
+                    <Button
+                      className="px-8 h-11 font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 rounded-sm w-full sm:w-auto"
+                      style={{
+                        background:
+                          "linear-gradient(to bottom right, var(--cityscape-yellow), var(--cityscape-yellow-dark))",
+                        color: "var(--foreground)",
+                      }}
+                      disabled={!selectedBarangay}
                     >
-                      Analysis Summary
-                    </h4>
-                    <p
-                      className="text-xs leading-relaxed"
-                      style={{ color: "var(--kpi-blue-text)" }}
-                    >
-                      {analyticsData.preAssessmentAnalysis.summary}
-                    </p>
+                      <Zap className="h-4 w-4" />
+                      Generate Report
+                    </Button>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* AI-Powered CapDev Report Generator */}
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg overflow-hidden">
-            <div className="p-6 border-b border-[var(--border)]">
-              <div className="flex items-center gap-3">
-                <Brain className="h-6 w-6" style={{ color: "var(--kpi-purple-text)" }} />
-                <h3 className="text-xl font-bold text-[var(--foreground)]">
-                  {analyticsData.aiReport.title}
-                </h3>
-              </div>
-              <p className="text-sm text-[var(--muted-foreground)] mt-1">
-                {analyticsData.aiReport.description}
-              </p>
-            </div>
-
-            <div className="p-6">
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-grow">
-                  <span className="text-sm font-medium text-[var(--foreground)] whitespace-nowrap">
-                    Select a Barangay:
-                  </span>
-                  <Select value={selectedBarangay} onValueChange={setSelectedBarangay}>
-                    <SelectTrigger className="w-full sm:w-64 bg-[var(--background)] border-[var(--border)] rounded-sm">
-                      <SelectValue placeholder="Choose a barangay..." />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[var(--card)] border border-[var(--border)] shadow-xl rounded-sm z-50">
-                      {analyticsData.aiReport.availableBarangays.map((barangay) => (
-                        <SelectItem
-                          key={barangay}
-                          value={barangay}
-                          className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
-                        >
-                          {barangay}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <Button
-                  className="px-8 h-11 font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 rounded-sm w-full sm:w-auto"
-                  style={{
-                    background:
-                      "linear-gradient(to bottom right, var(--cityscape-yellow), var(--cityscape-yellow-dark))",
-                    color: "var(--foreground)",
-                  }}
-                  disabled={!selectedBarangay}
-                >
-                  <Zap className="h-4 w-4" />
-                  Generate Report
-                </Button>
-              </div>
-            </div>
-          </div>
             </TabsContent>
           </Tabs>
         </div>

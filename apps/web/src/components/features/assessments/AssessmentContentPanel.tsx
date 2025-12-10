@@ -66,8 +66,22 @@ export function AssessmentContentPanel({
   }
 
   // Check if indicator needs rework
+  // Also check for calibration rework - only calibrated governance areas should be editable
+  const isCalibrationRework = dashboardData?.is_calibration_rework === true;
+  const calibrationGovernanceAreaIds: string[] = (
+    dashboardData?.calibration_governance_areas || []
+  ).map((a: any) => String(a.governance_area_id));
+
+  // During calibration rework, lock indicators NOT in calibration areas
+  const isLockedDueToCalibration =
+    isCalibrationRework &&
+    calibrationGovernanceAreaIds.length > 0 &&
+    !calibrationGovernanceAreaIds.includes(String(selectedIndicator.governanceAreaId));
+
   const indicatorLocked =
-    isLocked || (assessment.status === "Needs Rework" && !selectedIndicator.requiresRework);
+    isLocked ||
+    isLockedDueToCalibration ||
+    (assessment.status === "Needs Rework" && !selectedIndicator.requiresRework);
 
   // Get MOV annotations for the selected indicator
   const indicatorAnnotations = selectedIndicator

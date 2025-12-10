@@ -5,21 +5,21 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-    useGetComplianceAssessmentsAssessmentIdComplianceOverview,
-    usePostAssessorAssessmentResponsesResponseIdValidate,
+  useGetComplianceAssessmentsAssessmentIdComplianceOverview,
+  usePostAssessorAssessmentResponsesResponseIdValidate,
 } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-    AlertTriangle,
-    CheckCircle2,
-    ChevronLeft,
-    Clock,
-    FileCheck,
-    Info,
-    RotateCcw,
-    Sparkles,
-    TrendingUp,
-    XCircle,
+  AlertTriangle,
+  CheckCircle2,
+  ChevronLeft,
+  Clock,
+  FileCheck,
+  Info,
+  RotateCcw,
+  Sparkles,
+  TrendingUp,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";

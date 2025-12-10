@@ -114,6 +114,7 @@ async def validate_assessment_response(
         public_comment=validation_data.public_comment,
         assessor_remarks=validation_data.assessor_remarks,
         response_data=validation_data.response_data,
+        flagged_for_calibration=validation_data.flagged_for_calibration,
     )
 
     return ValidationResponse(**result)

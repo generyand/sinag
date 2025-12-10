@@ -267,6 +267,7 @@ class AssessmentService:
                     u.id as user_id, u.barangay_id, b.name as barangay_name,
                     a.id as assessment_id, a.status, a.created_at, a.updated_at,
                     a.submitted_at, a.validated_at, a.rework_requested_at,
+                    a.calibration_requested_at,
                     a.is_mlgoo_recalibration, a.mlgoo_recalibration_requested_at,
                     a.mlgoo_recalibration_indicator_ids, a.mlgoo_recalibration_comments,
                     a.mlgoo_recalibration_count, a.assessment_year, a.is_calibration_rework,
@@ -297,15 +298,16 @@ class AssessmentService:
                 "submitted_at": row1[7].isoformat() + "Z" if row1[7] else None,
                 "validated_at": row1[8].isoformat() + "Z" if row1[8] else None,
                 "rework_requested_at": row1[9].isoformat() + "Z" if row1[9] else None,
-                "is_mlgoo_recalibration": row1[10],
-                "mlgoo_recalibration_requested_at": row1[11].isoformat() + "Z"
-                if row1[11]
+                "calibration_requested_at": row1[10].isoformat() + "Z" if row1[10] else None,
+                "is_mlgoo_recalibration": row1[11],
+                "mlgoo_recalibration_requested_at": row1[12].isoformat() + "Z"
+                if row1[12]
                 else None,
-                "mlgoo_recalibration_indicator_ids": row1[12],
-                "mlgoo_recalibration_comments": row1[13],
-                "mlgoo_recalibration_count": row1[14],
-                "assessment_year": row1[15] if len(row1) > 15 else assessment_year,
-                "is_calibration_rework": row1[16] if len(row1) > 16 else False,
+                "mlgoo_recalibration_indicator_ids": row1[13],
+                "mlgoo_recalibration_comments": row1[14],
+                "mlgoo_recalibration_count": row1[15],
+                "assessment_year": row1[16] if len(row1) > 16 else assessment_year,
+                "is_calibration_rework": row1[17] if len(row1) > 17 else False,
             }
 
             if not assessment_info["id"]:
@@ -440,9 +442,9 @@ class AssessmentService:
                         "created_at": row[17].isoformat() + "Z" if row[17] else None,
                     }
 
-            # Parse pending calibrations
-            pending_calibrations = row1[17] if len(row1) > 17 else None
-            is_calibration_rework = row1[16] if len(row1) > 16 else False
+            # Parse pending calibrations (shifted by 1 due to calibration_requested_at at index 10)
+            pending_calibrations = row1[18] if len(row1) > 18 else None
+            is_calibration_rework = row1[17] if len(row1) > 17 else False
 
             # Determine active calibration governance area if in calibration mode
             calibration_ga_id = None
@@ -503,6 +505,7 @@ class AssessmentService:
             "submitted_at": assessment_info.get("submitted_at"),
             "validated_at": assessment_info.get("validated_at"),
             "rework_requested_at": assessment_info.get("rework_requested_at"),
+            "calibration_requested_at": assessment_info.get("calibration_requested_at"),
             "is_mlgoo_recalibration": assessment_info.get("is_mlgoo_recalibration"),
             "mlgoo_recalibration_requested_at": assessment_info.get(
                 "mlgoo_recalibration_requested_at"

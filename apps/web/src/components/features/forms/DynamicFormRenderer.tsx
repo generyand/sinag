@@ -4,24 +4,29 @@
 "use client";
 
 import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { classifyError } from "@/lib/error-utils";
-import { getSections, getVisibleFields, isFieldRequired, type Section } from "@/lib/forms/formSchemaParser";
+import {
+  getSections,
+  getVisibleFields,
+  isFieldRequired,
+  type Section,
+} from "@/lib/forms/formSchemaParser";
 import { generateValidationSchema } from "@/lib/forms/generateValidationSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { FormNotes, FormSchema, FormSchemaFieldsItem, MOVFileResponse } from "@sinag/shared";
 import {
-    useGetAssessmentsAssessmentIdAnswers,
-    useGetAssessmentsMyAssessment,
-    useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles,
-    usePostAssessmentsAssessmentIdAnswers,
+  useGetAssessmentsAssessmentIdAnswers,
+  useGetAssessmentsMyAssessment,
+  useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles,
+  usePostAssessmentsAssessmentIdAnswers,
 } from "@sinag/shared";
 import { AlertCircle, Info } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
@@ -30,13 +35,13 @@ import { toast } from "sonner";
 import { IndicatorNavigationFooter } from "../assessments/IndicatorNavigationFooter";
 import { CompletionFeedbackPanel } from "./CompletionFeedbackPanel";
 import {
-    CheckboxFieldComponent,
-    DateFieldComponent,
-    FileFieldComponent,
-    NumberFieldComponent,
-    RadioFieldComponent,
-    TextAreaFieldComponent,
-    TextFieldComponent,
+  CheckboxFieldComponent,
+  DateFieldComponent,
+  FileFieldComponent,
+  NumberFieldComponent,
+  RadioFieldComponent,
+  TextAreaFieldComponent,
+  TextFieldComponent,
 } from "./fields";
 
 interface DynamicFormRendererProps {
@@ -195,22 +200,22 @@ export function DynamicFormRenderer({
     // During rework, count files uploaded AFTER rework was requested (or recalibration requested)
     // AND existing files that do NOT have annotations (meaning they were not flagged for rework)
     const reworkDate = new Date(effectiveReworkTimestamp);
-    
+
     // Check for feedback types (Hybrid Logic)
     const hasSpecificAnnotations = movAnnotations && movAnnotations.length > 0;
     const hasGeneralComments = reworkComments && reworkComments.length > 0;
-    
+
     return uploadedFiles.filter((file: MOVFileResponse) => {
       if (!file.uploaded_at) return false;
       const uploadDate = new Date(file.uploaded_at);
-      
+
       // If it's a new file (uploaded during rework), it's valid
       if (uploadDate >= reworkDate) {
-         return true;
+        return true;
       }
 
       // If it's an old file (uploaded before rework):
-      
+
       // 1. If specific annotations exist, we trust them (Granular Mode)
       // Only invalidate the specifically annotated files
       if (hasSpecificAnnotations) {
@@ -219,18 +224,25 @@ export function DynamicFormRenderer({
         );
         return !isThisFileAnnotated; // Keep clean files
       }
-      
+
       // 2. If NO annotations but general comments exist (Strict Mode)
       // Invalidate ALL old files because the feedback is general
       if (hasGeneralComments) {
         return false;
       }
-      
+
       // 3. If no feedback at all (shouldn't happen if indicatorRequiresRework is true)
       // Keep everything
       return true;
     });
-  }, [uploadedFiles, isReworkStatus, effectiveReworkTimestamp, indicatorRequiresRework, movAnnotations, reworkComments]);
+  }, [
+    uploadedFiles,
+    isReworkStatus,
+    effectiveReworkTimestamp,
+    indicatorRequiresRework,
+    movAnnotations,
+    reworkComments,
+  ]);
 
   // Get backend's is_completed value for this indicator
   const backendIsCompleted = useMemo(() => {
@@ -783,7 +795,8 @@ function SectionRenderer({
 
   const validationRule = (formSchema as any).validation_rule;
   // Use accordion based on validation rule (mainly for 1.6.1)
-  const useAccordionUI = (formSchema as any)?.use_accordion_ui ?? validationRule === "ANY_OPTION_GROUP_REQUIRED";
+  const useAccordionUI =
+    (formSchema as any)?.use_accordion_ui ?? validationRule === "ANY_OPTION_GROUP_REQUIRED";
 
   // Don't render empty sections
   if (visibleFields.length === 0) {

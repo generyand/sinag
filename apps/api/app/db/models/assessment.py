@@ -328,6 +328,11 @@ class AssessmentResponse(Base):
     is_completed: Mapped[bool] = mapped_column(default=False, nullable=False)
     requires_rework: Mapped[bool] = mapped_column(default=False, nullable=False)
 
+    # Calibration flag (set by validator via toggle)
+    # When True, this indicator is explicitly flagged for calibration/rework
+    # Independent of validation_status (Met/Unmet) - gives validator direct control
+    flagged_for_calibration: Mapped[bool] = mapped_column(default=False, nullable=False)
+
     # Validation status (set by assessor)
     validation_status: Mapped[ValidationStatus] = mapped_column(
         Enum(ValidationStatus, name="validation_status_enum", create_constraint=True),

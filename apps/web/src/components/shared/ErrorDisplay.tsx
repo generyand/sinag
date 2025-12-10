@@ -8,7 +8,15 @@
 
 "use client";
 
-import { AlertCircle, AlertTriangle, Clock, Lock, ServerCrash, ShieldAlert, WifiOff } from "lucide-react";
+import {
+  AlertCircle,
+  AlertTriangle,
+  Clock,
+  Lock,
+  ServerCrash,
+  ShieldAlert,
+  WifiOff,
+} from "lucide-react";
 import { classifyError, type ErrorInfo } from "@/lib/error-utils";
 import { cn } from "@/lib/utils";
 
@@ -99,19 +107,12 @@ export function ErrorDisplay({ error, className }: ErrorDisplayProps) {
       aria-live="polite"
     >
       {/* Icon based on error type */}
-      <Icon
-        className={cn("w-5 h-5 flex-shrink-0 mt-0.5", styles.icon)}
-        aria-hidden="true"
-      />
+      <Icon className={cn("w-5 h-5 flex-shrink-0 mt-0.5", styles.icon)} aria-hidden="true" />
 
       {/* Error content */}
       <div className="flex flex-col gap-0.5">
-        <div className={cn("text-sm font-semibold", styles.title)}>
-          {errorInfo.title}
-        </div>
-        <div className={cn("text-sm", styles.message)}>
-          {errorInfo.message}
-        </div>
+        <div className={cn("text-sm font-semibold", styles.title)}>{errorInfo.title}</div>
+        <div className={cn("text-sm", styles.message)}>{errorInfo.message}</div>
       </div>
     </div>
   );

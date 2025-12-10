@@ -7,6 +7,7 @@ import type { ValidationRequestValidationStatus } from '../error';
 import type { ValidationRequestPublicComment } from '../error';
 import type { ValidationRequestAssessorRemarks } from '../assessor';
 import type { ValidationRequestResponseData } from '../system';
+import type { ValidationRequestFlaggedForCalibration } from '../error';
 import type { ValidationResponseValidationStatus } from '../system';
 
 /**
@@ -17,6 +18,7 @@ export interface ValidationRequest {
   public_comment?: ValidationRequestPublicComment;
   assessor_remarks?: ValidationRequestAssessorRemarks;
   response_data?: ValidationRequestResponseData;
+  flagged_for_calibration?: ValidationRequestFlaggedForCalibration;
 }
 
 

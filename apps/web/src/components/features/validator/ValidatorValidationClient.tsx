@@ -73,6 +73,8 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const [expandedId, setExpandedId] = useState<number | null>(null);
   // Store checklist state externally to persist across indicator navigation
   const [checklistState, setChecklistState] = useState<Record<string, any>>({});
+  // Store calibration flag state (which indicators are flagged for calibration)
+  const [calibrationFlags, setCalibrationFlags] = useState<Record<number, boolean>>({});
 
   // Get current user for per-area calibration check (must be called before conditional returns)
   const { user: currentUser } = useAuthStore();
@@ -177,6 +179,34 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     }
   }, [data, checklistState]);
 
+  // Initialize calibration flags from database when data loads
+  useEffect(() => {
+    if (data && Object.keys(calibrationFlags).length === 0) {
+      const assessment: AnyRecord = (data as unknown as AnyRecord) ?? {};
+      const core = (assessment.assessment as AnyRecord) ?? assessment;
+      const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
+
+      const initialFlags: Record<number, boolean> = {};
+
+      for (const resp of responses) {
+        // Debug: log the flagged_for_calibration value from each response
+        console.log(
+          `[Init] Response ${resp.id}: flagged_for_calibration =`,
+          resp.flagged_for_calibration
+        );
+        // Load flagged_for_calibration from database
+        if (resp.flagged_for_calibration === true) {
+          initialFlags[resp.id] = true;
+        }
+      }
+
+      if (Object.keys(initialFlags).length > 0) {
+        console.log("[Validator] Loading saved calibration flags:", initialFlags);
+        setCalibrationFlags(initialFlags);
+      }
+    }
+  }, [data, calibrationFlags]);
+
   if (isLoading) {
     return (
       <div className="mx-auto max-w-7xl px-6 py-10 text-sm text-muted-foreground">
@@ -244,10 +274,15 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     );
   };
 
+  // Helper: Check if an indicator is "reviewed" (checklist items checked OR flagged for calibration)
+  const isIndicatorReviewed = (responseId: number): boolean => {
+    return hasChecklistItemsChecked(responseId) || calibrationFlags[responseId] === true;
+  };
+
   // Transform to match BLGU assessment structure for TreeNavigator
   const transformedAssessment = {
     id: assessmentId,
-    completedIndicators: responses.filter((r: any) => hasChecklistItemsChecked(r.id)).length,
+    completedIndicators: responses.filter((r: any) => isIndicatorReviewed(r.id)).length,
     totalIndicators: responses.length,
     governanceAreas: responses.reduce((acc: any[], resp: any) => {
       const indicator = resp.indicator || {};
@@ -272,8 +307,8 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
         id: String(resp.id),
         code: indicator.indicator_code || indicator.code || String(resp.id),
         name: indicator.name || "Unnamed Indicator",
-        // For validators: Show completed if any checklist items have been checked
-        status: hasChecklistItemsChecked(resp.id) ? "completed" : "not_started",
+        // For validators: Show completed if checklist items checked OR flagged for calibration
+        status: isIndicatorReviewed(resp.id) ? "completed" : "not_started",
       });
 
       // Sort indicators by code after adding
@@ -284,17 +319,18 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   };
 
   const total = responses.length;
-  // For validators: "reviewed" means checklist items have been checked
-  const reviewed = responses.filter((r) => hasChecklistItemsChecked(r.id as number)).length;
+  // For validators: "reviewed" means checklist items checked OR flagged for calibration
+  const reviewed = responses.filter((r) => isIndicatorReviewed(r.id as number)).length;
   const allReviewed = total > 0 && reviewed === total;
   const progressPct = total > 0 ? Math.round((reviewed / total) * 100) : 0;
 
   const onSaveDraft = async () => {
-    // Build payloads that include both validation status AND checklist data
+    // Build payloads that include validation status, checklist data, AND calibration flag
     const payloads = responses
       .map((r) => {
         const responseId = r.id as number;
         const formData = form[responseId];
+        const flaggedForCalibration = calibrationFlags[responseId] ?? false;
 
         // Extract checklist data for this response
         const responseChecklistData: Record<string, any> = {};
@@ -311,13 +347,15 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
         const hasChecklistData = Object.keys(responseChecklistData).length > 0;
         const hasComment =
           formData && formData.publicComment && formData.publicComment.trim().length > 0;
+        const hasCalibrationFlag = flaggedForCalibration === true;
 
-        // Include in payload if has status OR has checklist data OR has comment
-        if (hasStatus || hasChecklistData || hasComment) {
+        // Include in payload if has status OR has checklist data OR has comment OR has calibration flag
+        if (hasStatus || hasChecklistData || hasComment || hasCalibrationFlag) {
           return {
             id: responseId,
             v: formData,
             checklistData: responseChecklistData,
+            flaggedForCalibration,
           };
         }
         return null;
@@ -329,6 +367,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
           id: number;
           v: { status?: "Pass" | "Fail" | "Conditional"; publicComment?: string } | undefined;
           checklistData: Record<string, any>;
+          flaggedForCalibration: boolean;
         } => x !== null
       );
 
@@ -346,8 +385,11 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       );
 
       await Promise.all(
-        payloads.map((p) =>
-          validateMut.mutateAsync({
+        payloads.map((p) => {
+          console.log(
+            `[SaveDraft] Response ${p.id}: flagged_for_calibration = ${p.flaggedForCalibration}`
+          );
+          return validateMut.mutateAsync({
             responseId: p.id,
             data: {
               // Convert to uppercase to match backend ValidationStatus enum (PASS, FAIL, CONDITIONAL)
@@ -357,9 +399,11 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
               public_comment: p.v?.publicComment ?? null,
               // Include checklist data in response_data
               response_data: Object.keys(p.checklistData).length > 0 ? p.checklistData : undefined,
+              // Include calibration flag
+              flagged_for_calibration: p.flaggedForCalibration,
             },
-          })
-        )
+          });
+        })
       );
       // Invalidate all queries to force refetch with updated response_data
       await qc.invalidateQueries();
@@ -630,6 +674,22 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                 calibrationRequestedAt={calibrationRequestedAt}
                 reworkRequestedAt={reworkRequestedAt}
                 separationLabel={separationLabel}
+                onAnnotationCreated={(responseId) => {
+                  // Auto-enable calibration flag when annotation is added
+                  setCalibrationFlags((prev) => ({
+                    ...prev,
+                    [responseId]: true,
+                  }));
+                }}
+                onAnnotationDeleted={(responseId, remainingCount) => {
+                  // Auto-disable calibration flag when ALL annotations are removed
+                  if (remainingCount === 0) {
+                    setCalibrationFlags((prev) => ({
+                      ...prev,
+                      [responseId]: false,
+                    }));
+                  }
+                }}
               />
             </div>
 
@@ -659,6 +719,13 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                     setChecklistState((prev) => ({
                       ...prev,
                       [key]: value,
+                    }));
+                  }}
+                  calibrationFlags={calibrationFlags}
+                  onCalibrationFlagChange={(responseId, flagged) => {
+                    setCalibrationFlags((prev) => ({
+                      ...prev,
+                      [responseId]: flagged,
                     }));
                   }}
                 />
@@ -727,15 +794,24 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
               size="default"
               type="button"
               onClick={onCalibrate}
-              disabled={calibrateMut.isPending || calibrationAlreadyUsed}
+              disabled={
+                calibrateMut.isPending ||
+                calibrationAlreadyUsed ||
+                !Object.values(calibrationFlags).some((v) => v === true)
+              }
               className="w-full sm:w-auto text-white hover:opacity-90"
               style={{
-                background: calibrationAlreadyUsed ? "var(--muted)" : "var(--cityscape-yellow)",
+                background:
+                  calibrationAlreadyUsed || !Object.values(calibrationFlags).some((v) => v === true)
+                    ? "var(--muted)"
+                    : "var(--cityscape-yellow)",
               }}
               title={
                 calibrationAlreadyUsed
                   ? "Calibration has already been used for your governance area (max 1 per area)"
-                  : undefined
+                  : !Object.values(calibrationFlags).some((v) => v === true)
+                    ? "Flag at least one indicator for calibration using the toggle"
+                    : undefined
               }
             >
               {calibrateMut.isPending ? (

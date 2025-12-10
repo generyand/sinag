@@ -296,6 +296,7 @@ class AssessorService:
         public_comment: str | None = None,
         assessor_remarks: str | None = None,
         response_data: dict | None = None,
+        flagged_for_calibration: bool | None = None,
     ) -> dict:
         """
         Validate an assessment response and save feedback comments.
@@ -308,6 +309,7 @@ class AssessorService:
             public_comment: Public comment visible to BLGU user
             assessor_remarks: Remarks from assessor for validators to review
             response_data: Optional checklist/form data to save
+            flagged_for_calibration: Toggle to flag indicator for calibration (validators only)
 
         Returns:
             dict: Success status and details
@@ -338,6 +340,12 @@ class AssessorService:
         # Update assessor remarks if provided
         if assessor_remarks is not None:
             response.assessor_remarks = assessor_remarks
+
+        # Update flagged_for_calibration if provided (validators only)
+        # This flag allows validators to explicitly mark indicators for calibration
+        # independent of the Met/Unmet compliance status
+        if flagged_for_calibration is not None:
+            response.flagged_for_calibration = flagged_for_calibration
 
         # Update response_data if provided (for checklist data)
         # IMPORTANT: Merge with existing BLGU data, don't overwrite!
@@ -857,6 +865,7 @@ class AssessorService:
                 "id": response.id,
                 "is_completed": response.is_completed,
                 "requires_rework": effective_requires_rework,
+                "flagged_for_calibration": response.flagged_for_calibration,
                 "validation_status": response.validation_status.value
                 if response.validation_status
                 else None,
@@ -1249,16 +1258,14 @@ class AssessorService:
                 "Wait for BLGU to resubmit before requesting another calibration."
             )
 
-        # Validator must have at least one indicator marked as FAIL (Unmet) to submit for calibration
-        # Check for FAIL indicators in validator's area responses
-        failed_responses = [
-            r for r in validator_area_responses if r.validation_status == ValidationStatus.FAIL
-        ]
+        # Validator must have at least one indicator flagged for calibration
+        # Check for flagged indicators in validator's area responses
+        flagged_responses = [r for r in validator_area_responses if r.flagged_for_calibration]
 
-        if not failed_responses:
+        if not flagged_responses:
             raise ValueError(
-                "At least one indicator in your governance area must be marked as 'Unmet' "
-                "to submit for calibration. Mark indicators that need corrections as 'Unmet' before calibrating."
+                "At least one indicator in your governance area must be flagged for calibration. "
+                "Use the 'Flag for Calibration' toggle on indicators that need corrections."
             )
 
         # Get governance area name for the response
@@ -1314,34 +1321,34 @@ class AssessorService:
             validator.validator_area_id
         ]
 
-        # Mark ONLY indicators with "Unmet" (FAIL) validation status for rework
+        # Mark ONLY indicators flagged for calibration for rework
         # These are the indicators the BLGU needs to correct and re-upload
         calibrated_count = 0
         calibrated_indicator_ids = []
         for response in validator_area_responses:
-            # Only mark indicators that have FAIL (Unmet) status
-            # Indicators with PASS (Met), CONDITIONAL, or NOT_APPLICABLE status should NOT be calibrated
-            is_unmet = response.validation_status == ValidationStatus.FAIL
-
-            if is_unmet:
+            # Only mark indicators that are flagged for calibration
+            if response.flagged_for_calibration:
                 response.requires_rework = True
                 response.is_completed = False
 
                 # Clear validation_status for this indicator so validator can re-validate after BLGU fixes it
                 response.validation_status = None
 
-                # Clear validator checklist data (assessor_val_ prefix)
+                # Reset the flag after processing
+                response.flagged_for_calibration = False
+
+                # Clear validator checklist data (assessor_val_ and validator_val_ prefixes)
                 if response.response_data:
                     response.response_data = {
                         k: v
                         for k, v in response.response_data.items()
-                        if not k.startswith("assessor_val_")
+                        if not k.startswith("assessor_val_") and not k.startswith("validator_val_")
                     }
 
                 calibrated_count += 1
                 calibrated_indicator_ids.append(response.indicator_id)
                 self.logger.info(
-                    f"[CALIBRATION] Marked response {response.id} (indicator {response.indicator_id}) for calibration - was Unmet (FAIL)"
+                    f"[CALIBRATION] Marked response {response.id} (indicator {response.indicator_id}) for calibration - was flagged"
                 )
 
         db.commit()

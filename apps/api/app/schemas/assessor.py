@@ -30,6 +30,7 @@ class ValidationRequest(BaseModel):
     public_comment: str | None = None
     assessor_remarks: str | None = None
     response_data: dict[str, Any] | None = None  # Allow assessors to update checklist data
+    flagged_for_calibration: bool | None = None  # Toggle to flag indicator for calibration
 
 
 class ValidationResponse(BaseModel):

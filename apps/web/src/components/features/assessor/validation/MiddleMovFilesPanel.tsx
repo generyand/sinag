@@ -141,6 +141,10 @@ interface MiddleMovFilesPanelProps {
   reworkRequestedAt?: string | null;
   /** Optional: Label for the separation section (e.g., "After Calibration" or "After Rework") */
   separationLabel?: string;
+  /** Callback when an annotation is added (for auto-toggling calibration flag) */
+  onAnnotationCreated?: (responseId: number) => void;
+  /** Callback when an annotation is deleted (for checking if calibration flag should be removed) */
+  onAnnotationDeleted?: (responseId: number, remainingCount: number) => void;
 }
 
 type AnyRecord = Record<string, any>;
@@ -151,6 +155,8 @@ export function MiddleMovFilesPanel({
   calibrationRequestedAt,
   reworkRequestedAt,
   separationLabel = "After Calibration",
+  onAnnotationCreated,
+  onAnnotationDeleted,
 }: MiddleMovFilesPanelProps) {
   const data: AnyRecord = (assessment as unknown as AnyRecord) ?? {};
   const core = (data.assessment as AnyRecord) ?? data;
@@ -322,8 +328,29 @@ export function MiddleMovFilesPanel({
         rects: annotation.rects || undefined,
         comment: annotation.comment || "",
       });
+
+      // Notify parent that annotation was created (for auto-toggling calibration flag)
+      if (expandedId && onAnnotationCreated) {
+        onAnnotationCreated(expandedId);
+      }
     } catch (error) {
       console.error("[MiddleMovFilesPanel] Failed to create annotation:", error);
+    }
+  };
+
+  // Wrapper for deleteAnnotation that calls the callback
+  const handleDeleteAnnotation = async (annotationId: number) => {
+    try {
+      await deleteAnnotation(annotationId);
+
+      // Notify parent that annotation was deleted
+      // Pass remaining count (current count - 1 since we just deleted one)
+      if (expandedId && onAnnotationDeleted) {
+        const remainingCount = Math.max(0, (annotations?.length ?? 1) - 1);
+        onAnnotationDeleted(expandedId, remainingCount);
+      }
+    } catch (error) {
+      console.error("[MiddleMovFilesPanel] Failed to delete annotation:", error);
     }
   };
 
@@ -518,7 +545,7 @@ export function MiddleMovFilesPanel({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => deleteAnnotation(parseInt(ann.id))}
+                            onClick={() => handleDeleteAnnotation(parseInt(ann.id))}
                             className="ml-auto shrink-0 h-6 w-6 p-0 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30"
                           >
                             <X className="h-3 w-3" />
@@ -559,7 +586,7 @@ export function MiddleMovFilesPanel({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => deleteAnnotation(parseInt(ann.id))}
+                            onClick={() => handleDeleteAnnotation(parseInt(ann.id))}
                             className="ml-auto shrink-0 h-6 w-6 p-0 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30"
                           >
                             <X className="h-3 w-3" />

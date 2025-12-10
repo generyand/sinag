@@ -6,9 +6,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { isFieldRequired } from "@/lib/forms/formSchemaParser";
 import type { FormSchema, FormSchemaFieldsItem, MOVFileResponse } from "@sinag/shared";
-import {
-    useGetAssessmentsMyAssessment
-} from "@sinag/shared";
+import { useGetAssessmentsMyAssessment } from "@sinag/shared";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { useMemo } from "react";
 
@@ -43,8 +41,6 @@ export function CompletionFeedbackPanel({
       staleTime: 0,
     } as any,
   } as any);
-
-
 
   // Get rework status and timestamp
   const assessmentData = myAssessmentData as any;

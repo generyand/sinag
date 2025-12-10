@@ -106,6 +106,7 @@ class AssessmentResponse(BaseModel):
     response_data: dict[str, Any] | None = None
     is_completed: bool
     requires_rework: bool
+    flagged_for_calibration: bool = False
     validation_status: str | None = None
     generated_remark: str | None = None
     assessor_remarks: str | None = None
@@ -129,6 +130,7 @@ class AssessmentResponseUpdate(BaseModel):
     response_data: dict[str, Any] | None = None
     is_completed: bool | None = None
     requires_rework: bool | None = None
+    flagged_for_calibration: bool | None = None
     validation_status: str | None = None
     assessor_remarks: str | None = None
 

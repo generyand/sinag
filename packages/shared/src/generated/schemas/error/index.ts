@@ -51,6 +51,12 @@ export type ValidationErrorLocItem = string | number;
 
 
 /**
+ * ValidationRequestFlaggedForCalibration
+ */
+export type ValidationRequestFlaggedForCalibration = boolean | null;
+
+
+/**
  * ValidationRequestPublicComment
  */
 export type ValidationRequestPublicComment = string | null;

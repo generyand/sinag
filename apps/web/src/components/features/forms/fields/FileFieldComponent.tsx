@@ -15,15 +15,15 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useUploadStore } from "@/store/useUploadStore";
 import type { FileUploadField } from "@sinag/shared";
 import {
-    MOVFileResponse,
-    getGetAssessmentsMyAssessmentQueryKey,
-    getGetBlguDashboardAssessmentIdQueryKey,
-    getGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFilesQueryKey,
-    getGetMovsFilesFileIdSignedUrlQueryKey,
-    useGetAssessmentsMyAssessment,
-    useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles,
-    useGetMovsFilesFileIdSignedUrl,
-    usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload,
+  MOVFileResponse,
+  getGetAssessmentsMyAssessmentQueryKey,
+  getGetBlguDashboardAssessmentIdQueryKey,
+  getGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFilesQueryKey,
+  getGetMovsFilesFileIdSignedUrlQueryKey,
+  useGetAssessmentsMyAssessment,
+  useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles,
+  useGetMovsFilesFileIdSignedUrl,
+  usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload,
 } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, CheckCircle2, FileIcon, Info, Loader2, X } from "lucide-react";
@@ -516,17 +516,64 @@ export function FileFieldComponent({
   const allFiles = filesResponse?.files || [];
 
   // Get rework timestamp from assessment data
-  // For MLGOO RE-calibration, use mlgoo_recalibration_requested_at instead
+  // Priority: MLGOO recalibration > Validator calibration > Assessor rework
   const reworkRequestedAt = (assessmentData as any)?.assessment?.rework_requested_at;
+  const calibrationRequestedAt = (assessmentData as any)?.assessment?.calibration_requested_at;
   const isMlgooRecalibration = (assessmentData as any)?.assessment?.is_mlgoo_recalibration === true;
   const mlgooRecalibrationRequestedAt = (assessmentData as any)?.assessment
     ?.mlgoo_recalibration_requested_at;
 
-  // Use MLGOO recalibration timestamp if it's an MLGOO recalibration, otherwise use regular rework timestamp
+  // Use the most recent applicable timestamp for file separation
   const effectiveReworkTimestamp =
     isMlgooRecalibration && mlgooRecalibrationRequestedAt
       ? mlgooRecalibrationRequestedAt
-      : reworkRequestedAt;
+      : calibrationRequestedAt || reworkRequestedAt;
+
+  // Check if THIS specific indicator requires rework (flagged for calibration)
+  // Data structure: governance_areas[].indicators[] with nested children[]
+  // Each indicator has .response.requires_rework
+  const findIndicatorRequiresRework = (): boolean => {
+    const areas = (assessmentData as any)?.governance_areas || [];
+    console.log(
+      `[FileField ${indicatorId}] findIndicatorRequiresRework - searching for indicatorId:`,
+      indicatorId,
+      "type:",
+      typeof indicatorId
+    );
+    for (const area of areas) {
+      const indicators = area.indicators || [];
+      for (const ind of indicators) {
+        // Check parent indicator
+        if (ind.id === indicatorId) {
+          console.log(`[FileField ${indicatorId}] FOUND as parent! response:`, ind.response);
+          return ind.response?.requires_rework === true;
+        }
+        // Check children (level 3 indicators)
+        const children = ind.children || [];
+        for (const child of children) {
+          if (child.id === indicatorId) {
+            console.log(`[FileField ${indicatorId}] FOUND as child! response:`, child.response);
+            return child.response?.requires_rework === true;
+          }
+        }
+      }
+    }
+    console.log(`[FileField ${indicatorId}] NOT FOUND in any indicator!`);
+    return false;
+  };
+  const indicatorRequiresRework = findIndicatorRequiresRework();
+
+  // Debug: log file separation data
+  console.log(`[FileField ${indicatorId}] === FILE SEPARATION DEBUG ===`);
+  console.log(`[FileField ${indicatorId}] normalizedStatus:`, normalizedStatus);
+  console.log(`[FileField ${indicatorId}] rework_requested_at:`, reworkRequestedAt);
+  console.log(`[FileField ${indicatorId}] calibration_requested_at:`, calibrationRequestedAt);
+  console.log(`[FileField ${indicatorId}] effectiveReworkTimestamp:`, effectiveReworkTimestamp);
+  console.log(`[FileField ${indicatorId}] indicatorRequiresRework:`, indicatorRequiresRework);
+  console.log(
+    `[FileField ${indicatorId}] activeFiles count:`,
+    allFiles.filter((f: any) => f.field_id === field.field_id && !f.deleted_at).length
+  );
 
   // Separate files based on rework timestamp
   const activeFiles = allFiles.filter((f: any) => f.field_id === field.field_id && !f.deleted_at);
@@ -538,8 +585,19 @@ export function FileFieldComponent({
   let previousFiles: any[] = [];
   let newFiles: any[] = [];
 
+  console.log(
+    `[FileField ${indicatorId}] isReworkStatus:`,
+    isReworkStatus,
+    "effectiveReworkTimestamp:",
+    !!effectiveReworkTimestamp
+  );
+
   if (isReworkStatus && effectiveReworkTimestamp) {
     const reworkDate = new Date(effectiveReworkTimestamp);
+    console.log(
+      `[FileField ${indicatorId}] ENTERING file separation logic, reworkDate:`,
+      reworkDate
+    );
 
     // Files uploaded BEFORE rework was requested are "old" (from before rework)
     const oldFiles = activeFiles.filter((f: any) => {
@@ -557,6 +615,26 @@ export function FileFieldComponent({
     const hasSpecificAnnotations = movAnnotations && movAnnotations.length > 0;
     const hasGeneralComments = reworkComments && reworkComments.length > 0;
 
+    // Check if this is a calibration rework (validator-initiated)
+    // For calibration, ALWAYS separate old files from new files based on timestamp
+    const isCalibrationRework = !!calibrationRequestedAt;
+
+    console.log(
+      `[FileField ${indicatorId}] oldFiles:`,
+      oldFiles.length,
+      "recentFiles:",
+      recentFiles.length
+    );
+    console.log(
+      `[FileField ${indicatorId}] hasSpecificAnnotations:`,
+      hasSpecificAnnotations,
+      "hasGeneralComments:",
+      hasGeneralComments,
+      "indicatorRequiresRework:",
+      indicatorRequiresRework
+    );
+    console.log(`[FileField ${indicatorId}] isCalibrationRework:`, isCalibrationRework);
+
     // Filter old files:
     let invalidOldFiles = [];
     let validOldFiles = [];
@@ -564,15 +642,22 @@ export function FileFieldComponent({
     if (hasSpecificAnnotations) {
       // Case 1: Granular Mode (Annotations exist)
       // Only invalid files are the ones with annotations
-      invalidOldFiles = oldFiles.filter((f: any) => 
+      invalidOldFiles = oldFiles.filter((f: any) =>
         movAnnotations.some((ann: any) => String(ann.mov_file_id) === String(f.id))
       );
-      validOldFiles = oldFiles.filter((f: any) => 
-        !movAnnotations.some((ann: any) => String(ann.mov_file_id) === String(f.id))
+      validOldFiles = oldFiles.filter(
+        (f: any) => !movAnnotations.some((ann: any) => String(ann.mov_file_id) === String(f.id))
       );
-    } else if (hasGeneralComments) {
-      // Case 2: Strict Mode (No annotations, but General Note exists)
-      // ALL old files are invalid
+    } else if (hasGeneralComments || indicatorRequiresRework) {
+      // Case 2: Strict Mode (No annotations, but General Note exists OR indicator flagged for calibration)
+      // ALL old files are invalid - BLGU must re-upload
+      invalidOldFiles = oldFiles;
+      validOldFiles = [];
+    } else if (isCalibrationRework && oldFiles.length > 0) {
+      // Case 2.5: Calibration Rework with no feedback
+      // For calibration, ALWAYS separate old files from new files
+      // This ensures BLGU sees which files existed before calibration was requested
+      // Old files are treated as "previous" (for reference) even without explicit feedback
       invalidOldFiles = oldFiles;
       validOldFiles = [];
     } else {
@@ -697,7 +782,8 @@ export function FileFieldComponent({
             <p className="text-sm dark:text-orange-300">
               The assessor has left {fieldAnnotations.length} comment
               {fieldAnnotations.length !== 1 ? "s" : ""} on specific files. Please review the
-              feedback and upload corrected versions for the flagged files. Unflagged files are still valid.
+              feedback and upload corrected versions for the flagged files. Unflagged files are
+              still valid.
             </p>
           </AlertDescription>
         </Alert>
