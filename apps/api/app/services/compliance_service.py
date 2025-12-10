@@ -60,6 +60,26 @@ class ComplianceService:
 
         response_data = response.response_data or {}
 
+        # EARLY CHECK: If ANY _no key is True for THIS indicator,
+        # immediately return FAIL (Unmet). This handles all assessment_field items
+        # with YES/NO options where NO indicates failure.
+        indicator_code_safe = (indicator.indicator_code or "").replace(".", "_")
+
+        for key, value in response_data.items():
+            # Check if this is a NO response for this indicator from VALIDATOR only
+            # Key format: validator_val_{item_id}_no (NOT assessor - we only care about validator's decision)
+            # where item_id contains indicator code
+            if (
+                key.startswith("validator_val_")
+                and key.endswith("_no")
+                and indicator_code_safe in key
+                and (value is True or value == 1 or str(value).lower() in ("true", "1"))
+            ):
+                self.logger.debug(
+                    f"Indicator {indicator.indicator_code}: Unmet - NO checked: {key}"
+                )
+                return False, True  # Not complete, but has checklist data
+
         # Find all validator checklist items with meaningful values
         # Key format: validator_val_{item_id} (e.g., validator_val_1_2_1_a)
         # Include:
@@ -119,11 +139,12 @@ class ComplianceService:
         checklist_items_data = []
 
         # First try mov_checklist_items JSON field
+        # Include both checkbox and assessment_field types (YES/NO fields)
         if indicator.mov_checklist_items:
             checklist_items_data = [
                 item
                 for item in indicator.mov_checklist_items
-                if item.get("item_type") == "checkbox"
+                if item.get("item_type") in ("checkbox", "assessment_field")
             ]
 
         # If no JSON items, try ChecklistItem table
@@ -132,7 +153,7 @@ class ComplianceService:
                 db.query(ChecklistItem)
                 .filter(
                     ChecklistItem.indicator_id == indicator.id,
-                    ChecklistItem.item_type == "checkbox",
+                    ChecklistItem.item_type.in_(["checkbox", "assessment_field"]),
                 )
                 .all()
             )
@@ -141,6 +162,7 @@ class ComplianceService:
                     "item_id": item.item_id,
                     "required": item.required,
                     "option_group": item.option_group,
+                    "item_type": item.item_type,
                 }
                 for item in db_items
             ]
@@ -288,19 +310,68 @@ class ComplianceService:
             is_complete = has_any_checked
         else:
             # ALL_ITEMS_REQUIRED: all required checkboxes must be checked
-            required_items = [item for item in checklist_items_data if item.get("required", True)]
-            if not required_items:
-                is_complete = has_any_checked
-            else:
-                # Check if all required items are in the completed keys
-                # Key format: validator_val_{item_id} → extract item_id
-                required_item_ids = {item.get("item_id") for item in required_items}
-                completed_item_ids = completed_keys_normalized
-                is_complete = required_item_ids.issubset(completed_item_ids)
+            # Also check for assessment_field items (YES/NO) - if ANY has NO, fail
+
+            # First, check if any assessment_field has explicit NO checked
+            # This means the validator explicitly marked the item as not present
+            assessment_field_items = [
+                item for item in checklist_items_data if item.get("item_type") == "assessment_field"
+            ]
+
+            # Collect items where _no is True (explicit failures)
+            failed_item_ids = set()
+            for key, value in response_data.items():
+                if key.startswith("validator_val_") and key.endswith("_no") and value is True:
+                    # Extract item_id: validator_val_2_3_2_f_no -> 2_3_2_f
+                    item_id = key.replace("validator_val_", "").rsplit("_", 1)[0]
+                    failed_item_ids.add(item_id)
+
+            # Get assessment field item IDs
+            assessment_field_ids = {item.get("item_id") for item in assessment_field_items}
+
+            # If ANY assessment_field has NO checked, fail immediately
+            if failed_item_ids & assessment_field_ids:
+                is_complete = False
                 self.logger.debug(
-                    f"Indicator {indicator.indicator_code}: required={required_item_ids}, "
-                    f"completed={completed_item_ids}, is_complete={is_complete}"
+                    f"Indicator {indicator.indicator_code}: FAIL - assessment fields "
+                    f"with NO checked: {failed_item_ids & assessment_field_ids}"
                 )
+            else:
+                # No explicit failures, check required items as before
+                required_items = [
+                    item for item in checklist_items_data if item.get("required", True)
+                ]
+                if not required_items:
+                    # If no required items but we have assessment_fields,
+                    # check if ALL assessment_fields have YES checked
+                    if assessment_field_items:
+                        yes_item_ids = set()
+                        for key, value in response_data.items():
+                            if (
+                                key.startswith("validator_val_")
+                                and key.endswith("_yes")
+                                and value is True
+                            ):
+                                item_id = key.replace("validator_val_", "").rsplit("_", 1)[0]
+                                yes_item_ids.add(item_id)
+                        # All assessment fields must have YES
+                        is_complete = assessment_field_ids.issubset(yes_item_ids)
+                        self.logger.debug(
+                            f"Indicator {indicator.indicator_code}: assessment_field check - "
+                            f"required={assessment_field_ids}, yes_checked={yes_item_ids}, "
+                            f"is_complete={is_complete}"
+                        )
+                    else:
+                        is_complete = has_any_checked
+                else:
+                    # Check if all required items are in the completed keys
+                    required_item_ids = {item.get("item_id") for item in required_items}
+                    completed_item_ids = completed_keys_normalized
+                    is_complete = required_item_ids.issubset(completed_item_ids)
+                    self.logger.debug(
+                        f"Indicator {indicator.indicator_code}: required={required_item_ids}, "
+                        f"completed={completed_item_ids}, is_complete={is_complete}"
+                    )
 
         self.logger.debug(
             f"Indicator {indicator.indicator_code}: validation_rule={validation_rule}, "

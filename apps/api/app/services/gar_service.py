@@ -243,8 +243,19 @@ class GARService:
                 )
 
             # Determine indicator validation status
+            # Priority: Calculate from checklist items if available, else use stored validator decision
             validation_status = None
-            if response and response.validation_status:
+
+            if gar_checklist:
+                # Has checklist items - calculate status from them
+                validation_status = self._calculate_indicator_status_from_checklist(
+                    gar_checklist=gar_checklist,
+                    indicator_code=indicator.indicator_code,
+                    validation_rule=indicator.validation_rule,
+                )
+
+            # Fallback to stored validator decision if no checklist items or calculation returned None
+            if validation_status is None and response and response.validation_status:
                 validation_status = response.validation_status.value
 
             # Determine indent level based on indicator code
@@ -439,7 +450,9 @@ class GARService:
 
         # Indicators that should NOT show any checklist items in GAR
         # (only the indicator itself is shown, no sub-items)
-        no_checklist_indicators = {"4.3.3"}
+        # 1.6.1 - Has 3 option groups, only validation status matters for GAR
+        # 4.3.3 - Similar case
+        no_checklist_indicators = {"1.6.1", "4.3.3"}
         if indicator_code in no_checklist_indicators:
             return False
 
@@ -680,6 +693,122 @@ class GARService:
                 gar_indicator.validation_status = "CONDITIONAL"
             elif all(s == "PASS" for s in child_statuses):
                 gar_indicator.validation_status = "PASS"
+
+    def _calculate_indicator_status_from_checklist(
+        self,
+        gar_checklist: list[GARChecklistItem],
+        indicator_code: str,
+        validation_rule: str,
+    ) -> str | None:
+        """
+        Calculate validation status for an indicator based on its checklist items.
+
+        This method ensures GAR shows the correct status based on actual checklist
+        validation results, not the stored validator decision.
+
+        Validation Rules:
+        - ALL_ITEMS_REQUIRED: All items must be "met" → PASS. Any "unmet" or all gray → FAIL
+        - ANY_ITEM_REQUIRED / OR_LOGIC_AT_LEAST_1_REQUIRED: At least one "met" → PASS
+        - ANY_OPTION_GROUP_REQUIRED: Handled by 1.6.1 special case (no checklist shown)
+        - Physical/Financial indicators: At least one of Physical/Financial must be "met"
+
+        Returns:
+            "PASS", "FAIL", or None (if no checklist items or header indicator)
+        """
+        # No checklist items = header indicator or special case, return None
+        if not gar_checklist:
+            return None
+
+        # Physical/Financial indicators (special OR logic)
+        physical_financial_indicators = {
+            "2.1.4",
+            "3.2.3",
+            "4.1.6",
+            "4.3.4",
+            "4.5.6",
+            "4.8.4",
+            "6.1.4",
+        }
+        if indicator_code in physical_financial_indicators:
+            return self._calculate_physical_financial_status(gar_checklist)
+
+        # Collect validation results
+        met_count = 0
+        unmet_count = 0
+        no_data_count = 0
+
+        for item in gar_checklist:
+            if item.validation_result == "met":
+                met_count += 1
+            elif item.validation_result == "unmet":
+                unmet_count += 1
+            else:
+                # None or any other value = no data (gray)
+                no_data_count += 1
+
+        total_items = len(gar_checklist)
+
+        # Apply validation rule logic
+        if validation_rule in ("ANY_ITEM_REQUIRED", "OR_LOGIC_AT_LEAST_1_REQUIRED"):
+            # OR logic: at least one item must be met
+            if met_count >= 1:
+                return "PASS"
+            else:
+                return "FAIL"
+
+        elif validation_rule == "ALL_ITEMS_REQUIRED":
+            # AND logic: all items must be met
+            if met_count == total_items:
+                return "PASS"
+            elif unmet_count > 0:
+                # Any explicit unmet = FAIL
+                return "FAIL"
+            else:
+                # All gray (no data) = FAIL (can't pass without validation)
+                return "FAIL"
+
+        elif validation_rule == "SHARED_PLUS_OR_LOGIC":
+            # Complex: some shared items + OR logic
+            # For now, treat as: at least one met = PASS
+            if met_count >= 1:
+                return "PASS"
+            else:
+                return "FAIL"
+
+        else:
+            # Default: ALL_ITEMS_REQUIRED behavior
+            if met_count == total_items:
+                return "PASS"
+            elif unmet_count > 0 or no_data_count > 0:
+                return "FAIL"
+            else:
+                return None
+
+    def _calculate_physical_financial_status(self, gar_checklist: list[GARChecklistItem]) -> str:
+        """
+        Calculate validation status for Physical/Financial OR-logic indicators.
+
+        These indicators (2.1.4, 3.2.3, 4.1.6, 4.3.4, 4.5.6, 4.8.4, 6.1.4) pass
+        if at least ONE of Physical Report or Financial Report is met.
+
+        Returns:
+            "PASS" if at least one report is met
+            "FAIL" if neither report is met
+        """
+        physical_met = False
+        financial_met = False
+
+        for item in gar_checklist:
+            if item.label == "Physical Report" and item.validation_result == "met":
+                physical_met = True
+            elif item.label == "Financial Report" and item.validation_result == "met":
+                financial_met = True
+
+        # OR logic: at least one must be met
+        if physical_met or financial_met:
+            return "PASS"
+        else:
+            return "FAIL"
 
     def _sort_key_for_indicator_code(self, indicator_code: str) -> tuple:
         """

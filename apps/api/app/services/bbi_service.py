@@ -26,10 +26,16 @@ from sqlalchemy import and_
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.cache import CACHE_TTL_INTERNAL_ANALYTICS, cache
-from app.db.enums import AssessmentStatus, BBIStatus, ValidationStatus
+from app.db.enums import AssessmentStatus, BBIStatus
 from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.bbi import BBI, BBIResult
-from app.db.models.governance_area import GovernanceArea, Indicator
+from app.db.models.governance_area import ChecklistItem, GovernanceArea, Indicator
+from app.services.checklist_utils import (
+    calculate_indicator_status_from_checklist,
+    clean_checklist_label,
+    get_checklist_validation_result,
+    is_minimum_requirement,
+)
 
 # BBI metadata configuration - maps indicator codes to BBI details
 # Includes count-based thresholds for functionality levels per DILG specifications
@@ -444,19 +450,10 @@ class BBIService:
 
         if not sub_indicators:
             # No sub-indicators - treat as single indicator
-            # Check if the BBI indicator itself passes based on its response
-            response = (
-                db.query(AssessmentResponse)
-                .filter(
-                    and_(
-                        AssessmentResponse.assessment_id == assessment_id,
-                        AssessmentResponse.indicator_id == bbi_indicator.id,
-                    )
-                )
-                .first()
-            )
+            # Use same checklist-based calculation as _evaluate_sub_indicator_compliance
+            result = self._evaluate_sub_indicator_compliance(db, assessment_id, bbi_indicator)
+            passed = result["passed"]
 
-            passed = response and response.validation_status == ValidationStatus.PASS
             return {
                 "compliance_percentage": 100.0 if passed else 0.0,
                 # 0% is NON_FUNCTIONAL per DILG MC 2024-417 (not LOW_FUNCTIONAL)
@@ -504,11 +501,13 @@ class BBIService:
         sub_indicator: Indicator,
     ) -> dict[str, Any]:
         """
-        Evaluate if a sub-indicator passes based on validator's decision.
+        Evaluate if a sub-indicator passes based on checklist item validation results.
 
-        A sub-indicator PASSES if validation_status == PASS.
-        This is the single source of truth - the validator has already reviewed
-        the submission and all checklist items before making their decision.
+        Priority:
+        1. Calculate from checklist items (met/unmet) - source of truth
+        2. Fall back to stored validator decision if no checklist items
+
+        This ensures BBI status matches GAR validation results.
 
         Args:
             db: Database session
@@ -536,16 +535,52 @@ class BBIService:
             .first()
         )
 
-        # Sub-indicator passes if validator marked it as PASS
-        passed = response is not None and response.validation_status == ValidationStatus.PASS
+        # Calculate indicator status from checklist items (same logic as GAR)
+        calculated_status = None
+
+        # Get checklist items for this sub-indicator
+        checklist_items = (
+            db.query(ChecklistItem)
+            .filter(ChecklistItem.indicator_id == sub_indicator.id)
+            .order_by(ChecklistItem.display_order)
+            .all()
+        )
+
+        # Filter to minimum requirements and get validation results
+        gar_checklist = []
+        for item in checklist_items:
+            if not is_minimum_requirement(item.label, item.item_type, sub_indicator.indicator_code):
+                continue
+            validation_result = get_checklist_validation_result(item, response)
+            display_label = clean_checklist_label(item.label, sub_indicator.indicator_code)
+            gar_checklist.append(
+                {
+                    "item_id": item.item_id,
+                    "label": display_label,
+                    "validation_result": validation_result,
+                }
+            )
+
+        # Calculate status from checklist items if available
+        if gar_checklist:
+            calculated_status = calculate_indicator_status_from_checklist(
+                gar_checklist,
+                sub_indicator.indicator_code,
+                sub_indicator.validation_rule,
+            )
+
+        # Fallback to stored validator decision if no checklist items
+        if calculated_status is None and response and response.validation_status:
+            calculated_status = response.validation_status.value
+
+        # Sub-indicator passes if calculated status is PASS or CONDITIONAL
+        passed = calculated_status in ("PASS", "CONDITIONAL")
 
         return {
             "code": sub_indicator.indicator_code,
             "name": sub_indicator.name,
             "passed": passed,
-            "validation_status": response.validation_status.value
-            if response and response.validation_status
-            else None,
+            "validation_status": calculated_status,
         }
 
     def _get_compliance_rating(self, percentage: float) -> BBIStatus:
