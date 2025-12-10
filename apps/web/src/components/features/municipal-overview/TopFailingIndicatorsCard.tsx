@@ -48,7 +48,11 @@ export function TopFailingIndicatorsCard({ data }: TopFailingIndicatorsCardProps
         {!hasData ? (
           <AnalyticsEmptyState variant="no-indicators" compact />
         ) : (
-          <div className="space-y-3" role="list" aria-label="Top failing indicators">
+          <div
+            className="space-y-3 max-h-[500px] overflow-y-auto pr-1"
+            role="list"
+            aria-label="Top failing indicators"
+          >
             {data!.indicators!.map((indicator: FailingIndicator, idx: number) => {
               const severity = getFailRateSeverity(indicator.fail_rate);
               return (
