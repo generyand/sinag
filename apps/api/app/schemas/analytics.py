@@ -43,8 +43,12 @@ class FailedIndicator(BaseModel):
 
     indicator_id: int = Field(..., description="Unique identifier for the indicator")
     indicator_name: str = Field(..., description="Name of the indicator")
+    indicator_code: str | None = Field(None, description="Indicator code (e.g., '1.1.1')")
+    governance_area: str | None = Field(None, description="Governance area name")
     failure_count: int = Field(..., description="Number of times this indicator failed")
-    percentage: float = Field(..., description="Failure rate as percentage", ge=0, le=100)
+    percentage: float = Field(
+        ..., description="Failure rate as percentage of total barangays", ge=0, le=100
+    )
 
 
 class TrendData(BaseModel):

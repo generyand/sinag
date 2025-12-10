@@ -357,14 +357,18 @@ class AnalyticsService:
             List of FailedIndicator schemas (max 5)
         """
         # Build query for FAILED validation status responses from COMPLETED assessments
+        # Include indicator_code and governance_area for richer data
         query = (
             db.query(
                 Indicator.id,
                 Indicator.name,
+                Indicator.indicator_code,
+                GovernanceArea.name.label("governance_area_name"),
                 func.count(AssessmentResponse.id).label("failure_count"),
             )
             .join(AssessmentResponse, AssessmentResponse.indicator_id == Indicator.id)
             .join(Assessment, AssessmentResponse.assessment_id == Assessment.id)
+            .join(GovernanceArea, Indicator.governance_area_id == GovernanceArea.id)
             .filter(AssessmentResponse.validation_status == ValidationStatus.FAIL)
             .filter(Assessment.status == AssessmentStatus.COMPLETED)
         )
@@ -373,9 +377,14 @@ class AnalyticsService:
         if assessment_year is not None:
             query = query.filter(Assessment.assessment_year == assessment_year)
 
-        # Group by indicator, order by count descending, limit to 5
+        # Group by indicator and governance area, order by count descending, limit to 5
         results = (
-            query.group_by(Indicator.id, Indicator.name)
+            query.group_by(
+                Indicator.id,
+                Indicator.name,
+                Indicator.indicator_code,
+                GovernanceArea.name,
+            )
             .order_by(desc("failure_count"))
             .limit(5)
             .all()
@@ -384,18 +393,22 @@ class AnalyticsService:
         if not results:
             return []
 
-        # Calculate total failures for percentage calculation
-        total_failures = sum(r.failure_count for r in results)
+        # Get total barangays for accurate percentage calculation
+        # This gives us the actual failure rate (failures / total barangays)
+        total_barangays = self._get_total_barangays(db)
 
         failed_indicators = []
         for result in results:
+            # Calculate actual failure rate as percentage of total barangays
             percentage = (
-                (result.failure_count / total_failures * 100) if total_failures > 0 else 0.0
+                (result.failure_count / total_barangays * 100) if total_barangays > 0 else 0.0
             )
             failed_indicators.append(
                 FailedIndicator(
                     indicator_id=result.id,
                     indicator_name=result.name,
+                    indicator_code=result.indicator_code,
+                    governance_area=result.governance_area_name,
                     failure_count=result.failure_count,
                     percentage=round(percentage, 2),
                 )

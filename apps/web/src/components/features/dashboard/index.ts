@@ -15,9 +15,3 @@ export { CompletionStatusBadge } from "./CompletionStatusBadge";
 export { GovernanceAreaBreakdown } from "./GovernanceAreaBreakdown";
 export { ReworkStatsCard } from "./ReworkStatsCard";
 export { TopReworkReasonsCard } from "./TopReworkReasonsCard";
-export {
-  BBIAnalyticsCard,
-  type BBIAnalyticsData,
-  type BBIAnalyticsSummary,
-  type BBIAnalyticsItem,
-} from "./BBIAnalyticsCard";

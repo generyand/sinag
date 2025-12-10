@@ -178,15 +178,31 @@ export interface FailedIndicator {
   indicator_id: number;
   /** Name of the indicator */
   indicator_name: string;
+  /** Indicator code (e.g., '1.1.1') */
+  indicator_code?: FailedIndicatorIndicatorCode;
+  /** Governance area name */
+  governance_area?: FailedIndicatorGovernanceArea;
   /** Number of times this indicator failed */
   failure_count: number;
   /**
-   * Failure rate as percentage
+   * Failure rate as percentage of total barangays
    * @minimum 0
    * @maximum 100
    */
   percentage: number;
 }
+
+
+/**
+ * FailedIndicatorGovernanceArea
+ */
+export type FailedIndicatorGovernanceArea = string | null;
+
+
+/**
+ * FailedIndicatorIndicatorCode
+ */
+export type FailedIndicatorIndicatorCode = string | null;
 
 
 /**

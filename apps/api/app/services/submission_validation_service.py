@@ -301,10 +301,12 @@ class SubmissionValidationService:
 
         for response in responses:
             indicator = db.query(Indicator).filter_by(id=response.indicator_id).first()
-            if not indicator: continue
+            if not indicator:
+                continue
 
             if is_mlgoo_recalibration and mlgoo_indicator_ids:
-                if indicator.id not in mlgoo_indicator_ids: continue
+                if indicator.id not in mlgoo_indicator_ids:
+                    continue
 
             if self._has_file_upload_fields(indicator.form_schema):
                 # Fetch MOVs with annotations

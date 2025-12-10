@@ -25,8 +25,6 @@ const getSeverityColor = (percentage: number) => {
     return { color: "var(--analytics-danger-text)", bgColor: "var(--analytics-danger-bg)" };
   if (percentage >= 30)
     return { color: "var(--analytics-warning-text)", bgColor: "var(--analytics-warning-bg)" };
-  if (percentage >= 15)
-    return { color: "var(--analytics-warning-text)", bgColor: "var(--analytics-warning-bg)" };
   return { color: "var(--analytics-neutral-text)", bgColor: "var(--analytics-neutral-bg)" };
 };
 
@@ -133,13 +131,15 @@ export function FailedIndicators({ data, totalBarangays }: FailedIndicatorsProps
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <Badge
-                        variant="secondary"
-                        className="text-xs font-medium rounded-sm"
-                        style={getGovernanceAreaColor(indicator.governanceArea)}
-                      >
-                        {indicator.governanceArea}
-                      </Badge>
+                      {indicator.governanceArea && (
+                        <Badge
+                          variant="secondary"
+                          className="text-xs font-medium rounded-sm"
+                          style={getGovernanceAreaColor(indicator.governanceArea)}
+                        >
+                          {indicator.governanceArea}
+                        </Badge>
+                      )}
                       <span className="text-xs font-mono text-[var(--muted-foreground)] bg-[var(--hover)] px-2 py-1 rounded-sm">
                         {indicator.code}
                       </span>

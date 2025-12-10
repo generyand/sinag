@@ -53,8 +53,8 @@ export function TopReworkReasonsCard({ data }: TopReworkReasonsCardProps) {
         </p>
       </div>
 
-      {/* Reasons list */}
-      <ul className="space-y-3">
+      {/* Reasons list - scrollable with max height */}
+      <ul className="space-y-3 max-h-[320px] overflow-y-auto pr-2">
         {data.reasons.map((reason, index) => (
           <li key={index} className="flex items-start gap-3">
             <span

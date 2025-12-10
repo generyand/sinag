@@ -23,20 +23,36 @@ If there are no changes to commit, inform the user and stop.
 
 ### Step 2: Run Lint Checks
 
-Run the project's lint checks:
+Run lint checks for both frontend and backend:
+
+**Frontend (TypeScript/JavaScript):**
 
 ```bash
 pnpm lint
 ```
 
-**If lint fails:**
+**Backend (Python):**
+
+```bash
+cd apps/api && uv run ruff check .
+```
+
+**If frontend lint fails:**
 
 1. Show the user the lint errors
-2. Ask: "Lint check failed. Would you like me to attempt to fix these issues automatically?"
-3. If yes, run `pnpm lint --fix` or appropriate fix commands
+2. Ask: "Frontend lint check failed. Would you like me to attempt to fix these issues
+   automatically?"
+3. If yes, run `pnpm lint --fix`
 4. Re-run lint to verify fixes
 
-**If lint passes:** Continue to the next step.
+**If backend lint fails:**
+
+1. Show the user the lint errors
+2. Ask: "Backend lint check failed. Would you like me to attempt to fix these issues automatically?"
+3. If yes, run `cd apps/api && uv run ruff check --fix .`
+4. Re-run lint to verify fixes
+
+**If all lint checks pass:** Continue to the next step.
 
 ### Step 3: Run Type Check (Optional but Recommended)
 

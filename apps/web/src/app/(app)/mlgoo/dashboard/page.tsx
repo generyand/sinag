@@ -2,7 +2,6 @@
 
 import {
   AdminDashboardSkeleton,
-  BBIAnalyticsCard,
   DashboardHeader,
   FailedIndicators,
   GovernanceAreaBreakdown,
@@ -257,11 +256,6 @@ export default function AdminDashboardPage() {
             <GovernanceAreaBreakdown data={dashboardData.areaBreakdown} />
             <TopReworkReasonsCard data={dashboardData.topReworkReasons} />
           </div>
-        </section>
-
-        {/* BBI Analytics Section */}
-        <section className="mb-6" aria-label="BBI Analytics">
-          <BBIAnalyticsCard data={dashboardData.bbiAnalytics} />
         </section>
 
         {/* Failed Indicators - Full Width */}

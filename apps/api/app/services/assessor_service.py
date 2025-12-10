@@ -1052,8 +1052,6 @@ class AssessorService:
         # Note: updated_at is automatically handled by SQLAlchemy's onupdate
 
         # Get all MOV annotations for this assessment to check for indicator-level feedback
-        from app.db.models.assessment import MOVAnnotation
-
         mov_file_ids = [mf.id for mf in assessment.mov_files]
         annotations_by_indicator = {}
 

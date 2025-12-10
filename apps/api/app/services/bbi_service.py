@@ -29,7 +29,7 @@ from app.core.cache import CACHE_TTL_INTERNAL_ANALYTICS, cache
 from app.db.enums import AssessmentStatus, BBIStatus, ValidationStatus
 from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.bbi import BBI, BBIResult
-from app.db.models.governance_area import ChecklistItem, GovernanceArea, Indicator
+from app.db.models.governance_area import GovernanceArea, Indicator
 
 # BBI metadata configuration - maps indicator codes to BBI details
 # Includes count-based thresholds for functionality levels per DILG specifications
@@ -504,11 +504,11 @@ class BBIService:
         sub_indicator: Indicator,
     ) -> dict[str, Any]:
         """
-        Evaluate if a sub-indicator passes based on its checklist items.
+        Evaluate if a sub-indicator passes based on validator's decision.
 
-        A sub-indicator PASSES if:
-        1. When checklist items exist: All required checklist items are satisfied
-        2. When no checklist items: Falls back to validation_status == PASS
+        A sub-indicator PASSES if validation_status == PASS.
+        This is the single source of truth - the validator has already reviewed
+        the submission and all checklist items before making their decision.
 
         Args:
             db: Database session
@@ -521,10 +521,7 @@ class BBIService:
                 "code": "2.1.1",
                 "name": "Structure",
                 "passed": True/False,
-                "checklist_summary": {
-                    "item_id": {"label": "...", "required": True, "satisfied": True},
-                    ...
-                }
+                "validation_status": "PASS" or "FAIL" or None
             }
         """
         # Get the assessment response for this sub-indicator
@@ -539,114 +536,17 @@ class BBIService:
             .first()
         )
 
-        response_data = response.response_data if response else {}
-
-        # Get checklist items for this sub-indicator
-        checklist_items = (
-            db.query(ChecklistItem)
-            .filter(ChecklistItem.indicator_id == sub_indicator.id)
-            .order_by(ChecklistItem.display_order)
-            .all()
-        )
-
-        # If no checklist items exist, fall back to validation_status
-        # This follows the same pattern used for parent indicators (line ~336)
-        if not checklist_items:
-            passed = response and response.validation_status == ValidationStatus.PASS
-            return {
-                "code": sub_indicator.indicator_code,
-                "name": sub_indicator.name,
-                "passed": passed,
-                "validation_rule": "VALIDATION_STATUS",
-                "checklist_summary": {},
-            }
-
-        checklist_summary = {}
-        all_required_satisfied = True
-
-        for item in checklist_items:
-            satisfied = self._is_checklist_item_satisfied(item, response_data)
-            checklist_summary[item.item_id] = {
-                "label": item.label,
-                "required": item.required,
-                "satisfied": satisfied,
-                "item_type": item.item_type,
-            }
-
-            # Check if required item is not satisfied
-            if item.required and not satisfied:
-                all_required_satisfied = False
-
-        # Handle validation_rule for the sub-indicator
-        # ALL_ITEMS_REQUIRED: all required items must be satisfied
-        # ANY_ITEM_REQUIRED: at least one required item must be satisfied (OR logic)
-        validation_rule = sub_indicator.validation_rule or "ALL_ITEMS_REQUIRED"
-
-        if validation_rule == "ANY_ITEM_REQUIRED":
-            # For OR logic, check if at least one required item is satisfied
-            required_items = [item for item in checklist_items if item.required]
-            satisfied_required = [
-                item
-                for item in required_items
-                if self._is_checklist_item_satisfied(item, response_data)
-            ]
-            passed = len(satisfied_required) > 0 if required_items else True
-        else:
-            # Default: ALL_ITEMS_REQUIRED
-            passed = all_required_satisfied
+        # Sub-indicator passes if validator marked it as PASS
+        passed = response is not None and response.validation_status == ValidationStatus.PASS
 
         return {
             "code": sub_indicator.indicator_code,
             "name": sub_indicator.name,
             "passed": passed,
-            "validation_rule": validation_rule,
-            "checklist_summary": checklist_summary,
+            "validation_status": response.validation_status.value
+            if response and response.validation_status
+            else None,
         }
-
-    def _is_checklist_item_satisfied(
-        self,
-        item: ChecklistItem,
-        response_data: dict[str, Any],
-    ) -> bool:
-        """
-        Check if a single checklist item is satisfied based on response data.
-
-        Args:
-            item: The checklist item to check
-            response_data: The response data from AssessmentResponse
-
-        Returns:
-            True if the item is satisfied, False otherwise
-        """
-        item_id = item.item_id
-
-        # Skip info_text items - they don't need validation
-        if item.item_type == "info_text":
-            return True
-
-        # Check standard checkbox validation
-        if item_id in response_data:
-            value = response_data[item_id]
-            if isinstance(value, bool):
-                return value
-            if isinstance(value, str):
-                return value.lower() in ["true", "yes", "1"]
-
-        # Check for YES/NO pattern (assessment_field)
-        yes_key = f"{item_id}_yes"
-        no_key = f"{item_id}_no"
-        if yes_key in response_data or no_key in response_data:
-            if response_data.get(yes_key):
-                return True
-            elif response_data.get(no_key):
-                return False
-
-        # Check for document_count or calculation_field - has value means satisfied
-        if item.item_type in ["document_count", "calculation_field"]:
-            if item_id in response_data and response_data[item_id]:
-                return True
-
-        return False
 
     def _get_compliance_rating(self, percentage: float) -> BBIStatus:
         """

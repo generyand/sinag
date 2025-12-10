@@ -126,14 +126,14 @@ function transformDashboardData(apiData: DashboardKPIResponse): AdminDashboardDa
     }));
 
   // Transform failed indicators
-  const failedIndicators = (apiData.top_failed_indicators || []).map((ind, index) => ({
+  const failedIndicators = (apiData.top_failed_indicators || []).map((ind) => ({
     id: String(ind.indicator_id),
-    code: `${index + 1}`, // We don't have code in the API, use index
+    code: ind.indicator_code || `IND-${ind.indicator_id}`,
     name: ind.indicator_name,
     failedCount: ind.failure_count,
     totalBarangays: apiData.total_barangays,
     percentage: ind.percentage,
-    governanceArea: "", // Not available in current API response
+    governanceArea: ind.governance_area || "",
   }));
 
   // Transform area breakdown
