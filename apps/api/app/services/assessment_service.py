@@ -414,15 +414,17 @@ class AssessmentService:
             for row in mov_files_rows:
                 ind_id = row[1]
                 mov_file_indicator_ids.add(ind_id)
-                mov_files_by_indicator.setdefault(ind_id, []).append({
-                    "id": row[0],
-                    "file_name": row[2],
-                    "file_size": row[3],
-                    "file_type": row[4],
-                    "file_url": row[5],
-                    "field_id": row[6],
-                    "uploaded_at": row[7].isoformat() + "Z" if row[7] else None,
-                })
+                mov_files_by_indicator.setdefault(ind_id, []).append(
+                    {
+                        "id": row[0],
+                        "file_name": row[2],
+                        "file_size": row[3],
+                        "file_type": row[4],
+                        "file_url": row[5],
+                        "field_id": row[6],
+                        "uploaded_at": row[7].isoformat() + "Z" if row[7] else None,
+                    }
+                )
 
             logger.info(
                 f"[PERF] Query 3b (MOVFiles): {time.time() - step_start:.2f}s, "
@@ -492,15 +494,17 @@ class AssessmentService:
             # AUTO-SYNC: Create AssessmentResponses for indicators with MOVFiles but no response
             # This ensures progress tracking works immediately for all uploaded files
             step_start = time.time()
-            missing_response_indicator_ids = mov_file_indicator_ids - set(responses_by_indicator.keys())
+            missing_response_indicator_ids = mov_file_indicator_ids - set(
+                responses_by_indicator.keys()
+            )
             if missing_response_indicator_ids:
                 logger.info(
                     f"[AUTO-SYNC] Found {len(missing_response_indicator_ids)} indicators with files but no response. "
                     f"Creating responses..."
                 )
-                from app.db.models.assessment import AssessmentResponse, MOVFile
-                from app.db.models.governance_area import Indicator
                 from sqlalchemy.orm import joinedload
+
+                from app.db.models.assessment import AssessmentResponse
 
                 for ind_id in missing_response_indicator_ids:
                     # Create new AssessmentResponse
