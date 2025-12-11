@@ -41,7 +41,13 @@ import type {
   MOVCreate,
   Mov,
   PostAssessmentsAssessmentIdAnswersParams,
+  PostAssessmentsAssessmentIdCalibrationSummaryRegenerate202,
+  PostAssessmentsAssessmentIdCalibrationSummaryRegenerateParams,
+  PostAssessmentsAssessmentIdReworkSummaryRegenerate202,
+  PostAssessmentsAssessmentIdReworkSummaryRegenerateParams,
   PostAssessmentsIdGenerateInsights202,
+  PostAssessmentsIdRegenerateInsights202,
+  PostAssessmentsIdRegenerateInsightsParams,
   RequestReworkRequest,
   RequestReworkResponse,
   ResubmitAssessmentResponse,
@@ -816,6 +822,92 @@ export const usePostAssessmentsIdGenerateInsights = <TError = HTTPValidationErro
       > => {
 
       const mutationOptions = getPostAssessmentsIdGenerateInsightsMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    /**
+ * Regenerate AI-powered insights for an assessment.
+
+This endpoint allows MLGOO admins to manually trigger regeneration of AI insights,
+for example if the AI model has been updated or if there was an error with
+the original generation.
+
+**Access:** MLGOO_DILG only
+
+**Business Rules:**
+- Assessment must be validated (status >= VALIDATED)
+- If force=false and insights already exist, returns cached status
+- If force=true, clears existing insights and regenerates
+- Task runs asynchronously via Celery
+
+Args:
+    id: Assessment ID
+    force: If True, regenerate even if insights already exist
+    db: Database session
+    current_user: Current authenticated admin user
+
+Returns:
+    dict: Task dispatch confirmation with task_id
+ * @summary Regenerate Insights
+ */
+export const postAssessments$IdRegenerateInsights = (
+    id: number,
+    params?: PostAssessmentsIdRegenerateInsightsParams,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<PostAssessmentsIdRegenerateInsights202>(
+      {url: `/api/v1/assessments/${id}/regenerate-insights`, method: 'POST',
+        params, signal
+    },
+      options);
+    }
+  
+
+
+export const getPostAssessmentsIdRegenerateInsightsMutationOptions = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessments$IdRegenerateInsights>>, TError,{id: number;params?: PostAssessmentsIdRegenerateInsightsParams}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postAssessments$IdRegenerateInsights>>, TError,{id: number;params?: PostAssessmentsIdRegenerateInsightsParams}, TContext> => {
+
+const mutationKey = ['postAssessmentsIdRegenerateInsights'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAssessments$IdRegenerateInsights>>, {id: number;params?: PostAssessmentsIdRegenerateInsightsParams}> = (props) => {
+          const {id,params} = props ?? {};
+
+          return  postAssessments$IdRegenerateInsights(id,params,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostAssessmentsIdRegenerateInsightsMutationResult = NonNullable<Awaited<ReturnType<typeof postAssessments$IdRegenerateInsights>>>
+    
+    export type PostAssessmentsIdRegenerateInsightsMutationError = HTTPValidationError
+
+    /**
+ * @summary Regenerate Insights
+ */
+export const usePostAssessmentsIdRegenerateInsights = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessments$IdRegenerateInsights>>, TError,{id: number;params?: PostAssessmentsIdRegenerateInsightsParams}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postAssessments$IdRegenerateInsights>>,
+        TError,
+        {id: number;params?: PostAssessmentsIdRegenerateInsightsParams},
+        TContext
+      > => {
+
+      const mutationOptions = getPostAssessmentsIdRegenerateInsightsMutationOptions(options);
 
       return useMutation(mutationOptions);
     }
@@ -1713,6 +1805,92 @@ export function useGetAssessmentsAssessmentIdReworkSummary<TData = Awaited<Retur
 
 
 /**
+ * Regenerate AI rework summary for an assessment.
+
+This endpoint allows MLGOO admins to manually trigger regeneration of the
+AI-powered rework summary, for example if the AI model has been updated
+or if there was an error with the original generation.
+
+**Access:** MLGOO_DILG only
+
+**Business Rules:**
+- Assessment must be in REWORK status or have been through rework
+- If force=false and summary already exists, returns cached status
+- If force=true, clears existing summary and regenerates all default languages
+- Task runs asynchronously via Celery
+
+Args:
+    assessment_id: ID of the assessment
+    force: If True, regenerate even if summary already exists
+    db: Database session
+    current_user: Current authenticated admin user
+
+Returns:
+    dict: Task dispatch confirmation with task_id
+ * @summary Regenerate Rework Summary
+ */
+export const postAssessments$AssessmentIdReworkSummaryRegenerate = (
+    assessmentId: number,
+    params?: PostAssessmentsAssessmentIdReworkSummaryRegenerateParams,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<PostAssessmentsAssessmentIdReworkSummaryRegenerate202>(
+      {url: `/api/v1/assessments/${assessmentId}/rework-summary/regenerate`, method: 'POST',
+        params, signal
+    },
+      options);
+    }
+  
+
+
+export const getPostAssessmentsAssessmentIdReworkSummaryRegenerateMutationOptions = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessments$AssessmentIdReworkSummaryRegenerate>>, TError,{assessmentId: number;params?: PostAssessmentsAssessmentIdReworkSummaryRegenerateParams}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postAssessments$AssessmentIdReworkSummaryRegenerate>>, TError,{assessmentId: number;params?: PostAssessmentsAssessmentIdReworkSummaryRegenerateParams}, TContext> => {
+
+const mutationKey = ['postAssessmentsAssessmentIdReworkSummaryRegenerate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAssessments$AssessmentIdReworkSummaryRegenerate>>, {assessmentId: number;params?: PostAssessmentsAssessmentIdReworkSummaryRegenerateParams}> = (props) => {
+          const {assessmentId,params} = props ?? {};
+
+          return  postAssessments$AssessmentIdReworkSummaryRegenerate(assessmentId,params,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostAssessmentsAssessmentIdReworkSummaryRegenerateMutationResult = NonNullable<Awaited<ReturnType<typeof postAssessments$AssessmentIdReworkSummaryRegenerate>>>
+    
+    export type PostAssessmentsAssessmentIdReworkSummaryRegenerateMutationError = HTTPValidationError
+
+    /**
+ * @summary Regenerate Rework Summary
+ */
+export const usePostAssessmentsAssessmentIdReworkSummaryRegenerate = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessments$AssessmentIdReworkSummaryRegenerate>>, TError,{assessmentId: number;params?: PostAssessmentsAssessmentIdReworkSummaryRegenerateParams}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postAssessments$AssessmentIdReworkSummaryRegenerate>>,
+        TError,
+        {assessmentId: number;params?: PostAssessmentsAssessmentIdReworkSummaryRegenerateParams},
+        TContext
+      > => {
+
+      const mutationOptions = getPostAssessmentsAssessmentIdReworkSummaryRegenerateMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    /**
  * Get AI-generated calibration summary for an assessment in the specified language.
 
 This endpoint retrieves the comprehensive AI-generated summary of calibration
@@ -1822,3 +2000,93 @@ export function useGetAssessmentsAssessmentIdCalibrationSummary<TData = Awaited<
 
 
 
+/**
+ * Regenerate AI calibration summary for an assessment.
+
+This endpoint allows MLGOO admins to manually trigger regeneration of the
+AI-powered calibration summary for a specific governance area, for example
+if the AI model has been updated or if there was an error with the original
+generation.
+
+**Access:** MLGOO_DILG only
+
+**Business Rules:**
+- Assessment must have been through calibration
+- A governance_area_id must be specified
+- If force=false and summary already exists for that area, returns cached status
+- If force=true, clears existing summary for that area and regenerates
+- Task runs asynchronously via Celery
+
+Args:
+    assessment_id: ID of the assessment
+    governance_area_id: ID of the governance area to regenerate summary for
+    force: If True, regenerate even if summary already exists
+    db: Database session
+    current_user: Current authenticated admin user
+
+Returns:
+    dict: Task dispatch confirmation with task_id
+ * @summary Regenerate Calibration Summary
+ */
+export const postAssessments$AssessmentIdCalibrationSummaryRegenerate = (
+    assessmentId: number,
+    params: PostAssessmentsAssessmentIdCalibrationSummaryRegenerateParams,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<PostAssessmentsAssessmentIdCalibrationSummaryRegenerate202>(
+      {url: `/api/v1/assessments/${assessmentId}/calibration-summary/regenerate`, method: 'POST',
+        params, signal
+    },
+      options);
+    }
+  
+
+
+export const getPostAssessmentsAssessmentIdCalibrationSummaryRegenerateMutationOptions = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessments$AssessmentIdCalibrationSummaryRegenerate>>, TError,{assessmentId: number;params: PostAssessmentsAssessmentIdCalibrationSummaryRegenerateParams}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postAssessments$AssessmentIdCalibrationSummaryRegenerate>>, TError,{assessmentId: number;params: PostAssessmentsAssessmentIdCalibrationSummaryRegenerateParams}, TContext> => {
+
+const mutationKey = ['postAssessmentsAssessmentIdCalibrationSummaryRegenerate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAssessments$AssessmentIdCalibrationSummaryRegenerate>>, {assessmentId: number;params: PostAssessmentsAssessmentIdCalibrationSummaryRegenerateParams}> = (props) => {
+          const {assessmentId,params} = props ?? {};
+
+          return  postAssessments$AssessmentIdCalibrationSummaryRegenerate(assessmentId,params,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostAssessmentsAssessmentIdCalibrationSummaryRegenerateMutationResult = NonNullable<Awaited<ReturnType<typeof postAssessments$AssessmentIdCalibrationSummaryRegenerate>>>
+    
+    export type PostAssessmentsAssessmentIdCalibrationSummaryRegenerateMutationError = HTTPValidationError
+
+    /**
+ * @summary Regenerate Calibration Summary
+ */
+export const usePostAssessmentsAssessmentIdCalibrationSummaryRegenerate = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessments$AssessmentIdCalibrationSummaryRegenerate>>, TError,{assessmentId: number;params: PostAssessmentsAssessmentIdCalibrationSummaryRegenerateParams}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postAssessments$AssessmentIdCalibrationSummaryRegenerate>>,
+        TError,
+        {assessmentId: number;params: PostAssessmentsAssessmentIdCalibrationSummaryRegenerateParams},
+        TContext
+      > => {
+
+      const mutationOptions = getPostAssessmentsAssessmentIdCalibrationSummaryRegenerateMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    

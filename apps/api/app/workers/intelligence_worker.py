@@ -56,8 +56,15 @@ def _generate_insights_logic(
             logger.error(error_msg)
             return {"success": False, "error": error_msg}
 
-        # Check if assessment is validated (required for insights)
-        if assessment.status != AssessmentStatus.VALIDATED:
+        # Check if assessment is at least validated (required for insights)
+        # Allow: VALIDATED, AWAITING_FINAL_VALIDATION, AWAITING_MLGOO_APPROVAL, COMPLETED
+        valid_statuses = [
+            AssessmentStatus.VALIDATED,
+            AssessmentStatus.AWAITING_FINAL_VALIDATION,
+            AssessmentStatus.AWAITING_MLGOO_APPROVAL,
+            AssessmentStatus.COMPLETED,
+        ]
+        if assessment.status not in valid_statuses:
             error_msg = f"Assessment {assessment_id} is not validated. Status: {assessment.status}"
             logger.error(error_msg)
             return {"success": False, "error": error_msg}

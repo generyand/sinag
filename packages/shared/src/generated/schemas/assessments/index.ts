@@ -1541,9 +1541,64 @@ indicator_id: number;
 
 
 /**
+ * PostAssessmentsAssessmentIdCalibrationSummaryRegenerate202
+ */
+export type PostAssessmentsAssessmentIdCalibrationSummaryRegenerate202 = { [key: string]: unknown };
+
+
+/**
+ * PostAssessmentsAssessmentIdCalibrationSummaryRegenerateParams
+ */
+export type PostAssessmentsAssessmentIdCalibrationSummaryRegenerateParams = {
+/**
+ * ID of the governance area to regenerate summary for
+ */
+governance_area_id: number;
+/**
+ * Force regeneration even if summary exists
+ */
+force?: boolean;
+};
+
+
+/**
+ * PostAssessmentsAssessmentIdReworkSummaryRegenerate202
+ */
+export type PostAssessmentsAssessmentIdReworkSummaryRegenerate202 = { [key: string]: unknown };
+
+
+/**
+ * PostAssessmentsAssessmentIdReworkSummaryRegenerateParams
+ */
+export type PostAssessmentsAssessmentIdReworkSummaryRegenerateParams = {
+/**
+ * Force regeneration even if summary exists
+ */
+force?: boolean;
+};
+
+
+/**
  * PostAssessmentsIdGenerateInsights202
  */
 export type PostAssessmentsIdGenerateInsights202 = { [key: string]: unknown };
+
+
+/**
+ * PostAssessmentsIdRegenerateInsights202
+ */
+export type PostAssessmentsIdRegenerateInsights202 = { [key: string]: unknown };
+
+
+/**
+ * PostAssessmentsIdRegenerateInsightsParams
+ */
+export type PostAssessmentsIdRegenerateInsightsParams = {
+/**
+ * Force regeneration even if insights exist
+ */
+force?: boolean;
+};
 
 
 /**
