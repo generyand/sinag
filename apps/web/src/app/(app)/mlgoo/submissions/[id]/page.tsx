@@ -38,6 +38,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
+  AlertTriangle,
   ArrowLeft,
   Calendar,
   CheckCircle,
@@ -1185,6 +1186,9 @@ export default function SubmissionDetailsPage() {
                                 >
                                   {status === "PASS" && <CheckCircle className="h-3.5 w-3.5" />}
                                   {status === "FAIL" && <XCircle className="h-3.5 w-3.5" />}
+                                  {status === "CONDITIONAL" && (
+                                    <AlertTriangle className="h-3.5 w-3.5" />
+                                  )}
                                   {status || "PENDING"}
                                 </span>
                               </div>

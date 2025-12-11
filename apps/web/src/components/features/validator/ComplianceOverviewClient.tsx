@@ -75,6 +75,7 @@ export function ComplianceOverviewClient({ assessmentId }: ComplianceOverviewCli
 
     let totalSubIndicators = 0;
     let metCount = 0;
+    let consideredCount = 0;
     let unmetCount = 0;
     let pendingCount = 0;
 
@@ -82,20 +83,24 @@ export function ComplianceOverviewClient({ assessmentId }: ComplianceOverviewCli
       for (const indicator of area.indicators) {
         for (const sub of indicator.sub_indicators) {
           totalSubIndicators++;
+          // PASS and CONDITIONAL both count toward compliance (SGLGB rule: Conditional = Considered = Pass)
+          // But we track them separately for display purposes
           if (sub.validation_status === "PASS") metCount++;
+          else if (sub.validation_status === "CONDITIONAL") consideredCount++;
           else if (sub.validation_status === "FAIL") unmetCount++;
           else pendingCount++;
         }
       }
     }
 
-    const confirmedCount = metCount + unmetCount;
+    const confirmedCount = metCount + consideredCount + unmetCount;
     const progressPercent =
       totalSubIndicators > 0 ? (confirmedCount / totalSubIndicators) * 100 : 0;
 
     return {
       totalSubIndicators,
       metCount,
+      consideredCount,
       unmetCount,
       pendingCount,
       confirmedCount,
@@ -103,8 +108,8 @@ export function ComplianceOverviewClient({ assessmentId }: ComplianceOverviewCli
     };
   }, [data]);
 
-  // Handle override: set validation_status to PASS or FAIL
-  const handleOverride = async (responseId: number, newStatus: "PASS" | "FAIL") => {
+  // Handle override: set validation_status to PASS, FAIL, or CONDITIONAL
+  const handleOverride = async (responseId: number, newStatus: "PASS" | "FAIL" | "CONDITIONAL") => {
     try {
       await validateMut.mutateAsync({
         responseId,
@@ -113,7 +118,9 @@ export function ComplianceOverviewClient({ assessmentId }: ComplianceOverviewCli
         },
       });
       await queryClient.invalidateQueries();
-      toast.success(`Status set to ${newStatus === "PASS" ? "Met" : "Unmet"}`);
+      const statusLabel =
+        newStatus === "PASS" ? "Met" : newStatus === "CONDITIONAL" ? "Considered" : "Unmet";
+      toast.success(`Status set to ${statusLabel}`);
     } catch (err) {
       console.error("Override error:", err);
       toast.error("Failed to update status");
@@ -249,7 +256,7 @@ export function ComplianceOverviewClient({ assessmentId }: ComplianceOverviewCli
 
         {/* Summary Stats Cards */}
         {stats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
             <div className="bg-white dark:bg-slate-800/50 rounded-sm p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
               <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm mb-1">
                 <TrendingUp className="h-4 w-4" />
@@ -273,6 +280,18 @@ export function ComplianceOverviewClient({ assessmentId }: ComplianceOverviewCli
               </div>
             </div>
             <div className="bg-white dark:bg-slate-800/50 rounded-sm p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
+              <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400 text-sm mb-1">
+                <AlertTriangle className="h-4 w-4" />
+                Considered
+              </div>
+              <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                {stats.consideredCount}
+              </div>
+              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                conditional pass
+              </div>
+            </div>
+            <div className="bg-white dark:bg-slate-800/50 rounded-sm p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
               <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm mb-1">
                 <XCircle className="h-4 w-4" />
                 Unmet
@@ -283,11 +302,11 @@ export function ComplianceOverviewClient({ assessmentId }: ComplianceOverviewCli
               <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">needs attention</div>
             </div>
             <div className="bg-white dark:bg-slate-800/50 rounded-sm p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
-              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 text-sm mb-1">
+              <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm mb-1">
                 <Clock className="h-4 w-4" />
                 Pending
               </div>
-              <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+              <div className="text-2xl font-bold text-slate-600 dark:text-slate-400">
                 {stats.pendingCount}
               </div>
               <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -443,6 +462,7 @@ export function ComplianceOverviewClient({ assessmentId }: ComplianceOverviewCli
                           {indicator.sub_indicators.map((sub) => {
                             const isConfirmed = sub.validation_status !== null;
                             const isMetConfirmed = sub.validation_status === "PASS";
+                            const isConditionalConfirmed = sub.validation_status === "CONDITIONAL";
                             const isUnmetConfirmed = sub.validation_status === "FAIL";
                             const isMetRecommended =
                               sub.recommended_status === "PASS" && !isConfirmed;
@@ -493,6 +513,21 @@ export function ComplianceOverviewClient({ assessmentId }: ComplianceOverviewCli
                                         }`}
                                       >
                                         Met
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleOverride(sub.response_id!, "CONDITIONAL")
+                                        }
+                                        disabled={validateMut.isPending}
+                                        className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                                          isConditionalConfirmed
+                                            ? "bg-yellow-500 text-white shadow-sm"
+                                            : "bg-slate-100 text-slate-500 hover:bg-yellow-50 hover:text-yellow-600 dark:bg-slate-700 dark:text-slate-400 dark:hover:bg-yellow-900/30 dark:hover:text-yellow-400"
+                                        }`}
+                                        title="Conditional pass (Considered)"
+                                      >
+                                        Considered
                                       </button>
                                       <button
                                         type="button"

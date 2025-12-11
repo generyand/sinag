@@ -896,14 +896,42 @@ export function RightAssessorPanel({
               const key = String(r.id);
               const errorsFor = (formState.errors as AnyRecord)?.[key]?.publicComment;
 
+              // Get current validation status for display
+              const currentValidationStatus = (r as AnyRecord).validation_status as string | null;
+              const getStatusBadge = () => {
+                if (!currentValidationStatus) return null;
+                const statusUpper = currentValidationStatus.toUpperCase();
+                if (statusUpper === "PASS") {
+                  return (
+                    <span className="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200">
+                      Met
+                    </span>
+                  );
+                } else if (statusUpper === "CONDITIONAL") {
+                  return (
+                    <span className="px-2 py-0.5 rounded text-xs font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200">
+                      Considered
+                    </span>
+                  );
+                } else if (statusUpper === "FAIL") {
+                  return (
+                    <span className="px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200">
+                      Unmet
+                    </span>
+                  );
+                }
+                return null;
+              };
+
               return (
                 <div
                   key={r.id ?? idx}
                   className="rounded-sm bg-white dark:bg-slate-900 shadow-md border border-slate-200 dark:border-slate-800 overflow-hidden"
                   data-right-item-id={r.id}
                 >
-                  <div className="px-3 py-3 text-lg font-semibold rounded-t-sm bg-amber-400 dark:bg-amber-500 text-slate-900">
-                    {indicatorLabel}
+                  <div className="px-3 py-3 text-lg font-semibold rounded-t-sm bg-amber-400 dark:bg-amber-500 text-slate-900 flex items-center justify-between gap-2">
+                    <span className="truncate">{indicatorLabel}</span>
+                    {getStatusBadge()}
                   </div>
                   {/* Content is always visible when indicator is selected */}
                   {

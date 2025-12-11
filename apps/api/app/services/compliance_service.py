@@ -483,12 +483,15 @@ class ComplianceService:
                     # Get actual confirmed status from database
                     if response and response.validation_status is not None:
                         validation_status = response.validation_status.value
-                        if response.validation_status == ValidationStatus.PASS:
+                        # PASS and CONDITIONAL both count as met (SGLGB rule: Conditional = Considered = Pass)
+                        if response.validation_status in (
+                            ValidationStatus.PASS,
+                            ValidationStatus.CONDITIONAL,
+                        ):
                             passed_count += 1
                         elif response.validation_status == ValidationStatus.FAIL:
                             failed_count += 1
                         else:
-                            # CONDITIONAL counts as pending for compliance
                             pending_count += 1
                     else:
                         # Not yet confirmed - counts as pending

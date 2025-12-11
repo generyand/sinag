@@ -1239,8 +1239,9 @@ class IntelligenceService:
         self, db: Session, assessment_id: int
     ) -> dict[str, list[AssessmentResponse]]:
         """
-        Fetch all assessment responses for an assessment, filtered by validation_status='Pass'.
+        Fetch all assessment responses for an assessment that count as passed.
 
+        PASS and CONDITIONAL both count as passing (SGLGB rule: Conditional = Considered = Pass).
         Groups responses by governance area name.
 
         Args:
@@ -1256,7 +1257,9 @@ class IntelligenceService:
             .join(GovernanceArea, Indicator.governance_area_id == GovernanceArea.id)
             .filter(
                 AssessmentResponse.assessment_id == assessment_id,
-                AssessmentResponse.validation_status == ValidationStatus.PASS,
+                AssessmentResponse.validation_status.in_(
+                    [ValidationStatus.PASS, ValidationStatus.CONDITIONAL]
+                ),
             )
             .all()
         )
@@ -1275,8 +1278,9 @@ class IntelligenceService:
         """
         Determine if a governance area has passed (all LEAF indicators within that area must pass).
 
-        An area passes if ALL of its LEAF indicators have validation_status = 'Pass'.
-        An area fails if ANY leaf indicator has validation_status != 'Pass' or is None.
+        An area passes if ALL of its LEAF indicators have validation_status = PASS or CONDITIONAL.
+        An area fails if ANY leaf indicator has validation_status = FAIL or is None.
+        SGLGB rule: CONDITIONAL (Considered) counts as passing.
 
         IMPORTANT: Only leaf indicators (indicators with no children) are checked.
         Parent/section indicators don't have responses and should be excluded.
@@ -1536,7 +1540,10 @@ class IntelligenceService:
         # Get failed indicators with feedback
         failed_indicators = []
         for response in assessment.responses:
-            if response.validation_status != ValidationStatus.PASS:
+            if response.validation_status not in (
+                ValidationStatus.PASS,
+                ValidationStatus.CONDITIONAL,
+            ):
                 indicator = response.indicator
                 governance_area = indicator.governance_area
 
