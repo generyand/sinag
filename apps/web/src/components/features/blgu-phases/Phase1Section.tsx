@@ -226,6 +226,8 @@ export function Phase1Section({
               <SubmitAssessmentButton
                 assessmentId={assessmentId}
                 isComplete={dashboardData.completion_percentage === 100}
+                completedCount={dashboardData.completed_indicators}
+                totalCount={dashboardData.total_indicators}
                 onSuccess={onRefetch}
               />
             )}

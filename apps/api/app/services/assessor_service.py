@@ -9,7 +9,7 @@ from fastapi import UploadFile
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.core.year_resolver import get_year_resolver
-from app.db.enums import AssessmentStatus, ComplianceStatus, ValidationStatus
+from app.db.enums import AssessmentStatus, ComplianceStatus, UserRole, ValidationStatus
 from app.db.models.assessment import (
     MOV as MOVModel,  # SQLAlchemy model - alias to avoid conflict
 )
@@ -87,7 +87,11 @@ class AssessorService:
         # - AWAITING_FINAL_VALIDATION: Ready for validation
         # - REWORK with is_calibration_rework=True: Parallel calibration in progress,
         #   validator can still validate their area if they haven't calibrated it yet
-        if assessor.validator_area_id is not None:
+        # IMPORTANT: Check role explicitly - assessors should NOT be filtered by governance area
+        is_validator = (
+            assessor.role == UserRole.VALIDATOR and assessor.validator_area_id is not None
+        )
+        if is_validator:
             query = query.filter(
                 Indicator.governance_area_id == assessor.validator_area_id,
                 Assessment.status.in_(
@@ -126,7 +130,7 @@ class AssessorService:
         for a in assessments:
             # For validators: Skip assessments where they've already completed their governance area
             # or where they have a pending calibration request (waiting for BLGU)
-            if assessor.validator_area_id is not None:
+            if is_validator:
                 # PARALLEL CALIBRATION: Check if validator has pending calibration for this assessment
                 # If they already requested calibration, don't show until BLGU resubmits
                 pending_calibrations = a.pending_calibrations or []
@@ -172,7 +176,7 @@ class AssessorService:
             pending_count = len(a.pending_calibrations or []) if a.is_calibration_rework else 0
 
             # Calculate area progress based on reviewed indicators
-            if assessor.validator_area_id is not None:
+            if is_validator:
                 # Validator: progress based on their governance area
                 area_responses = [
                     r
@@ -208,7 +212,7 @@ class AssessorService:
 
         # For validators, add completed count as metadata
         # This is used for the "Reviewed by You" KPI
-        if assessor.validator_area_id is not None and len(items) == 0:
+        if is_validator and len(items) == 0:
             # If queue is empty, check if there are completed assessments
             # This helps show progress even when queue is empty
             pass
@@ -750,28 +754,63 @@ class AssessorService:
                 "[YEAR RESOLVER] No active assessment year found, using raw indicator values"
             )
 
-        # Process responses based on assessor's governance area assignment
-        for response in assessment.responses:
-            # Skip parent indicators that have children (only show leaf indicators)
-            if response.indicator.children and len(response.indicator.children) > 0:
-                continue
+        # IMPORTANT: Fetch ALL leaf indicators (not just those with responses)
+        # This ensures assessors see all 86 indicators, even if BLGU hasn't filled them all
+        all_indicators = (
+            db.query(Indicator)
+            .options(
+                selectinload(Indicator.governance_area),
+                selectinload(Indicator.checklist_items),
+                selectinload(Indicator.children),
+            )
+            .filter(
+                # Only get leaf indicators (no children) - these are the ones that need responses
+                ~Indicator.id.in_(
+                    db.query(Indicator.parent_id).filter(Indicator.parent_id.isnot(None))
+                )
+            )
+            .order_by(Indicator.governance_area_id, Indicator.indicator_code)
+            .all()
+        )
 
-            # If assessor has validator_area_id, only show responses in that area
-            # If assessor has no validator_area_id, show all responses (system-wide)
-            if assessor.validator_area_id is not None:
-                if response.indicator.governance_area_id != assessor.validator_area_id:
+        # Create a lookup map of existing responses by indicator_id
+        response_lookup = {r.indicator_id: r for r in assessment.responses}
+
+        # Determine filtering based on user role
+        is_validator_role = assessor.role == UserRole.VALIDATOR
+        should_filter = is_validator_role and assessor.validator_area_id is not None
+
+        self.logger.info(
+            f"[ASSESSOR DEBUG] User {assessor.id} ({assessor.email}): "
+            f"role={assessor.role}, validator_area_id={assessor.validator_area_id}, "
+            f"total_responses_in_assessment={len(assessment.responses)}, "
+            f"total_indicators={len(all_indicators)}, should_filter={should_filter}"
+        )
+
+        # Process ALL indicators (not just responses)
+        for indicator in all_indicators:
+            # Only filter by governance area for VALIDATOR role users
+            if should_filter:
+                if indicator.governance_area_id != assessor.validator_area_id:
                     continue
+
+            # Get existing response for this indicator (may be None if BLGU hasn't filled it yet)
+            response = response_lookup.get(indicator.id)
+
             # Get all MOV files for this indicator (before filtering)
             all_movs_for_indicator = [
                 mov
                 for mov in assessment.mov_files
-                if mov.indicator_id == response.indicator_id and mov.deleted_at is None
+                if mov.indicator_id == indicator.id and mov.deleted_at is None
             ]
+
+            # Get requires_rework status (False if no response exists)
+            requires_rework = response.requires_rework if response else False
 
             # ALWAYS LOG: Debug filtering logic
             self.logger.info(
-                f"[MOV FILTER DEBUG] Indicator {response.indicator_id}: "
-                f"requires_rework={response.requires_rework}, "
+                f"[MOV FILTER DEBUG] Indicator {indicator.id}: "
+                f"has_response={response is not None}, requires_rework={requires_rework}, "
                 f"assessment_status={assessment.status}, "
                 f"rework_requested_at={assessment.rework_requested_at}, "
                 f"total_movs={len(all_movs_for_indicator)}"
@@ -783,7 +822,7 @@ class AssessorService:
             is_calibration_rework = assessment.is_calibration_rework or (
                 assessment.status == AssessmentStatus.REWORK and assessment.pending_calibrations
             )
-            effective_requires_rework = response.requires_rework
+            effective_requires_rework = requires_rework
 
             if is_calibration_rework and effective_requires_rework:
                 # Find active calibration governance area
@@ -798,12 +837,12 @@ class AssessorService:
                 # then this is a "Ghost Rework" flag - ignore it.
                 if (
                     calibration_ga_id is not None
-                    and response.indicator.governance_area_id != calibration_ga_id
+                    and indicator.governance_area_id != calibration_ga_id
                 ):
                     effective_requires_rework = False
                     self.logger.info(
-                        f"[GHOST REWORK FIX] Ignoring stale rework flag for Indicator {response.indicator_id} "
-                        f"(Area {response.indicator.governance_area_id} != Calibration Area {calibration_ga_id})"
+                        f"[GHOST REWORK FIX] Ignoring stale rework flag for Indicator {indicator.id} "
+                        f"(Area {indicator.governance_area_id} != Calibration Area {calibration_ga_id})"
                     )
 
             # Apply rework filtering based on assessment status and EFFECTIVE rework flag:
@@ -811,13 +850,49 @@ class AssessorService:
             # - If status is REWORK or SUBMITTED_FOR_REVIEW and requires_rework = True: Show only new files for assessor review
             # - Otherwise: Show all files
 
-            # from app.db.enums import AssessmentStatus (Removed - already imported globally)
-
             if assessment.status == AssessmentStatus.AWAITING_FINAL_VALIDATION:
-                # Rework cycle is complete - validators see all files that exist
-                filtered_movs = all_movs_for_indicator
-                if effective_requires_rework:
-                    pass  # Logging omitted for brevity
+                # Rework cycle is complete - validators see ALL files including rejected ones
+                # Rejected files are marked with is_rejected=True for frontend to display separately
+
+                rework_timestamp = assessment.rework_requested_at
+                calibration_timestamp = assessment.calibration_requested_at
+
+                # Use the most recent rework timestamp
+                effective_timestamp = calibration_timestamp or rework_timestamp
+
+                if effective_timestamp:
+                    # Get file IDs that have annotations (rejected files)
+                    rejected_file_ids = set()
+                    for mov in all_movs_for_indicator:
+                        if mov.annotations and len(mov.annotations) > 0:
+                            # This file has annotations - check if it was uploaded before rework
+                            if mov.uploaded_at < effective_timestamp:
+                                rejected_file_ids.add(mov.id)
+
+                    # Check if there are newer files (replacements) for this indicator
+                    has_new_uploads = any(
+                        mov.uploaded_at >= effective_timestamp for mov in all_movs_for_indicator
+                    )
+
+                    if rejected_file_ids and has_new_uploads:
+                        # Mark rejected files but don't filter them out - validators need to see them
+                        # Store rejected_file_ids for use when building the movs array
+                        self.logger.info(
+                            f"[VALIDATOR VIEW] Indicator {indicator.id}: "
+                            f"Marking {len(rejected_file_ids)} rejected file(s) with annotations, "
+                            f"total {len(all_movs_for_indicator)} file(s)"
+                        )
+                    else:
+                        # No rejected files or no replacements - clear the set
+                        rejected_file_ids = set()
+
+                    # For validators, show ALL files (filtered_movs = all)
+                    # The rejected_file_ids set will be used to mark files as rejected
+                    filtered_movs = all_movs_for_indicator
+                else:
+                    # No rework happened - show all files
+                    filtered_movs = all_movs_for_indicator
+                    rejected_file_ids = set()
             elif (
                 effective_requires_rework
                 and assessment.rework_requested_at
@@ -830,7 +905,7 @@ class AssessorService:
             ):
                 # Assessor reviewing reworked indicator - show only new files uploaded after rework
                 self.logger.info(
-                    f"[ASSESSOR REWORK FILTER] Assessment {assessment.id}, Indicator {response.indicator_id}: "
+                    f"[ASSESSOR REWORK FILTER] Assessment {assessment.id}, Indicator {indicator.id}: "
                     f"rework_requested_at={assessment.rework_requested_at}, status={assessment.status}"
                 )
 
@@ -847,62 +922,65 @@ class AssessorService:
                     for mov in all_movs_for_indicator
                     if mov.uploaded_at >= assessment.rework_requested_at
                 ]
+                rejected_file_ids = set()  # No rejected files for assessor views
 
                 # Log filtering results for debugging
                 self.logger.info(
-                    f"[ASSESSOR REWORK FILTER] Indicator {response.indicator_id}: "
+                    f"[ASSESSOR REWORK FILTER] Indicator {indicator.id}: "
                     f"Filtered {len(all_movs_for_indicator)} total MOVs to {len(filtered_movs)} new MOVs"
                 )
             else:
                 # Show all files for other cases
                 filtered_movs = all_movs_for_indicator
+                rejected_file_ids = set()  # No rejected files for non-validator views
 
-                if assessment.rework_requested_at and response.requires_rework is False:
+                if assessment.rework_requested_at and requires_rework is False:
                     self.logger.info(
-                        f"[FILTER] Indicator {response.indicator_id} (requires_rework=False): "
+                        f"[FILTER] Indicator {indicator.id} (requires_rework=False): "
                         f"Showing all {len(filtered_movs)} MOVs (indicator already passed)"
                     )
 
+            # Build response data - handle case where response is None (indicator not answered yet)
             response_data = {
-                "id": response.id,
-                "is_completed": response.is_completed,
+                "id": response.id if response else None,
+                "is_completed": response.is_completed if response else False,
                 "requires_rework": effective_requires_rework,
-                "flagged_for_calibration": response.flagged_for_calibration,
+                "flagged_for_calibration": response.flagged_for_calibration if response else False,
                 "validation_status": response.validation_status.value
-                if response.validation_status
+                if response and response.validation_status
                 else None,
-                "response_data": response.response_data,
-                "created_at": response.created_at.isoformat() + "Z",
-                "updated_at": response.updated_at.isoformat() + "Z",
+                "response_data": response.response_data if response else {},
+                "created_at": response.created_at.isoformat() + "Z" if response else None,
+                "updated_at": response.updated_at.isoformat() + "Z" if response else None,
                 "indicator": {
-                    "id": response.indicator.id,
+                    "id": indicator.id,
                     # Resolve year placeholders in indicator name
-                    "name": year_resolver.resolve_string(response.indicator.name)
+                    "name": year_resolver.resolve_string(indicator.name)
                     if year_resolver
-                    else response.indicator.name,
-                    "code": response.indicator.indicator_code,
-                    "indicator_code": response.indicator.indicator_code,
+                    else indicator.name,
+                    "code": indicator.indicator_code,
+                    "indicator_code": indicator.indicator_code,
                     # Resolve year placeholders in description
-                    "description": year_resolver.resolve_string(response.indicator.description)
+                    "description": year_resolver.resolve_string(indicator.description)
                     if year_resolver
-                    else response.indicator.description,
+                    else indicator.description,
                     # Resolve year placeholders in form_schema (deep resolution)
-                    "form_schema": year_resolver.resolve_schema(response.indicator.form_schema)
+                    "form_schema": year_resolver.resolve_schema(indicator.form_schema)
                     if year_resolver
-                    else response.indicator.form_schema,
-                    "validation_rule": response.indicator.validation_rule,
-                    "remark_schema": response.indicator.remark_schema,
+                    else indicator.form_schema,
+                    "validation_rule": indicator.validation_rule,
+                    "remark_schema": indicator.remark_schema,
                     "governance_area": {
-                        "id": response.indicator.governance_area.id,
-                        "name": response.indicator.governance_area.name,
-                        "code": response.indicator.governance_area.code,
-                        "area_type": response.indicator.governance_area.area_type.value,
+                        "id": indicator.governance_area.id,
+                        "name": indicator.governance_area.name,
+                        "code": indicator.governance_area.code,
+                        "area_type": indicator.governance_area.area_type.value,
                     },
                     # Technical notes - resolve year placeholders
                     "technical_notes": (
-                        year_resolver.resolve_string(response.indicator.description)
+                        year_resolver.resolve_string(indicator.description)
                         if year_resolver
-                        else response.indicator.description
+                        else indicator.description
                     )
                     or "No technical notes available",
                     # Checklist items for validation - resolve year placeholders in labels
@@ -930,7 +1008,7 @@ class AssessorService:
                             else item.field_notes,
                         }
                         for item in sorted(
-                            response.indicator.checklist_items,
+                            indicator.checklist_items,
                             key=lambda x: x.display_order,
                         )
                     ],
@@ -948,6 +1026,10 @@ class AssessorService:
                         if mov_file.uploaded_at
                         else None,
                         "field_id": mov_file.field_id,
+                        # File-level annotation flag for granular rework tracking
+                        "has_annotations": len(mov_file.annotations) > 0,
+                        # Validator view: Mark rejected files (files with annotations that were replaced)
+                        "is_rejected": mov_file.id in rejected_file_ids,
                     }
                     # Use the filtered_movs list created above (already filtered by rework timestamp)
                     for mov_file in filtered_movs
@@ -968,16 +1050,21 @@ class AssessorService:
                         if comment.assessor
                         else None,
                     }
-                    for comment in response.feedback_comments
+                    for comment in (response.feedback_comments if response else [])
                 ],
                 "has_mov_annotations": any(
                     len(mov.annotations) > 0 for mov in all_movs_for_indicator
                 ),
+                # List of MOV file IDs that have annotations (for file-level rework tracking)
+                "annotated_mov_file_ids": [
+                    mov.id for mov in all_movs_for_indicator if len(mov.annotations) > 0
+                ],
             }
             # DEBUG: Log requires_rework status
             self.logger.info(
-                f"[ASSESSOR VIEW] Response {response.id} (Indicator {response.indicator.name}): "
-                f"requires_rework={response.requires_rework}, is_completed={response.is_completed}"
+                f"[ASSESSOR VIEW] Indicator {indicator.id} ({indicator.name}): "
+                f"has_response={response is not None}, requires_rework={requires_rework}, "
+                f"is_completed={response.is_completed if response else False}"
             )
             assessment_data["assessment"]["responses"].append(response_data)
 
@@ -1032,18 +1119,12 @@ class AssessorService:
         ]:
             raise ValueError("Rework is only allowed when assessment is Submitted for Review")
 
-        # Phase 1 Assessors: Must have at least one indicator with public comments OR MOV annotations to send for rework
-        # (Assessors don't set validation_status, only validators do)
-        has_comments = any(
-            any(
-                fc.comment_type == "validation" and not fc.is_internal_note and fc.comment
-                for fc in response.feedback_comments
-            )
-            for response in assessment.responses
-        )
+        # Phase 1 Assessors: Must have at least one indicator with:
+        # 1. MOV annotations (file-level feedback)
+        # 2. Manual "Flag for Rework" toggle enabled
+        # NOTE: Comments alone are notes and don't trigger rework
 
         # Check for MOV annotations
-
         mov_file_ids = [mf.id for mf in assessment.mov_files]
         has_annotations = False
         if mov_file_ids:
@@ -1052,10 +1133,18 @@ class AssessorService:
             )
             has_annotations = annotation_count > 0
 
-        if not has_comments and not has_annotations:
+        # Check for manual rework flags in response_data
+        has_manual_rework_flag = any(
+            response.response_data
+            and response.response_data.get("assessor_manual_rework_flag") is True
+            for response in assessment.responses
+        )
+
+        if not has_annotations and not has_manual_rework_flag:
             raise ValueError(
-                "At least one indicator must have feedback (comments or MOV annotations) to send for rework. "
-                "Add comments or annotate MOV files explaining what needs improvement."
+                "At least one indicator must be flagged for rework. "
+                "Toggle 'Flag for Rework' on indicators that need BLGU to re-upload files, "
+                "or add annotations on specific MOV files."
             )
 
         # Update assessment status and rework count
@@ -1087,22 +1176,26 @@ class AssessorService:
                         annotations_by_indicator[indicator_id] = []
                     annotations_by_indicator[indicator_id].append(annotation)
 
-        # Mark responses requiring rework if they have public comments OR MOV annotations
-        # (Assessors don't set validation_status, only validators do in Phase 2)
+        # Mark responses requiring rework based on:
+        # 1. MOV annotations (always triggers rework - file-level feedback)
+        # 2. Manual "Flag for Rework" toggle (assessor_manual_rework_flag in response_data)
+        # NOTE: Comments alone do NOT trigger rework - only annotations or explicit flag
         for response in assessment.responses:
-            has_public_comments = any(
-                fc.comment_type == "validation" and not fc.is_internal_note and fc.comment
-                for fc in response.feedback_comments
-            )
-
             has_mov_annotations = (
                 response.indicator_id in annotations_by_indicator
                 and len(annotations_by_indicator[response.indicator_id]) > 0
             )
 
-            # Mark for rework if assessor provided feedback (comments OR annotations)
+            # Check for manual rework flag in response_data
+            has_manual_rework_flag = (
+                response.response_data
+                and response.response_data.get("assessor_manual_rework_flag") is True
+            )
+
+            # Mark for rework if assessor flagged it (via annotations OR manual toggle)
+            # Comments alone are just notes - they don't require re-upload
             # CRITICAL: Also reset is_completed to False so BLGU must re-complete the indicator
-            if has_public_comments or has_mov_annotations:
+            if has_mov_annotations or has_manual_rework_flag:
                 response.requires_rework = True
                 response.is_completed = False
 

@@ -514,21 +514,24 @@ export function ComplianceOverviewClient({ assessmentId }: ComplianceOverviewCli
                                       >
                                         Met
                                       </button>
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          handleOverride(sub.response_id!, "CONDITIONAL")
-                                        }
-                                        disabled={validateMut.isPending}
-                                        className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                                          isConditionalConfirmed
-                                            ? "bg-yellow-500 text-white shadow-sm"
-                                            : "bg-slate-100 text-slate-500 hover:bg-yellow-50 hover:text-yellow-600 dark:bg-slate-700 dark:text-slate-400 dark:hover:bg-yellow-900/30 dark:hover:text-yellow-400"
-                                        }`}
-                                        title="Conditional pass (Considered)"
-                                      >
-                                        Considered
-                                      </button>
+                                      {/* Only show Considered button for indicators with consideration rules */}
+                                      {sub.has_consideration_rule && (
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            handleOverride(sub.response_id!, "CONDITIONAL")
+                                          }
+                                          disabled={validateMut.isPending}
+                                          className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                                            isConditionalConfirmed
+                                              ? "bg-yellow-500 text-white shadow-sm"
+                                              : "bg-slate-100 text-slate-500 hover:bg-yellow-50 hover:text-yellow-600 dark:bg-slate-700 dark:text-slate-400 dark:hover:bg-yellow-900/30 dark:hover:text-yellow-400"
+                                          }`}
+                                          title="Conditional pass (Considered)"
+                                        >
+                                          Considered
+                                        </button>
+                                      )}
                                       <button
                                         type="button"
                                         onClick={() => handleOverride(sub.response_id!, "FAIL")}

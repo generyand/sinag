@@ -76,6 +76,8 @@ interface DynamicFormRendererProps {
   onPrevious?: () => void;
   /** Navigation: Go to next indicator */
   onNext?: () => void;
+  /** Callback to update assessment data for immediate UI updates */
+  updateAssessmentData?: (updater: (data: any) => any) => void;
 }
 
 export function DynamicFormRenderer({
@@ -95,6 +97,7 @@ export function DynamicFormRenderer({
   hasNext,
   onPrevious,
   onNext,
+  updateAssessmentData,
 }: DynamicFormRendererProps) {
   // Generate validation schema from form schema
   const validationSchema = useMemo(() => {
@@ -113,21 +116,26 @@ export function DynamicFormRenderer({
   );
 
   // Load uploaded files for this indicator (for progress tracking)
+  // IMPORTANT: Use longer cache times to prevent files from "disappearing" on navigation
   const { data: filesResponse } = useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles(
     assessmentId,
     indicatorId,
     {
       query: {
         enabled: !!assessmentId && !!indicatorId,
+        staleTime: 5 * 60 * 1000, // 5 minutes - consistent with FileFieldComponent
+        gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache even when unmounted
       } as any,
     } as any
   );
 
   // Fetch assessment details to get status and rework timestamp
+  // Use reasonable cache times - invalidation will handle updates after mutations
   const { data: myAssessmentData } = useGetAssessmentsMyAssessment({
     query: {
-      cacheTime: 0,
-      staleTime: 0,
+      staleTime: 30 * 1000, // 30 seconds - consistent with useAssessment.ts
+      gcTime: 5 * 60 * 1000, // 5 minutes - keep in cache
+      refetchOnWindowFocus: true,
     } as any,
   } as any);
 
@@ -136,6 +144,7 @@ export function DynamicFormRenderer({
   const normalizedStatus = (assessmentData?.assessment?.status || "").toUpperCase();
   const isReworkStatus = normalizedStatus === "REWORK" || normalizedStatus === "NEEDS_REWORK";
   const reworkRequestedAt = assessmentData?.assessment?.rework_requested_at;
+  const calibrationRequestedAt = assessmentData?.assessment?.calibration_requested_at;
 
   // Epic 5.0: Support for MLGOO Recalibration
   // If this is a recalibration, we need to use a different timestamp for filtering files
@@ -146,38 +155,65 @@ export function DynamicFormRenderer({
   const effectiveReworkTimestamp =
     isMlgooRecalibration && mlgooRecalibrationRequestedAt
       ? mlgooRecalibrationRequestedAt
-      : reworkRequestedAt;
+      : calibrationRequestedAt || reworkRequestedAt;
 
-  // Check if THIS specific indicator requires rework (has assessor feedback)
-  // Indicators need rework if they have:
-  // 1. Rework comments from dashboard API (most reliable - text feedback from assessor)
-  // 2. OR MOV annotations (highlight/comments on files)
+  // Get backend's is_completed and requires_rework values for this indicator
+  // IMPORTANT: This must come before indicatorRequiresRework since it depends on backendRequiresRework
+  const { backendIsCompleted, backendRequiresRework } = useMemo(() => {
+    if (!assessmentData?.governance_areas || !indicatorId) {
+      return { backendIsCompleted: null, backendRequiresRework: false };
+    }
+
+    for (const area of assessmentData.governance_areas) {
+      if (!area.indicators) continue;
+      for (const ind of area.indicators) {
+        if (String(ind.id) === String(indicatorId)) {
+          const isCompleted = ind.response?.is_completed === true || ind.is_completed === true;
+          const requiresRework =
+            ind.response?.requires_rework === true || ind.requires_rework === true;
+          return { backendIsCompleted: isCompleted, backendRequiresRework: requiresRework };
+        }
+        if (ind.children) {
+          for (const child of ind.children) {
+            if (String(child.id) === String(indicatorId)) {
+              const isCompleted =
+                child.response?.is_completed === true || child.is_completed === true;
+              const requiresRework =
+                child.response?.requires_rework === true || child.requires_rework === true;
+              return { backendIsCompleted: isCompleted, backendRequiresRework: requiresRework };
+            }
+          }
+        }
+      }
+    }
+    return { backendIsCompleted: null, backendRequiresRework: false };
+  }, [assessmentData, indicatorId]);
+
+  // Check if THIS specific indicator requires rework
+  // Sources (in order of reliability):
+  // 1. Backend's requires_rework flag (most reliable - set by assessor_service when sending for rework)
+  // 2. Rework comments from dashboard API (text feedback from assessor)
+  // 3. MOV annotations (highlight/comments on files)
   // Indicators WITHOUT feedback should keep their completion status unchanged
   const indicatorRequiresRework = useMemo(() => {
-    // Check reworkComments prop (from dashboard API - most reliable source)
-    // The dashboard API correctly returns rework_comments for this indicator
+    // Check backend's requires_rework flag first (most reliable)
+    if (backendRequiresRework) {
+      return true;
+    }
+
+    // Check reworkComments prop (from dashboard API)
     if (reworkComments && reworkComments.length > 0) {
-      console.log(
-        `[REWORK DEBUG] Indicator ${indicatorId} has ${reworkComments.length} rework comments from dashboard - REQUIRES REWORK`
-      );
       return true;
     }
 
     // Check MOV annotations passed as prop
-    // movAnnotations prop contains annotations specifically for this indicator
     if (movAnnotations && movAnnotations.length > 0) {
-      console.log(
-        `[REWORK DEBUG] Indicator ${indicatorId} has ${movAnnotations.length} MOV annotations - REQUIRES REWORK`
-      );
       return true;
     }
 
     // No feedback found - this indicator doesn't require rework
-    console.log(
-      `[REWORK DEBUG] Indicator ${indicatorId} has NO feedback (0 comments, 0 annotations) - keeping original completion status`
-    );
     return false;
-  }, [indicatorId, movAnnotations, reworkComments]);
+  }, [backendRequiresRework, movAnnotations, reworkComments]);
 
   // Get active uploaded files (not deleted)
   const uploadedFiles = useMemo(() => {
@@ -196,14 +232,41 @@ export function DynamicFormRenderer({
     if (!isReworkStatus || !effectiveReworkTimestamp || !indicatorRequiresRework) {
       return uploadedFiles;
     }
-    // During rework, count files uploaded AFTER rework was requested (or recalibration requested)
-    // AND existing files that do NOT have annotations (meaning they were not flagged for rework)
+
     const reworkDate = new Date(effectiveReworkTimestamp);
 
     // Check for feedback types (Hybrid Logic)
     const hasSpecificAnnotations = movAnnotations && movAnnotations.length > 0;
     const hasGeneralComments = reworkComments && reworkComments.length > 0;
 
+    // Check if this is calibration mode (timestamps are same or calibration exists)
+    const isCalibrationMode = !!calibrationRequestedAt;
+
+    // Get file IDs that have annotations (rejected files)
+    const rejectedFileIds = new Set(
+      (movAnnotations || []).map((ann: any) => String(ann.mov_file_id))
+    );
+
+    // During calibration, we need special handling:
+    // - Files WITH annotations (rejected during assessor rework) should NOT count
+    // - Files WITHOUT annotations (accepted during assessor rework) SHOULD count
+    // - New files uploaded after rework SHOULD count
+    if (isCalibrationMode && hasSpecificAnnotations) {
+      return uploadedFiles.filter((file: MOVFileResponse) => {
+        if (!file.uploaded_at) return false;
+        const uploadDate = new Date(file.uploaded_at);
+
+        // New files (after effective rework timestamp) are always valid
+        if (uploadDate >= reworkDate) {
+          return true;
+        }
+
+        // Old files: only valid if NOT annotated (not rejected)
+        return !rejectedFileIds.has(String(file.id));
+      });
+    }
+
+    // Standard rework mode (assessor rework)
     return uploadedFiles.filter((file: MOVFileResponse) => {
       if (!file.uploaded_at) return false;
       const uploadDate = new Date(file.uploaded_at);
@@ -215,7 +278,14 @@ export function DynamicFormRenderer({
 
       // If it's an old file (uploaded before rework):
 
-      // 1. If specific annotations exist, we trust them (Granular Mode)
+      // 1. PRIORITY: If backend says requires_rework=true, invalidate ALL old files
+      // The backend flag is authoritative - it means the assessor explicitly flagged this indicator
+      // This takes priority over frontend annotation/comment detection
+      if (backendRequiresRework) {
+        return false;
+      }
+
+      // 2. If specific annotations exist, we trust them (Granular Mode)
       // Only invalidate the specifically annotated files
       if (hasSpecificAnnotations) {
         const isThisFileAnnotated = movAnnotations.some(
@@ -224,14 +294,14 @@ export function DynamicFormRenderer({
         return !isThisFileAnnotated; // Keep clean files
       }
 
-      // 2. If NO annotations but general comments exist (Strict Mode)
+      // 3. If NO annotations but general comments exist (Strict Mode)
       // Invalidate ALL old files because the feedback is general
       if (hasGeneralComments) {
         return false;
       }
 
-      // 3. If no feedback at all (shouldn't happen if indicatorRequiresRework is true)
-      // Keep everything
+      // 4. If indicatorRequiresRework is true from other sources but we reach here
+      // This shouldn't happen, but fallback to keeping the file
       return true;
     });
   }, [
@@ -239,31 +309,11 @@ export function DynamicFormRenderer({
     isReworkStatus,
     effectiveReworkTimestamp,
     indicatorRequiresRework,
+    backendRequiresRework,
     movAnnotations,
     reworkComments,
+    calibrationRequestedAt,
   ]);
-
-  // Get backend's is_completed value for this indicator
-  const backendIsCompleted = useMemo(() => {
-    if (!assessmentData?.governance_areas || !indicatorId) return null;
-
-    for (const area of assessmentData.governance_areas) {
-      if (!area.indicators) continue;
-      for (const ind of area.indicators) {
-        if (String(ind.id) === String(indicatorId)) {
-          return ind.response?.is_completed === true || ind.is_completed === true;
-        }
-        if (ind.children) {
-          for (const child of ind.children) {
-            if (String(child.id) === String(indicatorId)) {
-              return child.response?.is_completed === true || child.is_completed === true;
-            }
-          }
-        }
-      }
-    }
-    return null;
-  }, [assessmentData, indicatorId]);
 
   // Calculate indicator completion status based on uploaded files
   // IMPORTANT: For indicators WITHOUT feedback during rework, trust backend's is_completed value
@@ -319,6 +369,28 @@ export function DynamicFormRenderer({
 
     // For ANY_OPTION_GROUP_REQUIRED (e.g., 1.6.1 with Options 1, 2, 3)
     if (isAnyOptionGroupRequired) {
+      // REWORK SPECIAL CASE: If there are rejected files that haven't been replaced, not complete
+      if (indicatorRequiresRework && movAnnotations && movAnnotations.length > 0) {
+        const allFiles = (filesResponse?.files || []) as MOVFileResponse[];
+        const rejectedFileIds = new Set(
+          movAnnotations.map((ann: any) => String(ann.mov_file_id))
+        );
+        const rejectedFieldIds = new Set<string>();
+        allFiles.forEach((file: MOVFileResponse) => {
+          if (file.field_id && rejectedFileIds.has(String(file.id)) && !file.deleted_at) {
+            rejectedFieldIds.add(file.field_id);
+          }
+        });
+        for (const fieldId of rejectedFieldIds) {
+          const hasValidReplacement = completionValidFiles.some(
+            (file: MOVFileResponse) => file.field_id === fieldId && !file.deleted_at
+          );
+          if (!hasValidReplacement) {
+            return false;
+          }
+        }
+      }
+
       const optionGroups: Record<string, FormSchemaFieldsItem[]> = {};
       requiredFields.forEach((field) => {
         const optionGroup = (field as any).option_group;
@@ -354,6 +426,28 @@ export function DynamicFormRenderer({
 
     // For SHARED+OR logic (e.g., 4.1.6) - uses completion_group (not option_group)
     if (isSharedPlusOrLogic) {
+      // REWORK SPECIAL CASE: If there are rejected files that haven't been replaced, not complete
+      if (indicatorRequiresRework && movAnnotations && movAnnotations.length > 0) {
+        const allFiles = (filesResponse?.files || []) as MOVFileResponse[];
+        const rejectedFileIds = new Set(
+          movAnnotations.map((ann: any) => String(ann.mov_file_id))
+        );
+        const rejectedFieldIds = new Set<string>();
+        allFiles.forEach((file: MOVFileResponse) => {
+          if (file.field_id && rejectedFileIds.has(String(file.id)) && !file.deleted_at) {
+            rejectedFieldIds.add(file.field_id);
+          }
+        });
+        for (const fieldId of rejectedFieldIds) {
+          const hasValidReplacement = completionValidFiles.some(
+            (file: MOVFileResponse) => file.field_id === fieldId && !file.deleted_at
+          );
+          if (!hasValidReplacement) {
+            return false;
+          }
+        }
+      }
+
       const sharedFields: FormSchemaFieldsItem[] = [];
       const optionAFields: FormSchemaFieldsItem[] = [];
       const optionBFields: FormSchemaFieldsItem[] = [];
@@ -392,7 +486,36 @@ export function DynamicFormRenderer({
         groups[optionGroup].push(field);
       });
 
-      // Check if at least one complete group is filled
+      // REWORK SPECIAL CASE: If there are rejected files (with annotations) that
+      // haven't been replaced yet, the indicator is NOT complete.
+      // This ensures BLGU must address all rejected files before completion.
+      if (indicatorRequiresRework && movAnnotations && movAnnotations.length > 0) {
+        const allFiles = (filesResponse?.files || []) as MOVFileResponse[];
+        const rejectedFileIds = new Set(
+          movAnnotations.map((ann: any) => String(ann.mov_file_id))
+        );
+
+        // Find fields that have rejected files
+        const rejectedFieldIds = new Set<string>();
+        allFiles.forEach((file: MOVFileResponse) => {
+          if (file.field_id && rejectedFileIds.has(String(file.id)) && !file.deleted_at) {
+            rejectedFieldIds.add(file.field_id);
+          }
+        });
+
+        // Check if ALL rejected fields have valid replacement files
+        for (const fieldId of rejectedFieldIds) {
+          const hasValidReplacement = completionValidFiles.some(
+            (file: MOVFileResponse) => file.field_id === fieldId && !file.deleted_at
+          );
+          if (!hasValidReplacement) {
+            // This rejected field doesn't have a replacement - not complete
+            return false;
+          }
+        }
+      }
+
+      // Standard OR logic: Check if at least one complete group is filled
       for (const [, groupFields] of Object.entries(groups)) {
         if (groupFields.every((field) => isFieldFilled(field))) {
           return true;
@@ -402,6 +525,28 @@ export function DynamicFormRenderer({
     }
 
     // Standard AND logic - all required file upload fields must be filled
+    // REWORK SPECIAL CASE: If there are rejected files that haven't been replaced, not complete
+    if (indicatorRequiresRework && movAnnotations && movAnnotations.length > 0) {
+      const allFiles = (filesResponse?.files || []) as MOVFileResponse[];
+      const rejectedFileIds = new Set(
+        movAnnotations.map((ann: any) => String(ann.mov_file_id))
+      );
+      const rejectedFieldIds = new Set<string>();
+      allFiles.forEach((file: MOVFileResponse) => {
+        if (file.field_id && rejectedFileIds.has(String(file.id)) && !file.deleted_at) {
+          rejectedFieldIds.add(file.field_id);
+        }
+      });
+      for (const fieldId of rejectedFieldIds) {
+        const hasValidReplacement = completionValidFiles.some(
+          (file: MOVFileResponse) => file.field_id === fieldId && !file.deleted_at
+        );
+        if (!hasValidReplacement) {
+          return false;
+        }
+      }
+    }
+
     return requiredFields.every((field) => {
       if (field.field_type === "file_upload") {
         return isFieldFilled(field);
@@ -414,13 +559,25 @@ export function DynamicFormRenderer({
     isReworkStatus,
     indicatorRequiresRework,
     backendIsCompleted,
+    movAnnotations,
+    filesResponse,
   ]);
 
   // Track previous completion status to avoid infinite loops
   const prevCompleteRef = useRef<boolean | null>(null);
 
+  // Check if we have the necessary data to calculate completion
+  // Don't notify until assessmentData has loaded (contains governance_areas with indicator response data)
+  const hasRequiredData = Boolean(assessmentData?.governance_areas);
+
   // Notify parent when completion status changes (only when it actually changes)
   useEffect(() => {
+    // Don't call callback until we have the required data
+    // This prevents premature "completed" status when backendRequiresRework hasn't loaded yet
+    if (!hasRequiredData) {
+      return;
+    }
+
     // Only call callback if completion status actually changed
     if (prevCompleteRef.current !== isIndicatorComplete) {
       prevCompleteRef.current = isIndicatorComplete;
@@ -428,7 +585,7 @@ export function DynamicFormRenderer({
         onIndicatorComplete(indicatorId, isIndicatorComplete);
       }
     }
-  }, [indicatorId, isIndicatorComplete, onIndicatorComplete]);
+  }, [indicatorId, isIndicatorComplete, onIndicatorComplete, hasRequiredData, backendRequiresRework]);
 
   // Transform saved responses to default values
   const defaultValues = useMemo(() => {
@@ -554,6 +711,9 @@ export function DynamicFormRenderer({
           assessmentId={assessmentId}
           indicatorId={indicatorId}
           completionValidFiles={completionValidFiles}
+          movAnnotations={movAnnotations}
+          allFiles={(filesResponse?.files || []) as MOVFileResponse[]}
+          indicatorRequiresRework={indicatorRequiresRework}
         />
 
         {/* Notes Section - Display before form fields so users see requirements before uploading */}
@@ -577,6 +737,7 @@ export function DynamicFormRenderer({
             reworkComments={reworkComments}
             uploadedFiles={uploadedFiles}
             completionValidFiles={completionValidFiles}
+            updateAssessmentData={updateAssessmentData}
           />
         ))}
 
@@ -633,6 +794,7 @@ interface SectionRendererProps {
   uploadedFiles: MOVFileResponse[];
   /** Files that count towards completion (filtered by rework timestamp if in rework status) */
   completionValidFiles: MOVFileResponse[];
+  updateAssessmentData?: (updater: (data: any) => any) => void;
 }
 
 /**
@@ -782,6 +944,7 @@ function SectionRenderer({
   // uploadedFiles is kept in props for potential future UI use (showing all files)
   // but for completion tracking we use completionValidFiles (filtered by rework)
   completionValidFiles,
+  updateAssessmentData,
 }: SectionRendererProps) {
   // Get visible fields for this section based on conditional logic
   const visibleFields = useMemo(() => {
@@ -911,6 +1074,7 @@ function SectionRenderer({
                           isLocked={isLocked}
                           movAnnotations={movAnnotations}
                           reworkComments={reworkComments}
+                          updateAssessmentData={updateAssessmentData}
                         />
                       ))}
                     </div>
@@ -960,6 +1124,7 @@ function SectionRenderer({
                 isLocked={isLocked}
                 movAnnotations={movAnnotations}
                 reworkComments={reworkComments}
+                updateAssessmentData={updateAssessmentData}
               />
             </Wrapper>
           );
@@ -982,6 +1147,7 @@ interface FieldRendererProps {
   isLocked: boolean;
   movAnnotations: any[];
   reworkComments: any[]; // Epic 5.0: Added for Hybrid Logic
+  updateAssessmentData?: (updater: (data: any) => any) => void;
 }
 
 function FieldRenderer({
@@ -993,6 +1159,7 @@ function FieldRenderer({
   isLocked,
   movAnnotations,
   reworkComments,
+  updateAssessmentData,
 }: FieldRendererProps) {
   // Render appropriate field component based on field type
   switch (field.field_type) {
@@ -1108,6 +1275,7 @@ function FieldRenderer({
           disabled={isLocked}
           movAnnotations={movAnnotations}
           reworkComments={reworkComments}
+          updateAssessmentData={updateAssessmentData}
         />
       );
 

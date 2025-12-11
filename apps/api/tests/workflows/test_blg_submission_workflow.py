@@ -146,8 +146,13 @@ def test_submit_assessment_success(client, db_session: Session, blgu_context_wit
     client.app.dependency_overrides.clear()
 
 
-def test_submit_assessment_fails_without_mov(client, db_session: Session, blgu_context_without_mov):
-    """Submission fails when a YES answer lacks MOVs."""
+def test_submit_assessment_succeeds_without_mov_with_warning(client, db_session: Session, blgu_context_without_mov):
+    """Submission succeeds even when a YES answer lacks MOVs (with warning logged).
+
+    Business Rule Change: We now allow incomplete submissions to support
+    BLGUs who genuinely don't have MOVs for certain indicators.
+    The user confirms via a warning dialog on the frontend.
+    """
     assessment = blgu_context_without_mov["assessment"]
     blgu_user = blgu_context_without_mov["blgu_user"]
 
@@ -155,13 +160,12 @@ def test_submit_assessment_fails_without_mov(client, db_session: Session, blgu_c
 
     response = client.post("/api/v1/assessments/submit")
 
-    # Expect a 400 error with details about failed indicators
-    assert response.status_code == 400
+    # Should now succeed - incomplete submissions are allowed with warning
+    assert response.status_code == 200
     data = response.json()
-    assert "without mov" in data.get("detail", "").lower()
-
-    db_session.refresh(assessment)
-    assert assessment.status == AssessmentStatus.DRAFT
+    # The response still indicates validation status (is_valid=False for incomplete)
+    # but submission proceeds
+    assert "is_valid" in data
 
     client.app.dependency_overrides.clear()
 

@@ -328,10 +328,12 @@ async def submit_current_user_assessment(
 
     try:
         validation_result = assessment_service.submit_assessment(db, assessment.id)
+        # NOTE: We now allow incomplete submissions (user confirmed via frontend warning dialog)
+        # This supports BLGUs who genuinely don't have MOVs for certain indicators
         if not getattr(validation_result, "is_valid", False):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=("Submission failed: YES answers without MOV detected."),
+            logger.warning(
+                f"[LEGACY SUBMIT] Assessment {assessment.id} submitted with incomplete data: "
+                f"YES answers without MOV detected"
             )
         return validation_result
 
@@ -1174,9 +1176,10 @@ def submit_assessment(
     """
     Submit an assessment for assessor review (Story 5.5).
 
-    This endpoint allows a BLGU user to submit their completed assessment.
-    The assessment must pass validation (all indicators complete, all MOVs uploaded)
-    before submission is allowed.
+    This endpoint allows a BLGU user to submit their assessment for review.
+    Incomplete assessments are allowed - the user confirms via a warning dialog
+    on the frontend. This supports BLGUs who genuinely don't have MOVs for
+    certain indicators.
 
     Authorization:
         - BLGU_USER role required
@@ -1184,8 +1187,8 @@ def submit_assessment(
 
     Workflow:
         1. Validate user authorization
-        2. Validate assessment completeness using SubmissionValidationService
-        3. If valid, update status to SUBMITTED and set submitted_at timestamp
+        2. Log validation status (incomplete submissions are allowed with warning)
+        3. Update status to SUBMITTED and set submitted_at timestamp
         4. Lock assessment for editing (is_locked property becomes True)
         5. Return success response
 
@@ -1199,7 +1202,6 @@ def submit_assessment(
 
     Raises:
         HTTPException 403: User not authorized to submit this assessment
-        HTTPException 400: Assessment validation failed (incomplete or missing MOVs)
         HTTPException 404: Assessment not found
     """
     # Authorization check: must be BLGU_USER
@@ -1225,18 +1227,19 @@ def submit_assessment(
         )
 
     # Validate assessment completeness using SubmissionValidationService
+    # NOTE: We now allow incomplete submissions (user confirmed via frontend warning dialog)
+    # This supports BLGUs who genuinely don't have MOVs for certain indicators
     validation_result = submission_validation_service.validate_submission(
         assessment_id=assessment_id, db=db
     )
 
+    # Log validation result but don't block submission
     if not validation_result.is_valid:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "message": validation_result.error_message,
-                "incomplete_indicators": validation_result.incomplete_indicators,
-                "missing_movs": validation_result.missing_movs,
-            },
+        logger.warning(
+            f"[SUBMIT] Assessment {assessment_id} submitted with incomplete data: "
+            f"{validation_result.error_message}. "
+            f"Incomplete indicators: {validation_result.incomplete_indicators}, "
+            f"Missing MOVs: {validation_result.missing_movs}"
         )
 
     # Update assessment status to SUBMITTED
@@ -1431,8 +1434,8 @@ def resubmit_assessment(
     Resubmit an assessment after completing rework (Story 5.7).
 
     This endpoint allows a BLGU user to resubmit their assessment after
-    addressing the assessor's rework comments. The assessment must be in
-    REWORK status and pass validation again.
+    addressing the assessor's rework comments. Incomplete resubmissions are
+    allowed - the user confirms via a warning dialog on the frontend.
 
     Authorization:
         - BLGU_USER role required
@@ -1440,13 +1443,13 @@ def resubmit_assessment(
 
     Business Rules:
         - Assessment must be in REWORK status
-        - Assessment must pass validation (completeness + MOVs)
+        - Incomplete resubmissions allowed with warning (supports BLGUs without MOVs)
         - No further rework is allowed after resubmission (rework_count = 1)
 
     Workflow:
         1. Validate user authorization
         2. Check assessment status is REWORK
-        3. Validate completeness using SubmissionValidationService
+        3. Log validation status (incomplete resubmissions allowed with warning)
         4. Update status back to SUBMITTED
         5. Update submitted_at timestamp
         6. Lock assessment again (is_locked becomes True)
@@ -1462,7 +1465,7 @@ def resubmit_assessment(
 
     Raises:
         HTTPException 403: User not authorized
-        HTTPException 400: Invalid status or validation failed
+        HTTPException 400: Invalid status
         HTTPException 404: Assessment not found
     """
     # Authorization check: must be BLGU_USER
@@ -1498,18 +1501,19 @@ def resubmit_assessment(
     is_mlgoo_recalibration = assessment.is_mlgoo_recalibration
 
     # Validate assessment completeness again
+    # NOTE: We now allow incomplete resubmissions (user confirmed via frontend warning dialog)
+    # This supports BLGUs who genuinely don't have MOVs for certain indicators
     validation_result = submission_validation_service.validate_submission(
         assessment_id=assessment_id, db=db
     )
 
+    # Log validation result but don't block resubmission
     if not validation_result.is_valid:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "message": validation_result.error_message,
-                "incomplete_indicators": validation_result.incomplete_indicators,
-                "missing_movs": validation_result.missing_movs,
-            },
+        logger.warning(
+            f"[RESUBMIT] Assessment {assessment_id} resubmitted with incomplete data: "
+            f"{validation_result.error_message}. "
+            f"Incomplete indicators: {validation_result.incomplete_indicators}, "
+            f"Missing MOVs: {validation_result.missing_movs}"
         )
 
     # MLGOO RE-calibration routes back to MLGOO approval
@@ -1593,7 +1597,7 @@ def submit_for_calibration_review(
     Business Rules:
         - Assessment must be in REWORK status
         - Assessment must have is_calibration_rework=True (set by Validator)
-        - Only indicators marked requires_rework need to be re-uploaded
+        - Incomplete submissions allowed with warning (supports BLGUs without MOVs)
         - After submission, is_calibration_rework is cleared
 
     Args:
@@ -1606,7 +1610,7 @@ def submit_for_calibration_review(
 
     Raises:
         HTTPException 403: User not authorized or not calibration mode
-        HTTPException 400: Invalid status or validation failed
+        HTTPException 400: Invalid status
         HTTPException 404: Assessment not found
     """
     # Authorization check: must be BLGU_USER
@@ -1782,13 +1786,12 @@ def submit_for_calibration_review(
                     }
                 )
 
+        # NOTE: We now allow incomplete calibration submissions (user confirmed via frontend warning dialog)
+        # This supports BLGUs who genuinely don't have MOVs for certain indicators
         if incomplete_indicators:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail={
-                    "message": f"{len(incomplete_indicators)} indicator(s) still incomplete",
-                    "incomplete_indicators": incomplete_indicators,
-                },
+            logger.warning(
+                f"[CALIBRATION SUBMIT] Assessment {assessment_id} submitted for calibration with incomplete data: "
+                f"{len(incomplete_indicators)} indicator(s) still incomplete: {incomplete_indicators}"
             )
 
     # Update assessment status to AWAITING_FINAL_VALIDATION (goes to Validator, not Assessor)

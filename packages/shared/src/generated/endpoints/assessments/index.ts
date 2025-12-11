@@ -1213,9 +1213,10 @@ export const usePostAssessmentsAssessmentIdValidateCompleteness = <TError = HTTP
     /**
  * Submit an assessment for assessor review (Story 5.5).
 
-This endpoint allows a BLGU user to submit their completed assessment.
-The assessment must pass validation (all indicators complete, all MOVs uploaded)
-before submission is allowed.
+This endpoint allows a BLGU user to submit their assessment for review.
+Incomplete assessments are allowed - the user confirms via a warning dialog
+on the frontend. This supports BLGUs who genuinely don't have MOVs for
+certain indicators.
 
 Authorization:
     - BLGU_USER role required
@@ -1223,8 +1224,8 @@ Authorization:
 
 Workflow:
     1. Validate user authorization
-    2. Validate assessment completeness using SubmissionValidationService
-    3. If valid, update status to SUBMITTED and set submitted_at timestamp
+    2. Log validation status (incomplete submissions are allowed with warning)
+    3. Update status to SUBMITTED and set submitted_at timestamp
     4. Lock assessment for editing (is_locked property becomes True)
     5. Return success response
 
@@ -1238,7 +1239,6 @@ Returns:
 
 Raises:
     HTTPException 403: User not authorized to submit this assessment
-    HTTPException 400: Assessment validation failed (incomplete or missing MOVs)
     HTTPException 404: Assessment not found
  * @summary Submit Assessment
  */
@@ -1407,8 +1407,8 @@ export const usePostAssessmentsAssessmentIdRequestRework = <TError = HTTPValidat
  * Resubmit an assessment after completing rework (Story 5.7).
 
 This endpoint allows a BLGU user to resubmit their assessment after
-addressing the assessor's rework comments. The assessment must be in
-REWORK status and pass validation again.
+addressing the assessor's rework comments. Incomplete resubmissions are
+allowed - the user confirms via a warning dialog on the frontend.
 
 Authorization:
     - BLGU_USER role required
@@ -1416,13 +1416,13 @@ Authorization:
 
 Business Rules:
     - Assessment must be in REWORK status
-    - Assessment must pass validation (completeness + MOVs)
+    - Incomplete resubmissions allowed with warning (supports BLGUs without MOVs)
     - No further rework is allowed after resubmission (rework_count = 1)
 
 Workflow:
     1. Validate user authorization
     2. Check assessment status is REWORK
-    3. Validate completeness using SubmissionValidationService
+    3. Log validation status (incomplete resubmissions allowed with warning)
     4. Update status back to SUBMITTED
     5. Update submitted_at timestamp
     6. Lock assessment again (is_locked becomes True)
@@ -1438,7 +1438,7 @@ Returns:
 
 Raises:
     HTTPException 403: User not authorized
-    HTTPException 400: Invalid status or validation failed
+    HTTPException 400: Invalid status
     HTTPException 404: Assessment not found
  * @summary Resubmit Assessment
  */
@@ -1521,7 +1521,7 @@ Authorization:
 Business Rules:
     - Assessment must be in REWORK status
     - Assessment must have is_calibration_rework=True (set by Validator)
-    - Only indicators marked requires_rework need to be re-uploaded
+    - Incomplete submissions allowed with warning (supports BLGUs without MOVs)
     - After submission, is_calibration_rework is cleared
 
 Args:
@@ -1534,7 +1534,7 @@ Returns:
 
 Raises:
     HTTPException 403: User not authorized or not calibration mode
-    HTTPException 400: Invalid status or validation failed
+    HTTPException 400: Invalid status
     HTTPException 404: Assessment not found
  * @summary Submit For Calibration Review
  */

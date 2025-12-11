@@ -106,9 +106,32 @@ export function IndicatorAccordion({
           const updateInTree = (nodes: any[]): any[] => {
             return nodes.map((node) => {
               if (node.id === indicator.id) {
+                // Check if this indicator requires rework
+                // If requiresRework is true, we should NOT mark as "completed" even if files exist
+                // because those files might be old files that need to be re-uploaded
+                const nodeRequiresRework = node.requiresRework === true;
+
+                // Determine the new status
+                let newStatus: string;
+                if (isComplete && !nodeRequiresRework) {
+                  // Only mark as completed if NOT requiring rework
+                  newStatus = "completed";
+                } else if (isComplete && nodeRequiresRework) {
+                  // Files exist but indicator requires rework - keep as in_progress
+                  // The DynamicFormRenderer's isIndicatorComplete already filters
+                  // by rework timestamp, so if it says complete, trust it
+                  newStatus = "completed";
+                } else {
+                  // No files - check if we're in rework mode
+                  newStatus = nodeRequiresRework ? "in_progress" : "not_started";
+                }
+
                 return {
                   ...node,
-                  status: isComplete ? "completed" : "not_started",
+                  status: newStatus,
+                  // CRITICAL: Clear requiresRework when marking as complete
+                  // This ensures the merge logic in useAssessment preserves this status
+                  requiresRework: newStatus === "completed" ? false : node.requiresRework,
                 };
               }
               if (node.children && node.children.length > 0) {
@@ -501,9 +524,9 @@ export function IndicatorAccordion({
                   hasNext={hasNext}
                   onPrevious={onPrevious}
                   onNext={onNext}
+                  updateAssessmentData={updateAssessmentData}
                   onSaveSuccess={() => {
                     // Optionally refresh assessment data after save
-                    console.log("Answers saved successfully for indicator", indicator.id);
                   }}
                   onIndicatorComplete={handleIndicatorComplete}
                 />

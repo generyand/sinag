@@ -31,8 +31,69 @@ class ComplianceService:
     Follows the Fat Service pattern - all business logic lives here.
     """
 
+    # Indicators with consideration rules (allows CONDITIONAL/Considered status)
+    # Based on SGLGB guidelines - only these indicators can have "Considered" status
+    INDICATORS_WITH_CONSIDERATION = {
+        "1.3.1",  # Approval of Barangay Budget - grace period until March 31
+        "1.6.1",  # SK Funds - bank statement consideration for deposit slips
+        "4.2.1",  # Health Station - clustered BHS/C consideration
+    }
+
     def __init__(self) -> None:
         self.logger = logger.bind(service="compliance_service")
+
+    def _has_consideration_rule(self, indicator: Indicator) -> bool:
+        """
+        Check if an indicator has a consideration rule that allows CONDITIONAL status.
+
+        This is determined by:
+        1. Hardcoded list of known indicators with consideration rules
+        2. Or by checking if checklist items have field_notes with "CONSIDERATION"
+        3. Or if the indicator name/description contains "(Consideration)"
+
+        Args:
+            indicator: The indicator to check
+
+        Returns:
+            True if the indicator allows CONDITIONAL (Considered) status
+        """
+        # Check hardcoded list first (fastest)
+        if indicator.indicator_code in self.INDICATORS_WITH_CONSIDERATION:
+            return True
+
+        # Check indicator name/description for "(Consideration)"
+        indicator_name = indicator.name or ""
+        indicator_desc = indicator.description or ""
+        if "(consideration)" in indicator_name.lower() or "(consideration)" in indicator_desc.lower():
+            return True
+
+        # Check checklist items for field_notes with "CONSIDERATION"
+        if indicator.mov_checklist_items:
+            for item in indicator.mov_checklist_items:
+                # Check field_notes
+                field_notes = item.get("field_notes")
+                if field_notes:
+                    title = field_notes.get("title", "")
+                    if "consideration" in title.lower():
+                        return True
+                    # Also check items within field_notes
+                    items = field_notes.get("items", [])
+                    for note_item in items:
+                        text = note_item.get("text", "")
+                        if "consideration" in text.lower():
+                            return True
+
+                # Check label for "(Consideration)"
+                label = item.get("label", "")
+                if "(consideration)" in label.lower():
+                    return True
+
+                # Check mov_description
+                mov_desc = item.get("mov_description", "")
+                if mov_desc and "consideration" in mov_desc.lower():
+                    return True
+
+        return False
 
     def _is_checklist_complete(
         self,
@@ -510,6 +571,9 @@ class ComplianceService:
                         # No checklist data OR incomplete = suggest Unmet
                         recommended_status = "FAIL"
 
+                    # Check if this indicator has a consideration rule
+                    has_consideration = self._has_consideration_rule(child)
+
                     sub_indicators_data.append(
                         SubIndicatorStatus(
                             indicator_id=child.id,
@@ -519,6 +583,7 @@ class ComplianceService:
                             validation_status=validation_status,
                             recommended_status=recommended_status,
                             has_checklist_data=has_checklist_data,
+                            has_consideration_rule=has_consideration,
                         )
                     )
 

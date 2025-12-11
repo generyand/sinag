@@ -1,6 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { classifyError } from "@/lib/error-utils";
@@ -10,7 +21,7 @@ import {
   usePostAssessmentsAssessmentIdSubmit,
   usePostAssessmentsAssessmentIdSubmitForCalibration,
 } from "@sinag/shared";
-import { AlertCircle, CheckCircle, Clock, Info, Send } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle, CheckCircle2, Clock, Info, Loader2, Send } from "lucide-react";
 
 interface AssessmentHeaderProps {
   assessment: Assessment;
@@ -35,6 +46,7 @@ export function AssessmentHeader({
         ? [calibrationGovernanceAreaName]
         : [];
   const { toast } = useToast();
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   // Use Epic 5.0 submit endpoint (POST /assessments/{id}/submit)
   const submitMutation = usePostAssessmentsAssessmentIdSubmit({
@@ -358,64 +370,37 @@ export function AssessmentHeader({
             </div>
 
             {/* Submit Button */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={() => {
-                      if (isReworkStatus) {
-                        if (isCalibrationRework) {
-                          calibrationMutation.mutate({
-                            assessmentId: parseInt(assessment.id),
-                          });
-                        } else {
-                          resubmitMutation.mutate({
-                            assessmentId: parseInt(assessment.id),
-                          });
-                        }
-                      } else {
-                        submitMutation.mutate({
-                          assessmentId: parseInt(assessment.id),
-                        });
-                      }
-                    }}
-                    disabled={
-                      !validation.canSubmit ||
-                      submitMutation.isPending ||
-                      resubmitMutation.isPending ||
-                      calibrationMutation.isPending
-                    }
-                    className="h-14 px-8 text-base font-semibold bg-[var(--foreground)] hover:bg-[var(--foreground)]/90 text-[var(--background)] rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 min-w-[200px]"
-                  >
-                    {submitMutation.isPending ||
-                    resubmitMutation.isPending ||
-                    calibrationMutation.isPending ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current mr-3" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="h-5 w-5 mr-3" />
-                        {isReworkStatus
-                          ? isCalibrationRework
-                            ? "Submit Calibration"
-                            : "Resubmit"
-                          : "Submit Assessment"}
-                      </>
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                {!validation.canSubmit && (
-                  <TooltipContent
-                    side="bottom"
-                    className="max-w-sm bg-[var(--card)]/95 backdrop-blur-sm border border-[var(--border)] shadow-xl p-4"
-                  >
-                    {getTooltipContent()}
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
+            <Button
+              onClick={() => setShowConfirmDialog(true)}
+              disabled={
+                submitMutation.isPending ||
+                resubmitMutation.isPending ||
+                calibrationMutation.isPending
+              }
+              className={
+                validation.isComplete
+                  ? "h-14 px-8 text-base font-semibold bg-[var(--foreground)] hover:bg-[var(--foreground)]/90 text-[var(--background)] rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 min-w-[200px]"
+                  : "h-14 px-8 text-base font-semibold bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 min-w-[200px]"
+              }
+            >
+              {submitMutation.isPending ||
+              resubmitMutation.isPending ||
+              calibrationMutation.isPending ? (
+                <>
+                  <Loader2 className="h-5 w-5 mr-3 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Send className="h-5 w-5 mr-3" />
+                  {isReworkStatus
+                    ? isCalibrationRework
+                      ? "Submit Calibration"
+                      : "Resubmit"
+                    : "Submit Assessment"}
+                </>
+              )}
+            </Button>
           </div>
         </div>
 
@@ -433,7 +418,7 @@ export function AssessmentHeader({
           </div>
 
           {/* Validation Info */}
-          {!validation.canSubmit && validation.missingIndicators.length > 0 && (
+          {!validation.isComplete && validation.missingIndicators.length > 0 && (
             <div className="mt-4 flex items-start gap-2 text-sm text-amber-600 bg-amber-50 p-3 rounded-md border border-amber-100">
               <Info className="h-5 w-5 flex-shrink-0" />
               <span>You have {validation.missingIndicators.length} incomplete indicators.</span>
@@ -441,6 +426,132 @@ export function AssessmentHeader({
           )}
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              {validation.isComplete ? (
+                <>
+                  <Send className="h-5 w-5" />
+                  {isReworkStatus
+                    ? isCalibrationRework
+                      ? "Submit Calibration?"
+                      : "Resubmit Assessment?"
+                    : "Submit Assessment for Review?"}
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="h-5 w-5 text-orange-500" />
+                  Submit Incomplete Assessment?
+                </>
+              )}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 pt-2">
+                {/* Warning banner for incomplete assessment */}
+                {!validation.isComplete && (
+                  <div className="flex items-start gap-2 p-3 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-md">
+                    <AlertTriangle className="h-5 w-5 mt-0.5 flex-shrink-0 text-orange-500" />
+                    <div className="space-y-1">
+                      <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
+                        Your assessment is not yet complete
+                      </span>
+                      <p className="text-xs text-orange-600 dark:text-orange-400">
+                        {validation.missingIndicators.length} of {assessment.totalIndicators}{" "}
+                        indicators are incomplete. You can still submit, but incomplete indicators
+                        may affect your assessment result.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-sm text-muted-foreground">
+                  {validation.isComplete
+                    ? "Are you sure you want to submit this assessment? Once submitted:"
+                    : "Are you sure you want to submit anyway? Once submitted:"}
+                </p>
+                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                  <li>Your assessment will be locked for editing</li>
+                  <li>An assessor will review your submission</li>
+                  <li>
+                    You will only be able to edit if the assessor requests rework (one rework cycle
+                    allowed)
+                  </li>
+                  {!validation.isComplete && (
+                    <li className="text-orange-600 dark:text-orange-400">
+                      Incomplete indicators cannot be edited after submission
+                    </li>
+                  )}
+                </ul>
+                <div className="flex items-start gap-2 p-3 bg-muted rounded-md mt-3">
+                  <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">
+                    {validation.isComplete
+                      ? "Please ensure all information is accurate before submitting."
+                      : "If you don't have MOVs for certain indicators, you may proceed with submission."}
+                  </span>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              disabled={
+                submitMutation.isPending ||
+                resubmitMutation.isPending ||
+                calibrationMutation.isPending
+              }
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (isReworkStatus) {
+                  if (isCalibrationRework) {
+                    calibrationMutation.mutate({
+                      assessmentId: parseInt(assessment.id),
+                    });
+                  } else {
+                    resubmitMutation.mutate({
+                      assessmentId: parseInt(assessment.id),
+                    });
+                  }
+                } else {
+                  submitMutation.mutate({
+                    assessmentId: parseInt(assessment.id),
+                  });
+                }
+              }}
+              disabled={
+                submitMutation.isPending ||
+                resubmitMutation.isPending ||
+                calibrationMutation.isPending
+              }
+              className={
+                validation.isComplete
+                  ? "bg-[var(--foreground)] hover:bg-[var(--foreground)]/90 text-[var(--background)] font-semibold shadow-md hover:shadow-lg"
+                  : "bg-orange-500 hover:bg-orange-600 text-white font-semibold shadow-md hover:shadow-lg"
+              }
+            >
+              {submitMutation.isPending ||
+              resubmitMutation.isPending ||
+              calibrationMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  {validation.isComplete ? "Confirm Submit" : "Submit Anyway"}
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

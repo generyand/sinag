@@ -21,6 +21,12 @@ interface CompletionFeedbackPanelProps {
   indicatorId: number;
   /** Pre-filtered files that count towards completion (handles Hybrid Rework Logic) */
   completionValidFiles: MOVFileResponse[];
+  /** MOV annotations for this indicator (for rework workflow) */
+  movAnnotations?: any[];
+  /** All files response (for checking rejected file field_ids) */
+  allFiles?: MOVFileResponse[];
+  /** Whether this indicator requires rework */
+  indicatorRequiresRework?: boolean;
 }
 
 export function CompletionFeedbackPanel({
@@ -29,6 +35,9 @@ export function CompletionFeedbackPanel({
   assessmentId,
   indicatorId,
   completionValidFiles,
+  movAnnotations = [],
+  allFiles = [],
+  indicatorRequiresRework = false,
 }: CompletionFeedbackPanelProps) {
   // Use passed files directly - no need to fetch again
   // also no need to re-filter for rework as completionValidFiles is already filtered
@@ -81,10 +90,11 @@ export function CompletionFeedbackPanel({
     const isOrLogic =
       validationRule === "ANY_ITEM_REQUIRED" || validationRule === "OR_LOGIC_AT_LEAST_1_REQUIRED";
     const isSharedPlusOrLogic = validationRule === "SHARED_PLUS_OR_LOGIC";
+    const isAnyOptionGroupRequired = validationRule === "ANY_OPTION_GROUP_REQUIRED";
 
     // Get fields to track for completion
     const requiredFields =
-      isOrLogic || isSharedPlusOrLogic
+      isOrLogic || isSharedPlusOrLogic || isAnyOptionGroupRequired
         ? fields.filter((field) => field.field_type === "file_upload") // All upload fields for OR logic
         : fields.filter((field) => isFieldRequired(field)); // Only required fields for AND logic
 
@@ -97,7 +107,6 @@ export function CompletionFeedbackPanel({
         const hasValidFile = uploadedFiles.some(
           (file: MOVFileResponse) => file.field_id === field.field_id && !file.deleted_at
         );
-
         return hasValidFile;
       }
 
@@ -172,47 +181,119 @@ export function CompletionFeedbackPanel({
       };
     }
 
+    // For ANY_OPTION_GROUP_REQUIRED (e.g., indicator 1.6.1 with Options 1, 2, 3)
+    // Must match DynamicFormRenderer.tsx logic
+    if (isAnyOptionGroupRequired) {
+      const optionGroups: Record<string, FormSchemaFieldsItem[]> = {};
+      requiredFields.forEach((field) => {
+        const optionGroup = (field as any).option_group;
+        if (optionGroup) {
+          if (!optionGroups[optionGroup]) {
+            optionGroups[optionGroup] = [];
+          }
+          optionGroups[optionGroup].push(field);
+        }
+      });
+
+      // Check if at least one complete option group exists
+      // For groups with internal OR (like Option 3), any field being filled counts
+      let hasCompleteGroup = false;
+      for (const [groupName, groupFields] of Object.entries(optionGroups)) {
+        const hasInternalOr =
+          groupName.includes("Option 3") ||
+          groupName.includes("OPTION 3") ||
+          groupName.toLowerCase().includes("option 3");
+
+        if (hasInternalOr) {
+          if (groupFields.some((field) => isFieldFilled(field))) {
+            hasCompleteGroup = true;
+            break;
+          }
+        } else {
+          if (groupFields.every((field) => isFieldFilled(field))) {
+            hasCompleteGroup = true;
+            break;
+          }
+        }
+      }
+
+      const totalRequired = 1; // Only 1 complete option group is required
+      const completed = hasCompleteGroup ? 1 : 0;
+      const percentage = Math.round((completed / totalRequired) * 100);
+
+      // Get incomplete fields (show first incomplete from each option)
+      const incompleteFields: FormSchemaFieldsItem[] = [];
+      if (!hasCompleteGroup) {
+        Object.values(optionGroups).forEach((groupFields) => {
+          const firstIncomplete = groupFields.find((field) => !isFieldFilled(field));
+          if (firstIncomplete) {
+            incompleteFields.push(firstIncomplete);
+          }
+        });
+      }
+
+      return {
+        totalRequired,
+        completed,
+        percentage,
+        incompleteFields,
+      };
+    }
+
     // For grouped OR logic (e.g., indicator 2.1.4 with Option A vs Option B, or 6.2.1 with Options A/B/C)
     if (isOrLogic) {
+      // REWORK SPECIAL CASE: If there are rejected files (with annotations) that
+      // haven't been replaced yet, show progress based on rejected field replacements.
+      if (indicatorRequiresRework && movAnnotations && movAnnotations.length > 0) {
+        const rejectedFileIds = new Set(
+          movAnnotations.map((ann: any) => String(ann.mov_file_id))
+        );
+
+        // Find fields that have rejected files
+        const rejectedFieldIds = new Set<string>();
+        allFiles.forEach((file: MOVFileResponse) => {
+          if (file.field_id && rejectedFileIds.has(String(file.id)) && !file.deleted_at) {
+            rejectedFieldIds.add(file.field_id);
+          }
+        });
+
+        // If there are rejected fields, check if they have valid replacement files
+        if (rejectedFieldIds.size > 0) {
+          const rejectedFieldsArray = Array.from(rejectedFieldIds);
+          const incompleteRejectedFields: FormSchemaFieldsItem[] = [];
+          let allReplaced = true;
+
+          for (const fieldId of rejectedFieldsArray) {
+            const hasValidFile = uploadedFiles.some(
+              (file: MOVFileResponse) => file.field_id === fieldId && !file.deleted_at
+            );
+            if (!hasValidFile) {
+              allReplaced = false;
+              const fieldDef = requiredFields.find(f => f.field_id === fieldId);
+              if (fieldDef) {
+                incompleteRejectedFields.push(fieldDef);
+              }
+            }
+          }
+
+          // Progress: 0/1 if not all replaced, 1/1 if all replaced
+          return {
+            totalRequired: 1,
+            completed: allReplaced ? 1 : 0,
+            percentage: allReplaced ? 100 : 0,
+            incompleteFields: incompleteRejectedFields,
+          };
+        }
+      }
+
       // Detect field groups by analyzing field_ids
+      // IMPORTANT: This logic must match DynamicFormRenderer.tsx isIndicatorComplete calculation
       const groups: Record<string, FormSchemaFieldsItem[]> = {};
 
       requiredFields.forEach((field) => {
-        const fieldId = field.field_id;
-
-        // Check if field has explicit option_group metadata (for 6.2.1-style indicators)
-        const optionGroup = (field as any).option_group;
-
-        let groupName: string;
-
-        if (optionGroup) {
-          // Use explicit option_group if available (e.g., "option_a", "option_b", "option_c")
-          groupName = optionGroup;
-        } else {
-          // Fallback to pattern-based detection for backwards compatibility
-          // Special case: If only 2 fields total with section_1/section_2, treat each as separate option
-          // (e.g., 1.6.1.3 with 2 separate upload options)
-          // Otherwise, group section_1+section_2 together (e.g., 2.1.4 Option A)
-
-          if (
-            requiredFields.length === 2 &&
-            requiredFields.every(
-              (f) => f.field_id.includes("section_1") || f.field_id.includes("section_2")
-            )
-          ) {
-            // Only 2 fields, both with section_1 or section_2 → each is its own option
-            groupName = `Field ${fieldId}`;
-          } else if (fieldId.includes("section_1") || fieldId.includes("section_2")) {
-            // Part of a multi-field group (Option A)
-            groupName = "Group A (Option A)";
-          } else if (fieldId.includes("section_3") || fieldId.includes("section_4")) {
-            // Part of a multi-field group (Option B)
-            groupName = "Group B (Option B)";
-          } else {
-            // Default: each field is its own group
-            groupName = `Field ${fieldId}`;
-          }
-        }
+        // Use option_group if available, otherwise treat each field as its own group
+        // This matches DynamicFormRenderer.tsx line 435: const optionGroup = (field as any).option_group || field.field_id;
+        const groupName = (field as any).option_group || field.field_id;
 
         if (!groups[groupName]) {
           groups[groupName] = [];
@@ -258,7 +339,7 @@ export function CompletionFeedbackPanel({
       percentage,
       incompleteFields,
     };
-  }, [formValues, formSchema, uploadedFiles, isReworkStatus, reworkRequestedAt]);
+  }, [formValues, formSchema, uploadedFiles, isReworkStatus, reworkRequestedAt, movAnnotations, allFiles, indicatorRequiresRework]);
 
   const { totalRequired, completed, percentage, incompleteFields } = completionMetrics;
 

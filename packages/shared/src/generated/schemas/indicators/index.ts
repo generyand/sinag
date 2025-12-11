@@ -959,6 +959,7 @@ export interface SubIndicatorStatus {
   validation_status?: SubIndicatorStatusValidationStatus;
   recommended_status?: SubIndicatorStatusRecommendedStatus;
   has_checklist_data?: boolean;
+  has_consideration_rule?: boolean;
 }
 
 

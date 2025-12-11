@@ -59,6 +59,87 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   const [isSaving, setIsSaving] = useState(false); // Local loading state instead of relying on mutation
   const isSavingRef = useRef(false); // Prevent multiple concurrent saves
 
+  // Track rework flags for assessors at FILE level (responseId → Set of movFileIds with annotations)
+  // This allows us to track which specific files need re-upload, not just which indicators
+  const [reworkFlags, setReworkFlags] = useState<Record<number, Set<number>>>({});
+
+  // Initialize reworkFlags from API data (annotated_mov_file_ids for file-level tracking + manual flags)
+  useEffect(() => {
+    if (data) {
+      const assessment: AnyRecord = (data as unknown as AnyRecord) ?? {};
+      const core = (assessment.assessment as AnyRecord) ?? assessment;
+      const resps: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
+
+      const initial: Record<number, Set<number>> = {};
+      resps.forEach((r) => {
+        // Use annotated_mov_file_ids for file-level tracking (array of MOV file IDs with annotations)
+        const annotatedFileIds: number[] = r.annotated_mov_file_ids || [];
+
+        // Also check for manual rework flag in response_data
+        const responseData = r.response_data || {};
+        const hasManualReworkFlag = responseData.assessor_manual_rework_flag === true;
+
+        if (annotatedFileIds.length > 0) {
+          initial[r.id] = new Set(annotatedFileIds);
+        } else if (hasManualReworkFlag) {
+          // Manual flag without specific file annotations - create empty set to mark as flagged
+          initial[r.id] = new Set();
+        }
+      });
+      setReworkFlags(initial);
+      console.log("[AssessorValidationClient] Initialized reworkFlags from API (file-level + manual):", initial);
+    }
+  }, [data]);
+
+  // Callback when rework flag is manually toggled from UI (toggles all files for the indicator)
+  // When toggled ON via UI without specific file context, we mark the indicator as flagged with an empty set
+  // (the UI will check if set exists OR has items to show as flagged)
+  const handleReworkFlagChange = (responseId: number, flagged: boolean) => {
+    console.log("[AssessorValidationClient] handleReworkFlagChange (manual):", responseId, flagged);
+    setReworkFlags((prev) => {
+      if (flagged) {
+        // Keep existing set if any, or create empty set to mark as "manually flagged"
+        return { ...prev, [responseId]: prev[responseId] || new Set() };
+      } else {
+        // Remove the entry entirely when toggled off
+        const { [responseId]: _, ...rest } = prev;
+        return rest;
+      }
+    });
+  };
+
+  // Callback when assessor creates an annotation - add file to rework set
+  const handleAnnotationCreated = (responseId: number, movFileId: number) => {
+    console.log("[AssessorValidationClient] handleAnnotationCreated - adding file to flag:", responseId, "movFileId:", movFileId);
+    setReworkFlags((prev) => {
+      const existingSet = prev[responseId] || new Set();
+      const newSet = new Set(existingSet);
+      newSet.add(movFileId);
+      return { ...prev, [responseId]: newSet };
+    });
+  };
+
+  // Callback when assessor deletes an annotation - remove file from set if no annotations remain for that file
+  const handleAnnotationDeleted = (responseId: number, movFileId: number, remainingCountForFile: number) => {
+    console.log("[AssessorValidationClient] handleAnnotationDeleted:", responseId, "movFileId:", movFileId, "remaining:", remainingCountForFile);
+    if (remainingCountForFile === 0) {
+      setReworkFlags((prev) => {
+        const existingSet = prev[responseId];
+        if (!existingSet) return prev;
+
+        const newSet = new Set(existingSet);
+        newSet.delete(movFileId);
+
+        // If set is now empty, remove the entry entirely
+        if (newSet.size === 0) {
+          const { [responseId]: _, ...rest } = prev;
+          return rest;
+        }
+        return { ...prev, [responseId]: newSet };
+      });
+    }
+  };
+
   // Set initial expandedId when data loads
   useEffect(() => {
     if (data && expandedId === null) {
@@ -300,33 +381,47 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               );
             }
 
+            // Check if rework flag is toggled ON for this indicator (assessor reviewed it)
+            // With file-level tracking, we check if the key exists in the reworkFlags object
+            // BUT: If requires_rework is true, the flag was used to SEND for rework - it doesn't mean "completed"
+            const hasReworkFlag = resp.id in reworkFlags;
+
+            // IMPORTANT: If requires_rework is true, we're WAITING for BLGU to respond
+            // The rework flag means we flagged it FOR rework, not that we've completed reviewing it
+            const isWaitingForBlgu = resp.requires_rework === true;
+
             console.log(`[Status Calc] Response ${resp.id}:`, {
               requires_rework: resp.requires_rework,
+              isWaitingForBlgu,
               hasChecklistData,
               hasLocalComments,
               hasPersistedComments,
               hasPersistedChecklistData,
-              willSetCompleted:
-                hasChecklistData ||
-                hasLocalComments ||
-                hasPersistedComments ||
-                hasPersistedChecklistData,
+              hasReworkFlag,
             });
 
-            // If assessor has done work → mark as completed (green checkmark)
-            if (
+            // If indicator is waiting for BLGU (requires_rework=true), show as needs_rework
+            // unless assessor has done NEW work in this session (local checklist/comments)
+            if (isWaitingForBlgu) {
+              // Only show as completed if assessor did NEW work after BLGU resubmitted
+              if (hasChecklistData || hasLocalComments) {
+                status = "completed";
+                console.log(`[Status Calc] Response ${resp.id} → 'completed' (new work on rework indicator)`);
+              } else {
+                status = "needs_rework";
+                console.log(`[Status Calc] Response ${resp.id} → 'needs_rework' (waiting for BLGU)`);
+              }
+            }
+            // If NOT waiting for BLGU, check all sources of "completed" work
+            else if (
               hasChecklistData ||
               hasLocalComments ||
               hasPersistedComments ||
-              hasPersistedChecklistData
+              hasPersistedChecklistData ||
+              hasReworkFlag
             ) {
               status = "completed";
               console.log(`[Status Calc] Response ${resp.id} → 'completed' (green checkmark)`);
-            }
-            // Only show needs_rework (orange alert) if NO work done yet AND requires_rework is true
-            else if (resp.requires_rework) {
-              status = "needs_rework";
-              console.log(`[Status Calc] Response ${resp.id} → 'needs_rework' (orange alert)`);
             }
           }
 
@@ -353,7 +448,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
           return area;
         }),
     };
-  }, [responses, checklistData, form, dataUpdatedAt]); // Add dataUpdatedAt to force recalc when data refetches
+  }, [responses, checklistData, form, dataUpdatedAt, reworkFlags]); // Add dataUpdatedAt to force recalc when data refetches
 
   // Conditional returns AFTER all hooks to maintain hook order
   if (isLoading) {
@@ -401,7 +496,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     reviewed = reviewedWithStatus;
     allReviewed = total > 0 && reviewed === total;
   } else {
-    // Assessors: check if they've reviewed checklists or added comments
+    // Assessors: check if they've reviewed (via checklist, comments, or rework flag)
     const reviewedByAssessor = responses.filter((r) => {
       // Has comments
       const publicComment = form[r.id]?.publicComment;
@@ -414,7 +509,11 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         return value === true || (typeof value === "string" && value.trim().length > 0);
       });
 
-      return hasComments || hasChecklistData;
+      // Has rework flag toggled ON (the single source of truth for annotations)
+      // With file-level tracking, check if key exists in reworkFlags
+      const hasReworkFlag = r.id in reworkFlags;
+
+      return hasComments || hasChecklistData || hasReworkFlag;
     }).length;
 
     reviewed = reviewedByAssessor;
@@ -430,13 +529,13 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       return localFail || persistedFail;
     });
 
-  // Check if assessor has any indicators with comments (for rework button)
-  const hasCommentsForRework =
+  // Check if assessor has any indicators flagged for rework
+  // reworkFlags is the single source of truth (initialized from annotated_mov_file_ids, updated via toggle/annotations)
+  // With file-level tracking, check if key exists in reworkFlags
+  const hasIndicatorsFlaggedForRework =
     isAssessor &&
     responses.some((r) => {
-      const publicComment = form[r.id]?.publicComment;
-      const hasComment = publicComment ? publicComment.trim().length > 0 : false;
-      return hasComment || (r as any).has_mov_annotations;
+      return r.id in reworkFlags;
     });
 
   const progressPct = total > 0 ? Math.round((reviewed / total) * 100) : 0;
@@ -484,11 +583,19 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       // Has comments
       const hasComments = formData?.publicComment && formData.publicComment.trim().length > 0;
 
+      // Has manual rework flag (assessor only) - current local state
+      const hasReworkFlag = isAssessor && r.id in reworkFlags;
+
+      // Check if indicator HAD a manual rework flag before (needs to be cleared if toggled off)
+      const responseData = (r as AnyRecord).response_data || {};
+      const hadManualReworkFlag = isAssessor && responseData.assessor_manual_rework_flag === true;
+      const needsToClearReworkFlag = hadManualReworkFlag && !hasReworkFlag;
+
       console.log(
-        `[onSaveDraft] Response ${r.id}: hasStatus=${hasStatus}, hasChecklistData=${hasChecklistData}, hasComments=${hasComments}`
+        `[onSaveDraft] Response ${r.id}: hasStatus=${hasStatus}, hasChecklistData=${hasChecklistData}, hasComments=${hasComments}, hasReworkFlag=${hasReworkFlag}, needsToClearReworkFlag=${needsToClearReworkFlag}`
       );
 
-      return hasStatus || hasChecklistData || hasComments;
+      return hasStatus || hasChecklistData || hasComments || hasReworkFlag || needsToClearReworkFlag;
     });
 
     const allResponseIds = new Set(responsesToSave.map((r) => r.id));
@@ -529,6 +636,23 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             );
           }
         });
+
+        // Add or clear manual rework flag in response_data (assessor only)
+        if (isAssessor) {
+          const currentResponse = responses.find((r) => r.id === responseId);
+          const prevResponseData = (currentResponse as AnyRecord)?.response_data || {};
+          const hadManualFlag = prevResponseData.assessor_manual_rework_flag === true;
+          const hasManualFlag = responseId in reworkFlags;
+
+          if (hasManualFlag) {
+            responseChecklistData["assessor_manual_rework_flag"] = true;
+            console.log(`[onSaveDraft] Setting manual rework flag TRUE for response ${responseId}`);
+          } else if (hadManualFlag) {
+            // Explicitly clear the flag
+            responseChecklistData["assessor_manual_rework_flag"] = false;
+            console.log(`[onSaveDraft] Clearing manual rework flag for response ${responseId}`);
+          }
+        }
 
         const payloadData = {
           // Convert to uppercase to match backend ValidationStatus enum (PASS, FAIL, CONDITIONAL)
@@ -745,6 +869,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 expandedId={expandedId ?? undefined}
                 reworkRequestedAt={reworkRequestedAt}
                 separationLabel="After Rework"
+                onAnnotationCreated={handleAnnotationCreated}
+                onAnnotationDeleted={handleAnnotationDeleted}
               />
             </div>
 
@@ -777,6 +903,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                       return newData;
                     });
                   }}
+                  reworkFlags={reworkFlags}
+                  onReworkFlagChange={handleReworkFlagChange}
                 />
               </div>
             </div>
@@ -817,12 +945,12 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 size="default"
                 type="button"
                 onClick={onSendRework}
-                disabled={!hasCommentsForRework || reworkCount !== 0 || reworkMut.isPending}
+                disabled={!hasIndicatorsFlaggedForRework || reworkCount !== 0 || reworkMut.isPending}
                 className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90"
                 style={{ background: "var(--cityscape-yellow)" }}
                 title={
-                  !hasCommentsForRework
-                    ? "Add feedback comments or file annotations on at least one indicator to send for rework"
+                  !hasIndicatorsFlaggedForRework
+                    ? "Toggle 'Flag for Rework' on at least one indicator to send for rework"
                     : undefined
                 }
               >

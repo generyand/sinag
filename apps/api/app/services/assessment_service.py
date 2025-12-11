@@ -395,6 +395,40 @@ class AssessmentService:
             rows3 = result3.fetchall()
             logger.info(f"[PERF] Query 3 (user data): {time.time() - step_start:.2f}s")
 
+            # QUERY 3b: Get MOVFiles (Epic 4.0) - stored with indicator_id directly
+            # This is needed to auto-create AssessmentResponses for indicators with uploaded files
+            step_start = time.time()
+            q3b = text("""
+                SELECT id, indicator_id, file_name, file_size, file_type, file_url, field_id, uploaded_at
+                FROM mov_files
+                WHERE assessment_id = :assessment_id
+                  AND deleted_at IS NULL
+                ORDER BY indicator_id, uploaded_at DESC
+            """)
+            result3b = db.execute(q3b, {"assessment_id": assessment_id})
+            mov_files_rows = result3b.fetchall()
+
+            # Build MOVFiles lookup by indicator_id
+            mov_files_by_indicator: dict[int, list[dict]] = {}
+            mov_file_indicator_ids: set[int] = set()
+            for row in mov_files_rows:
+                ind_id = row[1]
+                mov_file_indicator_ids.add(ind_id)
+                mov_files_by_indicator.setdefault(ind_id, []).append({
+                    "id": row[0],
+                    "file_name": row[2],
+                    "file_size": row[3],
+                    "file_type": row[4],
+                    "file_url": row[5],
+                    "field_id": row[6],
+                    "uploaded_at": row[7].isoformat() + "Z" if row[7] else None,
+                })
+
+            logger.info(
+                f"[PERF] Query 3b (MOVFiles): {time.time() - step_start:.2f}s, "
+                f"found {len(mov_files_rows)} files for {len(mov_file_indicator_ids)} indicators"
+            )
+
             # Build responses, MOVs, comments lookup
             responses_by_indicator = {}
             movs_by_response = {}
@@ -455,10 +489,68 @@ class AssessmentService:
                         calibration_ga_id = pc.get("governance_area_id")
                         break
 
+            # AUTO-SYNC: Create AssessmentResponses for indicators with MOVFiles but no response
+            # This ensures progress tracking works immediately for all uploaded files
+            step_start = time.time()
+            missing_response_indicator_ids = mov_file_indicator_ids - set(responses_by_indicator.keys())
+            if missing_response_indicator_ids:
+                logger.info(
+                    f"[AUTO-SYNC] Found {len(missing_response_indicator_ids)} indicators with files but no response. "
+                    f"Creating responses..."
+                )
+                from app.db.models.assessment import AssessmentResponse, MOVFile
+                from app.db.models.governance_area import Indicator
+                from sqlalchemy.orm import joinedload
+
+                for ind_id in missing_response_indicator_ids:
+                    # Create new AssessmentResponse
+                    new_response = AssessmentResponse(
+                        assessment_id=assessment_id,
+                        indicator_id=ind_id,
+                        response_data={},
+                        is_completed=False,
+                        requires_rework=False,
+                    )
+                    db.add(new_response)
+                    db.flush()
+
+                    # Load with relationships for completion check
+                    new_response = (
+                        db.query(AssessmentResponse)
+                        .options(
+                            joinedload(AssessmentResponse.indicator),
+                            joinedload(AssessmentResponse.assessment),
+                            joinedload(AssessmentResponse.movs),
+                        )
+                        .filter(AssessmentResponse.id == new_response.id)
+                        .first()
+                    )
+
+                    # Recalculate completion status
+                    is_completed = self.recompute_response_completion(new_response)
+
+                    # Add to lookup for this request
+                    responses_by_indicator[ind_id] = {
+                        "id": new_response.id,
+                        "response_data": {},
+                        "is_completed": is_completed,
+                        "requires_rework": False,
+                        "generated_remark": None,
+                    }
+
+                db.commit()
+                logger.info(
+                    f"[AUTO-SYNC] Created {len(missing_response_indicator_ids)} responses in "
+                    f"{time.time() - step_start:.2f}s"
+                )
+
             # Merge response data into indicators
             for ind in indicators_raw:
                 ind_id = ind["id"]
                 ind_ga_id = ind["governance_area_id"]
+
+                # Always include MOVFiles (Epic 4.0) for this indicator
+                ind["mov_files"] = mov_files_by_indicator.get(ind_id, [])
 
                 if ind_id in responses_by_indicator:
                     resp = responses_by_indicator[ind_id]

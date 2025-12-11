@@ -26,7 +26,12 @@ interface LeftSubmissionViewProps {
 
 type AnyRecord = Record<string, any>;
 
-export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSubmissionViewProps) {
+export function LeftSubmissionView({
+  assessment,
+  expandedId,
+  onToggle,
+}: LeftSubmissionViewProps) {
+
   // State for expanded governance areas
   const [expandedAreas, setExpandedAreas] = React.useState<Set<number>>(() => new Set());
 
@@ -109,16 +114,22 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
 
     // Create indicator in BLGU tree format
     // Status logic for assessor view:
+    // - 'completed': Indicator was already validated OR has been reviewed (via annotations)
+    //   Shows green checkmark - assessor has reviewed this indicator
     // - 'needs_rework': Indicator requires re-validation after rework (requires_rework = true)
-    //   Shows orange alert icon to indicate assessor needs to re-review
-    // - 'completed': Indicator was already validated in first review (requires_rework = false)
-    //   Shows green checkmark - assessor doesn't need to re-review
+    //   and hasn't been reviewed yet - shows orange alert icon
     const requiresRework = Boolean(r.requires_rework);
-    const computedStatus = requiresRework ? "needs_rework" : "completed";
+
+    // Check if this indicator has been reviewed via annotations
+    const hasAnnotations = Boolean(r.has_mov_annotations);
+
+    // If requires_rework but has no annotations, it hasn't been reviewed -> show as needs_rework
+    const computedStatus = requiresRework && !hasAnnotations ? "needs_rework" : "completed";
 
     console.log(`[LeftSubmissionView] Response ${r.id}:`, {
       requires_rework: r.requires_rework,
-      requiresRework,
+      has_mov_annotations: r.has_mov_annotations,
+      hasAnnotations,
       computedStatus,
     });
 

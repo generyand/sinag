@@ -165,6 +165,7 @@ interface FileFieldComponentProps {
   disabled?: boolean;
   movAnnotations?: any[];
   reworkComments?: any[]; // Epic 5.0: Added for Hybrid Logic
+  updateAssessmentData?: (updater: (data: any) => any) => void; // For immediate UI updates
 }
 
 /**
@@ -186,6 +187,7 @@ export function FileFieldComponent({
   disabled = false,
   movAnnotations = [],
   reworkComments = [],
+  updateAssessmentData,
 }: FileFieldComponentProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -215,20 +217,25 @@ export function FileFieldComponent({
   const queryClient = useQueryClient();
 
   // Fetch assessment details to check status
+  // Use reasonable cache times - invalidation handles updates after mutations
   const { data: assessmentData } = useGetAssessmentsMyAssessment({
     query: {
       enabled: !!assessmentId,
-      gcTime: 0, // Don't cache - always fresh
-      staleTime: 0,
+      staleTime: 30 * 1000, // 30 seconds - consistent with useAssessment.ts
+      gcTime: 5 * 60 * 1000, // 5 minutes - keep in cache
+      refetchOnWindowFocus: true,
     } as any,
   } as any);
 
   // Fetch uploaded files for this indicator
+  // IMPORTANT: Use longer cache times to prevent files from "disappearing" on navigation
+  // Files will still update via invalidation after uploads/deletes
   const { data: filesResponse, isLoading: isLoadingFiles } =
     useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles(assessmentId, indicatorId, {
       query: {
         enabled: !!assessmentId && !!indicatorId,
-        staleTime: 10 * 1000, // 10 seconds - short for quick invalidation after uploads
+        staleTime: 5 * 60 * 1000, // 5 minutes - longer to prevent disappearing files on navigation
+        gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache even when unmounted
         refetchOnWindowFocus: true, // Refresh when user returns to tab
       } as any,
     } as any);
@@ -322,27 +329,8 @@ export function FileFieldComponent({
 
         toast.success("File uploaded successfully");
 
-        // IMMEDIATE: Invalidate queries - refetchType: 'active' triggers refetch automatically
-        // No need for separate refetchQueries calls
-        queryClient.invalidateQueries({
-          queryKey: getGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFilesQueryKey(
-            assessmentId,
-            indicatorId
-          ),
-          refetchType: "active",
-        });
-
-        queryClient.invalidateQueries({
-          queryKey: getGetAssessmentsMyAssessmentQueryKey(),
-          refetchType: "active",
-        });
-
-        queryClient.invalidateQueries({
-          queryKey: getGetBlguDashboardAssessmentIdQueryKey(assessmentId),
-          refetchType: "active",
-        });
-
-        // Optimistically mark this indicator as completed in cached assessment data
+        // STEP 1: Do optimistic update FIRST for instant UI feedback
+        // This must happen BEFORE invalidation to prevent race conditions
         // CRITICAL: Update BOTH flat responses array AND nested governance_areas structure
         queryClient.setQueryData(getGetAssessmentsMyAssessmentQueryKey(), (old: any) => {
           if (!old) return old;
@@ -359,27 +347,156 @@ export function FileFieldComponent({
             });
           }
 
+          // Recursive helper to update indicator in nested tree structure
+          // This handles both top-level indicators AND children (e.g., 2.2.3 under 2.2)
+          const updateIndicatorInTree = (indicators: any[]): any[] => {
+            if (!indicators) return indicators;
+            return indicators.map((ind: any) => {
+              // Check if this is the target indicator (compare both number and string forms)
+              const isTarget =
+                ind.id === indicatorId ||
+                ind.id === String(indicatorId) ||
+                ind.response?.indicator_id === indicatorId;
+
+              if (isTarget) {
+                return {
+                  ...ind,
+                  response: ind.response
+                    ? { ...ind.response, is_completed: true, requires_rework: false }
+                    : { is_completed: true, requires_rework: false, indicator_id: indicatorId },
+                };
+              }
+
+              // Recursively check children
+              if (ind.children && ind.children.length > 0) {
+                return {
+                  ...ind,
+                  children: updateIndicatorInTree(ind.children),
+                };
+              }
+
+              return ind;
+            });
+          };
+
           // Update nested governance_areas structure (this is what TreeNavigator uses)
           if (updated.governance_areas) {
             updated.governance_areas = updated.governance_areas.map((area: any) => ({
               ...area,
-              indicators:
-                area.indicators?.map((ind: any) => {
-                  if (ind.id === indicatorId || ind.response?.indicator_id === indicatorId) {
-                    return {
-                      ...ind,
-                      response: ind.response
-                        ? { ...ind.response, is_completed: true, requires_rework: false }
-                        : { is_completed: true, requires_rework: false },
-                    };
-                  }
-                  return ind;
-                }) || [],
+              indicators: updateIndicatorInTree(area.indicators || []),
             }));
           }
 
           return updated;
         });
+
+        // STEP 2: Update files query cache with the server response
+        // This ensures DynamicFormRenderer's completionValidFiles sees the new file immediately
+        // We update the cache instead of just invalidating to prevent the optimistic file from disappearing
+        const uploadedFile = variables.data.file as File;
+        const nowTimestamp = new Date().toISOString();
+        const serverFile: MOVFileResponse = {
+          id: data?.id || Date.now(),
+          assessment_id: assessmentId,
+          indicator_id: indicatorId,
+          file_name: data?.file_name || uploadedFile.name,
+          file_size: data?.file_size || uploadedFile.size,
+          file_type: data?.file_type || uploadedFile.type || "application/octet-stream",
+          field_id: variables.data.field_id ?? null,
+          uploaded_at: data?.uploaded_at || nowTimestamp,
+          file_url: data?.file_url || "",
+          uploaded_by: data?.uploaded_by || user?.id || 0,
+        };
+
+        queryClient.setQueryData(
+          getGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFilesQueryKey(
+            assessmentId,
+            indicatorId
+          ),
+          (old: any) => {
+            if (!old) {
+              return { files: [serverFile] };
+            }
+            // Keep all existing files EXCEPT the temp optimistic file we added in onMutate
+            // Temp files have IDs >= 1000000000000 (Date.now() timestamp)
+            const existingFiles = (old.files || []).filter((f: any) => {
+              const isOptimisticTempFile = f.id >= 1000000000000;
+              const isSameFileName = f.file_name === uploadedFile.name;
+              // Remove the optimistic temp file for the same filename
+              return !(isOptimisticTempFile && isSameFileName);
+            });
+            return {
+              ...old,
+              files: [...existingFiles, serverFile],
+            };
+          }
+        );
+
+        queryClient.invalidateQueries({
+          queryKey: getGetAssessmentsMyAssessmentQueryKey(),
+          refetchType: "active",
+        });
+
+        queryClient.invalidateQueries({
+          queryKey: getGetBlguDashboardAssessmentIdQueryKey(assessmentId),
+          refetchType: "active",
+        });
+
+        // STEP 3: Update local assessment state for immediate tree navigation update
+        // This includes BOTH the status AND the movFiles array for progress calculation
+        if (updateAssessmentData) {
+          // Reuse serverFile as the new MOV file entry (already created above in STEP 2)
+          const newMovFile = {
+            id: serverFile.id,
+            file_name: serverFile.file_name,
+            file_size: serverFile.file_size,
+            file_type: serverFile.file_type,
+            field_id: serverFile.field_id,
+            uploaded_at: serverFile.uploaded_at,
+            file_url: serverFile.file_url,
+          };
+
+          updateAssessmentData((prev) => {
+            if (!prev || !prev.governanceAreas) return prev;
+
+            // Helper to update indicator status AND movFiles in the tree
+            const updateIndicatorStatus = (indicators: any[]): any[] => {
+              if (!indicators) return indicators;
+              return indicators.map((ind: any) => {
+                // Check if this is the target indicator
+                if (String(ind.id) === String(indicatorId)) {
+                  // Add new file to existing movFiles array
+                  const existingMovFiles = ind.movFiles || [];
+                  return {
+                    ...ind,
+                    status: "completed",
+                    // CRITICAL: Clear requiresRework when marking as complete
+                    // This ensures the merge logic in useAssessment preserves this status
+                    requiresRework: false,
+                    // Add the new file to movFiles for progress calculation
+                    movFiles: [...existingMovFiles, newMovFile],
+                  };
+                }
+                // Recursively check children
+                if (ind.children && ind.children.length > 0) {
+                  return {
+                    ...ind,
+                    children: updateIndicatorStatus(ind.children),
+                  };
+                }
+                return ind;
+              });
+            };
+
+            return {
+              ...prev,
+              governanceAreas: prev.governanceAreas.map((area: any) => ({
+                ...area,
+                indicators: updateIndicatorStatus(area.indicators || []),
+              })),
+            };
+          });
+        }
 
         // Reset UI state after a brief success display
         setTimeout(() => {
@@ -534,46 +651,25 @@ export function FileFieldComponent({
   // Each indicator has .response.requires_rework
   const findIndicatorRequiresRework = (): boolean => {
     const areas = (assessmentData as any)?.governance_areas || [];
-    console.log(
-      `[FileField ${indicatorId}] findIndicatorRequiresRework - searching for indicatorId:`,
-      indicatorId,
-      "type:",
-      typeof indicatorId
-    );
     for (const area of areas) {
       const indicators = area.indicators || [];
       for (const ind of indicators) {
         // Check parent indicator
         if (ind.id === indicatorId) {
-          console.log(`[FileField ${indicatorId}] FOUND as parent! response:`, ind.response);
           return ind.response?.requires_rework === true;
         }
         // Check children (level 3 indicators)
         const children = ind.children || [];
         for (const child of children) {
           if (child.id === indicatorId) {
-            console.log(`[FileField ${indicatorId}] FOUND as child! response:`, child.response);
             return child.response?.requires_rework === true;
           }
         }
       }
     }
-    console.log(`[FileField ${indicatorId}] NOT FOUND in any indicator!`);
     return false;
   };
   const indicatorRequiresRework = findIndicatorRequiresRework();
-
-  // Debug: log file separation data
-  console.log(`[FileField ${indicatorId}] === FILE SEPARATION DEBUG ===`);
-  console.log(`[FileField ${indicatorId}] normalizedStatus:`, normalizedStatus);
-  console.log(`[FileField ${indicatorId}] rework_requested_at:`, reworkRequestedAt);
-  console.log(`[FileField ${indicatorId}] calibration_requested_at:`, calibrationRequestedAt);
-  console.log(`[FileField ${indicatorId}] effectiveReworkTimestamp:`, effectiveReworkTimestamp);
-  console.log(`[FileField ${indicatorId}] indicatorRequiresRework:`, indicatorRequiresRework);
-  console.log(
-    `[FileField ${indicatorId}] activeFiles count:`,
-    allFiles.filter((f: any) => f.field_id === field.field_id && !f.deleted_at).length
-  );
 
   // Separate files based on rework timestamp
   const activeFiles = allFiles.filter((f: any) => f.field_id === field.field_id && !f.deleted_at);
@@ -585,19 +681,8 @@ export function FileFieldComponent({
   let previousFiles: any[] = [];
   let newFiles: any[] = [];
 
-  console.log(
-    `[FileField ${indicatorId}] isReworkStatus:`,
-    isReworkStatus,
-    "effectiveReworkTimestamp:",
-    !!effectiveReworkTimestamp
-  );
-
   if (isReworkStatus && effectiveReworkTimestamp) {
     const reworkDate = new Date(effectiveReworkTimestamp);
-    console.log(
-      `[FileField ${indicatorId}] ENTERING file separation logic, reworkDate:`,
-      reworkDate
-    );
 
     // Files uploaded BEFORE rework was requested are "old" (from before rework)
     const oldFiles = activeFiles.filter((f: any) => {
@@ -611,59 +696,100 @@ export function FileFieldComponent({
       return uploadDate >= reworkDate;
     });
 
-    // Hybrid Logic Implementation for Visual Filtering
-    const hasSpecificAnnotations = movAnnotations && movAnnotations.length > 0;
-    const hasGeneralComments = reworkComments && reworkComments.length > 0;
-
     // Check if this is a calibration rework (validator-initiated)
-    // For calibration, ALWAYS separate old files from new files based on timestamp
-    const isCalibrationRework = !!calibrationRequestedAt;
+    // For calibration, we use ONLY the calibration timestamp to determine old vs new files
+    // Assessor annotations from previous rework cycle should NOT affect calibration file separation
+    const isCalibrationRework = !!calibrationRequestedAt && effectiveReworkTimestamp === calibrationRequestedAt;
 
-    console.log(
-      `[FileField ${indicatorId}] oldFiles:`,
-      oldFiles.length,
-      "recentFiles:",
-      recentFiles.length
-    );
-    console.log(
-      `[FileField ${indicatorId}] hasSpecificAnnotations:`,
-      hasSpecificAnnotations,
-      "hasGeneralComments:",
-      hasGeneralComments,
-      "indicatorRequiresRework:",
-      indicatorRequiresRework
-    );
-    console.log(`[FileField ${indicatorId}] isCalibrationRework:`, isCalibrationRework);
+    // Filter old files based on rework type:
+    let invalidOldFiles: any[] = [];
+    let validOldFiles: any[] = [];
 
-    // Filter old files:
-    let invalidOldFiles = [];
-    let validOldFiles = [];
+    if (isCalibrationRework) {
+      // CALIBRATION MODE: Handle both calibration flags and assessor rework history
+      //
+      // Key insight: If there are files WITH annotations (rejected) AND files WITHOUT annotations
+      // (replacements), the non-annotated files are the valid current files.
+      // We identify replacements by checking if a file has NO annotations pointing to it.
 
-    if (hasSpecificAnnotations) {
-      // Case 1: Granular Mode (Annotations exist)
-      // Only invalid files are the ones with annotations
-      invalidOldFiles = oldFiles.filter((f: any) =>
-        movAnnotations.some((ann: any) => String(ann.mov_file_id) === String(f.id))
+      const hasAnnotations = movAnnotations && movAnnotations.length > 0;
+
+      // Get file IDs that have annotations (these are the rejected files)
+      const rejectedFileIds = new Set(
+        (movAnnotations || []).map((ann: any) => String(ann.mov_file_id))
       );
-      validOldFiles = oldFiles.filter(
-        (f: any) => !movAnnotations.some((ann: any) => String(ann.mov_file_id) === String(f.id))
-      );
-    } else if (hasGeneralComments || indicatorRequiresRework) {
-      // Case 2: Strict Mode (No annotations, but General Note exists OR indicator flagged for calibration)
-      // ALL old files are invalid - BLGU must re-upload
-      invalidOldFiles = oldFiles;
-      validOldFiles = [];
-    } else if (isCalibrationRework && oldFiles.length > 0) {
-      // Case 2.5: Calibration Rework with no feedback
-      // For calibration, ALWAYS separate old files from new files
-      // This ensures BLGU sees which files existed before calibration was requested
-      // Old files are treated as "previous" (for reference) even without explicit feedback
-      invalidOldFiles = oldFiles;
-      validOldFiles = [];
+
+      // Separate files into rejected (has annotations) and valid (no annotations)
+      const rejectedFiles = oldFiles.filter((f: any) => rejectedFileIds.has(String(f.id)));
+      const nonRejectedFiles = oldFiles.filter((f: any) => !rejectedFileIds.has(String(f.id)));
+
+      if (hasAnnotations && nonRejectedFiles.length > 0) {
+        // There are rejected files AND replacement files exist
+        // The non-rejected files are the replacements - show them as valid
+        // Hide the rejected files (they've been replaced)
+        validOldFiles = nonRejectedFiles;
+        invalidOldFiles = []; // Don't show rejected files - they have replacements
+      } else if (hasAnnotations && nonRejectedFiles.length === 0 && indicatorRequiresRework) {
+        // All files have annotations (rejected) and no replacements yet
+        // Show them as "Previous Files" needing re-upload
+        invalidOldFiles = oldFiles;
+        validOldFiles = [];
+      } else if (indicatorRequiresRework && !hasAnnotations) {
+        // Indicator flagged but no specific file annotations
+        // This is a general rework flag - show all old files as needing attention
+        invalidOldFiles = oldFiles;
+        validOldFiles = [];
+      } else {
+        // No flag or no annotations - all files valid
+        invalidOldFiles = [];
+        validOldFiles = oldFiles;
+      }
+    } else if (recentFiles.length > 0) {
+      // ASSESSOR REWORK MODE with replacements uploaded:
+      // BLGU has already uploaded replacement files - hide old rejected files completely
+      // Only show them if they DON'T have annotations (were accepted)
+      const hasSpecificAnnotations = movAnnotations && movAnnotations.length > 0;
+
+      if (hasSpecificAnnotations) {
+        // Files WITH annotations were rejected and have been REPLACED - don't show them
+        // Files WITHOUT annotations were accepted - show them as valid
+        const rejectedFiles = oldFiles.filter((f: any) =>
+          movAnnotations.some((ann: any) => String(ann.mov_file_id) === String(f.id))
+        );
+        validOldFiles = oldFiles.filter(
+          (f: any) => !movAnnotations.some((ann: any) => String(ann.mov_file_id) === String(f.id))
+        );
+        // Don't show rejected files since they've been replaced
+        invalidOldFiles = [];
+      } else {
+        // No annotations - all old files are valid
+        invalidOldFiles = [];
+        validOldFiles = oldFiles;
+      }
     } else {
-      // Case 3: No Feedback -> All valid
-      invalidOldFiles = [];
-      validOldFiles = oldFiles;
+      // ASSESSOR REWORK MODE: Use hybrid logic with annotations
+      const hasSpecificAnnotations = movAnnotations && movAnnotations.length > 0;
+      const hasGeneralComments = reworkComments && reworkComments.length > 0;
+
+      if (hasSpecificAnnotations) {
+        // Case 1: Granular Mode (Annotations exist)
+        // Only invalid files are the ones with annotations
+        invalidOldFiles = oldFiles.filter((f: any) =>
+          movAnnotations.some((ann: any) => String(ann.mov_file_id) === String(f.id))
+        );
+        validOldFiles = oldFiles.filter(
+          (f: any) => !movAnnotations.some((ann: any) => String(ann.mov_file_id) === String(f.id))
+        );
+      } else if (hasGeneralComments || indicatorRequiresRework) {
+        // Case 2: Strict Mode (No annotations, but General Note exists OR indicator flagged)
+        // ALL old files are invalid - BLGU must re-upload
+        invalidOldFiles = oldFiles;
+        validOldFiles = [];
+      } else {
+        // Case 3: No Feedback -> All valid
+        invalidOldFiles = [];
+        validOldFiles = oldFiles;
+      }
     }
 
     previousFiles = [...deletedFiles, ...invalidOldFiles];
@@ -777,14 +903,54 @@ export function FileFieldComponent({
             className="h-4 w-4 text-orange-600 dark:text-orange-400"
             aria-hidden="true"
           />
-          <AlertDescription className="text-orange-900 dark:text-orange-200">
-            <p className="font-medium mb-1">Assessor feedback on your files</p>
-            <p className="text-sm dark:text-orange-300">
-              The assessor has left {fieldAnnotations.length} comment
-              {fieldAnnotations.length !== 1 ? "s" : ""} on specific files. Please review the
-              feedback and upload corrected versions for the flagged files. Unflagged files are
-              still valid.
-            </p>
+          <AlertDescription className="text-orange-900 dark:text-orange-200 space-y-3">
+            <p className="font-semibold">Action Required: File Re-upload</p>
+
+            {/* Step-by-step guidance */}
+            <div className="bg-white dark:bg-slate-800 p-3 rounded-md border border-orange-200 dark:border-orange-700">
+              <p className="text-sm font-medium mb-2 text-orange-800 dark:text-orange-300">
+                What you need to do:
+              </p>
+              <ol className="text-sm space-y-1.5 list-decimal list-inside text-orange-700 dark:text-orange-400">
+                <li>Review the assessor&apos;s comments on the highlighted files below</li>
+                <li>Click &quot;Preview&quot; or &quot;View feedback&quot; to see annotations on the documents</li>
+                <li>Upload corrected versions of the flagged files only</li>
+                <li>Files without comments are still valid — no need to re-upload them</li>
+              </ol>
+            </div>
+
+            {/* Summary of files needing re-upload */}
+            {previousFiles.filter((f: any) =>
+              movAnnotations.some((ann: any) => String(ann.mov_file_id) === String(f.id))
+            ).length > 0 && (
+              <div className="text-sm">
+                <p className="font-medium text-orange-800 dark:text-orange-300 mb-1">
+                  Files needing correction ({previousFiles.filter((f: any) =>
+                    movAnnotations.some((ann: any) => String(ann.mov_file_id) === String(f.id))
+                  ).length} of {previousFiles.length + files.length}):
+                </p>
+                <ul className="space-y-1 pl-1">
+                  {previousFiles
+                    .filter((f: any) =>
+                      movAnnotations.some((ann: any) => String(ann.mov_file_id) === String(f.id))
+                    )
+                    .map((file: any) => {
+                      const fileAnns = movAnnotations.filter(
+                        (ann: any) => String(ann.mov_file_id) === String(file.id)
+                      );
+                      return (
+                        <li key={file.id} className="flex items-center gap-2 text-orange-700 dark:text-orange-400">
+                          <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                          <span className="font-medium truncate max-w-[200px]">{file.file_name}</span>
+                          <span className="text-orange-600 dark:text-orange-500">
+                            — {fileAnns.length} comment{fileAnns.length !== 1 ? "s" : ""}
+                          </span>
+                        </li>
+                      );
+                    })}
+                </ul>
+              </div>
+            )}
           </AlertDescription>
         </Alert>
       )}

@@ -480,9 +480,13 @@ class MLGOOService:
             barangay_name = assessment.blgu_user.barangay.name
 
         # Get all MOV files for this assessment (grouped by indicator_id)
-        # For recalibration targets, only show files uploaded AFTER recalibration was requested
+        # For recalibration targets, show ALL files but mark them as new/rejected
         recalibration_requested_at = assessment.mlgoo_recalibration_requested_at
         recalibration_indicator_ids = set(assessment.mlgoo_recalibration_indicator_ids or [])
+
+        # Also get calibration_requested_at for validator calibration context
+        calibration_requested_at = assessment.calibration_requested_at
+        rework_requested_at = assessment.rework_requested_at
 
         mov_files_query = (
             db.query(MOVFile)
@@ -494,13 +498,41 @@ class MLGOOService:
         )
 
         # Group MOV files by indicator_id
-        # For recalibration targets, filter to only show newly uploaded files
+        # For recalibration targets, show ALL files with is_new and is_rejected flags
         mov_files_by_indicator: dict[int, list[dict[str, Any]]] = {}
         for mov_file in mov_files_query:
-            # For recalibration target indicators, only include files uploaded after recalibration request
-            if mov_file.indicator_id in recalibration_indicator_ids and recalibration_requested_at:
-                if mov_file.uploaded_at and mov_file.uploaded_at < recalibration_requested_at:
-                    continue  # Skip files uploaded before recalibration request
+            # Determine the effective timestamp for this indicator
+            is_recalibration_target = mov_file.indicator_id in recalibration_indicator_ids
+            effective_timestamp = None
+
+            if is_recalibration_target and recalibration_requested_at:
+                # For MLGOO recalibration targets, use recalibration timestamp
+                effective_timestamp = recalibration_requested_at
+            elif calibration_requested_at:
+                # For validator calibration context
+                effective_timestamp = calibration_requested_at
+            elif rework_requested_at:
+                # For assessor rework context
+                effective_timestamp = rework_requested_at
+
+            # Determine if file is new (uploaded after effective timestamp)
+            is_new = False
+            is_rejected = False
+            if effective_timestamp and mov_file.uploaded_at:
+                is_new = mov_file.uploaded_at >= effective_timestamp
+                # File is rejected if it was uploaded before timestamp AND has annotations
+                if mov_file.uploaded_at < effective_timestamp:
+                    has_annotations = (
+                        len(mov_file.annotations) > 0 if mov_file.annotations else False
+                    )
+                    # Check if there are newer files (replacements) for this indicator
+                    has_replacements = any(
+                        f.indicator_id == mov_file.indicator_id
+                        and f.uploaded_at
+                        and f.uploaded_at >= effective_timestamp
+                        for f in mov_files_query
+                    )
+                    is_rejected = has_annotations and has_replacements
 
             if mov_file.indicator_id not in mov_files_by_indicator:
                 mov_files_by_indicator[mov_file.indicator_id] = []
@@ -515,6 +547,11 @@ class MLGOOService:
                     "uploaded_at": mov_file.uploaded_at.isoformat()
                     if mov_file.uploaded_at
                     else None,
+                    "is_new": is_new,
+                    "is_rejected": is_rejected,
+                    "has_annotations": len(mov_file.annotations) > 0
+                    if mov_file.annotations
+                    else False,
                 }
             )
 

@@ -36,12 +36,14 @@ function SecureFileContent({
   pdfAnnotations,
   imageAnnotations,
   onAddAnnotation,
+  onDeleteAnnotation,
 }: {
   file: any;
   annotationsLoading: boolean;
   pdfAnnotations: any[];
   imageAnnotations: any[];
   onAddAnnotation: (annotation: any) => void;
+  onDeleteAnnotation?: (id: string) => void;
 }) {
   const { signedUrl, isLoading: urlLoading, error: urlError, refetch } = useSignedUrl(file?.id);
 
@@ -99,6 +101,7 @@ function SecureFileContent({
         annotateEnabled={true}
         annotations={pdfAnnotations}
         onAdd={onAddAnnotation}
+        onDelete={onDeleteAnnotation}
       />
     );
   }
@@ -142,9 +145,9 @@ interface MiddleMovFilesPanelProps {
   /** Optional: Label for the separation section (e.g., "After Calibration" or "After Rework") */
   separationLabel?: string;
   /** Callback when an annotation is added (for auto-toggling calibration flag) */
-  onAnnotationCreated?: (responseId: number) => void;
+  onAnnotationCreated?: (responseId: number, movFileId: number) => void;
   /** Callback when an annotation is deleted (for checking if calibration flag should be removed) */
-  onAnnotationDeleted?: (responseId: number, remainingCount: number) => void;
+  onAnnotationDeleted?: (responseId: number, movFileId: number, remainingCountForFile: number) => void;
 }
 
 type AnyRecord = Record<string, any>;
@@ -220,19 +223,33 @@ export function MiddleMovFilesPanel({
         deleted_at: null,
         field_id: mov.field_id || null,
         isNew, // Flag for visual separation in UI
+        is_rejected: mov.is_rejected === true, // Flag for rejected files (validator view)
+        has_annotations: mov.has_annotations === true, // Flag for files with annotations
       };
     });
-  }, [selectedResponse, effectiveTimestamp, effectiveLabel]);
+  }, [selectedResponse, effectiveTimestamp]);
 
-  // Separate files into new (after rework/calibration) and old (before)
-  const { newFiles, oldFiles } = React.useMemo(() => {
+  // Separate files into:
+  // - newFiles: Files uploaded AFTER rework/calibration (replacement files)
+  // - acceptedOldFiles: Files uploaded BEFORE but have NO annotations (were accepted, don't need re-upload)
+  // - rejectedOldFiles: Files uploaded BEFORE and HAVE annotations (were rejected, replaced by newFiles)
+  const { newFiles, acceptedOldFiles, rejectedOldFiles } = React.useMemo(() => {
     if (!effectiveTimestamp) {
-      // No separation timestamp - all files are treated as "old" (normal view)
-      return { newFiles: [], oldFiles: movFiles };
+      // No separation timestamp - all files are treated as accepted (normal view)
+      return { newFiles: [], acceptedOldFiles: movFiles, rejectedOldFiles: [] };
     }
+
+    const newUploads = movFiles.filter((f: any) => f.isNew);
+    const oldUploads = movFiles.filter((f: any) => !f.isNew);
+
+    // Use is_rejected flag from backend to separate old files
+    const rejected = oldUploads.filter((f: any) => f.is_rejected === true);
+    const accepted = oldUploads.filter((f: any) => f.is_rejected !== true);
+
     return {
-      newFiles: movFiles.filter((f) => f.isNew),
-      oldFiles: movFiles.filter((f) => !f.isNew),
+      newFiles: newUploads,
+      acceptedOldFiles: accepted,
+      rejectedOldFiles: rejected,
     };
   }, [movFiles, effectiveTimestamp]);
 
@@ -316,6 +333,8 @@ export function MiddleMovFilesPanel({
   const handleAddAnnotation = async (annotation: any) => {
     if (!selectedFile?.id) return;
 
+    console.log("[MiddleMovFilesPanel] handleAddAnnotation called, expandedId:", expandedId);
+
     try {
       // For images, annotation won't have a 'page' property
       const isImageAnnotation = !("page" in annotation);
@@ -329,9 +348,12 @@ export function MiddleMovFilesPanel({
         comment: annotation.comment || "",
       });
 
-      // Notify parent that annotation was created (for auto-toggling calibration flag)
-      if (expandedId && onAnnotationCreated) {
-        onAnnotationCreated(expandedId);
+      // Notify parent that annotation was created (for auto-toggling rework/calibration flag)
+      console.log("[MiddleMovFilesPanel] Annotation created, calling onAnnotationCreated:", expandedId, "movFileId:", selectedFile.id);
+      if (expandedId && onAnnotationCreated && selectedFile?.id) {
+        onAnnotationCreated(expandedId, selectedFile.id);
+      } else {
+        console.warn("[MiddleMovFilesPanel] Cannot notify parent - expandedId:", expandedId, "selectedFile.id:", selectedFile?.id, "onAnnotationCreated:", !!onAnnotationCreated);
       }
     } catch (error) {
       console.error("[MiddleMovFilesPanel] Failed to create annotation:", error);
@@ -340,17 +362,51 @@ export function MiddleMovFilesPanel({
 
   // Wrapper for deleteAnnotation that calls the callback
   const handleDeleteAnnotation = async (annotationId: number) => {
+    // Calculate remaining count BEFORE deletion (since annotations state is stale after mutation)
+    const currentCount = annotations?.length ?? 0;
+    const remainingCountForFile = Math.max(0, currentCount - 1);
+
+    console.log(
+      "[MiddleMovFilesPanel] handleDeleteAnnotation - annotationId:",
+      annotationId,
+      "expandedId:",
+      expandedId,
+      "movFileId:",
+      selectedFile?.id,
+      "currentCount:",
+      currentCount,
+      "willHaveRemaining:",
+      remainingCountForFile
+    );
+
     try {
       await deleteAnnotation(annotationId);
+      console.log("[MiddleMovFilesPanel] Annotation deleted successfully");
 
-      // Notify parent that annotation was deleted
-      // Pass remaining count (current count - 1 since we just deleted one)
-      if (expandedId && onAnnotationDeleted) {
-        const remainingCount = Math.max(0, (annotations?.length ?? 1) - 1);
-        onAnnotationDeleted(expandedId, remainingCount);
+      // Notify parent that annotation was deleted (with file-level tracking)
+      if (expandedId && onAnnotationDeleted && selectedFile?.id) {
+        console.log("[MiddleMovFilesPanel] Calling onAnnotationDeleted with movFileId:", selectedFile.id, "remaining:", remainingCountForFile);
+        onAnnotationDeleted(expandedId, selectedFile.id, remainingCountForFile);
+      } else {
+        console.warn(
+          "[MiddleMovFilesPanel] Cannot notify parent - expandedId:",
+          expandedId,
+          "selectedFile.id:",
+          selectedFile?.id,
+          "onAnnotationDeleted:",
+          !!onAnnotationDeleted
+        );
       }
     } catch (error) {
       console.error("[MiddleMovFilesPanel] Failed to delete annotation:", error);
+    }
+  };
+
+  // Wrapper for PdfAnnotator's onDelete which passes string ID
+  const handleDeleteAnnotationFromPdf = (annotationIdStr: string) => {
+    const annotationId = parseInt(annotationIdStr, 10);
+    if (!isNaN(annotationId)) {
+      handleDeleteAnnotation(annotationId);
     }
   };
 
@@ -398,9 +454,10 @@ export function MiddleMovFilesPanel({
             </p>
           </div>
         ) : effectiveTimestamp ? (
-          /* Calibration/Rework mode: Show files in two sections based on effective timestamp */
+          /* Calibration/Rework mode: Show ALL files but highlight new ones */
+          /* Combine all files together - new files shown first with highlight, then old files */
           <div className="space-y-4">
-            {/* New Files Section - Highlighted (only show if there are new files) */}
+            {/* New Files Section - Highlighted (uploaded after rework/calibration request) */}
             {newFiles.length > 0 && (
               <div className="rounded-sm border-2 border-emerald-500 dark:border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 p-3">
                 <div className="flex items-center gap-2 mb-3">
@@ -424,31 +481,58 @@ export function MiddleMovFilesPanel({
               </div>
             )}
 
-            {/* Old Files Section */}
-            {oldFiles.length > 0 && (
-              <div className="rounded-sm border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-3">
+            {/* Existing Files Section - Files from before rework/calibration (accepted files that didn't need re-upload) */}
+            {acceptedOldFiles.length > 0 && (
+              <div className="rounded-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-3">
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                    Previous Files
+                  <span className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+                    Existing Files
                   </span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full">
-                    {oldFiles.length} file{oldFiles.length !== 1 ? "s" : ""}
+                  <span className="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full">
+                    {acceptedOldFiles.length} file{acceptedOldFiles.length !== 1 ? "s" : ""}
                   </span>
                 </div>
                 <FileList
-                  files={oldFiles}
+                  files={acceptedOldFiles}
                   onPreview={handlePreview}
                   onDownload={handleDownload}
                   canDelete={false}
                   loading={false}
-                  emptyMessage="No previous files"
+                  emptyMessage="No existing files"
                   movAnnotations={annotations as any[]}
                 />
               </div>
             )}
 
-            {/* If no files in either category */}
-            {newFiles.length === 0 && oldFiles.length === 0 && (
+            {/* Rejected Files Section - Files that were rejected during rework/calibration (shown for reference) */}
+            {rejectedOldFiles.length > 0 && (
+              <div className="rounded-sm border-2 border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/30 p-3 opacity-75">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="h-2 w-2 rounded-full bg-red-500 dark:bg-red-400" />
+                  <span className="text-xs font-semibold text-red-700 dark:text-red-300 uppercase tracking-wide">
+                    Rejected Files (Replaced)
+                  </span>
+                  <span className="text-xs text-red-600 dark:text-red-300 bg-red-100 dark:bg-red-900/50 px-2 py-0.5 rounded-full">
+                    {rejectedOldFiles.length} file{rejectedOldFiles.length !== 1 ? "s" : ""}
+                  </span>
+                </div>
+                <p className="text-xs text-red-600 dark:text-red-400 mb-3">
+                  These files were flagged during review and have been replaced with new uploads.
+                </p>
+                <FileList
+                  files={rejectedOldFiles}
+                  onPreview={handlePreview}
+                  onDownload={handleDownload}
+                  canDelete={false}
+                  loading={false}
+                  emptyMessage="No rejected files"
+                  movAnnotations={annotations as any[]}
+                />
+              </div>
+            )}
+
+            {/* No files at all */}
+            {newFiles.length === 0 && acceptedOldFiles.length === 0 && rejectedOldFiles.length === 0 && (
               <div className="flex flex-col items-center justify-center text-center p-6">
                 <FileIcon className="h-12 w-12 text-slate-400 dark:text-slate-500 mb-3" />
                 <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -516,6 +600,7 @@ export function MiddleMovFilesPanel({
                   pdfAnnotations={pdfAnnotations}
                   imageAnnotations={imageAnnotations}
                   onAddAnnotation={handleAddAnnotation}
+                  onDeleteAnnotation={handleDeleteAnnotationFromPdf}
                 />
               </div>
             </div>

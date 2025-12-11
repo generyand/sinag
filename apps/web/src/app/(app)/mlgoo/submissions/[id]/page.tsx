@@ -513,30 +513,51 @@ export default function SubmissionDetailsPage() {
 
   // Get recalibration target indicators (for review after BLGU resubmission)
   const recalibrationTargetIds = new Set(assessment.mlgoo_recalibration_indicator_ids || []);
+
+  // Type for MOV file with new/rejected flags
+  type MovFile = {
+    id: number;
+    file_name: string;
+    file_url: string;
+    file_type: string;
+    file_size: number;
+    is_new?: boolean;
+    is_rejected?: boolean;
+    has_annotations?: boolean;
+  };
+
   const recalibrationTargetIndicators: {
     indicator_id: number;
     indicator_name: string;
     indicator_code: string;
     areaName: string;
     validation_status: string;
-    mov_files: {
-      id: number;
-      file_name: string;
-      file_url: string;
-      file_type: string;
-      file_size: number;
-    }[];
+    mov_files: MovFile[];
+    newFiles: MovFile[];
+    existingFiles: MovFile[];
+    rejectedFiles: MovFile[];
   }[] = [];
   governanceAreas.forEach((ga: any) => {
     (ga.indicators || []).forEach((ind: any) => {
       if (recalibrationTargetIds.has(ind.indicator_id)) {
+        const allFiles: MovFile[] = ind.mov_files || [];
+        // Separate files into categories
+        const newFiles = allFiles.filter((f: MovFile) => f.is_new === true);
+        const rejectedFiles = allFiles.filter((f: MovFile) => f.is_rejected === true);
+        const existingFiles = allFiles.filter(
+          (f: MovFile) => f.is_new !== true && f.is_rejected !== true
+        );
+
         recalibrationTargetIndicators.push({
           indicator_id: ind.indicator_id,
           indicator_name: ind.indicator_name,
           indicator_code: ind.indicator_code,
           areaName: ga.name,
           validation_status: ind.validation_status,
-          mov_files: ind.mov_files || [],
+          mov_files: allFiles,
+          newFiles,
+          existingFiles,
+          rejectedFiles,
         });
       }
     });
@@ -796,12 +817,12 @@ export default function SubmissionDetailsPage() {
                             <p className="text-xs text-gray-500 mt-0.5">{ind.areaName}</p>
                           </div>
                           <div className="w-44">
-                            <label
+                            <span
                               id={`status-label-${ind.indicator_id}`}
                               className="text-xs font-medium text-purple-700 mb-1.5 block"
                             >
                               Update Status
-                            </label>
+                            </span>
                             <Select
                               value={
                                 validationUpdates[ind.indicator_id]?.status || ind.validation_status
@@ -843,72 +864,183 @@ export default function SubmissionDetailsPage() {
 
                       {/* Body */}
                       <div className="p-4 space-y-4">
-                        {/* MOV Files Section */}
-                        {ind.mov_files && ind.mov_files.length > 0 ? (
-                          <div className="bg-green-50 rounded-lg border border-green-200 p-3">
-                            <div className="flex items-center gap-2 mb-3">
-                              <div className="bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded">
-                                NEW
-                              </div>
-                              <p className="text-sm font-medium text-green-800">
-                                {ind.mov_files.length} file{ind.mov_files.length > 1 ? "s" : ""}{" "}
-                                uploaded after recalibration
-                              </p>
-                            </div>
-                            <div className="space-y-2">
-                              {ind.mov_files.map((file: any) => (
-                                <div
-                                  key={file.id}
-                                  className="flex items-center justify-between p-3 bg-white rounded-lg border border-green-100 hover:border-green-300 transition-colors"
-                                >
-                                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                                    <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
-                                      <FileText className="h-5 w-5 text-green-600" />
-                                    </div>
-                                    <div className="min-w-0">
-                                      <p className="text-sm font-medium text-gray-900 truncate">
-                                        {file.file_name}
-                                      </p>
-                                      <p className="text-xs text-gray-500">
-                                        {Math.round(file.file_size / 1024)} KB
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() =>
-                                      setPreviewFile({
-                                        id: file.id,
-                                        file_name: file.file_name,
-                                        file_type: file.file_type,
-                                      })
-                                    }
-                                    className="border-green-300 text-green-700 hover:bg-green-50 hover:text-green-800"
-                                  >
-                                    <Eye className="h-4 w-4 mr-1" />
-                                    Preview
-                                  </Button>
+                        {/* MOV Files Sections */}
+                        <div className="space-y-3">
+                          {/* New Files Section (Green) */}
+                          {ind.newFiles && ind.newFiles.length > 0 && (
+                            <div className="bg-green-50 rounded-lg border border-green-200 p-3">
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded">
+                                  NEW
                                 </div>
-                              ))}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="bg-amber-50 rounded-lg border border-amber-200 p-4">
-                            <div className="flex items-start gap-3">
-                              <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                              <div>
-                                <p className="text-sm font-medium text-amber-800">
-                                  No new files uploaded
-                                </p>
-                                <p className="text-xs text-amber-600 mt-0.5">
-                                  BLGU has not uploaded new MOV files since recalibration was
-                                  requested
+                                <p className="text-sm font-medium text-green-800">
+                                  {ind.newFiles.length} file{ind.newFiles.length > 1 ? "s" : ""}{" "}
+                                  uploaded after recalibration
                                 </p>
                               </div>
+                              <div className="space-y-2">
+                                {ind.newFiles.map((file: MovFile) => (
+                                  <div
+                                    key={file.id}
+                                    className="flex items-center justify-between p-3 bg-white rounded-lg border border-green-100 hover:border-green-300 transition-colors"
+                                  >
+                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                      <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                                        <FileText className="h-5 w-5 text-green-600" />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="text-sm font-medium text-gray-900 truncate">
+                                          {file.file_name}
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                          {Math.round(file.file_size / 1024)} KB
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() =>
+                                        setPreviewFile({
+                                          id: file.id,
+                                          file_name: file.file_name,
+                                          file_type: file.file_type,
+                                        })
+                                      }
+                                      className="border-green-300 text-green-700 hover:bg-green-50 hover:text-green-800"
+                                    >
+                                      <Eye className="h-4 w-4 mr-1" />
+                                      Preview
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
+
+                          {/* Existing Files Section (Neutral) */}
+                          {ind.existingFiles && ind.existingFiles.length > 0 && (
+                            <div className="bg-slate-50 rounded-lg border border-slate-200 p-3">
+                              <div className="flex items-center gap-2 mb-3">
+                                <p className="text-sm font-medium text-slate-700">
+                                  Existing Files ({ind.existingFiles.length})
+                                </p>
+                              </div>
+                              <div className="space-y-2">
+                                {ind.existingFiles.map((file: MovFile) => (
+                                  <div
+                                    key={file.id}
+                                    className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-100 hover:border-slate-300 transition-colors"
+                                  >
+                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                      <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
+                                        <FileText className="h-5 w-5 text-slate-600" />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="text-sm font-medium text-gray-900 truncate">
+                                          {file.file_name}
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                          {Math.round(file.file_size / 1024)} KB
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() =>
+                                        setPreviewFile({
+                                          id: file.id,
+                                          file_name: file.file_name,
+                                          file_type: file.file_type,
+                                        })
+                                      }
+                                      className="border-slate-300 text-slate-700 hover:bg-slate-50 hover:text-slate-800"
+                                    >
+                                      <Eye className="h-4 w-4 mr-1" />
+                                      Preview
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Rejected Files Section (Red - for comparison) */}
+                          {ind.rejectedFiles && ind.rejectedFiles.length > 0 && (
+                            <div className="bg-red-50 rounded-lg border-2 border-red-200 p-3 opacity-75">
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded">
+                                  REJECTED
+                                </div>
+                                <p className="text-sm font-medium text-red-800">
+                                  {ind.rejectedFiles.length} file
+                                  {ind.rejectedFiles.length > 1 ? "s" : ""} replaced
+                                </p>
+                              </div>
+                              <p className="text-xs text-red-600 mb-3">
+                                These files were flagged during review and have been replaced with
+                                new uploads. Shown for comparison.
+                              </p>
+                              <div className="space-y-2">
+                                {ind.rejectedFiles.map((file: MovFile) => (
+                                  <div
+                                    key={file.id}
+                                    className="flex items-center justify-between p-3 bg-white rounded-lg border border-red-100 hover:border-red-300 transition-colors"
+                                  >
+                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                      <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
+                                        <FileText className="h-5 w-5 text-red-600" />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="text-sm font-medium text-gray-900 truncate line-through">
+                                          {file.file_name}
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                          {Math.round(file.file_size / 1024)} KB
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() =>
+                                        setPreviewFile({
+                                          id: file.id,
+                                          file_name: file.file_name,
+                                          file_type: file.file_type,
+                                        })
+                                      }
+                                      className="border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800"
+                                    >
+                                      <Eye className="h-4 w-4 mr-1" />
+                                      Preview
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* No files at all */}
+                          {(!ind.newFiles || ind.newFiles.length === 0) &&
+                            (!ind.existingFiles || ind.existingFiles.length === 0) &&
+                            (!ind.rejectedFiles || ind.rejectedFiles.length === 0) && (
+                              <div className="bg-amber-50 rounded-lg border border-amber-200 p-4">
+                                <div className="flex items-start gap-3">
+                                  <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                                  <div>
+                                    <p className="text-sm font-medium text-amber-800">
+                                      No files uploaded
+                                    </p>
+                                    <p className="text-xs text-amber-600 mt-0.5">
+                                      BLGU has not uploaded any MOV files for this indicator
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                        </div>
 
                         {/* Remarks Section */}
                         <div>

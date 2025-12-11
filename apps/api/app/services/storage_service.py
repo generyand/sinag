@@ -471,9 +471,16 @@ class StorageService:
         """
         Update the completion status of an assessment response after file changes.
 
+        IMPORTANT: Creates an AssessmentResponse if one doesn't exist yet.
+        This ensures that progress is tracked immediately when MOV files are uploaded,
+        even before the user opens/interacts with the indicator form.
+
         Delegates to AssessmentService to ensure consistent validation logic (Single Source of Truth).
         """
+        from sqlalchemy.orm import joinedload
+
         from app.db.models.assessment import AssessmentResponse
+        from app.db.models.governance_area import Indicator
 
         # Import internally to avoid circular dependency
         from app.services.assessment_service import AssessmentService
@@ -481,6 +488,11 @@ class StorageService:
         try:
             response = (
                 db.query(AssessmentResponse)
+                .options(
+                    joinedload(AssessmentResponse.indicator),
+                    joinedload(AssessmentResponse.assessment),
+                    joinedload(AssessmentResponse.movs),
+                )
                 .filter(
                     AssessmentResponse.assessment_id == assessment_id,
                     AssessmentResponse.indicator_id == indicator_id,
@@ -488,8 +500,40 @@ class StorageService:
                 .first()
             )
 
+            # CRITICAL FIX: Create AssessmentResponse if it doesn't exist
+            # This ensures progress tracking works immediately after MOV upload
             if not response:
-                return
+                logger.info(
+                    f"Creating AssessmentResponse for assessment {assessment_id}, indicator {indicator_id}"
+                )
+                # Verify the indicator exists
+                indicator = db.query(Indicator).filter(Indicator.id == indicator_id).first()
+                if not indicator:
+                    logger.error(f"Indicator {indicator_id} not found")
+                    return
+
+                # Create a new response with empty response_data
+                response = AssessmentResponse(
+                    assessment_id=assessment_id,
+                    indicator_id=indicator_id,
+                    response_data={},  # Empty - will be filled when user interacts
+                    is_completed=False,
+                    requires_rework=False,
+                )
+                db.add(response)
+                db.flush()  # Get the ID
+
+                # Reload with relationships for recompute
+                response = (
+                    db.query(AssessmentResponse)
+                    .options(
+                        joinedload(AssessmentResponse.indicator),
+                        joinedload(AssessmentResponse.assessment),
+                        joinedload(AssessmentResponse.movs),
+                    )
+                    .filter(AssessmentResponse.id == response.id)
+                    .first()
+                )
 
             # Delegate to AssessmentService logic
             service = AssessmentService()
@@ -508,6 +552,9 @@ class StorageService:
                 f"Failed to update completion status for assessment {assessment_id}, "
                 f"indicator {indicator_id}: {str(e)}"
             )
+            import traceback
+
+            logger.error(traceback.format_exc())
             # Don't raise, as file operation was successful
 
     # ============================================================================

@@ -75,6 +75,18 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
   // Track checklist data separately for each response
   const [checklistData, setChecklistData] = React.useState<Record<string, any>>({});
 
+  // Helper to check if an indicator has been reviewed (via status or annotations)
+  const isIndicatorReviewed = React.useCallback(
+    (responseId: number, resp: AnyRecord): boolean => {
+      // Check if status is set
+      if (form[responseId]?.status) return true;
+      // Check if has MOV annotations from API
+      if (resp.has_mov_annotations) return true;
+      return false;
+    },
+    [form]
+  );
+
   // Initialize form with existing validation data from responses
   React.useEffect(() => {
     const initialForm: typeof form = {};
@@ -106,16 +118,20 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
   const total = responses.length; // ALWAYS show total (86)
 
   // Count completed: passed indicators (81) + reviewed reworked indicators (0-5)
+  // An indicator is considered "reviewed" if it has:
+  // - A validation status set, OR
+  // - MOV annotations (from API or created locally)
   const completed = responses.filter((r) => {
     const resp = r as AnyRecord;
     // Already passed indicators count as completed
     if (!resp.requires_rework) return true;
-    // Reworked indicators - check if assessor has reviewed them
-    return !!form[r.id]?.status;
+    // Reworked indicators - check if assessor has reviewed them (status, annotations, etc.)
+    return isIndicatorReviewed(r.id, resp);
   }).length;
 
   const allReviewed =
-    responsesToReview.length > 0 && responsesToReview.every((r) => !!form[r.id]?.status);
+    responsesToReview.length > 0 &&
+    responsesToReview.every((r) => isIndicatorReviewed(r.id, r as AnyRecord));
   const anyFail = responses.some((r) => form[r.id]?.status === "Fail");
   const dirty = Object.keys(form).length > 0;
   const progressPct = total > 0 ? Math.round((completed / total) * 100) : 0;

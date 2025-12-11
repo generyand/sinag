@@ -171,11 +171,14 @@ export function useCurrentAssessment() {
       description: indicator.description,
       technicalNotes: "See form schema for requirements",
       governanceAreaId: areaId.toString(),
-      status: indicator.response
-        ? (indicator.response as any).is_completed === true
-          ? ("completed" as const)
-          : ("in_progress" as const)
-        : ("not_started" as const),
+      status: (() => {
+        const isCompleted = (indicator.response as any)?.is_completed === true;
+        return indicator.response
+          ? isCompleted
+            ? ("completed" as const)
+            : ("in_progress" as const)
+          : ("not_started" as const);
+      })(),
       // Try to infer a generalized compliance answer from various backend field names
       // For areas 1-6, check for fields ending in _compliance (like bpoc_documents_compliance)
       // For Area 1 with multiple fields, use "yes" if any field is "yes", otherwise check all are answered
@@ -383,33 +386,130 @@ export function useCurrentAssessment() {
   );
 
   // Sync local assessment whenever the server data changes
-  // But preserve optimistic updates to prevent race conditions where server hasn't processed updates yet
+  // CRITICAL: Merge states intelligently to preserve optimistic updates
+  // The problem with simple count comparison: server might have DIFFERENT indicators
+  // marked as complete than local state, causing checkmarks to disappear
   useEffect(() => {
     if (transformedData) {
       setLocalAssessment((prev) => {
-        // If we have a previous state with optimistic updates, be smart about when to sync
-        if (prev && transformedData) {
-          const serverCompleted = (transformedData as any).completedIndicators || 0;
-          const localCompleted = prev.completedIndicators || 0;
-          const serverTotal = (transformedData as any).totalIndicators || 0;
-          const localTotal = prev.totalIndicators || 0;
-
-          // If totals don't match, always sync (schema might have changed)
-          if (serverTotal !== localTotal) {
-            return transformedData as unknown as Assessment;
-          }
-
-          // If local has higher completion count, preserve it (server might be stale)
-          // Only sync if server count is higher or equal (meaning server caught up)
-          if (serverCompleted >= localCompleted) {
-            return transformedData as unknown as Assessment;
-          }
-
-          // If server is lower, keep optimistic update but merge other changes if needed
-          // This prevents flickering when server hasn't finished processing yet
-          return prev;
+        // First time loading - just use server data
+        if (!prev) {
+          return transformedData as unknown as Assessment;
         }
-        return transformedData as unknown as Assessment;
+
+        // Schema changed - use server data
+        const serverTotal = (transformedData as any).totalIndicators || 0;
+        const localTotal = prev.totalIndicators || 0;
+        if (serverTotal !== localTotal) {
+          return transformedData as unknown as Assessment;
+        }
+
+        // INTELLIGENT MERGE: Instead of replacing entire state, merge indicator statuses
+        // Keep ANY indicator that's marked as "completed" in EITHER local OR server state
+        // This preserves optimistic updates while also incorporating server-side updates
+        const mergedData = { ...(transformedData as any) };
+
+        // Build a map of local indicator data for fast lookup (handles all levels)
+        // Key: indicator ID (as string), Value: { status, requiresRework, movFiles }
+        const localDataMap = new Map<string, { status: string; requiresRework: boolean; movFiles?: any[] }>();
+        const buildDataMap = (indicators: any[]) => {
+          if (!indicators) return;
+          for (const ind of indicators) {
+            localDataMap.set(String(ind.id), {
+              status: ind.status,
+              requiresRework: ind.requiresRework === true,
+              movFiles: ind.movFiles,
+            });
+            if (ind.children && ind.children.length > 0) {
+              buildDataMap(ind.children);
+            }
+          }
+        };
+        // Build map from all local governance areas
+        if (prev.governanceAreas) {
+          for (const area of prev.governanceAreas) {
+            buildDataMap(area.indicators || []);
+          }
+        }
+
+        // Helper to merge indicator tree - keep "completed" status from either source
+        const mergeIndicatorTree = (serverIndicators: any[]): any[] => {
+          if (!serverIndicators) return [];
+
+          return serverIndicators.map((serverInd: any) => {
+            const indId = String(serverInd.id);
+            const localData = localDataMap.get(indId);
+            const localStatus = localData?.status;
+            const localRequiresRework = localData?.requiresRework;
+            const localMovFiles = localData?.movFiles;
+
+            // Determine which status to use:
+            // - If LOCAL says requires_rework=false (we cleared it after upload), trust local
+            // - If local says "completed" but server doesn't, keep local (optimistic update)
+            // - If server says "completed" but local doesn't, use server (server caught up)
+            // - If both agree, use server (most up-to-date)
+            const localCompleted = localStatus === "completed";
+            const serverCompleted = serverInd.status === "completed";
+            // Use LOCAL requiresRework if we've cleared it (false), otherwise use server's value
+            const requiresRework = localRequiresRework === false ? false : serverInd.requiresRework === true;
+
+            let finalStatus = serverInd.status;
+            let finalRequiresRework = serverInd.requiresRework;
+            let finalMovFiles = serverInd.movFiles;
+
+            if (localCompleted && !serverCompleted && !requiresRework) {
+              // Preserve optimistic update - local knows something server doesn't yet
+              // Also preserve the local requiresRework=false and movFiles
+              finalStatus = "completed";
+              finalRequiresRework = false;
+              // If local has movFiles (from optimistic upload), use local's version
+              // Otherwise fall back to server's movFiles
+              if (localMovFiles && localMovFiles.length > 0) {
+                finalMovFiles = localMovFiles;
+              }
+            }
+
+            // Recursively merge children
+            const mergedChildren =
+              serverInd.children && serverInd.children.length > 0
+                ? mergeIndicatorTree(serverInd.children)
+                : serverInd.children;
+
+            return {
+              ...serverInd,
+              status: finalStatus,
+              requiresRework: finalRequiresRework,
+              movFiles: finalMovFiles,
+              children: mergedChildren,
+            };
+          });
+        };
+
+        // Apply merge to all governance areas
+        if (mergedData.governanceAreas) {
+          mergedData.governanceAreas = mergedData.governanceAreas.map(
+            (serverArea: any) => ({
+              ...serverArea,
+              indicators: mergeIndicatorTree(serverArea.indicators || []),
+            })
+          );
+        }
+
+        // Recompute the completed count after merge
+        const countCompleted = (indicators: any[]): number =>
+          (indicators || []).reduce((acc: number, ind: any) => {
+            if (ind.children && ind.children.length > 0) {
+              return acc + countCompleted(ind.children);
+            }
+            return acc + (ind.status === "completed" ? 1 : 0);
+          }, 0);
+
+        mergedData.completedIndicators = (mergedData.governanceAreas || []).reduce(
+          (sum: number, area: any) => sum + countCompleted(area.indicators || []),
+          0
+        );
+
+        return mergedData as unknown as Assessment;
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
