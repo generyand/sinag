@@ -47,7 +47,9 @@ export default function ReportDetailsPage() {
 
   const {
     generateInsights: handleGenerateInsights,
+    regenerateInsights: handleRegenerateInsights,
     isGenerating,
+    isRegenerating,
     error: generationError,
   } = useIntelligence();
 
@@ -100,13 +102,27 @@ export default function ReportDetailsPage() {
     }
   };
 
+  const handleRegenerate = async () => {
+    if (!assessmentId) return;
+
+    try {
+      await handleRegenerateInsights(assessmentId);
+      // Refetch CapDev data after regeneration
+      setTimeout(() => {
+        refetchCapdev();
+      }, 5000);
+    } catch (err) {
+      console.error("Failed to regenerate insights:", err);
+    }
+  };
+
   const error = fetchError ? "Failed to load assessment details" : null;
 
   // Determine compliance status from API response
   const complianceStatus = assessmentData?.compliance_status as "Passed" | "Failed" | undefined;
   const isValidated =
     assessmentData?.status === "COMPLETED" || assessmentData?.status === "AWAITING_MLGOO_APPROVAL";
-  const hasCapdevInsights = capdevData?.status === "completed" && capdevData?.insights;
+  const hasCapdevInsights = capdevData?.status === "completed" && !!capdevData?.insights;
 
   // Transform CapDev insights to the format expected by AIInsightsDisplay
   const transformedInsights = useMemo(() => {
@@ -218,22 +234,25 @@ export default function ReportDetailsPage() {
             </div>
           </div>
 
-          {/* Generate Insights Button (if not already generated) */}
-          {!hasCapdevInsights && (
-            <InsightsGenerator
-              assessmentId={assessmentData.id}
-              isAssessmentValidated={isValidated}
-              onGenerate={handleGenerate}
-              isGenerating={isGenerating || isLoadingCapdev}
-            />
-          )}
+          {/* Generate/Regenerate Insights Button */}
+          <InsightsGenerator
+            assessmentId={assessmentData.id}
+            isAssessmentValidated={isValidated}
+            onGenerate={handleGenerate}
+            onRegenerate={handleRegenerate}
+            isGenerating={isGenerating || isLoadingCapdev}
+            isRegenerating={isRegenerating}
+            hasExistingInsights={hasCapdevInsights}
+          />
 
-          {/* Generating State */}
-          {isGenerating && (
+          {/* Generating/Regenerating State */}
+          {(isGenerating || isRegenerating) && (
             <div className="flex items-center gap-2 p-4 bg-muted/50 rounded-md border border-muted">
               <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               <p className="text-sm text-muted-foreground">
-                Generating AI insights... This may take a few moments.
+                {isRegenerating
+                  ? "Regenerating AI insights... This may take a few moments."
+                  : "Generating AI insights... This may take a few moments."}
               </p>
             </div>
           )}

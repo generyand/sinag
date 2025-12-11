@@ -31,6 +31,9 @@ import {
   useGetCapdevAssessmentsAssessmentId,
   useGetMlgooAssessmentsAssessmentId,
   usePatchMlgooAssessmentsAssessmentIdRecalibrationValidation,
+  usePostAssessmentsAssessmentIdCalibrationSummaryRegenerate,
+  usePostAssessmentsAssessmentIdReworkSummaryRegenerate,
+  usePostAssessmentsIdRegenerateInsights,
   usePostCapdevAssessmentsAssessmentIdRegenerate,
   usePostMlgooAssessmentsAssessmentIdApprove,
   usePostMlgooAssessmentsAssessmentIdRecalibrate,
@@ -48,7 +51,9 @@ import {
   LayoutDashboard,
   ListChecks,
   Loader2,
+  RefreshCw,
   RotateCcw,
+  Sparkles,
   X,
   XCircle,
 } from "lucide-react";
@@ -156,6 +161,84 @@ export default function SubmissionDetailsPage() {
       await refetchCapdev();
     } catch (err: any) {
       toast.dismiss("capdev-regenerate");
+      const errorMessage = err?.response?.data?.detail || err?.message || "Failed to regenerate";
+      toast.error(`Regeneration failed: ${errorMessage}`, { duration: 6000 });
+    }
+  };
+
+  // AI Insights regeneration mutation
+  const regenerateInsightsMutation = usePostAssessmentsIdRegenerateInsights();
+
+  const handleRegenerateInsights = async () => {
+    if (!assessmentId) return;
+
+    toast.loading("Regenerating AI insights...", { id: "insights-regenerate" });
+
+    try {
+      await regenerateInsightsMutation.mutateAsync({
+        id: assessmentId,
+        params: { force: true },
+      });
+
+      toast.dismiss("insights-regenerate");
+      toast.success("AI insights regeneration started!", { duration: 5000 });
+
+      // Invalidate queries to refresh data
+      await queryClient.invalidateQueries();
+    } catch (err: any) {
+      toast.dismiss("insights-regenerate");
+      const errorMessage = err?.response?.data?.detail || err?.message || "Failed to regenerate";
+      toast.error(`Regeneration failed: ${errorMessage}`, { duration: 6000 });
+    }
+  };
+
+  // Rework summary regeneration mutation
+  const regenerateReworkMutation = usePostAssessmentsAssessmentIdReworkSummaryRegenerate();
+
+  const handleRegenerateReworkSummary = async () => {
+    if (!assessmentId) return;
+
+    toast.loading("Regenerating rework summary...", { id: "rework-regenerate" });
+
+    try {
+      await regenerateReworkMutation.mutateAsync({
+        assessmentId,
+        params: { force: true },
+      });
+
+      toast.dismiss("rework-regenerate");
+      toast.success("Rework summary regeneration started!", { duration: 5000 });
+
+      // Invalidate queries to refresh data
+      await queryClient.invalidateQueries();
+    } catch (err: any) {
+      toast.dismiss("rework-regenerate");
+      const errorMessage = err?.response?.data?.detail || err?.message || "Failed to regenerate";
+      toast.error(`Regeneration failed: ${errorMessage}`, { duration: 6000 });
+    }
+  };
+
+  // Calibration summary regeneration mutation
+  const regenerateCalibrationMutation = usePostAssessmentsAssessmentIdCalibrationSummaryRegenerate();
+
+  const handleRegenerateCalibrationSummary = async (governanceAreaId: number) => {
+    if (!assessmentId) return;
+
+    toast.loading("Regenerating calibration summary...", { id: "calibration-regenerate" });
+
+    try {
+      await regenerateCalibrationMutation.mutateAsync({
+        assessmentId,
+        params: { governance_area_id: governanceAreaId, force: true },
+      });
+
+      toast.dismiss("calibration-regenerate");
+      toast.success("Calibration summary regeneration started!", { duration: 5000 });
+
+      // Invalidate queries to refresh data
+      await queryClient.invalidateQueries();
+    } catch (err: any) {
+      toast.dismiss("calibration-regenerate");
       const errorMessage = err?.response?.data?.detail || err?.message || "Failed to regenerate";
       toast.error(`Regeneration failed: ${errorMessage}`, { duration: 6000 });
     }
@@ -956,6 +1039,122 @@ export default function SubmissionDetailsPage() {
                   onRegenerate={handleRegenerateCapdev}
                   isRegenerating={regenerateCapdevMutation.isPending}
                 />
+              )}
+
+              {/* AI Summary Management Section - For MLGOO Admins */}
+              {(assessment.rework_count > 0 ||
+                assessment.calibration_count > 0 ||
+                assessment.ai_recommendations) && (
+                <Card className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] overflow-hidden">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-3 text-lg font-semibold text-[var(--foreground)]">
+                      <div className="w-8 h-8 rounded-sm flex items-center justify-center bg-purple-100">
+                        <Sparkles className="h-5 w-5 text-purple-600" />
+                      </div>
+                      AI Summary Management
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Regenerate AI-generated summaries and insights for this assessment.
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* General AI Insights Regenerate */}
+                      {assessment.ai_recommendations && (
+                        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-blue-800">AI Insights</h4>
+                              <p className="text-xs text-blue-600 mt-1">
+                                General assessment recommendations
+                              </p>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleRegenerateInsights}
+                              disabled={regenerateInsightsMutation.isPending}
+                              className="border-blue-300 text-blue-700 hover:bg-blue-100"
+                            >
+                              {regenerateInsightsMutation.isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <RefreshCw className="h-4 w-4" />
+                              )}
+                              <span className="ml-2">Regenerate</span>
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Rework Summary Regenerate */}
+                      {assessment.rework_count > 0 && (
+                        <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-orange-800">Rework Summary</h4>
+                              <p className="text-xs text-orange-600 mt-1">
+                                {assessment.rework_count} rework
+                                {assessment.rework_count > 1 ? "s" : ""} recorded
+                              </p>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleRegenerateReworkSummary}
+                              disabled={regenerateReworkMutation.isPending}
+                              className="border-orange-300 text-orange-700 hover:bg-orange-100"
+                            >
+                              {regenerateReworkMutation.isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <RefreshCw className="h-4 w-4" />
+                              )}
+                              <span className="ml-2">Regenerate</span>
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Calibration Summary Regenerate - Per Governance Area */}
+                      {assessment.calibration_count > 0 &&
+                        governanceAreas
+                          .filter(
+                            (ga: any) => ga.calibration_count > 0 || ga.has_calibration_summary
+                          )
+                          .map((ga: any) => (
+                            <div
+                              key={`calib-${ga.id}`}
+                              className="p-4 bg-purple-50 rounded-lg border border-purple-200"
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex-1">
+                                  <h4 className="font-medium text-purple-800">Calibration Summary</h4>
+                                  <p className="text-xs text-purple-600 mt-1 truncate" title={ga.name}>
+                                    {ga.name}
+                                  </p>
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleRegenerateCalibrationSummary(ga.id)}
+                                  disabled={regenerateCalibrationMutation.isPending}
+                                  className="border-purple-300 text-purple-700 hover:bg-purple-100"
+                                >
+                                  {regenerateCalibrationMutation.isPending ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <RefreshCw className="h-4 w-4" />
+                                  )}
+                                  <span className="ml-2">Regenerate</span>
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                    </div>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Governance Areas Breakdown */}

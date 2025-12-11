@@ -6,12 +6,17 @@
  */
 
 import { useQueryClient } from "@tanstack/react-query";
-import { usePostAssessmentsIdGenerateInsights } from "@sinag/shared";
+import {
+  usePostAssessmentsIdGenerateInsights,
+  usePostAssessmentsIdRegenerateInsights,
+} from "@sinag/shared";
 import { useEffect, useRef } from "react";
 
 interface UseIntelligenceResult {
   generateInsights: (assessmentId: number) => Promise<void>;
+  regenerateInsights: (assessmentId: number) => Promise<void>;
   isGenerating: boolean;
+  isRegenerating: boolean;
   error: unknown;
 }
 
@@ -33,8 +38,14 @@ export function useIntelligence(): UseIntelligenceResult {
   const {
     mutate: generateInsightsMutation,
     isPending: isGenerating,
-    error,
+    error: generateError,
   } = usePostAssessmentsIdGenerateInsights();
+
+  const {
+    mutate: regenerateInsightsMutation,
+    isPending: isRegenerating,
+    error: regenerateError,
+  } = usePostAssessmentsIdRegenerateInsights();
 
   // Cleanup polling on unmount
   useEffect(() => {
@@ -95,9 +106,60 @@ export function useIntelligence(): UseIntelligenceResult {
     });
   };
 
+  const regenerateInsights = async (assessmentId: number): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      // Regenerate insights via mutation with force=true
+      regenerateInsightsMutation(
+        { id: assessmentId, params: { force: true } },
+        {
+          onSuccess: async () => {
+            // Start polling every 5 seconds to check for updated ai_recommendations
+            const pollForResults = async () => {
+              try {
+                // Refetch the assessment data to check for ai_recommendations
+                await queryClient.refetchQueries({
+                  queryKey: ["getAssessmentsMyAssessment"],
+                });
+
+                // Also refetch CapDev data since insights may be related
+                await queryClient.refetchQueries({
+                  queryKey: ["getCapdevAssessmentsAssessmentId"],
+                });
+
+                const cachedData = queryClient.getQueryData(["getAssessmentsMyAssessment"]);
+
+                if (cachedData) {
+                  if (pollingIntervalRef.current) {
+                    clearInterval(pollingIntervalRef.current);
+                    pollingIntervalRef.current = null;
+                    resolve();
+                  }
+                }
+              } catch (err) {
+                if (pollingIntervalRef.current) {
+                  clearInterval(pollingIntervalRef.current);
+                  pollingIntervalRef.current = null;
+                }
+                reject(err);
+              }
+            };
+
+            // Start polling
+            pollingIntervalRef.current = setInterval(pollForResults, 5000);
+          },
+          onError: (error: unknown) => {
+            reject(error);
+          },
+        }
+      );
+    });
+  };
+
   return {
     generateInsights,
+    regenerateInsights,
     isGenerating,
-    error,
+    isRegenerating,
+    error: generateError || regenerateError,
   };
 }
