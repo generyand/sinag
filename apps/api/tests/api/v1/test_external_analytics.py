@@ -15,6 +15,7 @@ from app.db.enums import AreaType, AssessmentStatus, ComplianceStatus, UserRole
 from app.db.models.assessment import Assessment
 from app.db.models.barangay import Barangay
 from app.db.models.governance_area import GovernanceArea
+from app.db.models.system import AssessmentYear
 from app.db.models.user import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -134,6 +135,16 @@ def five_assessments(db_session: Session):
     users = []
     assessments = []
 
+    # Create assessment year first (required FK)
+    assessment_year = AssessmentYear(
+        year=2024,
+        assessment_period_start=datetime(2024, 1, 1),
+        assessment_period_end=datetime(2024, 10, 31),
+        is_active=True,
+    )
+    db_session.add(assessment_year)
+    db_session.commit()
+
     for i in range(5):
         # Create barangay
         barangay = Barangay(name=f"Barangay {i + 1}")
@@ -163,6 +174,7 @@ def five_assessments(db_session: Session):
         # Create assessment
         assessment = Assessment(
             blgu_user_id=user.id,
+            assessment_year=2024,
             status=AssessmentStatus.VALIDATED,
             final_compliance_status=ComplianceStatus.PASSED,
             validated_at=datetime(2024, 1, 1),
@@ -269,6 +281,16 @@ def test_get_overall_compliance_insufficient_data_returns_400(
     """Test that < 5 barangays returns 400 Bad Request"""
     _override_user_and_db(client, katuparan_user, db_session)
 
+    # Create assessment year first (required FK)
+    assessment_year = AssessmentYear(
+        year=2024,
+        assessment_period_start=datetime(2024, 1, 1),
+        assessment_period_end=datetime(2024, 10, 31),
+        is_active=True,
+    )
+    db_session.add(assessment_year)
+    db_session.commit()
+
     # Create only 3 assessments (below threshold)
     for i in range(3):
         barangay = Barangay(name=f"Barangay {i}")
@@ -291,6 +313,7 @@ def test_get_overall_compliance_insufficient_data_returns_400(
 
         assessment = Assessment(
             blgu_user_id=user.id,
+            assessment_year=2024,
             status=AssessmentStatus.VALIDATED,
             final_compliance_status=ComplianceStatus.PASSED,
             validated_at=datetime(2024, 1, 1),
@@ -655,6 +678,16 @@ def test_csv_export_endpoint_insufficient_data(
     """Test CSV export endpoint returns 400 with insufficient data"""
     _override_user_and_db(client, katuparan_user, db_session)
 
+    # Create assessment year first (required FK)
+    assessment_year = AssessmentYear(
+        year=2024,
+        assessment_period_start=datetime(2024, 1, 1),
+        assessment_period_end=datetime(2024, 10, 31),
+        is_active=True,
+    )
+    db_session.add(assessment_year)
+    db_session.commit()
+
     # Create only 2 assessments (below threshold of 5)
     barangays = []
     for i in range(2):
@@ -680,6 +713,7 @@ def test_csv_export_endpoint_insufficient_data(
 
         assessment = Assessment(
             blgu_user_id=user.id,
+            assessment_year=2024,
             status=AssessmentStatus.VALIDATED,
             final_compliance_status=ComplianceStatus.PASSED,
             validated_at=datetime(2024, 1, 1),
@@ -757,6 +791,16 @@ def test_pdf_export_endpoint_insufficient_data(
     """Test PDF export endpoint returns 400 with insufficient data"""
     _override_user_and_db(client, katuparan_user, db_session)
 
+    # Create assessment year first (required FK)
+    assessment_year = AssessmentYear(
+        year=2024,
+        assessment_period_start=datetime(2024, 1, 1),
+        assessment_period_end=datetime(2024, 10, 31),
+        is_active=True,
+    )
+    db_session.add(assessment_year)
+    db_session.commit()
+
     # Create only 2 assessments (below threshold of 5)
     barangays = []
     for i in range(2):
@@ -782,6 +826,7 @@ def test_pdf_export_endpoint_insufficient_data(
 
         assessment = Assessment(
             blgu_user_id=user.id,
+            assessment_year=2024,
             status=AssessmentStatus.VALIDATED,
             final_compliance_status=ComplianceStatus.PASSED,
             validated_at=datetime(2024, 1, 1),

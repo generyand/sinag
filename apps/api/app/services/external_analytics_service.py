@@ -142,8 +142,10 @@ class ExternalAnalyticsService:
         Raises:
             ValueError: If fewer than minimum threshold barangays assessed
         """
-        # Query for completed assessments (status == COMPLETED ensures assessment is finalized)
-        query = db.query(Assessment).filter(Assessment.status == AssessmentStatus.COMPLETED)
+        # Query for completed assessments (COMPLETED is new workflow, VALIDATED is legacy)
+        query = db.query(Assessment).filter(
+            Assessment.status.in_([AssessmentStatus.COMPLETED, AssessmentStatus.VALIDATED])
+        )
 
         # Apply cycle filter if specified
         if assessment_cycle:
@@ -221,11 +223,11 @@ class ExternalAnalyticsService:
             if assessment_cycle:
                 query = query.join(Assessment).filter(
                     Assessment.assessment_cycle == assessment_cycle,
-                    Assessment.status == AssessmentStatus.COMPLETED,
+                    Assessment.status.in_([AssessmentStatus.COMPLETED, AssessmentStatus.VALIDATED]),
                 )
             else:
                 query = query.join(Assessment).filter(
-                    Assessment.status == AssessmentStatus.COMPLETED
+                    Assessment.status.in_([AssessmentStatus.COMPLETED, AssessmentStatus.VALIDATED])
                 )
 
             responses = query.all()
@@ -328,11 +330,11 @@ class ExternalAnalyticsService:
             if assessment_cycle:
                 query = query.join(Assessment).filter(
                     Assessment.assessment_cycle == assessment_cycle,
-                    Assessment.status == AssessmentStatus.COMPLETED,
+                    Assessment.status.in_([AssessmentStatus.COMPLETED, AssessmentStatus.VALIDATED]),
                 )
             else:
                 query = query.join(Assessment).filter(
-                    Assessment.status == AssessmentStatus.COMPLETED
+                    Assessment.status.in_([AssessmentStatus.COMPLETED, AssessmentStatus.VALIDATED])
                 )
 
             responses = query.all()
@@ -397,7 +399,7 @@ class ExternalAnalyticsService:
             .join(AssessmentResponse, AssessmentResponse.indicator_id == Indicator.id)
             .join(Assessment, Assessment.id == AssessmentResponse.assessment_id)
             .join(GovernanceArea, GovernanceArea.id == Indicator.governance_area_id)
-            .filter(Assessment.status == AssessmentStatus.COMPLETED)
+            .filter(Assessment.status.in_([AssessmentStatus.COMPLETED, AssessmentStatus.VALIDATED]))
         )
 
         if assessment_cycle:
@@ -464,9 +466,9 @@ class ExternalAnalyticsService:
         Returns:
             AnonymizedAIInsightsResponse with aggregated insights
         """
-        # Query for assessments with AI recommendations (only completed assessments)
+        # Query for assessments with AI recommendations (COMPLETED and VALIDATED statuses)
         query = db.query(Assessment).filter(
-            Assessment.status == AssessmentStatus.COMPLETED,
+            Assessment.status.in_([AssessmentStatus.COMPLETED, AssessmentStatus.VALIDATED]),
             Assessment.ai_recommendations.isnot(None),
         )
 
@@ -965,9 +967,9 @@ class ExternalAnalyticsService:
                     area.area_code,
                     area.area_name[:30] + "..." if len(area.area_name) > 30 else area.area_name,
                     f"{area.pass_percentage:.1f}%",
-                    str(area.total_indicators),
-                    str(area.passed_indicators),
-                    str(area.failed_indicators),
+                    str(area.indicator_count),
+                    str(area.passed_count),
+                    str(area.failed_count),
                 ]
             )
 
@@ -1010,8 +1012,8 @@ class ExternalAnalyticsService:
                     indicator.indicator_name[:40] + "..."
                     if len(indicator.indicator_name) > 40
                     else indicator.indicator_name,
-                    f"{indicator.failure_rate:.1f}%",
-                    str(indicator.failed_count),
+                    f"{indicator.failure_percentage:.1f}%",
+                    str(indicator.failure_count),
                 ]
             )
 
