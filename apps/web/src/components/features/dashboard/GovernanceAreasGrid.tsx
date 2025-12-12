@@ -100,29 +100,29 @@ export function GovernanceAreasGrid({ areas }: GovernanceAreasGridProps) {
     const name = areaName.toLowerCase();
 
     if (name.includes("financial") || name.includes("admin")) {
-      return "/Assessment_Areas/financialAdmin.png";
+      return "/Assessment_Areas/financialAdmin.webp";
     } else if (name.includes("disaster") || name.includes("preparedness")) {
-      return "/Assessment_Areas/disasterPreparedness.png";
+      return "/Assessment_Areas/disasterPreparedness.webp";
     } else if (name.includes("safety") || name.includes("peace") || name.includes("order")) {
-      return "/Assessment_Areas/safetyPeaceAndOrder.png";
+      return "/Assessment_Areas/safetyPeaceAndOrder.webp";
     } else if (
       name.includes("social") ||
       name.includes("protection") ||
       name.includes("sensitivity")
     ) {
-      return "/Assessment_Areas/socialProtectAndSensitivity.png";
+      return "/Assessment_Areas/socialProtectAndSensitivity.webp";
     } else if (
       name.includes("business") ||
       name.includes("friendliness") ||
       name.includes("competitiveness")
     ) {
-      return "/Assessment_Areas/businessFriendliness.png";
+      return "/Assessment_Areas/businessFriendliness.webp";
     } else if (name.includes("environmental") || name.includes("management")) {
-      return "/Assessment_Areas/environmentalManagement.png";
+      return "/Assessment_Areas/environmentalManagement.webp";
     }
 
     // Default fallback
-    return "/Assessment_Areas/financialAdmin.png";
+    return "/Assessment_Areas/financialAdmin.webp";
   };
 
   const getAreaConfig = (
