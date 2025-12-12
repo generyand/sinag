@@ -177,6 +177,9 @@ Or use the slash command: `/test-migration`
 3. **Check constraints**: Foreign keys, unique, NOT NULL constraints
 4. **Use transactions**: Wrap data migrations in transactions
 5. **Handle edge cases**: Empty tables, NULL values, existing data
+6. **Use Alembic, NOT Supabase MCP**: Always create migrations via `alembic revision` - never use
+   Supabase MCP's `apply_migration` for persistent changes. MCP changes only affect the current
+   database and won't be tracked in git or applied to other environments.
 
 ### Common Migration Issues
 

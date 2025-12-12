@@ -119,6 +119,9 @@ class SubIndicator:
         "ALL_ITEMS_REQUIRED"  # ALL_ITEMS_REQUIRED, ANY_ITEM_REQUIRED, CUSTOM (only for leaf nodes)
     )
     notes: FormNotes | None = None  # Optional notes section displayed below form fields
+    is_profiling_only: bool = (
+        False  # Is this sub-indicator profiling-only (doesn't affect pass/fail)
+    )
 
 
 @dataclass

@@ -82,6 +82,7 @@ INDICATOR_4_2 = Indicator(
                 "Upload EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the Appointment of BHW and/or BHO or BHAsst"
             ),
             validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # At least one of the two personnel types
+            is_profiling_only=True,  # FOR PROFILING ONLY - doesn't affect pass/fail
             checklist_items=[
                 ChecklistItem(
                     id="4_2_2_bhw",

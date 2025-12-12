@@ -283,12 +283,14 @@ class GARService:
                     checklist_items=gar_checklist,
                     is_header=is_header,
                     indent_level=indent_level,
+                    is_profiling_only=indicator.is_profiling_only,
                 )
             )
 
             # Count validation statuses (only for leaf indicators)
             # Note: ValidationStatus enum values are uppercase (PASS, FAIL, CONDITIONAL)
-            if not is_header and validation_status:
+            # EXCLUDE profiling-only indicators from counts - they don't affect pass/fail
+            if not is_header and validation_status and not indicator.is_profiling_only:
                 if validation_status == "PASS":
                     met_count += 1
                 elif validation_status == "CONDITIONAL":
@@ -304,15 +306,68 @@ class GARService:
         # Determine overall area result
         # Area passes if ALL leaf indicators have Pass or Conditional status
         # Note: ValidationStatus enum values are uppercase (PASS, FAIL, CONDITIONAL)
+        # EXCLUDE profiling-only indicators - they don't affect pass/fail status
+        #
+        # BBI SPECIAL RULE (4-tier system per DILG MC 2024-417):
+        # For BBI indicators, FAIL only means NON_FUNCTIONAL (0%).
+        # LOW_FUNCTIONAL, MODERATELY_FUNCTIONAL, HIGHLY_FUNCTIONAL all count as PASS.
         overall_result = None
-        leaf_indicators = [i for i in gar_indicators if not i.is_header]
+        leaf_indicators = [i for i in gar_indicators if not i.is_header and not i.is_profiling_only]
+
+        # Get BBI results for this assessment to check BBI 4-tier status
+        from app.db.enums import BBIStatus
+        from app.db.models.bbi import BBIResult
+
+        bbi_results = db.query(BBIResult).filter(BBIResult.assessment_id == assessment.id).all()
+        # Map by indicator_id for O(1) lookup
+        bbi_results_map = {r.indicator_id: r for r in bbi_results if r.indicator_id}
+
+        # Create a map of indicator_id -> indicator model for BBI check
+        indicator_model_map = {ind.id: ind for ind in all_indicators}
+
         if leaf_indicators:
+            # Check if indicator truly fails (accounting for BBI 4-tier rule)
+            def is_indicator_failed(gar_ind: GARIndicator) -> bool:
+                """Check if indicator should be considered FAIL for SGLGB calculation."""
+                if gar_ind.validation_status != "FAIL":
+                    return False
+
+                # Check if this is a BBI indicator
+                indicator_model = indicator_model_map.get(gar_ind.indicator_id)
+                if indicator_model and indicator_model.is_bbi:
+                    # BBI 4-tier rule: Only NON_FUNCTIONAL (0%) counts as FAIL
+                    bbi_result = bbi_results_map.get(gar_ind.indicator_id)
+                    if bbi_result:
+                        # Only NON_FUNCTIONAL is truly a fail
+                        return bbi_result.compliance_rating == BBIStatus.NON_FUNCTIONAL.value
+                    # No BBI result yet - fall back to validation_status (FAIL)
+                    return True
+
+                # Non-BBI indicator with FAIL status
+                return True
+
+            # Check if indicator passes (accounting for BBI 4-tier rule)
+            def is_indicator_passed(gar_ind: GARIndicator) -> bool:
+                """Check if indicator should be considered PASS for SGLGB calculation."""
+                # PASS and CONDITIONAL always count as passing
+                if gar_ind.validation_status in ["PASS", "CONDITIONAL"]:
+                    return True
+
+                # For BBI indicators with FAIL status, check 4-tier rule
+                if gar_ind.validation_status == "FAIL":
+                    indicator_model = indicator_model_map.get(gar_ind.indicator_id)
+                    if indicator_model and indicator_model.is_bbi:
+                        bbi_result = bbi_results_map.get(gar_ind.indicator_id)
+                        if bbi_result:
+                            # LOW, MODERATE, HIGHLY all count as pass
+                            return bbi_result.compliance_rating != BBIStatus.NON_FUNCTIONAL.value
+
+                return False
+
             all_passed = all(
-                i.validation_status in ["PASS", "CONDITIONAL"]
-                for i in leaf_indicators
-                if i.validation_status is not None
+                is_indicator_passed(i) for i in leaf_indicators if i.validation_status is not None
             )
-            has_any_fail = any(i.validation_status == "FAIL" for i in leaf_indicators)
+            has_any_fail = any(is_indicator_failed(i) for i in leaf_indicators)
 
             if has_any_fail:
                 overall_result = "Failed"

@@ -43,7 +43,7 @@ from app.indicators.base import ChecklistItem, Indicator, SubIndicator
 # Indicator 4.9: Halina't Magtanim ng Prutas at Gulay (HAPAG) sa Barangay Project
 INDICATOR_4_9 = Indicator(
     code="4.9",
-    name="Halina't Magtanim ng Prutas at Gulay (HAPAG) sa Barangay Project",
+    name="Halina't Magtanim ng Prutas at Gulay (HAPAG) sa Barangay Project (FOR PROFILING)",
     governance_area_id=4,  # Social Protection and Sensitivity
     is_bbi=False,  # HAPAG is NOT a BBI
     is_profiling_only=True,  # FOR PROFILING PURPOSES ONLY
@@ -61,6 +61,7 @@ INDICATOR_4_9 = Indicator(
                 "One (1) photo with Close-up View"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
+            is_profiling_only=True,  # FOR PROFILING ONLY - inherits from parent 4.9
             checklist_items=[
                 ChecklistItem(
                     id="4_9_1_upload_1",
@@ -81,6 +82,7 @@ INDICATOR_4_9 = Indicator(
                 "Date of approval"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
+            is_profiling_only=True,  # FOR PROFILING ONLY - inherits from parent 4.9
             checklist_items=[
                 ChecklistItem(
                     id="4_9_2_upload_1",
@@ -109,6 +111,7 @@ INDICATOR_4_9 = Indicator(
                 "Date of approval"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
+            is_profiling_only=True,  # FOR PROFILING ONLY - inherits from parent 4.9
             checklist_items=[
                 ChecklistItem(
                     id="4_9_3_upload_1",
@@ -135,6 +138,7 @@ INDICATOR_4_9 = Indicator(
                 "Upload: Proof of conduct of at least one (1) Advocacy Campaign/Awareness (Photo/Social Media Post, PAR/AR, etc.)"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
+            is_profiling_only=True,  # FOR PROFILING ONLY - inherits from parent 4.9
             checklist_items=[
                 ChecklistItem(
                     id="4_9_4_upload_1",
@@ -155,6 +159,7 @@ INDICATOR_4_9 = Indicator(
                 "Date of approval"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
+            is_profiling_only=True,  # FOR PROFILING ONLY - inherits from parent 4.9
             checklist_items=[
                 ChecklistItem(
                     id="4_9_5_upload_1",

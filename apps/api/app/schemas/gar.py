@@ -44,6 +44,10 @@ class GARIndicator(BaseModel):
     indent_level: int = Field(
         0, description="Indentation level for display (0=root, 1=sub, 2=sub-sub)"
     )
+    is_profiling_only: bool = Field(
+        False,
+        description="True if this indicator is for profiling purposes only (doesn't affect pass/fail)",
+    )
 
 
 class GARGovernanceArea(BaseModel):

@@ -343,13 +343,14 @@ INDICATOR_4_1 = Indicator(
         # Sub-Indicator 4.1.7 (FOR PROFILING ONLY)
         SubIndicator(
             code="4.1.7",
-            name="Referral Network (For Profiling): Presence of referral system and directory",
+            name="Referral Network: Presence of referral system and directory (FOR PROFILING)",
             upload_instructions=(
                 "Upload the following (both required):\n\n"
                 "1. 4.1.7.1. Presence of Referral System Flow Chart (For profiling)\n"
                 "2. 4.1.7.2. Presence of Directory of agencies/individuals providing services to victim-survivors (For profiling)"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
+            is_profiling_only=True,  # FOR PROFILING ONLY - doesn't affect pass/fail
             checklist_items=[
                 # Upload Verification for Flow Chart
                 ChecklistItem(

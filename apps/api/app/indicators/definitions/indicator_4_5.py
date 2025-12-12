@@ -150,18 +150,18 @@ INDICATOR_4_5 = Indicator(
                 ),
                 ChecklistItem(
                     id="4_5_5_b",
-                    label="Copy of Comprehensive Barangay Juvenile Intervention Program/Diversion Program",
+                    label="Copy of Comprehensive Barangay Juvenile Intervention Program/Diversion Program (FOR PROFILING)",
                     mov_description="Verification of uploaded Comprehensive Barangay Juvenile Intervention Program",
                     item_type="checkbox",
-                    required=True,
+                    required=False,  # Profiling only - not required for pass/fail
                     display_order=2,
                 ),
                 ChecklistItem(
                     id="4_5_5_c",
-                    label="Copy of Juvenile Justice and Welfare Council's Children at Risk (CAR) and Children in Conflict with the Law (CICL) registry",
+                    label="Copy of Juvenile Justice and Welfare Council's Children at Risk (CAR) and Children in Conflict with the Law (CICL) registry (FOR PROFILING)",
                     mov_description="Verification of uploaded CAR and CICL registry",
                     item_type="checkbox",
-                    required=True,
+                    required=False,  # Profiling only - not required for pass/fail
                     display_order=3,
                 ),
             ],

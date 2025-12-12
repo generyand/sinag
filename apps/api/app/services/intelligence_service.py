@@ -1285,6 +1285,11 @@ class IntelligenceService:
         IMPORTANT: Only leaf indicators (indicators with no children) are checked.
         Parent/section indicators don't have responses and should be excluded.
 
+        BBI SPECIAL RULE (4-tier system):
+        For BBI indicators, FAIL only means NON_FUNCTIONAL (0%).
+        LOW_FUNCTIONAL, MODERATELY_FUNCTIONAL, and HIGHLY_FUNCTIONAL all count as PASS.
+        This is based on DILG MC 2024-417 4-tier BBI compliance system.
+
         Args:
             db: Database session
             assessment_id: ID of the assessment
@@ -1293,6 +1298,9 @@ class IntelligenceService:
         Returns:
             True if all leaf indicators in the area passed, False otherwise
         """
+        from app.db.enums import BBIStatus
+        from app.db.models.bbi import BBIResult
+
         # Get all indicators for this governance area
         area = db.query(GovernanceArea).filter(GovernanceArea.name == area_name).first()
         if not area:
@@ -1307,7 +1315,10 @@ class IntelligenceService:
         parent_ids = {ind.parent_id for ind in all_indicators if ind.parent_id is not None}
 
         # Filter to only leaf indicators (indicators that are NOT parents of other indicators)
-        leaf_indicators = [ind for ind in all_indicators if ind.id not in parent_ids]
+        # ALSO exclude profiling-only indicators - they don't affect pass/fail status
+        leaf_indicators = [
+            ind for ind in all_indicators if ind.id not in parent_ids and not ind.is_profiling_only
+        ]
 
         if not leaf_indicators:
             return False  # No leaf indicators = failed area
@@ -1327,15 +1338,41 @@ class IntelligenceService:
         # Build a map of indicator_id -> response for O(1) lookup
         response_map = {r.indicator_id: r for r in responses}
 
+        # Get BBI results for this assessment to check BBI 4-tier status
+        # Only query if there are BBI indicators in this area
+        bbi_indicator_ids = [ind.id for ind in leaf_indicators if ind.is_bbi]
+        bbi_results_map = {}
+        if bbi_indicator_ids:
+            bbi_results = db.query(BBIResult).filter(BBIResult.assessment_id == assessment_id).all()
+            # Map by indicator_id for O(1) lookup
+            bbi_results_map = {r.indicator_id: r for r in bbi_results if r.indicator_id}
+
         # Check all leaf indicators against the response map
         for indicator in leaf_indicators:
             response = response_map.get(indicator.id)
 
             # If no response exists, the area fails
-            # PASS and CONDITIONAL both count as passing (SGLGB rule: Conditional = Considered = Pass)
-            # Only FAIL status causes the area to fail
             if not response:
                 return False
+
+            # BBI SPECIAL RULE: For BBI indicators, use 4-tier rule
+            # Only NON_FUNCTIONAL (0%) counts as FAIL
+            # LOW_FUNCTIONAL, MODERATELY_FUNCTIONAL, HIGHLY_FUNCTIONAL all count as PASS
+            if indicator.is_bbi:
+                bbi_result = bbi_results_map.get(indicator.id)
+                if bbi_result:
+                    # BBI exists - check if NON_FUNCTIONAL
+                    if bbi_result.compliance_rating == BBIStatus.NON_FUNCTIONAL.value:
+                        return False  # Only NON_FUNCTIONAL fails
+                    # Any other BBI status (LOW, MODERATE, HIGHLY) counts as pass
+                    continue
+                else:
+                    # No BBI result yet - fall back to validation_status check
+                    pass
+
+            # Standard check for non-BBI indicators (or BBI without result)
+            # PASS and CONDITIONAL both count as passing (SGLGB rule: Conditional = Considered = Pass)
+            # Only FAIL status causes the area to fail
             if response.validation_status not in (
                 ValidationStatus.PASS,
                 ValidationStatus.CONDITIONAL,
