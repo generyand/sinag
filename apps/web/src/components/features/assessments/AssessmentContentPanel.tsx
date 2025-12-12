@@ -16,6 +16,8 @@ interface AssessmentContentPanelProps {
   onIndicatorSelect?: (indicatorId: string) => void;
   movAnnotations?: Record<number, any[]>;
   dashboardData?: any; // BLGUDashboardResponse for rework context
+  /** MOV file IDs flagged by MLGOO for recalibration */
+  mlgooFlaggedFileIds?: Array<{ mov_file_id: number; comment?: string | null }>;
 }
 
 export function AssessmentContentPanel({
@@ -26,6 +28,7 @@ export function AssessmentContentPanel({
   onIndicatorSelect,
   movAnnotations = {},
   dashboardData,
+  mlgooFlaggedFileIds = [],
 }: AssessmentContentPanelProps) {
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -108,6 +111,7 @@ export function AssessmentContentPanel({
               onNext={navigation.navigateNext}
               level={0}
               movAnnotations={indicatorAnnotations}
+              mlgooFlaggedFileIds={mlgooFlaggedFileIds}
             />
           </div>
 

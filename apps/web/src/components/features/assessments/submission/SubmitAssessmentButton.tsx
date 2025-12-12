@@ -41,6 +41,7 @@ interface SubmitAssessmentButtonProps {
   isComplete: boolean;
   completedCount?: number;
   totalCount?: number;
+  assessmentStatus?: string;
   onSuccess?: () => void;
 }
 
@@ -49,6 +50,7 @@ export function SubmitAssessmentButton({
   isComplete,
   completedCount,
   totalCount,
+  assessmentStatus,
   onSuccess,
 }: SubmitAssessmentButtonProps) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -102,8 +104,15 @@ export function SubmitAssessmentButton({
     });
   };
 
-  // Only disable during pending state, NOT based on completion
-  const isButtonDisabled = isPending;
+  // Check if assessment is in an editable state
+  const isEditableStatus =
+    !assessmentStatus ||
+    assessmentStatus.toLowerCase() === "draft" ||
+    assessmentStatus.toLowerCase() === "rework" ||
+    assessmentStatus.toLowerCase() === "needs-rework";
+
+  // Disable when pending OR when assessment is already submitted (not editable)
+  const isButtonDisabled = isPending || !isEditableStatus;
 
   return (
     <>

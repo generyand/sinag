@@ -25,8 +25,12 @@ import type {
   AssessmentDetailResponse,
   GetMlgooApprovalQueueParams,
   HTTPValidationError,
+  OverrideValidationStatusRequest,
+  OverrideValidationStatusResponse,
   PostMlgooAssessmentsAssessmentIdApproveBody,
   PostMlgooAssessmentsAssessmentIdUnlockBody,
+  RecalibrationByMovRequest,
+  RecalibrationByMovResponse,
   RecalibrationRequest,
   RecalibrationResponse,
   UnlockAssessmentResponse,
@@ -343,6 +347,83 @@ export const usePostMlgooAssessmentsAssessmentIdRecalibrate = <TError = void | H
       return useMutation(mutationOptions);
     }
     /**
+ * Request RE-calibration for specific MOV files.
+
+**Access:** Requires MLGOO_DILG role.
+
+MLGOO can flag specific MOV files that need to be re-uploaded by BLGU. This is more granular than indicator-level recalibration - only the flagged files need to be resubmitted.
+
+**Important:**
+- RE-calibration can only be requested ONCE per assessment
+- Must specify which MOV files need recalibration
+- Optional comment per file for specific feedback
+- Overall comments explaining the reason are required
+- A 3-day grace period is automatically set for BLGU to respond
+ * @summary Request RE-calibration by MOV Files
+ */
+export const postMlgooAssessments$AssessmentIdRecalibrateByMov = (
+    assessmentId: number,
+    recalibrationByMovRequest: RecalibrationByMovRequest,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<RecalibrationByMovResponse>(
+      {url: `/api/v1/mlgoo/assessments/${assessmentId}/recalibrate-by-mov`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: recalibrationByMovRequest, signal
+    },
+      options);
+    }
+  
+
+
+export const getPostMlgooAssessmentsAssessmentIdRecalibrateByMovMutationOptions = <TError = void | HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postMlgooAssessments$AssessmentIdRecalibrateByMov>>, TError,{assessmentId: number;data: RecalibrationByMovRequest}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postMlgooAssessments$AssessmentIdRecalibrateByMov>>, TError,{assessmentId: number;data: RecalibrationByMovRequest}, TContext> => {
+
+const mutationKey = ['postMlgooAssessmentsAssessmentIdRecalibrateByMov'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postMlgooAssessments$AssessmentIdRecalibrateByMov>>, {assessmentId: number;data: RecalibrationByMovRequest}> = (props) => {
+          const {assessmentId,data} = props ?? {};
+
+          return  postMlgooAssessments$AssessmentIdRecalibrateByMov(assessmentId,data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostMlgooAssessmentsAssessmentIdRecalibrateByMovMutationResult = NonNullable<Awaited<ReturnType<typeof postMlgooAssessments$AssessmentIdRecalibrateByMov>>>
+    export type PostMlgooAssessmentsAssessmentIdRecalibrateByMovMutationBody = RecalibrationByMovRequest
+    export type PostMlgooAssessmentsAssessmentIdRecalibrateByMovMutationError = void | HTTPValidationError
+
+    /**
+ * @summary Request RE-calibration by MOV Files
+ */
+export const usePostMlgooAssessmentsAssessmentIdRecalibrateByMov = <TError = void | HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postMlgooAssessments$AssessmentIdRecalibrateByMov>>, TError,{assessmentId: number;data: RecalibrationByMovRequest}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postMlgooAssessments$AssessmentIdRecalibrateByMov>>,
+        TError,
+        {assessmentId: number;data: RecalibrationByMovRequest},
+        TContext
+      > => {
+
+      const mutationOptions = getPostMlgooAssessmentsAssessmentIdRecalibrateByMovMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    /**
  * Unlock an assessment that was locked due to deadline expiry.
 
 **Access:** Requires MLGOO_DILG role.
@@ -487,6 +568,79 @@ export const usePatchMlgooAssessmentsAssessmentIdRecalibrationValidation = <TErr
       > => {
 
       const mutationOptions = getPatchMlgooAssessmentsAssessmentIdRecalibrationValidationMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    /**
+ * Override the validation status of any assessment response.
+
+**Access:** Requires MLGOO_DILG role.
+
+MLGOO has the authority to override any indicator's validation status when reviewing assessments awaiting their approval. This allows MLGOO to correct validation decisions they believe were incorrect.
+
+**Requirements:**
+- Assessment must be in AWAITING_MLGOO_APPROVAL status
+- Valid validation status: PASS, FAIL, or CONDITIONAL
+ * @summary Override Validation Status
+ */
+export const patchMlgooAssessmentResponses$ResponseIdOverrideStatus = (
+    responseId: number,
+    overrideValidationStatusRequest: OverrideValidationStatusRequest,
+ options?: SecondParameter<typeof mutator>,) => {
+      
+      
+      return mutator<OverrideValidationStatusResponse>(
+      {url: `/api/v1/mlgoo/assessment-responses/${responseId}/override-status`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: overrideValidationStatusRequest
+    },
+      options);
+    }
+  
+
+
+export const getPatchMlgooAssessmentResponsesResponseIdOverrideStatusMutationOptions = <TError = void | HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchMlgooAssessmentResponses$ResponseIdOverrideStatus>>, TError,{responseId: number;data: OverrideValidationStatusRequest}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof patchMlgooAssessmentResponses$ResponseIdOverrideStatus>>, TError,{responseId: number;data: OverrideValidationStatusRequest}, TContext> => {
+
+const mutationKey = ['patchMlgooAssessmentResponsesResponseIdOverrideStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchMlgooAssessmentResponses$ResponseIdOverrideStatus>>, {responseId: number;data: OverrideValidationStatusRequest}> = (props) => {
+          const {responseId,data} = props ?? {};
+
+          return  patchMlgooAssessmentResponses$ResponseIdOverrideStatus(responseId,data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PatchMlgooAssessmentResponsesResponseIdOverrideStatusMutationResult = NonNullable<Awaited<ReturnType<typeof patchMlgooAssessmentResponses$ResponseIdOverrideStatus>>>
+    export type PatchMlgooAssessmentResponsesResponseIdOverrideStatusMutationBody = OverrideValidationStatusRequest
+    export type PatchMlgooAssessmentResponsesResponseIdOverrideStatusMutationError = void | HTTPValidationError
+
+    /**
+ * @summary Override Validation Status
+ */
+export const usePatchMlgooAssessmentResponsesResponseIdOverrideStatus = <TError = void | HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchMlgooAssessmentResponses$ResponseIdOverrideStatus>>, TError,{responseId: number;data: OverrideValidationStatusRequest}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof patchMlgooAssessmentResponses$ResponseIdOverrideStatus>>,
+        TError,
+        {responseId: number;data: OverrideValidationStatusRequest},
+        TContext
+      > => {
+
+      const mutationOptions = getPatchMlgooAssessmentResponsesResponseIdOverrideStatusMutationOptions(options);
 
       return useMutation(mutationOptions);
     }

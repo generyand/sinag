@@ -332,6 +332,11 @@ class BLGUDashboardResponse(BaseModel):
         description="List of indicator IDs that MLGOO has unlocked for RE-calibration. "
         "Only these indicators need to be addressed by BLGU.",
     )
+    mlgoo_recalibration_mov_file_ids: list[dict[str, Any]] | None = Field(
+        None,
+        description="List of MOV file IDs flagged by MLGOO for re-upload. "
+        "Each item contains mov_file_id and optional comment.",
+    )
     mlgoo_recalibration_comments: str | None = Field(
         None, description="MLGOO's comments explaining why RE-calibration is needed."
     )

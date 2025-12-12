@@ -315,6 +315,7 @@ export interface AssessmentDetailResponse {
   mlgoo_recalibration_requested_at: AssessmentDetailResponseMlgooRecalibrationRequestedAt;
   mlgoo_recalibration_submitted_at: AssessmentDetailResponseMlgooRecalibrationSubmittedAt;
   mlgoo_recalibration_indicator_ids: AssessmentDetailResponseMlgooRecalibrationIndicatorIds;
+  mlgoo_recalibration_mov_file_ids: AssessmentDetailResponseMlgooRecalibrationMovFileIds;
   mlgoo_recalibration_comments: AssessmentDetailResponseMlgooRecalibrationComments;
   mlgoo_approved_at: AssessmentDetailResponseMlgooApprovedAt;
   grace_period_expires_at: AssessmentDetailResponseGracePeriodExpiresAt;
@@ -392,6 +393,18 @@ export type AssessmentDetailResponseMlgooRecalibrationComments = string | null;
  * AssessmentDetailResponseMlgooRecalibrationIndicatorIds
  */
 export type AssessmentDetailResponseMlgooRecalibrationIndicatorIds = number[] | null;
+
+
+/**
+ * AssessmentDetailResponseMlgooRecalibrationMovFileIds
+ */
+export type AssessmentDetailResponseMlgooRecalibrationMovFileIds = AssessmentDetailResponseMlgooRecalibrationMovFileIdsAnyOfItem[] | null;
+
+
+/**
+ * AssessmentDetailResponseMlgooRecalibrationMovFileIdsAnyOfItem
+ */
+export type AssessmentDetailResponseMlgooRecalibrationMovFileIdsAnyOfItem = { [key: string]: unknown };
 
 
 /**

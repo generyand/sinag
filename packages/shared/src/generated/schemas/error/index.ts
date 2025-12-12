@@ -12,6 +12,12 @@ export interface HTTPValidationError {
 
 
 /**
+ * OverrideValidationStatusRequestRemarks
+ */
+export type OverrideValidationStatusRequestRemarks = string | null;
+
+
+/**
  * SubmissionValidationResult
  */
 export interface SubmissionValidationResult {

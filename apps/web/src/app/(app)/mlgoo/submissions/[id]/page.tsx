@@ -9,6 +9,7 @@ const GOVERNANCE_AREA_LOGOS: Record<string, string> = {
   "Safety, Peace and Order": "/Assessment_Areas/safetyPeaceAndOrder.png",
   "Environmental Management": "/Assessment_Areas/environmentalManagement.png",
   "Business Friendliness and Competitiveness": "/Assessment_Areas/businessFriendliness.png",
+  "Business-Friendliness and Competitiveness": "/Assessment_Areas/businessFriendliness.png",
 };
 
 import { CapDevInsightsCard } from "@/components/features/capdev";
@@ -30,13 +31,14 @@ import {
   getGetCapdevAssessmentsAssessmentIdQueryKey,
   useGetCapdevAssessmentsAssessmentId,
   useGetMlgooAssessmentsAssessmentId,
+  usePatchMlgooAssessmentResponsesResponseIdOverrideStatus,
   usePatchMlgooAssessmentsAssessmentIdRecalibrationValidation,
   usePostAssessmentsAssessmentIdCalibrationSummaryRegenerate,
   usePostAssessmentsAssessmentIdReworkSummaryRegenerate,
   usePostAssessmentsIdRegenerateInsights,
   usePostCapdevAssessmentsAssessmentIdRegenerate,
   usePostMlgooAssessmentsAssessmentIdApprove,
-  usePostMlgooAssessmentsAssessmentIdRecalibrate,
+  usePostMlgooAssessmentsAssessmentIdRecalibrateByMov,
 } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -45,6 +47,8 @@ import {
   ArrowLeft,
   Calendar,
   CheckCircle,
+  ChevronDown,
+  ChevronUp,
   Clock,
   Eye,
   FileText,
@@ -71,7 +75,7 @@ export default function SubmissionDetailsPage() {
 
   // State for recalibration mode (requesting new recalibration)
   const [isRecalibrationMode, setIsRecalibrationMode] = React.useState(false);
-  const [selectedIndicators, setSelectedIndicators] = React.useState<number[]>([]);
+  const [selectedMovFiles, setSelectedMovFiles] = React.useState<number[]>([]);
   const [recalibrationComments, setRecalibrationComments] = React.useState("");
 
   // State for review mode (reviewing resubmitted recalibration targets)
@@ -87,6 +91,9 @@ export default function SubmissionDetailsPage() {
     file_type: string;
   } | null>(null);
 
+  // State for expanded indicators in recalibration mode (to show MOV files)
+  const [expandedIndicators, setExpandedIndicators] = React.useState<Set<number>>(new Set());
+
   // Fetch assessment details from API
   const { data, isLoading, isError, error } = useGetMlgooAssessmentsAssessmentId(assessmentId);
 
@@ -96,11 +103,14 @@ export default function SubmissionDetailsPage() {
   // Approve mutation
   const approveMutation = usePostMlgooAssessmentsAssessmentIdApprove();
 
-  // Recalibration mutation
-  const recalibrateMutation = usePostMlgooAssessmentsAssessmentIdRecalibrate();
+  // Recalibration mutation (MOV file level)
+  const recalibrateMutation = usePostMlgooAssessmentsAssessmentIdRecalibrateByMov();
 
   // Update recalibration validation mutation
   const updateValidationMutation = usePatchMlgooAssessmentsAssessmentIdRecalibrationValidation();
+
+  // Override validation status mutation (for any indicator)
+  const overrideStatusMutation = usePatchMlgooAssessmentResponsesResponseIdOverrideStatus();
 
   // CapDev insights query - with polling for status updates
   const {
@@ -277,8 +287,8 @@ export default function SubmissionDetailsPage() {
   };
 
   const handleRecalibrate = async () => {
-    if (!assessmentId || selectedIndicators.length === 0 || !recalibrationComments.trim()) {
-      toast.error("Please select at least one indicator and provide comments.");
+    if (!assessmentId || selectedMovFiles.length === 0 || !recalibrationComments.trim()) {
+      toast.error("Please select at least one MOV file and provide comments.");
       return;
     }
 
@@ -293,14 +303,14 @@ export default function SubmissionDetailsPage() {
       await recalibrateMutation.mutateAsync({
         assessmentId,
         data: {
-          indicator_ids: selectedIndicators,
-          comments: recalibrationComments.trim(),
+          mov_files: selectedMovFiles.map((id) => ({ mov_file_id: id })),
+          overall_comments: recalibrationComments.trim(),
         },
       });
 
       toast.dismiss("recalibrate-toast");
       toast.success(
-        "Recalibration requested! The BLGU has been notified and given a 3-day grace period.",
+        "Recalibration requested! The BLGU has been notified and given a 3-day grace period to resubmit the flagged files.",
         {
           duration: 6000,
         }
@@ -319,16 +329,57 @@ export default function SubmissionDetailsPage() {
     }
   };
 
-  const toggleIndicatorSelection = (indicatorId: number) => {
-    setSelectedIndicators((prev) =>
-      prev.includes(indicatorId) ? prev.filter((id) => id !== indicatorId) : [...prev, indicatorId]
+  const toggleMovFileSelection = (movFileId: number) => {
+    setSelectedMovFiles((prev) =>
+      prev.includes(movFileId) ? prev.filter((id) => id !== movFileId) : [...prev, movFileId]
     );
   };
 
   const cancelRecalibrationMode = () => {
     setIsRecalibrationMode(false);
-    setSelectedIndicators([]);
+    setSelectedMovFiles([]);
     setRecalibrationComments("");
+    setExpandedIndicators(new Set());
+  };
+
+  const toggleIndicatorExpanded = (indicatorId: number) => {
+    setExpandedIndicators((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(indicatorId)) {
+        newSet.delete(indicatorId);
+      } else {
+        newSet.add(indicatorId);
+      }
+      return newSet;
+    });
+  };
+
+  // Handle override validation status
+  const handleOverrideStatus = async (
+    responseId: number,
+    newStatus: "PASS" | "FAIL" | "CONDITIONAL"
+  ) => {
+    toast.loading("Updating validation status...", { id: `override-${responseId}` });
+
+    try {
+      await overrideStatusMutation.mutateAsync({
+        responseId,
+        data: {
+          validation_status: newStatus,
+        },
+      });
+
+      toast.dismiss(`override-${responseId}`);
+      toast.success(`Status updated to ${newStatus}`, { duration: 3000 });
+
+      // Invalidate queries to refresh data
+      await queryClient.invalidateQueries();
+    } catch (err: any) {
+      toast.dismiss(`override-${responseId}`);
+      const errorMessage =
+        err?.response?.data?.detail || err?.message || "Failed to update status";
+      toast.error(`Update failed: ${errorMessage}`, { duration: 5000 });
+    }
   };
 
   // Initialize review mode with current validation statuses
@@ -488,34 +539,7 @@ export default function SubmissionDetailsPage() {
     assessment.overall_score ??
     (totalIndicators > 0 ? Math.round((totalPass / totalIndicators) * 100) : 0);
 
-  // Get all failed/conditional indicators for recalibration selection
-  // Note: validation_status from backend is uppercase (PASS, FAIL, CONDITIONAL)
-  const failedIndicators: {
-    id: number;
-    name: string;
-    code: string;
-    areaName: string;
-    status: string;
-  }[] = [];
-  governanceAreas.forEach((ga: any) => {
-    (ga.indicators || []).forEach((ind: any) => {
-      const statusUpper = ind.validation_status?.toUpperCase();
-      if (statusUpper === "FAIL" || statusUpper === "CONDITIONAL") {
-        failedIndicators.push({
-          id: ind.indicator_id,
-          name: ind.indicator_name,
-          code: ind.indicator_code,
-          areaName: ga.name,
-          status: ind.validation_status,
-        });
-      }
-    });
-  });
-
-  // Get recalibration target indicators (for review after BLGU resubmission)
-  const recalibrationTargetIds = new Set(assessment.mlgoo_recalibration_indicator_ids || []);
-
-  // Type for MOV file with new/rejected flags
+  // Type for MOV file with new/rejected flags (defined before usage)
   type MovFile = {
     id: number;
     file_name: string;
@@ -527,6 +551,47 @@ export default function SubmissionDetailsPage() {
     has_annotations?: boolean;
   };
 
+  // Get all failed/conditional indicators for recalibration selection
+  // Note: validation_status from backend is uppercase (PASS, FAIL, CONDITIONAL)
+  const failedIndicators: {
+    id: number;
+    name: string;
+    code: string;
+    areaName: string;
+    status: string;
+    mov_files: MovFile[];
+  }[] = [];
+  governanceAreas.forEach((ga: any) => {
+    (ga.indicators || []).forEach((ind: any) => {
+      const statusUpper = ind.validation_status?.toUpperCase();
+      if (statusUpper === "FAIL" || statusUpper === "CONDITIONAL") {
+        failedIndicators.push({
+          id: ind.indicator_id,
+          name: ind.indicator_name,
+          code: ind.indicator_code,
+          areaName: ga.name,
+          status: ind.validation_status,
+          mov_files: ind.mov_files || [],
+        });
+      }
+    });
+  });
+
+  // Get recalibration target indicators (for review after BLGU resubmission)
+  const recalibrationTargetIds = new Set(assessment.mlgoo_recalibration_indicator_ids || []);
+
+  // Get MLGOO flagged file IDs for identifying previously flagged files
+  const mlgooFlaggedFileIds = new Set(
+    (assessment.mlgoo_recalibration_mov_file_ids || []).map((item: any) => item.mov_file_id)
+  );
+  // Get comments for flagged files
+  const mlgooFlaggedFileComments = new Map(
+    (assessment.mlgoo_recalibration_mov_file_ids || []).map((item: any) => [
+      item.mov_file_id,
+      item.comment,
+    ])
+  );
+
   const recalibrationTargetIndicators: {
     indicator_id: number;
     indicator_name: string;
@@ -537,16 +602,39 @@ export default function SubmissionDetailsPage() {
     newFiles: MovFile[];
     existingFiles: MovFile[];
     rejectedFiles: MovFile[];
+    mlgooFlaggedFiles: (MovFile & { mlgoo_comment?: string })[];
   }[] = [];
   governanceAreas.forEach((ga: any) => {
     (ga.indicators || []).forEach((ind: any) => {
       if (recalibrationTargetIds.has(ind.indicator_id)) {
         const allFiles: MovFile[] = ind.mov_files || [];
+
         // Separate files into categories
-        const newFiles = allFiles.filter((f: MovFile) => f.is_new === true);
-        const rejectedFiles = allFiles.filter((f: MovFile) => f.is_rejected === true);
+        // For MLGOO recalibration, flagged files should be in a special category
+        const mlgooFlaggedFiles = allFiles
+          .filter((f: MovFile) => mlgooFlaggedFileIds.has(f.id))
+          .map((f: MovFile) => ({
+            ...f,
+            mlgoo_comment: mlgooFlaggedFileComments.get(f.id) || undefined,
+          }));
+
+        // New files are those uploaded after MLGOO recalibration request
+        // Use is_new flag from backend, OR if no flagged files data, use is_new directly
+        const newFiles = allFiles.filter(
+          (f: MovFile) => f.is_new === true && !mlgooFlaggedFileIds.has(f.id)
+        );
+
+        // Rejected files (from assessor/validator annotations)
+        const rejectedFiles = allFiles.filter(
+          (f: MovFile) => f.is_rejected === true && !mlgooFlaggedFileIds.has(f.id)
+        );
+
+        // Existing files that are NOT new, NOT rejected, and NOT MLGOO-flagged
         const existingFiles = allFiles.filter(
-          (f: MovFile) => f.is_new !== true && f.is_rejected !== true
+          (f: MovFile) =>
+            f.is_new !== true &&
+            f.is_rejected !== true &&
+            !mlgooFlaggedFileIds.has(f.id)
         );
 
         recalibrationTargetIndicators.push({
@@ -559,6 +647,7 @@ export default function SubmissionDetailsPage() {
           newFiles,
           existingFiles,
           rejectedFiles,
+          mlgooFlaggedFiles,
         });
       }
     });
@@ -669,7 +758,7 @@ export default function SubmissionDetailsPage() {
             </div>
           </div>
 
-          {/* Recalibration Mode Panel */}
+          {/* Recalibration Mode Panel - MOV File Level Selection */}
           {isRecalibrationMode && (
             <Card className="bg-orange-50 border-orange-200">
               <CardHeader>
@@ -680,44 +769,126 @@ export default function SubmissionDetailsPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm text-orange-700">
-                  Select the indicators you believe were unfairly marked as Fail or Conditional. The
-                  BLGU will be given a 3-day grace period to provide additional documentation.
+                  Select the specific MOV files that need to be resubmitted. The BLGU will be given
+                  a 3-day grace period to provide replacement documentation for only the selected
+                  files.
                 </p>
 
-                <div className="bg-white rounded-sm border border-orange-200 p-4 max-h-64 overflow-y-auto">
+                <div className="bg-white rounded-sm border border-orange-200 p-4 max-h-[500px] overflow-y-auto">
                   <p className="text-sm font-medium text-gray-700 mb-3">
                     Failed/Conditional Indicators ({failedIndicators.length})
                   </p>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {failedIndicators.map((ind) => (
-                      <label
+                      <div
                         key={ind.id}
-                        className="flex items-start gap-3 p-2 rounded hover:bg-orange-50 cursor-pointer"
+                        className="border border-gray-200 rounded-lg overflow-hidden"
                       >
-                        <Checkbox
-                          checked={selectedIndicators.includes(ind.id)}
-                          onCheckedChange={() => toggleIndicatorSelection(ind.id)}
-                          className="mt-0.5"
-                        />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900">
-                            {ind.code} - {ind.name}
-                          </p>
-                          <p className="text-xs text-gray-500">{ind.areaName}</p>
-                        </div>
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded ${
-                            ind.status?.toUpperCase() === "FAIL"
-                              ? "bg-red-100 text-red-700"
-                              : "bg-yellow-100 text-yellow-700"
-                          }`}
+                        {/* Indicator header (non-selectable, just for grouping) */}
+                        <div
+                          className="flex items-start gap-3 p-3 bg-gray-50 cursor-pointer hover:bg-gray-100"
+                          onClick={() => toggleIndicatorExpanded(ind.id)}
                         >
-                          {ind.status}
-                        </span>
-                      </label>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900">
+                              {ind.code} - {ind.name}
+                            </p>
+                            <p className="text-xs text-gray-500">{ind.areaName}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded ${
+                                ind.status?.toUpperCase() === "FAIL"
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-yellow-100 text-yellow-700"
+                              }`}
+                            >
+                              {ind.status}
+                            </span>
+                            {ind.mov_files.length > 0 ? (
+                              <div className="flex items-center text-gray-500">
+                                <FileText className="h-4 w-4 mr-1" />
+                                <span className="text-xs">{ind.mov_files.length}</span>
+                                {expandedIndicators.has(ind.id) ? (
+                                  <ChevronUp className="h-4 w-4 ml-1" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4 ml-1" />
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-gray-400 flex items-center gap-1">
+                                <AlertCircle className="h-3 w-3" />
+                                No MOV
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Expandable MOV files section with checkboxes */}
+                        {expandedIndicators.has(ind.id) && ind.mov_files.length > 0 && (
+                          <div className="p-3 bg-white border-t border-gray-200 space-y-2">
+                            <p className="text-xs font-medium text-gray-600 mb-2">
+                              Select files to flag for resubmission:
+                            </p>
+                            {ind.mov_files.map((file: MovFile) => (
+                              <div
+                                key={file.id}
+                                className={`flex items-center justify-between p-2 rounded-lg border transition-colors ${
+                                  selectedMovFiles.includes(file.id)
+                                    ? "bg-orange-50 border-orange-300"
+                                    : "bg-slate-50 border-slate-100 hover:border-slate-200"
+                                }`}
+                              >
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                  <Checkbox
+                                    checked={selectedMovFiles.includes(file.id)}
+                                    onCheckedChange={() => toggleMovFileSelection(file.id)}
+                                  />
+                                  <div className="w-8 h-8 rounded bg-slate-200 flex items-center justify-center flex-shrink-0">
+                                    <FileText className="h-4 w-4 text-slate-600" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-medium text-gray-900 truncate">
+                                      {file.file_name}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      {Math.round(file.file_size / 1024)} KB
+                                    </p>
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setPreviewFile({
+                                      id: file.id,
+                                      file_name: file.file_name,
+                                      file_type: file.file_type,
+                                    });
+                                  }}
+                                  className="h-7 px-2 text-xs border-slate-300 text-slate-700 hover:bg-slate-100"
+                                >
+                                  <Eye className="h-3 w-3 mr-1" />
+                                  View
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
                 </div>
+
+                {selectedMovFiles.length > 0 && (
+                  <div className="bg-orange-100 border border-orange-200 rounded-lg p-3">
+                    <p className="text-sm font-medium text-orange-800">
+                      {selectedMovFiles.length} file(s) selected for recalibration
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <label
@@ -730,7 +901,7 @@ export default function SubmissionDetailsPage() {
                     id="recalibration-reason"
                     value={recalibrationComments}
                     onChange={(e) => setRecalibrationComments(e.target.value)}
-                    placeholder="Explain why you believe these indicators should be recalibrated (minimum 10 characters)..."
+                    placeholder="Explain why these files need to be resubmitted (minimum 10 characters)..."
                     className="min-h-24 border-orange-200 focus:border-orange-400"
                   />
                   <p className="text-xs text-orange-600 mt-1">
@@ -746,10 +917,10 @@ export default function SubmissionDetailsPage() {
                     onClick={handleRecalibrate}
                     disabled={
                       recalibrateMutation.isPending ||
-                      selectedIndicators.length === 0 ||
+                      selectedMovFiles.length === 0 ||
                       recalibrationComments.trim().length < 10
                     }
-                    className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
+                    className="flex-1 bg-orange-600 hover:bg-orange-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {recalibrateMutation.isPending ? (
                       <>
@@ -759,7 +930,8 @@ export default function SubmissionDetailsPage() {
                     ) : (
                       <>
                         <RotateCcw className="mr-2 h-4 w-4" />
-                        Submit Recalibration ({selectedIndicators.length} selected)
+                        Submit Recalibration ({selectedMovFiles.length} file
+                        {selectedMovFiles.length !== 1 ? "s" : ""})
                       </>
                     )}
                   </Button>
@@ -915,6 +1087,74 @@ export default function SubmissionDetailsPage() {
                                     </Button>
                                   </div>
                                 ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* MLGOO-Flagged Files Section (Orange/Red - shows what was flagged for recalibration) */}
+                          {ind.mlgooFlaggedFiles && ind.mlgooFlaggedFiles.length > 0 && (
+                            <div className="bg-orange-50 rounded-lg border-2 border-orange-300 p-3">
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded">
+                                  PREVIOUSLY FLAGGED
+                                </div>
+                                <p className="text-sm font-medium text-orange-800">
+                                  {ind.mlgooFlaggedFiles.length} file
+                                  {ind.mlgooFlaggedFiles.length > 1 ? "s" : ""} you flagged for
+                                  recalibration
+                                </p>
+                              </div>
+                              <p className="text-xs text-orange-600 mb-3">
+                                These are the files you marked for BLGU to replace. Compare with the
+                                NEW uploads above.
+                              </p>
+                              <div className="space-y-2">
+                                {ind.mlgooFlaggedFiles.map(
+                                  (file: MovFile & { mlgoo_comment?: string }) => (
+                                    <div
+                                      key={file.id}
+                                      className="flex flex-col gap-2 p-3 bg-white rounded-lg border border-orange-200 hover:border-orange-400 transition-colors"
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                          <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
+                                            <FileText className="h-5 w-5 text-orange-600" />
+                                          </div>
+                                          <div className="min-w-0">
+                                            <p className="text-sm font-medium text-gray-900 truncate">
+                                              {file.file_name}
+                                            </p>
+                                            <p className="text-xs text-gray-500">
+                                              {Math.round(file.file_size / 1024)} KB
+                                            </p>
+                                          </div>
+                                        </div>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() =>
+                                            setPreviewFile({
+                                              id: file.id,
+                                              file_name: file.file_name,
+                                              file_type: file.file_type,
+                                            })
+                                          }
+                                          className="border-orange-300 text-orange-700 hover:bg-orange-50 hover:text-orange-800"
+                                        >
+                                          <Eye className="h-4 w-4 mr-1" />
+                                          Preview
+                                        </Button>
+                                      </div>
+                                      {file.mlgoo_comment && (
+                                        <div className="ml-13 pl-3 border-l-2 border-orange-200">
+                                          <p className="text-xs text-orange-700 italic">
+                                            Your comment: &quot;{file.mlgoo_comment}&quot;
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )
+                                )}
                               </div>
                             </div>
                           )}
@@ -1475,60 +1715,183 @@ export default function SubmissionDetailsPage() {
                         {(ga.indicators || []).map((indicator: any) => {
                           const isRecalibrationTarget = indicator.is_recalibration_target;
                           const status = indicator.validation_status?.toUpperCase();
+                          const movFiles: MovFile[] = indicator.mov_files || [];
+                          const isExpanded = expandedIndicators.has(indicator.indicator_id);
                           return (
                             <div
                               key={indicator.response_id}
-                              className={`p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/50 transition-colors ${
-                                isRecalibrationTarget ? "bg-purple-50/30" : ""
-                              }`}
+                              className={`${isRecalibrationTarget ? "bg-purple-50/30" : ""}`}
                             >
-                              <div className="flex-1 space-y-2">
-                                <div className="flex items-start gap-3">
-                                  <span className="shrink-0 px-2 py-1 rounded-md bg-gray-100 text-gray-600 font-mono text-xs font-bold border border-gray-200">
-                                    {indicator.indicator_code}
-                                  </span>
-                                  <div>
-                                    <p className="font-medium text-gray-900 leading-snug">
-                                      {indicator.indicator_name}
-                                    </p>
-                                    {isRecalibrationTarget && (
-                                      <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-purple-100 text-purple-700 text-xs font-semibold border border-purple-200">
-                                        <RotateCcw className="h-3.5 w-3.5" />
-                                        Recalibration Target
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                                {indicator.assessor_remarks && (
-                                  <div className="ml-12 mt-1 p-3 bg-gray-50 rounded-lg text-xs text-gray-600 border border-gray-100 italic">
-                                    <span className="font-semibold text-gray-700 not-italic mr-1">
-                                      Remarks:
+                              {/* Indicator Header */}
+                              <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/50 transition-colors">
+                                <div className="flex-1 space-y-2">
+                                  <div className="flex items-start gap-3">
+                                    <span className="shrink-0 px-2 py-1 rounded-md bg-gray-100 text-gray-600 font-mono text-xs font-bold border border-gray-200">
+                                      {indicator.indicator_code}
                                     </span>
-                                    {indicator.assessor_remarks}
+                                    <div>
+                                      <p className="font-medium text-gray-900 leading-snug">
+                                        {indicator.indicator_name}
+                                      </p>
+                                      {isRecalibrationTarget && (
+                                        <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-purple-100 text-purple-700 text-xs font-semibold border border-purple-200">
+                                          <RotateCcw className="h-3.5 w-3.5" />
+                                          Recalibration Target
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
-                                )}
+                                  {indicator.assessor_remarks && (
+                                    <div className="ml-12 mt-1 p-3 bg-gray-50 rounded-lg text-xs text-gray-600 border border-gray-100 italic">
+                                      <span className="font-semibold text-gray-700 not-italic mr-1">
+                                        Remarks:
+                                      </span>
+                                      {indicator.assessor_remarks}
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="ml-12 sm:ml-0 shrink-0 flex items-center gap-2">
+                                  {/* MOV Files Button */}
+                                  {movFiles.length > 0 && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => toggleIndicatorExpanded(indicator.indicator_id)}
+                                      className="h-8 px-2 text-gray-500 hover:text-gray-700"
+                                    >
+                                      <FileText className="h-4 w-4 mr-1" />
+                                      <span className="text-xs">{movFiles.length} MOV</span>
+                                      {isExpanded ? (
+                                        <ChevronUp className="h-4 w-4 ml-1" />
+                                      ) : (
+                                        <ChevronDown className="h-4 w-4 ml-1" />
+                                      )}
+                                    </Button>
+                                  )}
+                                  {movFiles.length === 0 && (
+                                    <span className="text-xs text-gray-400 flex items-center gap-1 mr-2">
+                                      <AlertCircle className="h-3 w-3" />
+                                      No MOV
+                                    </span>
+                                  )}
+
+                                  {/* Status Badge with Override Dropdown (only if AWAITING_MLGOO_APPROVAL) */}
+                                  {isAwaitingApproval ? (
+                                    <Select
+                                      value={status || "PENDING"}
+                                      onValueChange={(value) =>
+                                        handleOverrideStatus(
+                                          indicator.response_id,
+                                          value as "PASS" | "FAIL" | "CONDITIONAL"
+                                        )
+                                      }
+                                      disabled={overrideStatusMutation.isPending}
+                                    >
+                                      <SelectTrigger
+                                        className={`h-8 w-[130px] text-xs font-bold border shadow-sm ${
+                                          status === "PASS"
+                                            ? "bg-green-100 text-green-700 border-green-200"
+                                            : status === "FAIL"
+                                              ? "bg-red-100 text-red-700 border-red-200"
+                                              : status === "CONDITIONAL"
+                                                ? "bg-yellow-100 text-yellow-700 border-yellow-200"
+                                                : "bg-gray-100 text-gray-700 border-gray-200"
+                                        }`}
+                                      >
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="PASS">
+                                          <span className="flex items-center gap-2">
+                                            <CheckCircle className="h-4 w-4 text-green-600" />
+                                            Pass
+                                          </span>
+                                        </SelectItem>
+                                        <SelectItem value="CONDITIONAL">
+                                          <span className="flex items-center gap-2">
+                                            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                                            Conditional
+                                          </span>
+                                        </SelectItem>
+                                        <SelectItem value="FAIL">
+                                          <span className="flex items-center gap-2">
+                                            <XCircle className="h-4 w-4 text-red-600" />
+                                            Fail
+                                          </span>
+                                        </SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  ) : (
+                                    <span
+                                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm border ${
+                                        status === "PASS"
+                                          ? "bg-green-100 text-green-700 border-green-200"
+                                          : status === "FAIL"
+                                            ? "bg-red-100 text-red-700 border-red-200"
+                                            : status === "CONDITIONAL"
+                                              ? "bg-yellow-100 text-yellow-700 border-yellow-200"
+                                              : "bg-gray-100 text-gray-700 border-gray-200"
+                                      }`}
+                                    >
+                                      {status === "PASS" && <CheckCircle className="h-3.5 w-3.5" />}
+                                      {status === "FAIL" && <XCircle className="h-3.5 w-3.5" />}
+                                      {status === "CONDITIONAL" && (
+                                        <AlertTriangle className="h-3.5 w-3.5" />
+                                      )}
+                                      {status || "PENDING"}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
 
-                              <div className="ml-12 sm:ml-0 shrink-0">
-                                <span
-                                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm border ${
-                                    status === "PASS"
-                                      ? "bg-green-100 text-green-700 border-green-200"
-                                      : status === "FAIL"
-                                        ? "bg-red-100 text-red-700 border-red-200"
-                                        : status === "CONDITIONAL"
-                                          ? "bg-yellow-100 text-yellow-700 border-yellow-200"
-                                          : "bg-gray-100 text-gray-700 border-gray-200"
-                                  }`}
-                                >
-                                  {status === "PASS" && <CheckCircle className="h-3.5 w-3.5" />}
-                                  {status === "FAIL" && <XCircle className="h-3.5 w-3.5" />}
-                                  {status === "CONDITIONAL" && (
-                                    <AlertTriangle className="h-3.5 w-3.5" />
-                                  )}
-                                  {status || "PENDING"}
-                                </span>
-                              </div>
+                              {/* Expandable MOV Files Section */}
+                              {isExpanded && movFiles.length > 0 && (
+                                <div className="px-4 pb-4 pt-0">
+                                  <div className="ml-12 bg-slate-50 rounded-lg border border-slate-200 p-3">
+                                    <p className="text-xs font-medium text-slate-600 mb-2">
+                                      Uploaded MOV Files:
+                                    </p>
+                                    <div className="space-y-2">
+                                      {movFiles.map((file: MovFile) => (
+                                        <div
+                                          key={file.id}
+                                          className="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-100 hover:border-slate-200 transition-colors"
+                                        >
+                                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                                            <div className="w-8 h-8 rounded bg-slate-200 flex items-center justify-center flex-shrink-0">
+                                              <FileText className="h-4 w-4 text-slate-600" />
+                                            </div>
+                                            <div className="min-w-0">
+                                              <p className="text-xs font-medium text-gray-900 truncate">
+                                                {file.file_name}
+                                              </p>
+                                              <p className="text-xs text-gray-500">
+                                                {Math.round(file.file_size / 1024)} KB
+                                              </p>
+                                            </div>
+                                          </div>
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() =>
+                                              setPreviewFile({
+                                                id: file.id,
+                                                file_name: file.file_name,
+                                                file_type: file.file_type,
+                                              })
+                                            }
+                                            className="h-7 px-2 text-xs border-slate-300 text-slate-700 hover:bg-slate-100"
+                                          >
+                                            <Eye className="h-3 w-3 mr-1" />
+                                            View
+                                          </Button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           );
                         })}

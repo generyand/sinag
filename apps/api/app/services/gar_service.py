@@ -243,20 +243,23 @@ class GARService:
                 )
 
             # Determine indicator validation status
-            # Priority: Calculate from checklist items if available, else use stored validator decision
+            # Priority: Use stored validation_status (from Validator/MLGOO) as authoritative source
+            # This ensures MLGOO overrides are respected in GAR
             validation_status = None
 
-            if gar_checklist:
-                # Has checklist items - calculate status from them
+            # FIRST: Check if there's a stored validation_status (set by Validator or overridden by MLGOO)
+            # This is the authoritative decision and should be used for GAR display
+            if response and response.validation_status:
+                validation_status = response.validation_status.value
+
+            # FALLBACK: Only calculate from checklist if no validation_status is set
+            # This handles edge cases where indicator hasn't been validated yet
+            if validation_status is None and gar_checklist:
                 validation_status = self._calculate_indicator_status_from_checklist(
                     gar_checklist=gar_checklist,
                     indicator_code=indicator.indicator_code,
                     validation_rule=indicator.validation_rule,
                 )
-
-            # Fallback to stored validator decision if no checklist items or calculation returned None
-            if validation_status is None and response and response.validation_status:
-                validation_status = response.validation_status.value
 
             # Determine indent level based on indicator code
             indent_level = self._get_indent_level(indicator.indicator_code)

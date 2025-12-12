@@ -12,6 +12,7 @@ import type { AuditLogResponseUserName } from '../users';
 import type { GovernanceAreaGroup } from '../common';
 import type { BLGUDashboardResponseMovAnnotationsByIndicator } from '../indicators';
 import type { BLGUDashboardResponseMlgooRecalibrationIndicatorIds } from '../indicators';
+import type { BLGUDashboardResponseMlgooRecalibrationMovFileIds } from '../movs';
 import type { BLGUDashboardResponseMlgooRecalibrationComments } from '../mlgoo';
 import type { BLGUDashboardResponseFinalComplianceStatus } from '../compliance';
 import type { BLGUDashboardResponseBbiCompliance } from '../bbis';
@@ -252,6 +253,8 @@ export interface BLGUDashboardResponse {
   is_mlgoo_recalibration?: boolean;
   /** List of indicator IDs that MLGOO has unlocked for RE-calibration. Only these indicators need to be addressed by BLGU. */
   mlgoo_recalibration_indicator_ids?: BLGUDashboardResponseMlgooRecalibrationIndicatorIds;
+  /** List of MOV file IDs flagged by MLGOO for re-upload. Each item contains mov_file_id and optional comment. */
+  mlgoo_recalibration_mov_file_ids?: BLGUDashboardResponseMlgooRecalibrationMovFileIds;
   /** MLGOO's comments explaining why RE-calibration is needed. */
   mlgoo_recalibration_comments?: BLGUDashboardResponseMlgooRecalibrationComments;
   /** Number of times MLGOO has requested RE-calibration (max 1). */
@@ -666,6 +669,18 @@ export type HealthCheckChecks = { [key: string]: unknown };
  * HealthCheckConnections
  */
 export type HealthCheckConnections = { [key: string]: unknown };
+
+
+/**
+ * OverrideValidationStatusResponsePreviousStatus
+ */
+export type OverrideValidationStatusResponsePreviousStatus = string | null;
+
+
+/**
+ * OverrideValidationStatusResponseRemarks
+ */
+export type OverrideValidationStatusResponseRemarks = string | null;
 
 
 /**

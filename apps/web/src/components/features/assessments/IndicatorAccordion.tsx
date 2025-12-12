@@ -45,6 +45,8 @@ interface IndicatorAccordionProps {
   onNext?: () => void;
   /** MOV annotations for rework workflow */
   movAnnotations?: any[];
+  /** MOV file IDs flagged by MLGOO for recalibration */
+  mlgooFlaggedFileIds?: Array<{ mov_file_id: number; comment?: string | null }>;
 }
 
 export function IndicatorAccordion({
@@ -59,6 +61,7 @@ export function IndicatorAccordion({
   onPrevious,
   onNext,
   movAnnotations = [],
+  mlgooFlaggedFileIds = [],
 }: IndicatorAccordionProps) {
   const { data: assessment } = useCurrentAssessment();
 
@@ -517,6 +520,7 @@ export function IndicatorAccordion({
                   isLocked={isLocked}
                   movAnnotations={movAnnotations}
                   reworkComments={(indicator as any).rework_comments}
+                  mlgooFlaggedFileIds={mlgooFlaggedFileIds}
                   currentCode={currentCode}
                   currentPosition={currentPosition}
                   totalIndicators={totalIndicators}
@@ -890,6 +894,7 @@ export function RecursiveIndicator({
   onNext,
   level = 0,
   movAnnotations = [],
+  mlgooFlaggedFileIds = [],
 }: RecursiveIndicatorProps) {
   return (
     <div style={{ paddingLeft: level * 16 }}>
@@ -905,6 +910,7 @@ export function RecursiveIndicator({
         onPrevious={onPrevious}
         onNext={onNext}
         movAnnotations={movAnnotations}
+        mlgooFlaggedFileIds={mlgooFlaggedFileIds}
       />
     </div>
   );

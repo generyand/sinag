@@ -19,7 +19,7 @@ class ApproveAssessmentRequest(BaseModel):
 
 
 class RecalibrationRequest(BaseModel):
-    """Request body for requesting RE-calibration."""
+    """Request body for requesting RE-calibration (legacy - indicator level)."""
 
     indicator_ids: list[int] = Field(
         ...,
@@ -29,6 +29,33 @@ class RecalibrationRequest(BaseModel):
     comments: str = Field(
         ...,
         description="Explanation for why RE-calibration is needed",
+        min_length=10,
+        max_length=2000,
+    )
+
+
+class MOVFileRecalibrationItem(BaseModel):
+    """Single MOV file flagged for recalibration."""
+
+    mov_file_id: int = Field(..., description="ID of the MOV file to recalibrate")
+    comment: str | None = Field(
+        None,
+        description="Optional comment explaining why this file needs recalibration",
+        max_length=500,
+    )
+
+
+class RecalibrationByMovRequest(BaseModel):
+    """Request body for requesting RE-calibration by specific MOV files."""
+
+    mov_files: list[MOVFileRecalibrationItem] = Field(
+        ...,
+        description="List of MOV files to flag for recalibration",
+        min_length=1,
+    )
+    overall_comments: str = Field(
+        ...,
+        description="Overall explanation for why RE-calibration is needed",
         min_length=10,
         max_length=2000,
     )
@@ -51,8 +78,8 @@ class IndicatorValidationUpdate(BaseModel):
     indicator_id: int = Field(..., description="ID of the indicator to update")
     validation_status: str = Field(
         ...,
-        description="New validation status: Pass, Fail, or Conditional",
-        pattern="^(Pass|Fail|Conditional)$",
+        description="New validation status: PASS, FAIL, or CONDITIONAL",
+        pattern="^(PASS|FAIL|CONDITIONAL|Pass|Fail|Conditional)$",
     )
     remarks: str | None = Field(
         None,
@@ -72,6 +99,21 @@ class UpdateRecalibrationValidationRequest(BaseModel):
     comments: str | None = Field(
         None,
         description="Optional overall comments from MLGOO",
+        max_length=2000,
+    )
+
+
+class OverrideValidationStatusRequest(BaseModel):
+    """Request body for MLGOO to override any indicator's validation status."""
+
+    validation_status: str = Field(
+        ...,
+        description="New validation status: PASS, FAIL, or CONDITIONAL",
+        pattern="^(PASS|FAIL|CONDITIONAL)$",
+    )
+    remarks: str | None = Field(
+        None,
+        description="Optional remarks explaining the override decision",
         max_length=2000,
     )
 
@@ -179,6 +221,7 @@ class AssessmentDetailResponse(BaseModel):
     mlgoo_recalibration_requested_at: str | None
     mlgoo_recalibration_submitted_at: str | None  # When BLGU resubmitted after MLGOO RE-calibration
     mlgoo_recalibration_indicator_ids: list[int] | None
+    mlgoo_recalibration_mov_file_ids: list[dict[str, Any]] | None
     mlgoo_recalibration_comments: str | None
     # MLGOO approval
     mlgoo_approved_at: str | None
@@ -212,7 +255,7 @@ class ApproveAssessmentResponse(BaseModel):
 
 
 class RecalibrationResponse(BaseModel):
-    """Response for RE-calibration request."""
+    """Response for RE-calibration request (indicator level)."""
 
     success: bool
     message: str
@@ -222,6 +265,34 @@ class RecalibrationResponse(BaseModel):
     indicator_ids: list[int]
     indicator_names: list[str]
     comments: str
+    requested_by: str
+    requested_at: str
+    grace_period_expires_at: str
+    recalibration_count: int
+    notification_result: NotificationResult
+
+
+class FlaggedMovFileItem(BaseModel):
+    """Flagged MOV file details in response."""
+
+    mov_file_id: int
+    file_name: str
+    indicator_id: int
+    indicator_code: str | None
+    indicator_name: str
+    comment: str | None
+
+
+class RecalibrationByMovResponse(BaseModel):
+    """Response for RE-calibration request (MOV file level)."""
+
+    success: bool
+    message: str
+    assessment_id: int
+    barangay_name: str
+    status: str
+    flagged_mov_files: list[FlaggedMovFileItem]
+    overall_comments: str
     requested_by: str
     requested_at: str
     grace_period_expires_at: str
@@ -259,5 +330,21 @@ class UpdateRecalibrationValidationResponse(BaseModel):
     assessment_id: int
     barangay_name: str
     updated_indicators: list[UpdatedIndicatorItem]
+    updated_by: str
+    updated_at: str
+
+
+class OverrideValidationStatusResponse(BaseModel):
+    """Response for MLGOO validation status override."""
+
+    success: bool
+    message: str
+    response_id: int
+    indicator_id: int
+    indicator_name: str
+    indicator_code: str | None
+    previous_status: str | None
+    new_status: str
+    remarks: str | None
     updated_by: str
     updated_at: str
