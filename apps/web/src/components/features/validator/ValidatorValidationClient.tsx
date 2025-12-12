@@ -555,10 +555,23 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
           duration: 6000,
         });
       } else if (errorInfo.type === "validation") {
-        toast.error("Cannot finalize validation", {
-          description: errorInfo.message,
-          duration: 6000,
-        });
+        // Check if the error is about unreviewed indicators
+        const isUnreviewedError =
+          errorInfo.message?.toLowerCase().includes("unreviewed") ||
+          errorInfo.message?.toLowerCase().includes("validation_status");
+
+        if (isUnreviewedError) {
+          toast.error("Please complete the Compliance Overview first", {
+            description:
+              "You must review and confirm all indicator statuses in the Compliance Overview before finalizing.",
+            duration: 6000,
+          });
+        } else {
+          toast.error("Cannot finalize validation", {
+            description: errorInfo.message,
+            duration: 6000,
+          });
+        }
       } else {
         toast.error("Finalization failed", {
           description: "Please try again. If the problem persists, contact your MLGOO-DILG.",
