@@ -64,7 +64,10 @@ class ComplianceService:
         # Check indicator name/description for "(Consideration)"
         indicator_name = indicator.name or ""
         indicator_desc = indicator.description or ""
-        if "(consideration)" in indicator_name.lower() or "(consideration)" in indicator_desc.lower():
+        if (
+            "(consideration)" in indicator_name.lower()
+            or "(consideration)" in indicator_desc.lower()
+        ):
             return True
 
         # Check checklist items for field_notes with "CONSIDERATION"

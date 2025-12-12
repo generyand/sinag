@@ -146,7 +146,9 @@ def test_submit_assessment_success(client, db_session: Session, blgu_context_wit
     client.app.dependency_overrides.clear()
 
 
-def test_submit_assessment_succeeds_without_mov_with_warning(client, db_session: Session, blgu_context_without_mov):
+def test_submit_assessment_succeeds_without_mov_with_warning(
+    client, db_session: Session, blgu_context_without_mov
+):
     """Submission succeeds even when a YES answer lacks MOVs (with warning logged).
 
     Business Rule Change: We now allow incomplete submissions to support

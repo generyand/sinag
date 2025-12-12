@@ -23,7 +23,9 @@ class SubIndicatorStatus(BaseModel):
         None  # Auto-calculated recommendation (glow)
     )
     has_checklist_data: bool = False  # True if validator has checked any checklist items
-    has_consideration_rule: bool = False  # True if indicator has a "Consideration" rule (allows CONDITIONAL status)
+    has_consideration_rule: bool = (
+        False  # True if indicator has a "Consideration" rule (allows CONDITIONAL status)
+    )
 
 
 class ParentIndicatorCompliance(BaseModel):
