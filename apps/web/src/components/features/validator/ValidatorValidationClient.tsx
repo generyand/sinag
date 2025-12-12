@@ -4,6 +4,16 @@ import { TreeNavigator } from "@/components/features/assessments/tree-navigation
 import { StatusBadge } from "@/components/shared";
 import { ValidationPanelSkeleton } from "@/components/shared/skeletons";
 import { BBIPreviewPanel, BBIPreviewData } from "./BBIPreviewPanel";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/useAuthStore";
 import {
@@ -75,6 +85,10 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const [checklistState, setChecklistState] = useState<Record<string, any>>({});
   // Store calibration flag state (which indicators are flagged for calibration)
   const [calibrationFlags, setCalibrationFlags] = useState<Record<number, boolean>>({});
+
+  // Confirmation dialog states
+  const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
+  const [showCalibrationConfirm, setShowCalibrationConfirm] = useState(false);
 
   // Get current user for per-area calibration check (must be called before conditional returns)
   const { user: currentUser } = useAuthStore();
@@ -285,16 +299,24 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     return statusUpper === "PASS" || statusUpper === "FAIL" || statusUpper === "CONDITIONAL";
   };
 
+  // Helper: Check if validator has entered a comment/finding for this response
+  const hasValidatorComment = (responseId: number): boolean => {
+    const formData = form[responseId];
+    return !!(formData?.publicComment && formData.publicComment.trim().length > 0);
+  };
+
   // Helper: Check if an indicator is "reviewed"
   // An indicator is reviewed if:
   // 1. Has checklist items checked in current session, OR
   // 2. Flagged for calibration, OR
-  // 3. Already has a validation status from database (PASS/FAIL/CONDITIONAL - e.g., after calibration)
+  // 3. Already has a validation status from database (PASS/FAIL/CONDITIONAL - e.g., after calibration), OR
+  // 4. Validator has entered a comment/finding
   const isIndicatorReviewed = (responseId: number): boolean => {
     return (
       hasChecklistItemsChecked(responseId) ||
       calibrationFlags[responseId] === true ||
-      hasExistingValidationStatus(responseId)
+      hasExistingValidationStatus(responseId) ||
+      hasValidatorComment(responseId)
     );
   };
 
@@ -646,15 +668,18 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
               </div>
             ) : null}
             <Button
-              asChild
               variant="default"
               size="sm"
               className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
+              disabled={validateMut.isPending}
+              onClick={async () => {
+                // Save draft first, then navigate to compliance overview
+                await onSaveDraft();
+                router.push(`/validator/submissions/${assessmentId}/compliance`);
+              }}
             >
-              <Link href={`/validator/submissions/${assessmentId}/compliance`}>
-                <ClipboardCheck className="h-4 w-4" />
-                Compliance Overview
-              </Link>
+              <ClipboardCheck className="h-4 w-4" />
+              Compliance Overview
             </Button>
             <Button
               variant="outline"
@@ -812,7 +837,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
             <Button
               size="default"
               type="button"
-              onClick={onCalibrate}
+              onClick={() => setShowCalibrationConfirm(true)}
               disabled={
                 calibrateMut.isPending ||
                 calibrationAlreadyUsed ||
@@ -866,7 +891,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
             <Button
               size="default"
               type="button"
-              onClick={onFinalize}
+              onClick={() => setShowFinalizeConfirm(true)}
               disabled={!allReviewed || finalizeMut.isPending}
               className="w-full sm:w-auto text-white hover:opacity-90"
               style={{ background: "var(--success)" }}
@@ -902,6 +927,57 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
           </div>
         </div>
       </div>
+
+      {/* Confirmation Dialog - Submit for Calibration */}
+      <AlertDialog open={showCalibrationConfirm} onOpenChange={setShowCalibrationConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Submit for Calibration?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will send the flagged indicators back to BLGU for calibration. The BLGU will need
+              to address the issues and resubmit. Note: Calibration can only be used once per
+              governance area.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowCalibrationConfirm(false);
+                onCalibrate();
+              }}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              Yes, Submit for Calibration
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmation Dialog - Finalize Validation */}
+      <AlertDialog open={showFinalizeConfirm} onOpenChange={setShowFinalizeConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Finalize Validation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will complete the validation for your assigned governance area and send the
+              assessment for MLGOO approval. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowFinalizeConfirm(false);
+                onFinalize();
+              }}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              Yes, Finalize
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

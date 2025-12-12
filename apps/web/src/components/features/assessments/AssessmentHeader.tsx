@@ -38,6 +38,8 @@ interface AssessmentHeaderProps {
   isCalibrationRework?: boolean;
   calibrationGovernanceAreaName?: string;
   calibrationGovernanceAreaNames?: string[]; // Support multiple areas
+  reworkSubmittedAt?: string | null; // When BLGU already resubmitted after rework
+  calibrationSubmittedAt?: string | null; // When BLGU already resubmitted after calibration
 }
 
 export function AssessmentHeader({
@@ -46,6 +48,8 @@ export function AssessmentHeader({
   isCalibrationRework = false,
   calibrationGovernanceAreaName,
   calibrationGovernanceAreaNames = [],
+  reworkSubmittedAt,
+  calibrationSubmittedAt,
 }: AssessmentHeaderProps) {
   // Combine legacy single name with new multiple names array
   const allCalibrationAreaNames =
@@ -184,6 +188,11 @@ export function AssessmentHeader({
   const isReworkStatus =
     assessment.status.toLowerCase() === "rework" ||
     assessment.status.toLowerCase() === "needs-rework";
+
+  // Check if already resubmitted (button should be locked)
+  const hasAlreadyResubmitted = isCalibrationRework
+    ? !!calibrationSubmittedAt
+    : !!reworkSubmittedAt;
 
   // Check if assessment is in an editable state (can be submitted)
   const isEditableStatus =
@@ -386,37 +395,45 @@ export function AssessmentHeader({
 
             {/* Submit Button - Only show when assessment is in editable state */}
             {isEditableStatus ? (
-              <Button
-                onClick={() => setShowConfirmDialog(true)}
-                disabled={
-                  submitMutation.isPending ||
+              hasAlreadyResubmitted ? (
+                // Show "Already Resubmitted" message when BLGU has already resubmitted
+                <div className="h-14 px-8 flex items-center justify-center text-base font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg min-w-[200px]">
+                  <CheckCircle className="h-5 w-5 mr-3" />
+                  {isCalibrationRework ? "Calibration Submitted" : "Resubmitted"}
+                </div>
+              ) : (
+                <Button
+                  onClick={() => setShowConfirmDialog(true)}
+                  disabled={
+                    submitMutation.isPending ||
+                    resubmitMutation.isPending ||
+                    calibrationMutation.isPending
+                  }
+                  className={
+                    validation.isComplete
+                      ? "h-14 px-8 text-base font-semibold bg-[var(--foreground)] hover:bg-[var(--foreground)]/90 text-[var(--background)] rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 min-w-[200px]"
+                      : "h-14 px-8 text-base font-semibold bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 min-w-[200px]"
+                  }
+                >
+                  {submitMutation.isPending ||
                   resubmitMutation.isPending ||
-                  calibrationMutation.isPending
-                }
-                className={
-                  validation.isComplete
-                    ? "h-14 px-8 text-base font-semibold bg-[var(--foreground)] hover:bg-[var(--foreground)]/90 text-[var(--background)] rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 min-w-[200px]"
-                    : "h-14 px-8 text-base font-semibold bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 min-w-[200px]"
-                }
-              >
-                {submitMutation.isPending ||
-                resubmitMutation.isPending ||
-                calibrationMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-5 w-5 mr-3 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <Send className="h-5 w-5 mr-3" />
-                    {isReworkStatus
-                      ? isCalibrationRework
-                        ? "Submit Calibration"
-                        : "Resubmit"
-                      : "Submit Assessment"}
-                  </>
-                )}
-              </Button>
+                  calibrationMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-5 w-5 mr-3 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-5 w-5 mr-3" />
+                      {isReworkStatus
+                        ? isCalibrationRework
+                          ? "Submit Calibration"
+                          : "Resubmit"
+                        : "Submit Assessment"}
+                    </>
+                  )}
+                </Button>
+              )
             ) : (
               <div className="h-14 px-8 flex items-center justify-center text-base font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg min-w-[200px]">
                 <CheckCircle className="h-5 w-5 mr-3" />

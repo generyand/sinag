@@ -1383,6 +1383,7 @@ export function RightAssessorPanel({
                           name: string;
                           label: string;
                           items: any[];
+                          fieldNotes?: { title?: string; items?: { label?: string; text: string }[] } | null;
                         }
 
                         const groupedByOptionGroup = (): OptionGroupData[] | null => {
@@ -1414,6 +1415,7 @@ export function RightAssessorPanel({
                                   name: item.option_group,
                                   label: sectionHeader?.label || item.option_group,
                                   items: [],
+                                  fieldNotes: sectionHeader?.field_notes || null,
                                 };
                                 groups.push(currentGroup);
                               }
@@ -1477,6 +1479,33 @@ export function RightAssessorPanel({
                                         </span>
                                       </AccordionTrigger>
                                       <AccordionContent className="px-3 pt-3 pb-4">
+                                        {/* Section Header Field Notes (e.g., Important notes for this option) */}
+                                        {group.fieldNotes &&
+                                          group.fieldNotes.items &&
+                                          group.fieldNotes.items.length > 0 && (
+                                            <div className="mb-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-sm p-3">
+                                              <div className="text-xs font-semibold text-amber-900 dark:text-amber-200 mb-1">
+                                                {group.fieldNotes.title || "Note:"}
+                                              </div>
+                                              <div className="space-y-1">
+                                                {group.fieldNotes.items.map(
+                                                  (noteItem: any, noteIdx: number) => (
+                                                    <div
+                                                      key={noteIdx}
+                                                      className="text-xs text-amber-800 dark:text-amber-300"
+                                                    >
+                                                      {noteItem.label && (
+                                                        <span className="font-medium">
+                                                          {noteItem.label}:{" "}
+                                                        </span>
+                                                      )}
+                                                      {noteItem.text}
+                                                    </div>
+                                                  )
+                                                )}
+                                              </div>
+                                            </div>
+                                          )}
                                         <div className="space-y-3">
                                           {group.items.map((item: any, idx: number) =>
                                             renderChecklistItem(item, idx)

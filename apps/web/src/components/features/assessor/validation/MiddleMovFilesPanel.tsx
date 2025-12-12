@@ -235,8 +235,8 @@ export function MiddleMovFilesPanel({
 
   // Separate files into:
   // - newFiles: Files uploaded AFTER rework/calibration (replacement files)
-  // - acceptedOldFiles: Files uploaded BEFORE but have NO annotations (were accepted, don't need re-upload)
-  // - rejectedOldFiles: Files uploaded BEFORE and HAVE annotations (were rejected, replaced by newFiles)
+  // - acceptedOldFiles: Files uploaded BEFORE but were accepted (no annotations, didn't need re-upload)
+  // - rejectedOldFiles: Files uploaded BEFORE and were rejected/replaced
   const { newFiles, acceptedOldFiles, rejectedOldFiles } = React.useMemo(() => {
     if (!effectiveTimestamp) {
       // No separation timestamp - all files are treated as accepted (normal view)
@@ -246,9 +246,33 @@ export function MiddleMovFilesPanel({
     const newUploads = movFiles.filter((f: any) => f.isNew);
     const oldUploads = movFiles.filter((f: any) => !f.isNew);
 
-    // Use is_rejected flag from backend to separate old files
-    const rejected = oldUploads.filter((f: any) => f.is_rejected === true);
-    const accepted = oldUploads.filter((f: any) => f.is_rejected !== true);
+    // Check if any old files have explicit rejection flags
+    const hasExplicitRejection = oldUploads.some(
+      (f: any) => f.is_rejected === true || f.has_annotations === true
+    );
+
+    let rejected: any[] = [];
+    let accepted: any[] = [];
+
+    if (hasExplicitRejection) {
+      // Use is_rejected or has_annotations flag to determine rejection
+      rejected = oldUploads.filter(
+        (f: any) => f.is_rejected === true || f.has_annotations === true
+      );
+      accepted = oldUploads.filter(
+        (f: any) => f.is_rejected !== true && f.has_annotations !== true
+      );
+    } else if (newUploads.length > 0 && oldUploads.length > 0) {
+      // General rework case: New files uploaded but no explicit rejection flags
+      // This means indicator was flagged for rework without specific file annotations
+      // Treat ALL old files as "replaced" since BLGU uploaded replacements
+      rejected = oldUploads;
+      accepted = [];
+    } else {
+      // No new uploads - all old files are considered valid/existing
+      rejected = [];
+      accepted = oldUploads;
+    }
 
     return {
       newFiles: newUploads,

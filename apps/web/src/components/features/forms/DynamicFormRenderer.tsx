@@ -834,6 +834,7 @@ interface OptionGroup {
   name: string;
   label: string;
   fields: FormSchemaFieldsItem[];
+  fieldNotes?: { title?: string; items?: { label?: string; text: string }[] } | null;
 }
 
 function groupFieldsByOptionGroup(fields: FormSchemaFieldsItem[]): OptionGroup[] | null {
@@ -862,9 +863,10 @@ function groupFieldsByOptionGroup(fields: FormSchemaFieldsItem[]): OptionGroup[]
         groups.push(currentGroup);
       }
 
-      // Check if this is a section_header - use its label as the group label
+      // Check if this is a section_header - use its label and field_notes
       if (field.field_type === "section_header") {
         currentGroup.label = field.label;
+        currentGroup.fieldNotes = (field as any).field_notes || null;
       } else {
         // Add non-header fields to the group
         currentGroup.fields.push(field);
@@ -1092,6 +1094,33 @@ function SectionRenderer({
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="px-5 pt-6 pb-8 bg-white dark:bg-zinc-900">
+                    {/* Section Header Field Notes (e.g., Important notes for this option) */}
+                    {group.fieldNotes &&
+                      group.fieldNotes.items &&
+                      group.fieldNotes.items.length > 0 && (
+                        <div className="mb-6 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                          <div className="text-sm font-semibold text-amber-900 dark:text-amber-200 mb-2">
+                            {group.fieldNotes.title || "Note:"}
+                          </div>
+                          <div className="space-y-1">
+                            {group.fieldNotes.items.map(
+                              (noteItem: any, noteIdx: number) => (
+                                <div
+                                  key={noteIdx}
+                                  className="text-sm text-amber-800 dark:text-amber-300"
+                                >
+                                  {noteItem.label && (
+                                    <span className="font-medium">
+                                      {noteItem.label}:{" "}
+                                    </span>
+                                  )}
+                                  {noteItem.text}
+                                </div>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      )}
                     <div className="space-y-10">
                       {group.fields.map((field) => (
                         <FieldRenderer
