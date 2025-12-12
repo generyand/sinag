@@ -290,9 +290,16 @@ class ComplianceService:
                 f"completed={completed_item_ids}, any_group_complete={any_group_complete}"
             )
         elif validation_rule in ["OR_LOGIC_AT_LEAST_1_REQUIRED", "SHARED_PLUS_OR_LOGIC"]:
-            # Special logic for indicators like 4.5.6 (Physical OR Financial)
-            # 1. Must satisfy any unconditionally REQUIRED items (like shared uploads)
-            # 2. Must satisfy at least one OPTIONAL assessment field (YES result)
+            # Special logic for indicators like 3.1.6, 4.5.6 (Physical OR Financial)
+            # Logic: Check option checkbox OR (Check option checkbox AND YES for assessment)
+            #
+            # For 3.1.6:
+            # - Option 1: Approved Barangay Appropriation Ordinance (checkbox)
+            # - OR Option 2: Copy of Barangay AIP (checkbox) + YES assessment
+            #
+            # We need to consider:
+            # 1. Regular checkboxes that are checked (not just _yes suffixed ones)
+            # 2. Assessment fields with _yes suffix
 
             # 1. Check unconditionally required items
             required_items = [item for item in checklist_items_data if item.get("required", True)]
@@ -301,26 +308,43 @@ class ComplianceService:
 
             shared_requirements_met = required_item_ids.issubset(completed_item_ids)
 
-            # 2. Check for at least one successful assessment option (YES result)
-            # We look for "assessment_field" types in the definition, or infer from keys ending in "_yes"
-            # In response_data, a YES validation is stored as "validator_val_{id}_yes": True
-
-            # Find all assessment fields (the options)
-            # We can identify them by checking if any key in response_data ends with "_yes"
-            # and matches an item defined for this indicator
+            # 2. Check for passing options:
+            # a) Any checkbox item that is checked (item_type='checkbox'), OR
+            # b) Any assessment_field with _yes checked
 
             has_passing_option = False
 
             # Get all item IDs defined for this indicator
             all_item_ids = {item.get("item_id") for item in checklist_items_data}
 
-            for key, value in response_data.items():
-                if key.startswith("validator_val_") and key.endswith("_yes") and value is True:
-                    # Extract item_id from key: validator_val_{item_id}_yes
-                    item_id = key.replace("validator_val_", "").replace("_yes", "")
-                    if item_id in all_item_ids:
-                        has_passing_option = True
-                        break
+            # Get checkbox items (regular options like option_1, option_2)
+            checkbox_items = [
+                item.get("item_id")
+                for item in checklist_items_data
+                if item.get("item_type") == "checkbox"
+            ]
+
+            # Check if any checkbox option is checked
+            for checkbox_id in checkbox_items:
+                if checkbox_id in completed_item_ids:
+                    has_passing_option = True
+                    self.logger.debug(
+                        f"Indicator {indicator.indicator_code}: Checkbox '{checkbox_id}' is checked"
+                    )
+                    break
+
+            # Also check for assessment_field items with _yes suffix
+            if not has_passing_option:
+                for key, value in response_data.items():
+                    if key.startswith("validator_val_") and key.endswith("_yes") and value is True:
+                        # Extract item_id from key: validator_val_{item_id}_yes
+                        item_id = key.replace("validator_val_", "").replace("_yes", "")
+                        if item_id in all_item_ids:
+                            has_passing_option = True
+                            self.logger.debug(
+                                f"Indicator {indicator.indicator_code}: Assessment '{item_id}' has YES"
+                            )
+                            break
 
             # Fallback: Auto-calculate compliance from values if explicit CHECKBOX is missing
             # For indicators: 2.1.4, 3.2.3, 4.1.6, 4.3.4, 4.5.6, 4.8.4, 6.1.4
