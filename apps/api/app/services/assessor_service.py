@@ -1683,9 +1683,18 @@ class AssessorService:
 
             # Check if ALL governance areas have been validated
             # (All responses across all areas should have validation_status)
-            all_responses_validated = all(
-                response.validation_status is not None for response in assessment.responses
+            # IMPORTANT: Query the database directly to avoid stale data from eager loading.
+            # This prevents a race condition where two validators finalize concurrently
+            # and the last one doesn't see the other's committed validation_status values.
+            unvalidated_count = (
+                db.query(AssessmentResponse)
+                .filter(
+                    AssessmentResponse.assessment_id == assessment_id,
+                    AssessmentResponse.validation_status.is_(None),
+                )
+                .count()
             )
+            all_responses_validated = unvalidated_count == 0
 
             if all_responses_validated:
                 # All governance areas validated - move to AWAITING_MLGOO_APPROVAL
