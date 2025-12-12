@@ -4,13 +4,13 @@ import { formatIndicatorName } from "@/lib/utils/text-formatter";
 import Image from "next/image";
 
 const GOVERNANCE_AREA_LOGOS: Record<string, string> = {
-  "Financial Administration and Sustainability": "/Assessment_Areas/financialAdmin.png",
-  "Disaster Preparedness": "/Assessment_Areas/disasterPreparedness.png",
-  "Social Protection and Sensitivity": "/Assessment_Areas/socialProtectAndSensitivity.png",
-  "Safety, Peace and Order": "/Assessment_Areas/safetyPeaceAndOrder.png",
-  "Environmental Management": "/Assessment_Areas/environmentalManagement.png",
-  "Business Friendliness and Competitiveness": "/Assessment_Areas/businessFriendliness.png",
-  "Business-Friendliness and Competitiveness": "/Assessment_Areas/businessFriendliness.png",
+  "Financial Administration and Sustainability": "/Assessment_Areas/financialAdmin.webp",
+  "Disaster Preparedness": "/Assessment_Areas/disasterPreparedness.webp",
+  "Social Protection and Sensitivity": "/Assessment_Areas/socialProtectAndSensitivity.webp",
+  "Safety, Peace and Order": "/Assessment_Areas/safetyPeaceAndOrder.webp",
+  "Environmental Management": "/Assessment_Areas/environmentalManagement.webp",
+  "Business Friendliness and Competitiveness": "/Assessment_Areas/businessFriendliness.webp",
+  "Business-Friendliness and Competitiveness": "/Assessment_Areas/businessFriendliness.webp",
 };
 
 import { CapDevInsightsCard } from "@/components/features/capdev";
