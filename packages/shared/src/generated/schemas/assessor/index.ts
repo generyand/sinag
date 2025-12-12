@@ -46,6 +46,40 @@ export type AssessorQueueItemSubmissionDate = string | null;
 
 
 /**
+ * GetAssessorHistoryParams
+ */
+export type GetAssessorHistoryParams = {
+/**
+ * Filter by assessment year (e.g., 2024, 2025). Defaults to active year.
+ */
+year?: number | null;
+/**
+ * Page number (1-indexed)
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Items per page (max 100)
+ * @minimum 1
+ * @maximum 100
+ */
+page_size?: number;
+/**
+ * Filter by completion date >= date_from (ISO format)
+ */
+date_from?: string | null;
+/**
+ * Filter by completion date <= date_to (ISO format)
+ */
+date_to?: string | null;
+/**
+ * Filter by final compliance status
+ */
+outcome?: string | null;
+};
+
+
+/**
  * GetAssessorQueueParams
  */
 export type GetAssessorQueueParams = {
@@ -71,6 +105,18 @@ year?: number | null;
  * IndicatorDetailItemAssessorRemarks
  */
 export type IndicatorDetailItemAssessorRemarks = string | null;
+
+
+/**
+ * ReviewHistoryFeedbackCommentAssessorRole
+ */
+export type ReviewHistoryFeedbackCommentAssessorRole = string | null;
+
+
+/**
+ * ReviewHistoryIndicatorAssessorRemarks
+ */
+export type ReviewHistoryIndicatorAssessorRemarks = string | null;
 
 
 /**

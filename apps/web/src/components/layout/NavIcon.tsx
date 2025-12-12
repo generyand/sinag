@@ -19,6 +19,7 @@ import {
   Calendar,
   Building2,
   Clock,
+  History,
   type LucideIcon,
 } from "lucide-react";
 
@@ -37,6 +38,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   calendar: Calendar,
   building: Building2,
   clock: Clock,
+  history: History,
 };
 
 interface NavIconProps {

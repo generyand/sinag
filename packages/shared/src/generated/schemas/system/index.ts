@@ -35,6 +35,7 @@ import type { ReportMetadataAssessmentYear } from '../assessments';
 import type { ChartData } from '../common';
 import type { MapData } from '../common';
 import type { TableData } from '../common';
+import type { ReviewHistoryItem } from '../common';
 import type { AssessmentStatus } from '../assessments';
 import type { SubmissionValidationResult } from '../error';
 import type { ValidationStatus } from '../error';
@@ -824,6 +825,18 @@ export type ResolveSchemaResponseOriginalSchema = { [key: string]: unknown };
  * ResolveSchemaResponseResolvedSchema
  */
 export type ResolveSchemaResponseResolvedSchema = { [key: string]: unknown };
+
+
+/**
+ * ReviewHistoryResponse
+ */
+export interface ReviewHistoryResponse {
+  items: ReviewHistoryItem[];
+  total: number;
+  page: number;
+  page_size: number;
+  has_more: boolean;
+}
 
 
 /**

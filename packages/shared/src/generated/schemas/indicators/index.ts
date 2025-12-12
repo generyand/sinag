@@ -12,6 +12,9 @@ import type { IndicatorDetailItemAssessorRemarks } from '../assessor';
 import type { MOVFileItem } from '../movs';
 import type { IndicatorHistoryResponseArchivedByUser } from '../users';
 import type { GovernanceAreaNested } from '../common';
+import type { ReviewHistoryIndicatorAssessorRemarks } from '../assessor';
+import type { ReviewHistoryFeedbackComment } from '../common';
+import type { ValidationStatus } from '../error';
 import type { ChecklistItemResponse } from '../system';
 
 /**
@@ -945,6 +948,36 @@ export type PostIndicatorsValidateCalculationSchema200 = { [key: string]: unknow
  * PostIndicatorsValidateFormSchema200
  */
 export type PostIndicatorsValidateFormSchema200 = { [key: string]: unknown };
+
+
+/**
+ * ReviewHistoryIndicator
+ */
+export interface ReviewHistoryIndicator {
+  indicator_id: number;
+  indicator_code: string;
+  indicator_name: string;
+  governance_area_name?: ReviewHistoryIndicatorGovernanceAreaName;
+  validation_status?: ReviewHistoryIndicatorValidationStatus;
+  assessor_remarks?: ReviewHistoryIndicatorAssessorRemarks;
+  flagged_for_calibration?: boolean;
+  requires_rework?: boolean;
+  feedback_comments?: ReviewHistoryFeedbackComment[];
+  has_mov_annotations?: boolean;
+  mov_count?: number;
+}
+
+
+/**
+ * ReviewHistoryIndicatorGovernanceAreaName
+ */
+export type ReviewHistoryIndicatorGovernanceAreaName = string | null;
+
+
+/**
+ * ReviewHistoryIndicatorValidationStatus
+ */
+export type ReviewHistoryIndicatorValidationStatus = ValidationStatus | null;
 
 
 /**

@@ -121,3 +121,15 @@ export interface OverallComplianceResponse {
   /** Assessment cycle identifier */
   assessment_cycle?: OverallComplianceResponseAssessmentCycle;
 }
+
+
+/**
+ * ReviewHistoryDetailFinalComplianceStatus
+ */
+export type ReviewHistoryDetailFinalComplianceStatus = string | null;
+
+
+/**
+ * ReviewHistoryItemFinalComplianceStatus
+ */
+export type ReviewHistoryItemFinalComplianceStatus = string | null;

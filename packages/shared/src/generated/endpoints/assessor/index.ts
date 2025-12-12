@@ -27,11 +27,14 @@ import type {
   AssessorAnalyticsResponse,
   AssessorQueueItem,
   BodyUploadMovFileForAssessorApiV1AssessorAssessmentResponsesResponseIdMovsUploadPost,
+  GetAssessorHistoryParams,
   GetAssessorQueueParams,
   GetAssessorStatsParams,
   HTTPValidationError,
   MOVCreate,
   MOVUploadResponse,
+  ReviewHistoryDetail,
+  ReviewHistoryResponse,
   ValidationRequest,
   ValidationResponse
 } from '../../schemas';
@@ -862,6 +865,162 @@ export function useGetAssessorAnalytics<TData = Awaited<ReturnType<typeof getAss
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetAssessorAnalyticsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
+ * Get paginated review history for the current assessor/validator.
+
+Returns COMPLETED assessments that the user has reviewed:
+- Assessors: Assessments where reviewed_by matches the current user
+- Validators: Completed assessments in their governance area
+
+Each item includes summary counts (pass/fail/conditional indicators)
+without loading full indicator details (for performance).
+ * @summary Get Review History
+ */
+export const getAssessorHistory = (
+    params?: GetAssessorHistoryParams,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<ReviewHistoryResponse>(
+      {url: `/api/v1/assessor/history`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetAssessorHistoryQueryKey = (params?: GetAssessorHistoryParams,) => {
+    return [
+    `/api/v1/assessor/history`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getGetAssessorHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getAssessorHistory>>, TError = HTTPValidationError>(params?: GetAssessorHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorHistory>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAssessorHistoryQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessorHistory>>> = ({ signal }) => getAssessorHistory(params, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessorHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAssessorHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessorHistory>>>
+export type GetAssessorHistoryQueryError = HTTPValidationError
+
+
+/**
+ * @summary Get Review History
+ */
+
+export function useGetAssessorHistory<TData = Awaited<ReturnType<typeof getAssessorHistory>>, TError = HTTPValidationError>(
+ params?: GetAssessorHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorHistory>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAssessorHistoryQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
+ * Get detailed per-indicator decisions for a specific completed assessment.
+
+Used when user expands a row to see inline indicator details including:
+- Validation status (Pass/Fail/Conditional) per indicator
+- Feedback comments given
+- Calibration flags
+- MOV counts
+
+Access control:
+- Assessors can only view assessments they reviewed (reviewed_by == user.id)
+- Validators can view assessments in their governance area
+ * @summary Get Review History Detail
+ */
+export const getAssessorHistory$AssessmentId = (
+    assessmentId: number,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<ReviewHistoryDetail>(
+      {url: `/api/v1/assessor/history/${assessmentId}`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetAssessorHistoryAssessmentIdQueryKey = (assessmentId?: number,) => {
+    return [
+    `/api/v1/assessor/history/${assessmentId}`
+    ] as const;
+    }
+
+    
+export const getGetAssessorHistoryAssessmentIdQueryOptions = <TData = Awaited<ReturnType<typeof getAssessorHistory$AssessmentId>>, TError = HTTPValidationError>(assessmentId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorHistory$AssessmentId>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAssessorHistoryAssessmentIdQueryKey(assessmentId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessorHistory$AssessmentId>>> = ({ signal }) => getAssessorHistory$AssessmentId(assessmentId, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessorHistory$AssessmentId>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAssessorHistoryAssessmentIdQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessorHistory$AssessmentId>>>
+export type GetAssessorHistoryAssessmentIdQueryError = HTTPValidationError
+
+
+/**
+ * @summary Get Review History Detail
+ */
+
+export function useGetAssessorHistoryAssessmentId<TData = Awaited<ReturnType<typeof getAssessorHistory$AssessmentId>>, TError = HTTPValidationError>(
+ assessmentId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorHistory$AssessmentId>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAssessorHistoryAssessmentIdQueryOptions(assessmentId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
