@@ -694,6 +694,7 @@ export function FileFieldComponent({
 
   let previousFiles: any[] = [];
   let newFiles: any[] = [];
+  let validOldFiles: any[] = [];
 
   if (isReworkStatus && effectiveReworkTimestamp) {
     const reworkDate = new Date(effectiveReworkTimestamp);
@@ -718,7 +719,6 @@ export function FileFieldComponent({
 
     // Filter old files based on rework type:
     let invalidOldFiles: any[] = [];
-    let validOldFiles: any[] = [];
 
     if (isMlgooRecalibration && hasMlgooFlaggedFiles) {
       // MLGOO RECALIBRATION MODE: MLGOO flagged specific MOV files
@@ -785,23 +785,26 @@ export function FileFieldComponent({
       }
     } else if (recentFiles.length > 0) {
       // ASSESSOR REWORK MODE with replacements uploaded:
-      // BLGU has already uploaded replacement files - hide old rejected files completely
-      // Only show them if they DON'T have annotations (were accepted)
+      // BLGU has already uploaded replacement files
       const hasSpecificAnnotations = movAnnotations && movAnnotations.length > 0;
+      const hasGeneralComments = reworkComments && reworkComments.length > 0;
 
       if (hasSpecificAnnotations) {
-        // Files WITH annotations were rejected and have been REPLACED - don't show them
+        // Files WITH annotations were rejected - keep in Previous Files for reference
         // Files WITHOUT annotations were accepted - show them as valid
-        const rejectedFiles = oldFiles.filter((f: any) =>
+        invalidOldFiles = oldFiles.filter((f: any) =>
           movAnnotations.some((ann: any) => String(ann.mov_file_id) === String(f.id))
         );
         validOldFiles = oldFiles.filter(
           (f: any) => !movAnnotations.some((ann: any) => String(ann.mov_file_id) === String(f.id))
         );
-        // Don't show rejected files since they've been replaced
-        invalidOldFiles = [];
+      } else if (hasGeneralComments || indicatorRequiresRework) {
+        // Indicator flagged but no specific annotations - old files were replaced
+        // Keep them in "Previous Files" for reference
+        invalidOldFiles = oldFiles;
+        validOldFiles = [];
       } else {
-        // No annotations - all old files are valid
+        // No flag, no annotations - all old files are valid
         invalidOldFiles = [];
         validOldFiles = oldFiles;
       }
@@ -832,14 +835,18 @@ export function FileFieldComponent({
     }
 
     previousFiles = [...deletedFiles, ...invalidOldFiles];
-    // Active files = Recent uploads + Valid old files (not flagged)
-    newFiles = [...recentFiles, ...validOldFiles];
+    // Keep new uploads separate from valid old files
+    newFiles = recentFiles; // Only files uploaded during this rework cycle
   } else {
     // Not in rework status, show all active files as new
     newFiles = activeFiles;
   }
 
   const showPreviousFilesAsReference = isReworkStatus && previousFiles.length > 0;
+
+  // Valid old files that don't need re-upload (shown separately during rework)
+  const existingValidFiles = isReworkStatus ? validOldFiles : [];
+  const showExistingValidFiles = isReworkStatus && existingValidFiles.length > 0;
 
   // Only show new files in the main upload section during rework
   const files = newFiles;
@@ -877,9 +884,10 @@ export function FileFieldComponent({
         : null
     : null;
 
-  // Count annotations for this field
+  // Count annotations for this field (include all file types)
+  const allDisplayedFiles = [...files, ...existingValidFiles, ...previousFiles];
   const fieldAnnotations = movAnnotations.filter((ann: any) =>
-    files.some((f) => f.id === ann.mov_file_id)
+    allDisplayedFiles.some((f) => f.id === ann.mov_file_id)
   );
   const hasAnnotations = fieldAnnotations.length > 0;
 
@@ -1094,7 +1102,9 @@ export function FileFieldComponent({
             {isReworkStatus && (
               <CheckCircle2 className="h-4 w-4 text-green-600" aria-hidden="true" />
             )}
-            <span className={isReworkStatus ? "text-green-600" : ""}>Uploaded Files</span>
+            <span className={isReworkStatus ? "text-green-600" : ""}>
+              {isReworkStatus ? "New Uploads" : "Uploaded Files"}
+            </span>
             <span className="text-muted-foreground font-normal">
               ({files.length} file{files.length !== 1 ? "s" : ""} uploaded)
             </span>
@@ -1113,6 +1123,38 @@ export function FileFieldComponent({
             requiredFileCount={field.required ? 1 : 0}
             mlgooFlaggedFileIds={effectiveMlgooFlaggedFileIds}
           />
+        </section>
+      )}
+
+      {/* Existing Valid Files (Old files that don't need re-upload - shown during rework) */}
+      {showExistingValidFiles && existingValidFiles.length > 0 && (
+        <section className="space-y-2" aria-labelledby={`existing-files-${field.field_id}`}>
+          <h4
+            id={`existing-files-${field.field_id}`}
+            className="flex items-center gap-2 text-sm text-blue-600 font-medium"
+          >
+            <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+            <span>Existing Files</span>
+            <span className="text-muted-foreground font-normal">
+              ({existingValidFiles.length} file{existingValidFiles.length !== 1 ? "s" : ""})
+            </span>
+          </h4>
+          <div className="border-2 border-blue-200 dark:border-blue-800 rounded-md bg-blue-50/30 dark:bg-blue-950/20 p-3">
+            <FileList
+              files={existingValidFiles}
+              onPreview={handlePreview}
+              onDownload={handleDownload}
+              canDelete={false}
+              loading={isLoadingFiles}
+              emptyMessage=""
+              movAnnotations={movAnnotations}
+              hideHeader={true}
+              mlgooFlaggedFileIds={effectiveMlgooFlaggedFileIds}
+            />
+            <p className="text-xs text-blue-600 mt-2 italic">
+              These files from your previous submission are still valid. No need to re-upload them.
+            </p>
+          </div>
         </section>
       )}
 

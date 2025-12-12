@@ -938,31 +938,50 @@ class AssessorService:
                     AssessmentStatus.SUBMITTED,
                 ]
             ):
-                # Assessor reviewing reworked indicator - show only new files uploaded after rework
+                # Assessor reviewing reworked indicator - show ALL files
+                # Mark old files as rejected so frontend can display them separately
                 self.logger.info(
-                    f"[ASSESSOR REWORK FILTER] Assessment {assessment.id}, Indicator {indicator.id}: "
+                    f"[ASSESSOR REWORK VIEW] Assessment {assessment.id}, Indicator {indicator.id}: "
                     f"rework_requested_at={assessment.rework_requested_at}, status={assessment.status}"
                 )
 
-                # Log each file with its timestamp
+                rework_timestamp = assessment.rework_requested_at
+
+                # Identify old files (uploaded before rework) as "rejected"
+                rejected_file_ids = set()
+                new_files_count = 0
+
                 for mov in all_movs_for_indicator:
-                    self.logger.info(
-                        f"  - File: {mov.file_name}, "
-                        f"uploaded_at={mov.uploaded_at}, "
-                        f"passes_filter={mov.uploaded_at >= assessment.rework_requested_at}"
-                    )
+                    is_old = mov.uploaded_at < rework_timestamp
+                    is_new = mov.uploaded_at >= rework_timestamp
 
-                filtered_movs = [
-                    mov
-                    for mov in all_movs_for_indicator
-                    if mov.uploaded_at >= assessment.rework_requested_at
-                ]
-                rejected_file_ids = set()  # No rejected files for assessor views
+                    if is_new:
+                        new_files_count += 1
 
-                # Log filtering results for debugging
+                    # Old files are "rejected" if there are new replacements
+                    # or if they have annotations
+                    if is_old:
+                        has_annotations = mov.annotations and len(mov.annotations) > 0
+                        rejected_file_ids.add(mov.id)
+                        self.logger.info(
+                            f"  - OLD File: {mov.file_name}, "
+                            f"uploaded_at={mov.uploaded_at}, "
+                            f"has_annotations={has_annotations}, marked_as_rejected=True"
+                        )
+                    else:
+                        self.logger.info(
+                            f"  - NEW File: {mov.file_name}, "
+                            f"uploaded_at={mov.uploaded_at}"
+                        )
+
+                # Show ALL files (new + old) - frontend will display old files in "Rejected" section
+                filtered_movs = all_movs_for_indicator
+
+                # Log results for debugging
                 self.logger.info(
-                    f"[ASSESSOR REWORK FILTER] Indicator {indicator.id}: "
-                    f"Filtered {len(all_movs_for_indicator)} total MOVs to {len(filtered_movs)} new MOVs"
+                    f"[ASSESSOR REWORK VIEW] Indicator {indicator.id}: "
+                    f"Total {len(all_movs_for_indicator)} MOVs, {new_files_count} new, "
+                    f"{len(rejected_file_ids)} old/rejected"
                 )
             else:
                 # Show all files for other cases

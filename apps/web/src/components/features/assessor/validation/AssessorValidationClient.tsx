@@ -3,6 +3,16 @@
 import { TreeNavigator } from "@/components/features/assessments/tree-navigation";
 import { StatusBadge } from "@/components/shared";
 import { ValidationPanelSkeleton } from "@/components/shared/skeletons";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -58,6 +68,10 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false); // Local loading state instead of relying on mutation
   const isSavingRef = useRef(false); // Prevent multiple concurrent saves
+
+  // Confirmation dialog states
+  const [showReworkConfirm, setShowReworkConfirm] = useState(false);
+  const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
 
   // Track rework flags for assessors at FILE level (responseId → Set of movFileIds with annotations)
   // This allows us to track which specific files need re-upload, not just which indicators
@@ -969,7 +983,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 variant="secondary"
                 size="default"
                 type="button"
-                onClick={onSendRework}
+                onClick={() => setShowReworkConfirm(true)}
                 disabled={
                   !hasIndicatorsFlaggedForRework || reworkCount !== 0 || reworkMut.isPending
                 }
@@ -1017,7 +1031,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 variant="secondary"
                 size="default"
                 type="button"
-                onClick={onSendRework}
+                onClick={() => setShowReworkConfirm(true)}
                 disabled={!allReviewed || !anyFail || reworkCount !== 0 || reworkMut.isPending}
                 className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90"
                 style={{ background: "var(--cityscape-yellow)" }}
@@ -1062,7 +1076,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               <Button
                 size="default"
                 type="button"
-                onClick={onFinalize}
+                onClick={() => setShowFinalizeConfirm(true)}
                 disabled={!allReviewed || finalizeMut.isPending}
                 className="w-full sm:w-auto text-white hover:opacity-90"
                 style={{ background: "var(--success)" }}
@@ -1077,7 +1091,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               <Button
                 size="default"
                 type="button"
-                onClick={onFinalize}
+                onClick={() => setShowFinalizeConfirm(true)}
                 disabled={!allReviewed || (anyFail && reworkCount === 0) || finalizeMut.isPending}
                 className="w-full sm:w-auto text-white hover:opacity-90"
                 style={{ background: "var(--success)" }}
@@ -1093,6 +1107,59 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
           </div>
         </div>
       </div>
+
+      {/* Confirmation Dialog - Send for Rework */}
+      <AlertDialog open={showReworkConfirm} onOpenChange={setShowReworkConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Send Assessment for Rework?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will send the assessment back to BLGU for rework with your feedback. The BLGU
+              will need to address the issues you&apos;ve identified before resubmitting.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowReworkConfirm(false);
+                onSendRework();
+              }}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              Yes, Send for Rework
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmation Dialog - Finalize */}
+      <AlertDialog open={showFinalizeConfirm} onOpenChange={setShowFinalizeConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {isAssessor ? "Finalize and Send to Validator?" : "Finalize Validation?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {isAssessor
+                ? "This will finalize your review and send the assessment to the Validator for final validation. Make sure you have reviewed all indicators."
+                : "This will complete the validation process. This action is final and cannot be undone."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowFinalizeConfirm(false);
+                onFinalize();
+              }}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              Yes, Finalize
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

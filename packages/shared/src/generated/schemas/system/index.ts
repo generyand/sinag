@@ -263,6 +263,10 @@ export interface BLGUDashboardResponse {
   submitted_at?: BLGUDashboardResponseSubmittedAt;
   /** Timestamp when final validation was completed (ISO format) */
   validated_at?: BLGUDashboardResponseValidatedAt;
+  /** Timestamp when BLGU resubmitted after rework (ISO format). If set, the Resubmit button should be disabled. */
+  rework_submitted_at?: BLGUDashboardResponseReworkSubmittedAt;
+  /** Timestamp when BLGU resubmitted after calibration (ISO format). If set, the Submit Calibration button should be disabled. */
+  calibration_submitted_at?: BLGUDashboardResponseCalibrationSubmittedAt;
   /** Final SGLGB compliance status: 'Passed' or 'Failed'. Only populated when status is COMPLETED. */
   final_compliance_status?: BLGUDashboardResponseFinalComplianceStatus;
   /** Results breakdown by governance area. Each item contains: area_id, area_name, area_type (Core/Essential), passed (bool), total_indicators, passed_indicators, failed_indicators. Only populated when status is COMPLETED. */
@@ -347,6 +351,12 @@ export type BLGUDashboardResponseCalibrationGovernanceAreasAnyOfItem = { [key: s
 
 
 /**
+ * BLGUDashboardResponseCalibrationSubmittedAt
+ */
+export type BLGUDashboardResponseCalibrationSubmittedAt = string | null;
+
+
+/**
  * BLGUDashboardResponseCalibrationValidatorId
  */
 export type BLGUDashboardResponseCalibrationValidatorId = number | null;
@@ -368,6 +378,12 @@ export type BLGUDashboardResponseReworkRequestedAt = string | null;
  * BLGUDashboardResponseReworkRequestedBy
  */
 export type BLGUDashboardResponseReworkRequestedBy = number | null;
+
+
+/**
+ * BLGUDashboardResponseReworkSubmittedAt
+ */
+export type BLGUDashboardResponseReworkSubmittedAt = string | null;
 
 
 /**

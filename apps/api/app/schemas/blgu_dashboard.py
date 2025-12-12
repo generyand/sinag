@@ -352,6 +352,16 @@ class BLGUDashboardResponse(BaseModel):
     validated_at: str | None = Field(
         None, description="Timestamp when final validation was completed (ISO format)"
     )
+    rework_submitted_at: str | None = Field(
+        None,
+        description="Timestamp when BLGU resubmitted after rework (ISO format). "
+        "If set, the Resubmit button should be disabled.",
+    )
+    calibration_submitted_at: str | None = Field(
+        None,
+        description="Timestamp when BLGU resubmitted after calibration (ISO format). "
+        "If set, the Submit Calibration button should be disabled.",
+    )
 
     # Verdict fields - ONLY populated when status is COMPLETED
     # IMPORTANT: These are intentionally null until assessment is finalized

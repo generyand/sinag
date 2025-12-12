@@ -962,6 +962,12 @@ def get_blgu_dashboard(
         "completion_percentage": round(completion_percentage, 2),
         "governance_areas": governance_areas_list,
         "rework_comments": rework_comments,
+        "rework_submitted_at": assessment.rework_submitted_at.isoformat() + "Z"
+        if assessment.rework_submitted_at
+        else None,  # When BLGU resubmitted after rework (locks resubmit button)
+        "calibration_submitted_at": assessment.calibration_submitted_at.isoformat() + "Z"
+        if assessment.calibration_submitted_at
+        else None,  # When BLGU resubmitted after calibration (locks resubmit button)
         "mov_annotations_by_indicator": mov_annotations_by_indicator,  # MOV annotations grouped by indicator
         "addressed_indicator_ids": addressed_indicator_ids,  # Indicators with feedback that have new uploads after rework
         # AI Summary for rework/calibration guidance

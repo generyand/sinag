@@ -318,10 +318,12 @@ class ComplianceService:
             all_item_ids = {item.get("item_id") for item in checklist_items_data}
 
             # Get checkbox items (regular options like option_1, option_2)
+            # IMPORTANT: Exclude required items (shared requirements) from option checkboxes
+            # e.g., 4_1_6_report is a required SHARED item, not an OR option
             checkbox_items = [
                 item.get("item_id")
                 for item in checklist_items_data
-                if item.get("item_type") == "checkbox"
+                if item.get("item_type") == "checkbox" and not item.get("required", False)
             ]
 
             # Check if any checkbox option is checked

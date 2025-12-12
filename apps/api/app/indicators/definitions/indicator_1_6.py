@@ -138,6 +138,14 @@ INDICATOR_1_6 = Indicator(
                     required=False,
                     display_order=8,
                     option_group="Option 3",
+                    field_notes=FieldNotes(
+                        title="Important:",
+                        items=[
+                            NoteItem(
+                                text="SK Resolution authorizing the barangay to utilize the SK Funds if the SK has no bank account yet shall NOT be considered as MOV under this indicator."
+                            ),
+                        ],
+                    ),
                 ),
                 ChecklistItem(
                     id="1_6_1_opt3_a",
@@ -169,9 +177,6 @@ INDICATOR_1_6 = Indicator(
                 items=[
                     NoteItem(
                         text="Choose and upload documents for ONLY ONE option that applies to your barangay's situation."
-                    ),
-                    NoteItem(
-                        text="SK Resolution authorizing the barangay to utilize the SK Funds if the SK has no bank account yet shall NOT be considered as MOV under this indicator."
                     ),
                 ],
             ),
