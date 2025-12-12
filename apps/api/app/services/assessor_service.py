@@ -970,8 +970,7 @@ class AssessorService:
                         )
                     else:
                         self.logger.info(
-                            f"  - NEW File: {mov.file_name}, "
-                            f"uploaded_at={mov.uploaded_at}"
+                            f"  - NEW File: {mov.file_name}, uploaded_at={mov.uploaded_at}"
                         )
 
                 # Show ALL files (new + old) - frontend will display old files in "Rejected" section
