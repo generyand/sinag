@@ -6,6 +6,7 @@ Create Date: 2025-12-12 16:57:28.878234
 
 Move the SK Resolution note from indicator-level notes to inside OPTION 3's section header.
 """
+
 from typing import Sequence, Union
 import json
 
@@ -14,8 +15,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '25d466dcac50'
-down_revision: Union[str, Sequence[str], None] = 'b194ae4705da'
+revision: str = "25d466dcac50"
+down_revision: Union[str, Sequence[str], None] = "b194ae4705da"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -51,8 +52,7 @@ def upgrade() -> None:
 
         # Filter out the SK Resolution note
         new_items = [
-            item for item in items
-            if SK_RESOLUTION_NOTE.lower() not in item.get("text", "").lower()
+            item for item in items if SK_RESOLUTION_NOTE.lower() not in item.get("text", "").lower()
         ]
 
         if len(new_items) < len(items):
@@ -64,26 +64,21 @@ def upgrade() -> None:
                 sa.text(
                     "UPDATE indicators SET form_schema = cast(:form_schema as jsonb) WHERE id = :id"
                 ),
-                {"form_schema": json.dumps(form_schema), "id": indicator_id}
+                {"form_schema": json.dumps(form_schema), "id": indicator_id},
             )
-            print(f"Updated indicator 1.6.1 form_schema notes")
+            print("Updated indicator 1.6.1 form_schema notes")
 
     # 3. Update the OPTION 3 header checklist item to add field_notes
-    field_notes = {
-        "title": "Important:",
-        "items": [
-            {"text": SK_RESOLUTION_NOTE}
-        ]
-    }
+    field_notes = {"title": "Important:", "items": [{"text": SK_RESOLUTION_NOTE}]}
 
     conn.execute(
         sa.text(
             "UPDATE checklist_items SET field_notes = cast(:field_notes as jsonb) "
             "WHERE indicator_id = :indicator_id AND item_id = '1_6_1_opt3_header'"
         ),
-        {"field_notes": json.dumps(field_notes), "indicator_id": indicator_id}
+        {"field_notes": json.dumps(field_notes), "indicator_id": indicator_id},
     )
-    print(f"Added field_notes to checklist item 1_6_1_opt3_header")
+    print("Added field_notes to checklist item 1_6_1_opt3_header")
 
 
 def downgrade() -> None:
@@ -114,9 +109,9 @@ def downgrade() -> None:
             WHERE indicator_id = :indicator_id
               AND item_id = '1_6_1_opt3_header'
         """),
-        {"indicator_id": indicator_id}
+        {"indicator_id": indicator_id},
     )
-    print(f"Removed field_notes from checklist item 1_6_1_opt3_header")
+    print("Removed field_notes from checklist item 1_6_1_opt3_header")
 
     # 3. Add the note back to indicator form_schema
     if form_schema:
@@ -132,6 +127,6 @@ def downgrade() -> None:
             sa.text(
                 "UPDATE indicators SET form_schema = cast(:form_schema as jsonb) WHERE id = :id"
             ),
-            {"form_schema": json.dumps(form_schema), "id": indicator_id}
+            {"form_schema": json.dumps(form_schema), "id": indicator_id},
         )
-        print(f"Restored SK Resolution note to indicator 1.6.1 form_schema")
+        print("Restored SK Resolution note to indicator 1.6.1 form_schema")
