@@ -9,7 +9,7 @@ from fastapi import HTTPException, status  # type: ignore[reportMissingImports]
 from sqlalchemy import and_, func  # type: ignore[reportMissingImports]
 from sqlalchemy.orm import Session, joinedload, selectinload  # type: ignore[reportMissingImports]
 
-from app.db.enums import AssessmentStatus, MOVStatus
+from app.db.enums import AssessmentStatus, MOVStatus, UserRole
 from app.db.models import (
     MOV,
     Assessment,
@@ -3228,8 +3228,8 @@ class AssessmentService:
                     barangay_name = assessment.blgu_user.barangay.name
 
             # Get validators/assessors who worked on this assessment
-            # Include: reviewed_by (assessor), calibration_validator_id (validator),
-            # and users who left feedback comments
+            # Include: reviewed_by (assessor), validators who validated their areas,
+            # calibration_validator_id (legacy), and users who left feedback comments
             try:
                 validators_dict = {}  # Use dict to avoid duplicates by user ID
 
@@ -3246,24 +3246,65 @@ class AssessmentService:
                         "role": "assessor",
                     }
 
-                # 2. Add the validator who calibrated (if any)
+                # 2. Add validators who have validated their governance areas
+                # Get all governance area IDs that have validated responses in this assessment
+                validated_area_ids = (
+                    db.query(Indicator.governance_area_id)
+                    .join(AssessmentResponse, AssessmentResponse.indicator_id == Indicator.id)
+                    .filter(
+                        AssessmentResponse.assessment_id == assessment.id,
+                        AssessmentResponse.validation_status.isnot(None),
+                    )
+                    .distinct()
+                    .all()
+                )
+                validated_area_ids = [area_id for (area_id,) in validated_area_ids]
+
+                # Find validators assigned to these validated areas
+                if validated_area_ids:
+                    area_validators = (
+                        db.query(User)
+                        .filter(
+                            User.role == UserRole.VALIDATOR,
+                            User.validator_area_id.in_(validated_area_ids),
+                        )
+                        .all()
+                    )
+                    for validator in area_validators:
+                        if validator.id not in validators_dict:
+                            validators_dict[validator.id] = {
+                                "id": validator.id,
+                                "name": validator.name,
+                                "email": validator.email,
+                                "initials": "".join(
+                                    [word[0].upper() for word in validator.name.split()[:2]]
+                                )
+                                if validator.name
+                                else "V",
+                                "role": "validator",
+                                "governance_area_id": validator.validator_area_id,
+                            }
+
+                # 3. Add the calibration validator (legacy - for backward compatibility)
                 if assessment.calibration_validator_id and assessment.calibration_validator:
                     validator = assessment.calibration_validator
-                    validators_dict[validator.id] = {
-                        "id": validator.id,
-                        "name": validator.name,
-                        "email": validator.email,
-                        "initials": "".join(
-                            [word[0].upper() for word in validator.name.split()[:2]]
-                        )
-                        if validator.name
-                        else "V",
-                        "role": "validator",
-                    }
+                    if validator.id not in validators_dict:
+                        validators_dict[validator.id] = {
+                            "id": validator.id,
+                            "name": validator.name,
+                            "email": validator.email,
+                            "initials": "".join(
+                                [word[0].upper() for word in validator.name.split()[:2]]
+                            )
+                            if validator.name
+                            else "V",
+                            "role": "validator",
+                            "governance_area_id": validator.validator_area_id,
+                        }
 
-                # 3. Add users who left feedback comments (existing logic)
+                # 4. Add users who left feedback comments
                 feedback_users = (
-                    db.query(User.id, User.name, User.email)
+                    db.query(User.id, User.name, User.email, User.role)
                     .join(FeedbackComment, FeedbackComment.assessor_id == User.id)
                     .join(
                         AssessmentResponse,
@@ -3276,6 +3317,12 @@ class AssessmentService:
 
                 for v in feedback_users:
                     if v.id not in validators_dict:
+                        # Determine role based on user's actual role
+                        role = (
+                            "validator"
+                            if v.role == UserRole.VALIDATOR
+                            else ("assessor" if v.role == UserRole.ASSESSOR else None)
+                        )
                         validators_dict[v.id] = {
                             "id": v.id,
                             "name": v.name,
@@ -3283,6 +3330,7 @@ class AssessmentService:
                             "initials": "".join([word[0].upper() for word in v.name.split()[:2]])
                             if v.name
                             else "?",
+                            "role": role,
                         }
 
                 validators = list(validators_dict.values())

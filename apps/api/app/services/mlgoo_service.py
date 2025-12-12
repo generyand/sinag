@@ -795,7 +795,7 @@ class MLGOOService:
         return {
             "id": assessment.id,
             "barangay_name": barangay_name,
-            "cycle_year": None,  # Assessment doesn't have cycle_year field yet
+            "cycle_year": assessment.assessment_year,
             "blgu_user_id": assessment.blgu_user_id,
             "blgu_user_name": assessment.blgu_user.name if assessment.blgu_user else None,
             "status": assessment.status.value,

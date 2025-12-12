@@ -1,5 +1,6 @@
 "use client";
 
+import { formatIndicatorName } from "@/lib/utils/text-formatter";
 import Image from "next/image";
 
 const GOVERNANCE_AREA_LOGOS: Record<string, string> = {
@@ -376,8 +377,7 @@ export default function SubmissionDetailsPage() {
       await queryClient.invalidateQueries();
     } catch (err: any) {
       toast.dismiss(`override-${responseId}`);
-      const errorMessage =
-        err?.response?.data?.detail || err?.message || "Failed to update status";
+      const errorMessage = err?.response?.data?.detail || err?.message || "Failed to update status";
       toast.error(`Update failed: ${errorMessage}`, { duration: 5000 });
     }
   };
@@ -632,9 +632,7 @@ export default function SubmissionDetailsPage() {
         // Existing files that are NOT new, NOT rejected, and NOT MLGOO-flagged
         const existingFiles = allFiles.filter(
           (f: MovFile) =>
-            f.is_new !== true &&
-            f.is_rejected !== true &&
-            !mlgooFlaggedFileIds.has(f.id)
+            f.is_new !== true && f.is_rejected !== true && !mlgooFlaggedFileIds.has(f.id)
         );
 
         recalibrationTargetIndicators.push({
@@ -791,7 +789,7 @@ export default function SubmissionDetailsPage() {
                         >
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900">
-                              {ind.code} - {ind.name}
+                              {ind.code} - {formatIndicatorName(ind.name, assessment.cycle_year)}
                             </p>
                             <p className="text-xs text-gray-500">{ind.areaName}</p>
                           </div>
@@ -985,7 +983,7 @@ export default function SubmissionDetailsPage() {
                               </span>
                             </div>
                             <p className="font-medium text-sm text-gray-900">
-                              {ind.indicator_name}
+                              {formatIndicatorName(ind.indicator_name, assessment.cycle_year)}
                             </p>
                             <p className="text-xs text-gray-500 mt-0.5">{ind.areaName}</p>
                           </div>
@@ -1731,7 +1729,10 @@ export default function SubmissionDetailsPage() {
                                     </span>
                                     <div>
                                       <p className="font-medium text-gray-900 leading-snug">
-                                        {indicator.indicator_name}
+                                        {formatIndicatorName(
+                                          indicator.indicator_name,
+                                          assessment.cycle_year
+                                        )}
                                       </p>
                                       {isRecalibrationTarget && (
                                         <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-purple-100 text-purple-700 text-xs font-semibold border border-purple-200">
@@ -1757,7 +1758,9 @@ export default function SubmissionDetailsPage() {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      onClick={() => toggleIndicatorExpanded(indicator.indicator_id)}
+                                      onClick={() =>
+                                        toggleIndicatorExpanded(indicator.indicator_id)
+                                      }
                                       className="h-8 px-2 text-gray-500 hover:text-gray-700"
                                     >
                                       <FileText className="h-4 w-4 mr-1" />

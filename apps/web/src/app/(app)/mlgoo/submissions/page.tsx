@@ -11,6 +11,7 @@ import {
   getStatusConfig,
   useSubmissionsData,
   useSubmissionsFilters,
+  type ReviewerInfo,
   type SortableColumn,
   type SubmissionUIModel,
 } from "@/components/features/submissions";
@@ -37,6 +38,148 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+/**
+ * Governance area icon mapping by ID.
+ */
+const GOVERNANCE_AREA_ICONS: Record<number, string> = {
+  1: "/Assessment_Areas/financialAdmin.png",
+  2: "/Assessment_Areas/disasterPreparedness.png",
+  3: "/Assessment_Areas/safetyPeaceAndOrder.png",
+  4: "/Assessment_Areas/socialProtectAndSensitivity.png",
+  5: "/Assessment_Areas/businessFriendliness.png",
+  6: "/Assessment_Areas/environmentalManagement.png",
+};
+
+/**
+ * Governance area names by ID.
+ */
+const GOVERNANCE_AREA_NAMES: Record<number, string> = {
+  1: "Financial Administration",
+  2: "Disaster Preparedness",
+  3: "Safety, Peace and Order",
+  4: "Social Protection",
+  5: "Business-Friendliness",
+  6: "Environmental Management",
+};
+
+/**
+ * Compact stacked avatar display for reviewers.
+ * Shows first 4 avatars with overlap, then "+N" for overflow.
+ * Validators show governance area icons, assessors show purple avatar.
+ * Hover tooltip shows full list of reviewers.
+ */
+function ReviewerAvatars({
+  reviewers,
+  maxVisible = 4,
+}: {
+  reviewers: ReviewerInfo[];
+  maxVisible?: number;
+}) {
+  if (reviewers.length === 0) {
+    return <span className="text-sm text-[var(--muted-foreground)] italic">No reviewers yet</span>;
+  }
+
+  const visibleReviewers = reviewers.slice(0, maxVisible);
+  const overflowCount = reviewers.length - maxVisible;
+
+  const getRoleLabel = (reviewer: ReviewerInfo) => {
+    switch (reviewer.role) {
+      case "assessor":
+        return "Assessor";
+      case "validator":
+        return "Validator";
+      default:
+        return "Reviewer";
+    }
+  };
+
+  const tooltipContent = (
+    <div className="space-y-1.5 text-xs">
+      <div className="font-semibold text-[var(--foreground)] border-b border-[var(--border)] pb-1 mb-1">
+        Reviewers ({reviewers.length})
+      </div>
+      {reviewers.map((reviewer) => (
+        <div key={reviewer.id} className="flex items-center gap-2">
+          {reviewer.role === "validator" && reviewer.governanceAreaId ? (
+            <img
+              src={GOVERNANCE_AREA_ICONS[reviewer.governanceAreaId]}
+              alt={GOVERNANCE_AREA_NAMES[reviewer.governanceAreaId]}
+              className="w-5 h-5 rounded-full object-cover"
+            />
+          ) : (
+            <span
+              className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-white text-[10px] font-bold ${
+                reviewer.role === "assessor"
+                  ? "bg-gradient-to-br from-purple-500 to-purple-600"
+                  : "bg-gradient-to-br from-gray-400 to-gray-500"
+              }`}
+            >
+              {reviewer.avatar.charAt(0)}
+            </span>
+          )}
+          <span className="text-[var(--foreground)]">{reviewer.name}</span>
+        </div>
+      ))}
+    </div>
+  );
+
+  return (
+    <TooltipProvider>
+      <Tooltip delayDuration={200}>
+        <TooltipTrigger asChild>
+          <div className="flex items-center -space-x-2 cursor-pointer">
+            {visibleReviewers.map((reviewer, index) => (
+              <div
+                key={reviewer.id}
+                className="w-8 h-8 rounded-full flex items-center justify-center shadow-sm ring-2 ring-[var(--background)] overflow-hidden"
+                style={{ zIndex: maxVisible - index }}
+                aria-label={`${getRoleLabel(reviewer)}: ${reviewer.name}`}
+                title={`${getRoleLabel(reviewer)}: ${reviewer.name}`}
+              >
+                {reviewer.role === "validator" && reviewer.governanceAreaId ? (
+                  <img
+                    src={GOVERNANCE_AREA_ICONS[reviewer.governanceAreaId]}
+                    alt={GOVERNANCE_AREA_NAMES[reviewer.governanceAreaId]}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className={`w-full h-full flex items-center justify-center text-white text-xs font-bold ${
+                      reviewer.role === "assessor"
+                        ? "bg-gradient-to-br from-purple-500 to-purple-600"
+                        : "bg-gradient-to-br from-gray-400 to-gray-500"
+                    }`}
+                  >
+                    {reviewer.avatar}
+                  </div>
+                )}
+              </div>
+            ))}
+            {overflowCount > 0 && (
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-[var(--muted)] text-[var(--muted-foreground)] ring-2 ring-[var(--background)] shadow-sm"
+                style={{ zIndex: 0 }}
+                aria-label={`${overflowCount} more reviewers`}
+                title={`${overflowCount} more reviewers`}
+              >
+                +{overflowCount}
+              </div>
+            )}
+          </div>
+        </TooltipTrigger>
+        <TooltipContent
+          side="bottom"
+          align="start"
+          className="bg-[var(--card)] border border-[var(--border)] shadow-lg p-3 max-w-xs"
+        >
+          {tooltipContent}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 export default function AdminSubmissionsPage() {
   const { isAuthenticated } = useAuthStore();
@@ -286,20 +429,22 @@ export default function AdminSubmissionsPage() {
             ) : (
               <>
                 {/* Mobile Card View */}
-                <SubmissionsMobileList
-                  submissions={filteredSubmissions}
-                  onView={handleViewDetails}
-                  onRemind={handleSendReminder}
-                />
+                <div className="lg:hidden max-h-[600px] overflow-y-auto">
+                  <SubmissionsMobileList
+                    submissions={filteredSubmissions}
+                    onView={handleViewDetails}
+                    onRemind={handleSendReminder}
+                  />
+                </div>
 
                 {/* Desktop Table View */}
-                <div className="hidden lg:block overflow-x-auto">
+                <div className="hidden lg:block overflow-x-auto max-h-[600px] overflow-y-auto">
                   <table className="w-full" role="table">
                     <caption className="sr-only">
                       Assessment submissions with filterable columns for barangay name, progress,
                       status, validators, and last updated date
                     </caption>
-                    <thead className="bg-[var(--muted)]/20 border-b border-[var(--border)]">
+                    <thead className="bg-[var(--card)] border-b border-[var(--border)] sticky top-0 z-10">
                       <tr role="row">
                         <th
                           role="columnheader"
@@ -336,7 +481,7 @@ export default function AdminSubmissionsPage() {
                         </th>
                         <th role="columnheader" className="px-6 py-4 text-left">
                           <div className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                            Validators
+                            Reviewers
                           </div>
                         </th>
                         <th
@@ -410,25 +555,7 @@ export default function AdminSubmissionsPage() {
                               </div>
                             </td>
                             <td className="px-6 py-4">
-                              <div className="flex items-center gap-2">
-                                {submission.assignedValidators.length > 0 ? (
-                                  submission.assignedValidators.map((validator) => (
-                                    <div
-                                      key={validator.id}
-                                      role="img"
-                                      aria-label={`Validator: ${validator.name}`}
-                                      title={validator.name}
-                                      className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold bg-gradient-to-br from-blue-500 to-blue-600 shadow-sm"
-                                    >
-                                      {validator.avatar}
-                                    </div>
-                                  ))
-                                ) : (
-                                  <span className="text-sm text-[var(--muted-foreground)] italic">
-                                    No validators yet
-                                  </span>
-                                )}
-                              </div>
+                              <ReviewerAvatars reviewers={submission.reviewers} />
                             </td>
                             <td className="px-6 py-4">
                               <div className="text-sm text-[var(--muted-foreground)]">
