@@ -2110,5 +2110,336 @@ class AssessorService:
             "governance_area_name": governance_area_name,
         }
 
+    # =========================================================================
+    # Review History Methods
+    # =========================================================================
+
+    def get_review_history(
+        self,
+        db: Session,
+        user: User,
+        assessment_year: int | None = None,
+        page: int = 1,
+        page_size: int = 20,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
+        outcome: str | None = None,
+    ) -> dict:
+        """
+        Get paginated review history for assessors and validators.
+
+        Shows COMPLETED assessments that the user has reviewed:
+        - Assessors: Assessments where reviewed_by == user.id
+        - Validators: Assessments with responses in their governance area
+
+        Args:
+            db: Database session
+            user: Current user (assessor or validator)
+            assessment_year: Optional year filter (defaults to active year)
+            page: Page number (1-indexed)
+            page_size: Items per page (max 100)
+            date_from: Filter by completion date >= date_from
+            date_to: Filter by completion date <= date_to
+            outcome: Filter by final_compliance_status (PASSED/FAILED)
+
+        Returns:
+            Paginated list of review history items with summary counts
+        """
+        from sqlalchemy import func, case
+
+        # Get active year if not specified
+        if assessment_year is None:
+            from app.services.assessment_year_service import assessment_year_service
+
+            assessment_year = assessment_year_service.get_active_year_number(db)
+
+        # Determine if user is a validator
+        is_validator = (
+            user.role == UserRole.VALIDATOR and user.validator_area_id is not None
+        )
+
+        # Base query for COMPLETED assessments
+        if is_validator:
+            # Validators: Show assessments with responses in their governance area
+            # Use a subquery to get distinct assessment IDs first to avoid PostgreSQL DISTINCT ON issues
+            assessment_ids_subquery = (
+                db.query(Assessment.id)
+                .join(AssessmentResponse, AssessmentResponse.assessment_id == Assessment.id)
+                .join(Indicator, Indicator.id == AssessmentResponse.indicator_id)
+                .filter(
+                    Assessment.status == AssessmentStatus.COMPLETED,
+                    Indicator.governance_area_id == user.validator_area_id,
+                )
+                .distinct()
+                .subquery()
+            )
+            query = db.query(Assessment).filter(
+                Assessment.id.in_(db.query(assessment_ids_subquery.c.id))
+            )
+        else:
+            # Assessors: Show assessments they reviewed (reviewed_by == user.id)
+            query = db.query(Assessment).filter(
+                Assessment.status == AssessmentStatus.COMPLETED,
+                Assessment.reviewed_by == user.id,
+            )
+
+        # Apply year filter
+        if assessment_year:
+            query = query.filter(Assessment.assessment_year == assessment_year)
+
+        # Apply date filters (on completed_at which is mlgoo_approved_at or validated_at)
+        if date_from:
+            query = query.filter(
+                func.coalesce(Assessment.mlgoo_approved_at, Assessment.validated_at) >= date_from
+            )
+        if date_to:
+            query = query.filter(
+                func.coalesce(Assessment.mlgoo_approved_at, Assessment.validated_at) <= date_to
+            )
+
+        # Apply outcome filter
+        if outcome:
+            query = query.filter(Assessment.final_compliance_status == outcome)
+
+        # Get total count before pagination
+        total = query.count()
+
+        # Apply pagination and ordering (most recent first)
+        offset = (page - 1) * page_size
+        assessments = (
+            query.options(
+                joinedload(Assessment.blgu_user).joinedload(User.barangay),
+                selectinload(Assessment.responses).joinedload(AssessmentResponse.indicator),
+            )
+            .order_by(
+                func.coalesce(Assessment.mlgoo_approved_at, Assessment.validated_at).desc()
+            )
+            .offset(offset)
+            .limit(page_size)
+            .all()
+        )
+
+        # Get validator's governance area name if applicable
+        governance_area_name = None
+        if is_validator:
+            area = db.query(GovernanceArea).filter(GovernanceArea.id == user.validator_area_id).first()
+            if area:
+                governance_area_name = area.name
+
+        # Build response items
+        items = []
+        for assessment in assessments:
+            # Get barangay info
+            barangay_name = "Unknown"
+            municipality_name = None  # Barangay model doesn't have municipality field
+            if assessment.blgu_user and assessment.blgu_user.barangay:
+                barangay_name = assessment.blgu_user.barangay.name
+
+            # Count validation statuses for this assessment
+            # For validators, only count indicators in their governance area
+            pass_count = 0
+            fail_count = 0
+            conditional_count = 0
+            indicator_count = 0
+
+            for response in assessment.responses:
+                # For validators, filter by governance area
+                if is_validator and response.indicator:
+                    if response.indicator.governance_area_id != user.validator_area_id:
+                        continue
+
+                indicator_count += 1
+                if response.validation_status == ValidationStatus.PASS:
+                    pass_count += 1
+                elif response.validation_status == ValidationStatus.FAIL:
+                    fail_count += 1
+                elif response.validation_status == ValidationStatus.CONDITIONAL:
+                    conditional_count += 1
+
+            # Determine completion date
+            completed_at = assessment.mlgoo_approved_at or assessment.validated_at
+
+            items.append({
+                "assessment_id": assessment.id,
+                "barangay_name": barangay_name,
+                "municipality_name": municipality_name,
+                "governance_area_name": governance_area_name,
+                "submitted_at": assessment.submitted_at,
+                "completed_at": completed_at,
+                "final_compliance_status": assessment.final_compliance_status,
+                "rework_count": assessment.rework_count or 0,
+                "calibration_count": len(assessment.calibrated_area_ids or []),
+                "was_reworked": (assessment.rework_count or 0) > 0,
+                "was_calibrated": len(assessment.calibrated_area_ids or []) > 0,
+                "indicator_count": indicator_count,
+                "pass_count": pass_count,
+                "fail_count": fail_count,
+                "conditional_count": conditional_count,
+            })
+
+        return {
+            "items": items,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "has_more": (page * page_size) < total,
+        }
+
+    def get_review_history_detail(
+        self,
+        db: Session,
+        user: User,
+        assessment_id: int,
+    ) -> dict:
+        """
+        Get detailed per-indicator decisions for a specific completed assessment.
+
+        Used when user expands a row to see inline indicator details.
+
+        Args:
+            db: Database session
+            user: Current user (assessor or validator)
+            assessment_id: The assessment to get details for
+
+        Returns:
+            Detailed indicator data including validation status, comments, etc.
+        """
+        # Load assessment with all related data
+        assessment = (
+            db.query(Assessment)
+            .options(
+                joinedload(Assessment.blgu_user).joinedload(User.barangay),
+                selectinload(Assessment.responses)
+                .joinedload(AssessmentResponse.indicator)
+                .joinedload(Indicator.governance_area),
+                selectinload(Assessment.responses)
+                .selectinload(AssessmentResponse.feedback_comments)
+                .joinedload(FeedbackComment.assessor),
+                # Load MOV files at assessment level (they have indicator_id for filtering)
+                selectinload(Assessment.mov_files),
+            )
+            .filter(Assessment.id == assessment_id)
+            .first()
+        )
+
+        if not assessment:
+            return {"success": False, "message": "Assessment not found"}
+
+        # Verify access
+        is_validator = (
+            user.role == UserRole.VALIDATOR and user.validator_area_id is not None
+        )
+
+        if is_validator:
+            # Validators must have responses in their governance area
+            has_access = any(
+                r.indicator and r.indicator.governance_area_id == user.validator_area_id
+                for r in assessment.responses
+            )
+        else:
+            # Assessors must be the reviewer
+            has_access = assessment.reviewed_by == user.id
+
+        if not has_access:
+            return {"success": False, "message": "Access denied"}
+
+        # Get barangay info
+        barangay_name = "Unknown"
+        municipality_name = None  # Barangay model doesn't have municipality field
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+
+        # Get validator's governance area name if applicable
+        governance_area_name = None
+        if is_validator:
+            area = db.query(GovernanceArea).filter(GovernanceArea.id == user.validator_area_id).first()
+            if area:
+                governance_area_name = area.name
+
+        # Build indicator list
+        indicators = []
+        for response in assessment.responses:
+            # For validators, filter by governance area
+            if is_validator and response.indicator:
+                if response.indicator.governance_area_id != user.validator_area_id:
+                    continue
+
+            indicator = response.indicator
+            if not indicator:
+                continue
+
+            # Build feedback comments list
+            feedback_comments = []
+            for fc in response.feedback_comments or []:
+                assessor_name = "Unknown"
+                assessor_role = None
+                if fc.assessor:
+                    assessor_name = fc.assessor.email or fc.assessor.full_name or "Unknown"
+                    assessor_role = fc.assessor.role.value if fc.assessor.role else None
+
+                feedback_comments.append({
+                    "id": fc.id,
+                    "comment": fc.comment,
+                    "assessor_name": assessor_name,
+                    "assessor_role": assessor_role,
+                    "created_at": fc.created_at,
+                    "is_internal_note": fc.is_internal_note or False,
+                })
+
+            # Sort comments by date (newest first)
+            feedback_comments.sort(key=lambda x: x["created_at"], reverse=True)
+
+            # Check for MOV annotations - MOV files are at assessment level with indicator_id
+            has_mov_annotations = False
+            indicator_mov_files = [
+                mf for mf in (assessment.mov_files or [])
+                if mf.indicator_id == indicator.id and mf.deleted_at is None
+            ]
+            mov_count = len(indicator_mov_files)
+            for mov_file in indicator_mov_files:
+                if hasattr(mov_file, 'annotations') and mov_file.annotations:
+                    has_mov_annotations = True
+                    break
+
+            # Get indicator's governance area name
+            indicator_area_name = None
+            if indicator.governance_area:
+                indicator_area_name = indicator.governance_area.name
+
+            indicators.append({
+                "indicator_id": indicator.id,
+                "indicator_code": indicator.indicator_code or "",
+                "indicator_name": indicator.name or "",
+                "governance_area_name": indicator_area_name,
+                "validation_status": response.validation_status,
+                "assessor_remarks": response.assessor_remarks,
+                "flagged_for_calibration": response.flagged_for_calibration or False,
+                "requires_rework": response.requires_rework or False,
+                "feedback_comments": feedback_comments,
+                "has_mov_annotations": has_mov_annotations,
+                "mov_count": mov_count,
+            })
+
+        # Sort indicators by code
+        indicators.sort(key=lambda x: x["indicator_code"])
+
+        # Completion date
+        completed_at = assessment.mlgoo_approved_at or assessment.validated_at
+
+        return {
+            "success": True,
+            "assessment_id": assessment.id,
+            "assessment_year": assessment.assessment_year,
+            "barangay_name": barangay_name,
+            "municipality_name": municipality_name,
+            "governance_area_name": governance_area_name,
+            "submitted_at": assessment.submitted_at,
+            "completed_at": completed_at,
+            "final_compliance_status": assessment.final_compliance_status,
+            "rework_comments": assessment.rework_comments,
+            "calibration_comments": None,  # Could add if needed
+            "indicators": indicators,
+        }
+
 
 assessor_service = AssessorService()

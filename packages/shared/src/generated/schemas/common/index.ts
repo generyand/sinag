@@ -27,6 +27,10 @@ import type { TopFailingIndicatorsList } from '../indicators';
 import type { AggregatedCapDevSummary } from '../capdev';
 import type { MunicipalOverviewDashboardAssessmentCycle } from '../assessments';
 import type { ConditionalRemark } from '../conditionalremark';
+import type { ReviewHistoryDetailFinalComplianceStatus } from '../compliance';
+import type { ReviewHistoryIndicator } from '../indicators';
+import type { ReviewHistoryFeedbackCommentAssessorRole } from '../assessor';
+import type { ReviewHistoryItemFinalComplianceStatus } from '../compliance';
 import type { AssessmentRow } from '../assessments';
 
 /**
@@ -1075,6 +1079,119 @@ export interface RemarkSchema {
  * ResolveSchemaRequestSchemaData
  */
 export type ResolveSchemaRequestSchemaData = { [key: string]: unknown };
+
+
+/**
+ * ReviewHistoryDetail
+ */
+export interface ReviewHistoryDetail {
+  assessment_id: number;
+  assessment_year: number;
+  barangay_name: string;
+  municipality_name?: ReviewHistoryDetailMunicipalityName;
+  governance_area_name?: ReviewHistoryDetailGovernanceAreaName;
+  submitted_at?: ReviewHistoryDetailSubmittedAt;
+  completed_at?: ReviewHistoryDetailCompletedAt;
+  final_compliance_status?: ReviewHistoryDetailFinalComplianceStatus;
+  rework_comments?: ReviewHistoryDetailReworkComments;
+  calibration_comments?: ReviewHistoryDetailCalibrationComments;
+  indicators?: ReviewHistoryIndicator[];
+}
+
+
+/**
+ * ReviewHistoryDetailCalibrationComments
+ */
+export type ReviewHistoryDetailCalibrationComments = string | null;
+
+
+/**
+ * ReviewHistoryDetailCompletedAt
+ */
+export type ReviewHistoryDetailCompletedAt = string | null;
+
+
+/**
+ * ReviewHistoryDetailGovernanceAreaName
+ */
+export type ReviewHistoryDetailGovernanceAreaName = string | null;
+
+
+/**
+ * ReviewHistoryDetailMunicipalityName
+ */
+export type ReviewHistoryDetailMunicipalityName = string | null;
+
+
+/**
+ * ReviewHistoryDetailReworkComments
+ */
+export type ReviewHistoryDetailReworkComments = string | null;
+
+
+/**
+ * ReviewHistoryDetailSubmittedAt
+ */
+export type ReviewHistoryDetailSubmittedAt = string | null;
+
+
+/**
+ * ReviewHistoryFeedbackComment
+ */
+export interface ReviewHistoryFeedbackComment {
+  id: number;
+  comment: string;
+  assessor_name: string;
+  assessor_role?: ReviewHistoryFeedbackCommentAssessorRole;
+  created_at: string;
+  is_internal_note?: boolean;
+}
+
+
+/**
+ * ReviewHistoryItem
+ */
+export interface ReviewHistoryItem {
+  assessment_id: number;
+  barangay_name: string;
+  municipality_name?: ReviewHistoryItemMunicipalityName;
+  governance_area_name?: ReviewHistoryItemGovernanceAreaName;
+  submitted_at?: ReviewHistoryItemSubmittedAt;
+  completed_at?: ReviewHistoryItemCompletedAt;
+  final_compliance_status?: ReviewHistoryItemFinalComplianceStatus;
+  rework_count?: number;
+  calibration_count?: number;
+  was_reworked?: boolean;
+  was_calibrated?: boolean;
+  indicator_count?: number;
+  pass_count?: number;
+  fail_count?: number;
+  conditional_count?: number;
+}
+
+
+/**
+ * ReviewHistoryItemCompletedAt
+ */
+export type ReviewHistoryItemCompletedAt = string | null;
+
+
+/**
+ * ReviewHistoryItemGovernanceAreaName
+ */
+export type ReviewHistoryItemGovernanceAreaName = string | null;
+
+
+/**
+ * ReviewHistoryItemMunicipalityName
+ */
+export type ReviewHistoryItemMunicipalityName = string | null;
+
+
+/**
+ * ReviewHistoryItemSubmittedAt
+ */
+export type ReviewHistoryItemSubmittedAt = string | null;
 
 
 /**

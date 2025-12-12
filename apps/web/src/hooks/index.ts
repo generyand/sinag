@@ -49,9 +49,13 @@ export { useDashboard } from "./useDashboard";
 
 // Lookup data hooks
 export { useAssessorGovernanceArea } from "./useAssessorGovernanceArea";
+export { useValidatorGovernanceArea } from "./useValidatorGovernanceArea";
 export { useBarangays } from "./useBarangays";
 export { useGovernanceAreas } from "./useGovernanceAreas";
 export { useUserBarangay } from "./useUserBarangay";
+
+// Review history hooks
+export { useReviewHistory, useReviewHistoryDetail } from "./useReviewHistory";
 
 // System settings hooks
 export { useSystemSettings } from "./useSystemSettings";

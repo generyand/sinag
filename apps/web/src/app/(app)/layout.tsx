@@ -12,6 +12,7 @@ import {
   ChevronRight,
   ClipboardList,
   Clock,
+  History,
   Home,
   Layers,
   ListTodo,
@@ -43,6 +44,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   calendar: Calendar,
   building: Building2,
   clock: Clock,
+  history: History,
 };
 
 /**
@@ -78,6 +80,7 @@ const assessorNavigation = [
     href: "/assessor/submissions",
     icon: "clipboard",
   },
+  { name: "Review History", href: "/assessor/history", icon: "history" },
   { name: "Analytics", href: "/assessor/analytics", icon: "chart" },
   { name: "Profile", href: "/assessor/profile", icon: "user" },
 ];
@@ -88,6 +91,7 @@ const validatorNavigation = [
     href: "/validator/submissions",
     icon: "clipboard",
   },
+  { name: "Validation History", href: "/validator/history", icon: "history" },
   { name: "Profile", href: "/validator/profile", icon: "user" },
 ];
 

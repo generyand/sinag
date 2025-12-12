@@ -30,13 +30,14 @@ export const blguNavigation: NavItem[] = [
 
 export const assessorNavigation: NavItem[] = [
   { name: "Submissions Queue", href: "/assessor/submissions", icon: "clipboard" },
+  { name: "Review History", href: "/assessor/history", icon: "history" },
   { name: "Analytics", href: "/assessor/analytics", icon: "chart" },
   { name: "Profile", href: "/assessor/profile", icon: "user" },
 ];
 
 export const validatorNavigation: NavItem[] = [
   { name: "Submissions Queue", href: "/validator/submissions", icon: "clipboard" },
-  { name: "Analytics & Reports", href: "/analytics", icon: "chart" },
+  { name: "Validation History", href: "/validator/history", icon: "history" },
   { name: "Profile", href: "/validator/profile", icon: "user" },
 ];
 
