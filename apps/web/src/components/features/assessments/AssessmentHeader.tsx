@@ -185,6 +185,12 @@ export function AssessmentHeader({
     assessment.status.toLowerCase() === "rework" ||
     assessment.status.toLowerCase() === "needs-rework";
 
+  // Check if assessment is in an editable state (can be submitted)
+  const isEditableStatus =
+    assessment.status.toLowerCase() === "draft" ||
+    assessment.status.toLowerCase() === "rework" ||
+    assessment.status.toLowerCase() === "needs-rework";
+
   const getStatusIcon = () => {
     switch (assessment.status.toLowerCase()) {
       case "draft":
@@ -378,38 +384,45 @@ export function AssessmentHeader({
               </div>
             </div>
 
-            {/* Submit Button */}
-            <Button
-              onClick={() => setShowConfirmDialog(true)}
-              disabled={
-                submitMutation.isPending ||
+            {/* Submit Button - Only show when assessment is in editable state */}
+            {isEditableStatus ? (
+              <Button
+                onClick={() => setShowConfirmDialog(true)}
+                disabled={
+                  submitMutation.isPending ||
+                  resubmitMutation.isPending ||
+                  calibrationMutation.isPending
+                }
+                className={
+                  validation.isComplete
+                    ? "h-14 px-8 text-base font-semibold bg-[var(--foreground)] hover:bg-[var(--foreground)]/90 text-[var(--background)] rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 min-w-[200px]"
+                    : "h-14 px-8 text-base font-semibold bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 min-w-[200px]"
+                }
+              >
+                {submitMutation.isPending ||
                 resubmitMutation.isPending ||
-                calibrationMutation.isPending
-              }
-              className={
-                validation.isComplete
-                  ? "h-14 px-8 text-base font-semibold bg-[var(--foreground)] hover:bg-[var(--foreground)]/90 text-[var(--background)] rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 min-w-[200px]"
-                  : "h-14 px-8 text-base font-semibold bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 min-w-[200px]"
-              }
-            >
-              {submitMutation.isPending ||
-              resubmitMutation.isPending ||
-              calibrationMutation.isPending ? (
-                <>
-                  <Loader2 className="h-5 w-5 mr-3 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <Send className="h-5 w-5 mr-3" />
-                  {isReworkStatus
-                    ? isCalibrationRework
-                      ? "Submit Calibration"
-                      : "Resubmit"
-                    : "Submit Assessment"}
-                </>
-              )}
-            </Button>
+                calibrationMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-5 w-5 mr-3 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-5 w-5 mr-3" />
+                    {isReworkStatus
+                      ? isCalibrationRework
+                        ? "Submit Calibration"
+                        : "Resubmit"
+                      : "Submit Assessment"}
+                  </>
+                )}
+              </Button>
+            ) : (
+              <div className="h-14 px-8 flex items-center justify-center text-base font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg min-w-[200px]">
+                <CheckCircle className="h-5 w-5 mr-3" />
+                Submitted
+              </div>
+            )}
           </div>
         </div>
 

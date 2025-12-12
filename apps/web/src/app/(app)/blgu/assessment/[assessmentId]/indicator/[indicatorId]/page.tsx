@@ -100,6 +100,10 @@ export default function IndicatorFormPage() {
     (comment: any) => comment.indicator_id === indicatorId
   );
 
+  // Epic 5.0: Get MLGOO flagged MOV file IDs (for MLGOO recalibration workflow)
+  const mlgooFlaggedFileIds: Array<{ mov_file_id: number; comment?: string | null }> =
+    (dashboardData as any)?.mlgoo_recalibration_mov_file_ids || [];
+
   // Handle save success - could redirect or show confirmation
   const handleSaveSuccess = () => {
     // Could add additional logic here if needed
@@ -253,6 +257,7 @@ export default function IndicatorFormPage() {
           isLocked={isLocked || false}
           movAnnotations={movAnnotations}
           reworkComments={reworkComments}
+          mlgooFlaggedFileIds={mlgooFlaggedFileIds}
         />
       ) : (
         <Alert>

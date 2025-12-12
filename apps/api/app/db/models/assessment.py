@@ -110,7 +110,10 @@ class Assessment(Base):
     )  # Max 1
     mlgoo_recalibration_indicator_ids: Mapped[list | None] = mapped_column(
         JSON, nullable=True
-    )  # Specific indicators unlocked
+    )  # Specific indicators unlocked (legacy - kept for backward compatibility)
+    mlgoo_recalibration_mov_file_ids: Mapped[list | None] = mapped_column(
+        JSON, nullable=True
+    )  # Specific MOV files flagged for recalibration
     mlgoo_recalibration_comments: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Grace Period & Auto-lock tracking

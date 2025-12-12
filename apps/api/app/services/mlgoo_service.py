@@ -440,6 +440,161 @@ class MLGOOService:
             "notification_result": notification_result,
         }
 
+    def request_recalibration_by_mov(
+        self,
+        db: Session,
+        assessment_id: int,
+        mlgoo_user: User,
+        mov_files: list[dict],
+        overall_comments: str,
+    ) -> dict[str, Any]:
+        """
+        Request RE-calibration for specific MOV files.
+
+        MLGOO can flag specific MOV files that need to be re-uploaded by BLGU.
+        This is more granular than indicator-level recalibration - only the
+        flagged files need to be resubmitted.
+
+        Args:
+            db: Database session
+            assessment_id: ID of the assessment
+            mlgoo_user: The MLGOO user requesting RE-calibration
+            mov_files: List of MOV file items with mov_file_id and optional comment
+            overall_comments: MLGOO's overall comments explaining why RE-calibration is needed
+
+        Returns:
+            dict: Result of the RE-calibration request
+
+        Raises:
+            ValueError: If assessment cannot be RE-calibrated
+        """
+        assessment = (
+            db.query(Assessment)
+            .options(
+                joinedload(Assessment.blgu_user).joinedload(User.barangay),
+                selectinload(Assessment.responses).joinedload(AssessmentResponse.indicator),
+                selectinload(Assessment.mov_files).joinedload(MOVFile.indicator),
+            )
+            .filter(Assessment.id == assessment_id)
+            .first()
+        )
+
+        if not assessment:
+            raise ValueError(f"Assessment {assessment_id} not found")
+
+        # Check if RE-calibration is allowed
+        if not assessment.can_request_mlgoo_recalibration:
+            if assessment.mlgoo_recalibration_count >= 1:
+                raise ValueError(
+                    "RE-calibration has already been used for this assessment. Only one RE-calibration is allowed."
+                )
+            raise ValueError(
+                f"Assessment cannot be RE-calibrated. Current status: {assessment.status.value}"
+            )
+
+        # Validate MOV file IDs
+        assessment_mov_ids = {m.id for m in assessment.mov_files if m.deleted_at is None}
+        requested_mov_ids = {item["mov_file_id"] for item in mov_files}
+        invalid_ids = requested_mov_ids - assessment_mov_ids
+        if invalid_ids:
+            raise ValueError(f"Invalid MOV file IDs for this assessment: {invalid_ids}")
+
+        if not mov_files:
+            raise ValueError("At least one MOV file must be specified for RE-calibration")
+
+        if not overall_comments or not overall_comments.strip():
+            raise ValueError("Overall comments are required for RE-calibration")
+
+        # Get unique indicator IDs from the flagged MOV files
+        mov_to_indicator = {m.id: m.indicator_id for m in assessment.mov_files}
+        indicator_ids = list(set(mov_to_indicator[mid] for mid in requested_mov_ids))
+
+        # Set RE-calibration fields
+        assessment.is_mlgoo_recalibration = True
+        assessment.mlgoo_recalibration_requested_by = mlgoo_user.id
+        assessment.mlgoo_recalibration_requested_at = datetime.utcnow()
+        assessment.mlgoo_recalibration_count += 1
+        assessment.mlgoo_recalibration_indicator_ids = indicator_ids  # Also set indicators for backward compatibility
+        assessment.mlgoo_recalibration_mov_file_ids = [
+            {"mov_file_id": item["mov_file_id"], "comment": item.get("comment")}
+            for item in mov_files
+        ]
+        assessment.mlgoo_recalibration_comments = overall_comments.strip()
+
+        # Set grace period
+        assessment.grace_period_expires_at = datetime.utcnow() + timedelta(
+            days=self.MLGOO_RECALIBRATION_GRACE_PERIOD_DAYS
+        )
+
+        # Move back to REWORK status for BLGU to make corrections
+        assessment.status = AssessmentStatus.REWORK
+
+        # Reset is_completed flag for indicators with flagged MOV files
+        for response in assessment.responses:
+            if response.indicator_id in indicator_ids:
+                response.is_completed = False
+                self.logger.info(
+                    f"Reset is_completed for indicator {response.indicator_id} "
+                    f"(response {response.id}) due to MLGOO MOV file RE-calibration"
+                )
+
+        db.commit()
+        db.refresh(assessment)
+
+        # Get barangay name for logging
+        barangay_name = "Unknown Barangay"
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+
+        # Build flagged MOV file details for response
+        mov_file_lookup = {m.id: m for m in assessment.mov_files}
+        flagged_mov_files = []
+        for item in mov_files:
+            mov_file = mov_file_lookup.get(item["mov_file_id"])
+            if mov_file:
+                flagged_mov_files.append({
+                    "mov_file_id": mov_file.id,
+                    "file_name": mov_file.file_name,
+                    "indicator_id": mov_file.indicator_id,
+                    "indicator_code": mov_file.indicator.indicator_code if mov_file.indicator else None,
+                    "indicator_name": mov_file.indicator.name if mov_file.indicator else "Unknown",
+                    "comment": item.get("comment"),
+                })
+
+        self.logger.info(
+            f"MLGOO {mlgoo_user.name} requested MOV file RE-calibration for assessment {assessment_id} "
+            f"({barangay_name}). MOV files: {requested_mov_ids}"
+        )
+
+        # Trigger notification to BLGU
+        try:
+            from app.workers.notifications import send_mlgoo_recalibration_notification
+
+            task = send_mlgoo_recalibration_notification.delay(assessment_id)
+            notification_result = {
+                "success": True,
+                "message": "RE-calibration notification queued",
+                "task_id": task.id,
+            }
+        except Exception as e:
+            self.logger.error(f"Failed to queue RE-calibration notification: {e}")
+            notification_result = {"success": False, "error": str(e)}
+
+        return {
+            "success": True,
+            "message": f"RE-calibration requested for {len(mov_files)} MOV file(s)",
+            "assessment_id": assessment_id,
+            "barangay_name": barangay_name,
+            "status": assessment.status.value,
+            "flagged_mov_files": flagged_mov_files,
+            "overall_comments": overall_comments,
+            "requested_by": mlgoo_user.name,
+            "requested_at": assessment.mlgoo_recalibration_requested_at.isoformat(),
+            "grace_period_expires_at": assessment.grace_period_expires_at.isoformat(),
+            "recalibration_count": assessment.mlgoo_recalibration_count,
+            "notification_result": notification_result,
+        }
+
     def get_assessment_details(
         self,
         db: Session,
@@ -675,6 +830,7 @@ class MLGOOService:
             if assessment.mlgoo_recalibration_submitted_at
             else None,
             "mlgoo_recalibration_indicator_ids": assessment.mlgoo_recalibration_indicator_ids,
+            "mlgoo_recalibration_mov_file_ids": assessment.mlgoo_recalibration_mov_file_ids,
             "mlgoo_recalibration_comments": assessment.mlgoo_recalibration_comments,
             # MLGOO approval
             "mlgoo_approved_at": assessment.mlgoo_approved_at.isoformat()
@@ -869,7 +1025,18 @@ class MLGOOService:
                 f"from {previous_status} to {new_status.value} for assessment {assessment_id}"
             )
 
+        # Ensure all modified responses are added to session explicitly
+        for update in indicator_updates:
+            indicator_id = update["indicator_id"]
+            if indicator_id in response_map:
+                db.add(response_map[indicator_id])
+
+        # Commit and flush to ensure changes are persisted
+        db.flush()
         db.commit()
+
+        # Log post-commit verification
+        self.logger.info(f"Committed validation updates for assessment {assessment_id}")
 
         # Get barangay name for response
         barangay_name = "Unknown Barangay"
@@ -882,6 +1049,112 @@ class MLGOOService:
             "assessment_id": assessment_id,
             "barangay_name": barangay_name,
             "updated_indicators": updated_indicators,
+            "updated_by": mlgoo_user.name,
+            "updated_at": datetime.utcnow().isoformat(),
+        }
+
+
+    def override_validation_status(
+        self,
+        db: Session,
+        response_id: int,
+        mlgoo_user: User,
+        validation_status: str,
+        remarks: str | None = None,
+    ) -> dict[str, Any]:
+        """
+        Override the validation status of any assessment response.
+
+        MLGOO has the authority to override any indicator's validation status
+        when reviewing assessments awaiting their approval.
+
+        Args:
+            db: Database session
+            response_id: ID of the assessment response to update
+            mlgoo_user: The MLGOO user making the override
+            validation_status: New validation status (PASS, FAIL, CONDITIONAL)
+            remarks: Optional remarks explaining the override
+
+        Returns:
+            dict: Result of the override operation
+
+        Raises:
+            ValueError: If response not found or override not allowed
+        """
+        # Get the assessment response with its indicator
+        response = (
+            db.query(AssessmentResponse)
+            .options(
+                joinedload(AssessmentResponse.indicator),
+                joinedload(AssessmentResponse.assessment)
+                .joinedload(Assessment.blgu_user)
+                .joinedload(User.barangay),
+            )
+            .filter(AssessmentResponse.id == response_id)
+            .first()
+        )
+
+        if not response:
+            raise ValueError(f"Assessment response {response_id} not found")
+
+        assessment = response.assessment
+        if not assessment:
+            raise ValueError("Assessment not found for this response")
+
+        # Only allow overrides when assessment is AWAITING_MLGOO_APPROVAL
+        if assessment.status != AssessmentStatus.AWAITING_MLGOO_APPROVAL:
+            raise ValueError(
+                f"Cannot override validation status. Assessment must be awaiting MLGOO approval. "
+                f"Current status: {assessment.status.value}"
+            )
+
+        # Convert string status to enum
+        try:
+            new_status = ValidationStatus(validation_status.upper())
+        except ValueError:
+            raise ValueError(
+                f"Invalid validation status: {validation_status}. Must be PASS, FAIL, or CONDITIONAL"
+            )
+
+        # Store previous status for logging
+        previous_status = (
+            response.validation_status.value if response.validation_status else None
+        )
+
+        # Update the validation status
+        response.validation_status = new_status
+
+        # Add MLGOO remarks
+        if remarks:
+            mlgoo_remark = f"[MLGOO Override] {remarks}"
+            if response.assessor_remarks:
+                response.assessor_remarks = f"{response.assessor_remarks}\n{mlgoo_remark}"
+            else:
+                response.assessor_remarks = mlgoo_remark
+
+        db.commit()
+        db.refresh(response)
+
+        # Get indicator details
+        indicator = response.indicator
+        indicator_name = indicator.name if indicator else "Unknown"
+        indicator_code = indicator.indicator_code if indicator else None
+
+        self.logger.info(
+            f"MLGOO {mlgoo_user.name} overrode validation status for response {response_id} "
+            f"(indicator {indicator_code}) from {previous_status} to {new_status.value}"
+        )
+
+        return {
+            "success": True,
+            "message": f"Validation status updated to {new_status.value}",
+            "response_id": response_id,
+            "indicator_id": response.indicator_id,
+            "indicator_name": indicator_name,
+            "indicator_code": indicator_code,
+            "previous_status": previous_status,
+            "new_status": new_status.value,
+            "remarks": remarks,
             "updated_by": mlgoo_user.name,
             "updated_at": datetime.utcnow().isoformat(),
         }

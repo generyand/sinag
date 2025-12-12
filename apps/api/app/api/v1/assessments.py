@@ -1520,14 +1520,19 @@ def resubmit_assessment(
     # Regular assessor rework routes back to SUBMITTED (for assessor review)
     if is_mlgoo_recalibration:
         assessment.status = AssessmentStatus.AWAITING_MLGOO_APPROVAL
-        # Clear MLGOO recalibration flags after resubmission
+        # Clear MLGOO recalibration active flag after resubmission
         assessment.is_mlgoo_recalibration = False
-        # Keep mlgoo_recalibration_indicator_ids and comments for audit trail
+        # Record when BLGU resubmitted after recalibration
+        assessment.mlgoo_recalibration_submitted_at = datetime.utcnow()
+        # Keep mlgoo_recalibration_indicator_ids, mov_file_ids, requested_at, and comments for audit trail
+        # These are needed by MLGOO to review which files were flagged vs which are new
         assessment.submitted_at = datetime.utcnow()
         import logging
 
         logging.getLogger(__name__).info(
-            f"[MLGOO RECALIBRATION] Assessment {assessment_id} resubmitted - routing to AWAITING_MLGOO_APPROVAL"
+            f"[MLGOO RECALIBRATION] Assessment {assessment_id} resubmitted - routing to AWAITING_MLGOO_APPROVAL. "
+            f"Flagged indicators: {assessment.mlgoo_recalibration_indicator_ids}, "
+            f"Flagged MOV files: {assessment.mlgoo_recalibration_mov_file_ids}"
         )
     else:
         assessment.status = AssessmentStatus.SUBMITTED

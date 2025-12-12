@@ -782,6 +782,35 @@ class AssessorService:
         # Create a lookup map of existing responses by indicator_id
         response_lookup = {r.indicator_id: r for r in assessment.responses}
 
+        # CRITICAL: Create empty AssessmentResponse records for indicators without responses
+        # This ensures assessors can select and review ALL indicators, even those where
+        # BLGU didn't upload any files. Without this, the frontend can't track selection
+        # because responses returned with id=None can't be properly selected.
+        existing_indicator_ids = set(response_lookup.keys())
+        created_responses = 0
+
+        for indicator in all_indicators:
+            if indicator.id not in existing_indicator_ids:
+                # Create empty response in database
+                empty_response = AssessmentResponse(
+                    assessment_id=assessment_id,
+                    indicator_id=indicator.id,
+                    response_data={},
+                    is_completed=False,  # No files = incomplete
+                    requires_rework=False,
+                )
+                db.add(empty_response)
+                db.flush()  # Flush to get the ID
+                response_lookup[indicator.id] = empty_response
+                created_responses += 1
+
+        if created_responses > 0:
+            db.commit()
+            self.logger.info(
+                f"[ASSESSOR VIEW] Created {created_responses} empty responses for indicators "
+                f"without responses (assessment {assessment_id})"
+            )
+
         # Determine filtering based on user role
         is_validator_role = assessor.role == UserRole.VALIDATOR
         should_filter = is_validator_role and assessor.validator_area_id is not None

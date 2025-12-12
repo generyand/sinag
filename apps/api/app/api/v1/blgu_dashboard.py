@@ -949,6 +949,7 @@ def get_blgu_dashboard(
         # MLGOO RE-calibration tracking (distinct from Validator calibration)
         "is_mlgoo_recalibration": assessment.is_mlgoo_recalibration,  # True if MLGOO requested RE-calibration
         "mlgoo_recalibration_indicator_ids": assessment.mlgoo_recalibration_indicator_ids,  # Specific indicators to address
+        "mlgoo_recalibration_mov_file_ids": assessment.mlgoo_recalibration_mov_file_ids,  # Specific MOV files flagged
         "mlgoo_recalibration_comments": assessment.mlgoo_recalibration_comments,  # MLGOO's explanation
         "mlgoo_recalibration_count": assessment.mlgoo_recalibration_count,  # Count of RE-calibrations (max 1)
         "mlgoo_recalibration_requested_at": assessment.mlgoo_recalibration_requested_at.isoformat()

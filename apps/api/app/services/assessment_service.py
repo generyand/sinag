@@ -271,7 +271,7 @@ class AssessmentService:
                     a.is_mlgoo_recalibration, a.mlgoo_recalibration_requested_at,
                     a.mlgoo_recalibration_indicator_ids, a.mlgoo_recalibration_comments,
                     a.mlgoo_recalibration_count, a.assessment_year, a.is_calibration_rework,
-                    a.pending_calibrations
+                    a.pending_calibrations, a.mlgoo_recalibration_mov_file_ids
                 FROM users u
                 LEFT JOIN barangays b ON u.barangay_id = b.id
                 LEFT JOIN assessments a ON a.blgu_user_id = u.id AND a.assessment_year = :year
@@ -308,6 +308,8 @@ class AssessmentService:
                 "mlgoo_recalibration_count": row1[15],
                 "assessment_year": row1[16] if len(row1) > 16 else assessment_year,
                 "is_calibration_rework": row1[17] if len(row1) > 17 else False,
+                "pending_calibrations": row1[18] if len(row1) > 18 else None,
+                "mlgoo_recalibration_mov_file_ids": row1[19] if len(row1) > 19 else None,
             }
 
             if not assessment_info["id"]:
@@ -611,6 +613,9 @@ class AssessmentService:
             ),
             "mlgoo_recalibration_comments": assessment_info.get("mlgoo_recalibration_comments"),
             "mlgoo_recalibration_count": assessment_info.get("mlgoo_recalibration_count"),
+            "mlgoo_recalibration_mov_file_ids": assessment_info.get(
+                "mlgoo_recalibration_mov_file_ids"
+            ),
         }
 
         # Build lookup structures
@@ -1904,6 +1909,33 @@ class AssessmentService:
 
         # Run preliminary compliance check (for additional MOV checks)
         validation_result = self._run_preliminary_compliance_check(assessment)
+
+        # CRITICAL: Create empty AssessmentResponse records for ALL indicators without responses
+        # This ensures Assessors can review and mark ALL indicators for rework, even those
+        # where BLGU didn't upload any files
+        existing_indicator_ids = {r.indicator_id for r in assessment.responses}
+        all_indicators = db.query(Indicator).filter(Indicator.is_active == True).all()
+
+        created_empty_responses = 0
+        for indicator in all_indicators:
+            if indicator.id not in existing_indicator_ids:
+                empty_response = AssessmentResponse(
+                    assessment_id=assessment_id,
+                    indicator_id=indicator.id,
+                    response_data={},
+                    is_completed=False,  # No files = incomplete
+                    requires_rework=False,
+                )
+                db.add(empty_response)
+                created_empty_responses += 1
+
+        if created_empty_responses > 0:
+            db.flush()
+            self.logger.info(
+                f"[SUBMIT] Created {created_empty_responses} empty responses for indicators without files (assessment {assessment_id})"
+            )
+            # Refresh assessment to include newly created responses
+            db.refresh(assessment)
 
         if validation_result.is_valid:
             # Check if this is a resubmission after rework/calibration

@@ -62,6 +62,8 @@ interface DynamicFormRendererProps {
   movAnnotations?: any[];
   /** Epic 5.0: Rework comments for this indicator from dashboard (assessor feedback) */
   reworkComments?: any[];
+  /** Epic 5.0: MOV file IDs flagged by MLGOO for recalibration - these need to be re-uploaded */
+  mlgooFlaggedFileIds?: Array<{ mov_file_id: number; comment?: string | null }>;
   /** Navigation: Current indicator code */
   currentCode?: string;
   /** Navigation: Current position in the assessment */
@@ -90,6 +92,7 @@ export function DynamicFormRenderer({
   isLocked = false,
   movAnnotations = [],
   reworkComments = [],
+  mlgooFlaggedFileIds = [],
   currentCode,
   currentPosition,
   totalIndicators,
@@ -221,16 +224,39 @@ export function DynamicFormRenderer({
     return allFiles.filter((f) => !f.deleted_at);
   }, [filesResponse]);
 
+  // Get MLGOO flagged file IDs - use props if available, otherwise fall back to assessment data
+  const effectiveMlgooFlaggedFileIds = useMemo(() => {
+    if (mlgooFlaggedFileIds && mlgooFlaggedFileIds.length > 0) {
+      return mlgooFlaggedFileIds;
+    }
+    return (assessmentData as any)?.assessment?.mlgoo_recalibration_mov_file_ids || [];
+  }, [mlgooFlaggedFileIds, assessmentData]);
+
+  const mlgooFlaggedFileIdsSet = useMemo(() => {
+    return new Set(
+      (effectiveMlgooFlaggedFileIds || []).map((item: any) => String(item.mov_file_id))
+    );
+  }, [effectiveMlgooFlaggedFileIds]);
+
   // Get files that count towards completion (filtered by rework timestamp ONLY if indicator requires rework)
   // Indicators WITHOUT assessor feedback keep all their files (no need to re-upload)
   // Indicators WITH assessor feedback (requires_rework=true) must have files uploaded AFTER rework
+  // MLGOO-flagged files are always excluded from completion count
   const completionValidFiles = useMemo(() => {
-    // Only filter files if:
+    // First, filter out MLGOO-flagged files - they should never count towards completion
+    let validFiles = uploadedFiles;
+    if (isMlgooRecalibration && mlgooFlaggedFileIdsSet.size > 0) {
+      validFiles = uploadedFiles.filter(
+        (file: MOVFileResponse) => !mlgooFlaggedFileIdsSet.has(String(file.id))
+      );
+    }
+
+    // Only apply rework timestamp filtering if:
     // 1. Assessment is in rework status
     // 2. We have a rework timestamp (or recalibration timestamp)
     // 3. THIS specific indicator requires rework (has assessor feedback)
     if (!isReworkStatus || !effectiveReworkTimestamp || !indicatorRequiresRework) {
-      return uploadedFiles;
+      return validFiles;
     }
 
     const reworkDate = new Date(effectiveReworkTimestamp);
@@ -252,7 +278,7 @@ export function DynamicFormRenderer({
     // - Files WITHOUT annotations (accepted during assessor rework) SHOULD count
     // - New files uploaded after rework SHOULD count
     if (isCalibrationMode && hasSpecificAnnotations) {
-      return uploadedFiles.filter((file: MOVFileResponse) => {
+      return validFiles.filter((file: MOVFileResponse) => {
         if (!file.uploaded_at) return false;
         const uploadDate = new Date(file.uploaded_at);
 
@@ -267,7 +293,7 @@ export function DynamicFormRenderer({
     }
 
     // Standard rework mode (assessor rework)
-    return uploadedFiles.filter((file: MOVFileResponse) => {
+    return validFiles.filter((file: MOVFileResponse) => {
       if (!file.uploaded_at) return false;
       const uploadDate = new Date(file.uploaded_at);
 
@@ -311,6 +337,8 @@ export function DynamicFormRenderer({
     indicatorRequiresRework,
     backendRequiresRework,
     movAnnotations,
+    isMlgooRecalibration,
+    mlgooFlaggedFileIdsSet,
     reworkComments,
     calibrationRequestedAt,
   ]);
@@ -736,6 +764,7 @@ export function DynamicFormRenderer({
             uploadedFiles={uploadedFiles}
             completionValidFiles={completionValidFiles}
             updateAssessmentData={updateAssessmentData}
+            mlgooFlaggedFileIds={mlgooFlaggedFileIds}
           />
         ))}
 
@@ -793,6 +822,8 @@ interface SectionRendererProps {
   /** Files that count towards completion (filtered by rework timestamp if in rework status) */
   completionValidFiles: MOVFileResponse[];
   updateAssessmentData?: (updater: (data: any) => any) => void;
+  /** MOV file IDs flagged by MLGOO for recalibration */
+  mlgooFlaggedFileIds?: Array<{ mov_file_id: number; comment?: string | null }>;
 }
 
 /**
@@ -943,6 +974,7 @@ function SectionRenderer({
   // but for completion tracking we use completionValidFiles (filtered by rework)
   completionValidFiles,
   updateAssessmentData,
+  mlgooFlaggedFileIds = [],
 }: SectionRendererProps) {
   // Get visible fields for this section based on conditional logic
   const visibleFields = useMemo(() => {
@@ -1073,6 +1105,7 @@ function SectionRenderer({
                           movAnnotations={movAnnotations}
                           reworkComments={reworkComments}
                           updateAssessmentData={updateAssessmentData}
+                          mlgooFlaggedFileIds={mlgooFlaggedFileIds}
                         />
                       ))}
                     </div>
@@ -1123,6 +1156,7 @@ function SectionRenderer({
                 movAnnotations={movAnnotations}
                 reworkComments={reworkComments}
                 updateAssessmentData={updateAssessmentData}
+                mlgooFlaggedFileIds={mlgooFlaggedFileIds}
               />
             </Wrapper>
           );
@@ -1146,6 +1180,8 @@ interface FieldRendererProps {
   movAnnotations: any[];
   reworkComments: any[]; // Epic 5.0: Added for Hybrid Logic
   updateAssessmentData?: (updater: (data: any) => any) => void;
+  /** MOV file IDs flagged by MLGOO for recalibration */
+  mlgooFlaggedFileIds?: Array<{ mov_file_id: number; comment?: string | null }>;
 }
 
 function FieldRenderer({
@@ -1158,6 +1194,7 @@ function FieldRenderer({
   movAnnotations,
   reworkComments,
   updateAssessmentData,
+  mlgooFlaggedFileIds = [],
 }: FieldRendererProps) {
   // Render appropriate field component based on field type
   switch (field.field_type) {
@@ -1274,6 +1311,7 @@ function FieldRenderer({
           movAnnotations={movAnnotations}
           reworkComments={reworkComments}
           updateAssessmentData={updateAssessmentData}
+          mlgooFlaggedFileIds={mlgooFlaggedFileIds}
         />
       );
 

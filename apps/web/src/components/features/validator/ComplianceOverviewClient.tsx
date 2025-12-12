@@ -22,7 +22,7 @@ import {
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 interface ComplianceOverviewClientProps {
@@ -68,6 +68,7 @@ export function ComplianceOverviewClient({ assessmentId }: ComplianceOverviewCli
   const { data, isLoading, isError, error } =
     useGetComplianceAssessmentsAssessmentIdComplianceOverview(assessmentId);
   const validateMut = usePostAssessorAssessmentResponsesResponseIdValidate();
+  const [isConfirmingAll, setIsConfirmingAll] = useState(false);
 
   // Calculate summary stats
   const stats = useMemo(() => {
@@ -141,6 +142,80 @@ export function ComplianceOverviewClient({ assessmentId }: ComplianceOverviewCli
     } catch (err) {
       console.error("Reset error:", err);
       toast.error("Failed to reset status");
+    }
+  };
+
+  // Get all sub-indicators with suggestions that haven't been confirmed yet
+  const pendingSuggestions = useMemo(() => {
+    if (!data?.governance_areas) return [];
+
+    const suggestions: { responseId: number; status: "PASS" | "FAIL" }[] = [];
+    for (const area of data.governance_areas) {
+      for (const indicator of area.indicators) {
+        for (const sub of indicator.sub_indicators) {
+          // Only include items that:
+          // 1. Have a response_id
+          // 2. Don't have a confirmed validation_status
+          // 3. Have a recommended_status (PASS or FAIL)
+          if (
+            sub.response_id &&
+            sub.validation_status === null &&
+            (sub.recommended_status === "PASS" || sub.recommended_status === "FAIL")
+          ) {
+            suggestions.push({
+              responseId: sub.response_id,
+              status: sub.recommended_status,
+            });
+          }
+        }
+      }
+    }
+    return suggestions;
+  }, [data]);
+
+  // Handle confirm all suggestions
+  const handleConfirmAllSuggestions = async () => {
+    if (pendingSuggestions.length === 0) {
+      toast.info("No pending suggestions to confirm");
+      return;
+    }
+
+    setIsConfirmingAll(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    try {
+      // Process all suggestions sequentially to avoid overwhelming the server
+      for (const suggestion of pendingSuggestions) {
+        try {
+          await validateMut.mutateAsync({
+            responseId: suggestion.responseId,
+            data: {
+              validation_status: suggestion.status,
+            },
+          });
+          successCount++;
+        } catch (err) {
+          console.error(`Failed to confirm suggestion for response ${suggestion.responseId}:`, err);
+          errorCount++;
+        }
+      }
+
+      // Invalidate queries once after all updates
+      await queryClient.invalidateQueries();
+
+      if (errorCount === 0) {
+        toast.success(`Confirmed ${successCount} suggestion${successCount !== 1 ? "s" : ""}`);
+      } else {
+        toast.warning(
+          `Confirmed ${successCount} suggestion${successCount !== 1 ? "s" : ""}, ${errorCount} failed`
+        );
+      }
+    } catch (err) {
+      console.error("Confirm all suggestions error:", err);
+      toast.error("Failed to confirm suggestions");
+    } finally {
+      setIsConfirmingAll(false);
     }
   };
 
@@ -320,7 +395,7 @@ export function ComplianceOverviewClient({ assessmentId }: ComplianceOverviewCli
         <div className="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-950/30 border border-indigo-100 dark:border-indigo-900/50 rounded-sm p-4 mb-6">
           <div className="flex gap-3">
             <Info className="h-5 w-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-0.5" />
-            <div className="text-sm">
+            <div className="text-sm flex-1">
               <p className="text-indigo-800 dark:text-indigo-200">
                 <strong>How it works:</strong> Glowing buttons show the <em>suggested</em> status
                 based on your checklist completion. Click a button to <strong>confirm</strong> the
@@ -329,6 +404,27 @@ export function ComplianceOverviewClient({ assessmentId }: ComplianceOverviewCli
                 until confirmed.
               </p>
             </div>
+            {/* Confirm All Suggestions Button */}
+            {pendingSuggestions.length > 0 && (
+              <Button
+                onClick={handleConfirmAllSuggestions}
+                disabled={isConfirmingAll || validateMut.isPending}
+                size="sm"
+                className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white flex-shrink-0"
+              >
+                {isConfirmingAll ? (
+                  <>
+                    <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Confirming...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    Confirm All ({pendingSuggestions.length})
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </div>
 

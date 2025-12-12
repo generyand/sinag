@@ -274,9 +274,28 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     );
   };
 
-  // Helper: Check if an indicator is "reviewed" (checklist items checked OR flagged for calibration)
+  // Helper: Check if a response already has a validation status from database
+  const hasExistingValidationStatus = (responseId: number): boolean => {
+    const response = responses.find((r: any) => r.id === responseId);
+    if (!response) return false;
+    const status = (response as any).validation_status;
+    // Check if status is PASS, FAIL, or CONDITIONAL (case-insensitive)
+    if (!status) return false;
+    const statusUpper = String(status).toUpperCase();
+    return statusUpper === "PASS" || statusUpper === "FAIL" || statusUpper === "CONDITIONAL";
+  };
+
+  // Helper: Check if an indicator is "reviewed"
+  // An indicator is reviewed if:
+  // 1. Has checklist items checked in current session, OR
+  // 2. Flagged for calibration, OR
+  // 3. Already has a validation status from database (PASS/FAIL/CONDITIONAL - e.g., after calibration)
   const isIndicatorReviewed = (responseId: number): boolean => {
-    return hasChecklistItemsChecked(responseId) || calibrationFlags[responseId] === true;
+    return (
+      hasChecklistItemsChecked(responseId) ||
+      calibrationFlags[responseId] === true ||
+      hasExistingValidationStatus(responseId)
+    );
   };
 
   // Transform to match BLGU assessment structure for TreeNavigator

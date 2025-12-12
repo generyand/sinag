@@ -80,6 +80,9 @@ export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkInd
     (dashboardData as any).mlgoo_recalibration_indicator_ids || [];
   const mlgooRecalibrationComments: string | null =
     (dashboardData as any).mlgoo_recalibration_comments || null;
+  // MLGOO RE-calibration can now target specific MOV files (more granular than indicators)
+  const mlgooRecalibrationMovFileIds: Array<{ mov_file_id: number; comment?: string | null }> =
+    (dashboardData as any).mlgoo_recalibration_mov_file_ids || [];
 
   // Compute failed indicators based on calibration mode or assessor feedback
   // For MLGOO RE-CALIBRATION: Show ONLY the specific indicators selected by MLGOO
@@ -126,8 +129,9 @@ export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkInd
       return null;
     };
 
-    // For MLGOO RE-CALIBRATION: Show ONLY the specific indicators selected by MLGOO
-    if (isMlgooRecalibration && mlgooRecalibrationIndicatorIds.length > 0) {
+    // For MLGOO RE-CALIBRATION: Show indicators that have flagged files OR are explicitly selected
+    if (isMlgooRecalibration && (mlgooRecalibrationIndicatorIds.length > 0 || mlgooRecalibrationMovFileIds.length > 0)) {
+      // First, handle explicitly selected indicators (by indicator ID)
       mlgooRecalibrationIndicatorIds.forEach((indicatorId) => {
         const indicator = findIndicator(indicatorId);
         if (indicator) {
@@ -146,6 +150,63 @@ export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkInd
           });
         }
       });
+
+      // Second, handle MOV file-level flagging (find indicators by flagged file IDs)
+      // MOV files are associated with indicators, so we need to find which indicators
+      // the flagged files belong to
+      if (mlgooRecalibrationMovFileIds.length > 0) {
+        // Search all governance areas to find indicators with the flagged files
+        const flaggedFileIds = new Set(mlgooRecalibrationMovFileIds.map(f => f.mov_file_id));
+
+        // Check mov_annotations_by_indicator for file-to-indicator mapping
+        // Also iterate through all indicators to check if they have flagged files
+        dashboardData.governance_areas.forEach((area) => {
+          const searchAndAddIndicators = (indicators: any[]) => {
+            indicators.forEach((indicator: any) => {
+              // Check if this indicator's ID matches any flagged files
+              // We'll use the indicator_ids from the mlgoo_recalibration data
+              // Note: The backend should have set mlgoo_recalibration_indicator_ids based on the flagged files
+
+              // For now, we use the file associations from mov_annotations_by_indicator
+              // or check if the indicator is already in our map
+              const indicatorId = indicator.indicator_id;
+
+              // If not already added and has flagged files, add it
+              // The is_complete check will be based on whether BLGU has re-uploaded
+              if (!indicatorMap.has(indicatorId)) {
+                // Check if this indicator has any flagged files
+                // For MLGOO file-level flagging, indicator completion should reflect file replacement status
+                const needsAttention = !indicator.is_complete;
+
+                // Only add if the indicator needs attention (not complete)
+                // The backend marks indicators incomplete when their files are flagged
+                if (needsAttention || mlgooRecalibrationIndicatorIds.includes(indicatorId)) {
+                  indicatorMap.set(indicatorId, {
+                    indicator_id: indicatorId,
+                    indicator_name: indicator.indicator_name,
+                    governance_area_id: area.governance_area_id,
+                    governance_area_name: area.governance_area_name,
+                    is_complete: indicator.is_complete,
+                    comments: [],
+                    annotations: [],
+                    total_feedback_items: mlgooRecalibrationMovFileIds.length,
+                    has_mov_issues: true,
+                    has_field_issues: false,
+                    route_path: `/blgu/assessments?indicator=${indicatorId}`,
+                  });
+                }
+              }
+
+              // Search children
+              if (indicator.children && indicator.children.length > 0) {
+                searchAndAddIndicators(indicator.children);
+              }
+            });
+          };
+
+          searchAndAddIndicators(area.indicators);
+        });
+      }
 
       // Also add any annotations for the MLGOO-selected indicators
       Object.entries(dashboardData.mov_annotations_by_indicator || {}).forEach(
@@ -294,6 +355,7 @@ export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkInd
     calibrationAreaIds,
     isMlgooRecalibration,
     mlgooRecalibrationIndicatorIds,
+    mlgooRecalibrationMovFileIds,
   ]);
 
   // Compute progress
@@ -446,6 +508,21 @@ export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkInd
                   <p className="text-sm text-white/90 italic">
                     <span className="font-semibold not-italic">MLGOO&apos;s Note:</span>{" "}
                     {mlgooRecalibrationComments}
+                  </p>
+                </div>
+              )}
+              {/* Flagged MOV Files Count */}
+              {isMlgooRecalibration && mlgooRecalibrationMovFileIds.length > 0 && (
+                <div className="bg-yellow-500/20 border border-yellow-400/30 rounded-sm p-3 mb-3">
+                  <p className="text-sm text-white/90">
+                    <span className="font-semibold">
+                      {mlgooRecalibrationMovFileIds.length} specific file(s)
+                    </span>{" "}
+                    have been flagged for resubmission. Look for the{" "}
+                    <span className="bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded">
+                      FLAGGED
+                    </span>{" "}
+                    badge on files that need to be replaced.
                   </p>
                 </div>
               )}

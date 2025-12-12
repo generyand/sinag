@@ -231,6 +231,12 @@ export interface FailingIndicator {
 
 
 /**
+ * FlaggedMovFileItemIndicatorCode
+ */
+export type FlaggedMovFileItemIndicatorCode = string | null;
+
+
+/**
  * GARIndicator
  */
 export interface GARIndicator {
@@ -862,8 +868,8 @@ export interface IndicatorValidationUpdate {
   /** ID of the indicator to update */
   indicator_id: number;
   /**
-   * New validation status: Pass, Fail, or Conditional
-   * @pattern ^(Pass|Fail|Conditional)$
+   * New validation status: PASS, FAIL, or CONDITIONAL
+   * @pattern ^(PASS|FAIL|CONDITIONAL|Pass|Fail|Conditional)$
    */
   validation_status: string;
   /** Optional remarks for the validation decision */
@@ -875,6 +881,12 @@ export interface IndicatorValidationUpdate {
  * IndicatorValidationUpdateRemarks
  */
 export type IndicatorValidationUpdateRemarks = string | null;
+
+
+/**
+ * OverrideValidationStatusResponseIndicatorCode
+ */
+export type OverrideValidationStatusResponseIndicatorCode = string | null;
 
 
 /**

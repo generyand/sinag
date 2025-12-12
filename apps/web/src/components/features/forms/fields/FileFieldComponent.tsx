@@ -166,6 +166,8 @@ interface FileFieldComponentProps {
   movAnnotations?: any[];
   reworkComments?: any[]; // Epic 5.0: Added for Hybrid Logic
   updateAssessmentData?: (updater: (data: any) => any) => void; // For immediate UI updates
+  /** MOV file IDs flagged by MLGOO for recalibration - these need to be re-uploaded */
+  mlgooFlaggedFileIds?: Array<{ mov_file_id: number; comment?: string | null }>;
 }
 
 /**
@@ -188,6 +190,7 @@ export function FileFieldComponent({
   movAnnotations = [],
   reworkComments = [],
   updateAssessmentData,
+  mlgooFlaggedFileIds = [],
 }: FileFieldComponentProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -678,6 +681,17 @@ export function FileFieldComponent({
   // During REWORK status, separate old files from new files
   const isReworkStatus = normalizedStatus === "REWORK" || normalizedStatus === "NEEDS_REWORK";
 
+  // Get MLGOO flagged file IDs for this field
+  // Use props if available, otherwise fall back to assessment data
+  const effectiveMlgooFlaggedFileIds = mlgooFlaggedFileIds?.length > 0
+    ? mlgooFlaggedFileIds
+    : (assessmentData as any)?.assessment?.mlgoo_recalibration_mov_file_ids || [];
+
+  const mlgooFlaggedFileIdsSet = new Set(
+    (effectiveMlgooFlaggedFileIds || []).map((item: any) => String(item.mov_file_id))
+  );
+  const hasMlgooFlaggedFiles = mlgooFlaggedFileIdsSet.size > 0;
+
   let previousFiles: any[] = [];
   let newFiles: any[] = [];
 
@@ -706,7 +720,31 @@ export function FileFieldComponent({
     let invalidOldFiles: any[] = [];
     let validOldFiles: any[] = [];
 
-    if (isCalibrationRework) {
+    if (isMlgooRecalibration && hasMlgooFlaggedFiles) {
+      // MLGOO RECALIBRATION MODE: MLGOO flagged specific MOV files
+      // Files flagged by MLGOO should go to previousFiles (need re-upload)
+      // Files NOT flagged by MLGOO are still valid
+
+      // Separate files into flagged (by MLGOO) and non-flagged
+      const flaggedFiles = oldFiles.filter((f: any) => mlgooFlaggedFileIdsSet.has(String(f.id)));
+      const nonFlaggedFiles = oldFiles.filter((f: any) => !mlgooFlaggedFileIdsSet.has(String(f.id)));
+
+      // Check if BLGU has uploaded replacement files (files uploaded after recalibration request)
+      // These replacement files should NOT be flagged files
+      const replacementFiles = recentFiles.filter((f: any) => !mlgooFlaggedFileIdsSet.has(String(f.id)));
+
+      if (replacementFiles.length > 0) {
+        // BLGU has uploaded replacement files
+        // Flagged files go to previous (for reference)
+        // Non-flagged old files + recent files are valid
+        invalidOldFiles = flaggedFiles;
+        validOldFiles = nonFlaggedFiles;
+      } else {
+        // No replacements yet - flagged files need to be re-uploaded
+        invalidOldFiles = flaggedFiles;
+        validOldFiles = nonFlaggedFiles;
+      }
+    } else if (isCalibrationRework) {
       // CALIBRATION MODE: Handle both calibration flags and assessor rework history
       //
       // Key insight: If there are files WITH annotations (rejected) AND files WITHOUT annotations
@@ -1073,6 +1111,7 @@ export function FileFieldComponent({
             assessmentId={assessmentId}
             indicatorId={indicatorId}
             requiredFileCount={field.required ? 1 : 0}
+            mlgooFlaggedFileIds={effectiveMlgooFlaggedFileIds}
           />
         </section>
       )}
@@ -1097,6 +1136,7 @@ export function FileFieldComponent({
               emptyMessage=""
               movAnnotations={movAnnotations}
               hideHeader={true}
+              mlgooFlaggedFileIds={effectiveMlgooFlaggedFileIds}
             />
             <p className="text-xs text-orange-600 mt-2 italic">
               These are files from your previous submission. They are shown here so you can review

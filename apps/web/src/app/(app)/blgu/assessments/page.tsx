@@ -245,6 +245,7 @@ export default function BLGUAssessmentsPage() {
             onIndicatorSelect={handleIndicatorSelect}
             movAnnotations={dashboardData?.mov_annotations_by_indicator || {}}
             dashboardData={dashboardData}
+            mlgooFlaggedFileIds={(dashboardData as any)?.mlgoo_recalibration_mov_file_ids || []}
           />
         </main>
       </div>

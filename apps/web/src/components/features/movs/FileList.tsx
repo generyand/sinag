@@ -51,6 +51,8 @@ interface FileListProps {
   emptyMessage?: string;
   movAnnotations?: any[];
   hideHeader?: boolean;
+  /** MOV file IDs flagged by MLGOO for recalibration - these need to be re-uploaded */
+  mlgooFlaggedFileIds?: Array<{ mov_file_id: number; comment?: string | null }>;
 }
 
 function getFileIcon(fileType: string) {
@@ -196,6 +198,7 @@ export function FileList({
   emptyMessage = "No files uploaded yet",
   movAnnotations = [],
   hideHeader = false,
+  mlgooFlaggedFileIds = [],
 }: FileListProps) {
   const [viewAnnotationsDialog, setViewAnnotationsDialog] = useState<{
     open: boolean;
@@ -210,6 +213,12 @@ export function FileList({
   // Helper function to get annotations for a specific file
   const getAnnotationsForFile = (fileId: number) => {
     return movAnnotations.filter((ann: any) => ann.mov_file_id === fileId);
+  };
+
+  // Helper function to check if file is flagged by MLGOO and get comment
+  const getMlgooFlaggedInfo = (fileId: number) => {
+    const flagged = mlgooFlaggedFileIds.find((f) => f.mov_file_id === fileId);
+    return flagged ? { isFlagged: true, comment: flagged.comment } : { isFlagged: false, comment: null };
   };
 
   // Handler to open annotation viewer
@@ -297,22 +306,31 @@ export function FileList({
             {files.map((file) => {
               const fileAnnotations = getAnnotationsForFile(file.id);
               const hasAnnotations = fileAnnotations.length > 0;
+              const mlgooFlagged = getMlgooFlaggedInfo(file.id);
+              const needsReupload = hasAnnotations || mlgooFlagged.isFlagged;
 
               return (
                 <div
                   key={file.id}
                   className={cn(
                     "p-3 rounded-lg border transition-colors",
-                    hasAnnotations
-                      ? "border-2 border-orange-400 bg-orange-50/70 dark:border-orange-500 dark:bg-orange-950/30"
-                      : "border-[var(--border)] bg-[var(--card)] hover:bg-[var(--hover)]"
+                    mlgooFlagged.isFlagged
+                      ? "border-2 border-red-400 bg-red-50/70 dark:border-red-500 dark:bg-red-950/30"
+                      : hasAnnotations
+                        ? "border-2 border-orange-400 bg-orange-50/70 dark:border-orange-500 dark:bg-orange-950/30"
+                        : "border-[var(--border)] bg-[var(--card)] hover:bg-[var(--hover)]"
                   )}
                 >
                   {/* File Info Header */}
                   <div className="flex items-start gap-3 mb-3">
                     {/* Status indicator icon */}
                     <div className="flex-shrink-0 mt-0.5">
-                      {hasAnnotations ? (
+                      {mlgooFlagged.isFlagged ? (
+                        <AlertCircle
+                          className="h-5 w-5 text-red-600 dark:text-red-400"
+                          aria-label="File flagged by MLGOO for re-upload"
+                        />
+                      ) : hasAnnotations ? (
                         <AlertCircle
                           className="h-5 w-5 text-orange-600 dark:text-orange-400"
                           aria-label="File needs re-upload"
@@ -345,7 +363,16 @@ export function FileList({
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
-                        {hasAnnotations && (
+                        {mlgooFlagged.isFlagged && (
+                          <Badge
+                            variant="outline"
+                            className="text-xs shrink-0 border-red-500 bg-red-100 text-red-700 dark:border-red-600 dark:bg-red-900/50 dark:text-red-300"
+                          >
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            MLGOO Flagged
+                          </Badge>
+                        )}
+                        {hasAnnotations && !mlgooFlagged.isFlagged && (
                           <Badge
                             variant="outline"
                             className="text-xs shrink-0 border-orange-500 bg-orange-100 text-orange-700 dark:border-orange-600 dark:bg-orange-900/50 dark:text-orange-300"
@@ -355,6 +382,20 @@ export function FileList({
                           </Badge>
                         )}
                       </div>
+                      {/* MLGOO flagged comment */}
+                      {mlgooFlagged.isFlagged && mlgooFlagged.comment && (
+                        <div className="flex items-start gap-2 text-xs text-red-700 dark:text-red-300 mt-1 bg-red-50 dark:bg-red-950/30 p-2 rounded border border-red-200 dark:border-red-800">
+                          <MessageSquare className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                          <span className="italic">&quot;{mlgooFlagged.comment}&quot;</span>
+                        </div>
+                      )}
+                      {/* MLGOO flagged without specific comment - show generic instruction */}
+                      {mlgooFlagged.isFlagged && !mlgooFlagged.comment && (
+                        <div className="flex items-center gap-2 text-xs text-red-700 dark:text-red-300 mt-1">
+                          <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                          <span>This file was flagged by MLGOO for re-upload</span>
+                        </div>
+                      )}
                       {/* Annotation count and view feedback link */}
                       {hasAnnotations && (
                         <div className="flex items-center gap-2 text-xs text-orange-700 dark:text-orange-300 mt-1">
@@ -397,9 +438,11 @@ export function FileList({
                   <div
                     className={cn(
                       "flex items-center gap-1 pt-2 border-t",
-                      hasAnnotations
-                        ? "border-orange-300 dark:border-orange-700"
-                        : "border-[var(--border)]"
+                      mlgooFlagged.isFlagged
+                        ? "border-red-300 dark:border-red-700"
+                        : hasAnnotations
+                          ? "border-orange-300 dark:border-orange-700"
+                          : "border-[var(--border)]"
                     )}
                   >
                     <Button
@@ -408,11 +451,7 @@ export function FileList({
                       size="sm"
                       onClick={() => handlePreviewClick(file)}
                       title="Preview file"
-                      className={
-                        hasAnnotations
-                          ? "text-orange-700 hover:text-orange-900 hover:bg-orange-100 dark:text-orange-300 dark:hover:text-orange-100"
-                          : ""
-                      }
+                      className={mlgooFlagged.isFlagged ? "text-red-700 hover:text-red-900 hover:bg-red-100 dark:text-red-300 dark:hover:text-red-100" : hasAnnotations ? "text-orange-700 hover:text-orange-900 hover:bg-orange-100 dark:text-orange-300 dark:hover:text-orange-100" : ""}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -423,11 +462,7 @@ export function FileList({
                         size="sm"
                         onClick={() => onDownload(file)}
                         title="Download file"
-                        className={
-                          hasAnnotations
-                            ? "text-orange-700 hover:text-orange-900 hover:bg-orange-100 dark:text-orange-300 dark:hover:text-orange-100"
-                            : ""
-                        }
+                        className={mlgooFlagged.isFlagged ? "text-red-700 hover:text-red-900 hover:bg-red-100 dark:text-red-300 dark:hover:text-red-100" : hasAnnotations ? "text-orange-700 hover:text-orange-900 hover:bg-orange-100 dark:text-orange-300 dark:hover:text-orange-100" : ""}
                       >
                         <Download className="h-4 w-4" />
                       </Button>

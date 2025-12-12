@@ -38,6 +38,8 @@ interface FileListWithDeleteProps {
   indicatorId?: number;
   /** Total required files for this field - if deleting makes count < required, mark incomplete */
   requiredFileCount?: number;
+  /** MOV file IDs flagged by MLGOO for recalibration - these need to be re-uploaded */
+  mlgooFlaggedFileIds?: Array<{ mov_file_id: number; comment?: string | null }>;
 }
 
 /**
@@ -63,6 +65,7 @@ export function FileListWithDelete({
   assessmentId,
   indicatorId,
   requiredFileCount = 1,
+  mlgooFlaggedFileIds = [],
 }: FileListWithDeleteProps) {
   const [fileToDelete, setFileToDelete] = useState<number | null>(null);
   const [deletingFileId, setDeletingFileId] = useState<number | null>(null);
@@ -230,6 +233,7 @@ export function FileListWithDelete({
         emptyMessage={emptyMessage}
         movAnnotations={movAnnotations}
         hideHeader={hideHeader}
+        mlgooFlaggedFileIds={mlgooFlaggedFileIds}
       />
 
       {/* Confirmation Dialog */}
