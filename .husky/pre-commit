@@ -19,8 +19,8 @@ if [ -n "$STAGED_PY_FILES_FULL" ]; then
     RUFF_CMD=".venv/bin/ruff"
   fi
 
-  # Run ruff check with auto-fix
-  echo "$STAGED_PY_FILES" | xargs $RUFF_CMD check --fix
+  # Run ruff check with auto-fix (--unsafe-fixes removes unused imports)
+  echo "$STAGED_PY_FILES" | xargs $RUFF_CMD check --fix --unsafe-fixes
   if [ $? -ne 0 ]; then
     echo "Ruff check failed. Please fix the issues before committing."
     exit 1

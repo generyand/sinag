@@ -2145,7 +2145,7 @@ class AssessorService:
         Returns:
             Paginated list of review history items with summary counts
         """
-        from sqlalchemy import func, case
+        from sqlalchemy import func
 
         # Get active year if not specified
         if assessment_year is None:
@@ -2154,9 +2154,7 @@ class AssessorService:
             assessment_year = assessment_year_service.get_active_year_number(db)
 
         # Determine if user is a validator
-        is_validator = (
-            user.role == UserRole.VALIDATOR and user.validator_area_id is not None
-        )
+        is_validator = user.role == UserRole.VALIDATOR and user.validator_area_id is not None
 
         # Base query for COMPLETED assessments
         if is_validator:
@@ -2211,9 +2209,7 @@ class AssessorService:
                 joinedload(Assessment.blgu_user).joinedload(User.barangay),
                 selectinload(Assessment.responses).joinedload(AssessmentResponse.indicator),
             )
-            .order_by(
-                func.coalesce(Assessment.mlgoo_approved_at, Assessment.validated_at).desc()
-            )
+            .order_by(func.coalesce(Assessment.mlgoo_approved_at, Assessment.validated_at).desc())
             .offset(offset)
             .limit(page_size)
             .all()
@@ -2222,7 +2218,9 @@ class AssessorService:
         # Get validator's governance area name if applicable
         governance_area_name = None
         if is_validator:
-            area = db.query(GovernanceArea).filter(GovernanceArea.id == user.validator_area_id).first()
+            area = (
+                db.query(GovernanceArea).filter(GovernanceArea.id == user.validator_area_id).first()
+            )
             if area:
                 governance_area_name = area.name
 
@@ -2259,23 +2257,25 @@ class AssessorService:
             # Determine completion date
             completed_at = assessment.mlgoo_approved_at or assessment.validated_at
 
-            items.append({
-                "assessment_id": assessment.id,
-                "barangay_name": barangay_name,
-                "municipality_name": municipality_name,
-                "governance_area_name": governance_area_name,
-                "submitted_at": assessment.submitted_at,
-                "completed_at": completed_at,
-                "final_compliance_status": assessment.final_compliance_status,
-                "rework_count": assessment.rework_count or 0,
-                "calibration_count": len(assessment.calibrated_area_ids or []),
-                "was_reworked": (assessment.rework_count or 0) > 0,
-                "was_calibrated": len(assessment.calibrated_area_ids or []) > 0,
-                "indicator_count": indicator_count,
-                "pass_count": pass_count,
-                "fail_count": fail_count,
-                "conditional_count": conditional_count,
-            })
+            items.append(
+                {
+                    "assessment_id": assessment.id,
+                    "barangay_name": barangay_name,
+                    "municipality_name": municipality_name,
+                    "governance_area_name": governance_area_name,
+                    "submitted_at": assessment.submitted_at,
+                    "completed_at": completed_at,
+                    "final_compliance_status": assessment.final_compliance_status,
+                    "rework_count": assessment.rework_count or 0,
+                    "calibration_count": len(assessment.calibrated_area_ids or []),
+                    "was_reworked": (assessment.rework_count or 0) > 0,
+                    "was_calibrated": len(assessment.calibrated_area_ids or []) > 0,
+                    "indicator_count": indicator_count,
+                    "pass_count": pass_count,
+                    "fail_count": fail_count,
+                    "conditional_count": conditional_count,
+                }
+            )
 
         return {
             "items": items,
@@ -2326,9 +2326,7 @@ class AssessorService:
             return {"success": False, "message": "Assessment not found"}
 
         # Verify access
-        is_validator = (
-            user.role == UserRole.VALIDATOR and user.validator_area_id is not None
-        )
+        is_validator = user.role == UserRole.VALIDATOR and user.validator_area_id is not None
 
         if is_validator:
             # Validators must have responses in their governance area
@@ -2352,7 +2350,9 @@ class AssessorService:
         # Get validator's governance area name if applicable
         governance_area_name = None
         if is_validator:
-            area = db.query(GovernanceArea).filter(GovernanceArea.id == user.validator_area_id).first()
+            area = (
+                db.query(GovernanceArea).filter(GovernanceArea.id == user.validator_area_id).first()
+            )
             if area:
                 governance_area_name = area.name
 
@@ -2377,14 +2377,16 @@ class AssessorService:
                     assessor_name = fc.assessor.email or fc.assessor.full_name or "Unknown"
                     assessor_role = fc.assessor.role.value if fc.assessor.role else None
 
-                feedback_comments.append({
-                    "id": fc.id,
-                    "comment": fc.comment,
-                    "assessor_name": assessor_name,
-                    "assessor_role": assessor_role,
-                    "created_at": fc.created_at,
-                    "is_internal_note": fc.is_internal_note or False,
-                })
+                feedback_comments.append(
+                    {
+                        "id": fc.id,
+                        "comment": fc.comment,
+                        "assessor_name": assessor_name,
+                        "assessor_role": assessor_role,
+                        "created_at": fc.created_at,
+                        "is_internal_note": fc.is_internal_note or False,
+                    }
+                )
 
             # Sort comments by date (newest first)
             feedback_comments.sort(key=lambda x: x["created_at"], reverse=True)
@@ -2392,12 +2394,13 @@ class AssessorService:
             # Check for MOV annotations - MOV files are at assessment level with indicator_id
             has_mov_annotations = False
             indicator_mov_files = [
-                mf for mf in (assessment.mov_files or [])
+                mf
+                for mf in (assessment.mov_files or [])
                 if mf.indicator_id == indicator.id and mf.deleted_at is None
             ]
             mov_count = len(indicator_mov_files)
             for mov_file in indicator_mov_files:
-                if hasattr(mov_file, 'annotations') and mov_file.annotations:
+                if hasattr(mov_file, "annotations") and mov_file.annotations:
                     has_mov_annotations = True
                     break
 
@@ -2406,19 +2409,21 @@ class AssessorService:
             if indicator.governance_area:
                 indicator_area_name = indicator.governance_area.name
 
-            indicators.append({
-                "indicator_id": indicator.id,
-                "indicator_code": indicator.indicator_code or "",
-                "indicator_name": indicator.name or "",
-                "governance_area_name": indicator_area_name,
-                "validation_status": response.validation_status,
-                "assessor_remarks": response.assessor_remarks,
-                "flagged_for_calibration": response.flagged_for_calibration or False,
-                "requires_rework": response.requires_rework or False,
-                "feedback_comments": feedback_comments,
-                "has_mov_annotations": has_mov_annotations,
-                "mov_count": mov_count,
-            })
+            indicators.append(
+                {
+                    "indicator_id": indicator.id,
+                    "indicator_code": indicator.indicator_code or "",
+                    "indicator_name": indicator.name or "",
+                    "governance_area_name": indicator_area_name,
+                    "validation_status": response.validation_status,
+                    "assessor_remarks": response.assessor_remarks,
+                    "flagged_for_calibration": response.flagged_for_calibration or False,
+                    "requires_rework": response.requires_rework or False,
+                    "feedback_comments": feedback_comments,
+                    "has_mov_annotations": has_mov_annotations,
+                    "mov_count": mov_count,
+                }
+            )
 
         # Sort indicators by code
         indicators.sort(key=lambda x: x["indicator_code"])
