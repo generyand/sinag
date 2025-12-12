@@ -10,6 +10,7 @@ import type { CalibrationSummaryResponse } from '../system';
 import type { ProgressSummary } from '../common';
 import type { GovernanceAreaProgress } from '../common';
 import type { GovernanceAreaDetailItem } from '../common';
+import type { GovernanceAreaBreakdown } from '../common';
 import type { AppSchemasYearConfigUserNested } from '../users';
 
 /**
@@ -774,6 +775,17 @@ export const AssessmentStatus = {
 
 
 /**
+ * AssessmentStatusDetail
+ */
+export interface AssessmentStatusDetail {
+  /** Core governance areas (must all pass) */
+  core: GovernanceAreaBreakdown;
+  /** Essential governance areas (must all pass) */
+  essential: GovernanceAreaBreakdown;
+}
+
+
+/**
  * AssessmentSubmissionValidation
  */
 export interface AssessmentSubmissionValidation {
@@ -1255,6 +1267,12 @@ export type BarangayAssessmentStatusTotalGovernanceAreas = number | null;
  * BarangayAssessmentStatusTotalResponses
  */
 export type BarangayAssessmentStatusTotalResponses = number | null;
+
+
+/**
+ * BarangayMapPointAssessmentStatus
+ */
+export type BarangayMapPointAssessmentStatus = AssessmentStatusDetail | null;
 
 
 /**

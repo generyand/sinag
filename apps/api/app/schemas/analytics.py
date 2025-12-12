@@ -289,6 +289,50 @@ class ChartData(BaseModel):
     )
 
 
+class GovernanceAreaIndicator(BaseModel):
+    """Status of a single governance area indicator."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    code: str = Field(..., description="Short code for the indicator (e.g., 'FAS', 'DP')")
+    name: str = Field(..., description="Full name of the governance area")
+    status: Literal["passed", "failed", "pending"] = Field(
+        ..., description="Status of this governance area"
+    )
+
+
+class GovernanceAreaBreakdown(BaseModel):
+    """Breakdown of governance areas by type (Core/Essential)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    passed: int = Field(..., description="Number of areas passed", ge=0)
+    total: int = Field(..., description="Total number of areas in this category", ge=0)
+    indicators: list[GovernanceAreaIndicator] = Field(
+        default_factory=list, description="Individual indicator statuses"
+    )
+
+
+class AssessmentStatusDetail(BaseModel):
+    """Detailed assessment status showing Core and Essential governance areas."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    core: GovernanceAreaBreakdown = Field(..., description="Core governance areas (must all pass)")
+    essential: GovernanceAreaBreakdown = Field(
+        ..., description="Essential governance areas (must all pass)"
+    )
+
+
+class WorkflowStatusDetail(BaseModel):
+    """Current workflow status for the assessment."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    current_phase: str = Field(..., description="Current phase in the workflow")
+    action_needed: str = Field(..., description="Action required (if any)")
+
+
 class BarangayMapPoint(BaseModel):
     """Geographic data point for a barangay on the map."""
 
@@ -300,6 +344,12 @@ class BarangayMapPoint(BaseModel):
     lng: float | None = Field(None, description="Longitude coordinate")
     status: str = Field(..., description="Compliance status (Pass/Fail/In Progress)")
     score: float | None = Field(None, description="Compliance score", ge=0, le=100)
+    assessment_status: AssessmentStatusDetail | None = Field(
+        None, description="Detailed governance area assessment status"
+    )
+    workflow_status: WorkflowStatusDetail | None = Field(
+        None, description="Current workflow status and action needed"
+    )
 
 
 class MapData(BaseModel):

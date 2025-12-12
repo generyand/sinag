@@ -4,6 +4,7 @@
 import logging
 from dataclasses import dataclass
 from datetime import date, datetime
+from typing import Literal
 
 from sqlalchemy import case, desc, func, or_
 from sqlalchemy.orm import Session, joinedload, selectinload
@@ -1261,13 +1262,36 @@ class AnalyticsService:
             MapData schema with list of barangay map points
         """
         from app.db.enums import ValidationStatus
-        from app.schemas.analytics import BarangayMapPoint, MapData
+        from app.schemas.analytics import (
+            AssessmentStatusDetail,
+            BarangayMapPoint,
+            GovernanceAreaBreakdown,
+            GovernanceAreaIndicator,
+            MapData,
+            WorkflowStatusDetail,
+        )
 
         # Get all assessments from the filtered query
         assessments = query.all()
 
         if not assessments:
             return MapData(barangays=[])
+
+        # Define governance area mappings
+        # Core: FAS (1), DP (2), SPO (3)
+        # Essential: SPS (4), BFC (5), EM (6)
+        GOVERNANCE_AREAS: dict[str, list[dict[str, str | int]]] = {
+            "core": [
+                {"id": 1, "code": "FAS", "name": "Financial Administration and Sustainability"},
+                {"id": 2, "code": "DP", "name": "Disaster Preparedness"},
+                {"id": 3, "code": "SPO", "name": "Safety, Peace and Order"},
+            ],
+            "essential": [
+                {"id": 4, "code": "SPS", "name": "Social Protection and Sensitivity"},
+                {"id": 5, "code": "BFC", "name": "Business-Friendliness and Competitiveness"},
+                {"id": 6, "code": "EM", "name": "Environmental Management"},
+            ],
+        }
 
         # Build map of barangay_id to assessment data
         barangay_map = {}
@@ -1324,6 +1348,103 @@ class AnalyticsService:
             lat = getattr(barangay, "latitude", None) or getattr(barangay, "lat", None)
             lng = getattr(barangay, "longitude", None) or getattr(barangay, "lng", None)
 
+            # Build assessment status from area_results
+            assessment_status = None
+            if assessment.area_results:
+                # Build Core indicators
+                core_indicators: list[GovernanceAreaIndicator] = []
+                core_passed = 0
+                for area in GOVERNANCE_AREAS["core"]:
+                    # area_results uses full area name as key
+                    area_name = str(area["name"])
+                    area_code = str(area["code"])
+                    area_result = assessment.area_results.get(area_name)
+                    indicator_status: Literal["passed", "failed", "pending"]
+                    if area_result is not None:
+                        indicator_status = "passed" if area_result.lower() == "passed" else "failed"
+                        if indicator_status == "passed":
+                            core_passed += 1
+                    else:
+                        indicator_status = "pending"
+                    core_indicators.append(
+                        GovernanceAreaIndicator(
+                            code=area_code, name=area_name, status=indicator_status
+                        )
+                    )
+
+                # Build Essential indicators
+                essential_indicators: list[GovernanceAreaIndicator] = []
+                essential_passed = 0
+                for area in GOVERNANCE_AREAS["essential"]:
+                    area_name = str(area["name"])
+                    area_code = str(area["code"])
+                    area_result = assessment.area_results.get(area_name)
+                    indicator_status_e: Literal["passed", "failed", "pending"]
+                    if area_result is not None:
+                        indicator_status_e = (
+                            "passed" if area_result.lower() == "passed" else "failed"
+                        )
+                        if indicator_status_e == "passed":
+                            essential_passed += 1
+                    else:
+                        indicator_status_e = "pending"
+                    essential_indicators.append(
+                        GovernanceAreaIndicator(
+                            code=area_code, name=area_name, status=indicator_status_e
+                        )
+                    )
+
+                assessment_status = AssessmentStatusDetail(
+                    core=GovernanceAreaBreakdown(
+                        passed=core_passed, total=3, indicators=core_indicators
+                    ),
+                    essential=GovernanceAreaBreakdown(
+                        passed=essential_passed, total=3, indicators=essential_indicators
+                    ),
+                )
+
+            # Build workflow status based on assessment status
+            workflow_status = None
+            if assessment.status != AssessmentStatus.DRAFT:
+                # Determine current phase based on assessment status
+                phase_map = {
+                    AssessmentStatus.SUBMITTED: "Phase 1: Assessor Review",
+                    AssessmentStatus.IN_REVIEW: "Phase 1: Assessor Review",
+                    AssessmentStatus.REWORK: "Phase 1: BLGU Rework",
+                    AssessmentStatus.AWAITING_FINAL_VALIDATION: "Phase 2: Table Validation",
+                    AssessmentStatus.AWAITING_MLGOO_APPROVAL: "Phase 3: MLGOO Approval",
+                    AssessmentStatus.COMPLETED: "Completed",
+                }
+                current_phase = phase_map.get(assessment.status, "Unknown")
+
+                # Determine action needed
+                action_needed = "None"
+                if assessment.status == AssessmentStatus.REWORK:
+                    action_needed = "Rework Required"
+                elif assessment.status == AssessmentStatus.SUBMITTED:
+                    action_needed = "Awaiting Review"
+                elif assessment.status == AssessmentStatus.IN_REVIEW:
+                    action_needed = "Under Review"
+                elif assessment.status == AssessmentStatus.AWAITING_FINAL_VALIDATION:
+                    # Check if any calibration is pending
+                    if assessment.pending_calibrations:
+                        action_needed = "Waiting for Calibration"
+                    elif assessment.is_calibration_rework:
+                        action_needed = "Calibration Rework"
+                    else:
+                        action_needed = "Awaiting Validation"
+                elif assessment.status == AssessmentStatus.AWAITING_MLGOO_APPROVAL:
+                    if assessment.is_mlgoo_recalibration:
+                        action_needed = "RE-calibration Rework"
+                    else:
+                        action_needed = "Awaiting MLGOO Approval"
+                elif assessment.status == AssessmentStatus.COMPLETED:
+                    action_needed = "None - Assessment Finalized"
+
+                workflow_status = WorkflowStatusDetail(
+                    current_phase=current_phase, action_needed=action_needed
+                )
+
             barangay_map[barangay_id] = BarangayMapPoint(
                 barangay_id=barangay_id,
                 name=barangay.name,
@@ -1331,6 +1452,8 @@ class AnalyticsService:
                 lng=lng,
                 status=status,
                 score=score,
+                assessment_status=assessment_status,
+                workflow_status=workflow_status,
             )
 
         # Convert to list

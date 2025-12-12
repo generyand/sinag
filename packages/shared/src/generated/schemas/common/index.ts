@@ -13,10 +13,12 @@ import type { BBIFunctionalityCheckRule } from '../bbis';
 import type { ApprovalQueueItemBlguUserId } from '../users';
 import type { ApprovalQueueItemComplianceStatus } from '../compliance';
 import type { ApprovalQueueItemOverallScore } from '../movs';
+import type { BarangayMapPointAssessmentStatus } from '../assessments';
 import type { BarangayAssessmentStatus } from '../assessments';
 import type { FileUploadFieldConditionalMovRequirement } from '../movs';
 import type { SectionHeaderField } from '../sectionheaderfield';
 import type { InfoTextField } from '../infotextfield';
+import type { GovernanceAreaIndicator } from '../indicators';
 import type { IndicatorDetailItem } from '../indicators';
 import type { IndicatorItem } from '../indicators';
 import type { MunicipalComplianceSummary } from '../compliance';
@@ -290,6 +292,10 @@ export interface BarangayMapPoint {
   status: string;
   /** Compliance score */
   score?: BarangayMapPointScore;
+  /** Detailed governance area assessment status */
+  assessment_status?: BarangayMapPointAssessmentStatus;
+  /** Current workflow status and action needed */
+  workflow_status?: BarangayMapPointWorkflowStatus;
 }
 
 
@@ -309,6 +315,12 @@ export type BarangayMapPointLng = number | null;
  * BarangayMapPointScore
  */
 export type BarangayMapPointScore = number | null;
+
+
+/**
+ * BarangayMapPointWorkflowStatus
+ */
+export type BarangayMapPointWorkflowStatus = WorkflowStatusDetail | null;
 
 
 /**
@@ -708,6 +720,25 @@ export type GetMunicipalOverviewGovernanceAreasParams = {
  */
 year?: number | null;
 };
+
+
+/**
+ * GovernanceAreaBreakdown
+ */
+export interface GovernanceAreaBreakdown {
+  /**
+   * Number of areas passed
+   * @minimum 0
+   */
+  passed: number;
+  /**
+   * Total number of areas in this category
+   * @minimum 0
+   */
+  total: number;
+  /** Individual indicator statuses */
+  indicators?: GovernanceAreaIndicator[];
+}
 
 
 /**
@@ -1371,6 +1402,17 @@ export interface WorkflowStatusBreakdown {
   awaiting_approval?: number;
   /** Assessments in COMPLETED status */
   completed?: number;
+}
+
+
+/**
+ * WorkflowStatusDetail
+ */
+export interface WorkflowStatusDetail {
+  /** Current phase in the workflow */
+  current_phase: string;
+  /** Action required (if any) */
+  action_needed: string;
 }
 
 

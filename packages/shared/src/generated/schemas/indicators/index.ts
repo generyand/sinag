@@ -352,6 +352,33 @@ year?: number | null;
 
 
 /**
+ * GovernanceAreaIndicator
+ */
+export interface GovernanceAreaIndicator {
+  /** Short code for the indicator (e.g., 'FAS', 'DP') */
+  code: string;
+  /** Full name of the governance area */
+  name: string;
+  /** Status of this governance area */
+  status: GovernanceAreaIndicatorStatus;
+}
+
+
+/**
+ * GovernanceAreaIndicatorStatus
+ */
+export type GovernanceAreaIndicatorStatus = typeof GovernanceAreaIndicatorStatus[keyof typeof GovernanceAreaIndicatorStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GovernanceAreaIndicatorStatus = {
+  passed: 'passed',
+  failed: 'failed',
+  pending: 'pending',
+} as const;
+
+
+/**
  * IncompleteIndicatorDetail
  */
 export interface IncompleteIndicatorDetail {
