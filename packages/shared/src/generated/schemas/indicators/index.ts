@@ -254,6 +254,8 @@ export interface GARIndicator {
   is_header?: boolean;
   /** Indentation level for display (0=root, 1=sub, 2=sub-sub) */
   indent_level?: number;
+  /** True if this indicator is for profiling purposes only (doesn't affect pass/fail) */
+  is_profiling_only?: boolean;
 }
 
 
