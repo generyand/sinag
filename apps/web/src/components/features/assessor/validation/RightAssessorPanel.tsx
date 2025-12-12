@@ -1585,7 +1585,7 @@ export function RightAssessorPanel({
                                 // With file-level tracking, check if key exists in reworkFlags
                                 reworkFlags
                                   ? r.id in reworkFlags
-                                  : (r as AnyRecord).has_mov_annotations ?? false
+                                  : ((r as AnyRecord).has_mov_annotations ?? false)
                               }
                               onCheckedChange={(checked) => {
                                 onReworkFlagChange?.(r.id, checked);

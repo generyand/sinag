@@ -27,8 +27,14 @@ Documentation in this directory represents:
   Point-in-time service layer documentation audit (November 2025)
 - **[bbi-compliance-rate-implementation.md](./bbi-compliance-rate-implementation.md)** -
   Implementation plan for BBI 3-tier rating system (now implemented)
+- **[bbi-feature-fix-plan-dec-2025.md](./bbi-feature-fix-plan-dec-2025.md)** - BBI feature fixes
+  implemented in December 2025
 - **[user-management-validation-error-handling-assessment.md](./user-management-validation-error-handling-assessment.md)** -
   Point-in-time assessment of user management validation (November 2025)
+- **[file-level-rework-indicators-blgu.md](./file-level-rework-indicators-blgu.md)** -
+  Implementation proposal for file-level rework indicators (implemented December 2025)
+- **[file-level-rework-visual-mockup.md](./file-level-rework-visual-mockup.md)** - Visual mockup for
+  file-level rework indicators (implemented December 2025)
 
 ## Why Archive Instead of Delete?
 
@@ -57,4 +63,4 @@ Keep documentation active (in `troubleshooting/` or `guides/`) when:
 
 ---
 
-**Archive maintained as of**: December 2, 2025
+**Archive maintained as of**: December 12, 2025

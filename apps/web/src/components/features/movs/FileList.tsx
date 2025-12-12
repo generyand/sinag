@@ -408,7 +408,11 @@ export function FileList({
                       size="sm"
                       onClick={() => handlePreviewClick(file)}
                       title="Preview file"
-                      className={hasAnnotations ? "text-orange-700 hover:text-orange-900 hover:bg-orange-100 dark:text-orange-300 dark:hover:text-orange-100" : ""}
+                      className={
+                        hasAnnotations
+                          ? "text-orange-700 hover:text-orange-900 hover:bg-orange-100 dark:text-orange-300 dark:hover:text-orange-100"
+                          : ""
+                      }
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -419,7 +423,11 @@ export function FileList({
                         size="sm"
                         onClick={() => onDownload(file)}
                         title="Download file"
-                        className={hasAnnotations ? "text-orange-700 hover:text-orange-900 hover:bg-orange-100 dark:text-orange-300 dark:hover:text-orange-100" : ""}
+                        className={
+                          hasAnnotations
+                            ? "text-orange-700 hover:text-orange-900 hover:bg-orange-100 dark:text-orange-300 dark:hover:text-orange-100"
+                            : ""
+                        }
                       >
                         <Download className="h-4 w-4" />
                       </Button>

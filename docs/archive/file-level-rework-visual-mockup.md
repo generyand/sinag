@@ -47,6 +47,7 @@
 ```
 
 **Problems**:
+
 - Hard to distinguish which files need action
 - "2 notes" badge is subtle
 - No clear visual hierarchy
@@ -110,12 +111,9 @@
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**Improvements**:
-✅ Clear visual distinction (orange background) for files needing rework
-✅ "Re-upload needed" badge adds explicit action hint
-✅ Step-by-step instructions in alert
-✅ Specific count: "2 files" instead of vague message
-✅ Clear separation between action items and valid files
+**Improvements**: ✅ Clear visual distinction (orange background) for files needing rework ✅
+"Re-upload needed" badge adds explicit action hint ✅ Step-by-step instructions in alert ✅ Specific
+count: "2 files" instead of vague message ✅ Clear separation between action items and valid files
 
 ---
 
@@ -181,11 +179,9 @@
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**Additional Improvements (Phase 2)**:
-✅ Progress tracker shows at-a-glance status
-✅ "Replace" button for quick workflow
-✅ Clear indication of which files have been addressed
-✅ Previous files section shows replaced versions for reference
+**Additional Improvements (Phase 2)**: ✅ Progress tracker shows at-a-glance status ✅ "Replace"
+button for quick workflow ✅ Clear indication of which files have been addressed ✅ Previous files
+section shows replaced versions for reference
 
 ---
 
@@ -219,12 +215,12 @@
 
 ### Proposed Visual States:
 
-| State | Background | Border | Badge |
-|-------|------------|--------|-------|
-| **Needs Rework** (has annotations) | `bg-orange-50` | `border-orange-300` | `🔴 X notes` + `⚠️ Re-upload needed` |
-| **Valid** (no annotations) | `bg-card` | `border-border` | None |
-| **Replaced** (new upload after rework) | `bg-card` | `border-border` | None (shows in "Uploaded Files") |
-| **Previous** (old file, shown for reference) | `bg-gray-50` | `border-gray-200` | None (shows in "Previous Files") |
+| State                                        | Background     | Border              | Badge                                |
+| -------------------------------------------- | -------------- | ------------------- | ------------------------------------ |
+| **Needs Rework** (has annotations)           | `bg-orange-50` | `border-orange-300` | `🔴 X notes` + `⚠️ Re-upload needed` |
+| **Valid** (no annotations)                   | `bg-card`      | `border-border`     | None                                 |
+| **Replaced** (new upload after rework)       | `bg-card`      | `border-border`     | None (shows in "Uploaded Files")     |
+| **Previous** (old file, shown for reference) | `bg-gray-50`   | `border-gray-200`   | None (shows in "Previous Files")     |
 
 ---
 
@@ -279,6 +275,7 @@ On mobile devices (< 640px):
 ## User Flow Example
 
 ### Before (Current):
+
 1. BLGU opens indicator form
 2. Sees generic "assessor feedback" alert
 3. Scrolls through files trying to find which ones need rework
@@ -288,6 +285,7 @@ On mobile devices (< 640px):
 **Result**: Inefficient, high cognitive load
 
 ### After (Proposed):
+
 1. BLGU opens indicator form
 2. Sees clear "2 files need re-upload" with step-by-step instructions
 3. Immediately identifies orange-highlighted files
@@ -301,5 +299,5 @@ On mobile devices (< 640px):
 
 ---
 
-**Note**: This mockup uses text-based visual representation.
-Actual implementation will use Tailwind CSS classes and shadcn/ui components for proper styling.
+**Note**: This mockup uses text-based visual representation. Actual implementation will use Tailwind
+CSS classes and shadcn/ui components for proper styling.

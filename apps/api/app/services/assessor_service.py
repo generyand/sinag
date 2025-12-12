@@ -8,6 +8,8 @@ from typing import Any
 from fastapi import UploadFile
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+logger = logging.getLogger(__name__)
+
 from app.core.year_resolver import get_year_resolver
 from app.db.enums import AssessmentStatus, ComplianceStatus, UserRole, ValidationStatus
 from app.db.models.assessment import (
@@ -320,11 +322,15 @@ class AssessorService:
         Returns:
             dict: Success status and details
         """
-        print(f"=== BACKEND: validate_assessment_response for response_id={response_id} ===")
-        print(f"validation_status: {validation_status}")
-        print(f"public_comment: {public_comment}")
-        print(f"assessor_remarks: {assessor_remarks}")
-        print(f"response_data: {response_data}")
+        logger.debug(
+            "validate_assessment_response called: response_id=%s, validation_status=%s, "
+            "public_comment=%s, assessor_remarks=%s, response_data=%s",
+            response_id,
+            validation_status,
+            public_comment,
+            assessor_remarks,
+            response_data,
+        )
 
         # Get the assessment response
         response = db.query(AssessmentResponse).filter(AssessmentResponse.id == response_id).first()
@@ -337,7 +343,7 @@ class AssessorService:
                 "validation_status": validation_status,
             }
 
-        print(f"Current response.response_data BEFORE update: {response.response_data}")
+        logger.debug("response.response_data BEFORE update: %s", response.response_data)
 
         # Update the validation status only if provided (validators only)
         if validation_status is not None:
@@ -356,18 +362,18 @@ class AssessorService:
         # Update response_data if provided (for checklist data)
         # IMPORTANT: Merge with existing BLGU data, don't overwrite!
         if response_data is not None:
-            print(f"Merging response_data. New validation data: {response_data}")
+            logger.debug("Merging response_data. New validation data: %s", response_data)
 
             # Get existing BLGU response data or empty dict
             existing_data = response.response_data or {}
-            print(f"Existing BLGU response_data: {existing_data}")
+            logger.debug("Existing BLGU response_data: %s", existing_data)
 
             # Merge: Assessor validation data takes precedence for matching keys
             # This preserves BLGU's assessment answers while adding assessor's validation checklist
             merged_data = {**existing_data, **response_data}
 
             response.response_data = merged_data
-            print(f"response.response_data AFTER merge: {response.response_data}")
+            logger.debug("response.response_data AFTER merge: %s", response.response_data)
 
         # Generate remark if indicator has calculation_schema and remark_schema
         # DISABLED TEMPORARILY: Causing "Unable to add filesystem" crash on some environments
@@ -1243,7 +1249,10 @@ class AssessorService:
             }
         except Exception as e:
             # Log the error but don't fail the rework operation
-            print(f"Failed to queue rework summary generation: {e}")
+            logger.error(
+                f"Failed to queue rework summary generation for assessment {assessment_id}: {e}",
+                exc_info=True,
+            )
             summary_result = {"success": False, "error": str(e)}
 
         # Trigger notification asynchronously using Celery
@@ -1259,7 +1268,7 @@ class AssessorService:
             }
         except Exception as e:
             # Log the error but don't fail the rework operation
-            print(f"Failed to queue notification: {e}")
+            logger.error("Failed to queue notification", exc_info=True)
             notification_result = {"success": False, "error": str(e)}
 
         return {
@@ -1484,7 +1493,7 @@ class AssessorService:
                 "task_id": task.id,
             }
         except Exception as e:
-            print(f"Failed to queue calibration notification: {e}")
+            logger.error("Failed to queue calibration notification", exc_info=True)
             notification_result = {"success": False, "error": str(e)}
 
         # Trigger AI calibration summary generation asynchronously using Celery
@@ -1504,7 +1513,10 @@ class AssessorService:
                 "task_id": summary_task.id,
             }
         except Exception as e:
-            print(f"Failed to queue calibration summary generation: {e}")
+            logger.error(
+                f"Failed to queue calibration summary generation for assessment {assessment_id}: {e}",
+                exc_info=True,
+            )
             summary_result = {"success": False, "error": str(e)}
 
         # Calculate total pending calibrations for response
@@ -1749,7 +1761,7 @@ class AssessorService:
             classification_result = intelligence_service.classify_assessment(db, assessment_id)
         except Exception as e:
             # Log the error but don't fail the finalization operation
-            print(f"Failed to run classification: {e}")
+            logger.error("Failed to run classification", exc_info=True)
             classification_result = {"success": False, "error": str(e)}
 
         # Calculate BBI statuses for all active BBIs
@@ -1764,7 +1776,7 @@ class AssessorService:
             }
         except Exception as e:
             # Log the error but don't fail the finalization operation
-            print(f"Failed to calculate BBI statuses: {e}")
+            logger.error("Failed to calculate BBI statuses", exc_info=True)
             bbi_calculation_result = {"success": False, "error": str(e)}
 
         # Notification #7: If validator completed ALL governance areas (status = AWAITING_MLGOO_APPROVAL),

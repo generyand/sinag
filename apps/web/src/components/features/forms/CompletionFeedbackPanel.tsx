@@ -245,9 +245,7 @@ export function CompletionFeedbackPanel({
       // REWORK SPECIAL CASE: If there are rejected files (with annotations) that
       // haven't been replaced yet, show progress based on rejected field replacements.
       if (indicatorRequiresRework && movAnnotations && movAnnotations.length > 0) {
-        const rejectedFileIds = new Set(
-          movAnnotations.map((ann: any) => String(ann.mov_file_id))
-        );
+        const rejectedFileIds = new Set(movAnnotations.map((ann: any) => String(ann.mov_file_id)));
 
         // Find fields that have rejected files
         const rejectedFieldIds = new Set<string>();
@@ -269,7 +267,7 @@ export function CompletionFeedbackPanel({
             );
             if (!hasValidFile) {
               allReplaced = false;
-              const fieldDef = requiredFields.find(f => f.field_id === fieldId);
+              const fieldDef = requiredFields.find((f) => f.field_id === fieldId);
               if (fieldDef) {
                 incompleteRejectedFields.push(fieldDef);
               }
@@ -339,7 +337,16 @@ export function CompletionFeedbackPanel({
       percentage,
       incompleteFields,
     };
-  }, [formValues, formSchema, uploadedFiles, isReworkStatus, reworkRequestedAt, movAnnotations, allFiles, indicatorRequiresRework]);
+  }, [
+    formValues,
+    formSchema,
+    uploadedFiles,
+    isReworkStatus,
+    reworkRequestedAt,
+    movAnnotations,
+    allFiles,
+    indicatorRequiresRework,
+  ]);
 
   const { totalRequired, completed, percentage, incompleteFields } = completionMetrics;
 

@@ -1,5 +1,13 @@
-import { DashboardKPIResponse, useGetAnalyticsDashboard } from "@sinag/shared";
+import {
+  DashboardKPIResponse,
+  useGetAnalyticsDashboard,
+  TopReworkReasons,
+  BBIAnalyticsData,
+} from "@sinag/shared";
 import { useEffectiveYear } from "./useAssessmentYear";
+
+// Re-export the generated types for convenience
+export type { TopReworkReasons, BBIAnalyticsData };
 
 // Status color mapping for the municipal progress chart
 const statusColorMap: Record<string, { color: string; bgColor: string }> = {
@@ -12,46 +20,6 @@ const statusColorMap: Record<string, { color: string; bgColor: string }> = {
   Completed: { color: "text-green-600", bgColor: "bg-green-100" },
 };
 
-// BBI Analytics types (matching backend schema)
-export interface BBIAnalyticsItem {
-  bbi_id: number;
-  bbi_name: string;
-  bbi_abbreviation: string;
-  average_compliance: number;
-  highly_functional_count: number;
-  moderately_functional_count: number;
-  low_functional_count: number;
-  total_barangays: number;
-}
-
-export interface BBIAnalyticsSummary {
-  total_assessments: number;
-  overall_average_compliance: number;
-  total_highly_functional: number;
-  total_moderately_functional: number;
-  total_low_functional: number;
-}
-
-export interface BBIAnalyticsData {
-  summary: BBIAnalyticsSummary;
-  bbi_breakdown: BBIAnalyticsItem[];
-}
-
-// Top Rework Reasons types (AI-generated)
-export interface TopReworkReason {
-  reason: string;
-  count: number;
-  source: "rework" | "calibration";
-  governance_area: string | null;
-}
-
-export interface TopReworkReasons {
-  reasons: TopReworkReason[];
-  total_rework_assessments: number;
-  total_calibration_assessments: number;
-  generated_by_ai: boolean;
-}
-
 // Types for the administrator dashboard (frontend-friendly format)
 export interface AdminDashboardData {
   kpiData: {
@@ -59,6 +27,15 @@ export interface AdminDashboardData {
     awaitingReview: number;
     inRework: number;
     validatedReady: number;
+    // NEW: Enhanced KPI data for improved dashboard
+    awaitingAssessorReview: number; // Submitted + In Review
+    awaitingFinalValidation: number; // Awaiting Validation status
+    awaitingMLGOOApproval: number; // Awaiting MLGOO Approval status (ACTION REQUIRED)
+    completed: number; // Completed status
+    notStarted: number; // Not Started
+    passedCount: number; // Barangays that passed
+    failedCount: number; // Barangays that failed
+    passRate: number; // Pass rate percentage
   };
   municipalProgress: Array<{
     status: string;
@@ -160,16 +137,33 @@ function transformDashboardData(apiData: DashboardKPIResponse): AdminDashboardDa
   // Transform top rework reasons (pass through as-is since it matches our interface)
   const topReworkReasons = apiData.top_rework_reasons || undefined;
 
+  // NEW: Calculate enhanced KPI values
+  const awaitingAssessorReview = getStatusCount("Submitted") + getStatusCount("In Review");
+  const awaitingFinalValidation = getStatusCount("Awaiting Validation");
+  const awaitingMLGOOApproval = getStatusCount("Awaiting MLGOO Approval");
+  const completed = getStatusCount("Completed");
+  const passedCount = apiData.overall_compliance_rate?.passed || 0;
+  const failedCount = apiData.overall_compliance_rate?.failed || 0;
+  const passRate = apiData.overall_compliance_rate?.pass_percentage || 0;
+
   return {
     kpiData: {
       barangaySubmissions: {
         current: submitted,
         total: apiData.total_barangays,
       },
-      awaitingReview: getStatusCount("Submitted") + getStatusCount("In Review"),
+      awaitingReview: awaitingAssessorReview,
       inRework: getStatusCount("In Rework"),
-      validatedReady:
-        getStatusCount("Awaiting Validation") + getStatusCount("Awaiting MLGOO Approval"),
+      validatedReady: awaitingFinalValidation + awaitingMLGOOApproval,
+      // NEW: Enhanced KPI data
+      awaitingAssessorReview,
+      awaitingFinalValidation,
+      awaitingMLGOOApproval,
+      completed,
+      notStarted,
+      passedCount,
+      failedCount,
+      passRate,
     },
     municipalProgress,
     failedIndicators,

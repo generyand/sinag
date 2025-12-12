@@ -4,6 +4,7 @@ export { GovernanceAreasGrid } from "./GovernanceAreasGrid";
 export { DashboardSkeleton } from "./DashboardSkeleton";
 export { AdminDashboardSkeleton } from "./AdminDashboardSkeleton";
 export { KPICards } from "./KPICards";
+export { SimplifiedKPICards } from "./SimplifiedKPICards";
 export { MunicipalProgressChart } from "./MunicipalProgressChart";
 export { AssessorQueue } from "./AssessorQueue";
 export { FailedIndicators } from "./FailedIndicators";

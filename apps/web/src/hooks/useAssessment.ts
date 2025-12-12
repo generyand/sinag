@@ -411,7 +411,10 @@ export function useCurrentAssessment() {
 
         // Build a map of local indicator data for fast lookup (handles all levels)
         // Key: indicator ID (as string), Value: { status, requiresRework, movFiles }
-        const localDataMap = new Map<string, { status: string; requiresRework: boolean; movFiles?: any[] }>();
+        const localDataMap = new Map<
+          string,
+          { status: string; requiresRework: boolean; movFiles?: any[] }
+        >();
         const buildDataMap = (indicators: any[]) => {
           if (!indicators) return;
           for (const ind of indicators) {
@@ -451,7 +454,8 @@ export function useCurrentAssessment() {
             const localCompleted = localStatus === "completed";
             const serverCompleted = serverInd.status === "completed";
             // Use LOCAL requiresRework if we've cleared it (false), otherwise use server's value
-            const requiresRework = localRequiresRework === false ? false : serverInd.requiresRework === true;
+            const requiresRework =
+              localRequiresRework === false ? false : serverInd.requiresRework === true;
 
             let finalStatus = serverInd.status;
             let finalRequiresRework = serverInd.requiresRework;
@@ -487,12 +491,10 @@ export function useCurrentAssessment() {
 
         // Apply merge to all governance areas
         if (mergedData.governanceAreas) {
-          mergedData.governanceAreas = mergedData.governanceAreas.map(
-            (serverArea: any) => ({
-              ...serverArea,
-              indicators: mergeIndicatorTree(serverArea.indicators || []),
-            })
-          );
+          mergedData.governanceAreas = mergedData.governanceAreas.map((serverArea: any) => ({
+            ...serverArea,
+            indicators: mergeIndicatorTree(serverArea.indicators || []),
+          }));
         }
 
         // Recompute the completed count after merge

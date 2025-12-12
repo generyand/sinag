@@ -3,20 +3,22 @@
 import {
   AdminDashboardSkeleton,
   DashboardHeader,
-  FailedIndicators,
-  GovernanceAreaBreakdown,
-  KPICards,
   MunicipalProgressChart,
   TopReworkReasonsCard,
 } from "@/components/features/dashboard";
+import { SimplifiedKPICards } from "@/components/features/dashboard/SimplifiedKPICards";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import { useAuthStore } from "@/store/useAuthStore";
-import { useGetUsersMe } from "@sinag/shared";
+import { useGetUsersMe, usePostAnalyticsDashboardRefreshAnalysis } from "@sinag/shared";
+import { useQueryClient } from "@tanstack/react-query";
+import { ArrowRight, BarChart3 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
+import { toast } from "sonner";
 
 export default function AdminDashboardPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { user, setUser, isAuthenticated } = useAuthStore();
 
   // Auto-generated hook to fetch current user data
@@ -24,6 +26,31 @@ export default function AdminDashboardPage() {
 
   // Admin dashboard data hook - automatically uses year from global store
   const dashboardQuery = useAdminDashboard();
+
+  // Mutation hook for refreshing AI analysis
+  const refreshAnalysisMutation = usePostAnalyticsDashboardRefreshAnalysis({
+    mutation: {
+      onSuccess: () => {
+        // Invalidate the dashboard query to refetch fresh data
+        // Query key format: ['/api/v1/analytics/dashboard', params]
+        queryClient.invalidateQueries({
+          queryKey: ["/api/v1/analytics/dashboard"],
+        });
+        toast.success("AI analysis refreshed successfully");
+      },
+      onError: () => {
+        toast.error("Failed to refresh AI analysis. Please try again.");
+      },
+    },
+  });
+
+  // Handler for regenerating AI analysis
+  const handleRegenerateAnalysis = useCallback(() => {
+    const year = dashboardQuery.year;
+    refreshAnalysisMutation.mutate({
+      params: year ? { year } : undefined,
+    });
+  }, [dashboardQuery.year, refreshAnalysisMutation]);
 
   // Redirect unauthenticated users to login
   useEffect(() => {
@@ -125,74 +152,26 @@ export default function AdminDashboardPage() {
           <DashboardHeader municipality={dashboardData.municipality} />
         </header>
 
-        {/* KPI Cards Section */}
+        {/* Simplified KPI Cards with Hero Action */}
         <section className="mb-6" aria-label="Key Performance Indicators">
-          <KPICards data={dashboardData.kpiData} />
+          <SimplifiedKPICards data={dashboardData.kpiData} />
         </section>
 
-        {/* Main Content: Progress Chart + Sidebar */}
-        <section className="mb-6" aria-label="Municipal Progress and Status">
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-            {/* Municipal Progress Chart - 8 columns */}
-            <div className="xl:col-span-8">
+        {/* Main Content: Progress Chart + Quick Actions */}
+        <section className="mb-6" aria-label="Municipal Progress and Quick Actions">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Municipal Progress Chart - Expanded to 9 columns */}
+            <div className="lg:col-span-9">
               <MunicipalProgressChart
                 data={dashboardData.municipalProgress}
                 totalBarangays={dashboardData.totalBarangays}
               />
             </div>
 
-            {/* Sidebar - 4 columns */}
-            <aside className="xl:col-span-4 flex flex-col gap-6" aria-label="Dashboard sidebar">
-              {/* System Status Card */}
-              <div
-                className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-sm p-5"
-                role="region"
-                aria-labelledby="system-status-title"
-              >
-                <h3
-                  id="system-status-title"
-                  className="text-base font-semibold text-[var(--foreground)] mb-4"
-                >
-                  System Status
-                </h3>
-                <ul className="space-y-3" aria-label="System status indicators">
-                  <li className="flex items-center justify-between p-3 rounded-sm bg-[var(--muted)]/20 border border-[var(--border)]">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-2 h-2 rounded-full animate-pulse bg-[var(--cityscape-yellow)]"
-                        aria-hidden="true"
-                      />
-                      <span className="text-sm font-medium text-[var(--foreground)]">
-                        Live Data
-                      </span>
-                    </div>
-                    <span
-                      className="text-xs font-semibold text-[var(--cityscape-yellow)]"
-                      aria-label="Status: Active"
-                    >
-                      ACTIVE
-                    </span>
-                  </li>
-                  <li className="flex items-center justify-between p-3 rounded-sm bg-[var(--muted)]/20 border border-[var(--border)]">
-                    <span className="text-sm font-medium text-[var(--foreground)]">
-                      Last Updated
-                    </span>
-                    <span className="text-xs text-[var(--muted-foreground)]">
-                      {new Date().toLocaleTimeString()}
-                    </span>
-                  </li>
-                  <li className="flex items-center justify-between p-3 rounded-sm bg-[var(--muted)]/20 border border-[var(--border)]">
-                    <span className="text-sm font-medium text-[var(--foreground)]">
-                      Auto-refresh
-                    </span>
-                    <span className="text-xs font-semibold text-[var(--text-secondary)]">30s</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Quick Actions Card */}
+            {/* Quick Actions Sidebar - 3 columns */}
+            <aside className="lg:col-span-3" aria-label="Quick Actions">
               <nav
-                className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-sm p-5 flex-1"
+                className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-sm p-5 h-full"
                 aria-labelledby="quick-actions-title"
               >
                 <h3
@@ -211,36 +190,23 @@ export default function AdminDashboardPage() {
                       <div className="font-medium text-[var(--foreground)] text-sm">
                         Review Submissions
                       </div>
-                      <div className="text-xs text-[var(--text-secondary)]">
+                      <div className="text-xs text-[var(--text-secondary)] mt-1">
                         Check pending assessments
                       </div>
                     </button>
                   </li>
                   <li>
                     <button
-                      onClick={() => router.push("/mlgoo/reports")}
+                      onClick={() => router.push("/analytics")}
                       className="w-full text-left p-3 rounded-sm border border-[var(--border)] bg-[var(--muted)]/20 hover:bg-[var(--cityscape-yellow)]/10 hover:border-[var(--cityscape-yellow)] transition-all duration-200"
-                      aria-label="Generate Reports - View analytics and insights"
+                      aria-label="View Analytics - Detailed reports and insights"
                     >
-                      <div className="font-medium text-[var(--foreground)] text-sm">
-                        Generate Reports
+                      <div className="flex items-center gap-2 font-medium text-[var(--foreground)] text-sm">
+                        <BarChart3 className="h-4 w-4" />
+                        View Analytics
                       </div>
-                      <div className="text-xs text-[var(--text-secondary)]">
-                        View analytics & insights
-                      </div>
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={() => router.push("/user-management")}
-                      className="w-full text-left p-3 rounded-sm border border-[var(--border)] bg-[var(--muted)]/20 hover:bg-[var(--cityscape-yellow)]/10 hover:border-[var(--cityscape-yellow)] transition-all duration-200"
-                      aria-label="Manage Users - User accounts and permissions"
-                    >
-                      <div className="font-medium text-[var(--foreground)] text-sm">
-                        Manage Users
-                      </div>
-                      <div className="text-xs text-[var(--text-secondary)]">
-                        User accounts & permissions
+                      <div className="text-xs text-[var(--text-secondary)] mt-1">
+                        Detailed reports & insights
                       </div>
                     </button>
                   </li>
@@ -250,22 +216,27 @@ export default function AdminDashboardPage() {
           </div>
         </section>
 
-        {/* Governance Area & Top Rework Reasons */}
-        <section className="mb-6" aria-label="Governance Area Breakdown and Top Rework Reasons">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <GovernanceAreaBreakdown data={dashboardData.areaBreakdown} />
-            <TopReworkReasonsCard data={dashboardData.topReworkReasons} />
-          </div>
-        </section>
-
-        {/* Failed Indicators - Full Width */}
-        <section aria-label="Failed Indicators">
-          <FailedIndicators
-            data={dashboardData.failedIndicators}
-            totalBarangays={dashboardData.totalBarangays}
-            year={dashboardQuery.year ?? undefined}
+        {/* Top Rework Reasons - AI Insights (Unique to Dashboard) */}
+        <section className="mb-6" aria-label="AI-Generated Insights">
+          <TopReworkReasonsCard
+            data={dashboardData.topReworkReasons}
+            onRegenerate={handleRegenerateAnalysis}
+            isRegenerating={refreshAnalysisMutation.isPending}
+            isRefetching={dashboardQuery.isFetching && !dashboardQuery.isLoading}
           />
         </section>
+
+        {/* Link to Analytics for detailed analysis */}
+        <div className="flex justify-center">
+          <button
+            onClick={() => router.push("/analytics")}
+            className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium text-[var(--foreground)] bg-[var(--card)] border border-[var(--border)] rounded-sm hover:bg-[var(--cityscape-yellow)]/10 hover:border-[var(--cityscape-yellow)] transition-all duration-200"
+          >
+            <BarChart3 className="h-4 w-4" />
+            View Detailed Analytics & Reports
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     </main>
   );

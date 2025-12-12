@@ -42,7 +42,6 @@ function getPageInfo(
   // Admin-specific pages
   if (isAdmin) {
     const adminPages: Record<string, PageInfo> = {
-      "/mlgoo/reports": { title: "Analytics & Reports" },
       "/mlgoo/submissions": {
         title: "Submission Queue",
         subtitle: "Review and manage submitted assessments from barangays",

@@ -26,12 +26,7 @@ interface LeftSubmissionViewProps {
 
 type AnyRecord = Record<string, any>;
 
-export function LeftSubmissionView({
-  assessment,
-  expandedId,
-  onToggle,
-}: LeftSubmissionViewProps) {
-
+export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSubmissionViewProps) {
   // State for expanded governance areas
   const [expandedAreas, setExpandedAreas] = React.useState<Set<number>>(() => new Set());
 

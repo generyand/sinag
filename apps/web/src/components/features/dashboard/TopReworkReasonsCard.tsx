@@ -1,24 +1,81 @@
 "use client";
 
+import { RefreshCw } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { TopReworkReasons } from "@/hooks/useAdminDashboard";
 
 interface TopReworkReasonsCardProps {
   data: TopReworkReasons | undefined;
+  onRegenerate?: () => void;
+  isRegenerating?: boolean;
+  isRefetching?: boolean;
 }
 
-export function TopReworkReasonsCard({ data }: TopReworkReasonsCardProps) {
+export function TopReworkReasonsCard({
+  data,
+  onRegenerate,
+  isRegenerating = false,
+  isRefetching = false,
+}: TopReworkReasonsCardProps) {
+  // Combined loading state: regenerating API call OR refetching dashboard data
+  const isLoading = isRegenerating || isRefetching;
+
+  // Status text for the loading overlay
+  const getStatusText = () => {
+    if (isRegenerating) return "Regenerating analysis...";
+    if (isRefetching) return "Updating data...";
+    return "";
+  };
+  // Regenerate button component (reusable)
+  const RegenerateButton = () =>
+    onRegenerate ? (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onRegenerate}
+              disabled={isLoading}
+              className="h-8 px-2 text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Refresh AI analysis</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    ) : null;
+
+  // Loading overlay component
+  const LoadingOverlay = () =>
+    isLoading ? (
+      <div className="absolute inset-0 bg-[var(--card)]/80 backdrop-blur-[1px] flex flex-col items-center justify-center z-10 rounded-sm">
+        <RefreshCw className="h-6 w-6 animate-spin text-purple-500 mb-2" />
+        <span className="text-sm text-[var(--muted-foreground)]">{getStatusText()}</span>
+      </div>
+    ) : null;
+
   // Show empty state if no data (with null safety check for reasons array)
   if (!data || !data.reasons || data.reasons.length === 0) {
     return (
-      <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+      <div className="relative bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+        <LoadingOverlay />
         <div className="mb-4">
-          <div className="flex items-center gap-2">
-            <h3 className="text-lg font-semibold text-[var(--foreground)]">
-              Top Reasons for Rework/Calibration
-            </h3>
-            <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
-              AI Generated
-            </span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-[var(--foreground)]">
+                Top Reasons for Rework/Calibration
+              </h3>
+              <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+                AI Generated
+              </span>
+            </div>
+            <RegenerateButton />
           </div>
           <p className="text-sm text-[var(--muted-foreground)]">
             Common issues identified in assessments
@@ -36,17 +93,21 @@ export function TopReworkReasonsCard({ data }: TopReworkReasonsCardProps) {
   }
 
   return (
-    <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+    <div className="relative bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+      <LoadingOverlay />
       <div className="mb-4">
-        <div className="flex items-center gap-2">
-          <h3 className="text-lg font-semibold text-[var(--foreground)]">
-            Top Reasons for Rework/Calibration
-          </h3>
-          {data.generated_by_ai && (
-            <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
-              AI Generated
-            </span>
-          )}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-[var(--foreground)]">
+              Top Reasons for Rework/Calibration
+            </h3>
+            {data.generated_by_ai && (
+              <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+                AI Generated
+              </span>
+            )}
+          </div>
+          <RegenerateButton />
         </div>
         <p className="text-sm text-[var(--muted-foreground)]">
           Common issues identified across assessments

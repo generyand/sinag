@@ -29,7 +29,7 @@ import {
   Leaf,
   Scale,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 // BBI compliance types (matching backend schema)
 export interface SubIndicatorResult {
@@ -267,6 +267,12 @@ function BBIComplianceSkeleton() {
 }
 
 export function BBIComplianceCard({ data, isLoading = false }: BBIComplianceCardProps) {
+  // Sort BBI results by compliance percentage (descending) to create ranking
+  const rankedResults = useMemo(() => {
+    if (!data?.bbi_results) return [];
+    return [...data.bbi_results].sort((a, b) => b.compliance_percentage - a.compliance_percentage);
+  }, [data?.bbi_results]);
+
   if (isLoading) {
     return (
       <div>
@@ -306,9 +312,9 @@ export function BBIComplianceCard({ data, isLoading = false }: BBIComplianceCard
       {/* Summary */}
       <SummaryCard summary={data.summary} />
 
-      {/* BBI Cards Grid */}
+      {/* BBI Cards Grid - Sorted by compliance percentage (ranked) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {data.bbi_results.map((result) => (
+        {rankedResults.map((result) => (
           <BBICard key={result.bbi_id} result={result} />
         ))}
       </div>

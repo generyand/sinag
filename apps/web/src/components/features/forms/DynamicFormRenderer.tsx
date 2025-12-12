@@ -372,9 +372,7 @@ export function DynamicFormRenderer({
       // REWORK SPECIAL CASE: If there are rejected files that haven't been replaced, not complete
       if (indicatorRequiresRework && movAnnotations && movAnnotations.length > 0) {
         const allFiles = (filesResponse?.files || []) as MOVFileResponse[];
-        const rejectedFileIds = new Set(
-          movAnnotations.map((ann: any) => String(ann.mov_file_id))
-        );
+        const rejectedFileIds = new Set(movAnnotations.map((ann: any) => String(ann.mov_file_id)));
         const rejectedFieldIds = new Set<string>();
         allFiles.forEach((file: MOVFileResponse) => {
           if (file.field_id && rejectedFileIds.has(String(file.id)) && !file.deleted_at) {
@@ -429,9 +427,7 @@ export function DynamicFormRenderer({
       // REWORK SPECIAL CASE: If there are rejected files that haven't been replaced, not complete
       if (indicatorRequiresRework && movAnnotations && movAnnotations.length > 0) {
         const allFiles = (filesResponse?.files || []) as MOVFileResponse[];
-        const rejectedFileIds = new Set(
-          movAnnotations.map((ann: any) => String(ann.mov_file_id))
-        );
+        const rejectedFileIds = new Set(movAnnotations.map((ann: any) => String(ann.mov_file_id)));
         const rejectedFieldIds = new Set<string>();
         allFiles.forEach((file: MOVFileResponse) => {
           if (file.field_id && rejectedFileIds.has(String(file.id)) && !file.deleted_at) {
@@ -491,9 +487,7 @@ export function DynamicFormRenderer({
       // This ensures BLGU must address all rejected files before completion.
       if (indicatorRequiresRework && movAnnotations && movAnnotations.length > 0) {
         const allFiles = (filesResponse?.files || []) as MOVFileResponse[];
-        const rejectedFileIds = new Set(
-          movAnnotations.map((ann: any) => String(ann.mov_file_id))
-        );
+        const rejectedFileIds = new Set(movAnnotations.map((ann: any) => String(ann.mov_file_id)));
 
         // Find fields that have rejected files
         const rejectedFieldIds = new Set<string>();
@@ -528,9 +522,7 @@ export function DynamicFormRenderer({
     // REWORK SPECIAL CASE: If there are rejected files that haven't been replaced, not complete
     if (indicatorRequiresRework && movAnnotations && movAnnotations.length > 0) {
       const allFiles = (filesResponse?.files || []) as MOVFileResponse[];
-      const rejectedFileIds = new Set(
-        movAnnotations.map((ann: any) => String(ann.mov_file_id))
-      );
+      const rejectedFileIds = new Set(movAnnotations.map((ann: any) => String(ann.mov_file_id)));
       const rejectedFieldIds = new Set<string>();
       allFiles.forEach((file: MOVFileResponse) => {
         if (file.field_id && rejectedFileIds.has(String(file.id)) && !file.deleted_at) {
@@ -585,7 +577,13 @@ export function DynamicFormRenderer({
         onIndicatorComplete(indicatorId, isIndicatorComplete);
       }
     }
-  }, [indicatorId, isIndicatorComplete, onIndicatorComplete, hasRequiredData, backendRequiresRework]);
+  }, [
+    indicatorId,
+    isIndicatorComplete,
+    onIndicatorComplete,
+    hasRequiredData,
+    backendRequiresRework,
+  ]);
 
   // Transform saved responses to default values
   const defaultValues = useMemo(() => {

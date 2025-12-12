@@ -230,6 +230,20 @@ class DashboardKPIResponse(BaseModel):
     total_barangays: int = Field(..., description="Total number of barangays in the municipality")
 
 
+class RefreshAnalysisResponse(BaseModel):
+    """Response for dashboard analysis refresh operation."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    message: str = Field(..., description="Status message")
+    cache_invalidated: bool = Field(
+        ..., description="Whether the cache was successfully invalidated"
+    )
+    top_rework_reasons: TopReworkReasons | None = Field(
+        None, description="Refreshed top rework/calibration reasons"
+    )
+
+
 # ============================================================================
 # Reports Page Schemas
 # ============================================================================

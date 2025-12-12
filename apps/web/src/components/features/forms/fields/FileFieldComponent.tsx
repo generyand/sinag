@@ -699,7 +699,8 @@ export function FileFieldComponent({
     // Check if this is a calibration rework (validator-initiated)
     // For calibration, we use ONLY the calibration timestamp to determine old vs new files
     // Assessor annotations from previous rework cycle should NOT affect calibration file separation
-    const isCalibrationRework = !!calibrationRequestedAt && effectiveReworkTimestamp === calibrationRequestedAt;
+    const isCalibrationRework =
+      !!calibrationRequestedAt && effectiveReworkTimestamp === calibrationRequestedAt;
 
     // Filter old files based on rework type:
     let invalidOldFiles: any[] = [];
@@ -913,7 +914,10 @@ export function FileFieldComponent({
               </p>
               <ol className="text-sm space-y-1.5 list-decimal list-inside text-orange-700 dark:text-orange-400">
                 <li>Review the assessor&apos;s comments on the highlighted files below</li>
-                <li>Click &quot;Preview&quot; or &quot;View feedback&quot; to see annotations on the documents</li>
+                <li>
+                  Click &quot;Preview&quot; or &quot;View feedback&quot; to see annotations on the
+                  documents
+                </li>
                 <li>Upload corrected versions of the flagged files only</li>
                 <li>Files without comments are still valid — no need to re-upload them</li>
               </ol>
@@ -925,9 +929,13 @@ export function FileFieldComponent({
             ).length > 0 && (
               <div className="text-sm">
                 <p className="font-medium text-orange-800 dark:text-orange-300 mb-1">
-                  Files needing correction ({previousFiles.filter((f: any) =>
-                    movAnnotations.some((ann: any) => String(ann.mov_file_id) === String(f.id))
-                  ).length} of {previousFiles.length + files.length}):
+                  Files needing correction (
+                  {
+                    previousFiles.filter((f: any) =>
+                      movAnnotations.some((ann: any) => String(ann.mov_file_id) === String(f.id))
+                    ).length
+                  }{" "}
+                  of {previousFiles.length + files.length}):
                 </p>
                 <ul className="space-y-1 pl-1">
                   {previousFiles
@@ -939,9 +947,14 @@ export function FileFieldComponent({
                         (ann: any) => String(ann.mov_file_id) === String(file.id)
                       );
                       return (
-                        <li key={file.id} className="flex items-center gap-2 text-orange-700 dark:text-orange-400">
+                        <li
+                          key={file.id}
+                          className="flex items-center gap-2 text-orange-700 dark:text-orange-400"
+                        >
                           <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                          <span className="font-medium truncate max-w-[200px]">{file.file_name}</span>
+                          <span className="font-medium truncate max-w-[200px]">
+                            {file.file_name}
+                          </span>
                           <span className="text-orange-600 dark:text-orange-500">
                             — {fileAnns.length} comment{fileAnns.length !== 1 ? "s" : ""}
                           </span>

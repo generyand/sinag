@@ -357,7 +357,7 @@ class GARService:
         """
         Get validation result for a checklist item from response data.
 
-        Checks assessor_val_{item_id} in response_data.
+        Priority: validator_val_{item_id} (final decision) > assessor_val_{item_id} (initial)
         Returns: 'met', 'considered', 'unmet', or None
         """
         if not response or not response.response_data:
@@ -370,32 +370,39 @@ class GARService:
         if item.item_type == "info_text":
             return None
 
-        # Check for assessor validation data
-        val_key = f"assessor_val_{item_id}"
+        # Priority: Use validator data (final decision), fallback to assessor data
+        for prefix in ["validator_val_", "assessor_val_"]:
+            val_key = f"{prefix}{item_id}"
 
-        # Check standard checkbox validation
-        if val_key in response_data:
-            value = response_data[val_key]
-            if isinstance(value, bool):
-                return "met" if value else "unmet"
-            if isinstance(value, str):
-                return "met" if value.lower() in ["true", "yes", "1"] else "unmet"
+            # Check standard checkbox validation
+            if val_key in response_data:
+                value = response_data[val_key]
+                if isinstance(value, bool):
+                    return "met" if value else "unmet"
+                if isinstance(value, str):
+                    return "met" if value.lower() in ["true", "yes", "1"] else "unmet"
 
-        # Check yes/no pattern (assessment_field type)
-        yes_key = f"{val_key}_yes"
-        no_key = f"{val_key}_no"
+            # Check yes/no pattern (assessment_field type)
+            yes_key = f"{val_key}_yes"
+            no_key = f"{val_key}_no"
 
-        if yes_key in response_data or no_key in response_data:
-            if response_data.get(yes_key):
-                return "met"
-            elif response_data.get(no_key):
-                return "unmet"
+            if yes_key in response_data or no_key in response_data:
+                if response_data.get(yes_key):
+                    return "met"
+                elif response_data.get(no_key):
+                    return "unmet"
 
-        # Check for document_count or calculation_field
-        if item.item_type in ["document_count", "calculation_field"]:
-            if val_key in response_data and response_data[val_key]:
-                # Has a value - consider it met
-                return "met"
+            # Check for document_count or calculation_field
+            if item.item_type in ["document_count", "calculation_field"]:
+                if val_key in response_data and response_data[val_key]:
+                    # Has a value - consider it met
+                    return "met"
+
+            # If we found validator data, use it (don't fallback to assessor)
+            if prefix == "validator_val_" and any(
+                k.startswith(f"validator_val_{item_id}") for k in response_data.keys()
+            ):
+                break
 
         return None
 

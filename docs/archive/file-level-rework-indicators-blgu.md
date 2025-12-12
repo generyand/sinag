@@ -2,7 +2,9 @@
 
 ## Overview
 
-This proposal outlines the implementation of file-level rework indicators for BLGU users viewing assessments in REWORK status. The goal is to clearly show which specific files need re-upload based on Assessor annotations.
+This proposal outlines the implementation of file-level rework indicators for BLGU users viewing
+assessments in REWORK status. The goal is to clearly show which specific files need re-upload based
+on Assessor annotations.
 
 ## Current State Analysis
 
@@ -30,12 +32,14 @@ The backend already provides all necessary data:
 #### Key Files Involved:
 
 1. **Indicator Form Page**
-   - Location: `/home/asnari/Project/sinag/apps/web/src/app/(app)/blgu/assessment/[assessmentId]/indicator/[indicatorId]/page.tsx`
+   - Location:
+     `/home/asnari/Project/sinag/apps/web/src/app/(app)/blgu/assessment/[assessmentId]/indicator/[indicatorId]/page.tsx`
    - Already fetches and passes `movAnnotations` to components
    - Lines 95-96: Extracts annotations by indicator
 
 2. **FileFieldComponent**
-   - Location: `/home/asnari/Project/sinag/apps/web/src/components/features/forms/fields/FileFieldComponent.tsx`
+   - Location:
+     `/home/asnari/Project/sinag/apps/web/src/components/features/forms/fields/FileFieldComponent.tsx`
    - Already implements hybrid logic for file separation
    - Lines 669-694: Filters files with annotations vs without
    - Lines 798-817: Shows alert when files have annotations
@@ -46,7 +50,8 @@ The backend already provides all necessary data:
    - Lines 320-326 (FileList.tsx): Shows badge with annotation count
 
 4. **DynamicFormRenderer**
-   - Location: `/home/asnari/Project/sinag/apps/web/src/components/features/forms/DynamicFormRenderer.tsx`
+   - Location:
+     `/home/asnari/Project/sinag/apps/web/src/components/features/forms/DynamicFormRenderer.tsx`
    - Passes `movAnnotations` and `reworkComments` to FileFieldComponent
 
 ## Current Behavior
@@ -65,7 +70,8 @@ The backend already provides all necessary data:
 
 ### What's Missing/Needs Enhancement:
 
-1. **Visual Clarity**: The distinction between "needs rework" and "still valid" files could be more prominent
+1. **Visual Clarity**: The distinction between "needs rework" and "still valid" files could be more
+   prominent
 2. **Upload Guidance**: Clearer instruction on which files need re-upload
 3. **Progress Tracking**: No clear indication of which annotated files have been replaced
 
@@ -78,6 +84,7 @@ The backend already provides all necessary data:
 **Location**: `FileList.tsx` (lines 299-378)
 
 **Changes**:
+
 ```tsx
 // Add visual state indicators to file cards
 <div
@@ -97,19 +104,22 @@ The backend already provides all necessary data:
 **Location**: `FileList.tsx` (after annotation badge)
 
 **Changes**:
+
 ```tsx
-{hasAnnotations && (
-  <>
-    <Badge variant="destructive" className="text-xs shrink-0">
-      <MessageSquare className="h-3 w-3 mr-1" />
-      {fileAnnotations.length} {fileAnnotations.length === 1 ? "note" : "notes"}
-    </Badge>
-    <Badge variant="outline" className="text-xs shrink-0 border-orange-500 text-orange-700">
-      <AlertCircle className="h-3 w-3 mr-1" />
-      Re-upload needed
-    </Badge>
-  </>
-)}
+{
+  hasAnnotations && (
+    <>
+      <Badge variant="destructive" className="text-xs shrink-0">
+        <MessageSquare className="h-3 w-3 mr-1" />
+        {fileAnnotations.length} {fileAnnotations.length === 1 ? "note" : "notes"}
+      </Badge>
+      <Badge variant="outline" className="text-xs shrink-0 border-orange-500 text-orange-700">
+        <AlertCircle className="h-3 w-3 mr-1" />
+        Re-upload needed
+      </Badge>
+    </>
+  );
+}
 ```
 
 **Benefit**: Clear action hint on each annotated file
@@ -119,29 +129,32 @@ The backend already provides all necessary data:
 **Location**: `FileFieldComponent.tsx` (lines 798-817)
 
 **Changes**:
+
 ```tsx
-{hasAnnotations && (normalizedStatus === "REWORK" || normalizedStatus === "NEEDS_REWORK") && (
-  <Alert className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/30">
-    <AlertCircle className="h-4 w-4 text-orange-600" />
-    <AlertDescription className="text-orange-900 dark:text-orange-200 space-y-2">
-      <p className="font-medium mb-1">Action Required: File Re-upload</p>
-      <p className="text-sm">
-        The assessor has left {fieldAnnotations.length} comment
-        {fieldAnnotations.length !== 1 ? "s" : ""} on {annotatedFileCount} specific file
-        {annotatedFileCount !== 1 ? "s" : ""}.
-      </p>
-      <div className="bg-white dark:bg-gray-800 p-3 rounded-md border border-orange-200">
-        <p className="text-sm font-semibold mb-2">What you need to do:</p>
-        <ol className="text-sm space-y-1 list-decimal list-inside">
-          <li>Review the assessor's comments on the highlighted files below</li>
-          <li>Click "Preview" to see annotations directly on the documents</li>
-          <li>Upload corrected versions of the flagged files</li>
-          <li>Files without comments are still valid - no need to re-upload them</li>
-        </ol>
-      </div>
-    </AlertDescription>
-  </Alert>
-)}
+{
+  hasAnnotations && (normalizedStatus === "REWORK" || normalizedStatus === "NEEDS_REWORK") && (
+    <Alert className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/30">
+      <AlertCircle className="h-4 w-4 text-orange-600" />
+      <AlertDescription className="text-orange-900 dark:text-orange-200 space-y-2">
+        <p className="font-medium mb-1">Action Required: File Re-upload</p>
+        <p className="text-sm">
+          The assessor has left {fieldAnnotations.length} comment
+          {fieldAnnotations.length !== 1 ? "s" : ""} on {annotatedFileCount} specific file
+          {annotatedFileCount !== 1 ? "s" : ""}.
+        </p>
+        <div className="bg-white dark:bg-gray-800 p-3 rounded-md border border-orange-200">
+          <p className="text-sm font-semibold mb-2">What you need to do:</p>
+          <ol className="text-sm space-y-1 list-decimal list-inside">
+            <li>Review the assessor's comments on the highlighted files below</li>
+            <li>Click "Preview" to see annotations directly on the documents</li>
+            <li>Upload corrected versions of the flagged files</li>
+            <li>Files without comments are still valid - no need to re-upload them</li>
+          </ol>
+        </div>
+      </AlertDescription>
+    </Alert>
+  );
+}
 ```
 
 **Benefit**: Clear step-by-step guidance for BLGU users
@@ -153,23 +166,27 @@ The backend already provides all necessary data:
 **Location**: `FileList.tsx` (action buttons section)
 
 **New Feature**:
+
 ```tsx
-{hasAnnotations && canDelete && (
-  <Button
-    type="button"
-    variant="outline"
-    size="sm"
-    onClick={() => handleReplaceFile(file)}
-    className="text-orange-600 border-orange-300 hover:bg-orange-50"
-    title="Delete and upload new version"
-  >
-    <RefreshCw className="h-4 w-4 mr-1" />
-    Replace
-  </Button>
-)}
+{
+  hasAnnotations && canDelete && (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={() => handleReplaceFile(file)}
+      className="text-orange-600 border-orange-300 hover:bg-orange-50"
+      title="Delete and upload new version"
+    >
+      <RefreshCw className="h-4 w-4 mr-1" />
+      Replace
+    </Button>
+  );
+}
 ```
 
 **Implementation**:
+
 - Combines delete + scroll to upload area
 - Provides clear workflow for replacement
 
@@ -180,6 +197,7 @@ The backend already provides all necessary data:
 **Purpose**: Track which annotated files have been replaced with new uploads
 
 **Data Structure**:
+
 ```typescript
 interface FileReplacementStatus {
   originalFileId: number;
@@ -187,28 +205,31 @@ interface FileReplacementStatus {
   annotationCount: number;
   replacedAt?: string;
   replacementFileId?: number;
-  status: 'needs_replacement' | 'replaced';
+  status: "needs_replacement" | "replaced";
 }
 ```
 
 **Visual**:
+
 ```tsx
 <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
   <h4 className="font-medium text-sm mb-2">File Replacement Progress</h4>
   <div className="space-y-2">
     {replacementStatuses.map((status) => (
       <div key={status.originalFileId} className="flex items-center gap-2">
-        {status.status === 'replaced' ? (
+        {status.status === "replaced" ? (
           <CheckCircle className="h-4 w-4 text-green-600" />
         ) : (
           <AlertCircle className="h-4 w-4 text-orange-600" />
         )}
         <span className="text-sm">{status.fileName}</span>
         <span className="text-xs text-muted-foreground">
-          ({status.annotationCount} {status.annotationCount === 1 ? 'note' : 'notes'})
+          ({status.annotationCount} {status.annotationCount === 1 ? "note" : "notes"})
         </span>
-        {status.status === 'replaced' && (
-          <Badge variant="outline" className="text-xs">Replaced</Badge>
+        {status.status === "replaced" && (
+          <Badge variant="outline" className="text-xs">
+            Replaced
+          </Badge>
         )}
       </div>
     ))}
@@ -225,33 +246,35 @@ interface FileReplacementStatus {
 When upload area is shown for a field with annotated files:
 
 ```tsx
-{annotatedFiles.length > 0 && canUpload && (
-  <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
-    <div className="flex items-start gap-3">
-      <Sparkles className="h-5 w-5 text-blue-600 mt-0.5" />
-      <div>
-        <p className="font-medium text-sm text-blue-900">Upload Reminder</p>
-        <p className="text-sm text-blue-800 mt-1">
-          You have {annotatedFiles.length} file{annotatedFiles.length !== 1 ? 's' : ''}
-          with assessor feedback. Make sure to upload corrected versions:
-        </p>
-        <ul className="mt-2 space-y-1">
-          {annotatedFiles.slice(0, 3).map((file) => (
-            <li key={file.id} className="text-sm text-blue-700 flex items-center gap-2">
-              <FileText className="h-3 w-3" />
-              {file.file_name}
-            </li>
-          ))}
-          {annotatedFiles.length > 3 && (
-            <li className="text-sm text-blue-600 italic">
-              ...and {annotatedFiles.length - 3} more
-            </li>
-          )}
-        </ul>
+{
+  annotatedFiles.length > 0 && canUpload && (
+    <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
+      <div className="flex items-start gap-3">
+        <Sparkles className="h-5 w-5 text-blue-600 mt-0.5" />
+        <div>
+          <p className="font-medium text-sm text-blue-900">Upload Reminder</p>
+          <p className="text-sm text-blue-800 mt-1">
+            You have {annotatedFiles.length} file{annotatedFiles.length !== 1 ? "s" : ""}
+            with assessor feedback. Make sure to upload corrected versions:
+          </p>
+          <ul className="mt-2 space-y-1">
+            {annotatedFiles.slice(0, 3).map((file) => (
+              <li key={file.id} className="text-sm text-blue-700 flex items-center gap-2">
+                <FileText className="h-3 w-3" />
+                {file.file_name}
+              </li>
+            ))}
+            {annotatedFiles.length > 3 && (
+              <li className="text-sm text-blue-600 italic">
+                ...and {annotatedFiles.length - 3} more
+              </li>
+            )}
+          </ul>
+        </div>
       </div>
     </div>
-  </div>
-)}
+  );
+}
 ```
 
 #### 3.2 Annotation Summary in Upload Area
@@ -266,9 +289,7 @@ Show a collapsed summary of annotations when user is about to upload:
   </CollapsibleTrigger>
   <CollapsibleContent className="mt-2 p-3 bg-white border border-blue-200 rounded-md">
     {annotatedFiles.map((file) => {
-      const fileAnnotations = movAnnotations.filter(
-        (ann) => ann.mov_file_id === file.id
-      );
+      const fileAnnotations = movAnnotations.filter((ann) => ann.mov_file_id === file.id);
       return (
         <div key={file.id} className="mb-3 last:mb-0">
           <p className="font-medium text-sm">{file.file_name}</p>
@@ -291,21 +312,25 @@ Show a collapsed summary of annotations when user is about to upload:
 ## Implementation Priority
 
 ### High Priority (Implement First):
+
 1. ✅ Enhanced visual states for annotated files (Phase 1.1)
 2. ✅ "Re-upload needed" badge (Phase 1.2)
 3. ✅ Enhanced field-level alert with step-by-step guidance (Phase 1.3)
 
 ### Medium Priority:
+
 4. Replace action button (Phase 2.1)
 5. File replacement tracking (Phase 2.2)
 
 ### Low Priority (Nice to Have):
+
 6. Context-aware upload prompts (Phase 3.1)
 7. Annotation summary in upload area (Phase 3.2)
 
 ## Files to Modify
 
 ### Primary Changes:
+
 1. `/home/asnari/Project/sinag/apps/web/src/components/features/movs/FileList.tsx`
    - Add enhanced visual states
    - Add "Re-upload needed" badge
@@ -316,6 +341,7 @@ Show a collapsed summary of annotations when user is about to upload:
    - Add context-aware upload prompts (optional)
 
 ### New Components (Optional):
+
 3. `/home/asnari/Project/sinag/apps/web/src/components/features/rework/FileReplacementTracker.tsx`
    - Track replacement status
    - Show progress
@@ -375,6 +401,4 @@ Show a collapsed summary of annotations when user is about to upload:
 
 ---
 
-**Prepared by**: Claude Code (Frontend Architect)
-**Date**: 2025-12-11
-**Status**: Awaiting Review
+**Prepared by**: Claude Code (Frontend Architect) **Date**: 2025-12-11 **Status**: Awaiting Review

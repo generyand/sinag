@@ -219,7 +219,8 @@ export default function SubmissionDetailsPage() {
   };
 
   // Calibration summary regeneration mutation
-  const regenerateCalibrationMutation = usePostAssessmentsAssessmentIdCalibrationSummaryRegenerate();
+  const regenerateCalibrationMutation =
+    usePostAssessmentsAssessmentIdCalibrationSummaryRegenerate();
 
   const handleRegenerateCalibrationSummary = async (governanceAreaId: number) => {
     if (!assessmentId) return;
@@ -1262,8 +1263,13 @@ export default function SubmissionDetailsPage() {
                             >
                               <div className="flex items-center justify-between gap-3">
                                 <div className="flex-1">
-                                  <h4 className="font-medium text-purple-800">Calibration Summary</h4>
-                                  <p className="text-xs text-purple-600 mt-1 truncate" title={ga.name}>
+                                  <h4 className="font-medium text-purple-800">
+                                    Calibration Summary
+                                  </h4>
+                                  <p
+                                    className="text-xs text-purple-600 mt-1 truncate"
+                                    title={ga.name}
+                                  >
                                     {ga.name}
                                   </p>
                                 </div>

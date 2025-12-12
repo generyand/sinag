@@ -255,16 +255,19 @@ alembic upgrade head
 
 ## Documentation
 
-| Topic               | Location                                 |
-| ------------------- | ---------------------------------------- |
-| Project structure   | `docs/architecture/project-structure.md` |
-| User roles          | `docs/architecture/user-roles.md`        |
-| Assessment workflow | `docs/workflows/assessor-validation.md`  |
-| BLGU workflow       | `docs/workflows/blgu-assessment.md`      |
-| External analytics  | `docs/features/external-analytics.md`    |
-| API endpoints       | `docs/api/endpoints/`                    |
-| PRDs                | `docs/prds/`                             |
-| Changelog           | `CHANGELOG.md`                           |
+| Topic                  | Location                                     |
+| ---------------------- | -------------------------------------------- |
+| Project structure      | `docs/architecture/project-structure.md`     |
+| User roles             | `docs/architecture/user-roles.md`            |
+| Assessment workflow    | `docs/workflows/assessor-validation.md`      |
+| BLGU workflow          | `docs/workflows/blgu-assessment.md`          |
+| Classification (3+1)   | `docs/workflows/classification-algorithm.md` |
+| BBI compliance         | `docs/features/bbi-compliance.md`            |
+| External analytics     | `docs/features/external-analytics.md`        |
+| Multi-year assessments | `docs/features/multi-year-assessments.md`    |
+| API endpoints          | `docs/api/endpoints/`                        |
+| PRDs                   | `docs/prds/`                                 |
+| Changelog              | `CHANGELOG.md`                               |
 
 ## Docker Development
 

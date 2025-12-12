@@ -213,8 +213,10 @@ def _generate_rework_summary_logic(
             return {"success": False, "error": error_msg}
 
         # Check if assessment needs rework summary generation
-        # Generate if: (1) currently in REWORK status, OR (2) has been through rework but missing summary
-        needs_generation = assessment.status == AssessmentStatus.REWORK or (
+        # Generate if: rework_count > 0 AND no summary exists yet
+        # NOTE: We don't check status anymore to avoid race conditions where
+        # the status changes (e.g., REWORK → SUBMITTED) before this async task runs
+        needs_generation = (
             assessment.rework_count
             and assessment.rework_count > 0
             and not assessment.rework_summary
@@ -443,10 +445,10 @@ def _generate_calibration_summary_logic(
         )
 
         # Check if assessment needs calibration summary generation for this area
-        # Generate if: (1) currently in REWORK with calibration flag, OR (2) has been through calibration but missing summary for this area
+        # Generate if: calibration_count > 0 AND no summary exists for this area
+        # NOTE: We don't check status anymore to avoid race conditions where
+        # the status changes before this async task runs
         needs_generation = (
-            assessment.status == AssessmentStatus.REWORK and assessment.is_calibration_rework
-        ) or (
             assessment.calibration_count
             and assessment.calibration_count > 0
             and not area_summary_exists

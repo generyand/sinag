@@ -426,18 +426,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   <h2 className="text-xl md:text-2xl font-bold leading-7 text-[var(--foreground)] sm:truncate">
                     {isAdmin
                       ? // Admin-specific titles
-                        pathname === "/mlgoo/reports"
-                        ? "Analytics & Reports"
-                        : pathname === "/mlgoo/submissions"
-                          ? "Submission Queue"
-                          : pathname === "/mlgoo/cycles"
-                            ? "Assessment Cycles"
-                            : pathname === "/mlgoo/settings"
-                              ? "System Settings"
-                              : pathname === "/mlgoo/profile"
-                                ? "Profile"
-                                : navigation.find((item) => pathname === item.href)?.name ||
-                                  "Dashboard"
+                        pathname === "/mlgoo/submissions"
+                        ? "Submission Queue"
+                        : pathname === "/mlgoo/cycles"
+                          ? "Assessment Cycles"
+                          : pathname === "/mlgoo/settings"
+                            ? "System Settings"
+                            : pathname === "/mlgoo/profile"
+                              ? "Profile"
+                              : navigation.find((item) => pathname === item.href)?.name ||
+                                "Dashboard"
                       : isAssessor
                         ? // Assessor-specific titles
                           pathname === "/assessor/submissions"
@@ -494,8 +492,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       {pathname === "/mlgoo/dashboard" && "Welcome to your SINAG dashboard"}
                       {pathname === "/mlgoo/submissions" &&
                         "Review and manage submitted assessments from barangays"}
-                      {pathname === "/mlgoo/reports" &&
-                        "View analytics and generate reports on assessment data"}
                       {pathname === "/analytics" &&
                         "Comprehensive analytics, municipal overview, and performance reports"}
                       {pathname.startsWith("/mlgoo/indicators") &&

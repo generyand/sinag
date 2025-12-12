@@ -11,6 +11,19 @@ from pydantic import BaseModel, ConfigDict, Field
 # ============================================================================
 
 
+class WorkflowStatusBreakdown(BaseModel):
+    """Detailed breakdown of assessments by workflow status."""
+
+    not_started: int = Field(0, description="Barangays with no assessment started")
+    draft: int = Field(0, description="Assessments in DRAFT status")
+    submitted: int = Field(0, description="Assessments in SUBMITTED status")
+    in_review: int = Field(0, description="Assessments in IN_REVIEW status")
+    rework: int = Field(0, description="Assessments in REWORK status")
+    awaiting_validation: int = Field(0, description="Assessments in AWAITING_FINAL_VALIDATION")
+    awaiting_approval: int = Field(0, description="Assessments in AWAITING_MLGOO_APPROVAL")
+    completed: int = Field(0, description="Assessments in COMPLETED status")
+
+
 class MunicipalComplianceSummary(BaseModel):
     """Schema for municipal-wide compliance statistics."""
 
@@ -31,6 +44,22 @@ class MunicipalComplianceSummary(BaseModel):
     )
     in_progress: int = Field(
         ..., description="Number of assessments in progress (draft/submitted/rework)"
+    )
+
+    # New metrics for enhanced dashboard
+    workflow_breakdown: WorkflowStatusBreakdown = Field(
+        default_factory=lambda: WorkflowStatusBreakdown(),
+        description="Detailed breakdown of assessments by workflow status",
+    )
+    stalled_assessments: int = Field(0, description="Assessments stuck in same status for >14 days")
+    rework_rate: float = Field(
+        0.0, description="Percentage of assessments that required rework (0-100)"
+    )
+    weighted_progress: float = Field(
+        0.0,
+        description="Weighted progress based on workflow stages (0-100). "
+        "Each stage has a weight: DRAFT=10%, SUBMITTED=25%, IN_REVIEW=40%, "
+        "AWAITING_VALIDATION=55%, AWAITING_APPROVAL=70%, COMPLETED=100%",
     )
 
 

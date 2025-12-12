@@ -343,3 +343,14 @@ export interface MunicipalityBBIAnalyticsSummary {
   /** Total NON_FUNCTIONAL ratings across all BBIs */
   overall_non_functional: number;
 }
+
+
+/**
+ * PostAnalyticsDashboardRefreshAnalysisParams
+ */
+export type PostAnalyticsDashboardRefreshAnalysisParams = {
+/**
+ * Assessment year to refresh analysis for. Defaults to active year.
+ */
+year?: number | null;
+};

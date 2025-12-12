@@ -135,6 +135,23 @@ class AnalyticsService:
 
         return response
 
+    def calculate_top_rework_reasons(
+        self, db: Session, assessment_year: int | None = None
+    ) -> TopReworkReasons | None:
+        """
+        Calculate top reasons for rework and calibration from AI-generated summaries.
+
+        Public API method for refreshing rework/calibration analysis.
+
+        Args:
+            db: Database session
+            assessment_year: Optional assessment year
+
+        Returns:
+            TopReworkReasons or None if no rework/calibration data available
+        """
+        return self._calculate_top_rework_reasons(db, assessment_year)
+
     def _calculate_overall_compliance(
         self, db: Session, assessment_year: int | None = None
     ) -> ComplianceRate:
@@ -674,6 +691,21 @@ class AnalyticsService:
             .all()
         )
 
+        # Debug logging: track which assessments have summaries
+        assessments_with_rework_summary = sum(
+            1 for a in assessments if a.rework_summary is not None
+        )
+        assessments_with_calibration_summary = sum(
+            1
+            for a in assessments
+            if a.calibration_summary is not None or a.calibration_summaries_by_area
+        )
+        logger.info(
+            f"📊 Top rework reasons: Found {len(assessments)} assessments with rework/calibration for year {assessment_year}. "
+            f"Rework summaries: {assessments_with_rework_summary}/{rework_count}, "
+            f"Calibration summaries: {assessments_with_calibration_summary}/{calibration_count}"
+        )
+
         # Collect REASONS (key_issues) from AI summaries - NOT actions/recommendations
         # key_issues = the actual problems identified (reasons for rework/calibration)
         # priority_actions = what to do to fix them (NOT what we want here)
@@ -734,6 +766,11 @@ class AnalyticsService:
                 for area_id, area_summary in assessment.calibration_summaries_by_area.items():
                     if isinstance(area_summary, dict):
                         calibration_reasons.extend(extract_key_issues_from_summary(area_summary))
+
+        # Debug logging: track extracted reasons
+        logger.info(
+            f"📊 Extracted {len(rework_reasons)} rework reasons and {len(calibration_reasons)} calibration reasons from AI summaries"
+        )
 
         # If no AI-generated reasons, fall back to feedback comments
         if not rework_reasons and not calibration_reasons:
@@ -1025,8 +1062,8 @@ class AnalyticsService:
         Aggregate bar chart data: pass/fail rates by governance area.
 
         Shows how many barangays passed vs failed each governance area based on
-        validation status (Pass/Conditional = passed, Fail = failed).
-        Aligned with GAR methodology.
+        the stored area_results from the GAR classification algorithm.
+        This ensures consistency with the official GAR determination.
 
         Args:
             db: Database session
@@ -1035,17 +1072,13 @@ class AnalyticsService:
         Returns:
             List of BarChartData
         """
-        from app.db.enums import ValidationStatus
         from app.schemas.analytics import BarChartData
 
         if not assessments:
             return []
 
-        # Get all governance areas with eager loaded indicators
-        # PERFORMANCE FIX: Eager load indicators to prevent N+1 queries
-        governance_areas = (
-            db.query(GovernanceArea).options(selectinload(GovernanceArea.indicators)).all()
-        )
+        # Get all governance areas
+        governance_areas = db.query(GovernanceArea).all()
 
         if not governance_areas:
             return []
@@ -1053,44 +1086,25 @@ class AnalyticsService:
         bar_data = []
 
         for area in governance_areas:
-            # Get indicator IDs for this governance area
-            indicator_ids = [ind.id for ind in area.indicators]
-
-            if not indicator_ids:
-                continue
-
             passed_count = 0
             failed_count = 0
 
             # For each assessment, check if this governance area passed or failed
-            # based on validation status (aligned with GAR methodology)
+            # using the stored area_results (source of truth from GAR classification)
             for assessment in assessments:
-                # Get responses for this area's indicators
-                area_responses = [
-                    r for r in assessment.responses if r.indicator_id in indicator_ids
-                ]
-
-                if not area_responses:
+                if not assessment.area_results:
                     continue
 
-                # Count indicators by validation status
-                met_count = sum(
-                    1
-                    for r in area_responses
-                    if r.validation_status in (ValidationStatus.PASS, ValidationStatus.CONDITIONAL)
-                )
-                total_validated = sum(1 for r in area_responses if r.validation_status is not None)
+                # area_results is stored with area names as keys and "Passed"/"Failed" as values
+                # Try matching by area name (the primary key format used by intelligence_service)
+                area_result = assessment.area_results.get(area.name)
 
-                # Skip if no indicators have been validated yet
-                if total_validated == 0:
-                    continue
-
-                # A barangay "passes" this area if ALL validated indicators are met (Pass/Conditional)
-                # This aligns with GAR methodology where all indicators must pass for area compliance
-                if met_count == total_validated:
-                    passed_count += 1
-                else:
-                    failed_count += 1
+                if area_result is not None:
+                    # Case-insensitive comparison for defensive coding
+                    if area_result.lower() == "passed":
+                        passed_count += 1
+                    elif area_result.lower() == "failed":
+                        failed_count += 1
 
             total = passed_count + failed_count
             pass_percentage = (passed_count / total * 100) if total > 0 else 0.0
@@ -1418,34 +1432,21 @@ class AnalyticsService:
             if assessment.status == AssessmentStatus.COMPLETED and assessment.responses:
                 total_indicators = len(assessment.responses)
 
-                # Group by governance area
-                area_stats = {}  # {area_id: {total: 0, passed: 0}}
-
+                # Count indicators passed
                 for r in assessment.responses:
-                    # Indicators passed count
                     if r.validation_status in (ValidationStatus.PASS, ValidationStatus.CONDITIONAL):
                         indicators_passed += 1
 
-                    # Grouping for governance areas
-                    if r.indicator and r.indicator.governance_area_id:
-                        ga_id = r.indicator.governance_area_id
-                        if ga_id not in area_stats:
-                            area_stats[ga_id] = {"total": 0, "passed": 0}
-
-                        area_stats[ga_id]["total"] += 1
-                        if r.validation_status in (
-                            ValidationStatus.PASS,
-                            ValidationStatus.CONDITIONAL,
-                        ):
-                            area_stats[ga_id]["passed"] += 1
-
-                # Calculate governance areas passed
-                total_governance_areas = len(area_stats)
-                for ga_id, stats in area_stats.items():
-                    if stats["total"] > 0:
-                        # Threshold 70%
-                        if (stats["passed"] / stats["total"] * 100) >= 70:
-                            governance_areas_passed += 1
+                # Use stored area_results for governance area counts (source of truth from GAR)
+                # This ensures consistency with the overview tab and GAR classification
+                if assessment.area_results:
+                    total_governance_areas = len(assessment.area_results)
+                    # Case-insensitive comparison for defensive coding
+                    governance_areas_passed = sum(
+                        1
+                        for result in assessment.area_results.values()
+                        if result and result.lower() == "passed"
+                    )
 
                 # Score calculation
                 total_validated = sum(

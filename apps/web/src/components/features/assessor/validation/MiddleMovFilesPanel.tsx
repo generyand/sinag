@@ -147,7 +147,11 @@ interface MiddleMovFilesPanelProps {
   /** Callback when an annotation is added (for auto-toggling calibration flag) */
   onAnnotationCreated?: (responseId: number, movFileId: number) => void;
   /** Callback when an annotation is deleted (for checking if calibration flag should be removed) */
-  onAnnotationDeleted?: (responseId: number, movFileId: number, remainingCountForFile: number) => void;
+  onAnnotationDeleted?: (
+    responseId: number,
+    movFileId: number,
+    remainingCountForFile: number
+  ) => void;
 }
 
 type AnyRecord = Record<string, any>;
@@ -349,11 +353,23 @@ export function MiddleMovFilesPanel({
       });
 
       // Notify parent that annotation was created (for auto-toggling rework/calibration flag)
-      console.log("[MiddleMovFilesPanel] Annotation created, calling onAnnotationCreated:", expandedId, "movFileId:", selectedFile.id);
+      console.log(
+        "[MiddleMovFilesPanel] Annotation created, calling onAnnotationCreated:",
+        expandedId,
+        "movFileId:",
+        selectedFile.id
+      );
       if (expandedId && onAnnotationCreated && selectedFile?.id) {
         onAnnotationCreated(expandedId, selectedFile.id);
       } else {
-        console.warn("[MiddleMovFilesPanel] Cannot notify parent - expandedId:", expandedId, "selectedFile.id:", selectedFile?.id, "onAnnotationCreated:", !!onAnnotationCreated);
+        console.warn(
+          "[MiddleMovFilesPanel] Cannot notify parent - expandedId:",
+          expandedId,
+          "selectedFile.id:",
+          selectedFile?.id,
+          "onAnnotationCreated:",
+          !!onAnnotationCreated
+        );
       }
     } catch (error) {
       console.error("[MiddleMovFilesPanel] Failed to create annotation:", error);
@@ -385,7 +401,12 @@ export function MiddleMovFilesPanel({
 
       // Notify parent that annotation was deleted (with file-level tracking)
       if (expandedId && onAnnotationDeleted && selectedFile?.id) {
-        console.log("[MiddleMovFilesPanel] Calling onAnnotationDeleted with movFileId:", selectedFile.id, "remaining:", remainingCountForFile);
+        console.log(
+          "[MiddleMovFilesPanel] Calling onAnnotationDeleted with movFileId:",
+          selectedFile.id,
+          "remaining:",
+          remainingCountForFile
+        );
         onAnnotationDeleted(expandedId, selectedFile.id, remainingCountForFile);
       } else {
         console.warn(
@@ -532,14 +553,16 @@ export function MiddleMovFilesPanel({
             )}
 
             {/* No files at all */}
-            {newFiles.length === 0 && acceptedOldFiles.length === 0 && rejectedOldFiles.length === 0 && (
-              <div className="flex flex-col items-center justify-center text-center p-6">
-                <FileIcon className="h-12 w-12 text-slate-400 dark:text-slate-500 mb-3" />
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  No files uploaded for this indicator
-                </p>
-              </div>
-            )}
+            {newFiles.length === 0 &&
+              acceptedOldFiles.length === 0 &&
+              rejectedOldFiles.length === 0 && (
+                <div className="flex flex-col items-center justify-center text-center p-6">
+                  <FileIcon className="h-12 w-12 text-slate-400 dark:text-slate-500 mb-3" />
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    No files uploaded for this indicator
+                  </p>
+                </div>
+              )}
           </div>
         ) : (
           /* Normal mode: Show all files */

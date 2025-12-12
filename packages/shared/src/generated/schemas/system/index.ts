@@ -699,6 +699,25 @@ export interface PublishYearResponse {
 
 
 /**
+ * RefreshAnalysisResponse
+ */
+export interface RefreshAnalysisResponse {
+  /** Status message */
+  message: string;
+  /** Whether the cache was successfully invalidated */
+  cache_invalidated: boolean;
+  /** Refreshed top rework/calibration reasons */
+  top_rework_reasons?: RefreshAnalysisResponseTopReworkReasons;
+}
+
+
+/**
+ * RefreshAnalysisResponseTopReworkReasons
+ */
+export type RefreshAnalysisResponseTopReworkReasons = TopReworkReasons | null;
+
+
+/**
  * ReportMetadata
  */
 export interface ReportMetadata {

@@ -342,10 +342,10 @@ function BBIDetailView({
 
       <Card className="rounded-lg border-[var(--border)] shadow-sm bg-[var(--card)]">
         <CardHeader className="pb-2 border-b border-[var(--border)]">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
               <CardTitle className="text-xl font-bold text-[var(--foreground)]">
-                {bbiFullName} ({bbiName})
+                {bbiFullName}
               </CardTitle>
               <p className="text-sm text-[var(--muted-foreground)] mt-1">
                 Functionality distribution across {totalBarangays} of{" "}
@@ -354,7 +354,7 @@ function BBIDetailView({
             </div>
             <button
               onClick={onBack}
-              className="text-sm px-4 py-2 rounded-lg bg-[var(--muted)]/50 text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
+              className="text-sm px-4 py-2 rounded-lg bg-[var(--muted)]/50 text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors whitespace-nowrap flex-shrink-0"
             >
               ← Back to Overview
             </button>

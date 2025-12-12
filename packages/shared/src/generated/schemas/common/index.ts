@@ -1352,6 +1352,29 @@ export type WorkflowMetricsCountsByStatus = {[key: string]: number};
 
 
 /**
+ * WorkflowStatusBreakdown
+ */
+export interface WorkflowStatusBreakdown {
+  /** Barangays with no assessment started */
+  not_started?: number;
+  /** Assessments in DRAFT status */
+  draft?: number;
+  /** Assessments in SUBMITTED status */
+  submitted?: number;
+  /** Assessments in IN_REVIEW status */
+  in_review?: number;
+  /** Assessments in REWORK status */
+  rework?: number;
+  /** Assessments in AWAITING_FINAL_VALIDATION */
+  awaiting_validation?: number;
+  /** Assessments in AWAITING_MLGOO_APPROVAL */
+  awaiting_approval?: number;
+  /** Assessments in COMPLETED status */
+  completed?: number;
+}
+
+
+/**
  * YearPlaceholderInfo
  */
 export interface YearPlaceholderInfo {

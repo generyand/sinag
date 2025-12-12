@@ -87,7 +87,10 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         }
       });
       setReworkFlags(initial);
-      console.log("[AssessorValidationClient] Initialized reworkFlags from API (file-level + manual):", initial);
+      console.log(
+        "[AssessorValidationClient] Initialized reworkFlags from API (file-level + manual):",
+        initial
+      );
     }
   }, [data]);
 
@@ -110,7 +113,12 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
   // Callback when assessor creates an annotation - add file to rework set
   const handleAnnotationCreated = (responseId: number, movFileId: number) => {
-    console.log("[AssessorValidationClient] handleAnnotationCreated - adding file to flag:", responseId, "movFileId:", movFileId);
+    console.log(
+      "[AssessorValidationClient] handleAnnotationCreated - adding file to flag:",
+      responseId,
+      "movFileId:",
+      movFileId
+    );
     setReworkFlags((prev) => {
       const existingSet = prev[responseId] || new Set();
       const newSet = new Set(existingSet);
@@ -120,8 +128,19 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   };
 
   // Callback when assessor deletes an annotation - remove file from set if no annotations remain for that file
-  const handleAnnotationDeleted = (responseId: number, movFileId: number, remainingCountForFile: number) => {
-    console.log("[AssessorValidationClient] handleAnnotationDeleted:", responseId, "movFileId:", movFileId, "remaining:", remainingCountForFile);
+  const handleAnnotationDeleted = (
+    responseId: number,
+    movFileId: number,
+    remainingCountForFile: number
+  ) => {
+    console.log(
+      "[AssessorValidationClient] handleAnnotationDeleted:",
+      responseId,
+      "movFileId:",
+      movFileId,
+      "remaining:",
+      remainingCountForFile
+    );
     if (remainingCountForFile === 0) {
       setReworkFlags((prev) => {
         const existingSet = prev[responseId];
@@ -406,10 +425,14 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               // Only show as completed if assessor did NEW work after BLGU resubmitted
               if (hasChecklistData || hasLocalComments) {
                 status = "completed";
-                console.log(`[Status Calc] Response ${resp.id} → 'completed' (new work on rework indicator)`);
+                console.log(
+                  `[Status Calc] Response ${resp.id} → 'completed' (new work on rework indicator)`
+                );
               } else {
                 status = "needs_rework";
-                console.log(`[Status Calc] Response ${resp.id} → 'needs_rework' (waiting for BLGU)`);
+                console.log(
+                  `[Status Calc] Response ${resp.id} → 'needs_rework' (waiting for BLGU)`
+                );
               }
             }
             // If NOT waiting for BLGU, check all sources of "completed" work
@@ -595,7 +618,9 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         `[onSaveDraft] Response ${r.id}: hasStatus=${hasStatus}, hasChecklistData=${hasChecklistData}, hasComments=${hasComments}, hasReworkFlag=${hasReworkFlag}, needsToClearReworkFlag=${needsToClearReworkFlag}`
       );
 
-      return hasStatus || hasChecklistData || hasComments || hasReworkFlag || needsToClearReworkFlag;
+      return (
+        hasStatus || hasChecklistData || hasComments || hasReworkFlag || needsToClearReworkFlag
+      );
     });
 
     const allResponseIds = new Set(responsesToSave.map((r) => r.id));
@@ -945,7 +970,9 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 size="default"
                 type="button"
                 onClick={onSendRework}
-                disabled={!hasIndicatorsFlaggedForRework || reworkCount !== 0 || reworkMut.isPending}
+                disabled={
+                  !hasIndicatorsFlaggedForRework || reworkCount !== 0 || reworkMut.isPending
+                }
                 className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90"
                 style={{ background: "var(--cityscape-yellow)" }}
                 title={

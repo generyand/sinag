@@ -4,6 +4,7 @@
 // 🏷️  Based on FastAPI tag: "compliance"
 
 import type { ParentIndicatorCompliance } from '../indicators';
+import type { WorkflowStatusBreakdown } from '../common';
 import type { OverallComplianceResponseAssessmentCycle } from '../assessments';
 
 /**
@@ -92,6 +93,14 @@ export interface MunicipalComplianceSummary {
   pending_mlgoo_approval: number;
   /** Number of assessments in progress (draft/submitted/rework) */
   in_progress: number;
+  /** Detailed breakdown of assessments by workflow status */
+  workflow_breakdown?: WorkflowStatusBreakdown;
+  /** Assessments stuck in same status for >14 days */
+  stalled_assessments?: number;
+  /** Percentage of assessments that required rework (0-100) */
+  rework_rate?: number;
+  /** Weighted progress based on workflow stages (0-100). Each stage has a weight: DRAFT=10%, SUBMITTED=25%, IN_REVIEW=40%, AWAITING_VALIDATION=55%, AWAITING_APPROVAL=70%, COMPLETED=100% */
+  weighted_progress?: number;
 }
 
 
