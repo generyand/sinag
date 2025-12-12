@@ -501,13 +501,13 @@ class BBIService:
         sub_indicator: Indicator,
     ) -> dict[str, Any]:
         """
-        Evaluate if a sub-indicator passes based on checklist item validation results.
+        Evaluate if a sub-indicator passes based on validator decision.
 
         Priority:
-        1. Calculate from checklist items (met/unmet) - source of truth
-        2. Fall back to stored validator decision if no checklist items
+        1. Use stored validation_status (set by Validator/MLGOO) - authoritative source
+        2. Fall back to calculating from checklist items if no validation_status
 
-        This ensures BBI status matches GAR validation results.
+        This ensures BBI status respects validator decisions and MLGOO overrides.
 
         Args:
             db: Database session
@@ -535,43 +535,46 @@ class BBIService:
             .first()
         )
 
-        # Calculate indicator status from checklist items (same logic as GAR)
+        # PRIORITY 1: Use stored validation_status (validator/MLGOO decision)
+        # This is the authoritative source of truth
         calculated_status = None
-
-        # Get checklist items for this sub-indicator
-        checklist_items = (
-            db.query(ChecklistItem)
-            .filter(ChecklistItem.indicator_id == sub_indicator.id)
-            .order_by(ChecklistItem.display_order)
-            .all()
-        )
-
-        # Filter to minimum requirements and get validation results
-        gar_checklist = []
-        for item in checklist_items:
-            if not is_minimum_requirement(item.label, item.item_type, sub_indicator.indicator_code):
-                continue
-            validation_result = get_checklist_validation_result(item, response)
-            display_label = clean_checklist_label(item.label, sub_indicator.indicator_code)
-            gar_checklist.append(
-                {
-                    "item_id": item.item_id,
-                    "label": display_label,
-                    "validation_result": validation_result,
-                }
-            )
-
-        # Calculate status from checklist items if available
-        if gar_checklist:
-            calculated_status = calculate_indicator_status_from_checklist(
-                gar_checklist,
-                sub_indicator.indicator_code,
-                sub_indicator.validation_rule,
-            )
-
-        # Fallback to stored validator decision if no checklist items
-        if calculated_status is None and response and response.validation_status:
+        if response and response.validation_status:
             calculated_status = response.validation_status.value
+
+        # FALLBACK: Calculate from checklist items only if no validation_status
+        if calculated_status is None:
+            # Get checklist items for this sub-indicator
+            checklist_items = (
+                db.query(ChecklistItem)
+                .filter(ChecklistItem.indicator_id == sub_indicator.id)
+                .order_by(ChecklistItem.display_order)
+                .all()
+            )
+
+            # Filter to minimum requirements and get validation results
+            gar_checklist = []
+            for item in checklist_items:
+                if not is_minimum_requirement(
+                    item.label, item.item_type, sub_indicator.indicator_code
+                ):
+                    continue
+                validation_result = get_checklist_validation_result(item, response)
+                display_label = clean_checklist_label(item.label, sub_indicator.indicator_code)
+                gar_checklist.append(
+                    {
+                        "item_id": item.item_id,
+                        "label": display_label,
+                        "validation_result": validation_result,
+                    }
+                )
+
+            # Calculate status from checklist items if available
+            if gar_checklist:
+                calculated_status = calculate_indicator_status_from_checklist(
+                    gar_checklist,
+                    sub_indicator.indicator_code,
+                    sub_indicator.validation_rule,
+                )
 
         # Sub-indicator passes if calculated status is PASS or CONDITIONAL
         passed = calculated_status in ("PASS", "CONDITIONAL")
