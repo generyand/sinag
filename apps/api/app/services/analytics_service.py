@@ -1349,8 +1349,25 @@ class AnalyticsService:
             lng = getattr(barangay, "longitude", None) or getattr(barangay, "lng", None)
 
             # Build assessment status from area_results
+            # If area_results is missing but assessment is completed, compute it on-the-fly
             assessment_status = None
-            if assessment.area_results:
+            area_results_data = assessment.area_results
+
+            # For completed assessments without area_results, compute from responses
+            if not area_results_data and assessment.status in [
+                AssessmentStatus.COMPLETED,
+                AssessmentStatus.AWAITING_MLGOO_APPROVAL,
+                AssessmentStatus.AWAITING_FINAL_VALIDATION,
+            ]:
+                from app.services.intelligence_service import intelligence_service
+
+                try:
+                    area_results_data = intelligence_service.get_all_area_results(db, assessment.id)
+                except Exception:
+                    # If computation fails, continue without area_results
+                    pass
+
+            if area_results_data:
                 # Build Core indicators
                 core_indicators: list[GovernanceAreaIndicator] = []
                 core_passed = 0
@@ -1358,7 +1375,7 @@ class AnalyticsService:
                     # area_results uses full area name as key
                     area_name = str(area["name"])
                     area_code = str(area["code"])
-                    area_result = assessment.area_results.get(area_name)
+                    area_result = area_results_data.get(area_name)
                     indicator_status: Literal["passed", "failed", "pending"]
                     if area_result is not None:
                         indicator_status = "passed" if area_result.lower() == "passed" else "failed"
@@ -1378,7 +1395,7 @@ class AnalyticsService:
                 for area in GOVERNANCE_AREAS["essential"]:
                     area_name = str(area["name"])
                     area_code = str(area["code"])
-                    area_result = assessment.area_results.get(area_name)
+                    area_result = area_results_data.get(area_name)
                     indicator_status_e: Literal["passed", "failed", "pending"]
                     if area_result is not None:
                         indicator_status_e = (
