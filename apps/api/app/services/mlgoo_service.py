@@ -514,7 +514,9 @@ class MLGOOService:
         assessment.mlgoo_recalibration_requested_by = mlgoo_user.id
         assessment.mlgoo_recalibration_requested_at = datetime.utcnow()
         assessment.mlgoo_recalibration_count += 1
-        assessment.mlgoo_recalibration_indicator_ids = indicator_ids  # Also set indicators for backward compatibility
+        assessment.mlgoo_recalibration_indicator_ids = (
+            indicator_ids  # Also set indicators for backward compatibility
+        )
         assessment.mlgoo_recalibration_mov_file_ids = [
             {"mov_file_id": item["mov_file_id"], "comment": item.get("comment")}
             for item in mov_files
@@ -552,14 +554,20 @@ class MLGOOService:
         for item in mov_files:
             mov_file = mov_file_lookup.get(item["mov_file_id"])
             if mov_file:
-                flagged_mov_files.append({
-                    "mov_file_id": mov_file.id,
-                    "file_name": mov_file.file_name,
-                    "indicator_id": mov_file.indicator_id,
-                    "indicator_code": mov_file.indicator.indicator_code if mov_file.indicator else None,
-                    "indicator_name": mov_file.indicator.name if mov_file.indicator else "Unknown",
-                    "comment": item.get("comment"),
-                })
+                flagged_mov_files.append(
+                    {
+                        "mov_file_id": mov_file.id,
+                        "file_name": mov_file.file_name,
+                        "indicator_id": mov_file.indicator_id,
+                        "indicator_code": mov_file.indicator.indicator_code
+                        if mov_file.indicator
+                        else None,
+                        "indicator_name": mov_file.indicator.name
+                        if mov_file.indicator
+                        else "Unknown",
+                        "comment": item.get("comment"),
+                    }
+                )
 
         self.logger.info(
             f"MLGOO {mlgoo_user.name} requested MOV file RE-calibration for assessment {assessment_id} "
@@ -1053,7 +1061,6 @@ class MLGOOService:
             "updated_at": datetime.utcnow().isoformat(),
         }
 
-
     def override_validation_status(
         self,
         db: Session,
@@ -1117,9 +1124,7 @@ class MLGOOService:
             )
 
         # Store previous status for logging
-        previous_status = (
-            response.validation_status.value if response.validation_status else None
-        )
+        previous_status = response.validation_status.value if response.validation_status else None
 
         # Update the validation status
         response.validation_status = new_status

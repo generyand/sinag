@@ -283,8 +283,7 @@ async def request_recalibration_by_mov(
     try:
         # Convert Pydantic models to dicts for the service
         mov_files = [
-            {"mov_file_id": item.mov_file_id, "comment": item.comment}
-            for item in request.mov_files
+            {"mov_file_id": item.mov_file_id, "comment": item.comment} for item in request.mov_files
         ]
         result = mlgoo_service.request_recalibration_by_mov(
             db=db,
