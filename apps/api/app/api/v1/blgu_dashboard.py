@@ -698,6 +698,16 @@ def get_blgu_dashboard(
             area_indicator_counts: dict[str, dict[str, int]] = {}
             area_indicator_statuses: dict[str, list[str | None]] = {}
 
+            # Get BBI results for this assessment to check BBI 4-tier status (same as GAR)
+            # BBI 4-tier rule per DILG MC 2024-417:
+            # For BBI indicators, FAIL only means NON_FUNCTIONAL (0%).
+            # LOW_FUNCTIONAL, MODERATELY_FUNCTIONAL, HIGHLY_FUNCTIONAL all count as PASS.
+            from app.db.enums import BBIStatus
+            from app.db.models.bbi import BBIResult
+
+            bbi_results = db.query(BBIResult).filter(BBIResult.assessment_id == assessment.id).all()
+            bbi_results_map = {r.indicator_id: r for r in bbi_results if r.indicator_id}
+
             for area_name in assessment.area_results.keys():
                 area_indicator_counts[area_name] = {
                     "total": 0,
@@ -749,33 +759,50 @@ def get_blgu_dashboard(
                             }
                         )
 
-                    # Calculate indicator status from checklist items
-                    calculated_status = None
-                    if gar_checklist:
-                        calculated_status = calculate_indicator_status_from_checklist(
-                            gar_checklist,
-                            indicator.indicator_code,
-                            indicator.validation_rule,
-                        )
-
-                    # Fallback to stored validator decision if no checklist items
-                    if calculated_status is None and response and response.validation_status:
-                        calculated_status = (
+                    # FIRST: Check if there's a stored validation_status (set by Validator or MLGOO)
+                    # This is the authoritative decision and should be used (same as GAR)
+                    validation_status = None
+                    if response and response.validation_status:
+                        validation_status = (
                             response.validation_status.value
                             if hasattr(response.validation_status, "value")
                             else response.validation_status
                         )
 
-                    # Count the calculated status
+                    # FALLBACK: Only calculate from checklist if no validation_status is set
+                    if validation_status is None and gar_checklist:
+                        validation_status = calculate_indicator_status_from_checklist(
+                            gar_checklist,
+                            indicator.indicator_code,
+                            indicator.validation_rule,
+                        )
+
+                    # Skip profiling-only indicators - they don't affect pass/fail (same as GAR)
+                    if indicator.is_profiling_only:
+                        continue
+
+                    # Apply BBI 4-tier rule (same as GAR)
+                    # For BBI indicators, FAIL only counts if NON_FUNCTIONAL (0%)
+                    # LOW_FUNCTIONAL, MODERATELY_FUNCTIONAL, HIGHLY_FUNCTIONAL count as PASS
+                    effective_status = validation_status
+                    if validation_status == "FAIL" and indicator.is_bbi:
+                        bbi_result = bbi_results_map.get(indicator.id)
+                        if bbi_result:
+                            # Only NON_FUNCTIONAL is truly a fail for BBI
+                            if bbi_result.compliance_rating != BBIStatus.NON_FUNCTIONAL.value:
+                                effective_status = "PASS"  # BBI 4-tier: treat as pass
+
+                    # Count the effective status (after BBI 4-tier adjustment)
                     area_indicator_counts[area_name]["total"] += 1
-                    if calculated_status == "PASS":
+                    if effective_status == "PASS":
                         area_indicator_counts[area_name]["passed"] += 1
-                    elif calculated_status == "FAIL":
+                    elif effective_status == "FAIL":
                         area_indicator_counts[area_name]["failed"] += 1
-                    elif calculated_status == "CONDITIONAL":
+                    elif effective_status == "CONDITIONAL":
                         area_indicator_counts[area_name]["conditional"] += 1
 
-                    area_indicator_statuses[area_name].append(calculated_status)
+                    # Use effective status for area result calculation
+                    area_indicator_statuses[area_name].append(effective_status)
 
             # Build area_results_list with CALCULATED governance area results
             area_results_list = []
@@ -790,22 +817,23 @@ def get_blgu_dashboard(
                 indicator_statuses = area_indicator_statuses.get(area_name, [])
                 calculated_area_result = calculate_governance_area_result(indicator_statuses)
 
+                # Determine area type - normalize to title case for frontend consistency
+                if ga and ga.area_type:
+                    area_type_value = ga.area_type.value.title()  # "CORE" -> "Core"
+                elif area_name in [
+                    "Financial Administration and Sustainability",
+                    "Disaster Preparedness",
+                    "Safety, Peace and Order",
+                ]:
+                    area_type_value = "Core"
+                else:
+                    area_type_value = "Essential"
+
                 area_results_list.append(
                     {
                         "area_id": ga.id if ga else None,
                         "area_name": area_name,
-                        "area_type": ga.area_type.value
-                        if ga and ga.area_type
-                        else (
-                            "Core"
-                            if area_name
-                            in [
-                                "Financial Administration and Sustainability",
-                                "Disaster Preparedness",
-                                "Safety, Peace and Order",
-                            ]
-                            else "Essential"
-                        ),
+                        "area_type": area_type_value,
                         "passed": calculated_area_result == "Passed",
                         "total_indicators": counts["total"],
                         # SGLGB Rule: Conditional = Considered = PASS (counts toward passing)
