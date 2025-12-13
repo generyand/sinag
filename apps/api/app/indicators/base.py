@@ -54,6 +54,7 @@ class ChecklistItem:
     display_order: int = 0  # Sort order within indicator
     option_group: str | None = None  # Option group for OR logic (e.g., "Option A", "Option B")
     field_notes: FieldNotes | None = None  # Notes displayed below this field
+    is_profiling_only: bool = False  # If true, doesn't affect pass/fail (for data collection only)
 
 
 @dataclass

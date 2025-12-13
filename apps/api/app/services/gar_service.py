@@ -220,9 +220,9 @@ class GARService:
             # Build checklist items with validation results - FILTER to only minimum requirements
             gar_checklist = []
             for item in checklist_items:
-                # Filter: only include minimum requirements, not MOV items
+                # Filter: only include minimum requirements, not MOV items or profiling-only items
                 if not self._is_minimum_requirement(
-                    item.label, item.item_type, indicator.indicator_code
+                    item.label, item.item_type, indicator.indicator_code, item.is_profiling_only
                 ):
                     continue
 
@@ -496,7 +496,11 @@ class GARService:
         return len(indicator_code.split("."))
 
     def _is_minimum_requirement(
-        self, label: str, item_type: str, indicator_code: str = None
+        self,
+        label: str,
+        item_type: str,
+        indicator_code: str = None,
+        is_profiling_only: bool = False,
     ) -> bool:
         """
         Filter to determine if a checklist item should appear in GAR.
@@ -508,7 +512,12 @@ class GARService:
         GAR does NOT show:
         - MOV items (Monitoring Forms, Photo Documentation, signatures)
         - Data entry fields (Total amount, Date of Approval, SRE, Certification)
+        - Profiling-only items (FOR PROFILING - doesn't affect pass/fail)
         """
+        # Profiling-only items never count as minimum requirements
+        if is_profiling_only:
+            return False
+
         # Skip info_text items entirely
         if item_type == "info_text":
             return False

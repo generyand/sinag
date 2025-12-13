@@ -293,6 +293,9 @@ class ChecklistItem(Base):
     # Field-level notes (JSONB) - displayed below the field
     field_notes: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
+    # Profiling-only flag - if true, this item doesn't affect pass/fail
+    is_profiling_only: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
+
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now()

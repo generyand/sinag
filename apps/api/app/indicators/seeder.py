@@ -487,6 +487,7 @@ def _seed_sub_indicator(
         form_schema=form_schema,  # Add generated form schema
         is_active=True,
         is_auto_calculable=True,
+        is_profiling_only=sub_def.is_profiling_only,  # Preserve profiling-only flag
         sort_order=sort_order,  # Set sort_order based on position
     )
     db.add(sub_indicator)
@@ -517,6 +518,7 @@ def _seed_sub_indicator(
             display_order=item_def.display_order,
             option_group=item_def.option_group,
             field_notes=field_notes_dict,
+            is_profiling_only=item_def.is_profiling_only,  # Preserve profiling-only flag
         )
         db.add(checklist_item)
 

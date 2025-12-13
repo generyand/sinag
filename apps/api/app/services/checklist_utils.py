@@ -74,10 +74,25 @@ def clean_checklist_label(label: str, indicator_code: str = None) -> str:
     return cleaned_label
 
 
-def is_minimum_requirement(label: str, item_type: str, indicator_code: str = None) -> bool:
+def is_minimum_requirement(
+    label: str, item_type: str, indicator_code: str = None, is_profiling_only: bool = False
+) -> bool:
     """
     Filter to determine if a checklist item is a minimum requirement (for GAR/BBI).
+
+    Args:
+        label: The checklist item label
+        item_type: The type of checklist item (checkbox, info_text, etc.)
+        indicator_code: The indicator code (e.g., "4.5.5")
+        is_profiling_only: If True, this item is for profiling only and doesn't affect pass/fail
+
+    Returns:
+        True if this item should be counted for minimum requirements, False otherwise
     """
+    # Profiling-only items never count as minimum requirements
+    if is_profiling_only:
+        return False
+
     if item_type == "info_text":
         return False
 
