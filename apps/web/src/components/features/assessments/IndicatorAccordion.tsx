@@ -17,7 +17,7 @@ import {
 import { uploadMovFile } from "@/lib/uploadMov";
 import { Assessment, ComplianceAnswer, Indicator } from "@/types/assessment";
 import { postAssessmentsResponses, useGetAssessmentsMyAssessment } from "@sinag/shared";
-import { AlertCircle, CheckCircle } from "lucide-react";
+import { AlertCircle, BarChart3, CheckCircle } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useCallback, useState } from "react";
 import { DynamicFormRenderer } from "../forms/DynamicFormRenderer";
@@ -445,6 +445,16 @@ export function IndicatorAccordion({
                   <p className="text-sm text-[var(--text-secondary)] leading-relaxed max-w-4xl">
                     {indicator.description}
                   </p>
+                )}
+
+                {/* Profiling Only Badge - Dynamic based on indicator data */}
+                {indicator.isProfilingOnly && (
+                  <div className="flex items-center gap-1.5 mt-2 px-2.5 py-1.5 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 w-fit">
+                    <BarChart3 className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span className="text-xs font-medium">
+                      For Profiling Only — Does not affect pass/fail status
+                    </span>
+                  </div>
                 )}
 
                 {/* Progress Metadata (Only when collapsed) */}

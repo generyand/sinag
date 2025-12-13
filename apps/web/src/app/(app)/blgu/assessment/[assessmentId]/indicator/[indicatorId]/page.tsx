@@ -8,7 +8,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, ArrowLeft, RefreshCw } from "lucide-react";
+import { AlertCircle, ArrowLeft, RefreshCw, BarChart3 } from "lucide-react";
 import { DynamicFormRenderer } from "@/components/features/forms/DynamicFormRenderer";
 import { LockedStateBanner } from "@/components/features/assessments";
 import { ReworkAlertBanner, ReworkProgressTracker } from "@/components/features/rework";
@@ -235,6 +235,17 @@ export default function IndicatorFormPage() {
           </h1>
           {indicator?.description && (
             <p className="text-muted-foreground">{indicator.description}</p>
+          )}
+
+          {/* Profiling Only Badge - Dynamic based on indicator data */}
+          {indicator?.is_profiling_only && (
+            <div className="flex items-center gap-2 mt-3 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 w-fit">
+              <BarChart3 className="h-4 w-4 flex-shrink-0" />
+              <span className="text-sm font-medium">
+                For Profiling Only — This indicator is for data collection purposes and does not
+                affect your barangay&apos;s pass/fail status.
+              </span>
+            </div>
           )}
         </div>
       </div>

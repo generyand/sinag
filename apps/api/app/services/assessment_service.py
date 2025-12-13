@@ -325,7 +325,7 @@ class AssessmentService:
                     ga.id as ga_id, ga.name as ga_name, ga.area_type,
                     i.id as ind_id, i.name as ind_name, i.description,
                     i.indicator_code, i.form_schema, i.governance_area_id,
-                    i.parent_id, i.sort_order
+                    i.parent_id, i.sort_order, i.is_profiling_only
                 FROM governance_areas ga
                 LEFT JOIN indicators i ON i.governance_area_id = ga.id
                 ORDER BY ga.id, i.sort_order, i.indicator_code
@@ -366,6 +366,7 @@ class AssessmentService:
                             "governance_area_id": row[8],
                             "parent_id": row[9],
                             "sort_order": row[10],
+                            "is_profiling_only": row[11] if len(row) > 11 else False,
                             # Will be filled in from query 3
                             "response_id": None,
                             "response_data": None,
@@ -649,6 +650,7 @@ class AssessmentService:
                 "name": ind.get("name"),
                 "description": ind.get("description"),
                 "form_schema": ind.get("form_schema"),
+                "is_profiling_only": ind.get("is_profiling_only", False),
                 "response": response_obj,
                 "movs": movs_list,
                 "feedback_comments": comments_list,

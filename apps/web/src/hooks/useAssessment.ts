@@ -292,6 +292,8 @@ export function useCurrentAssessment() {
         },
       },
       responseData: indicator.response?.response_data || {},
+      // Map is_profiling_only from API to camelCase for frontend
+      isProfilingOnly: (indicator as any).is_profiling_only === true,
       children: (indicator.children || []).map((child) => mapIndicatorTree(areaId, child)),
     };
     return mapped;
