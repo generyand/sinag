@@ -555,7 +555,7 @@ class BBIService:
             gar_checklist = []
             for item in checklist_items:
                 if not is_minimum_requirement(
-                    item.label, item.item_type, sub_indicator.indicator_code
+                    item.label, item.item_type, sub_indicator.indicator_code, item.is_profiling_only
                 ):
                     continue
                 validation_result = get_checklist_validation_result(item, response)

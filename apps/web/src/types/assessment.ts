@@ -48,6 +48,7 @@ export interface Indicator {
   responseData?: Record<string, unknown>; // Form response data
   requiresRework?: boolean; // Editable during Needs Rework when true
   responseId?: number | null; // Backend response id for mutations
+  isProfilingOnly?: boolean; // For data collection only, does not affect pass/fail
 }
 
 export interface MOVFile {

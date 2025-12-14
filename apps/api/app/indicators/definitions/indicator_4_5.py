@@ -155,6 +155,7 @@ INDICATOR_4_5 = Indicator(
                     item_type="checkbox",
                     required=False,  # Profiling only - not required for pass/fail
                     display_order=2,
+                    is_profiling_only=True,  # FOR PROFILING ONLY - doesn't affect pass/fail
                 ),
                 ChecklistItem(
                     id="4_5_5_c",
@@ -163,6 +164,7 @@ INDICATOR_4_5 = Indicator(
                     item_type="checkbox",
                     required=False,  # Profiling only - not required for pass/fail
                     display_order=3,
+                    is_profiling_only=True,  # FOR PROFILING ONLY - doesn't affect pass/fail
                 ),
             ],
         ),
