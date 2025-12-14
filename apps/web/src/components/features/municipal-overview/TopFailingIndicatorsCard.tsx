@@ -4,10 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle } from "lucide-react";
 import { AnalyticsEmptyState } from "@/components/features/analytics";
+import { formatIndicatorName } from "@/lib/utils/text-formatter";
 import type { TopFailingIndicatorsList, FailingIndicator } from "@sinag/shared";
 
 interface TopFailingIndicatorsCardProps {
   data: TopFailingIndicatorsList | null | undefined;
+  year?: number;
 }
 
 /**
@@ -28,8 +30,9 @@ function getFailRateSeverity(rate: number): { text: string; bg: string; label: s
   return { text: "text-gray-700", bg: "bg-gray-100", label: "Low" };
 }
 
-export function TopFailingIndicatorsCard({ data }: TopFailingIndicatorsCardProps) {
+export function TopFailingIndicatorsCard({ data, year }: TopFailingIndicatorsCardProps) {
   const hasData = data && data.indicators && data.indicators.length > 0;
+  const displayYear = year ?? new Date().getFullYear();
 
   return (
     <Card>
@@ -72,7 +75,7 @@ export function TopFailingIndicatorsCard({ data }: TopFailingIndicatorsCardProps
                         </Badge>
                       </div>
                       <p className="font-medium text-sm text-[var(--foreground)]">
-                        {indicator.indicator_name}
+                        {formatIndicatorName(indicator.indicator_name, displayYear)}
                       </p>
                       <p className="text-xs text-[var(--muted-foreground)]">
                         {indicator.governance_area}

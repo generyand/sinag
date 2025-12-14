@@ -879,9 +879,9 @@ def get_blgu_dashboard(
 
             # Apply 3+1 rule
             if all_core_passed and at_least_one_essential_passed:
-                final_compliance_status = "PASS"
+                final_compliance_status = "PASSED"
             else:
-                final_compliance_status = "FAIL"
+                final_compliance_status = "FAILED"
 
         # AI recommendations (CapDev)
         ai_recommendations = assessment.ai_recommendations

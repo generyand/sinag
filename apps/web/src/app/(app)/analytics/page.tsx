@@ -392,7 +392,10 @@ export default function AnalyticsPage() {
                       })) ?? []
                     }
                   />
-                  <TopFailingIndicatorsCard data={municipalData.top_failing_indicators} />
+                  <TopFailingIndicatorsCard
+                    data={municipalData.top_failing_indicators}
+                    year={selectedYear ?? undefined}
+                  />
                 </div>
 
                 {/* Aggregated CapDev Insights */}
