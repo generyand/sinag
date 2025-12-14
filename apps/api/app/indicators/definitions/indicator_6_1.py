@@ -42,7 +42,7 @@ IMPORTANT NOTES FOR PHASE 9 (VALIDATION SERVICE):
    - Failing means BESWMC is "Non-Functional"
 """
 
-from app.indicators.base import ChecklistItem, Indicator, SubIndicator
+from app.indicators.base import ChecklistItem, FormNotes, Indicator, NoteItem, SubIndicator
 
 # Indicator 6.1: Functionality of the Barangay Ecological Solid Waste Management Committee (BESWMC)
 INDICATOR_6_1 = Indicator(
@@ -123,6 +123,17 @@ INDICATOR_6_1 = Indicator(
             name="Accomplishment Reports: At least 50% accomplishment (Physical) OR 50% fund utilization (Financial) - covering {JUL_TO_SEP_CURRENT_YEAR}",
             upload_instructions="Upload: Three (3) Monthly Accomplishment Reports",
             validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # OR logic: either physical OR budget
+            notes=FormNotes(
+                title="Requirements:",
+                items=[
+                    NoteItem(
+                        label="a.)",
+                        text="At least 50% accomplishment of the physical targets in the BESWMP",
+                    ),
+                    NoteItem(text="OR"),
+                    NoteItem(label="b.)", text="At least 50% utilization rate of BESWM Budget"),
+                ],
+            ),
             checklist_items=[
                 # Document checkbox
                 ChecklistItem(

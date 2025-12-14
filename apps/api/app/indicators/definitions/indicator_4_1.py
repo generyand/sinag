@@ -138,20 +138,27 @@ INDICATOR_4_1 = Indicator(
         # Sub-Indicator 4.1.4
         SubIndicator(
             code="4.1.4",
-            name="Accomplishment Reports: Quarterly accomplishment reports based on the database/records of VAW cases reported in the barangay covering {Q1_Q3_CURRENT_YEAR} with received stamp by the C/MSWDO and C/MLGOO",
-            upload_instructions=(
-                "Upload: Accomplishment Report covering {Q1_Q3_CURRENT_YEAR} with received stamp by the C/MSWDO and C/MLGOO\n\n"
-                "Quarterly accomplishment reports based on the database/records of VAW cases reported in the barangay "
-                "with the following information at the minimum: total number of VAW cases received, assistance provided to victim-survivors, "
-                "total number of cases documented for violating RA 9262 and other VAW-related laws, total barangay population, number of male "
-                "and female in the barangay, and minor to adult ratio"
-            ),
+            name="Accomplishment Reports: Quarterly accomplishment reports based on the database/records of VAW cases reported in the barangay",
+            upload_instructions="Upload: Quarterly accomplishment reports based on the database/records of VAW cases reported in the barangay",
             validation_rule="ALL_ITEMS_REQUIRED",
+            notes=FormNotes(
+                title="Quarterly accomplishment reports based on the database/records of VAW cases reported in the barangay containing relevant information such as:",
+                items=[
+                    NoteItem(text="total number of VAW cases received"),
+                    NoteItem(text="assistance provided to victim-survivors"),
+                    NoteItem(
+                        text="total number of cases documented for violating RA 9262 and other VAW-related laws"
+                    ),
+                    NoteItem(text="total barangay population"),
+                    NoteItem(text="number of male and female in the barangay"),
+                    NoteItem(text="minor to adult ratio"),
+                ],
+            ),
             checklist_items=[
                 # Upload Verification
                 ChecklistItem(
                     id="4_1_4_upload_1",
-                    label="Accomplishment Report covering 1st to 3rd quarter with received stamp by the C/MSWDO and C/MLGOO",
+                    label="Quarterly accomplishment reports based on the database/records of VAW cases reported in the barangay",
                     mov_description="Verification of uploaded quarterly accomplishment reports based on VAW cases database/records",
                     required=True,
                     display_order=1,
@@ -248,10 +255,10 @@ INDICATOR_4_1 = Indicator(
                 "SHARED (Required):\n"
                 "- GAD Accomplishment Report\n\n"
                 "PLUS ONE of the following (PHYSICAL or FINANCIAL):\n\n"
-                "OPTION A - PHYSICAL:\n"
+                "OPTION A - PHYSICAL: At least 50% accomplishment of the physical targets in the GAD Plan\n"
                 "- Certification on the submitted GAD Accomplishment Report indicating at least 50% accomplishment of the physical targets in the GAD Plan signed by the C/MSWDO or C/MLGOO\n\n"
                 "OR\n\n"
-                "OPTION B - FINANCIAL:\n"
+                "OPTION B - FINANCIAL: At least 50% fund utilization of the GAD Budget\n"
                 "- Certification on the submitted GAD Accomplishment Report indicating at least 50% fund utilization of the GAD Budget signed by the C/MSWDO or C/MLGOO"
             ),
             validation_rule="SHARED_PLUS_OR_LOGIC",  # SHARED + (A OR B)

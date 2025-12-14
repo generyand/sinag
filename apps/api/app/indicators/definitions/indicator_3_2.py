@@ -103,19 +103,33 @@ INDICATOR_3_2 = Indicator(
         # Sub-Indicator 3.2.3: Accomplishment Reports
         SubIndicator(
             code="3.2.3",
-            name="Accomplishment Reports: At least 50% accomplishment (physical OR financial)",
+            name="Accomplishment Reports: At least 50% accomplishment (Physical) OR 50% fund utilization (Financial) - CY {CURRENT_YEAR}",
             upload_instructions=(
                 "Upload:\n"
-                "- (PHYSICAL or/and FINANCIAL) Accomplishment Report with the status of implementation of target activities and utilization of funds "
+                "- Accomplishment Report with the status of implementation of target activities and utilization of funds "
                 "submitted to the C/M POC with received stamp of the DILG City Director or C/MLGOO"
             ),
             validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # OR logic: Physical OR Financial
+            notes=FormNotes(
+                title="Requirements:",
+                items=[
+                    NoteItem(
+                        label="a.)",
+                        text="At least 50% accomplishment of the physical targets in the BPOPs Plan",
+                    ),
+                    NoteItem(text="OR"),
+                    NoteItem(
+                        label="b.)",
+                        text="At least 50% fund utilization rate of the CY {PREVIOUS_YEAR} BPOPs Budget.",
+                    ),
+                ],
+            ),
             checklist_items=[
-                # Single shared upload field for PHYSICAL or/and FINANCIAL (ungrouped - always required)
+                # Single shared upload field (ungrouped - always required)
                 ChecklistItem(
                     id="3_2_3_upload",
-                    label="(PHYSICAL or/and FINANCIAL) Accomplishment Report with the status of implementation of target activities and utilization of funds submitted to the C/M POC with received stamp of the DILG City Director or C/MLGOO",
-                    mov_description="Verification of uploaded Accomplishment Report (PHYSICAL or/and FINANCIAL)",
+                    label="Accomplishment Report with the status of implementation of target activities and utilization of funds submitted to the C/M POC with received stamp of the DILG City Director or C/MLGOO",
+                    mov_description="Verification of uploaded Accomplishment Report",
                     item_type="checkbox",
                     required=True,
                     display_order=1,

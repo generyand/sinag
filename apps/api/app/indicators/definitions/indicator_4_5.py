@@ -47,7 +47,7 @@ IMPORTANT NOTES FOR PHASE 9 (VALIDATION SERVICE):
    - Failing means BCPC is "Non-Functional"
 """
 
-from app.indicators.base import ChecklistItem, Indicator, SubIndicator
+from app.indicators.base import ChecklistItem, FormNotes, Indicator, NoteItem, SubIndicator
 
 # Indicator 4.5: Functionality of the Barangay Council for the Protection of Children (BCPC)
 INDICATOR_4_5 = Indicator(
@@ -171,14 +171,25 @@ INDICATOR_4_5 = Indicator(
         # Sub-Indicator 4.5.6
         SubIndicator(
             code="4.5.6",
-            name="Accomplishment Reports: Physical accomplishment OR financial utilization (only 1 of the below reports is required)",
+            name="Accomplishment Reports: At least 50% accomplishment (Physical) OR 50% fund utilization (Financial) - CY {CURRENT_YEAR}",
             upload_instructions=(
                 "Upload:\n"
-                "- (PHYSICAL or/and FINANCIAL) Approved Accomplishment Report on BCPC AWFP with received stamp by the City/Municipality Inter-Agency Monitoring Task Force (IMTF)"
+                "- Approved Accomplishment Report on BCPC AWFP with received stamp by the City/Municipality Inter-Agency Monitoring Task Force (IMTF)"
             ),
             validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # OR logic: Physical OR Financial
+            notes=FormNotes(
+                title="Requirements:",
+                items=[
+                    NoteItem(
+                        label="a.)",
+                        text="At least 50% accomplishment of the physical targets in the BCPC AWFP",
+                    ),
+                    NoteItem(text="OR"),
+                    NoteItem(label="b.)", text="At least 50% utilization rate of BCPC AWFP Budget"),
+                ],
+            ),
             checklist_items=[
-                # Single shared upload field for PHYSICAL or/and FINANCIAL
+                # Single shared upload field
                 ChecklistItem(
                     id="4_5_6_upload",
                     label="Approved Accomplishment Report on BCPC AWFP with received stamp by the City/Municipality Inter-Agency Monitoring Task Force (IMTF)",

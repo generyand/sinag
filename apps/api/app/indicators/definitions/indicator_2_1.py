@@ -133,14 +133,14 @@ INDICATOR_2_1 = Indicator(
         # Sub-Indicator 2.1.4: Accomplishment Reports
         SubIndicator(
             code="2.1.4",
-            name="Accomplishment Reports: Physical accomplishment OR fund utilization (only 1 of the below reports is required)",
+            name="Accomplishment Reports: At least 50% accomplishment (Physical) OR 50% fund utilization (Financial) - CY {CURRENT_YEAR}",
             upload_instructions=(
                 "Upload the following:\n\n"
-                "OPTION A - PHYSICAL:\n"
+                "OPTION A - PHYSICAL: At least 50% accomplishment of the physical targets in the BDRRM Plan\n"
                 "- Accomplishment Report\n"
                 "- Certification on the submission and correctness of Accomplishment Report signed by the C/MDRRMO\n\n"
                 "OR\n\n"
-                "OPTION B - FINANCIAL:\n"
+                "OPTION B - FINANCIAL: At least 50% fund utilization of the 70% component of CY {PREVIOUS_YEAR} BDRRMF - Preparedness component as of December 31, {PREVIOUS_YEAR}\n"
                 "- Annual LDRRMF Utilization Report\n"
                 "- Certification on the submission and correctness of fund utilization report signed by the C/MDRRMO\n\n"
                 "Note: Choose either Option A (Physical) OR Option B (Financial). Only ONE option is required."

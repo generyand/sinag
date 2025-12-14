@@ -106,8 +106,12 @@ def _parse_upload_sections_from_instructions(
                     }
                 )
             # Detect option headers (e.g., "OPTION A - PHYSICAL:" or "OPTION 1:")
-            elif "OPTION" in line_upper and (
-                not line_stripped[0].isdigit() if line_stripped else True
+            # Skip lines that start with "Note:" or other informational prefixes
+            elif (
+                "OPTION" in line_upper
+                and (not line_stripped[0].isdigit() if line_stripped else True)
+                and not line_upper.startswith("NOTE:")
+                and not line_upper.startswith("NOTE ")
             ):
                 current_section = line_stripped
                 # Extract option letter (A, B, C) or number (1, 2, 3) for grouping
