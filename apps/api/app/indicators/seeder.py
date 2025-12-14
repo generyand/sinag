@@ -137,13 +137,13 @@ def _parse_upload_sections_from_instructions(
                         "option_group": current_option_id,
                     }
                 )
-            # Detect "OR" separators
-            elif line_upper == "OR":
+            # Detect "OR" or "AND/OR" separators
+            elif line_upper == "OR" or line_upper == "AND/OR":
                 upload_sections.append(
                     {
                         "field_id": f"or_separator_{len(upload_sections) + 1}",
                         "field_type": "info_text",
-                        "label": "OR",
+                        "label": line_stripped,  # Use original casing (OR or AND/OR)
                         "description": "",
                         "required": False,
                     }
@@ -228,6 +228,11 @@ def _parse_upload_sections_from_instructions(
             "components:",
             "criteria:",
             "note:",  # Notes are informational
+            "a.",  # Alphabetical list items are informational
+            "b.",
+            "c.",
+            "d.",
+            "e.",
         ]
 
         # Also check if the numbered items appear AFTER an informational header
@@ -251,6 +256,20 @@ def _parse_upload_sections_from_instructions(
             # Reset if we hit "Upload" again (new upload section)
             if line_lower.startswith("upload") and ":" in line_lower:
                 in_informational_section = False
+
+            # Detect "OR" or "AND/OR" separators in numbered sections
+            line_upper = line_stripped.upper()
+            if line_upper == "OR" or line_upper == "AND/OR":
+                upload_sections.append(
+                    {
+                        "field_id": f"or_separator_{len(upload_sections) + 1}",
+                        "field_type": "info_text",
+                        "label": line_stripped,  # Use original casing
+                        "description": "",
+                        "required": False,
+                    }
+                )
+                continue
 
             # Look for numbered items (e.g., "1.", "2.", etc.)
             if line_stripped and line_stripped[0].isdigit() and "." in line_stripped[:3]:
@@ -282,10 +301,22 @@ def _parse_upload_sections_from_instructions(
         # If no numbered sections found, check for bullet point format or extract from first line
         if not upload_sections:
             # First, check for bullet point items (lines starting with "-")
+            # But skip bullets that are part of informational sections (after a., b., etc.)
             bullet_counter = 0
+            in_info_section = False
             for line in lines:
                 line_stripped = line.strip()
+                line_lower = line_stripped.lower()
+
+                # Check if entering an informational section (a., b., etc.)
+                if any(line_lower.startswith(h) for h in informational_header_starts):
+                    in_info_section = True
+                    continue
+
+                # Skip bullets in informational sections
                 if line_stripped.startswith("-"):
+                    if in_info_section:
+                        continue
                     bullet_counter += 1
                     label = line_stripped[1:].strip()  # Remove leading "-"
                     upload_sections.append(

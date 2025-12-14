@@ -121,19 +121,7 @@ INDICATOR_6_1 = Indicator(
         SubIndicator(
             code="6.1.4",
             name="Accomplishment Reports: At least 50% accomplishment (Physical) OR 50% fund utilization (Financial) - covering {JUL_TO_SEP_CURRENT_YEAR}",
-            upload_instructions=(
-                "Upload:\n"
-                "- Three (3) Monthly Accomplishment Reports\n\n"
-                "OPTION A - PHYSICAL:\n"
-                "To compute Physical Accomplishment Rate:\n"
-                "(Total number of activities/projects accomplished / Total number of activities/projects reflected in the BESWMP) × 100\n\n"
-                "OR\n\n"
-                "OPTION B - FINANCIAL:\n"
-                "Amount utilized (as of {DEC_31_PREVIOUS_YEAR}):\n"
-                "Amount allocated for PPAs in the BESWM Plan:\n\n"
-                "To compute % utilization:\n"
-                "(Total Amount Utilized / Total Amount Allocated) × 100"
-            ),
+            upload_instructions="Upload: Three (3) Monthly Accomplishment Reports",
             validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # OR logic: either physical OR budget
             checklist_items=[
                 # Document checkbox

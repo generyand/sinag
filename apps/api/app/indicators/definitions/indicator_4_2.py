@@ -79,7 +79,10 @@ INDICATOR_4_2 = Indicator(
             code="4.2.2",
             name="Appointment of the following Barangay Health Personnel: (FOR PROFILING) covering {JAN_TO_OCT_CURRENT_YEAR}",
             upload_instructions=(
-                "Upload EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the Appointment of BHW and/or BHO or BHAsst"
+                "Upload the following:\n\n"
+                "1. EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the Appointment of BHW\n\n"
+                "AND/OR\n\n"
+                "2. EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) on the Appointment of BHO or BHAsst"
             ),
             validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # At least one of the two personnel types
             is_profiling_only=True,  # FOR PROFILING ONLY - doesn't affect pass/fail

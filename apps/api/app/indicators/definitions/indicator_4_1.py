@@ -346,8 +346,8 @@ INDICATOR_4_1 = Indicator(
             name="Referral Network: Presence of referral system and directory (FOR PROFILING)",
             upload_instructions=(
                 "Upload the following (both required):\n\n"
-                "1. 4.1.7.1. Presence of Referral System Flow Chart (For profiling)\n"
-                "2. 4.1.7.2. Presence of Directory of agencies/individuals providing services to victim-survivors (For profiling)"
+                "1. Flow Chart based on Annex C - Establishment of Referral System\n"
+                "2. Annex J - Directory Form"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             is_profiling_only=True,  # FOR PROFILING ONLY - doesn't affect pass/fail
@@ -355,7 +355,7 @@ INDICATOR_4_1 = Indicator(
                 # Upload Verification for Flow Chart
                 ChecklistItem(
                     id="4_1_7_1_upload",
-                    label="4.1.7.1. Presence of Referral System Flow Chart (For profiling) - Flow Chart based on Annex C - Establishment of Referral System",
+                    label="Flow Chart based on Annex C - Establishment of Referral System",
                     mov_description="Verification of uploaded Flow Chart based on Annex C (For profiling only)",
                     required=False,  # Not required for pass/fail - profiling only
                     display_order=1,
@@ -363,7 +363,7 @@ INDICATOR_4_1 = Indicator(
                 # Upload Verification for Directory
                 ChecklistItem(
                     id="4_1_7_2_upload",
-                    label="4.1.7.2. Presence of Directory of agencies/individuals providing services to victim-survivors (For profiling) - Annex J - Directory Form",
+                    label="Annex J - Directory Form",
                     mov_description="Verification of uploaded Annex J - Directory Form (For profiling only)",
                     required=False,  # Not required for pass/fail - profiling only
                     display_order=2,
