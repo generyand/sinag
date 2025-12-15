@@ -1697,6 +1697,12 @@ export interface SubmitAssessmentResponse {
 
 
 /**
+ * TourCompletedUpdateAssessments
+ */
+export type TourCompletedUpdateAssessments = boolean | null;
+
+
+/**
  * UnlockAssessmentRequest
  */
 export interface UnlockAssessmentRequest {

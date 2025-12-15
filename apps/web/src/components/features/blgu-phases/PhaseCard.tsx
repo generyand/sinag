@@ -40,6 +40,7 @@ interface PhaseCardProps {
   defaultExpanded?: boolean;
   children: ReactNode;
   className?: string;
+  "data-tour"?: string;
 }
 
 const statusConfig: Record<
@@ -128,6 +129,7 @@ export function PhaseCard({
   defaultExpanded,
   children,
   className,
+  "data-tour": dataTour,
 }: PhaseCardProps) {
   // Default expanded state: active phases are expanded, others collapsed
   const [isExpanded, setIsExpanded] = useState(
@@ -146,6 +148,7 @@ export function PhaseCard({
         isActive && "shadow-md",
         className
       )}
+      data-tour={dataTour}
     >
       {/* Header - Always visible */}
       <button

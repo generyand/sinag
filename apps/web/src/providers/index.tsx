@@ -2,11 +2,12 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "./AuthProvider";
 import { ThemeProvider } from "./ThemeProvider";
 import { LanguageProvider } from "./LanguageProvider";
+import { TourProvider } from "./TourProvider";
 
 /**
  * Creates a QueryClient with optimized configuration for SINAG
@@ -66,7 +67,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <ThemeProvider defaultTheme="system" storageKey="sinag-theme">
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <LanguageProvider>{children}</LanguageProvider>
+          <LanguageProvider>
+            <TourProvider>{children}</TourProvider>
+          </LanguageProvider>
         </AuthProvider>
         {/* Toast notifications */}
         <Toaster />

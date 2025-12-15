@@ -1,7 +1,7 @@
 # 👥 User Database Model
 # SQLAlchemy model for the users table
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import (
     Boolean,
@@ -13,6 +13,7 @@ from sqlalchemy import (
     SmallInteger,
     String,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -53,6 +54,12 @@ class User(Base):
         default="ceb",
         comment="Preferred language for AI summaries: ceb (Bisaya), fil (Tagalog), en (English)",
     )
+    preferences = Column(
+        JSONB,
+        nullable=False,
+        server_default="{}",
+        comment="User preferences including onboarding tour state, UI settings, etc.",
+    )
 
     # Authentication
     hashed_password = Column(String, nullable=False)
@@ -63,8 +70,16 @@ class User(Base):
     is_superuser = Column(Boolean, default=False, nullable=False)
 
     # Timestamps
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
     # Relationships
     barangay = relationship("Barangay", back_populates="users")

@@ -1103,6 +1103,12 @@ export interface TopFailingIndicatorsResponse {
 
 
 /**
+ * TourCompletedUpdateIndicatorForm
+ */
+export type TourCompletedUpdateIndicatorForm = boolean | null;
+
+
+/**
  * UpdatedIndicatorItem
  */
 export interface UpdatedIndicatorItem {
