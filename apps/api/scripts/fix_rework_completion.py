@@ -4,6 +4,7 @@ One-time script to fix is_completed for indicators that have MOVs uploaded.
 This script recomputes completion status for all incomplete responses using the
 completeness_validation_service - the same logic used by the actual application.
 """
+
 from sqlalchemy.orm import joinedload
 
 from app.db.base import SessionLocal
@@ -78,6 +79,7 @@ def fix_completion():
     except Exception as e:
         print(f"Error: {e}")
         import traceback
+
         traceback.print_exc()
         db.rollback()
         raise

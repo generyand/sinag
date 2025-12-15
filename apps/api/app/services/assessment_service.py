@@ -1843,9 +1843,7 @@ class AssessmentService:
         ):
             # Count MOVs uploaded after rework request
             new_mov_count = sum(
-                1
-                for m in mov_files
-                if m.uploaded_at and m.uploaded_at >= rework_requested_at
+                1 for m in mov_files if m.uploaded_at and m.uploaded_at >= rework_requested_at
             )
             if new_mov_count > 0:
                 print(
