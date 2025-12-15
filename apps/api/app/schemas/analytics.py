@@ -91,6 +91,16 @@ class ReworkStats(BaseModel):
     )
 
 
+class AffectedBarangay(BaseModel):
+    """A barangay affected by a rework/calibration reason."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    barangay_id: int = Field(..., description="Unique identifier for the barangay")
+    barangay_name: str = Field(..., description="Name of the barangay")
+    assessment_id: int = Field(..., description="Associated assessment ID")
+
+
 class TopReworkReason(BaseModel):
     """A single top reason for rework or calibration (AI-generated or aggregated)."""
 
@@ -103,6 +113,11 @@ class TopReworkReason(BaseModel):
         description="Source of the reason: 'rework' or 'calibration'",
     )
     governance_area: str | None = Field(None, description="Related governance area if applicable")
+    affected_barangays: list[AffectedBarangay] = Field(
+        default_factory=list,
+        description="List of barangays affected by this reason (max 10 shown)",
+        max_length=10,
+    )
 
 
 class TopReworkReasons(BaseModel):

@@ -422,6 +422,9 @@ export function TourProvider({ children }: TourProviderProps) {
           showSkipButton
           disableOverlayClose
           spotlightClicks={false}
+          spotlightPadding={8}
+          scrollToFirstStep
+          scrollOffset={100}
           callback={handleJoyrideCallback}
           tooltipComponent={tooltipComponent}
           floaterProps={{
@@ -429,18 +432,19 @@ export function TourProvider({ children }: TourProviderProps) {
           }}
           styles={{
             options: {
-              primaryColor: "#2563eb", // Match your primary blue color
+              primaryColor: "#2563eb",
               zIndex: 10000,
               arrowColor: "#ffffff",
               backgroundColor: "#ffffff",
-              overlayColor: "rgba(0, 0, 0, 0.5)",
+              overlayColor: "rgba(0, 0, 0, 0.6)",
               textColor: "#1f2937",
+              spotlightShadow: "0 0 15px rgba(0, 0, 0, 0.5)",
             },
             spotlight: {
-              borderRadius: 8,
+              borderRadius: 12,
             },
             overlay: {
-              mixBlendMode: "normal" as const,
+              backgroundColor: "rgba(0, 0, 0, 0.6)",
             },
           }}
           locale={{

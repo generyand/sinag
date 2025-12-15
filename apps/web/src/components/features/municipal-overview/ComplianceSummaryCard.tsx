@@ -16,6 +16,13 @@ import {
   TrendingUp,
   Info,
   RotateCcw,
+  FileQuestion,
+  FilePen,
+  Send,
+  Eye,
+  ClipboardCheck,
+  Stamp,
+  ChevronRight,
 } from "lucide-react";
 import { AnalyticsEmptyState } from "@/components/features/analytics";
 import { cn } from "@/lib/utils";
@@ -99,35 +106,81 @@ interface WorkflowStageProps {
   label: string;
   count: number;
   color: string;
+  bgColor: string;
+  borderColor: string;
   percentage: number;
+  description: string;
+  icon: React.ReactNode;
+  isActive?: boolean;
+  onClick?: () => void;
 }
 
-function WorkflowStage({ label, count, color, percentage }: WorkflowStageProps) {
+function WorkflowStage({
+  label,
+  count,
+  color,
+  bgColor,
+  borderColor,
+  percentage,
+  description,
+  icon,
+  isActive,
+  onClick,
+}: WorkflowStageProps) {
+  const isEmpty = count === 0;
+
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className="flex flex-col items-center gap-1 min-w-[60px]">
-            <div
-              className={cn(
-                "w-full h-2 rounded-full transition-all",
-                count > 0 ? color : "bg-gray-200"
-              )}
-              style={{ opacity: count > 0 ? 1 : 0.3 }}
-            />
-            <span className="text-xs font-medium text-[var(--foreground)]">{count}</span>
-            <span className="text-[10px] text-[var(--muted-foreground)] text-center leading-tight">
+          <button
+            type="button"
+            onClick={onClick}
+            disabled={isEmpty}
+            className={cn(
+              "flex flex-col items-center justify-center gap-1",
+              "rounded-lg border-2 p-3 min-w-[72px] flex-1",
+              "transition-all duration-200",
+              "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500",
+              isEmpty
+                ? "opacity-40 cursor-default bg-gray-50 border-gray-200"
+                : cn(bgColor, borderColor, "cursor-pointer hover:shadow-md hover:-translate-y-0.5"),
+              isActive && "ring-2 ring-primary shadow-lg"
+            )}
+            aria-label={`${label}: ${count} barangays (${percentage.toFixed(1)}%). ${isEmpty ? "" : "Click to filter."}`}
+          >
+            <div className={cn("mb-0.5", isEmpty ? "text-gray-400" : color)}>{icon}</div>
+            <span
+              className={cn("text-2xl font-bold leading-none", isEmpty ? "text-gray-400" : color)}
+            >
+              {count}
+            </span>
+            <span className="text-[10px] text-[var(--muted-foreground)] text-center leading-tight font-medium">
               {label}
             </span>
-          </div>
+            {!isEmpty && (
+              <span className={cn("text-[9px] leading-none", color)}>{percentage.toFixed(0)}%</span>
+            )}
+          </button>
         </TooltipTrigger>
-        <TooltipContent>
-          <p>
+        <TooltipContent side="bottom" className="max-w-[200px]">
+          <p className="font-medium">{label}</p>
+          <p className="text-xs text-muted-foreground mt-1">{description}</p>
+          <p className="text-xs mt-2">
             {count} barangay{count !== 1 ? "s" : ""} ({percentage.toFixed(1)}%)
           </p>
+          {!isEmpty && <p className="text-xs text-muted-foreground mt-1">Click to filter list</p>}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
+  );
+}
+
+function StageConnector() {
+  return (
+    <div className="flex items-center justify-center px-0.5 self-center mb-4">
+      <ArrowRight className="h-4 w-4 text-gray-300" />
+    </div>
   );
 }
 
@@ -326,88 +379,201 @@ export function ComplianceSummaryCard({
 
             {/* Workflow Pipeline */}
             {data.workflow_breakdown && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-medium text-[var(--foreground)]">
-                    Assessment Pipeline
-                  </h4>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-3.5 w-3.5 text-[var(--muted-foreground)] cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p>
-                          Shows the distribution of barangays across different stages of the
-                          assessment workflow.
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-medium text-[var(--foreground)]">
+                      Assessment Pipeline
+                    </h4>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-3.5 w-3.5 text-[var(--muted-foreground)] cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>
+                            Track barangays through each assessment stage. Click any stage to filter
+                            the list below.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {data.total_barangays} total barangays
+                  </span>
                 </div>
 
-                {/* Visual Pipeline */}
-                <div className="flex items-end justify-between gap-1 px-2">
+                {/* Visual Pipeline - Improved Cards */}
+                <div className="flex items-stretch gap-1 overflow-x-auto pb-2 -mx-2 px-2">
                   <WorkflowStage
                     label="Not Started"
                     count={data.workflow_breakdown.not_started}
-                    color="bg-gray-400"
+                    color="text-slate-600"
+                    bgColor="bg-slate-50"
+                    borderColor="border-slate-200"
                     percentage={getStagePercentage(data.workflow_breakdown.not_started)}
+                    description="Barangays that haven't begun their assessment yet."
+                    icon={<FileQuestion className="h-4 w-4" />}
+                    onClick={() => onFilterChange?.("not_started")}
                   />
-                  <ArrowRight className="h-3 w-3 text-gray-300 mb-4 flex-shrink-0" />
+                  <StageConnector />
                   <WorkflowStage
                     label="Draft"
                     count={data.workflow_breakdown.draft}
-                    color="bg-slate-400"
+                    color="text-blue-600"
+                    bgColor="bg-blue-50"
+                    borderColor="border-blue-200"
                     percentage={getStagePercentage(data.workflow_breakdown.draft)}
+                    description="Assessment started but not yet submitted by BLGU."
+                    icon={<FilePen className="h-4 w-4" />}
+                    onClick={() => onFilterChange?.("draft")}
                   />
-                  <ArrowRight className="h-3 w-3 text-gray-300 mb-4 flex-shrink-0" />
+                  <StageConnector />
                   <WorkflowStage
                     label="Submitted"
                     count={data.workflow_breakdown.submitted}
-                    color="bg-blue-400"
+                    color="text-cyan-600"
+                    bgColor="bg-cyan-50"
+                    borderColor="border-cyan-200"
                     percentage={getStagePercentage(data.workflow_breakdown.submitted)}
+                    description="Submitted by BLGU, awaiting assessor review."
+                    icon={<Send className="h-4 w-4" />}
+                    onClick={() => onFilterChange?.("submitted")}
                   />
-                  <ArrowRight className="h-3 w-3 text-gray-300 mb-4 flex-shrink-0" />
+                  <StageConnector />
                   <WorkflowStage
                     label="In Review"
                     count={data.workflow_breakdown.in_review}
-                    color="bg-indigo-400"
+                    color="text-indigo-600"
+                    bgColor="bg-indigo-50"
+                    borderColor="border-indigo-200"
                     percentage={getStagePercentage(data.workflow_breakdown.in_review)}
+                    description="Being reviewed by an assessor."
+                    icon={<Eye className="h-4 w-4" />}
+                    onClick={() => onFilterChange?.("in_review")}
                   />
-                  <ArrowRight className="h-3 w-3 text-gray-300 mb-4 flex-shrink-0" />
+                  <StageConnector />
                   <WorkflowStage
                     label="Validation"
                     count={data.workflow_breakdown.awaiting_validation}
-                    color="bg-purple-400"
+                    color="text-purple-600"
+                    bgColor="bg-purple-50"
+                    borderColor="border-purple-200"
                     percentage={getStagePercentage(data.workflow_breakdown.awaiting_validation)}
+                    description="Awaiting validator to determine pass/fail."
+                    icon={<ClipboardCheck className="h-4 w-4" />}
+                    onClick={() => onFilterChange?.("awaiting_validation")}
                   />
-                  <ArrowRight className="h-3 w-3 text-gray-300 mb-4 flex-shrink-0" />
+                  <StageConnector />
                   <WorkflowStage
                     label="Approval"
                     count={data.workflow_breakdown.awaiting_approval}
-                    color="bg-amber-400"
+                    color="text-amber-600"
+                    bgColor="bg-amber-50"
+                    borderColor="border-amber-200"
                     percentage={getStagePercentage(data.workflow_breakdown.awaiting_approval)}
+                    description="Awaiting MLGOO final approval."
+                    icon={<Stamp className="h-4 w-4" />}
+                    onClick={() => onFilterChange?.("awaiting_approval")}
                   />
-                  <ArrowRight className="h-3 w-3 text-gray-300 mb-4 flex-shrink-0" />
+                  <StageConnector />
                   <WorkflowStage
                     label="Completed"
                     count={data.workflow_breakdown.completed}
-                    color="bg-green-500"
+                    color="text-green-600"
+                    bgColor="bg-green-50"
+                    borderColor="border-green-200"
                     percentage={getStagePercentage(data.workflow_breakdown.completed)}
+                    description="Assessment finalized with pass/fail result."
+                    icon={<CheckCircle2 className="h-4 w-4" />}
+                    onClick={() => onFilterChange?.("completed")}
                   />
                 </div>
 
-                {/* Rework indicator */}
-                {data.workflow_breakdown.rework > 0 && (
-                  <div className="flex items-center justify-center gap-2 text-xs text-amber-600 bg-amber-50 py-1.5 px-3 rounded-sm">
-                    <RotateCcw className="h-3.5 w-3.5" />
-                    <span>
-                      {data.workflow_breakdown.rework} assessment
-                      {data.workflow_breakdown.rework !== 1 ? "s" : ""} in rework
-                    </span>
+                {/* Pipeline Distribution Bar */}
+                <div className="space-y-1.5">
+                  <div className="relative h-2 w-full bg-gray-100 rounded-full overflow-hidden flex">
+                    {data.workflow_breakdown.not_started > 0 && (
+                      <div
+                        className="h-full bg-slate-300 transition-all duration-500"
+                        style={{
+                          width: `${getStagePercentage(data.workflow_breakdown.not_started)}%`,
+                        }}
+                      />
+                    )}
+                    {data.workflow_breakdown.draft > 0 && (
+                      <div
+                        className="h-full bg-blue-300 transition-all duration-500"
+                        style={{ width: `${getStagePercentage(data.workflow_breakdown.draft)}%` }}
+                      />
+                    )}
+                    {data.workflow_breakdown.submitted > 0 && (
+                      <div
+                        className="h-full bg-cyan-300 transition-all duration-500"
+                        style={{
+                          width: `${getStagePercentage(data.workflow_breakdown.submitted)}%`,
+                        }}
+                      />
+                    )}
+                    {data.workflow_breakdown.in_review > 0 && (
+                      <div
+                        className="h-full bg-indigo-300 transition-all duration-500"
+                        style={{
+                          width: `${getStagePercentage(data.workflow_breakdown.in_review)}%`,
+                        }}
+                      />
+                    )}
+                    {data.workflow_breakdown.awaiting_validation > 0 && (
+                      <div
+                        className="h-full bg-purple-400 transition-all duration-500"
+                        style={{
+                          width: `${getStagePercentage(data.workflow_breakdown.awaiting_validation)}%`,
+                        }}
+                      />
+                    )}
+                    {data.workflow_breakdown.awaiting_approval > 0 && (
+                      <div
+                        className="h-full bg-amber-400 transition-all duration-500"
+                        style={{
+                          width: `${getStagePercentage(data.workflow_breakdown.awaiting_approval)}%`,
+                        }}
+                      />
+                    )}
+                    {data.workflow_breakdown.completed > 0 && (
+                      <div
+                        className="h-full bg-green-500 transition-all duration-500"
+                        style={{
+                          width: `${getStagePercentage(data.workflow_breakdown.completed)}%`,
+                        }}
+                      />
+                    )}
                   </div>
-                )}
+                </div>
+
+                {/* Insights & Rework indicator */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Bottleneck insight */}
+                  {data.workflow_breakdown.not_started > data.total_barangays * 0.5 && (
+                    <Badge
+                      variant="outline"
+                      className="text-xs border-slate-300 text-slate-700 bg-slate-50"
+                    >
+                      <AlertTriangle className="h-3 w-3 mr-1" />
+                      {data.workflow_breakdown.not_started} barangays haven&apos;t started
+                    </Badge>
+                  )}
+                  {data.workflow_breakdown.rework > 0 && (
+                    <Badge
+                      variant="outline"
+                      className="text-xs border-orange-300 text-orange-700 bg-orange-50 cursor-pointer hover:bg-orange-100"
+                      onClick={() => onFilterChange?.("rework")}
+                    >
+                      <RotateCcw className="h-3 w-3 mr-1" />
+                      {data.workflow_breakdown.rework} in rework
+                    </Badge>
+                  )}
+                </div>
               </div>
             )}
 

@@ -104,6 +104,19 @@ export const AISummarySummaryType = {
 
 
 /**
+ * AffectedBarangay
+ */
+export interface AffectedBarangay {
+  /** Unique identifier for the barangay */
+  barangay_id: number;
+  /** Name of the barangay */
+  barangay_name: string;
+  /** Associated assessment ID */
+  assessment_id: number;
+}
+
+
+/**
  * AndAllRuleConditionsItem
  */
 export type AndAllRuleConditionsItem = AndAllRule | OrAnyRule | PercentageThresholdRule | CountThresholdRule | MatchValueRule | BBIFunctionalityCheckRule;
@@ -1418,6 +1431,11 @@ export interface TopReworkReason {
   source: TopReworkReasonSource;
   /** Related governance area if applicable */
   governance_area?: TopReworkReasonGovernanceArea;
+  /**
+   * List of barangays affected by this reason (max 10 shown)
+   * @maxItems 10
+   */
+  affected_barangays?: AffectedBarangay[];
 }
 
 

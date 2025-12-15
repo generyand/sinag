@@ -30,6 +30,7 @@ from app.db.models import (
 )
 from app.db.models.bbi import BBIResult
 from app.schemas.analytics import (
+    AffectedBarangay,
     AreaBreakdown,
     BarangayRanking,
     BBIAnalyticsData,
@@ -653,7 +654,6 @@ class AnalyticsService:
         Returns:
             TopReworkReasons or None if no rework/calibration data available
         """
-        from collections import Counter
 
         from app.db.models.assessment import FeedbackComment
 
@@ -683,8 +683,10 @@ class AnalyticsService:
 
         # PERFORMANCE FIX: Only query assessments that actually have rework OR calibration
         # This avoids loading all assessments into memory
+        # Eager load blgu_user->barangay chain to avoid N+1 queries when building affected_barangays
         assessments = (
             db.query(Assessment)
+            .options(joinedload(Assessment.blgu_user).joinedload(User.barangay))
             .filter(
                 or_(Assessment.rework_count > 0, Assessment.calibration_count > 0),
                 year_filter,
@@ -713,8 +715,12 @@ class AnalyticsService:
         #
         # Summary structure is multi-language:
         # {"ceb": {"indicator_summaries": [{"key_issues": [...]}]}, "en": {...}}
-        rework_reasons: list[str] = []
-        calibration_reasons: list[str] = []
+        #
+        # Track reason -> list of assessments mapping to show affected barangays
+        # Key: (reason_text, source), Value: list of assessment objects
+        from collections import defaultdict
+
+        reason_to_assessments: dict[tuple[str, str], list[Assessment]] = defaultdict(list)
 
         def extract_key_issues_from_summary(summary: dict) -> list[str]:
             """Extract key_issues from a multi-language summary structure."""
@@ -752,13 +758,17 @@ class AnalyticsService:
         for assessment in assessments:
             # Extract key_issues from rework_summary
             if assessment.rework_summary and isinstance(assessment.rework_summary, dict):
-                rework_reasons.extend(extract_key_issues_from_summary(assessment.rework_summary))
+                issues = extract_key_issues_from_summary(assessment.rework_summary)
+                for issue in issues:
+                    if issue and issue.strip():
+                        reason_to_assessments[(issue.strip(), "rework")].append(assessment)
 
             # Extract key_issues from calibration_summary
             if assessment.calibration_summary and isinstance(assessment.calibration_summary, dict):
-                calibration_reasons.extend(
-                    extract_key_issues_from_summary(assessment.calibration_summary)
-                )
+                issues = extract_key_issues_from_summary(assessment.calibration_summary)
+                for issue in issues:
+                    if issue and issue.strip():
+                        reason_to_assessments[(issue.strip(), "calibration")].append(assessment)
 
             # Extract key_issues from calibration_summaries_by_area
             if assessment.calibration_summaries_by_area and isinstance(
@@ -766,20 +776,34 @@ class AnalyticsService:
             ):
                 for area_id, area_summary in assessment.calibration_summaries_by_area.items():
                     if isinstance(area_summary, dict):
-                        calibration_reasons.extend(extract_key_issues_from_summary(area_summary))
+                        issues = extract_key_issues_from_summary(area_summary)
+                        for issue in issues:
+                            if issue and issue.strip():
+                                reason_to_assessments[(issue.strip(), "calibration")].append(
+                                    assessment
+                                )
 
         # Debug logging: track extracted reasons
+        total_rework_reasons = sum(
+            len(v) for (_, src), v in reason_to_assessments.items() if src == "rework"
+        )
+        total_calibration_reasons = sum(
+            len(v) for (_, src), v in reason_to_assessments.items() if src == "calibration"
+        )
         logger.info(
-            f"📊 Extracted {len(rework_reasons)} rework reasons and {len(calibration_reasons)} calibration reasons from AI summaries"
+            f"📊 Extracted {total_rework_reasons} rework reasons and {total_calibration_reasons} calibration reasons from AI summaries"
         )
 
         # If no AI-generated reasons, fall back to feedback comments
-        if not rework_reasons and not calibration_reasons:
+        if not reason_to_assessments:
             # Get feedback comments from assessments with rework
             assessment_ids_with_rework = [
                 a.id for a in assessments if a.rework_count and a.rework_count > 0
             ]
             if assessment_ids_with_rework:
+                # Create a mapping of assessment_id -> assessment for quick lookup
+                assessment_map = {a.id: a for a in assessments}
+
                 feedback_comments = (
                     db.query(FeedbackComment)
                     .join(AssessmentResponse)
@@ -788,46 +812,60 @@ class AnalyticsService:
                     .limit(50)
                     .all()
                 )
-                rework_reasons = [fc.comment for fc in feedback_comments if fc.comment]
+                for fc in feedback_comments:
+                    if fc.comment and fc.comment.strip():
+                        assessment_id = fc.assessment_response.assessment_id
+                        if assessment_id in assessment_map:
+                            reason_to_assessments[(fc.comment.strip(), "rework")].append(
+                                assessment_map[assessment_id]
+                            )
 
-        # Count occurrences and get top reasons
+        # Build TopReworkReason objects with affected barangays
         all_reasons: list[TopReworkReason] = []
 
-        # Process rework reasons
-        rework_counter = Counter(rework_reasons)
-        for reason, count in rework_counter.most_common(5):
-            if reason and reason.strip():
-                all_reasons.append(
-                    TopReworkReason(
-                        reason=reason.strip(),
-                        count=count,
-                        source="rework",
-                        governance_area=None,
-                    )
-                )
+        # Sort by occurrence count and take top reasons
+        sorted_reasons = sorted(
+            reason_to_assessments.items(), key=lambda x: len(x[1]), reverse=True
+        )
 
-        # Process calibration reasons
-        calibration_counter = Counter(calibration_reasons)
-        for reason, count in calibration_counter.most_common(5):
-            if reason and reason.strip():
-                all_reasons.append(
-                    TopReworkReason(
-                        reason=reason.strip(),
-                        count=count,
-                        source="calibration",
-                        governance_area=None,
-                    )
-                )
+        for (reason_text, source), assessment_list in sorted_reasons[:10]:
+            # Deduplicate assessments (same assessment may appear multiple times)
+            seen_assessment_ids: set[int] = set()
+            unique_assessments: list[Assessment] = []
+            for assessment in assessment_list:
+                if assessment.id not in seen_assessment_ids:
+                    seen_assessment_ids.add(assessment.id)
+                    unique_assessments.append(assessment)
 
-        # Sort by count descending and take top 10
-        all_reasons.sort(key=lambda x: x.count, reverse=True)
-        top_reasons = all_reasons[:10]
+            # Build affected barangays list (max 10)
+            # Access barangay through blgu_user relationship: assessment.blgu_user.barangay
+            affected_barangays: list[AffectedBarangay] = []
+            for assessment in unique_assessments[:10]:
+                barangay = assessment.blgu_user.barangay if assessment.blgu_user else None
+                if barangay:
+                    affected_barangays.append(
+                        AffectedBarangay(
+                            barangay_id=barangay.id,
+                            barangay_name=barangay.name,
+                            assessment_id=assessment.id,
+                        )
+                    )
+
+            all_reasons.append(
+                TopReworkReason(
+                    reason=reason_text,
+                    count=len(unique_assessments),
+                    source=source,  # type: ignore
+                    governance_area=None,
+                    affected_barangays=affected_barangays,
+                )
+            )
 
         return TopReworkReasons(
-            reasons=top_reasons,
+            reasons=all_reasons,
             total_rework_assessments=rework_count,
             total_calibration_assessments=calibration_count,
-            generated_by_ai=bool(rework_reasons or calibration_reasons),
+            generated_by_ai=bool(reason_to_assessments),
         )
 
     def _get_total_barangays(self, db: Session) -> int:

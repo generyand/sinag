@@ -17,44 +17,44 @@ export function getDashboardTourSteps(language: TourLanguage): TourStep[] {
       disableBeacon: true,
       showOnPaths: ["/blgu/dashboard"],
     },
-    // Step 2: Phase Timeline
-    {
-      target: '[data-tour="phase-timeline"]',
-      content: getStepTranslation(dashboardTourTranslations.phaseTimeline, language).content,
-      title: getStepTranslation(dashboardTourTranslations.phaseTimeline, language).title,
-      placement: "right",
-      showOnPaths: ["/blgu/dashboard"],
-    },
-    // Step 3: Phase 1 Section
-    {
-      target: '[data-tour="phase-1-section"]',
-      content: getStepTranslation(dashboardTourTranslations.phase1Section, language).content,
-      title: getStepTranslation(dashboardTourTranslations.phase1Section, language).title,
-      placement: "top",
-      showOnPaths: ["/blgu/dashboard"],
-    },
-    // Step 4: Completion Metrics
-    {
-      target: '[data-tour="completion-metrics"]',
-      content: getStepTranslation(dashboardTourTranslations.completionMetrics, language).content,
-      title: getStepTranslation(dashboardTourTranslations.completionMetrics, language).title,
-      placement: "bottom",
-      showOnPaths: ["/blgu/dashboard"],
-    },
-    // Step 5: Year Selector
+    // Step 2: Year Selector - show early while at top of page
     {
       target: '[data-tour="year-selector"]',
       content: getStepTranslation(dashboardTourTranslations.yearSelector, language).content,
       title: getStepTranslation(dashboardTourTranslations.yearSelector, language).title,
-      placement: "bottom",
+      placement: "bottom-end",
       showOnPaths: ["/blgu/dashboard"],
     },
-    // Step 6: Submit Button
+    // Step 3: Phase Timeline (auto placement adjusts for mobile/desktop)
+    {
+      target: '[data-tour="phase-timeline"]',
+      content: getStepTranslation(dashboardTourTranslations.phaseTimeline, language).content,
+      title: getStepTranslation(dashboardTourTranslations.phaseTimeline, language).title,
+      placement: "auto",
+      showOnPaths: ["/blgu/dashboard"],
+    },
+    // Step 4: Phase 1 Section - left placement works better for large cards
+    {
+      target: '[data-tour="phase-1-section"]',
+      content: getStepTranslation(dashboardTourTranslations.phase1Section, language).content,
+      title: getStepTranslation(dashboardTourTranslations.phase1Section, language).title,
+      placement: "left",
+      showOnPaths: ["/blgu/dashboard"],
+    },
+    // Step 5: Completion Metrics - top to avoid overlapping with content below
+    {
+      target: '[data-tour="completion-metrics"]',
+      content: getStepTranslation(dashboardTourTranslations.completionMetrics, language).content,
+      title: getStepTranslation(dashboardTourTranslations.completionMetrics, language).title,
+      placement: "top",
+      showOnPaths: ["/blgu/dashboard"],
+    },
+    // Step 6: Submit Button - bottom to show tooltip below button
     {
       target: '[data-tour="submit-button"]',
       content: getStepTranslation(dashboardTourTranslations.submitButton, language).content,
       title: getStepTranslation(dashboardTourTranslations.submitButton, language).title,
-      placement: "top",
+      placement: "bottom",
       showOnPaths: ["/blgu/dashboard"],
     },
     // Step 7: Navigate to Assessments (transition step)
@@ -63,7 +63,7 @@ export function getDashboardTourSteps(language: TourLanguage): TourStep[] {
       content: getStepTranslation(dashboardTourTranslations.navigateToAssessments, language)
         .content,
       title: getStepTranslation(dashboardTourTranslations.navigateToAssessments, language).title,
-      placement: "top",
+      placement: "bottom",
       showOnPaths: ["/blgu/dashboard"],
       navigateTo: "/blgu/assessments",
     },

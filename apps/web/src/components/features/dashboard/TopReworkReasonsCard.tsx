@@ -3,8 +3,11 @@
 import { RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useEffectiveYear } from "@/hooks/useAssessmentYear";
 import { TopReworkReasons } from "@/hooks/useAdminDashboard";
+import { formatIndicatorName } from "@/lib/utils/text-formatter";
 
 interface TopReworkReasonsCardProps {
   data: TopReworkReasons | undefined;
@@ -19,6 +22,7 @@ export function TopReworkReasonsCard({
   isRegenerating = false,
   isRefetching = false,
 }: TopReworkReasonsCardProps) {
+  const effectiveYear = useEffectiveYear();
   // Combined loading state: regenerating API call OR refetching dashboard data
   const isLoading = isRegenerating || isRefetching;
 
@@ -128,7 +132,9 @@ export function TopReworkReasonsCard({
               {index + 1}
             </span>
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-[var(--foreground)] leading-relaxed">{reason.reason}</p>
+              <p className="text-sm text-[var(--foreground)] leading-relaxed">
+                {formatIndicatorName(reason.reason, effectiveYear ?? new Date().getFullYear())}
+              </p>
               <div className="flex items-center gap-2 mt-1">
                 <span
                   className={`text-xs px-1.5 py-0.5 rounded ${
@@ -140,9 +146,50 @@ export function TopReworkReasonsCard({
                   {reason.source === "rework" ? "Rework" : "Calibration"}
                 </span>
                 {reason.count > 1 && (
-                  <span className="text-xs text-[var(--muted-foreground)]">
-                    ({reason.count} occurrences)
-                  </span>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        className="text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:underline cursor-help transition-colors"
+                        type="button"
+                      >
+                        ({reason.count} occurrences)
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-72 p-3" side="top" align="start">
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium text-[var(--foreground)]">
+                          Affected Barangays ({reason.count})
+                        </p>
+                        {reason.affected_barangays && reason.affected_barangays.length > 0 ? (
+                          <ul className="text-xs text-[var(--muted-foreground)] space-y-1 max-h-32 overflow-y-auto">
+                            {reason.affected_barangays.map((barangay) => (
+                              <li
+                                key={`${barangay.barangay_id}-${barangay.assessment_id}`}
+                                className="flex items-center gap-1.5"
+                              >
+                                <span
+                                  className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                                    reason.source === "rework" ? "bg-orange-400" : "bg-purple-400"
+                                  }`}
+                                />
+                                <span className="truncate">{barangay.barangay_name}</span>
+                              </li>
+                            ))}
+                            {reason.count > reason.affected_barangays.length && (
+                              <li className="text-[var(--muted-foreground)] italic pt-1">
+                                +{reason.count - reason.affected_barangays.length} more...
+                              </li>
+                            )}
+                          </ul>
+                        ) : (
+                          <p className="text-xs text-[var(--muted-foreground)]">
+                            This issue was identified across multiple barangay assessments during
+                            the {reason.source === "rework" ? "rework" : "calibration"} process.
+                          </p>
+                        )}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 )}
               </div>
             </div>

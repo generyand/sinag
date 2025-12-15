@@ -208,8 +208,8 @@ export default function BLGUDashboardPage() {
                     Viewing {effectiveYear}
                   </span>
                 )}
-                {/* Tour Help Button */}
-                <TourHelpButton tourName="dashboard" />
+                {/* Tour Help Button - Prominent variant for high visibility */}
+                <TourHelpButton tourName="dashboard" variant="prominent" />
               </div>
               <p className="mt-2 text-[var(--text-secondary)]">
                 Track your SGLGB assessment progress through each phase
@@ -250,7 +250,7 @@ export default function BLGUDashboardPage() {
           {/* Phase Sections */}
           <div className="lg:col-span-3 space-y-6">
             {/* Mobile Timeline - Collapsible */}
-            <div className="lg:hidden">
+            <div className="lg:hidden" data-tour="phase-timeline">
               <details className="bg-[var(--card)] rounded-lg border border-[var(--border)]">
                 <summary className="p-4 cursor-pointer font-medium text-[var(--foreground)]">
                   View Assessment Journey
