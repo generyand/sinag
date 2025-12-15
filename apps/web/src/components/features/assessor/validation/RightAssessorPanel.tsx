@@ -23,7 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuthStore } from "@/store/useAuthStore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { AssessmentDetailsResponse } from "@sinag/shared";
-import { AlertCircle, FileTextIcon, Info } from "lucide-react";
+import { AlertCircle, FileTextIcon, Info, MessageSquare as MessageSquareIcon } from "lucide-react";
 import * as React from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -263,7 +263,23 @@ function AssessorChecklistHistoryModal({
   const checklistItems = (indicator?.checklist_items as any[]) || [];
   const indicatorLabel = indicator?.name || `Indicator #${response.indicator_id}`;
 
-  if (checklistItems.length === 0) {
+  // Get assessor's comments/notes (filter to only assessor comments, not validator comments)
+  const feedbackComments = (response.feedback_comments as any[]) || [];
+  const assessorComments = feedbackComments.filter((fc: any) => {
+    // Only include comments from assessors (not validators)
+    // Role values are uppercase: "ASSESSOR", "VALIDATOR", etc.
+    const commenterRole = (fc.assessor?.role || "").toUpperCase();
+    return commenterRole === "ASSESSOR" && !fc.is_internal_note;
+  });
+
+  // Sort by date (newest first)
+  assessorComments.sort((a: any, b: any) => {
+    const dateA = new Date(a.created_at || 0).getTime();
+    const dateB = new Date(b.created_at || 0).getTime();
+    return dateB - dateA;
+  });
+
+  if (checklistItems.length === 0 && assessorComments.length === 0) {
     return null;
   }
 
@@ -333,6 +349,64 @@ function AssessorChecklistHistoryModal({
               );
             })()}
           </div>
+
+          {/* Assessor's Comments/Notes Section */}
+          {assessorComments.length > 0 && (
+            <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-2 mb-3">
+                <MessageSquareIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <h4 className="text-sm font-semibold text-foreground">
+                  Assessor's Comments/Notes
+                </h4>
+                <span className="text-xs text-muted-foreground">
+                  ({assessorComments.length})
+                </span>
+              </div>
+              <div className="space-y-3">
+                {assessorComments.map((comment: any, idx: number) => (
+                  <div
+                    key={comment.id || idx}
+                    className="border border-blue-200 dark:border-blue-800 rounded-sm p-3 bg-blue-50/50 dark:bg-blue-950/30"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <p className="text-sm text-foreground whitespace-pre-wrap">
+                          {comment.comment}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="font-medium">
+                        {comment.assessor?.name || comment.assessor?.email || "Assessor"}
+                      </span>
+                      {comment.created_at && (
+                        <>
+                          <span>•</span>
+                          <span>
+                            {new Date(comment.created_at).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </>
+                      )}
+                      {comment.comment_type && (
+                        <>
+                          <span>•</span>
+                          <span className="capitalize px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
+                            {comment.comment_type.replace(/_/g, " ")}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

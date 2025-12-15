@@ -1470,11 +1470,15 @@ class AssessmentService:
         Returns:
             True if response is completed, False otherwise
         """
+        # Normalize response_data to empty dict if None/invalid
         if not response_data or not isinstance(response_data, dict):
-            # For new format with fields array, allow empty response_data
-            # since completion is based on MOV uploads
-            if not form_schema.get("fields"):
-                return False
+            response_data = {}
+
+        # For new format with fields array, completion is based on MOV uploads
+        # so we continue to validation even with empty response_data.
+        # For legacy format without fields array, we also continue if MOV files
+        # exist - this supports rework scenarios where BLGU only uploads MOVs.
+        # The validation logic below will determine actual completion status.
 
         # Combine Legacy MOVs and New MOVFiles for validation
         # We wrap them in a unified structure for checking
@@ -1641,6 +1645,15 @@ class AssessmentService:
             if has_any_yes and mov_count <= 0:
                 print("[DEBUG] _check_response_completion: Has 'yes' but no valid MOVs")
                 return False
+
+            # For rework scenarios: if response_data is empty but MOVs exist,
+            # consider it complete (BLGU uploaded new MOVs for rework)
+            if not response_data and mov_count > 0:
+                print(
+                    f"[DEBUG] _check_response_completion: Empty response_data but has {mov_count} valid MOVs - marking complete"
+                )
+                return True
+
             return bool(response_data)
 
         # Check that all required fields have valid compliance values
@@ -1817,6 +1830,30 @@ class AssessmentService:
             )
         except Exception:
             pass
+
+        # REWORK COMPLETION FIX: If completion is False but we're in REWORK status with new MOVs,
+        # check if the indicator has new MOVs uploaded after rework_requested_at.
+        # This handles the case where BLGU uploaded new MOVs to address rework.
+        if (
+            not completion
+            and assessment_status
+            and assessment_status.upper() in ("REWORK", "NEEDS_REWORK")
+            and rework_requested_at
+            and mov_files
+        ):
+            # Count MOVs uploaded after rework request
+            new_mov_count = sum(
+                1
+                for m in mov_files
+                if m.uploaded_at and m.uploaded_at >= rework_requested_at
+            )
+            if new_mov_count > 0:
+                print(
+                    f"[DEBUG] recompute_response_completion: REWORK FIX - Found {new_mov_count} new MOVs "
+                    f"uploaded after rework_requested_at. Marking as complete."
+                )
+                completion = True
+
         response.is_completed = completion
         return completion
 
@@ -1977,8 +2014,11 @@ class AssessmentService:
                         # Clear validation_status for fresh review
                         response.validation_status = None
 
-                        # Mark as incomplete so assessor needs to review
-                        response.is_completed = False
+                        # NOTE: Do NOT reset is_completed here!
+                        # is_completed represents whether BLGU completed their uploads,
+                        # not whether assessor has reviewed. Resetting it causes the tree
+                        # to show indicators as incomplete even when all MOVs are uploaded.
+                        # Assessor review status is tracked via validation_status.
 
                         # Clear assessor checklist data (assessor_val_ prefix)
                         if response.response_data:
@@ -1988,7 +2028,7 @@ class AssessmentService:
                                 if not k.startswith("assessor_val_")
                             }
                         self.logger.info(
-                            f"[RESUBMISSION] Cleared checklist & marked incomplete for response {response.id} (requires_rework=True)"
+                            f"[RESUBMISSION] Cleared checklist for response {response.id} (requires_rework=True)"
                         )
 
             db.commit()

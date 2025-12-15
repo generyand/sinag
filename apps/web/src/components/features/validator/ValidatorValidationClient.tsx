@@ -365,6 +365,11 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const allReviewed = total > 0 && reviewed === total;
   const progressPct = total > 0 ? Math.round((reviewed / total) * 100) : 0;
 
+  // Check if ALL responses have validation_status confirmed (via Compliance Overview)
+  // This is required before finalization - validators must confirm each indicator status
+  const confirmedCount = responses.filter((r) => hasExistingValidationStatus(r.id as number)).length;
+  const allConfirmed = total > 0 && confirmedCount === total;
+
   const onSaveDraft = async () => {
     // Build payloads that include validation status, checklist data, AND calibration flag
     const payloads = responses
@@ -904,10 +909,28 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
             <Button
               size="default"
               type="button"
-              onClick={() => setShowFinalizeConfirm(true)}
-              disabled={!allReviewed || finalizeMut.isPending}
+              onClick={() => {
+                // Check if compliance overview is completed (all validation_status confirmed)
+                if (!allConfirmed) {
+                  toast.warning("Complete Compliance Overview", {
+                    description: `${confirmedCount}/${total} indicators confirmed`,
+                    duration: 5000,
+                    action: {
+                      label: "Open",
+                      onClick: async () => {
+                        await onSaveDraft();
+                        router.push(`/validator/submissions/${assessmentId}/compliance`);
+                      },
+                    },
+                  });
+                  return;
+                }
+                setShowFinalizeConfirm(true);
+              }}
+              disabled={finalizeMut.isPending}
               className="w-full sm:w-auto text-white hover:opacity-90"
-              style={{ background: "var(--success)" }}
+              style={{ background: allConfirmed ? "var(--success)" : "var(--muted)" }}
+              title={!allConfirmed ? `Complete Compliance Overview first (${confirmedCount}/${total} confirmed)` : undefined}
             >
               {finalizeMut.isPending ? (
                 <>
