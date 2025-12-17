@@ -549,13 +549,13 @@ export function MiddleMovFilesPanel({
               </div>
             )}
 
-            {/* Rejected Files Section - Files that were rejected during rework/calibration (shown for reference) */}
+            {/* Previous Files Section - Files that were replaced during rework/calibration (shown for reference) */}
             {rejectedOldFiles.length > 0 && (
               <div className="rounded-sm border-2 border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/30 p-3 opacity-75">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="h-2 w-2 rounded-full bg-red-500 dark:bg-red-400" />
                   <span className="text-xs font-semibold text-red-700 dark:text-red-300 uppercase tracking-wide">
-                    Rejected Files (Replaced)
+                    Previous Files
                   </span>
                   <span className="text-xs text-red-600 dark:text-red-300 bg-red-100 dark:bg-red-900/50 px-2 py-0.5 rounded-full">
                     {rejectedOldFiles.length} file{rejectedOldFiles.length !== 1 ? "s" : ""}
@@ -570,7 +570,7 @@ export function MiddleMovFilesPanel({
                   onDownload={handleDownload}
                   canDelete={false}
                   loading={false}
-                  emptyMessage="No rejected files"
+                  emptyMessage="No previous files"
                   movAnnotations={annotations as any[]}
                 />
               </div>

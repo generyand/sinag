@@ -1205,12 +1205,12 @@ export default function SubmissionDetailsPage() {
                             </div>
                           )}
 
-                          {/* Rejected Files Section (Red - for comparison) */}
+                          {/* Previous Files Section (Red - for comparison) */}
                           {ind.rejectedFiles && ind.rejectedFiles.length > 0 && (
                             <div className="bg-red-50 rounded-lg border-2 border-red-200 p-3 opacity-75">
                               <div className="flex items-center gap-2 mb-2">
                                 <div className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded">
-                                  REJECTED
+                                  PREVIOUS
                                 </div>
                                 <p className="text-sm font-medium text-red-800">
                                   {ind.rejectedFiles.length} file
