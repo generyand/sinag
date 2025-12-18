@@ -73,6 +73,13 @@ export default function BLGUAssessmentsPage() {
     window.history.pushState(null, "", `/blgu/assessments?${params.toString()}`);
   };
 
+  // Handle back to list (mobile) - clear indicator selection
+  const handleBackToList = () => {
+    setSelectedIndicatorId(null);
+    // Remove indicator param from URL
+    window.history.pushState(null, "", "/blgu/assessments");
+  };
+
   // Show loading if not authenticated or if auth state is still loading
   if (!isAuthenticated || !user || !token) {
     return (
@@ -225,9 +232,9 @@ export default function BLGUAssessmentsPage() {
 
       {/* Split Panel Layout */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Desktop: Left Sidebar Tree Navigation */}
+        {/* Desktop & Tablet (md+): Left Sidebar Tree Navigation */}
         <nav
-          className="hidden lg:block w-48 xl:w-56 flex-shrink-0"
+          className="hidden md:block w-48 lg:w-48 xl:w-56 flex-shrink-0"
           aria-label="Assessment navigation sidebar"
         >
           <TreeNavigator
@@ -245,6 +252,7 @@ export default function BLGUAssessmentsPage() {
             isLocked={isLocked}
             updateAssessmentData={updateAssessmentData}
             onIndicatorSelect={handleIndicatorSelect}
+            onBackToList={handleBackToList}
             movAnnotations={dashboardData?.mov_annotations_by_indicator || {}}
             dashboardData={dashboardData}
             mlgooFlaggedFileIds={(dashboardData as any)?.mlgoo_recalibration_mov_file_ids || []}
@@ -252,17 +260,21 @@ export default function BLGUAssessmentsPage() {
         </main>
       </div>
 
-      {/* Mobile: Bottom Sheet Drawer */}
-      <MobileTreeDrawer
-        isOpen={isMobileDrawerOpen}
-        onClose={() => setIsMobileDrawerOpen(false)}
-        assessment={assessment}
-        selectedIndicatorId={selectedIndicatorId}
-        onIndicatorSelect={handleIndicatorSelect}
-      />
+      {/* Mobile: Bottom Sheet Drawer - Only show when an indicator is selected */}
+      {selectedIndicatorId && (
+        <MobileTreeDrawer
+          isOpen={isMobileDrawerOpen}
+          onClose={() => setIsMobileDrawerOpen(false)}
+          assessment={assessment}
+          selectedIndicatorId={selectedIndicatorId}
+          onIndicatorSelect={handleIndicatorSelect}
+        />
+      )}
 
-      {/* Mobile: Floating Action Button */}
-      <MobileNavButton progress={progressPercentage} onClick={() => setIsMobileDrawerOpen(true)} />
+      {/* Mobile: Floating Action Button - Only show when an indicator is selected */}
+      {selectedIndicatorId && (
+        <MobileNavButton progress={progressPercentage} onClick={() => setIsMobileDrawerOpen(true)} />
+      )}
     </div>
   );
 }

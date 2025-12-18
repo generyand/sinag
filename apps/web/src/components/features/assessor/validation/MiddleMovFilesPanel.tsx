@@ -152,6 +152,8 @@ interface MiddleMovFilesPanelProps {
     movFileId: number,
     remainingCountForFile: number
   ) => void;
+  /** Callback when a file is clicked for preview (for mobile tab switching) */
+  onFileClick?: () => void;
 }
 
 type AnyRecord = Record<string, any>;
@@ -164,6 +166,7 @@ export function MiddleMovFilesPanel({
   separationLabel = "After Calibration",
   onAnnotationCreated,
   onAnnotationDeleted,
+  onFileClick,
 }: MiddleMovFilesPanelProps) {
   const data: AnyRecord = (assessment as unknown as AnyRecord) ?? {};
   const core = (data.assessment as AnyRecord) ?? data;
@@ -297,6 +300,8 @@ export function MiddleMovFilesPanel({
     // Set selected file for preview (works for both PDF and images)
     setSelectedFile(file);
     setIsAnnotating(true);
+    // Call onFileClick callback for mobile tab switching
+    onFileClick?.();
   };
 
   const handleDownload = async (file: any) => {

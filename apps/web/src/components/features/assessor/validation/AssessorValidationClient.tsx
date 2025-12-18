@@ -73,6 +73,9 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   const [showReworkConfirm, setShowReworkConfirm] = useState(false);
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
 
+  // Mobile tab state: 'indicators' | 'files' | 'validation'
+  const [mobileTab, setMobileTab] = useState<'indicators' | 'files' | 'validation'>('indicators');
+
   // Track rework flags for assessors at FILE level (responseId → Set of movFileIds with annotations)
   // This allows us to track which specific files need re-upload, not just which indicators
   const [reworkFlags, setReworkFlags] = useState<Record<number, Set<number>>>({});
@@ -836,39 +839,50 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     const responseId = parseInt(indicatorId, 10);
     setExpandedId(responseId);
     setSelectedIndicatorId(indicatorId);
+    // On mobile, auto-switch to files tab when indicator is selected
+    if (window.innerWidth < 768) {
+      setMobileTab('files');
+    }
+  };
+
+  const handleFileClick = () => {
+    // On mobile, auto-switch to validation tab when file is clicked
+    if (window.innerWidth < 768) {
+      setMobileTab('validation');
+    }
   };
 
   return (
     <div className="min-h-screen bg-[var(--background)] flex flex-col">
       {/* Header */}
       <div className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
-        <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4 min-w-0">
+        <div className="max-w-[1920px] mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
             <Button
               asChild
               variant="ghost"
               size="sm"
-              className="shrink-0 gap-1 text-muted-foreground hover:text-foreground px-2"
+              className="shrink-0 gap-1 text-muted-foreground hover:text-foreground px-1.5 sm:px-2"
             >
               <Link href="/assessor/submissions">
                 <ChevronLeft className="h-4 w-4" />
-                <span className="font-medium">Queue</span>
+                <span className="font-medium hidden sm:inline">Queue</span>
               </Link>
             </Button>
-            <div className="h-8 w-px bg-border shrink-0" />
-            <div className="min-w-0 flex flex-col justify-center">
-              <div className="text-sm font-bold text-foreground truncate leading-tight">
-                {barangayName} <span className="text-muted-foreground font-medium mx-1">/</span>{" "}
-                {governanceArea}
+            <div className="h-6 sm:h-8 w-px bg-border shrink-0" />
+            <div className="min-w-0 flex flex-col justify-center flex-1">
+              <div className="text-xs sm:text-sm font-bold text-foreground truncate leading-tight">
+                {barangayName} <span className="text-muted-foreground font-medium mx-1 hidden sm:inline">/</span>{" "}
+                <span className="hidden md:inline">{governanceArea}</span>
               </div>
-              <div className="text-xs text-muted-foreground truncate leading-tight mt-0.5">
+              <div className="text-[10px] sm:text-xs text-muted-foreground truncate leading-tight mt-0.5 hidden sm:block">
                 Assessor Validation Workspace {cycleYear ? `• CY ${cycleYear}` : ""}
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {statusText ? (
-              <div className="scale-90 origin-right">
+              <div className="scale-75 sm:scale-90 origin-right">
                 <StatusBadge status={statusText} />
               </div>
             ) : null}
@@ -878,18 +892,221 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               type="button"
               onClick={onSaveDraft}
               disabled={isSaving}
-              className="ml-2"
+              className="text-xs sm:text-sm px-2 sm:px-4"
             >
-              {isSaving ? "Saving..." : "Save as Draft"}
+              <span className="hidden sm:inline">{isSaving ? "Saving..." : "Save as Draft"}</span>
+              <span className="sm:hidden">Save</span>
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Three-Column Layout */}
+      {/* Mobile Tab Navigation (< 768px) */}
+      <div className="md:hidden sticky top-[56px] z-10 bg-background border-b border-border">
+        <div className="flex">
+          <button
+            onClick={() => setMobileTab('indicators')}
+            className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
+              mobileTab === 'indicators'
+                ? 'text-foreground'
+                : 'text-muted-foreground'
+            }`}
+          >
+            Indicators
+            {mobileTab === 'indicators' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+            )}
+          </button>
+          <button
+            onClick={() => setMobileTab('files')}
+            className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
+              mobileTab === 'files'
+                ? 'text-foreground'
+                : 'text-muted-foreground'
+            }`}
+          >
+            Files
+            {mobileTab === 'files' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+            )}
+          </button>
+          <button
+            onClick={() => setMobileTab('validation')}
+            className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
+              mobileTab === 'validation'
+                ? 'text-foreground'
+                : 'text-muted-foreground'
+            }`}
+          >
+            Validation
+            {mobileTab === 'validation' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Responsive Layout */}
       <div className="flex-1 overflow-hidden">
         <div className="h-full max-w-[1920px] mx-auto">
-          <div className="flex flex-row h-[calc(100vh-125px)] bg-white border-b border-[var(--border)]">
+          {/* Mobile: Single Panel with Tabs (< 768px) */}
+          <div className="md:hidden h-[calc(100vh-168px)] bg-white">
+            {mobileTab === 'indicators' && (
+              <div className="h-full overflow-y-auto bg-muted/5">
+                <TreeNavigator
+                  assessment={transformedAssessment as any}
+                  selectedIndicatorId={selectedIndicatorId}
+                  onIndicatorSelect={handleIndicatorSelect}
+                />
+              </div>
+            )}
+            {mobileTab === 'files' && (
+              <div className="h-full overflow-hidden flex flex-col">
+                <MiddleMovFilesPanel
+                  assessment={data as any}
+                  expandedId={expandedId ?? undefined}
+                  reworkRequestedAt={reworkRequestedAt}
+                  separationLabel="After Rework"
+                  onAnnotationCreated={handleAnnotationCreated}
+                  onAnnotationDeleted={handleAnnotationDeleted}
+                  onFileClick={handleFileClick}
+                />
+              </div>
+            )}
+            {mobileTab === 'validation' && (
+              <div className="h-full overflow-y-auto">
+                <RightAssessorPanel
+                  assessment={data as any}
+                  form={form}
+                  expandedId={expandedId ?? undefined}
+                  onToggle={(id) => setExpandedId((curr) => (curr === id ? null : id))}
+                  onIndicatorSelect={handleIndicatorSelect}
+                  setField={(id, field, value) => {
+                    setForm((prev) => ({
+                      ...prev,
+                      [id]: {
+                        ...prev[id],
+                        [field]: value,
+                      },
+                    }));
+                  }}
+                  onChecklistChange={(key, value) => {
+                    console.log("[onChecklistChange] Checkbox changed:", { key, value });
+                    setChecklistData((prev) => {
+                      const newData = {
+                        ...prev,
+                        [key]: value,
+                      };
+                      console.log("[onChecklistChange] Updated checklistData:", newData);
+                      return newData;
+                    });
+                  }}
+                  reworkFlags={reworkFlags}
+                  onReworkFlagChange={handleReworkFlagChange}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Tablet: 2-Column Layout (768px - 1024px) */}
+          <div className="hidden md:flex lg:hidden h-[calc(100vh-125px)] bg-white border-b border-[var(--border)]">
+            {/* Left Sidebar - Indicators */}
+            <div className="w-[240px] flex-shrink-0 border-r border-[var(--border)] overflow-hidden flex flex-col bg-muted/5">
+              <div className="flex-1 overflow-y-auto">
+                <TreeNavigator
+                  assessment={transformedAssessment as any}
+                  selectedIndicatorId={selectedIndicatorId}
+                  onIndicatorSelect={handleIndicatorSelect}
+                />
+              </div>
+            </div>
+
+            {/* Right Content - Files + Validation Tabs */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Tab Bar */}
+              <div className="flex border-b border-border bg-muted/30">
+                <button
+                  onClick={() => setMobileTab('files')}
+                  className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+                    mobileTab === 'files'
+                      ? 'text-foreground bg-white'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Files
+                  {mobileTab === 'files' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+                  )}
+                </button>
+                <button
+                  onClick={() => setMobileTab('validation')}
+                  className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+                    mobileTab === 'validation'
+                      ? 'text-foreground bg-white'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Validation
+                  {mobileTab === 'validation' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+                  )}
+                </button>
+              </div>
+
+              {/* Tab Content */}
+              <div className="flex-1 overflow-hidden bg-white">
+                {mobileTab === 'files' && (
+                  <div className="h-full overflow-hidden flex flex-col">
+                    <MiddleMovFilesPanel
+                      assessment={data as any}
+                      expandedId={expandedId ?? undefined}
+                      reworkRequestedAt={reworkRequestedAt}
+                      separationLabel="After Rework"
+                      onAnnotationCreated={handleAnnotationCreated}
+                      onAnnotationDeleted={handleAnnotationDeleted}
+                      onFileClick={handleFileClick}
+                    />
+                  </div>
+                )}
+                {mobileTab === 'validation' && (
+                  <div className="h-full overflow-y-auto">
+                    <RightAssessorPanel
+                      assessment={data as any}
+                      form={form}
+                      expandedId={expandedId ?? undefined}
+                      onToggle={(id) => setExpandedId((curr) => (curr === id ? null : id))}
+                      onIndicatorSelect={handleIndicatorSelect}
+                      setField={(id, field, value) => {
+                        setForm((prev) => ({
+                          ...prev,
+                          [id]: {
+                            ...prev[id],
+                            [field]: value,
+                          },
+                        }));
+                      }}
+                      onChecklistChange={(key, value) => {
+                        console.log("[onChecklistChange] Checkbox changed:", { key, value });
+                        setChecklistData((prev) => {
+                          const newData = {
+                            ...prev,
+                            [key]: value,
+                          };
+                          console.log("[onChecklistChange] Updated checklistData:", newData);
+                          return newData;
+                        });
+                      }}
+                      reworkFlags={reworkFlags}
+                      onReworkFlagChange={handleReworkFlagChange}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop: 3-Column Layout (≥ 1024px) */}
+          <div className="hidden lg:flex flex-row h-[calc(100vh-125px)] bg-white border-b border-[var(--border)]">
             {/* Left Panel - Indicator Tree Navigation */}
             <div className="w-[280px] flex-shrink-0 border-r border-[var(--border)] overflow-hidden flex flex-col bg-muted/5">
               <div className="flex-1 overflow-y-auto">
@@ -910,6 +1127,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 separationLabel="After Rework"
                 onAnnotationCreated={handleAnnotationCreated}
                 onAnnotationDeleted={handleAnnotationDeleted}
+                onFileClick={handleFileClick}
               />
             </div>
 
@@ -953,27 +1171,27 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
       {/* Bottom Progress Bar */}
       <div className="sticky bottom-0 z-10 border-t border-[var(--border)] bg-card/80 backdrop-blur">
-        <div className="relative max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative max-w-[1920px] mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-3 flex flex-col gap-2 sm:gap-3 md:flex-row md:items-center md:justify-between">
           <div className="absolute inset-x-0 -top-[3px] h-[3px] bg-black/5">
             <div
               className="h-full bg-[var(--cityscape-yellow)] transition-all"
               style={{ width: `${progressPct}%` }}
             />
           </div>
-          <div className="text-xs text-muted-foreground">
+          <div className="text-[11px] sm:text-xs text-muted-foreground">
             Indicators Reviewed: {reviewed}/{total}
             {missingRequiredComments > 0
               ? ` • Missing required comments: ${missingRequiredComments}`
               : ""}
           </div>
-          <div className="flex flex-col sm:flex-row w-full sm:w-auto items-stretch sm:items-center gap-2 sm:gap-3">
+          <div className="flex flex-col sm:flex-row w-full md:w-auto items-stretch sm:items-center gap-2">
             <Button
               variant="outline"
-              size="default"
+              size="sm"
               type="button"
               onClick={onSaveDraft}
               disabled={isSaving}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10"
             >
               {isSaving ? "Saving..." : "Save as Draft"}
             </Button>
@@ -981,13 +1199,13 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             {isAssessor && (
               <Button
                 variant="secondary"
-                size="default"
+                size="sm"
                 type="button"
                 onClick={() => setShowReworkConfirm(true)}
                 disabled={
                   !hasIndicatorsFlaggedForRework || reworkCount !== 0 || reworkMut.isPending
                 }
-                className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90"
+                className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
                 style={{ background: "var(--cityscape-yellow)" }}
                 title={
                   !hasIndicatorsFlaggedForRework
@@ -998,7 +1216,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 {reworkMut.isPending ? (
                   <>
                     <svg
-                      className="animate-spin -ml-1 mr-2 h-4 w-4 inline-block"
+                      className="animate-spin -ml-1 mr-1.5 h-3 w-3 sm:h-4 sm:w-4 inline-block"
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
                       viewBox="0 0 24 24"
@@ -1017,10 +1235,14 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       ></path>
                     </svg>
-                    Compiling...
+                    <span className="hidden sm:inline">Compiling...</span>
+                    <span className="sm:hidden">Processing...</span>
                   </>
                 ) : (
-                  "Compile and Send for Rework"
+                  <>
+                    <span className="hidden sm:inline">Compile and Send for Rework</span>
+                    <span className="sm:hidden">Send for Rework</span>
+                  </>
                 )}
               </Button>
             )}
@@ -1029,11 +1251,11 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             {isValidator && (
               <Button
                 variant="secondary"
-                size="default"
+                size="sm"
                 type="button"
                 onClick={() => setShowReworkConfirm(true)}
                 disabled={!allReviewed || !anyFail || reworkCount !== 0 || reworkMut.isPending}
-                className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90"
+                className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
                 style={{ background: "var(--cityscape-yellow)" }}
                 title={
                   !anyFail && allReviewed
@@ -1044,7 +1266,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 {reworkMut.isPending ? (
                   <>
                     <svg
-                      className="animate-spin -ml-1 mr-2 h-4 w-4 inline-block"
+                      className="animate-spin -ml-1 mr-1.5 h-3 w-3 sm:h-4 sm:w-4 inline-block"
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
                       viewBox="0 0 24 24"
@@ -1063,10 +1285,14 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       ></path>
                     </svg>
-                    Compiling...
+                    <span className="hidden sm:inline">Compiling...</span>
+                    <span className="sm:hidden">Processing...</span>
                   </>
                 ) : (
-                  "Compile and Send for Rework"
+                  <>
+                    <span className="hidden sm:inline">Compile and Send for Rework</span>
+                    <span className="sm:hidden">Send for Rework</span>
+                  </>
                 )}
               </Button>
             )}
@@ -1074,26 +1300,27 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             {/* Finalize - Assessors, just needs review */}
             {isAssessor && (
               <Button
-                size="default"
+                size="sm"
                 type="button"
                 onClick={() => setShowFinalizeConfirm(true)}
                 disabled={!allReviewed || finalizeMut.isPending}
-                className="w-full sm:w-auto text-white hover:opacity-90"
+                className="w-full sm:w-auto text-white hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
                 style={{ background: "var(--success)" }}
                 title={!allReviewed ? "Review all indicators before finalizing" : undefined}
               >
-                Finalize and Send to Validator
+                <span className="hidden sm:inline">Finalize and Send to Validator</span>
+                <span className="sm:hidden">Finalize</span>
               </Button>
             )}
 
             {/* Finalize - Validators, cannot have FAILs on first submission */}
             {isValidator && (
               <Button
-                size="default"
+                size="sm"
                 type="button"
                 onClick={() => setShowFinalizeConfirm(true)}
                 disabled={!allReviewed || (anyFail && reworkCount === 0) || finalizeMut.isPending}
-                className="w-full sm:w-auto text-white hover:opacity-90"
+                className="w-full sm:w-auto text-white hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
                 style={{ background: "var(--success)" }}
                 title={
                   anyFail && reworkCount === 0
@@ -1101,7 +1328,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                     : undefined
                 }
               >
-                Finalize Validation
+                <span className="hidden sm:inline">Finalize Validation</span>
+                <span className="sm:hidden">Finalize</span>
               </Button>
             )}
           </div>

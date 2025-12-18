@@ -102,13 +102,13 @@ export function ChallengeSection() {
       aria-labelledby="challenges-heading"
     >
       <div
-        className={`text-left mb-8 transition-all duration-1000 delay-200 ${
+        className={`text-left mb-6 md:mb-8 transition-all duration-1000 delay-200 ${
           challengeAnimation.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
         }`}
       >
         <h2
           id="challenges-heading"
-          className="text-3xl md:text-4xl lg:text-4xl font-extrabold text-black mb-2"
+          className="text-2xl md:text-4xl lg:text-4xl font-extrabold text-black mb-2"
         >
           A Proactive Approach to Governance
         </h2>
@@ -117,11 +117,11 @@ export function ChallengeSection() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8" role="list">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8" role="list">
         {challengeCards.map((card) => (
           <article
             key={card.id}
-            className={`group bg-white rounded-2xl shadow-lg p-8 flex flex-col items-start text-left border border-gray-100 transition-all duration-300 relative overflow-hidden ${
+            className={`group bg-white rounded-2xl shadow-lg p-5 md:p-8 flex flex-col items-start text-left border border-gray-100 transition-all duration-300 relative overflow-hidden ${
               challengeAnimation.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             }`}
             role="listitem"
@@ -134,31 +134,31 @@ export function ChallengeSection() {
             ></div>
 
             {/* Image container: subtle gray, small border, centered image */}
-            <div className="relative mb-6 w-full">
-              <div className="h-36 rounded-md border border-gray-200 bg-gray-50 flex items-center justify-center shadow-sm transition-transform duration-300 group-hover:scale-105 group-hover:shadow-lg">
+            <div className="relative mb-4 md:mb-6 w-full">
+              <div className="h-28 md:h-36 rounded-md border border-gray-200 bg-gray-50 flex items-center justify-center shadow-sm transition-transform duration-300 group-hover:scale-105 group-hover:shadow-lg">
                 {card.imageSrc ? (
                   <Image
                     src={card.imageSrc}
                     alt={`${card.title} icon`}
                     width={88}
                     height={88}
-                    className="object-contain"
+                    className="object-contain w-16 h-16 md:w-[88px] md:h-[88px]"
                   />
                 ) : null}
               </div>
             </div>
 
-            <h3 id={`challenge-${card.id}-title`} className="text-xl font-bold text-black mb-4">
+            <h3 id={`challenge-${card.id}-title`} className="text-lg md:text-xl font-bold text-black mb-3 md:mb-4">
               {card.title}
             </h3>
 
             {/* Removed percentage/statistics pill for cleaner layout */}
 
-            <p className="text-gray-600 leading-relaxed mb-4">{card.description}</p>
+            <p className="text-sm md:text-base text-gray-600 leading-relaxed mb-3 md:mb-4">{card.description}</p>
 
             {/* Solution Preview (subtle, descriptive outcome) */}
-            <div className="mt-auto pt-4 border-t border-gray-100 w-full">
-              <div className="flex items-center gap-2 text-gray-600 text-sm font-medium">
+            <div className="mt-auto pt-3 md:pt-4 border-t border-gray-100 w-full">
+              <div className="flex items-center gap-2 text-gray-600 text-xs md:text-sm font-medium">
                 <span className="text-green-600">{card.solution}</span>
               </div>
             </div>

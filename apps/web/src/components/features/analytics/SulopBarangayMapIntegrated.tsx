@@ -693,8 +693,8 @@ export function SulopBarangayMapIntegrated({
   }, [barangays]);
 
   return (
-    <Card className="w-full rounded-sm mb-12" role="region" aria-label={title}>
-      <CardHeader>
+    <Card className="w-full rounded-sm mb-12 overflow-hidden" role="region" aria-label={title}>
+      <CardHeader className="px-4 sm:px-6">
         <CardTitle>{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
 
@@ -725,16 +725,16 @@ export function SulopBarangayMapIntegrated({
         </div>
       </CardHeader>
 
-      <CardContent className="pb-12">
+      <CardContent className="pb-12 px-4 sm:px-6 overflow-hidden">
         {/* Main container with equal heights for map and details */}
-        <div className="flex flex-col md:flex-row md:items-stretch gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-stretch gap-4 overflow-hidden">
           {/* Map Container - Expands/Shrinks based on selection */}
           <div
-            className={`w-full flex items-center transition-[width] duration-300 ease-out ${
-              showDetailsPanel ? "md:w-2/3" : "md:w-full"
+            className={`w-full flex items-center transition-[width] duration-300 ease-out overflow-hidden ${
+              showDetailsPanel ? "lg:w-2/3" : "lg:w-full"
             }`}
           >
-            <div className="relative w-full aspect-[2.15/1] min-h-[250px] md:min-h-0 overflow-hidden">
+            <div className="relative w-full aspect-[2.15/1] min-h-[200px] md:min-h-[250px] overflow-hidden">
               {/* Title Overlay */}
               <div className="absolute top-4 left-0 right-0 text-center pointer-events-none z-10 w-full px-4">
                 <h3 className="text-xs md:text-lg lg:text-xl font-semibold text-gray-900 dark:text-gray-100 bg-white/50 dark:bg-black/50 backdrop-blur-sm py-1 px-3 rounded-full inline-block mx-auto">
@@ -857,16 +857,16 @@ export function SulopBarangayMapIntegrated({
 
           {/* Details Panel - Slides in from right when barangay is selected */}
           <aside
-            className={`w-full transition-all duration-300 ease-out ${
+            className={`w-full transition-all duration-300 ease-out overflow-hidden ${
               showDetailsPanel
-                ? "opacity-100 md:w-1/3 translate-x-0 scale-100"
-                : "opacity-0 md:w-0 translate-x-2 scale-[0.98] h-0 md:h-auto overflow-hidden pointer-events-none"
+                ? "opacity-100 lg:w-1/3 lg:min-w-[260px] translate-x-0 scale-100"
+                : "opacity-0 lg:w-0 translate-x-2 scale-[0.98] h-0 lg:h-auto pointer-events-none"
             }`}
             aria-label="Barangay details panel"
             aria-hidden={!showDetailsPanel}
           >
             <div
-              className={`bg-white dark:bg-slate-900 rounded-sm p-3 sm:p-4 border border-slate-200 dark:border-slate-700 shadow-lg h-full md:min-w-[280px] transition-all duration-300 ease-out ${
+              className={`bg-white dark:bg-slate-900 rounded-sm p-3 sm:p-4 border border-slate-200 dark:border-slate-700 shadow-lg h-full transition-all duration-300 ease-out overflow-hidden ${
                 showDetailsPanel ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"
               }`}
             >

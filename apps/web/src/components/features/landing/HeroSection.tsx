@@ -40,7 +40,7 @@ export function HeroSection() {
       </div>
 
       <div className="max-w-7xl mx-auto w-full py-8 md:py-12 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-28 xl:gap-32 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 xl:gap-20 items-center">
           {/* Left Column - Content */}
           <div className="space-y-8 lg:pr-8 xl:pr-12">
             {/* Trust Badge */}
@@ -150,59 +150,62 @@ export function HeroSection() {
 
           {/* Right Column - Visual */}
           <div
-            className={`relative lg:pl-8 xl:pl-12 transition-all duration-1000 delay-1000 ${
+            className={`relative transition-all duration-1000 delay-1000 py-8 lg:py-0 flex justify-center ${
               isVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-8"
             }`}
           >
-            {/* Main Monitor Visual */}
-            <div className="relative transform rotate-2 lg:scale-[1.15] xl:scale-[1.2] origin-center rounded-2xl overflow-hidden shadow-2xl border border-[#fbbf24] bg-[#fbbf24] p-2 hover:scale-[1.18] transition-transform duration-500">
-              <Image
-                src="/Scenery/Sulop_Hall.png"
-                alt="Sulop Municipal Hall"
-                width={1000}
-                height={750}
-                className="w-full h-auto rounded-lg border border-[#fbbf24]"
-              />
-            </div>
+            {/* Image wrapper for positioning badges */}
+            <div className="relative w-[85%] md:w-[70%] lg:w-full max-w-[500px] lg:max-w-none">
+              {/* Main Monitor Visual */}
+              <div className="relative transform rotate-1 md:rotate-2 origin-center rounded-2xl overflow-hidden shadow-2xl border border-[#fbbf24] bg-[#fbbf24] p-1.5 md:p-2 hover:scale-[1.02] transition-transform duration-500">
+                <Image
+                  src="/Scenery/Sulop_Hall.png"
+                  alt="Sulop Municipal Hall"
+                  width={1000}
+                  height={750}
+                  className="w-full h-auto rounded-lg border border-[#fbbf24]"
+                />
+              </div>
 
-            {/* Floating Data Cards - Spread Positioning with enhanced animations */}
-            {/* Top Left Badge */}
-            <div
-              className={`absolute -top-6 -left-2 md:-top-16 md:-left-10 bg-white/95 rounded-full shadow-lg border border-gray-100 px-3 py-1.5 md:px-4 md:py-2 flex items-center gap-2 w-max transform rotate-2 hover:-translate-y-1 hover:scale-105 transition-all duration-300 animate-float-slow z-20 ${
-                isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
-              }`}
-              style={{ animationDelay: "1.2s" }}
-            >
-              <CheckCircle2 className="w-3 h-3 md:w-4 md:h-4 text-green-600 animate-pulse" />
-              <span className="text-xs md:text-sm font-semibold text-gray-800">
-                Validated Submission
-              </span>
-            </div>
+              {/* Floating Data Cards - Outside image container */}
+              {/* Top Left Badge */}
+              <div
+                className={`absolute -top-2 left-0 md:-top-4 md:-left-2 lg:-top-4 lg:-left-4 bg-white/95 rounded-full shadow-lg border border-gray-100 px-2 py-1 md:px-3 md:py-1.5 flex items-center gap-1.5 w-max transform rotate-2 hover:-translate-y-1 hover:scale-105 transition-all duration-300 animate-float-slow z-20 ${
+                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
+                }`}
+                style={{ animationDelay: "1.2s" }}
+              >
+                <CheckCircle2 className="w-3 h-3 text-green-600 animate-pulse" />
+                <span className="text-[10px] md:text-xs font-semibold text-gray-800">
+                  Validated
+                </span>
+              </div>
 
-            {/* Top Right Badge */}
-            <div
-              className={`absolute -top-4 -right-2 md:-top-8 md:-right-8 bg-white/95 rounded-full shadow-lg border border-gray-100 px-3 py-1.5 md:px-4 md:py-2 flex items-center gap-2 w-max transform rotate-2 hover:-translate-x-1 hover:scale-105 transition-all duration-300 animate-float-slow z-20 ${
-                isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
-              }`}
-              style={{ animationDelay: "1.4s" }}
-            >
-              <Users className="w-3 h-3 md:w-4 md:h-4 text-blue-600 animate-pulse" />
-              <span className="text-xs md:text-sm font-semibold text-gray-800">
-                25 Barangays Connected
-              </span>
-            </div>
+              {/* Top Right Badge */}
+              <div
+                className={`absolute -top-2 right-0 md:-top-4 md:-right-2 lg:-top-4 lg:-right-4 bg-white/95 rounded-full shadow-lg border border-gray-100 px-2 py-1 md:px-3 md:py-1.5 flex items-center gap-1.5 w-max transform -rotate-2 hover:-translate-x-1 hover:scale-105 transition-all duration-300 animate-float-slow z-20 ${
+                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
+                }`}
+                style={{ animationDelay: "1.4s" }}
+              >
+                <Users className="w-3 h-3 text-blue-600 animate-pulse" />
+                <span className="text-[10px] md:text-xs font-semibold text-gray-800">
+                  25 Barangays
+                </span>
+              </div>
 
-            {/* Bottom Right Badge */}
-            <div
-              className={`absolute -bottom-6 -right-2 md:-bottom-10 md:-right-8 bg-white/95 rounded-full shadow-lg border border-gray-100 px-3 py-1.5 md:px-4 md:py-2 flex items-center gap-2 w-max transform rotate-2 hover:translate-y-1 hover:scale-105 transition-all duration-300 animate-float-slow z-20 ${
-                isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-              }`}
-              style={{ animationDelay: "1.6s" }}
-            >
-              <BarChart3 className="w-3 h-3 md:w-4 md:h-4 text-purple-600 animate-pulse" />
-              <span className="text-xs md:text-sm font-semibold text-gray-800">
-                95% Compliance Rate
-              </span>
+              {/* Bottom Right Badge */}
+              <div
+                className={`absolute -bottom-2 right-0 md:-bottom-4 md:-right-2 lg:-bottom-4 lg:-right-4 bg-white/95 rounded-full shadow-lg border border-gray-100 px-2 py-1 md:px-3 md:py-1.5 flex items-center gap-1.5 w-max transform rotate-2 hover:translate-y-1 hover:scale-105 transition-all duration-300 animate-float-slow z-20 ${
+                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                }`}
+                style={{ animationDelay: "1.6s" }}
+              >
+                <BarChart3 className="w-3 h-3 text-purple-600 animate-pulse" />
+                <span className="text-[10px] md:text-xs font-semibold text-gray-800">
+                  95% Pass Rate
+                </span>
+              </div>
             </div>
           </div>
         </div>

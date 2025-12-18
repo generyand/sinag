@@ -202,24 +202,22 @@ export default function KatuparanReportsPage() {
           <CardDescription>Select the assessment year for the reports</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <label htmlFor="year-select" className="text-sm font-medium">
-                Assessment Year:
-              </label>
-              <Select value={selectedYear} onValueChange={setSelectedYear}>
-                <SelectTrigger id="year-select" className="w-[140px]">
-                  <SelectValue placeholder="Select year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {years.map((year) => (
-                    <SelectItem key={year} value={year}>
-                      CY {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+            <label htmlFor="year-select" className="text-sm font-medium">
+              Assessment Year:
+            </label>
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger id="year-select" className="w-full sm:w-[140px]">
+                <SelectValue placeholder="Select year" />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((year) => (
+                  <SelectItem key={year} value={year}>
+                    CY {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -230,15 +228,18 @@ export default function KatuparanReportsPage() {
 
         {REPORT_TYPES.map((report) => (
           <Card key={report.id} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 rounded-lg bg-primary/10 text-primary">{report.icon}</div>
-                  <div className="space-y-1">
-                    <h3 className="font-semibold">{report.name}</h3>
-                    <p className="text-sm text-muted-foreground">{report.description}</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-xs text-muted-foreground">Available formats:</span>
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex flex-col gap-4">
+                {/* Report Info */}
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <div className="p-2 sm:p-3 rounded-lg bg-primary/10 text-primary shrink-0">
+                    {report.icon}
+                  </div>
+                  <div className="space-y-1 min-w-0">
+                    <h3 className="font-semibold text-sm sm:text-base">{report.name}</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{report.description}</p>
+                    <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-2">
+                      <span className="text-xs text-muted-foreground">Formats:</span>
                       {report.formats.map((format) => (
                         <Badge key={format} variant="outline" className="text-xs uppercase">
                           {format}
@@ -247,7 +248,9 @@ export default function KatuparanReportsPage() {
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-col gap-2">
+
+                {/* Download Buttons */}
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2 sm:pt-0 border-t sm:border-t-0">
                   {report.formats.map((format) => {
                     const isDownloading = downloadingReport === `${report.id}-${format}`;
                     const isSuccess = downloadSuccess === `${report.id}-${format}`;
@@ -259,7 +262,7 @@ export default function KatuparanReportsPage() {
                         size="sm"
                         onClick={() => handleDownload(report.id, format)}
                         disabled={isDownloading}
-                        className={`min-w-[140px] ${isSuccess ? "bg-green-600 hover:bg-green-600" : ""}`}
+                        className={`w-full sm:w-auto sm:min-w-[140px] h-10 sm:h-9 ${isSuccess ? "bg-green-600 hover:bg-green-600" : ""}`}
                         aria-label={
                           isDownloading
                             ? `Downloading ${report.name} as ${format.toUpperCase()}`
@@ -272,12 +275,12 @@ export default function KatuparanReportsPage() {
                         {isDownloading ? (
                           <>
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Downloading...
+                            <span className="sm:inline">Downloading...</span>
                           </>
                         ) : isSuccess ? (
                           <>
                             <CheckCircle2 className="h-4 w-4 mr-2" />
-                            Downloaded!
+                            <span>Downloaded!</span>
                           </>
                         ) : (
                           <>

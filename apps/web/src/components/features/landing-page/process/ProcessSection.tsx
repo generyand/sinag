@@ -111,43 +111,59 @@ export function ProcessSection() {
   return (
     <section
       ref={processAnimation.elementRef}
-      className={`w-full max-w-7xl mx-auto min-h-screen px-8 py-12 flex flex-col justify-center transition-all duration-1000 ${
+      className={`w-full max-w-7xl mx-auto px-4 md:px-8 py-8 md:py-12 lg:py-16 flex flex-col justify-center transition-all duration-1000 ${
         processAnimation.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
       }`}
       aria-labelledby="process-heading"
     >
       {/* Section Header (left-aligned, no decorative animations) */}
-      <div className="text-left mb-8">
+      <div className="text-left mb-4 md:mb-6 lg:mb-8">
         <h2
           id="process-heading"
-          className="text-3xl md:text-4xl lg:text-4xl font-extrabold text-black mb-2"
+          className="text-xl md:text-3xl lg:text-4xl font-extrabold text-black mb-1 md:mb-2"
         >
           How SINAG Works
         </h2>
-        <p className="text-sm md:text-base text-gray-500 max-w-3xl font-normal">
+        <p className="text-xs md:text-sm lg:text-base text-gray-500 max-w-3xl font-normal">
           A clear, three-step process for efficient SGLGB preparation and validation.
         </p>
       </div>
 
-      <div className="flex flex-col lg:flex-row items-stretch gap-8">
+      <div className="flex flex-col lg:flex-row items-stretch gap-4 md:gap-6 lg:gap-8">
         {/* Left: Enhanced Stepper */}
-        <div className="flex flex-col justify-center lg:w-2/5 mb-6 lg:mb-0 order-2 lg:order-1">
-          {/* Progress Overview */}
-          <div className="bg-gradient-to-br from-gray-50 to-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-medium text-gray-600">
-                Current Step: {activeStep + 1} of {steps.length}
-              </span>
-              <div className="flex gap-1">
+        <div className="flex flex-col justify-center lg:w-2/5 mb-2 md:mb-4 lg:mb-0 order-2 lg:order-1">
+          {/* Progress Overview - Compact on mobile */}
+          <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl md:rounded-2xl p-3 md:p-4 lg:p-6 shadow-lg border border-gray-100 mb-3 md:mb-4 lg:mb-6">
+            {/* Mobile: Inline layout */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <div
+                  className={`text-lg md:text-xl lg:text-2xl font-bold ${
+                    activeStep === 0
+                      ? "text-[#fbbf24]"
+                      : activeStep === 1
+                        ? "text-[#1A3A6D]"
+                        : "text-[#28A745]"
+                  }`}
+                >
+                  {activeStep + 1}/{steps.length}
+                </div>
+                <div className="hidden md:block text-xs text-gray-500">
+                  {steps[activeStep].benefit}
+                </div>
+              </div>
+
+              {/* Progress dots */}
+              <div className="flex gap-1.5">
                 {steps.map((_, idx) => (
                   <div
                     key={idx}
-                    className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                    className={`w-2 h-2 md:w-2.5 md:h-2.5 rounded-full transition-all duration-300 ${
                       idx === activeStep
                         ? `${steps[idx].color} scale-125 shadow-lg`
                         : idx < activeStep
                           ? `${steps[idx].color}`
-                          : "bg-[#E9ECEF]" // Light gray for inactive
+                          : "bg-[#E9ECEF]"
                     }`}
                   />
                 ))}
@@ -155,9 +171,9 @@ export function ProcessSection() {
             </div>
 
             {/* Progress Bar */}
-            <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+            <div className="w-full bg-gray-200 rounded-full h-1 md:h-1.5 mt-2 md:mt-3">
               <div
-                className={`h-2 rounded-full transition-all duration-700 ease-in-out ${
+                className={`h-1 md:h-1.5 rounded-full transition-all duration-700 ease-in-out ${
                   activeStep === 0
                     ? "bg-[#fbbf24]"
                     : activeStep === 1
@@ -167,33 +183,17 @@ export function ProcessSection() {
                 style={{ width: `${((activeStep + 1) / steps.length) * 100}%` }}
               ></div>
             </div>
-
-            {/* Current Step Info */}
-            <div className="text-center">
-              <div
-                className={`text-2xl font-bold mb-1 ${
-                  activeStep === 0
-                    ? "text-[#fbbf24]"
-                    : activeStep === 1
-                      ? "text-[#1A3A6D]"
-                      : "text-[#28A745]"
-                }`}
-              >
-                {steps[activeStep].duration}
-              </div>
-              <div className="text-sm text-gray-600">{steps[activeStep].benefit}</div>
-            </div>
           </div>
 
           {/* Interactive Step Buttons */}
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1.5 md:gap-2 lg:gap-3">
             {steps.map((step, idx) => (
               <button
                 key={idx}
-                className={`group flex items-center w-full p-4 text-left rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                className={`group flex items-center w-full p-2.5 md:p-3 lg:p-4 text-left rounded-lg md:rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                   activeStep === idx
-                    ? "bg-white shadow-lg border-2 transform scale-105"
-                    : "bg-white/50 border border-gray-200 hover:bg-white hover:shadow-md hover:scale-102"
+                    ? "bg-white shadow-lg border-2 transform scale-[1.02] md:scale-105"
+                    : "bg-white/50 border border-gray-200 hover:bg-white hover:shadow-md"
                 }`}
                 style={
                   activeStep === idx
@@ -211,7 +211,7 @@ export function ProcessSection() {
                 aria-label={`Step ${idx + 1}: ${step.label}`}
               >
                 <div
-                  className={`flex items-center justify-center w-12 h-12 rounded-full font-bold text-lg mr-4 transition-all duration-300 ${
+                  className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 rounded-full font-bold text-sm md:text-base lg:text-lg mr-2 md:mr-3 lg:mr-4 transition-all duration-300 flex-shrink-0 ${
                     activeStep === idx
                       ? `${step.color} shadow-lg ${idx === 0 ? "text-black" : "text-white"}`
                       : `${step.color} opacity-70 group-hover:opacity-100 ${
@@ -221,10 +221,10 @@ export function ProcessSection() {
                 >
                   {idx + 1}
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 md:gap-2">
                     <span
-                      className={`flex items-center justify-center w-8 h-8 rounded-lg ${
+                      className={`hidden md:flex items-center justify-center w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 rounded-lg flex-shrink-0 ${
                         step.color
                       } ${
                         activeStep === idx ? "opacity-100" : "opacity-70"
@@ -236,20 +236,20 @@ export function ProcessSection() {
                       style={{
                         color: activeStep === idx ? step.activeColor : "#374151",
                       }}
-                      className="font-bold text-lg transition-colors duration-300"
+                      className="font-bold text-xs md:text-sm lg:text-base transition-colors duration-300 truncate"
                     >
                       {step.label}
                     </div>
                     {activeStep === idx && (
-                      <ChevronRight className="w-4 h-4 ml-1" style={{ color: step.activeColor }} />
+                      <ChevronRight className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" style={{ color: step.activeColor }} />
                     )}
                   </div>
-                  <div className="text-sm text-gray-600 mt-1">
+                  <div className="text-[10px] md:text-xs lg:text-sm text-gray-600 mt-0.5 truncate">
                     {step.duration} • {step.benefit}
                   </div>
                 </div>
                 {activeStep === idx && (
-                  <div className={`w-2 h-2 rounded-full animate-pulse ${step.color}`}></div>
+                  <div className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full animate-pulse flex-shrink-0 ${step.color}`}></div>
                 )}
               </button>
             ))}
@@ -260,7 +260,7 @@ export function ProcessSection() {
         <div className="flex-1 lg:w-1/2 order-1 lg:order-2">
           <div
             key={activeStep}
-            className={`relative bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden transition-all duration-500 min-h-[400px] lg:min-h-[500px] ${
+            className={`relative bg-white rounded-xl md:rounded-2xl shadow-xl border border-gray-200 overflow-hidden transition-all duration-500 min-h-[280px] md:min-h-[350px] lg:min-h-[500px] ${
               fade ? "opacity-0 scale-95" : "opacity-100 scale-100"
             }`}
           >
@@ -308,11 +308,11 @@ export function ProcessSection() {
             </div>
 
             {/* Content Overlay - Positioned at bottom like footer */}
-            <div className="absolute bottom-0 left-0 right-0 p-6">
+            <div className="absolute bottom-0 left-0 right-0 p-2 md:p-4 lg:p-6">
               {/* Step Badge */}
-              <div className="mb-4">
+              <div className="mb-2 md:mb-3">
                 <span
-                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-bold shadow-lg ${
+                  className={`inline-flex items-center gap-1 md:gap-1.5 px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs lg:text-sm font-bold shadow-lg ${
                     steps[activeStep].color
                   } ${activeStep === 0 ? "text-black" : "text-white"}`}
                 >
@@ -322,26 +322,26 @@ export function ProcessSection() {
               </div>
 
               {/* Main Content */}
-              <div className="bg-white rounded-md p-4 shadow-xl border border-gray-200 relative overflow-hidden">
+              <div className="bg-white rounded-md p-2 md:p-3 lg:p-4 shadow-xl border border-gray-200 relative overflow-hidden">
                 {/* Visible top accent border */}
                 <div
-                  className={`absolute top-0 left-0 w-full h-1 ${steps[activeStep].color}`}
+                  className={`absolute top-0 left-0 w-full h-0.5 md:h-1 ${steps[activeStep].color}`}
                   aria-hidden="true"
                 ></div>
-                <p className="text-base font-medium leading-relaxed text-gray-800 mb-3">
+                <p className="text-xs md:text-sm lg:text-base font-medium leading-relaxed text-gray-800 mb-1.5 md:mb-2">
                   {steps[activeStep].text}
                 </p>
 
-                {/* Step Metrics */}
-                <div className="flex items-center gap-4 text-sm">
+                {/* Step Metrics - Hidden on mobile to save space */}
+                <div className="hidden md:flex flex-row items-center gap-4 text-xs lg:text-sm">
                   <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${steps[activeStep].color}`}></div>
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${steps[activeStep].color}`}></div>
                     <span className="font-medium text-gray-700">
-                      Duration: {steps[activeStep].duration}
+                      {steps[activeStep].duration}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
                     <span className="font-medium text-gray-700">{steps[activeStep].benefit}</span>
                   </div>
                 </div>
@@ -349,17 +349,17 @@ export function ProcessSection() {
             </div>
 
             {/* Navigation Arrows */}
-            <div className="absolute top-1/2 left-4 right-4 flex justify-between transform -translate-y-1/2 pointer-events-none">
+            <div className="absolute top-[40%] md:top-1/2 left-1 md:left-3 right-1 md:right-3 flex justify-between transform -translate-y-1/2 pointer-events-none">
               <button
                 onClick={() => {
                   const prevStep = activeStep === 0 ? steps.length - 1 : activeStep - 1;
                   setActiveStep(prevStep);
                   if (timerRef.current) clearInterval(timerRef.current);
                 }}
-                className="w-12 h-12 bg-white/90 hover:bg-white shadow-lg hover:shadow-xl rounded-full flex items-center justify-center text-gray-700 hover:text-gray-900 transition-all duration-300 hover:scale-110 pointer-events-auto focus:outline-none focus:ring-2 focus:ring-gray-300 border border-gray-200"
+                className="w-8 h-8 md:w-10 md:h-10 lg:w-11 lg:h-11 bg-white/90 hover:bg-white shadow-lg hover:shadow-xl rounded-full flex items-center justify-center text-gray-700 hover:text-gray-900 transition-all duration-300 hover:scale-110 pointer-events-auto focus:outline-none focus:ring-2 focus:ring-gray-300 border border-gray-200"
                 aria-label="Previous step"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -374,10 +374,10 @@ export function ProcessSection() {
                   setActiveStep(nextStep);
                   if (timerRef.current) clearInterval(timerRef.current);
                 }}
-                className="w-12 h-12 bg-white/90 hover:bg-white shadow-lg hover:shadow-xl rounded-full flex items-center justify-center text-gray-700 hover:text-gray-900 transition-all duration-300 hover:scale-110 pointer-events-auto focus:outline-none focus:ring-2 focus:ring-gray-300 border border-gray-200"
+                className="w-8 h-8 md:w-10 md:h-10 lg:w-11 lg:h-11 bg-white/90 hover:bg-white shadow-lg hover:shadow-xl rounded-full flex items-center justify-center text-gray-700 hover:text-gray-900 transition-all duration-300 hover:scale-110 pointer-events-auto focus:outline-none focus:ring-2 focus:ring-gray-300 border border-gray-200"
                 aria-label="Next step"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"

@@ -3,10 +3,11 @@
 import { useIndicatorNavigation } from "@/hooks/useIndicatorNavigation";
 import { useReworkContext } from "@/hooks/useReworkContext";
 import { Assessment, Indicator } from "@/types/assessment";
-import { FileText } from "lucide-react";
+import { ArrowLeft, FileText } from "lucide-react";
 import { useRef } from "react";
 import { ReworkAlertBanner } from "../rework";
 import { RecursiveIndicator } from "./IndicatorAccordion";
+import { TreeNavigator } from "./tree-navigation";
 
 interface AssessmentContentPanelProps {
   assessment: Assessment;
@@ -14,6 +15,8 @@ interface AssessmentContentPanelProps {
   isLocked: boolean;
   updateAssessmentData?: (updater: (data: Assessment) => Assessment) => void;
   onIndicatorSelect?: (indicatorId: string) => void;
+  /** Callback to clear indicator selection and go back to list (mobile) */
+  onBackToList?: () => void;
   movAnnotations?: Record<number, any[]>;
   dashboardData?: any; // BLGUDashboardResponse for rework context
   /** MOV file IDs flagged by MLGOO for recalibration */
@@ -26,6 +29,7 @@ export function AssessmentContentPanel({
   isLocked,
   updateAssessmentData,
   onIndicatorSelect,
+  onBackToList,
   movAnnotations = {},
   dashboardData,
   mlgooFlaggedFileIds = [],
@@ -51,18 +55,30 @@ export function AssessmentContentPanel({
   // Show empty state if no indicator selected
   if (!selectedIndicator) {
     return (
-      <div className="h-full flex items-center justify-center bg-[var(--background)] p-8">
-        <div className="text-center max-w-md">
-          <div className="w-20 h-20 bg-[var(--card)] rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-[var(--border)]">
-            <FileText className="h-10 w-10 text-[var(--text-secondary)] opacity-50" />
+      <div className="h-full flex flex-col bg-[var(--background)]">
+        {/* Desktop & Tablet (md+): Centered empty state */}
+        <div className="hidden md:flex h-full items-center justify-center p-8">
+          <div className="text-center max-w-md w-full">
+            <div className="w-20 h-20 bg-[var(--card)] rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-[var(--border)]">
+              <FileText className="h-10 w-10 text-[var(--text-secondary)] opacity-50" />
+            </div>
+            <h3 className="text-xl font-semibold text-[var(--foreground)] mb-3">
+              Select an Indicator
+            </h3>
+            <p className="text-[var(--text-secondary)] leading-relaxed">
+              Choose an indicator from the navigation panel on the left to view its details and
+              complete the assessment requirements.
+            </p>
           </div>
-          <h3 className="text-xl font-semibold text-[var(--foreground)] mb-3">
-            Select an Indicator
-          </h3>
-          <p className="text-[var(--text-secondary)] leading-relaxed">
-            Choose an indicator from the navigation panel on the left to view its details and
-            complete the assessment requirements.
-          </p>
+        </div>
+
+        {/* Mobile only (< md): Show TreeNavigator directly in content area */}
+        <div className="md:hidden h-full overflow-hidden">
+          <TreeNavigator
+            assessment={assessment}
+            selectedIndicatorId={null}
+            onIndicatorSelect={onIndicatorSelect || (() => {})}
+          />
         </div>
       </div>
     );
@@ -93,6 +109,20 @@ export function AssessmentContentPanel({
 
   return (
     <div className="h-full flex flex-col bg-[var(--background)]">
+      {/* Mobile Back Button - Only show on mobile when indicator is selected */}
+      {onBackToList && (
+        <div className="md:hidden sticky top-0 z-10 bg-[var(--card)] border-b border-[var(--border)]">
+          <button
+            onClick={onBackToList}
+            className="flex items-center gap-2 w-full px-4 py-3 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--hover)] transition-colors active:bg-[var(--hover)]"
+            aria-label="Back to indicator list"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back to Indicators</span>
+          </button>
+        </div>
+      )}
+
       {/* Scrollable Content */}
       <div ref={contentRef} className="flex-1 overflow-y-auto">
         <div className="max-w-5xl mx-auto px-0 sm:px-6 lg:px-8 py-6 sm:py-8">

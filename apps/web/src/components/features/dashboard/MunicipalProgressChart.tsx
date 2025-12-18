@@ -48,13 +48,13 @@ const statusConfig = {
 export function MunicipalProgressChart({ data, totalBarangays }: MunicipalProgressChartProps) {
   return (
     <Card className="bg-[var(--card)] border border-[var(--border)] shadow-sm">
-      <CardHeader className="pb-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <CardTitle className="text-xl font-bold text-[var(--foreground)]">
+      <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+          <div className="flex-1 min-w-0">
+            <CardTitle className="text-base sm:text-lg md:text-xl font-bold text-[var(--foreground)]">
               Live Status of All Barangays
             </CardTitle>
-            <p className="text-sm text-[var(--muted-foreground)] mt-1">
+            <p className="text-xs sm:text-sm text-[var(--muted-foreground)] mt-1">
               Distribution of {totalBarangays} barangays across assessment stages
             </p>
           </div>
@@ -64,8 +64,8 @@ export function MunicipalProgressChart({ data, totalBarangays }: MunicipalProgre
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
+      <CardContent className="px-4 sm:px-6">
+        <div className="space-y-3 sm:space-y-4">
           {data.map((item) => {
             const config = statusConfig[item.status as keyof typeof statusConfig] || {
               color: "var(--analytics-neutral-text)",
@@ -77,26 +77,26 @@ export function MunicipalProgressChart({ data, totalBarangays }: MunicipalProgre
             return (
               <div
                 key={item.status}
-                className="group relative bg-[var(--background)] hover:bg-[var(--accent)]/5 rounded-lg border border-[var(--border)] p-4 transition-all duration-200"
+                className="group relative bg-[var(--background)] hover:bg-[var(--accent)]/5 rounded-lg border border-[var(--border)] p-3 sm:p-4 transition-all duration-200 min-h-[60px]"
               >
                 {/* Header Row: Status Badge + Count */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 mb-2 sm:mb-3">
                   <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto gap-3">
                     <Badge
                       variant="outline"
-                      className="text-xs font-semibold px-2.5 py-0.5 rounded-full border bg-opacity-10"
+                      className="text-xs sm:text-xs font-semibold px-2 sm:px-2.5 py-0.5 rounded-full border bg-opacity-10"
                       style={{
                         backgroundColor: config.bgColor,
                         borderColor: config.bgColor,
                         color: config.color,
                       }}
                     >
-                      <Icon className="w-3.5 h-3.5 mr-1.5" />
-                      {item.status}
+                      <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1 sm:mr-1.5" />
+                      <span className="text-xs">{item.status}</span>
                     </Badge>
 
                     {/* Mobile Only Count */}
-                    <span className="sm:hidden text-sm font-medium text-[var(--foreground)]">
+                    <span className="sm:hidden text-sm font-bold text-[var(--foreground)]">
                       {item.count}{" "}
                       <span className="text-[var(--muted-foreground)] text-xs font-normal">
                         brgys
@@ -123,9 +123,9 @@ export function MunicipalProgressChart({ data, totalBarangays }: MunicipalProgre
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs sm:hidden">
                     <span className="text-[var(--muted-foreground)]">Completion</span>
-                    <span className="font-medium text-[var(--foreground)]">{item.percentage}%</span>
+                    <span className="font-semibold text-[var(--foreground)]">{item.percentage}%</span>
                   </div>
-                  <div className="h-2.5 w-full bg-[var(--muted)]/30 rounded-full overflow-hidden">
+                  <div className="h-3 sm:h-2.5 w-full bg-[var(--muted)]/30 rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-1000 ease-out relative overflow-hidden"
                       style={{

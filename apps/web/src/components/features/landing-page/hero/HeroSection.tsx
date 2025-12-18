@@ -179,7 +179,7 @@ export function HeroSection() {
       </div>
 
       {/* Cityscape Layout - First Section */}
-      <div className="flex h-screen relative">
+      <div className="flex h-[60vh] md:h-[50vh] lg:h-screen relative">
         {/* Left Sidebar - Cityscape Theme */}
         <aside
           className="hidden lg:flex lg:w-1/4 bg-black flex-col justify-between p-4 lg:p-8 transition-colors duration-300"
@@ -324,7 +324,7 @@ export function HeroSection() {
           </div>
 
           {/* Content Overlay */}
-          <div className="absolute bottom-8 left-4 lg:bottom-20 lg:left-8 xl:left-32 text-white space-y-2 lg:space-y-6 max-w-sm lg:max-w-2xl xl:max-w-3xl">
+          <div className="absolute bottom-6 left-4 right-4 md:bottom-8 md:right-auto lg:bottom-20 lg:left-8 xl:left-32 text-white space-y-2 lg:space-y-6 max-w-sm lg:max-w-2xl xl:max-w-3xl">
             {/* Location with enhanced styling */}
             <div
               className={`flex items-center gap-2 mb-2 backdrop-blur-sm bg-black/20 px-3 py-1.5 rounded-md border border-white/10 w-fit transition-all duration-1000 ease-out delay-300 ${
@@ -347,12 +347,12 @@ export function HeroSection() {
                   : "opacity-0 translate-y-12 scale-95"
               }`}
             >
-              <h1 className="text-4xl sm:text-5xl lg:text-7xl xl:text-8xl font-black text-[#fbbf24] leading-none tracking-tight mb-2 lg:mb-4 transform hover:scale-105 transition-all duration-500 ease-out">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl xl:text-8xl font-black text-[#fbbf24] leading-none tracking-tight mb-2 lg:mb-4 transform hover:scale-105 transition-all duration-500 ease-out">
                 <span className="inline-block hover:animate-pulse">{currentHeroSlide.title}</span>
               </h1>
               {/* Subtle glow effect */}
               <div
-                className="absolute inset-0 text-4xl sm:text-5xl lg:text-7xl xl:text-8xl font-black text-[#fbbf24] leading-none tracking-tight opacity-20 blur-sm -z-10"
+                className="absolute inset-0 text-3xl sm:text-4xl md:text-5xl lg:text-7xl xl:text-8xl font-black text-[#fbbf24] leading-none tracking-tight opacity-20 blur-sm -z-10"
                 aria-hidden="true"
               >
                 {currentHeroSlide.title}
@@ -361,17 +361,19 @@ export function HeroSection() {
 
             {/* Enhanced subtitle */}
             <div
-              className={`text-sm sm:text-base lg:text-xl font-light leading-relaxed text-gray-100 max-w-2xl transition-all duration-1000 ease-out delay-700 ${
+              className={`text-xs sm:text-sm md:text-base lg:text-xl font-light leading-relaxed text-gray-100 max-w-2xl transition-all duration-1000 ease-out delay-700 ${
                 heroLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
               }`}
             >
               <span
-                className="block mb-2 text-xs lg:text-sm uppercase tracking-wider text-[#fbbf24] font-semibold"
+                className="block mb-1 md:mb-2 text-[10px] md:text-xs lg:text-sm uppercase tracking-wider text-[#fbbf24] font-semibold"
                 role="banner"
               >
                 Official Platform
               </span>
-              <span aria-label="Platform description">{currentHeroSlide.subtitle}</span>
+              {/* Hide long subtitle on mobile, show shorter version */}
+              <span className="hidden md:inline" aria-label="Platform description">{currentHeroSlide.subtitle}</span>
+              <span className="md:hidden" aria-label="Platform description">Official SGLGB Analytics System for the Municipality of Sulop</span>
             </div>
           </div>
         </main>

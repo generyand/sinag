@@ -43,7 +43,7 @@ export function Footer() {
   return (
     <footer
       ref={footerAnimation.elementRef}
-      className={`relative z-20 w-full bg-gradient-to-br from-gray-900 via-black to-gray-800 text-white py-16 px-8 transition-all duration-1000 overflow-hidden ${
+      className={`relative z-20 w-full bg-gradient-to-br from-gray-900 via-black to-gray-800 text-white py-12 md:py-16 px-4 md:px-8 transition-all duration-1000 overflow-hidden ${
         footerAnimation.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
       }`}
     >
@@ -57,161 +57,303 @@ export function Footer() {
 
       <div className="max-w-7xl mx-auto relative z-10">
         {/* Main Footer Content */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-          {/* Column 1: Organization Info */}
-          <div className="space-y-6">
-            <div>
-              <div className="flex items-center gap-4 mb-4">
-                {/* DILG - white circular badge */}
-                <div className="w-14 h-14 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center">
+        {/* Mobile: Centered compact layout | Tablet: 2 organized rows | Desktop: 3 columns */}
+        <div className="mb-8 md:mb-12">
+          {/* Mobile & Tablet: Brand Section (centered on mobile) */}
+          <div className="flex flex-col items-center md:items-start md:flex-row md:justify-between lg:hidden mb-8 pb-6 border-b border-gray-700/50">
+            <div className="flex flex-col items-center md:items-start mb-6 md:mb-0">
+              <div className="flex items-center gap-3 mb-3">
+                {/* DILG Logo */}
+                <div className="w-11 h-11 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center flex-shrink-0">
                   <Image
                     src="/officialLogo/DILG.webp"
                     alt="DILG Logo"
-                    width={50}
-                    height={50}
+                    width={40}
+                    height={40}
                     className="object-contain rounded-full"
                   />
                 </div>
-                {/* LGU - white circular badge */}
-                <div className="w-14 h-14 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center">
+                {/* LGU Logo */}
+                <div className="w-11 h-11 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center flex-shrink-0">
                   <Image
                     src="/officialLogo/Sulop_Municipal_Government.webp"
                     alt="Sulop Municipal Government Logo"
-                    width={50}
-                    height={50}
+                    width={40}
+                    height={40}
                     className="object-contain rounded-full"
                   />
                 </div>
-              </div>
-              <h3 className="text-xl font-bold text-white mb-3">SINAG Platform</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">
-                The official digital platform for Sulop&apos;s Seal of Good Local Governance for
-                Barangays program.
-              </p>
-            </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white/5 rounded-sm p-3 backdrop-blur-sm border border-white/10">
-                <div className="text-lg font-bold text-[#fbbf24]">25</div>
-                <div className="text-xs text-gray-400">Barangays</div>
-              </div>
-              <div className="bg-white/5 rounded-sm p-3 backdrop-blur-sm border border-white/10">
-                <div className="text-lg font-bold text-[#f59e0b]">100%</div>
-                <div className="text-xs text-gray-400">Coverage</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Column 3: Contact Information */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-bold text-white mb-6">Contact & Support</h3>
-            <div className="space-y-4">
-              <div className="bg-white/5 rounded-sm p-4 backdrop-blur-sm border border-white/10">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 bg-[#fbbf24]/20 rounded-lg flex items-center justify-center">
-                    <svg
-                      className="w-4 h-4 text-[#fbbf24]"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold text-white">System Administrator</div>
-                    <div className="text-xs text-gray-400">MLGOO-DILG</div>
-                  </div>
+                <div className="ml-2">
+                  <h3 className="text-lg font-bold text-white">SINAG Platform</h3>
+                  <p className="text-xs text-gray-400">Official SGLGB Tool</p>
                 </div>
-                <a
-                  href="mailto:sulop.mlgoo@dilg.gov.ph"
-                  className="text-[#fbbf24] hover:text-[#f59e0b] font-medium text-sm transition-colors duration-300 hover:underline"
-                >
-                  sulop.mlgoo@dilg.gov.ph
-                </a>
               </div>
-
-              <div className="flex items-center gap-2 text-sm text-gray-400">
-                <svg
-                  className="w-4 h-4 text-green-500"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                  />
-                </svg>
-                <span>Secure & Verified Platform</span>
+              {/* Stats - inline on mobile */}
+              <div className="flex gap-4 mt-2">
+                <div className="text-center">
+                  <div className="text-lg font-bold text-[#fbbf24]">25</div>
+                  <div className="text-xs text-gray-400">Barangays</div>
+                </div>
+                <div className="w-px bg-gray-700"></div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-[#f59e0b]">100%</div>
+                  <div className="text-xs text-gray-400">Coverage</div>
+                </div>
               </div>
             </div>
-          </div>
-
-          {/* Column 4: Social Media & Updates */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-bold text-white mb-6">Stay Connected</h3>
-
-            {/* Social Media */}
-            <div>
-              <p className="text-gray-400 text-sm mb-4">Follow us for updates and announcements</p>
-              <div className="flex gap-3">
+            {/* Social Icons - visible on tablet in brand row */}
+            <div className="hidden md:flex lg:hidden flex-col items-end">
+              <p className="text-gray-400 text-sm mb-3">Follow us</p>
+              <div className="flex gap-2">
                 <a
                   href="#"
-                  className="w-10 h-10 bg-white/10 hover:bg-[#fbbf24] rounded-lg flex items-center justify-center text-white hover:text-black transition-all duration-300 hover:scale-110 hover:shadow-lg backdrop-blur-sm border border-white/20 group"
+                  className="w-10 h-10 bg-white/10 hover:bg-[#fbbf24] rounded-lg flex items-center justify-center text-white hover:text-black transition-all duration-300 backdrop-blur-sm border border-white/20"
                   aria-label="Follow us on Facebook"
                 >
                   <Facebook className="w-5 h-5" />
                 </a>
                 <a
                   href="#"
-                  className="w-10 h-10 bg-white/10 hover:bg-gradient-to-br hover:from-purple-600 hover:to-pink-500 rounded-lg flex items-center justify-center text-white transition-all duration-300 hover:scale-110 hover:shadow-lg backdrop-blur-sm border border-white/20 group"
+                  className="w-10 h-10 bg-white/10 hover:bg-gradient-to-br hover:from-purple-600 hover:to-pink-500 rounded-lg flex items-center justify-center text-white transition-all duration-300 backdrop-blur-sm border border-white/20"
                   aria-label="Follow us on Instagram"
                 >
                   <Instagram className="w-5 h-5" />
                 </a>
                 <a
                   href="#"
-                  className="w-10 h-10 bg-white/10 hover:bg-blue-400 rounded-lg flex items-center justify-center text-white transition-all duration-300 hover:scale-110 hover:shadow-lg backdrop-blur-sm border border-white/20 group"
+                  className="w-10 h-10 bg-white/10 hover:bg-blue-400 rounded-lg flex items-center justify-center text-white transition-all duration-300 backdrop-blur-sm border border-white/20"
                   aria-label="Follow us on Twitter"
                 >
                   <Twitter className="w-5 h-5" />
                 </a>
               </div>
             </div>
+          </div>
 
-            {/* Status Indicators */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-gray-300">System Online</span>
+          {/* Mobile: Contact & Social in compact cards */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:hidden">
+            {/* Contact Card */}
+            <div className="bg-white/5 rounded-lg p-4 backdrop-blur-sm border border-white/10">
+              <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                <svg className="w-4 h-4 text-[#fbbf24]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Contact Support
+              </h4>
+              <div className="text-xs text-gray-400 mb-1">System Administrator (MLGOO-DILG)</div>
+              <a
+                href="mailto:sulop.mlgoo@dilg.gov.ph"
+                className="text-[#fbbf24] hover:text-[#f59e0b] font-medium text-sm transition-colors break-all"
+              >
+                sulop.mlgoo@dilg.gov.ph
+              </a>
+            </div>
+
+            {/* Status Card */}
+            <div className="bg-white/5 rounded-lg p-4 backdrop-blur-sm border border-white/10">
+              <h4 className="text-sm font-semibold text-white mb-3">System Status</h4>
+              <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-gray-300">Online</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 bg-[#fbbf24] rounded-full animate-pulse"></div>
+                  <span className="text-gray-300">Live</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span className="text-gray-300">v1.0</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-sm">
-                <div className="w-2 h-2 bg-[#fbbf24] rounded-full animate-pulse"></div>
-                <span className="text-gray-300">Live Application</span>
+            </div>
+          </div>
+
+          {/* Mobile-only: Social section */}
+          <div className="mt-6 text-center md:hidden">
+            <p className="text-gray-400 text-sm mb-3">Follow us for updates</p>
+            <div className="flex justify-center gap-3">
+              <a
+                href="#"
+                className="w-11 h-11 bg-white/10 hover:bg-[#fbbf24] rounded-lg flex items-center justify-center text-white hover:text-black transition-all duration-300 backdrop-blur-sm border border-white/20"
+                aria-label="Follow us on Facebook"
+              >
+                <Facebook className="w-5 h-5" />
+              </a>
+              <a
+                href="#"
+                className="w-11 h-11 bg-white/10 hover:bg-gradient-to-br hover:from-purple-600 hover:to-pink-500 rounded-lg flex items-center justify-center text-white transition-all duration-300 backdrop-blur-sm border border-white/20"
+                aria-label="Follow us on Instagram"
+              >
+                <Instagram className="w-5 h-5" />
+              </a>
+              <a
+                href="#"
+                className="w-11 h-11 bg-white/10 hover:bg-blue-400 rounded-lg flex items-center justify-center text-white transition-all duration-300 backdrop-blur-sm border border-white/20"
+                aria-label="Follow us on Twitter"
+              >
+                <Twitter className="w-5 h-5" />
+              </a>
+            </div>
+          </div>
+
+          {/* Desktop: Original 3-column layout */}
+          <div className="hidden lg:grid lg:grid-cols-3 gap-8">
+            {/* Column 1: Organization Info */}
+            <div className="space-y-6">
+              <div>
+                <div className="flex items-center gap-4 mb-4">
+                  {/* DILG - white circular badge */}
+                  <div className="w-14 h-14 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center flex-shrink-0">
+                    <Image
+                      src="/officialLogo/DILG.webp"
+                      alt="DILG Logo"
+                      width={50}
+                      height={50}
+                      className="object-contain rounded-full"
+                    />
+                  </div>
+                  {/* LGU - white circular badge */}
+                  <div className="w-14 h-14 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center flex-shrink-0">
+                    <Image
+                      src="/officialLogo/Sulop_Municipal_Government.webp"
+                      alt="Sulop Municipal Government Logo"
+                      width={50}
+                      height={50}
+                      className="object-contain rounded-full"
+                    />
+                  </div>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">SINAG Platform</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">
+                  The official digital platform for Sulop&apos;s Seal of Good Local Governance for
+                  Barangays program.
+                </p>
               </div>
-              <div className="flex items-center gap-2 text-sm">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span className="text-gray-300">Version 1.0</span>
+
+              {/* Stats */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white/5 rounded-sm p-3 backdrop-blur-sm border border-white/10">
+                  <div className="text-lg font-bold text-[#fbbf24]">25</div>
+                  <div className="text-xs text-gray-400">Barangays</div>
+                </div>
+                <div className="bg-white/5 rounded-sm p-3 backdrop-blur-sm border border-white/10">
+                  <div className="text-lg font-bold text-[#f59e0b]">100%</div>
+                  <div className="text-xs text-gray-400">Coverage</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Column 2: Contact Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-bold text-white mb-6">Contact & Support</h3>
+              <div className="space-y-4">
+                <div className="bg-white/5 rounded-sm p-4 backdrop-blur-sm border border-white/10">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 bg-[#fbbf24]/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <svg
+                        className="w-4 h-4 text-[#fbbf24]"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-white">System Administrator</div>
+                      <div className="text-xs text-gray-400">MLGOO-DILG</div>
+                    </div>
+                  </div>
+                  <a
+                    href="mailto:sulop.mlgoo@dilg.gov.ph"
+                    className="text-[#fbbf24] hover:text-[#f59e0b] font-medium text-sm transition-colors duration-300 hover:underline break-all"
+                  >
+                    sulop.mlgoo@dilg.gov.ph
+                  </a>
+                </div>
+
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <svg
+                    className="w-4 h-4 text-green-500 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                    />
+                  </svg>
+                  <span>Secure & Verified Platform</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Column 3: Social Media & Updates */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-bold text-white mb-6">Stay Connected</h3>
+
+              {/* Social Media */}
+              <div>
+                <p className="text-gray-400 text-sm mb-4">Follow us for updates and announcements</p>
+                <div className="flex gap-3">
+                  <a
+                    href="#"
+                    className="w-10 h-10 bg-white/10 hover:bg-[#fbbf24] rounded-lg flex items-center justify-center text-white hover:text-black transition-all duration-300 hover:scale-110 hover:shadow-lg backdrop-blur-sm border border-white/20 group"
+                    aria-label="Follow us on Facebook"
+                  >
+                    <Facebook className="w-5 h-5" />
+                  </a>
+                  <a
+                    href="#"
+                    className="w-10 h-10 bg-white/10 hover:bg-gradient-to-br hover:from-purple-600 hover:to-pink-500 rounded-lg flex items-center justify-center text-white transition-all duration-300 hover:scale-110 hover:shadow-lg backdrop-blur-sm border border-white/20 group"
+                    aria-label="Follow us on Instagram"
+                  >
+                    <Instagram className="w-5 h-5" />
+                  </a>
+                  <a
+                    href="#"
+                    className="w-10 h-10 bg-white/10 hover:bg-blue-400 rounded-lg flex items-center justify-center text-white transition-all duration-300 hover:scale-110 hover:shadow-lg backdrop-blur-sm border border-white/20 group"
+                    aria-label="Follow us on Twitter"
+                  >
+                    <Twitter className="w-5 h-5" />
+                  </a>
+                </div>
+              </div>
+
+              {/* Status Indicators */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse flex-shrink-0"></div>
+                  <span className="text-gray-300">System Online</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="w-2 h-2 bg-[#fbbf24] rounded-full animate-pulse flex-shrink-0"></div>
+                  <span className="text-gray-300">Live Application</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
+                  <span className="text-gray-300">Version 1.0</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Enhanced Bottom Section */}
-        <div className="border-t border-gray-700/50 pt-8">
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
+        <div className="border-t border-gray-700/50 pt-6 md:pt-8">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-4 md:gap-6">
             {/* Left: Copyright */}
-            <div className="flex items-center gap-3 text-sm text-gray-400">
-              <div className="w-8 h-8 bg-[#fbbf24]/20 rounded-lg flex items-center justify-center">
+            <div className="flex items-center gap-3 text-sm text-gray-400 text-center lg:text-left">
+              <div className="w-8 h-8 bg-[#fbbf24]/20 rounded-lg flex items-center justify-center flex-shrink-0">
                 <svg
                   className="w-4 h-4 text-[#fbbf24]"
                   fill="none"
@@ -227,7 +369,7 @@ export function Footer() {
                 </svg>
               </div>
               <div>
-                <div className="font-medium text-white">© 2025 Municipality of Sulop</div>
+                <div className="font-medium text-white text-sm md:text-base">© 2025 Municipality of Sulop</div>
                 <div className="text-xs">
                   All Rights Reserved • Developed by{" "}
                   <span className="text-[#fbbf24] font-semibold">SINAG</span> Team
@@ -236,10 +378,10 @@ export function Footer() {
             </div>
 
             {/* Right: Additional Info */}
-            <div className="flex items-center gap-6 text-sm text-gray-400">
+            <div className="flex items-center gap-4 md:gap-6 text-sm text-gray-400">
               <div className="flex items-center gap-2">
                 <svg
-                  className="w-4 h-4 text-[#fbbf24]"
+                  className="w-4 h-4 text-[#fbbf24] flex-shrink-0"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -251,11 +393,12 @@ export function Footer() {
                     d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
                   />
                 </svg>
-                <span>SSL Secured</span>
+                <span className="hidden sm:inline">SSL Secured</span>
+                <span className="sm:hidden">Secured</span>
               </div>
               <div className="flex items-center gap-2">
                 <svg
-                  className="w-4 h-4 text-green-500"
+                  className="w-4 h-4 text-green-500 flex-shrink-0"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -267,7 +410,8 @@ export function Footer() {
                     d="M5 13l4 4L19 7"
                   />
                 </svg>
-                <span>Government Verified</span>
+                <span className="hidden sm:inline">Government Verified</span>
+                <span className="sm:hidden">Verified</span>
               </div>
             </div>
           </div>

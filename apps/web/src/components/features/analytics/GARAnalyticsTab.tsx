@@ -112,93 +112,98 @@ export function GARAnalyticsTab({ year }: GARAnalyticsTabProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Filters and Controls */}
-      <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg p-6">
-        <div className="flex flex-col md:flex-row gap-4 items-start md:items-end">
-          {/* Assessment Selector */}
-          <div className="flex-1 w-full md:w-auto">
-            <label
-              id="assessment-selector-label"
-              className="block text-sm font-medium text-[var(--foreground)] mb-2"
-            >
-              Select Assessment
-            </label>
-            <Select value={selectedAssessmentId} onValueChange={setSelectedAssessmentId}>
-              <SelectTrigger className="w-full" aria-labelledby="assessment-selector-label">
-                <SelectValue placeholder="Select a completed assessment..." />
-              </SelectTrigger>
-              <SelectContent className="z-50 max-h-96">
-                {loadingAssessments ? (
-                  <SelectItem value="loading" disabled>
-                    Loading...
-                  </SelectItem>
-                ) : assessmentsData?.assessments?.length === 0 ? (
-                  <SelectItem value="none" disabled>
-                    No completed assessments found for {year}
-                  </SelectItem>
-                ) : (
-                  assessmentsData?.assessments?.map((a) => (
-                    <SelectItem key={a.assessment_id} value={String(a.assessment_id)}>
-                      {a.barangay_name} - {a.status}
+      <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg p-4 md:p-6">
+        <div className="flex flex-col gap-3 md:gap-4">
+          {/* Top row: Selectors */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+            {/* Assessment Selector */}
+            <div className="w-full">
+              <label
+                id="assessment-selector-label"
+                className="block text-xs md:text-sm font-medium text-[var(--foreground)] mb-1.5 md:mb-2"
+              >
+                Select Assessment
+              </label>
+              <Select value={selectedAssessmentId} onValueChange={setSelectedAssessmentId}>
+                <SelectTrigger className="w-full h-10 md:h-11 text-sm" aria-labelledby="assessment-selector-label">
+                  <SelectValue placeholder="Select assessment..." />
+                </SelectTrigger>
+                <SelectContent className="z-50 max-h-96">
+                  {loadingAssessments ? (
+                    <SelectItem value="loading" disabled>
+                      Loading...
                     </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+                  ) : assessmentsData?.assessments?.length === 0 ? (
+                    <SelectItem value="none" disabled>
+                      No completed assessments for {year}
+                    </SelectItem>
+                  ) : (
+                    assessmentsData?.assessments?.map((a) => (
+                      <SelectItem key={a.assessment_id} value={String(a.assessment_id)}>
+                        {a.barangay_name} - {a.status}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Governance Area Selector */}
+            <div className="w-full">
+              <label
+                id="governance-area-selector-label"
+                className="block text-xs md:text-sm font-medium text-[var(--foreground)] mb-1.5 md:mb-2"
+              >
+                Governance Area
+              </label>
+              <Select value={selectedAreaId} onValueChange={setSelectedAreaId}>
+                <SelectTrigger className="h-10 md:h-11 text-sm" aria-labelledby="governance-area-selector-label">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="z-50">
+                  <SelectItem value="all">All Areas</SelectItem>
+                  <SelectItem value="1">CGA 1: Financial Admin</SelectItem>
+                  <SelectItem value="2">CGA 2: Disaster Prep</SelectItem>
+                  <SelectItem value="3">CGA 3: Safety & Order</SelectItem>
+                  <SelectItem value="4">EGA 1: Social Protection</SelectItem>
+                  <SelectItem value="5">EGA 2: Business-Friendly</SelectItem>
+                  <SelectItem value="6">EGA 3: Environment</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          {/* Governance Area Selector */}
-          <div className="w-full md:w-64">
-            <label
-              id="governance-area-selector-label"
-              className="block text-sm font-medium text-[var(--foreground)] mb-2"
-            >
-              Governance Area
-            </label>
-            <Select value={selectedAreaId} onValueChange={setSelectedAreaId}>
-              <SelectTrigger aria-labelledby="governance-area-selector-label">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="z-50">
-                <SelectItem value="all">All Governance Areas</SelectItem>
-                <SelectItem value="1">CGA 1: Financial Administration</SelectItem>
-                <SelectItem value="2">CGA 2: Disaster Preparedness</SelectItem>
-                <SelectItem value="3">CGA 3: Safety, Peace and Order</SelectItem>
-                <SelectItem value="4">EGA 1: Social Protection</SelectItem>
-                <SelectItem value="5">EGA 2: Business-Friendliness</SelectItem>
-                <SelectItem value="6">EGA 3: Environmental Management</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Export Buttons */}
-          <div className="flex gap-2">
+          {/* Export Buttons - Full width on mobile */}
+          <div className="flex gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
               onClick={() => handleExport("excel")}
               disabled={!selectedAssessmentId || exportingExcel || exportingPdf}
-              className="flex items-center gap-2"
+              className="flex-1 sm:flex-none items-center justify-center gap-2 h-10 md:h-11 text-sm"
             >
               {exportingExcel ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <FileSpreadsheet className="h-4 w-4" />
               )}
-              {exportingExcel ? "Exporting..." : "Excel"}
+              <span className="hidden sm:inline">{exportingExcel ? "Exporting..." : "Excel"}</span>
+              <span className="sm:hidden">{exportingExcel ? "..." : "Excel"}</span>
             </Button>
             <Button
               variant="outline"
               onClick={() => handleExport("pdf")}
               disabled={!selectedAssessmentId || exportingExcel || exportingPdf}
-              className="flex items-center gap-2"
+              className="flex-1 sm:flex-none items-center justify-center gap-2 h-10 md:h-11 text-sm"
             >
               {exportingPdf ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <FileText className="h-4 w-4" />
               )}
-              {exportingPdf ? "Exporting..." : "PDF"}
+              <span className="hidden sm:inline">{exportingPdf ? "Exporting..." : "PDF"}</span>
+              <span className="sm:hidden">{exportingPdf ? "..." : "PDF"}</span>
             </Button>
           </div>
         </div>
@@ -206,20 +211,20 @@ export function GARAnalyticsTab({ year }: GARAnalyticsTabProps) {
 
       {/* GAR Report Display */}
       {!selectedAssessmentId ? (
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg p-12 text-center">
-          <FileSpreadsheet className="h-16 w-16 mx-auto text-[var(--muted-foreground)] mb-4" />
-          <h3 className="text-lg font-medium text-[var(--foreground)] mb-2">
+        <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg p-6 md:p-12 text-center">
+          <FileSpreadsheet className="h-10 w-10 md:h-16 md:w-16 mx-auto text-[var(--muted-foreground)] mb-3 md:mb-4" />
+          <h3 className="text-base md:text-lg font-medium text-[var(--foreground)] mb-1.5 md:mb-2">
             Select an Assessment
           </h3>
-          <p className="text-[var(--muted-foreground)]">
-            Choose a completed assessment from the dropdown above to view its GAR for {year}.
+          <p className="text-sm md:text-base text-[var(--muted-foreground)]">
+            Choose an assessment from the dropdown to view its GAR for {year}.
           </p>
         </div>
       ) : loadingGar ? (
         <GARSkeleton />
       ) : garError ? (
-        <div className="bg-[var(--card)] border border-red-200 rounded-sm shadow-lg p-6 text-center">
-          <p className="text-red-600">Failed to load GAR data. Please try again.</p>
+        <div className="bg-[var(--card)] border border-red-200 rounded-sm shadow-lg p-4 md:p-6 text-center">
+          <p className="text-sm md:text-base text-red-600">Failed to load GAR data. Please try again.</p>
         </div>
       ) : garData ? (
         <GARReportDisplay data={garData} />
