@@ -23,7 +23,6 @@ import {
 } from "@sinag/shared";
 import {
   AlertCircle,
-  AlertTriangle,
   CheckCircle,
   CheckCircle2,
   Clock,
@@ -402,37 +401,47 @@ export function AssessmentHeader({
                   {isCalibrationRework ? "Calibration Submitted" : "Resubmitted"}
                 </div>
               ) : (
-                <Button
-                  onClick={() => setShowConfirmDialog(true)}
-                  disabled={
-                    submitMutation.isPending ||
-                    resubmitMutation.isPending ||
-                    calibrationMutation.isPending
-                  }
-                  className={
-                    validation.isComplete
-                      ? "h-14 px-8 text-base font-semibold bg-[var(--foreground)] hover:bg-[var(--foreground)]/90 text-[var(--background)] rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 min-w-[200px]"
-                      : "h-14 px-8 text-base font-semibold bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 min-w-[200px]"
-                  }
-                >
-                  {submitMutation.isPending ||
-                  resubmitMutation.isPending ||
-                  calibrationMutation.isPending ? (
-                    <>
-                      <Loader2 className="h-5 w-5 mr-3 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="h-5 w-5 mr-3" />
-                      {isReworkStatus
-                        ? isCalibrationRework
-                          ? "Submit Calibration"
-                          : "Resubmit"
-                        : "Submit Assessment"}
-                    </>
+                <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-block">
+                      <Button
+                        onClick={() => setShowConfirmDialog(true)}
+                        disabled={
+                          !validation.isComplete ||
+                          submitMutation.isPending ||
+                          resubmitMutation.isPending ||
+                          calibrationMutation.isPending
+                        }
+                        className="h-14 px-8 text-base font-semibold bg-[var(--foreground)] hover:bg-[var(--foreground)]/90 text-[var(--background)] rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 min-w-[200px] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                      >
+                        {submitMutation.isPending ||
+                        resubmitMutation.isPending ||
+                        calibrationMutation.isPending ? (
+                          <>
+                            <Loader2 className="h-5 w-5 mr-3 animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="h-5 w-5 mr-3" />
+                            {isReworkStatus
+                              ? isCalibrationRework
+                                ? "Submit Calibration"
+                                : "Resubmit"
+                              : "Submit Assessment"}
+                          </>
+                        )}
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {!validation.isComplete && (
+                    <TooltipContent side="bottom" className="max-w-xs">
+                      {getTooltipContent()}
+                    </TooltipContent>
                   )}
-                </Button>
+                </Tooltip>
+              </TooltipProvider>
               )
             ) : (
               <div className="h-14 px-8 flex items-center justify-center text-base font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg min-w-[200px]">
@@ -471,45 +480,17 @@ export function AssessmentHeader({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              {validation.isComplete ? (
-                <>
-                  <Send className="h-5 w-5" />
-                  {isReworkStatus
-                    ? isCalibrationRework
-                      ? "Submit Calibration?"
-                      : "Resubmit Assessment?"
-                    : "Submit Assessment for Review?"}
-                </>
-              ) : (
-                <>
-                  <AlertTriangle className="h-5 w-5 text-orange-500" />
-                  Submit Incomplete Assessment?
-                </>
-              )}
+              <Send className="h-5 w-5" />
+              {isReworkStatus
+                ? isCalibrationRework
+                  ? "Submit Calibration?"
+                  : "Resubmit Assessment?"
+                : "Submit Assessment for Review?"}
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3 pt-2">
-                {/* Warning banner for incomplete assessment */}
-                {!validation.isComplete && (
-                  <div className="flex items-start gap-2 p-3 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-md">
-                    <AlertTriangle className="h-5 w-5 mt-0.5 flex-shrink-0 text-orange-500" />
-                    <div className="space-y-1">
-                      <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
-                        Your assessment is not yet complete
-                      </span>
-                      <p className="text-xs text-orange-600 dark:text-orange-400">
-                        {validation.missingIndicators.length} of {assessment.totalIndicators}{" "}
-                        indicators are incomplete. You can still submit, but incomplete indicators
-                        may affect your assessment result.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
                 <p className="text-sm text-muted-foreground">
-                  {validation.isComplete
-                    ? "Are you sure you want to submit this assessment? Once submitted:"
-                    : "Are you sure you want to submit anyway? Once submitted:"}
+                  Are you sure you want to submit this assessment? Once submitted:
                 </p>
                 <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
                   <li>Your assessment will be locked for editing</li>
@@ -518,18 +499,11 @@ export function AssessmentHeader({
                     You will only be able to edit if the assessor requests rework (one rework cycle
                     allowed)
                   </li>
-                  {!validation.isComplete && (
-                    <li className="text-orange-600 dark:text-orange-400">
-                      Incomplete indicators cannot be edited after submission
-                    </li>
-                  )}
                 </ul>
                 <div className="flex items-start gap-2 p-3 bg-muted rounded-md mt-3">
                   <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">
-                    {validation.isComplete
-                      ? "Please ensure all information is accurate before submitting."
-                      : "If you don't have MOVs for certain indicators, you may proceed with submission."}
+                    Please ensure all information is accurate before submitting.
                   </span>
                 </div>
               </div>
@@ -568,11 +542,7 @@ export function AssessmentHeader({
                 resubmitMutation.isPending ||
                 calibrationMutation.isPending
               }
-              className={
-                validation.isComplete
-                  ? "bg-[var(--foreground)] hover:bg-[var(--foreground)]/90 text-[var(--background)] font-semibold shadow-md hover:shadow-lg"
-                  : "bg-orange-500 hover:bg-orange-600 text-white font-semibold shadow-md hover:shadow-lg"
-              }
+              className="bg-[var(--foreground)] hover:bg-[var(--foreground)]/90 text-[var(--background)] font-semibold shadow-md hover:shadow-lg"
             >
               {submitMutation.isPending ||
               resubmitMutation.isPending ||
@@ -584,7 +554,7 @@ export function AssessmentHeader({
               ) : (
                 <>
                   <CheckCircle2 className="mr-2 h-4 w-4" />
-                  {validation.isComplete ? "Confirm Submit" : "Submit Anyway"}
+                  Confirm Submit
                 </>
               )}
             </AlertDialogAction>
