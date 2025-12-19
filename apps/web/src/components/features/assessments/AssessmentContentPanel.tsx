@@ -127,6 +127,20 @@ export function AssessmentContentPanel({
       {/* Scrollable Content */}
       <div ref={contentRef} className="flex-1 overflow-y-auto">
         <div className="max-w-5xl mx-auto px-0 sm:px-6 lg:px-8 py-6 sm:py-8">
+          {/* Tech Notes PDF - at top, based on governance area */}
+          {selectedIndicator?.governanceAreaId && (
+            <div className="mb-6">
+              <TechNotesPDF
+                areaNumber={Number(selectedIndicator.governanceAreaId)}
+                areaName={
+                  assessment.governanceAreas?.find(
+                    (a) => String(a.id) === String(selectedIndicator.governanceAreaId)
+                  )?.name
+                }
+              />
+            </div>
+          )}
+
           {/* Form Content */}
           <div className="space-y-6">
             <RecursiveIndicator
@@ -145,20 +159,6 @@ export function AssessmentContentPanel({
               mlgooFlaggedFileIds={mlgooFlaggedFileIds}
             />
           </div>
-
-          {/* Tech Notes PDF - based on governance area */}
-          {selectedIndicator?.governanceAreaId && (
-            <div className="mt-6">
-              <TechNotesPDF
-                areaNumber={Number(selectedIndicator.governanceAreaId)}
-                areaName={
-                  assessment.governanceAreas?.find(
-                    (a) => String(a.id) === String(selectedIndicator.governanceAreaId)
-                  )?.name
-                }
-              />
-            </div>
-          )}
 
           {/* Rework Alert Banner - Shows indicator-specific assessor feedback at the bottom */}
           {reworkContext?.current_indicator && (
