@@ -1030,12 +1030,13 @@ class AssessorService:
                         "area_type": indicator.governance_area.area_type.value,
                     },
                     # Technical notes - resolve year placeholders
+                    # Return None if no description to let frontend hide the section
                     "technical_notes": (
                         year_resolver.resolve_string(indicator.description)
                         if year_resolver
                         else indicator.description
                     )
-                    or "No technical notes available",
+                    or None,
                     # Checklist items for validation - resolve year placeholders in labels
                     "checklist_items": [
                         {
