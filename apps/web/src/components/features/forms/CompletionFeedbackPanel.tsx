@@ -195,7 +195,78 @@ export function CompletionFeedbackPanel({
         }
       });
 
-      // Check if at least one complete option group exists
+      // REWORK SPECIAL CASE for OR-logic: Only require rejected files to be replaced
+      // if they're in the option group being used. If another option is complete, that's valid.
+      if (indicatorRequiresRework && movAnnotations && movAnnotations.length > 0) {
+        const rejectedFileIds = new Set(movAnnotations.map((ann: any) => String(ann.mov_file_id)));
+
+        // Find fields that have rejected files (without valid replacements)
+        const rejectedFieldIdsWithoutReplacement = new Set<string>();
+        allFiles.forEach((file: MOVFileResponse) => {
+          if (file.field_id && rejectedFileIds.has(String(file.id)) && !file.deleted_at) {
+            const hasValidReplacement = uploadedFiles.some(
+              (f: MOVFileResponse) => f.field_id === file.field_id && !f.deleted_at
+            );
+            if (!hasValidReplacement) {
+              rejectedFieldIdsWithoutReplacement.add(file.field_id);
+            }
+          }
+        });
+
+        // Check if ANY option group is complete without unresolved rejections
+        let hasValidCompleteGroup = false;
+        for (const [groupName, groupFields] of Object.entries(optionGroups)) {
+          const groupFieldIds = new Set(groupFields.map((f) => f.field_id));
+          const groupHasUnresolvedRejections = [...rejectedFieldIdsWithoutReplacement].some(
+            (fieldId) => groupFieldIds.has(fieldId)
+          );
+
+          // Skip this group if it has unresolved rejections
+          if (groupHasUnresolvedRejections) {
+            continue;
+          }
+
+          // Check if this group is complete (internal OR vs AND logic)
+          const hasInternalOr =
+            groupName.includes("Option 3") ||
+            groupName.includes("OPTION 3") ||
+            groupName.toLowerCase().includes("option 3");
+
+          if (hasInternalOr) {
+            if (groupFields.some((field) => isFieldFilled(field))) {
+              hasValidCompleteGroup = true;
+              break;
+            }
+          } else {
+            if (groupFields.every((field) => isFieldFilled(field))) {
+              hasValidCompleteGroup = true;
+              break;
+            }
+          }
+        }
+
+        const totalRequired = 1;
+        const completed = hasValidCompleteGroup ? 1 : 0;
+        const percentage = Math.round((completed / totalRequired) * 100);
+        const incompleteFields: FormSchemaFieldsItem[] = [];
+        if (!hasValidCompleteGroup) {
+          Object.values(optionGroups).forEach((groupFields) => {
+            const firstIncomplete = groupFields.find((field) => !isFieldFilled(field));
+            if (firstIncomplete) {
+              incompleteFields.push(firstIncomplete);
+            }
+          });
+        }
+
+        return {
+          totalRequired,
+          completed,
+          percentage,
+          incompleteFields,
+        };
+      }
+
+      // Standard logic: Check if at least one complete option group exists
       // For groups with internal OR (like Option 3), any field being filled counts
       let hasCompleteGroup = false;
       for (const [groupName, groupFields] of Object.entries(optionGroups)) {
@@ -242,55 +313,12 @@ export function CompletionFeedbackPanel({
 
     // For grouped OR logic (e.g., indicator 2.1.4 with Option A vs Option B, or 6.2.1 with Options A/B/C)
     if (isOrLogic) {
-      // REWORK SPECIAL CASE: If there are rejected files (with annotations) that
-      // haven't been replaced yet, show progress based on rejected field replacements.
-      if (indicatorRequiresRework && movAnnotations && movAnnotations.length > 0) {
-        const rejectedFileIds = new Set(movAnnotations.map((ann: any) => String(ann.mov_file_id)));
-
-        // Find fields that have rejected files
-        const rejectedFieldIds = new Set<string>();
-        allFiles.forEach((file: MOVFileResponse) => {
-          if (file.field_id && rejectedFileIds.has(String(file.id)) && !file.deleted_at) {
-            rejectedFieldIds.add(file.field_id);
-          }
-        });
-
-        // If there are rejected fields, check if they have valid replacement files
-        if (rejectedFieldIds.size > 0) {
-          const rejectedFieldsArray = Array.from(rejectedFieldIds);
-          const incompleteRejectedFields: FormSchemaFieldsItem[] = [];
-          let allReplaced = true;
-
-          for (const fieldId of rejectedFieldsArray) {
-            const hasValidFile = uploadedFiles.some(
-              (file: MOVFileResponse) => file.field_id === fieldId && !file.deleted_at
-            );
-            if (!hasValidFile) {
-              allReplaced = false;
-              const fieldDef = requiredFields.find((f) => f.field_id === fieldId);
-              if (fieldDef) {
-                incompleteRejectedFields.push(fieldDef);
-              }
-            }
-          }
-
-          // Progress: 0/1 if not all replaced, 1/1 if all replaced
-          return {
-            totalRequired: 1,
-            completed: allReplaced ? 1 : 0,
-            percentage: allReplaced ? 100 : 0,
-            incompleteFields: incompleteRejectedFields,
-          };
-        }
-      }
-
       // Detect field groups by analyzing field_ids
       // IMPORTANT: This logic must match DynamicFormRenderer.tsx isIndicatorComplete calculation
       const groups: Record<string, FormSchemaFieldsItem[]> = {};
 
       requiredFields.forEach((field) => {
         // Use option_group if available, otherwise treat each field as its own group
-        // This matches DynamicFormRenderer.tsx line 435: const optionGroup = (field as any).option_group || field.field_id;
         const groupName = (field as any).option_group || field.field_id;
 
         if (!groups[groupName]) {
@@ -299,8 +327,63 @@ export function CompletionFeedbackPanel({
         groups[groupName].push(field);
       });
 
-      // Check if at least one complete group is filled
-      const completeGroups = Object.entries(groups).filter(([groupName, groupFields]) => {
+      // REWORK SPECIAL CASE for OR-logic: For OR-logic indicators (e.g., PHYSICAL OR FINANCIAL),
+      // BLGU only needs to satisfy ONE option. If an option group is complete AND doesn't have
+      // any rejected files needing replacement, it's valid.
+      if (indicatorRequiresRework && movAnnotations && movAnnotations.length > 0) {
+        const rejectedFileIds = new Set(movAnnotations.map((ann: any) => String(ann.mov_file_id)));
+
+        // Find fields that have rejected files (without valid replacements)
+        const rejectedFieldIdsWithoutReplacement = new Set<string>();
+        allFiles.forEach((file: MOVFileResponse) => {
+          if (file.field_id && rejectedFileIds.has(String(file.id)) && !file.deleted_at) {
+            const hasValidReplacement = uploadedFiles.some(
+              (f: MOVFileResponse) => f.field_id === file.field_id && !f.deleted_at
+            );
+            if (!hasValidReplacement) {
+              rejectedFieldIdsWithoutReplacement.add(file.field_id);
+            }
+          }
+        });
+
+        // For OR logic during rework: Check if ANY option group is:
+        // 1. Fully filled (all fields have files), AND
+        // 2. None of its fields have unresolved rejected files
+        let hasValidCompleteGroup = false;
+        for (const [, groupFields] of Object.entries(groups)) {
+          const groupFieldIds = new Set(groupFields.map((f) => f.field_id));
+          const groupHasUnresolvedRejections = [...rejectedFieldIdsWithoutReplacement].some(
+            (fieldId) => groupFieldIds.has(fieldId)
+          );
+
+          // Skip this group if it has unresolved rejections
+          if (groupHasUnresolvedRejections) {
+            continue;
+          }
+
+          // Check if all fields in this group are filled
+          if (groupFields.every((field) => isFieldFilled(field))) {
+            hasValidCompleteGroup = true;
+            break;
+          }
+        }
+
+        const totalRequired = 1;
+        const completed = hasValidCompleteGroup ? 1 : 0;
+        const percentage = Math.round((completed / totalRequired) * 100);
+        const incompleteFields =
+          completed === 0 ? requiredFields.filter((field) => !isFieldFilled(field)) : [];
+
+        return {
+          totalRequired,
+          completed,
+          percentage,
+          incompleteFields,
+        };
+      }
+
+      // Standard OR logic: Check if at least one complete group is filled
+      const completeGroups = Object.entries(groups).filter(([, groupFields]) => {
         // All fields in this group must be filled
         return groupFields.every((field) => isFieldFilled(field));
       });

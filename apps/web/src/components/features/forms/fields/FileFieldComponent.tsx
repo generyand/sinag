@@ -810,25 +810,39 @@ export function FileFieldComponent({
       }
     } else {
       // ASSESSOR REWORK MODE: Use hybrid logic with annotations
-      const hasSpecificAnnotations = movAnnotations && movAnnotations.length > 0;
+      const hasIndicatorAnnotations = movAnnotations && movAnnotations.length > 0;
       const hasGeneralComments = reworkComments && reworkComments.length > 0;
 
-      if (hasSpecificAnnotations) {
-        // Case 1: Granular Mode (Annotations exist)
-        // Only invalid files are the ones with annotations
+      // Check if THIS field has any files with annotations
+      const thisFieldHasAnnotatedFiles =
+        hasIndicatorAnnotations &&
+        oldFiles.some((f: any) =>
+          movAnnotations.some((ann: any) => String(ann.mov_file_id) === String(f.id))
+        );
+
+      if (hasIndicatorAnnotations) {
+        // Case 1: Granular Mode (Annotations exist somewhere in indicator)
+        // Only mark THIS field's files as invalid if they have annotations
+        // Files in OTHER fields (without annotations) remain VALID
         invalidOldFiles = oldFiles.filter((f: any) =>
           movAnnotations.some((ann: any) => String(ann.mov_file_id) === String(f.id))
         );
         validOldFiles = oldFiles.filter(
           (f: any) => !movAnnotations.some((ann: any) => String(ann.mov_file_id) === String(f.id))
         );
-      } else if (hasGeneralComments || indicatorRequiresRework) {
-        // Case 2: Strict Mode (No annotations, but General Note exists OR indicator flagged)
+      } else if (hasGeneralComments) {
+        // Case 2: Comment-only Mode (General comments without file annotations)
+        // ALL old files are invalid - assessor gave general feedback requiring re-upload
+        invalidOldFiles = oldFiles;
+        validOldFiles = [];
+      } else if (indicatorRequiresRework) {
+        // Case 3: Manual Flag Mode (Indicator flagged without annotations or comments)
+        // This happens when assessor uses "Flag for Rework" toggle without specific feedback
         // ALL old files are invalid - BLGU must re-upload
         invalidOldFiles = oldFiles;
         validOldFiles = [];
       } else {
-        // Case 3: No Feedback -> All valid
+        // Case 4: No Feedback -> All valid
         invalidOldFiles = [];
         validOldFiles = oldFiles;
       }

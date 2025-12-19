@@ -397,26 +397,6 @@ export function DynamicFormRenderer({
 
     // For ANY_OPTION_GROUP_REQUIRED (e.g., 1.6.1 with Options 1, 2, 3)
     if (isAnyOptionGroupRequired) {
-      // REWORK SPECIAL CASE: If there are rejected files that haven't been replaced, not complete
-      if (indicatorRequiresRework && movAnnotations && movAnnotations.length > 0) {
-        const allFiles = (filesResponse?.files || []) as MOVFileResponse[];
-        const rejectedFileIds = new Set(movAnnotations.map((ann: any) => String(ann.mov_file_id)));
-        const rejectedFieldIds = new Set<string>();
-        allFiles.forEach((file: MOVFileResponse) => {
-          if (file.field_id && rejectedFileIds.has(String(file.id)) && !file.deleted_at) {
-            rejectedFieldIds.add(file.field_id);
-          }
-        });
-        for (const fieldId of rejectedFieldIds) {
-          const hasValidReplacement = completionValidFiles.some(
-            (file: MOVFileResponse) => file.field_id === fieldId && !file.deleted_at
-          );
-          if (!hasValidReplacement) {
-            return false;
-          }
-        }
-      }
-
       const optionGroups: Record<string, FormSchemaFieldsItem[]> = {};
       requiredFields.forEach((field) => {
         const optionGroup = (field as any).option_group;
@@ -428,10 +408,58 @@ export function DynamicFormRenderer({
         }
       });
 
-      // Check if at least one complete option group exists
+      // REWORK SPECIAL CASE for OR-logic: Only require rejected files to be replaced
+      // if they're in the option group being used. If another option is complete, that's valid.
+      if (indicatorRequiresRework && movAnnotations && movAnnotations.length > 0) {
+        const allFiles = (filesResponse?.files || []) as MOVFileResponse[];
+        const rejectedFileIds = new Set(movAnnotations.map((ann: any) => String(ann.mov_file_id)));
+
+        // Find fields that have rejected files (without valid replacements)
+        const rejectedFieldIdsWithoutReplacement = new Set<string>();
+        allFiles.forEach((file: MOVFileResponse) => {
+          if (file.field_id && rejectedFileIds.has(String(file.id)) && !file.deleted_at) {
+            const hasValidReplacement = completionValidFiles.some(
+              (f: MOVFileResponse) => f.field_id === file.field_id && !f.deleted_at
+            );
+            if (!hasValidReplacement) {
+              rejectedFieldIdsWithoutReplacement.add(file.field_id);
+            }
+          }
+        });
+
+        // Check if ANY option group is complete without unresolved rejections
+        for (const [groupName, groupFields] of Object.entries(optionGroups)) {
+          const groupFieldIds = new Set(groupFields.map((f) => f.field_id));
+          const groupHasUnresolvedRejections = [...rejectedFieldIdsWithoutReplacement].some(
+            (fieldId) => groupFieldIds.has(fieldId)
+          );
+
+          // Skip this group if it has unresolved rejections
+          if (groupHasUnresolvedRejections) {
+            continue;
+          }
+
+          // Check if this group is complete (internal OR vs AND logic)
+          const hasInternalOr =
+            groupName.includes("Option 3") ||
+            groupName.includes("OPTION 3") ||
+            groupName.toLowerCase().includes("option 3");
+
+          if (hasInternalOr) {
+            if (groupFields.some((field) => isFieldFilled(field))) {
+              return true;
+            }
+          } else {
+            if (groupFields.every((field) => isFieldFilled(field))) {
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+
+      // Standard logic: Check if at least one complete option group exists
       for (const [groupName, groupFields] of Object.entries(optionGroups)) {
-        // Check if all fields in this group are filled
-        // For groups with internal OR (like Option 3), any field being filled counts
         const hasInternalOr =
           groupName.includes("Option 3") ||
           groupName.includes("OPTION 3") ||
@@ -452,26 +480,6 @@ export function DynamicFormRenderer({
 
     // For SHARED+OR logic (e.g., 4.1.6) - uses completion_group (not option_group)
     if (isSharedPlusOrLogic) {
-      // REWORK SPECIAL CASE: If there are rejected files that haven't been replaced, not complete
-      if (indicatorRequiresRework && movAnnotations && movAnnotations.length > 0) {
-        const allFiles = (filesResponse?.files || []) as MOVFileResponse[];
-        const rejectedFileIds = new Set(movAnnotations.map((ann: any) => String(ann.mov_file_id)));
-        const rejectedFieldIds = new Set<string>();
-        allFiles.forEach((file: MOVFileResponse) => {
-          if (file.field_id && rejectedFileIds.has(String(file.id)) && !file.deleted_at) {
-            rejectedFieldIds.add(file.field_id);
-          }
-        });
-        for (const fieldId of rejectedFieldIds) {
-          const hasValidReplacement = completionValidFiles.some(
-            (file: MOVFileResponse) => file.field_id === fieldId && !file.deleted_at
-          );
-          if (!hasValidReplacement) {
-            return false;
-          }
-        }
-      }
-
       const sharedFields: FormSchemaFieldsItem[] = [];
       const optionAFields: FormSchemaFieldsItem[] = [];
       const optionBFields: FormSchemaFieldsItem[] = [];
@@ -487,7 +495,61 @@ export function DynamicFormRenderer({
         }
       });
 
-      // SHARED: all must be filled
+      // REWORK SPECIAL CASE for SHARED+OR: For shared fields, ALL rejections must be addressed.
+      // For option fields, only rejections in the chosen option need to be addressed.
+      if (indicatorRequiresRework && movAnnotations && movAnnotations.length > 0) {
+        const allFiles = (filesResponse?.files || []) as MOVFileResponse[];
+        const rejectedFileIds = new Set(movAnnotations.map((ann: any) => String(ann.mov_file_id)));
+
+        // Find fields that have rejected files (without valid replacements)
+        const rejectedFieldIdsWithoutReplacement = new Set<string>();
+        allFiles.forEach((file: MOVFileResponse) => {
+          if (file.field_id && rejectedFileIds.has(String(file.id)) && !file.deleted_at) {
+            const hasValidReplacement = completionValidFiles.some(
+              (f: MOVFileResponse) => f.field_id === file.field_id && !f.deleted_at
+            );
+            if (!hasValidReplacement) {
+              rejectedFieldIdsWithoutReplacement.add(file.field_id);
+            }
+          }
+        });
+
+        // Check shared fields - ALL unresolved rejections must be fixed
+        const sharedFieldIds = new Set(sharedFields.map((f) => f.field_id));
+        const sharedHasUnresolvedRejections = [...rejectedFieldIdsWithoutReplacement].some(
+          (fieldId) => sharedFieldIds.has(fieldId)
+        );
+        if (sharedHasUnresolvedRejections) {
+          return false; // Shared fields have unresolved rejections
+        }
+
+        // Check if shared fields are complete
+        const sharedComplete =
+          sharedFields.length > 0 ? sharedFields.every((field) => isFieldFilled(field)) : true;
+        if (!sharedComplete) {
+          return false;
+        }
+
+        // Check options - at least one option must be complete without unresolved rejections
+        const optionAFieldIds = new Set(optionAFields.map((f) => f.field_id));
+        const optionBFieldIds = new Set(optionBFields.map((f) => f.field_id));
+
+        const optionAHasUnresolvedRejections = [...rejectedFieldIdsWithoutReplacement].some(
+          (fieldId) => optionAFieldIds.has(fieldId)
+        );
+        const optionBHasUnresolvedRejections = [...rejectedFieldIdsWithoutReplacement].some(
+          (fieldId) => optionBFieldIds.has(fieldId)
+        );
+
+        const optionAHasUpload =
+          !optionAHasUnresolvedRejections && optionAFields.some((field) => isFieldFilled(field));
+        const optionBHasUpload =
+          !optionBHasUnresolvedRejections && optionBFields.some((field) => isFieldFilled(field));
+
+        return optionAHasUpload || optionBHasUpload;
+      }
+
+      // Standard logic: SHARED: all must be filled
       const sharedComplete =
         sharedFields.length > 0 ? sharedFields.every((field) => isFieldFilled(field)) : true;
 
@@ -510,31 +572,48 @@ export function DynamicFormRenderer({
         groups[optionGroup].push(field);
       });
 
-      // REWORK SPECIAL CASE: If there are rejected files (with annotations) that
-      // haven't been replaced yet, the indicator is NOT complete.
-      // This ensures BLGU must address all rejected files before completion.
+      // REWORK SPECIAL CASE for OR-logic: For OR-logic indicators (e.g., PHYSICAL OR FINANCIAL),
+      // BLGU only needs to satisfy ONE option. If an option group is complete AND doesn't have
+      // any rejected files needing replacement, it's valid. We don't require ALL rejected files
+      // to be replaced - only the ones in the option group being used.
       if (indicatorRequiresRework && movAnnotations && movAnnotations.length > 0) {
         const allFiles = (filesResponse?.files || []) as MOVFileResponse[];
         const rejectedFileIds = new Set(movAnnotations.map((ann: any) => String(ann.mov_file_id)));
 
-        // Find fields that have rejected files
-        const rejectedFieldIds = new Set<string>();
+        // Find fields that have rejected files (without valid replacements)
+        const rejectedFieldIdsWithoutReplacement = new Set<string>();
         allFiles.forEach((file: MOVFileResponse) => {
           if (file.field_id && rejectedFileIds.has(String(file.id)) && !file.deleted_at) {
-            rejectedFieldIds.add(file.field_id);
+            // Check if this rejected field has a valid replacement
+            const hasValidReplacement = completionValidFiles.some(
+              (f: MOVFileResponse) => f.field_id === file.field_id && !f.deleted_at
+            );
+            if (!hasValidReplacement) {
+              rejectedFieldIdsWithoutReplacement.add(file.field_id);
+            }
           }
         });
 
-        // Check if ALL rejected fields have valid replacement files
-        for (const fieldId of rejectedFieldIds) {
-          const hasValidReplacement = completionValidFiles.some(
-            (file: MOVFileResponse) => file.field_id === fieldId && !file.deleted_at
+        // For OR logic during rework: Check if ANY option group is:
+        // 1. Fully filled (all fields have files), AND
+        // 2. None of its fields have unresolved rejected files
+        for (const [, groupFields] of Object.entries(groups)) {
+          const groupFieldIds = new Set(groupFields.map((f) => f.field_id));
+          const groupHasUnresolvedRejections = [...rejectedFieldIdsWithoutReplacement].some(
+            (fieldId) => groupFieldIds.has(fieldId)
           );
-          if (!hasValidReplacement) {
-            // This rejected field doesn't have a replacement - not complete
-            return false;
+
+          // Skip this group if it has unresolved rejections
+          if (groupHasUnresolvedRejections) {
+            continue;
+          }
+
+          // Check if all fields in this group are filled
+          if (groupFields.every((field) => isFieldFilled(field))) {
+            return true; // This group is complete without any unresolved rejections
           }
         }
+        return false; // No group is both complete and free of unresolved rejections
       }
 
       // Standard OR logic: Check if at least one complete group is filled
