@@ -24,6 +24,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { AssessmentDetailsResponse } from "@sinag/shared";
 import { AlertCircle, FileTextIcon, Info, MessageSquare as MessageSquareIcon } from "lucide-react";
+import { TechNotesPDF } from "@/components/features/shared/TechNotesPDF";
 import * as React from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -967,6 +968,10 @@ export function RightAssessorPanel({
               const indicator = (r.indicator as AnyRecord) ?? {};
               const indicatorLabel = indicator?.name || `Indicator #${r.indicator_id ?? idx + 1}`;
               const techNotes = indicator?.technical_notes || indicator?.notes || null;
+              // Get governance area for Tech Notes PDF
+              const govArea = (indicator?.governance_area as AnyRecord) ?? {};
+              const govAreaId = Number(govArea?.id) || 0;
+              const govAreaName = (govArea?.name as string) || "";
               // Get notes from form_schema (used for composition notes, considerations, etc.)
               const formSchemaNotes = (indicator?.form_schema as AnyRecord)?.notes as {
                 title?: string;
@@ -1023,6 +1028,11 @@ export function RightAssessorPanel({
                           <div className="whitespace-pre-wrap">{String(techNotes)}</div>
                         </div>
                       ) : null}
+
+                      {/* Tech Notes PDF - based on governance area */}
+                      {govAreaId > 0 && govAreaId <= 6 && (
+                        <TechNotesPDF areaNumber={govAreaId} areaName={govAreaName} />
+                      )}
 
                       {/* Form Schema Notes (composition notes, considerations, etc.) */}
                       {formSchemaNotes &&

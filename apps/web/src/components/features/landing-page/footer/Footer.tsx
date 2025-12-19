@@ -73,6 +73,16 @@ export function Footer() {
                     className="object-contain rounded-full"
                   />
                 </div>
+                {/* MLGRC Logo */}
+                <div className="w-11 h-11 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center flex-shrink-0">
+                  <Image
+                    src="/officialLogo/MLGRC.webp"
+                    alt="MLGRC Logo"
+                    width={40}
+                    height={40}
+                    className="object-contain rounded-full"
+                  />
+                </div>
                 {/* LGU Logo */}
                 <div className="w-11 h-11 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center flex-shrink-0">
                   <Image
@@ -208,6 +218,16 @@ export function Footer() {
                     <Image
                       src="/officialLogo/DILG.webp"
                       alt="DILG Logo"
+                      width={50}
+                      height={50}
+                      className="object-contain rounded-full"
+                    />
+                  </div>
+                  {/* MLGRC - white circular badge */}
+                  <div className="w-14 h-14 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center flex-shrink-0">
+                    <Image
+                      src="/officialLogo/MLGRC.webp"
+                      alt="MLGRC Logo"
                       width={50}
                       height={50}
                       className="object-contain rounded-full"

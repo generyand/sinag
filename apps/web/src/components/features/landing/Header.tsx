@@ -95,15 +95,15 @@ export function Header() {
               <div className="font-extrabold text-lg md:text-xl tracking-tight text-foreground group-hover:text-[#fbbf24] transition-colors duration-300">
                 SINAG
               </div>
-              <div className="hidden sm:block text-[10px] md:text-xs text-muted-foreground font-medium">
-                SGLGB Analytics System
+              <div className="hidden lg:block text-xs text-muted-foreground font-medium">
+                SGLGB Insights Nurturing Assessments and Governance
               </div>
             </div>
           </div>
 
           {/* Desktop Navigation */}
           <nav
-            className={`hidden md:flex items-center space-x-6 lg:space-x-8 transition-all duration-700 delay-200 ${
+            className={`hidden lg:flex items-center space-x-6 xl:space-x-8 transition-all duration-700 delay-200 ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
             }`}
           >
@@ -112,7 +112,7 @@ export function Header() {
 
           {/* Desktop CTA Button */}
           <div
-            className={`hidden md:flex items-center transition-all duration-700 delay-400 ${
+            className={`hidden lg:flex items-center transition-all duration-700 delay-400 ${
               isVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
             }`}
           >
@@ -141,8 +141,8 @@ export function Header() {
             </Button>
           </div>
 
-          {/* Mobile Menu Trigger */}
-          <div className="flex md:hidden items-center gap-4">
+          {/* Mobile & Tablet Menu Trigger */}
+          <div className="flex lg:hidden items-center gap-4">
             {/* Mobile CTA (Small) */}
             <Button
               size="sm"
@@ -161,24 +161,14 @@ export function Header() {
               </SheetTrigger>
               <SheetContent side="right" className="w-[300px] sm:w-[350px] flex flex-col pt-10">
                 <SheetHeader className="mb-6 text-left px-4">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <Image
-                      src="/logo/logo.webp"
-                      alt="SINAG Logo"
-                      width={40}
-                      height={40}
-                      className="w-10 h-10 object-contain"
-                    />
-                    <SheetTitle className="text-xl font-extrabold text-[#fbbf24]">SINAG</SheetTitle>
-                  </div>
-                  <p className="text-sm text-muted-foreground">SGLGB Analytics System for Sulop</p>
+                  <SheetTitle className="text-xl font-extrabold text-[#fbbf24]">Menu</SheetTitle>
                 </SheetHeader>
 
                 <nav className="flex flex-col space-y-2">
                   <NavLinks mobile scrollToSection={scrollToSection} />
                 </nav>
 
-                <div className="mt-auto px-4 pb-8">
+                <div className="px-4 mt-6">
                   <div className="p-4 bg-muted/30 rounded-xl border border-border">
                     <p className="text-xs text-muted-foreground mb-3 text-center">
                       Ready to access the dashboard?
@@ -189,6 +179,25 @@ export function Header() {
                     >
                       Access Login Portal
                     </Button>
+                  </div>
+                </div>
+
+                {/* Logo at very bottom */}
+                <div className="mt-auto px-4 pb-6">
+                  <div className="flex items-center justify-center space-x-3 pt-4 border-t border-border">
+                    <Image
+                      src="/logo/logo.webp"
+                      alt="SINAG Logo"
+                      width={32}
+                      height={32}
+                      className="w-8 h-8 object-contain"
+                    />
+                    <div>
+                      <div className="text-sm font-extrabold text-[#fbbf24]">SINAG</div>
+                      <p className="text-[10px] text-muted-foreground">
+                        SGLGB Insights Nurturing Assessments and Governance
+                      </p>
+                    </div>
                   </div>
                 </div>
               </SheetContent>

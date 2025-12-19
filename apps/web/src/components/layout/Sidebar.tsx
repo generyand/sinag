@@ -11,6 +11,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NavIcon } from "./NavIcon";
+import { OfficialLogos } from "@/components/shared";
 import type { NavItem } from "@/lib/navigation";
 
 interface SidebarProps {
@@ -79,6 +80,11 @@ export function Sidebar({ navigation, portalName, isCollapsed, onToggleCollapse 
               );
             })}
           </nav>
+
+          {/* Official Partner Logos */}
+          <div className="px-1 py-5 border-t border-[var(--border)] flex justify-center items-center w-full overflow-visible">
+            <OfficialLogos variant={isCollapsed ? "minimal" : "compact"} stacked={isCollapsed} />
+          </div>
 
           {/* Collapse Toggle */}
           <div className="px-2 pt-4 border-t border-[var(--border)]">

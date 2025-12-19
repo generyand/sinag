@@ -217,14 +217,14 @@ export function GARAnalyticsTab({ year }: GARAnalyticsTabProps) {
             Select an Assessment
           </h3>
           <p className="text-sm md:text-base text-[var(--muted-foreground)]">
-            Choose an assessment from the dropdown to view its GAR for {year}.
+            Choose an assessment from the dropdown to view its BGAR for {year}.
           </p>
         </div>
       ) : loadingGar ? (
         <GARSkeleton />
       ) : garError ? (
         <div className="bg-[var(--card)] border border-red-200 rounded-sm shadow-lg p-4 md:p-6 text-center">
-          <p className="text-sm md:text-base text-red-600">Failed to load GAR data. Please try again.</p>
+          <p className="text-sm md:text-base text-red-600">Failed to load BGAR data. Please try again.</p>
         </div>
       ) : garData ? (
         <GARReportDisplay data={garData} />

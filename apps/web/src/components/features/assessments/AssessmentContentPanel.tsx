@@ -6,6 +6,7 @@ import { Assessment, Indicator } from "@/types/assessment";
 import { ArrowLeft, FileText } from "lucide-react";
 import { useRef } from "react";
 import { ReworkAlertBanner } from "../rework";
+import { TechNotesPDF } from "../shared/TechNotesPDF";
 import { RecursiveIndicator } from "./IndicatorAccordion";
 import { TreeNavigator } from "./tree-navigation";
 
@@ -144,6 +145,20 @@ export function AssessmentContentPanel({
               mlgooFlaggedFileIds={mlgooFlaggedFileIds}
             />
           </div>
+
+          {/* Tech Notes PDF - based on governance area */}
+          {selectedIndicator?.governanceAreaId && (
+            <div className="mt-6">
+              <TechNotesPDF
+                areaNumber={Number(selectedIndicator.governanceAreaId)}
+                areaName={
+                  assessment.governanceAreas?.find(
+                    (a) => String(a.id) === String(selectedIndicator.governanceAreaId)
+                  )?.name
+                }
+              />
+            </div>
+          )}
 
           {/* Rework Alert Banner - Shows indicator-specific assessor feedback at the bottom */}
           {reworkContext?.current_indicator && (

@@ -70,8 +70,8 @@ export function HeroSection() {
                   isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
                 }`}
               >
-                The official pre-assessment and analytics web application for the SGLGB. A guided,
-                transparent, and efficient digital workflow for the Barangays of Sulop.
+                The official assessment and analytics web application for the Barangays of Sulop. A
+                guided, transparent, and efficient digital workflow for the SGLGB.
               </p>
             </div>
 

@@ -276,14 +276,14 @@ export default function GARPage() {
                 Select an Assessment
               </h3>
               <p className="text-[var(--muted-foreground)]">
-                Choose a completed assessment from the dropdown above to view its GAR report.
+                Choose a completed assessment from the dropdown above to view its BGAR report.
               </p>
             </div>
           ) : loadingGar ? (
             <GARSkeleton />
           ) : garError ? (
             <div className="bg-[var(--card)] border border-red-200 rounded-sm shadow-lg p-6 text-center">
-              <p className="text-red-600">Failed to load GAR data. Please try again.</p>
+              <p className="text-red-600">Failed to load BGAR data. Please try again.</p>
             </div>
           ) : garData ? (
             <GARReportDisplay data={garData} />

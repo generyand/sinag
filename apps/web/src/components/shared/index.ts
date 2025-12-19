@@ -5,6 +5,7 @@ export { default as DataTable } from "./DataTable";
 export { ErrorBoundary, ErrorBoundaryWrapper } from "./ErrorBoundary";
 export { FilePreviewerModal } from "./FilePreviewerModal";
 export { default as FileUploader } from "./FileUploader";
+export { OfficialLogos } from "./OfficialLogos";
 export { default as PageHeader } from "./PageHeader";
 export { ProgressBar } from "./ProgressBar";
 export { StatusBadge } from "./StatusBadge";

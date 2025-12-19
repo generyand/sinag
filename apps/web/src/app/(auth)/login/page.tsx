@@ -243,7 +243,7 @@ export default function LoginPage() {
                 isDarkMode ? "text-gray-300" : "text-gray-600"
               }`}
             >
-              Strategic Insights Nurturing Assessments and Governance
+              SGLGB Insights Nurturing Assessments and Governance
             </p>
           </div>
         </div>

@@ -5,12 +5,12 @@ import { BARANGAY_PATHS } from "@/components/features/analytics/sulop-barangay-p
 
 /**
  * Design system colors for the animated map
- * Using SINAG brand colors - red, yellow, and DILG blue
+ * Using SINAG brand colors - red, yellow, and green
  */
 const ANIMATION_COLORS = [
   "#dc2626", // Red (primary)
   "#fbbf24", // Yellow/Amber
-  "#1A3A6D", // DILG Blue (dark)
+  "#16a34a", // Green
 ] as const;
 
 /**
@@ -167,7 +167,7 @@ export function AnimatedSulopMap({ className = "" }: AnimatedSulopMapProps) {
           <div className="flex items-center gap-2">
             <div
               className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: hoveredColor || "#1A3A6D" }}
+              style={{ backgroundColor: hoveredColor || "#16a34a" }}
             />
             <span className="text-sm font-semibold text-gray-900">
               {BARANGAY_NAMES[hoveredBarangay] || hoveredBarangay}

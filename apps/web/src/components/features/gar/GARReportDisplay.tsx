@@ -30,7 +30,7 @@ export function GARReportDisplay({ data }: GARReportDisplayProps) {
       <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg overflow-hidden">
         <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4 text-white text-center">
           <h2 className="text-xl font-bold">{data.cycle_year}</h2>
-          <p className="text-lg font-semibold">GOVERNANCE ASSESSMENT REPORT</p>
+          <p className="text-lg font-semibold">BARANGAY GOVERNANCE ASSESSMENT REPORT</p>
           <p className="text-sm italic mt-1">
             Barangay {data.barangay_name}, {data.municipality}, {data.province}
           </p>

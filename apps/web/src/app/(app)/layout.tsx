@@ -23,6 +23,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
+import { OfficialLogos } from "@/components/shared";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -265,13 +266,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="relative flex-1 flex flex-col max-w-xs w-full bg-[var(--card)] backdrop-blur-sm shadow-xl border-r border-[var(--border)] transition-colors duration-300">
           <div className="absolute top-0 right-0 -mr-12 pt-2">
             <button
-              className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+              className="ml-1 flex items-center justify-center h-10 w-10 rounded-full bg-black/50 hover:bg-black/70 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white transition-colors"
               onClick={() => setSidebarOpen(false)}
             >
               <X className="h-6 w-6 text-white" />
             </button>
           </div>
-          <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
+          <div className="flex-1 pt-5 pb-4 overflow-y-auto">
             <div className="flex-shrink-0 flex items-center px-6 mb-8">
               <div className="flex items-center">
                 <Image
@@ -314,6 +315,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </Link>
               ))}
             </nav>
+          </div>
+
+          {/* Official Partner Logos - Fixed at bottom */}
+          <div className="px-4 py-4 border-t border-[var(--border)]">
+            <OfficialLogos variant="compact" />
           </div>
         </div>
       </div>
@@ -388,6 +394,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </Link>
               ))}
             </nav>
+
+            {/* Official Partner Logos */}
+            <div
+              className="mt-auto px-1 py-5 border-t border-[var(--border)] flex justify-center items-center w-full overflow-visible"
+            >
+              <OfficialLogos
+                variant={sidebarCollapsed ? "minimal" : "compact"}
+                stacked={sidebarCollapsed}
+              />
+            </div>
           </div>
         </div>
       </div>
