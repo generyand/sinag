@@ -126,12 +126,6 @@ export function IndicatorForm({ indicator, isLocked }: IndicatorFormProps) {
         <p className="text-[var(--text-secondary)]">{indicator.description}</p>
       </div>
 
-      {/* Technical Notes */}
-      <div className="bg-[var(--cityscape-yellow)]/10 border border-[var(--cityscape-yellow)]/20 rounded-sm p-4">
-        <h3 className="font-semibold text-[var(--foreground)] mb-2">Technical Notes</h3>
-        <p className="text-[var(--text-secondary)] text-sm">{indicator.technicalNotes}</p>
-      </div>
-
       {/* Assessor's Remarks (Conditional) */}
       {indicator.assessorComment && (
         <Card className="border-[var(--cityscape-yellow)]/30 bg-[var(--cityscape-yellow)]/10 rounded-sm">
