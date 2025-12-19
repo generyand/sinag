@@ -31,12 +31,13 @@ export function useTourAutoStart({
 }: UseTourAutoStartOptions) {
   const { shouldShowTour, startTour, isRunning, isLoading } = useTour();
   const { user, isAuthenticated } = useAuthStore();
-  const hasTriggeredRef = useRef(false);
+  const hasCheckedRef = useRef(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [hasStartedTour, setHasStartedTour] = useState(false);
 
   useEffect(() => {
-    // Prevent multiple triggers across re-renders
-    if (hasTriggeredRef.current) return;
+    // Prevent multiple checks - this persists across re-renders and page visits
+    if (hasCheckedRef.current) return;
 
     // Wait for authentication
     if (!isAuthenticated || !user) return;
@@ -50,26 +51,26 @@ export function useTourAutoStart({
     // Don't start if another tour is running
     if (isRunning) return;
 
-    // Check if we should show the tour
-    if (firstTimeOnly && !shouldShowTour(tourName)) return;
+    // Mark as checked BEFORE checking shouldShowTour
+    // This ensures we only check once per page mount, even if preferences change
+    hasCheckedRef.current = true;
 
-    // Mark as triggered immediately to prevent race conditions
-    // This prevents double-triggering if the effect runs again before timeout completes
-    hasTriggeredRef.current = true;
+    // Check if we should show the tour
+    const shouldStart = firstTimeOnly ? shouldShowTour(tourName) : true;
+
+    if (!shouldStart) return;
 
     // Start the tour after a delay to allow page content to render
-    const timer = setTimeout(() => {
+    timerRef.current = setTimeout(() => {
       setHasStartedTour(true);
       startTour(tourName);
     }, delay);
 
     return () => {
-      // On cleanup, reset the ref if the timer was cancelled
-      // This allows the tour to be re-triggered if the user navigates away and back
-      clearTimeout(timer);
-      // Only reset if we haven't actually started the tour yet
-      if (!hasStartedTour) {
-        hasTriggeredRef.current = false;
+      // Clear the timer on cleanup
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
       }
     };
   }, [
@@ -83,7 +84,6 @@ export function useTourAutoStart({
     tourName,
     startTour,
     delay,
-    hasStartedTour,
   ]);
 
   return {

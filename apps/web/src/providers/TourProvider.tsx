@@ -156,11 +156,16 @@ export function TourProvider({ children }: TourProviderProps) {
   });
 
   // Fetch preferences using generated hook
+  // Use a longer staleTime to prevent unnecessary refetches
+  // The cache will be explicitly invalidated when preferences are updated
   const { data: preferencesData, isLoading } = useGetUsersMePreferences({
     query: {
       queryKey: getGetUsersMePreferencesQueryKey(),
       enabled: isAuthenticated,
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 30 * 60 * 1000, // 30 minutes - preferences don't change often
+      gcTime: 60 * 60 * 1000, // Keep in cache for 1 hour
+      refetchOnMount: "always", // Always refetch on mount to ensure fresh data
+      refetchOnWindowFocus: false, // Don't refetch when window regains focus
     },
   });
 
@@ -425,10 +430,19 @@ export function TourProvider({ children }: TourProviderProps) {
           spotlightPadding={8}
           scrollToFirstStep
           scrollOffset={100}
+          disableScrolling={false}
+          disableScrollParentFix={false}
           callback={handleJoyrideCallback}
           tooltipComponent={tooltipComponent}
           floaterProps={{
             disableAnimation: false,
+            options: {
+              // Better positioning to avoid viewport edges
+              preventOverflow: {
+                boundariesElement: "viewport",
+                padding: 8,
+              },
+            },
           }}
           styles={{
             options: {
@@ -445,6 +459,13 @@ export function TourProvider({ children }: TourProviderProps) {
             },
             overlay: {
               backgroundColor: "rgba(0, 0, 0, 0.6)",
+            },
+            // Override default tooltip styles to ensure proper mobile positioning
+            tooltip: {
+              maxWidth: "100%",
+            },
+            tooltipContainer: {
+              textAlign: "left",
             },
           }}
           locale={{

@@ -63,8 +63,10 @@ export function TourTooltip({
       {...tooltipProps}
       className={cn(
         "bg-white dark:bg-gray-900 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700",
-        "max-w-md w-full p-0 overflow-hidden",
-        "animate-in fade-in-0 zoom-in-95 duration-200"
+        "max-w-sm sm:max-w-md w-full sm:w-auto p-0 overflow-hidden",
+        "animate-in fade-in-0 zoom-in-95 duration-200",
+        // Ensure tooltip doesn't overflow viewport
+        "mx-2 sm:mx-0"
       )}
     >
       {/* Header */}
