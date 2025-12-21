@@ -144,6 +144,9 @@ const BarangayAvatar = ({ name }: { name: string }) => {
   );
 };
 
+/** Approximate number of rows visible in the 400px scroll container */
+const VISIBLE_ROWS_THRESHOLD = 7;
+
 export function BarangayStatusTable({
   data,
   onViewCapDev,
@@ -154,6 +157,13 @@ export function BarangayStatusTable({
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortField, setSortField] = useState<SortField>("barangay_name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [isScrolledToBottom, setIsScrolledToBottom] = useState(false);
+
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    const atBottom = scrollTop + clientHeight >= scrollHeight - 10;
+    setIsScrolledToBottom((prev) => (prev !== atBottom ? atBottom : prev));
+  }, []);
 
   const hasData = (data?.barangays?.length ?? 0) > 0;
 
@@ -320,88 +330,138 @@ export function BarangayStatusTable({
               </div>
             </div>
 
-            {/* Table */}
-            <div className="border border-[var(--border)] rounded-sm overflow-hidden">
-              <Table>
-                <caption className="sr-only">
-                  Barangay assessment status table. Click column headers to sort.
-                </caption>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>
-                      <button
-                        className="flex items-center font-medium hover:text-[var(--foreground)] transition-colors"
-                        onClick={() => handleSort("barangay_name")}
-                        aria-label={`Sort by barangay name, currently ${sortField === "barangay_name" ? sortDirection : "unsorted"}`}
-                      >
-                        Barangay
-                        <SortIndicator
-                          field="barangay_name"
-                          sortField={sortField}
-                          sortDirection={sortDirection}
-                        />
-                      </button>
-                    </TableHead>
-                    <TableHead>
-                      <button
-                        className="flex items-center font-medium hover:text-[var(--foreground)] transition-colors"
-                        onClick={() => handleSort("status")}
-                        aria-label={`Sort by status, currently ${sortField === "status" ? sortDirection : "unsorted"}`}
-                      >
-                        Status
-                      </button>
-                    </TableHead>
-                    <TableHead className="text-right">Governance Areas Passed</TableHead>
-                    <TableHead className="text-right">Indicators Passed</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredBarangays.map((barangay) => (
-                    <TableRow key={barangay.barangay_id}>
-                      <TableCell className="font-medium text-[var(--foreground)]">
-                        <button
-                          onClick={() =>
-                            barangay.assessment_id && handleViewDetails(barangay.assessment_id)
-                          }
-                          className="flex items-center gap-3 hover:bg-accent/50 p-1 -m-1 rounded-md transition-colors w-full text-left group"
-                        >
-                          <BarangayAvatar name={barangay.barangay_name} />
-                          <span className="group-hover:text-primary font-semibold transition-colors">
-                            {barangay.barangay_name}
-                          </span>
-                        </button>
-                      </TableCell>
-                      <TableCell>{getUnifiedStatusBadge(barangay)}</TableCell>
-                      <TableCell className="text-right">
-                        {barangay.governance_areas_passed !== undefined &&
-                        barangay.governance_areas_passed !== null
-                          ? `${barangay.governance_areas_passed}/${barangay.total_governance_areas}`
-                          : "-"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {barangay.total_responses
-                          ? `${(barangay.pass_count || 0) + (barangay.conditional_count || 0)}/${barangay.total_responses}`
-                          : "-"}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {filteredBarangays.length === 0 && (
+            {/* Results count */}
+            <div className="text-sm text-[var(--muted-foreground)] mb-2">
+              Showing <span className="font-medium">{filteredBarangays.length}</span> of{" "}
+              <span className="font-medium">{data?.barangays?.length ?? 0}</span> barangays
+            </div>
+
+            {/* Scrollable Table Container */}
+            <div className="relative">
+              <div
+                className="h-[300px] sm:h-[400px] overflow-auto border border-[var(--border)] rounded-sm"
+                role="group"
+                aria-label="Assessment data table showing status and progress for each barangay"
+                // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+                tabIndex={0}
+                onScroll={handleScroll}
+              >
+                <Table>
+                  <caption className="sr-only">
+                    Barangay assessment status table. Click column headers to sort. Use arrow keys
+                    to scroll within the table.
+                  </caption>
+                  <TableHeader className="sticky top-0 z-10 bg-[var(--card)] shadow-[0_1px_0_0_var(--border)]">
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8">
-                        <AnalyticsEmptyState
-                          variant="no-barangays"
-                          compact
-                          description={
-                            searchTerm || statusFilter !== "all"
-                              ? "No barangays match your search or filter criteria."
-                              : undefined
-                          }
-                        />
-                      </TableCell>
+                      <TableHead className="bg-[var(--card)]">
+                        <button
+                          className="flex items-center font-medium hover:text-[var(--foreground)] transition-colors"
+                          onClick={() => handleSort("barangay_name")}
+                          aria-label={`Sort by barangay name, currently ${sortField === "barangay_name" ? sortDirection : "unsorted"}`}
+                        >
+                          Barangay
+                          <SortIndicator
+                            field="barangay_name"
+                            sortField={sortField}
+                            sortDirection={sortDirection}
+                          />
+                        </button>
+                      </TableHead>
+                      <TableHead className="bg-[var(--card)]">
+                        <button
+                          className="flex items-center font-medium hover:text-[var(--foreground)] transition-colors"
+                          onClick={() => handleSort("status")}
+                          aria-label={`Sort by status, currently ${sortField === "status" ? sortDirection : "unsorted"}`}
+                        >
+                          Status
+                          <SortIndicator
+                            field="status"
+                            sortField={sortField}
+                            sortDirection={sortDirection}
+                          />
+                        </button>
+                      </TableHead>
+                      <TableHead className="text-right bg-[var(--card)]">
+                        Governance Areas Passed
+                      </TableHead>
+                      <TableHead className="text-right bg-[var(--card)]">
+                        Indicators Passed
+                      </TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredBarangays.map((barangay) => (
+                      <TableRow key={barangay.barangay_id} className="h-14">
+                        <TableCell className="font-medium text-[var(--foreground)]">
+                          <button
+                            onClick={() =>
+                              barangay.assessment_id && handleViewDetails(barangay.assessment_id)
+                            }
+                            disabled={!barangay.assessment_id}
+                            aria-disabled={!barangay.assessment_id}
+                            className={`flex items-center gap-3 p-1 -m-1 rounded-md transition-colors w-full text-left group ${
+                              barangay.assessment_id
+                                ? "hover:bg-accent/50 cursor-pointer"
+                                : "cursor-default opacity-75"
+                            }`}
+                          >
+                            <BarangayAvatar name={barangay.barangay_name} />
+                            <span
+                              className={`font-semibold transition-colors ${
+                                barangay.assessment_id ? "group-hover:text-primary" : ""
+                              }`}
+                            >
+                              {barangay.barangay_name}
+                            </span>
+                          </button>
+                        </TableCell>
+                        <TableCell>{getUnifiedStatusBadge(barangay)}</TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {barangay.governance_areas_passed !== undefined &&
+                          barangay.governance_areas_passed !== null
+                            ? `${barangay.governance_areas_passed}/${barangay.total_governance_areas}`
+                            : "-"}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {barangay.total_responses
+                            ? `${(barangay.pass_count || 0) + (barangay.conditional_count || 0)}/${barangay.total_responses}`
+                            : "-"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredBarangays.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-8">
+                          <AnalyticsEmptyState
+                            variant="no-barangays"
+                            compact
+                            description={
+                              searchTerm || statusFilter !== "all"
+                                ? "No barangays match your search or filter criteria."
+                                : undefined
+                            }
+                          />
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Scroll indicator gradient - shows when more content below */}
+              {!isScrolledToBottom && filteredBarangays.length > VISIBLE_ROWS_THRESHOLD && (
+                <div
+                  className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[var(--card)] to-transparent pointer-events-none rounded-b-sm"
+                  aria-hidden="true"
+                />
+              )}
+            </div>
+
+            {/* Live region for screen readers */}
+            <div aria-live="polite" aria-atomic="true" className="sr-only">
+              {searchTerm || statusFilter !== "all"
+                ? `Filtered to ${filteredBarangays.length} of ${data?.barangays?.length ?? 0} barangays`
+                : `${filteredBarangays.length} barangays displayed`}
             </div>
           </>
         )}

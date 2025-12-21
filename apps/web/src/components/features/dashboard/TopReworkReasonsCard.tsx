@@ -73,7 +73,7 @@ export function TopReworkReasonsCard({
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <h3 className="text-base sm:text-lg font-semibold text-[var(--foreground)]">
-                Top Reasons for Rework/Calibration
+                Top Reasons for Adjustment
               </h3>
               <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 w-fit">
                 AI Generated
@@ -87,9 +87,9 @@ export function TopReworkReasonsCard({
         </div>
 
         <div className="text-center py-6 sm:py-8 text-[var(--muted-foreground)]">
-          <p className="text-sm sm:text-base">No rework or calibration data available yet.</p>
+          <p className="text-sm sm:text-base">No adjustment data available yet.</p>
           <p className="text-xs mt-2">
-            Data will appear once assessments go through the rework process.
+            Data will appear once assessments go through the review process.
           </p>
         </div>
       </div>
@@ -103,7 +103,7 @@ export function TopReworkReasonsCard({
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             <h3 className="text-base sm:text-lg font-semibold text-[var(--foreground)]">
-              Top Reasons for Rework/Calibration
+              Top Reasons for Adjustment
             </h3>
             {data.generated_by_ai && (
               <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 w-fit">
@@ -122,13 +122,7 @@ export function TopReworkReasonsCard({
       <ul className="space-y-3 max-h-[320px] overflow-y-auto pr-1 sm:pr-2">
         {data.reasons.map((reason, index) => (
           <li key={index} className="flex items-start gap-2 sm:gap-3">
-            <span
-              className={`flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full text-xs font-medium ${
-                reason.source === "rework"
-                  ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
-                  : "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
-              }`}
-            >
+            <span className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
               {index + 1}
             </span>
             <div className="flex-1 min-w-0">
@@ -136,15 +130,6 @@ export function TopReworkReasonsCard({
                 {formatIndicatorName(reason.reason, effectiveYear ?? new Date().getFullYear())}
               </p>
               <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                <span
-                  className={`text-xs px-1.5 py-0.5 rounded ${
-                    reason.source === "rework"
-                      ? "bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400"
-                      : "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400"
-                  }`}
-                >
-                  {reason.source === "rework" ? "Rework" : "Calibration"}
-                </span>
                 {reason.count > 1 && (
                   <Popover>
                     <PopoverTrigger asChild>
@@ -167,11 +152,7 @@ export function TopReworkReasonsCard({
                                 key={`${barangay.barangay_id}-${barangay.assessment_id}`}
                                 className="flex items-center gap-1.5"
                               >
-                                <span
-                                  className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                                    reason.source === "rework" ? "bg-orange-400" : "bg-purple-400"
-                                  }`}
-                                />
+                                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-purple-400" />
                                 <span className="truncate">{barangay.barangay_name}</span>
                               </li>
                             ))}
@@ -184,7 +165,7 @@ export function TopReworkReasonsCard({
                         ) : (
                           <p className="text-xs text-[var(--muted-foreground)]">
                             This issue was identified across multiple barangay assessments during
-                            the {reason.source === "rework" ? "rework" : "calibration"} process.
+                            the review process.
                           </p>
                         )}
                       </div>
@@ -199,24 +180,9 @@ export function TopReworkReasonsCard({
 
       {/* Summary footer */}
       <div className="mt-4 pt-4 border-t border-[var(--border)]">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 text-xs sm:text-sm">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <span className="text-[var(--muted-foreground)]">
-              <span className="font-medium text-orange-600 dark:text-orange-400">
-                {data.total_rework_assessments}
-              </span>{" "}
-              rework
-            </span>
-            <span className="text-[var(--muted-foreground)]">
-              <span className="font-medium text-purple-600 dark:text-purple-400">
-                {data.total_calibration_assessments}
-              </span>{" "}
-              calibration
-            </span>
-          </div>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-4 text-xs sm:text-sm">
           <span className="text-xs text-[var(--muted-foreground)]">
-            {data.total_rework_assessments + data.total_calibration_assessments} assessments
-            analyzed
+            {data.total_adjustment_assessments} assessments analyzed
           </span>
         </div>
       </div>

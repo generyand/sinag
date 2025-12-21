@@ -210,12 +210,11 @@ async def get_dashboard(
                                 {
                                     "reason": "Missing MOV documents",
                                     "count": 5,
-                                    "source": "rework",
+                                    "source": "adjustment",
                                     "governance_area": None,
                                 }
                             ],
-                            "total_rework_assessments": 10,
-                            "total_calibration_assessments": 5,
+                            "total_adjustment_assessments": 15,
                             "generated_by_ai": True,
                         },
                     }

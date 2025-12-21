@@ -642,17 +642,17 @@ class AnalyticsService:
         self, db: Session, assessment_year: int | None = None
     ) -> TopReworkReasons | None:
         """
-        Calculate top reasons for rework and calibration from AI-generated summaries.
+        Calculate top reasons for adjustment from AI-generated summaries.
 
-        Aggregates priority_actions from rework_summary and calibration_summary
-        fields across all assessments to identify the most common reasons.
+        Aggregates key_issues from rework_summary and calibration_summary
+        fields across all assessments to identify the most common adjustment reasons.
 
         Args:
             db: Database session
             assessment_year: Optional assessment year
 
         Returns:
-            TopReworkReasons or None if no rework/calibration data available
+            TopReworkReasons or None if no adjustment data available
         """
 
         from app.db.models.assessment import FeedbackComment
@@ -663,22 +663,19 @@ class AnalyticsService:
             Assessment.assessment_year == assessment_year if assessment_year is not None else True
         )
 
-        # Count assessments with rework/calibration at database level
-        rework_count = (
+        # Count assessments with adjustments (rework OR calibration) at database level
+        # Use DISTINCT count to avoid double-counting assessments with both
+        adjustment_count = (
             db.query(func.count(Assessment.id))
-            .filter(Assessment.rework_count > 0, year_filter)
+            .filter(
+                or_(Assessment.rework_count > 0, Assessment.calibration_count > 0),
+                year_filter,
+            )
             .scalar()
             or 0
         )
 
-        calibration_count = (
-            db.query(func.count(Assessment.id))
-            .filter(Assessment.calibration_count > 0, year_filter)
-            .scalar()
-            or 0
-        )
-
-        if rework_count == 0 and calibration_count == 0:
+        if adjustment_count == 0:
             return None
 
         # PERFORMANCE FIX: Only query assessments that actually have rework OR calibration
@@ -695,32 +692,30 @@ class AnalyticsService:
         )
 
         # Debug logging: track which assessments have summaries
-        assessments_with_rework_summary = sum(
-            1 for a in assessments if a.rework_summary is not None
-        )
-        assessments_with_calibration_summary = sum(
+        assessments_with_summary = sum(
             1
             for a in assessments
-            if a.calibration_summary is not None or a.calibration_summaries_by_area
+            if a.rework_summary is not None
+            or a.calibration_summary is not None
+            or a.calibration_summaries_by_area
         )
         logger.info(
-            f"📊 Top rework reasons: Found {len(assessments)} assessments with rework/calibration for year {assessment_year}. "
-            f"Rework summaries: {assessments_with_rework_summary}/{rework_count}, "
-            f"Calibration summaries: {assessments_with_calibration_summary}/{calibration_count}"
+            f"📊 Top adjustment reasons: Found {len(assessments)} assessments with adjustments for year {assessment_year}. "
+            f"Assessments with summaries: {assessments_with_summary}/{adjustment_count}"
         )
 
         # Collect REASONS (key_issues) from AI summaries - NOT actions/recommendations
-        # key_issues = the actual problems identified (reasons for rework/calibration)
+        # key_issues = the actual problems identified (reasons for adjustment)
         # priority_actions = what to do to fix them (NOT what we want here)
         #
         # Summary structure is multi-language:
         # {"ceb": {"indicator_summaries": [{"key_issues": [...]}]}, "en": {...}}
         #
         # Track reason -> list of assessments mapping to show affected barangays
-        # Key: (reason_text, source), Value: list of assessment objects
+        # Key: reason_text, Value: list of assessment objects
         from collections import defaultdict
 
-        reason_to_assessments: dict[tuple[str, str], list[Assessment]] = defaultdict(list)
+        reason_to_assessments: dict[str, list[Assessment]] = defaultdict(list)
 
         def extract_key_issues_from_summary(summary: dict) -> list[str]:
             """Extract key_issues from a multi-language summary structure."""
@@ -761,14 +756,14 @@ class AnalyticsService:
                 issues = extract_key_issues_from_summary(assessment.rework_summary)
                 for issue in issues:
                     if issue and issue.strip():
-                        reason_to_assessments[(issue.strip(), "rework")].append(assessment)
+                        reason_to_assessments[issue.strip()].append(assessment)
 
             # Extract key_issues from calibration_summary
             if assessment.calibration_summary and isinstance(assessment.calibration_summary, dict):
                 issues = extract_key_issues_from_summary(assessment.calibration_summary)
                 for issue in issues:
                     if issue and issue.strip():
-                        reason_to_assessments[(issue.strip(), "calibration")].append(assessment)
+                        reason_to_assessments[issue.strip()].append(assessment)
 
             # Extract key_issues from calibration_summaries_by_area
             if assessment.calibration_summaries_by_area and isinstance(
@@ -779,35 +774,26 @@ class AnalyticsService:
                         issues = extract_key_issues_from_summary(area_summary)
                         for issue in issues:
                             if issue and issue.strip():
-                                reason_to_assessments[(issue.strip(), "calibration")].append(
-                                    assessment
-                                )
+                                reason_to_assessments[issue.strip()].append(assessment)
 
         # Debug logging: track extracted reasons
-        total_rework_reasons = sum(
-            len(v) for (_, src), v in reason_to_assessments.items() if src == "rework"
-        )
-        total_calibration_reasons = sum(
-            len(v) for (_, src), v in reason_to_assessments.items() if src == "calibration"
-        )
+        total_reasons = sum(len(v) for v in reason_to_assessments.values())
         logger.info(
-            f"📊 Extracted {total_rework_reasons} rework reasons and {total_calibration_reasons} calibration reasons from AI summaries"
+            f"📊 Extracted {total_reasons} adjustment reasons from AI summaries across {len(reason_to_assessments)} unique issues"
         )
 
         # If no AI-generated reasons, fall back to feedback comments
         if not reason_to_assessments:
-            # Get feedback comments from assessments with rework
-            assessment_ids_with_rework = [
-                a.id for a in assessments if a.rework_count and a.rework_count > 0
-            ]
-            if assessment_ids_with_rework:
+            # Get feedback comments from assessments with adjustments
+            assessment_ids_with_adjustments = [a.id for a in assessments]
+            if assessment_ids_with_adjustments:
                 # Create a mapping of assessment_id -> assessment for quick lookup
                 assessment_map = {a.id: a for a in assessments}
 
                 feedback_comments = (
                     db.query(FeedbackComment)
                     .join(AssessmentResponse)
-                    .filter(AssessmentResponse.assessment_id.in_(assessment_ids_with_rework))
+                    .filter(AssessmentResponse.assessment_id.in_(assessment_ids_with_adjustments))
                     .filter(FeedbackComment.is_internal_note == False)  # noqa: E712
                     .limit(50)
                     .all()
@@ -816,7 +802,7 @@ class AnalyticsService:
                     if fc.comment and fc.comment.strip():
                         assessment_id = fc.assessment_response.assessment_id
                         if assessment_id in assessment_map:
-                            reason_to_assessments[(fc.comment.strip(), "rework")].append(
+                            reason_to_assessments[fc.comment.strip()].append(
                                 assessment_map[assessment_id]
                             )
 
@@ -828,7 +814,7 @@ class AnalyticsService:
             reason_to_assessments.items(), key=lambda x: len(x[1]), reverse=True
         )
 
-        for (reason_text, source), assessment_list in sorted_reasons[:10]:
+        for reason_text, assessment_list in sorted_reasons[:10]:
             # Deduplicate assessments (same assessment may appear multiple times)
             seen_assessment_ids: set[int] = set()
             unique_assessments: list[Assessment] = []
@@ -855,7 +841,7 @@ class AnalyticsService:
                 TopReworkReason(
                     reason=reason_text,
                     count=len(unique_assessments),
-                    source=source,  # type: ignore
+                    source="adjustment",
                     governance_area=None,
                     affected_barangays=affected_barangays,
                 )
@@ -863,8 +849,7 @@ class AnalyticsService:
 
         return TopReworkReasons(
             reasons=all_reasons,
-            total_rework_assessments=rework_count,
-            total_calibration_assessments=calibration_count,
+            total_adjustment_assessments=adjustment_count,
             generated_by_ai=bool(reason_to_assessments),
         )
 
