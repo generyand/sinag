@@ -13,7 +13,7 @@ import {
   X,
   XCircle,
 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { BARANGAY_PATHS } from "./sulop-barangay-paths";
 
 /**
@@ -596,6 +596,32 @@ export function SulopBarangayMapIntegrated({
   const [hoveredBarangay, setHoveredBarangay] = useState<string | null>(null);
   const [selectedBarangay, setSelectedBarangay] = useState<string | null>(null);
 
+  // Use refs to track hover state and prevent flickering caused by rapid state changes
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const currentHoveredRef = useRef<string | null>(null);
+
+  // Debounced hover handlers to prevent flickering when tooltip causes layout shifts
+  const handleMouseEnter = useCallback((svgId: string) => {
+    // Clear any pending timeout
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    currentHoveredRef.current = svgId;
+    setHoveredBarangay(svgId);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    // Delay the unhover to prevent flickering
+    hoverTimeoutRef.current = setTimeout(() => {
+      // Only clear if we haven't entered a new barangay
+      if (currentHoveredRef.current === hoveredBarangay) {
+        currentHoveredRef.current = null;
+        setHoveredBarangay(null);
+      }
+    }, 50); // Small delay to prevent flicker
+  }, [hoveredBarangay]);
+
   // Create a lookup map that maps SVG path IDs to barangay data
   // This handles the conversion from API barangay data to SVG element IDs
   const svgIdToBarangayMap = React.useMemo(() => {
@@ -777,10 +803,10 @@ export function SulopBarangayMapIntegrated({
                       fill={getBarangayColor(svgId)}
                       stroke={selectedBarangay === svgId ? getBarangayStrokeColor(svgId) : "none"}
                       strokeWidth={selectedBarangay === svgId ? 4 : 0}
-                      className="cursor-pointer transition-all duration-200 hover:brightness-110 focus:outline-none"
+                      className="cursor-pointer transition-[fill,stroke,stroke-width] duration-200 hover:brightness-110 focus:outline-none"
                       onClick={() => handleBarangayClick(svgId)}
-                      onMouseEnter={() => setHoveredBarangay(svgId)}
-                      onMouseLeave={() => setHoveredBarangay(null)}
+                      onMouseEnter={() => handleMouseEnter(svgId)}
+                      onMouseLeave={handleMouseLeave}
                       role="button"
                       tabIndex={0}
                       aria-label={`${displayName}: ${statusLabel}${brgy?.compliance_rate !== undefined ? `, ${brgy.compliance_rate.toFixed(1)}% compliance` : ""}`}
