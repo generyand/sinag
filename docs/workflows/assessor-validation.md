@@ -3,7 +3,7 @@
 This document describes the validation workflow for both Assessors and Validators in the SINAG SGLGB
 assessment system, including the calibration workflow introduced in Phase 2.
 
-**Last Updated:** 2025-12-06
+**Last Updated:** 2025-12-28
 
 ---
 
@@ -491,7 +491,19 @@ When MLGOO is satisfied with the assessment:
 3. Apply validation rule:
    - `ALL_ITEMS_REQUIRED`: All required items must be satisfied → Pass, else Fail
    - `ANY_ITEM_REQUIRED`: At least one item satisfied → Pass, else Fail
+   - `OR_LOGIC_AT_LEAST_1_REQUIRED`: At least one option group must be satisfied
+   - `ANY_OPTION_GROUP_REQUIRED`: Any option group can satisfy the requirement
+   - `SHARED_PLUS_OR_LOGIC`: Shared items plus at least one option group
 4. Display result with recommendation badge
+
+**Rework Mode Behavior (December 2025 Fix):**
+
+During rework mode, OR-logic validation rules behave differently:
+
+- BLGU only needs to satisfy **ONE** option group, not replace ALL rejected files
+- Files WITHOUT annotations from reviewers remain valid
+- Only files WITH specific annotations are marked for re-upload
+- This aligns with the SGLGB assessment workflow expectations for targeted corrections
 
 **Override Capability:**
 
@@ -611,6 +623,25 @@ class MOVAnnotation(BaseModel):
 ---
 
 ## Migration Notes
+
+**December 2025 Updates:**
+
+1. **OR-Logic Rework Handling Fix:**
+   - Fixed validation during rework mode for OR-logic indicators
+   - Affected rules: ANY_ITEM_REQUIRED, OR_LOGIC_AT_LEAST_1_REQUIRED, ANY_OPTION_GROUP_REQUIRED,
+     SHARED_PLUS_OR_LOGIC
+   - BLGU now only needs to satisfy ONE option group during rework
+   - Field-level annotations properly respected (only annotated files marked invalid)
+
+2. **Unified Adjustment Terminology:**
+   - Consolidated "rework" and "calibration" terminology to "adjustment" in analytics
+   - TopReworkReasonsCard simplified (removed source-based color differentiation)
+   - Analytics schemas updated for consistent terminology
+
+3. **Onboarding Tour Improvements:**
+   - Fixed recurring tour loop issue for BLGU users
+   - Enhanced tooltip placement for mobile screens
+   - Improved preferences caching for tour completion state
 
 **November 2025 Updates:**
 
