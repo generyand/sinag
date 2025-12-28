@@ -8,14 +8,15 @@ Move the "Please supply the required information:" mov_description from the seco
 calculation field to the first one in indicator 4.3.4, so the orange box appears
 before both input fields instead of between them.
 """
+
 from typing import Sequence, Union
 
 from alembic import op
 
 
 # revision identifiers, used by Alembic.
-revision: str = '84ad5b2dfad0'
-down_revision: Union[str, Sequence[str], None] = '4736110d6eef'
+revision: str = "84ad5b2dfad0"
+down_revision: Union[str, Sequence[str], None] = "4736110d6eef"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
