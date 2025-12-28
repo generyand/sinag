@@ -800,7 +800,7 @@ class AnalyticsService:
                 )
                 for fc in feedback_comments:
                     if fc.comment and fc.comment.strip():
-                        assessment_id = fc.assessment_response.assessment_id
+                        assessment_id = fc.response.assessment_id
                         if assessment_id in assessment_map:
                             reason_to_assessments[fc.comment.strip()].append(
                                 assessment_map[assessment_id]
