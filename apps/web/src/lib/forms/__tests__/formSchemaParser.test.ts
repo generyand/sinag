@@ -12,7 +12,7 @@ import {
   type ConditionalRule,
   type FormValues,
   type ParsedField,
-} from "./formSchemaParser";
+} from "../formSchemaParser";
 
 describe("formSchemaParser", () => {
   // ============================================================================
