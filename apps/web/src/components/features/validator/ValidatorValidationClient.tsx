@@ -436,50 +436,64 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       return;
     }
 
-    try {
-      // Show loading toast
-      toast.loading(
-        `Saving ${payloads.length} validation decision${payloads.length > 1 ? "s" : ""}...`,
-        { id: "save-draft-toast" }
-      );
+    // Show loading toast
+    toast.loading(
+      `Saving ${payloads.length} validation decision${payloads.length > 1 ? "s" : ""}...`,
+      { id: "save-draft-toast" }
+    );
 
-      await Promise.all(
-        payloads.map((p) => {
-          console.log(
-            `[SaveDraft] Response ${p.id}: flagged_for_calibration = ${p.flaggedForCalibration}`
-          );
-          return validateMut.mutateAsync({
-            responseId: p.id,
-            data: {
-              // Convert to uppercase to match backend ValidationStatus enum (PASS, FAIL, CONDITIONAL)
-              validation_status: p.v.status
-                ? (p.v.status.toUpperCase() as "PASS" | "FAIL" | "CONDITIONAL")
-                : undefined,
-              public_comment: p.v.publicComment ?? null,
-              // Include checklist data in response_data
-              response_data: Object.keys(p.checklistData).length > 0 ? p.checklistData : undefined,
-              // Include calibration flag
-              flagged_for_calibration: p.flaggedForCalibration,
-            },
-          });
-        })
-      );
-      // Invalidate all queries to force refetch with updated response_data
+    // Use Promise.allSettled to handle partial failures gracefully
+    const results = await Promise.allSettled(
+      payloads.map((p) => {
+        console.log(
+          `[SaveDraft] Response ${p.id}: flagged_for_calibration = ${p.flaggedForCalibration}`
+        );
+        return validateMut.mutateAsync({
+          responseId: p.id,
+          data: {
+            // Convert to uppercase to match backend ValidationStatus enum (PASS, FAIL, CONDITIONAL)
+            validation_status: p.v.status
+              ? (p.v.status.toUpperCase() as "PASS" | "FAIL" | "CONDITIONAL")
+              : undefined,
+            public_comment: p.v.publicComment ?? null,
+            // Include checklist data in response_data
+            response_data: Object.keys(p.checklistData).length > 0 ? p.checklistData : undefined,
+            // Include calibration flag
+            flagged_for_calibration: p.flaggedForCalibration,
+          },
+        });
+      })
+    );
+
+    const succeeded = results.filter((r) => r.status === "fulfilled").length;
+    const failed = results.filter((r) => r.status === "rejected").length;
+
+    console.log(`[SaveDraft] Results: ${succeeded} succeeded, ${failed} failed`);
+
+    // Dismiss loading toast
+    toast.dismiss("save-draft-toast");
+
+    // Invalidate queries if any saves succeeded
+    if (succeeded > 0) {
       await qc.invalidateQueries();
+    }
 
-      // Dismiss loading and show success
-      toast.dismiss("save-draft-toast");
+    // Show appropriate feedback
+    if (failed === 0) {
       toast.success(
-        `✅ Saved ${payloads.length} validation decision${payloads.length > 1 ? "s" : ""} as draft`,
-        {
-          duration: 3000,
-        }
+        `Saved ${payloads.length} validation decision${payloads.length > 1 ? "s" : ""} as draft`,
+        { duration: 3000 }
       );
-    } catch (error) {
-      console.error("Error saving validation:", error);
-      toast.dismiss("save-draft-toast");
+    } else if (succeeded > 0) {
+      toast.error("Partially saved", {
+        description: `${succeeded} item(s) saved, ${failed} failed. Please try again.`,
+        duration: 5000,
+      });
+    } else {
+      // All failed - get error info from first failure
+      const firstError = results.find((r) => r.status === "rejected") as PromiseRejectedResult;
+      const errorInfo = classifyError(firstError?.reason);
 
-      const errorInfo = classifyError(error);
       if (errorInfo.type === "network") {
         toast.error("Unable to save draft", {
           description: "Check your internet connection and try again.",
@@ -496,7 +510,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
           duration: 5000,
         });
       }
-      throw error;
+      throw firstError?.reason || new Error("All save requests failed");
     }
   };
 
@@ -572,6 +586,11 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
           description: "Please log in again to complete finalization.",
           duration: 6000,
         });
+      } else if (errorInfo.type === "server") {
+        toast.error("Server temporarily unavailable", {
+          description: "The server is busy. Please wait a moment and try again.",
+          duration: 6000,
+        });
       } else if (errorInfo.type === "validation") {
         // Check if the error is about unreviewed indicators
         const isUnreviewedError =
@@ -641,6 +660,11 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       } else if (errorInfo.type === "auth") {
         toast.error("Session expired", {
           description: "Please log in again to submit for calibration.",
+          duration: 6000,
+        });
+      } else if (errorInfo.type === "server") {
+        toast.error("Server temporarily unavailable", {
+          description: "The server is busy. Please wait a moment and try again.",
           duration: 6000,
         });
       } else if (errorInfo.type === "validation") {

@@ -727,53 +727,72 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       });
 
       console.log("[onSaveDraft] Waiting for all save promises to complete...");
-      await Promise.all(savePromises);
-      console.log("[onSaveDraft] All saves completed successfully");
+      // Use Promise.allSettled to handle partial failures gracefully
+      // This prevents one failed request from blocking others that succeeded
+      const results = await Promise.allSettled(savePromises);
 
-      // Show success toast with better styling
-      toast({
-        title: "Saved",
-        description: "Validation progress saved successfully",
-        duration: 2000,
-        className: "bg-green-600 text-white border-none",
-      });
+      const succeeded = results.filter((r) => r.status === "fulfilled").length;
+      const failed = results.filter((r) => r.status === "rejected").length;
 
-      // Invalidate queries to refresh data with saved changes
-      console.log("[onSaveDraft] Invalidating queries to refresh UI...");
-      await qc.invalidateQueries({ queryKey: ["assessor", "assessments", assessmentId] });
-    } catch (error) {
-      console.error("Error saving validation data:", error);
-      // Reset mutation state to allow retry
-      validateMut.reset();
+      console.log(`[onSaveDraft] Results: ${succeeded} succeeded, ${failed} failed`);
 
-      // Classify error for better user feedback
-      const errorInfo = classifyError(error);
+      // Always invalidate queries if any saves succeeded
+      if (succeeded > 0) {
+        console.log("[onSaveDraft] Invalidating queries to refresh UI...");
+        await qc.invalidateQueries({ queryKey: ["assessor", "assessments", assessmentId] });
+      }
 
-      // Show error toast with specific error type and message
-      if (errorInfo.type === "network") {
+      // Show appropriate toast based on results
+      if (failed === 0) {
+        // All succeeded
         toast({
-          title: "Unable to save draft",
-          description: "Check your internet connection and try again.",
-          variant: "destructive",
+          title: "Saved",
+          description: "Validation progress saved successfully",
+          duration: 2000,
+          className: "bg-green-600 text-white border-none",
         });
-      } else if (errorInfo.type === "auth") {
+      } else if (succeeded > 0) {
+        // Partial success - some saved, some failed
         toast({
-          title: "Session expired",
-          description: "Please log in again to save your work.",
-          variant: "destructive",
-        });
-      } else if (errorInfo.type === "permission") {
-        toast({
-          title: "Access denied",
-          description: "You do not have permission to validate this assessment.",
+          title: "Partially saved",
+          description: `${succeeded} item(s) saved, ${failed} failed. Please try again.`,
           variant: "destructive",
         });
       } else {
-        toast({
-          title: errorInfo.title,
-          description: errorInfo.message,
-          variant: "destructive",
-        });
+        // All failed - get error info from first failure
+        const firstError = results.find((r) => r.status === "rejected") as PromiseRejectedResult;
+        const errorInfo = classifyError(firstError?.reason);
+
+        if (errorInfo.type === "network") {
+          toast({
+            title: "Unable to save draft",
+            description: "Check your internet connection and try again.",
+            variant: "destructive",
+          });
+        } else if (errorInfo.type === "auth") {
+          toast({
+            title: "Session expired",
+            description: "Please log in again to save your work.",
+            variant: "destructive",
+          });
+        } else if (errorInfo.type === "permission") {
+          toast({
+            title: "Access denied",
+            description: "You do not have permission to validate this assessment.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: errorInfo.title,
+            description: errorInfo.message,
+            variant: "destructive",
+          });
+        }
+      }
+
+      // Reset mutation state if there were any failures
+      if (failed > 0) {
+        validateMut.reset();
       }
     } finally {
       // CRITICAL: Always reset loading state, whether success or error
@@ -827,7 +846,10 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
   const onFinalize = async () => {
     try {
+      // Save draft first (uses Promise.allSettled internally)
       await onSaveDraft();
+
+      // Then finalize
       await finalizeMut.mutateAsync({ assessmentId });
 
       // Show success toast with different message based on role
@@ -861,11 +883,35 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       }, 1500);
     } catch (error) {
       console.error("Error finalizing assessment:", error);
-      toast({
-        title: "Error",
-        description: "Failed to finalize assessment. Please try again.",
-        variant: "destructive",
-      });
+
+      // Classify error for better user feedback
+      const errorInfo = classifyError(error);
+
+      if (errorInfo.type === "network") {
+        toast({
+          title: "Unable to finalize",
+          description: "Check your internet connection and try again.",
+          variant: "destructive",
+        });
+      } else if (errorInfo.type === "auth") {
+        toast({
+          title: "Session expired",
+          description: "Please log in again to finalize.",
+          variant: "destructive",
+        });
+      } else if (errorInfo.type === "server") {
+        toast({
+          title: "Server temporarily unavailable",
+          description: "The server is busy. Please wait a moment and try again.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: errorInfo.title,
+          description: errorInfo.message,
+          variant: "destructive",
+        });
+      }
     }
   };
 
