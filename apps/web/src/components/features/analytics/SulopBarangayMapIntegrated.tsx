@@ -202,8 +202,8 @@ function HeroStatusCard({
   status: "pass" | "fail" | "in_progress" | "not_started";
   complianceRate?: number;
 }) {
-  const isPassed = status === "pass";
-  const isFailed = status === "fail";
+  const _isPassed = status === "pass";
+  const _isFailed = status === "fail";
   const isInProgress = status === "in_progress";
 
   const statusConfig = {
@@ -595,32 +595,41 @@ export function SulopBarangayMapIntegrated({
 }: SulopBarangayMapProps) {
   const [hoveredBarangay, setHoveredBarangay] = useState<string | null>(null);
   const [selectedBarangay, setSelectedBarangay] = useState<string | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Use refs to track hover state and prevent flickering caused by rapid state changes
-  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const currentHoveredRef = useRef<string | null>(null);
+  const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hoveredBarangayRef = useRef<string | null>(null);
 
-  // Debounced hover handlers to prevent flickering when tooltip causes layout shifts
-  const handleMouseEnter = useCallback((svgId: string) => {
-    // Clear any pending timeout
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-      hoverTimeoutRef.current = null;
-    }
-    currentHoveredRef.current = svgId;
-    setHoveredBarangay(svgId);
-  }, []);
+  // Event delegation: single handler on SVG instead of per-path handlers
+  // This prevents React re-render cycles from interfering with hover detection
+  // Using refs to avoid callback recreation on state changes
+  const handleSvgMouseMove = useCallback(
+    (e: React.MouseEvent<SVGSVGElement>) => {
+      if (isTransitioning) return;
 
-  const handleMouseLeave = useCallback(() => {
-    // Delay the unhover to prevent flickering
-    hoverTimeoutRef.current = setTimeout(() => {
-      // Only clear if we haven't entered a new barangay
-      if (currentHoveredRef.current === hoveredBarangay) {
-        currentHoveredRef.current = null;
+      const target = e.target as SVGElement;
+      // Check if we're hovering over a path (barangay)
+      if (target.tagName === "path" && target.id) {
+        // Only update if actually changed (compare with ref, not state)
+        if (hoveredBarangayRef.current !== target.id) {
+          hoveredBarangayRef.current = target.id;
+          setHoveredBarangay(target.id);
+        }
+      } else if (hoveredBarangayRef.current !== null) {
+        // Hovering over non-path element (like background rect)
+        hoveredBarangayRef.current = null;
         setHoveredBarangay(null);
       }
-    }, 50); // Small delay to prevent flicker
-  }, [hoveredBarangay]);
+    },
+    [isTransitioning]
+  );
+
+  const handleSvgMouseLeave = useCallback(() => {
+    if (isTransitioning) return;
+    hoveredBarangayRef.current = null;
+    setHoveredBarangay(null);
+  }, [isTransitioning]);
 
   // Create a lookup map that maps SVG path IDs to barangay data
   // This handles the conversion from API barangay data to SVG element IDs
@@ -667,6 +676,20 @@ export function SulopBarangayMapIntegrated({
 
   // Handle barangay path click - works for all barangays including those without data
   const handleBarangayClick = (svgId: string) => {
+    // Start transition lock to prevent hover flickering during width animation
+    setIsTransitioning(true);
+    // Clear hover state immediately when clicking
+    setHoveredBarangay(null);
+
+    // Clear any existing transition timeout
+    if (transitionTimeoutRef.current) {
+      clearTimeout(transitionTimeoutRef.current);
+    }
+    // Unlock after the CSS transition completes (300ms + buffer)
+    transitionTimeoutRef.current = setTimeout(() => {
+      setIsTransitioning(false);
+    }, 350);
+
     setSelectedBarangay(svgId);
     const brgy = svgIdToBarangayMap.get(svgId);
     if (brgy) {
@@ -681,6 +704,23 @@ export function SulopBarangayMapIntegrated({
       onBarangayClick?.(placeholderBarangay);
     }
   };
+
+  // Handle closing the details panel
+  const handleClosePanel = useCallback(() => {
+    // Start transition lock to prevent hover flickering during width animation
+    setIsTransitioning(true);
+
+    // Clear any existing transition timeout
+    if (transitionTimeoutRef.current) {
+      clearTimeout(transitionTimeoutRef.current);
+    }
+    // Unlock after the CSS transition completes (300ms + buffer)
+    transitionTimeoutRef.current = setTimeout(() => {
+      setIsTransitioning(false);
+    }, 350);
+
+    setSelectedBarangay(null);
+  }, []);
 
   // Get currently displayed barangay - when panel is open, only show selected barangay (not hovered)
   const getDisplayedBarangay = (): BarangayData | null => {
@@ -756,15 +796,22 @@ export function SulopBarangayMapIntegrated({
         <div className="flex flex-col lg:flex-row lg:items-stretch gap-4 overflow-hidden">
           {/* Map Container - Expands/Shrinks based on selection */}
           <div
-            className={`w-full flex items-center transition-[width] duration-300 ease-out overflow-hidden ${
+            className={`w-full flex items-start transition-[width] duration-300 ease-out overflow-hidden ${
               showDetailsPanel ? "lg:w-2/3" : "lg:w-full"
             }`}
           >
-            <div className="relative w-full aspect-[2.15/1] min-h-[200px] md:min-h-[250px] overflow-hidden">
-              {/* Title Overlay */}
-              <div className="absolute top-4 left-0 right-0 text-center pointer-events-none z-10 w-full px-4">
-                <h3 className="text-xs md:text-lg lg:text-xl font-semibold text-gray-900 dark:text-gray-100 bg-white/50 dark:bg-black/50 backdrop-blur-sm py-1 px-3 rounded-full inline-block mx-auto">
-                  {displayedBarangay?.name || "Sulop, Davao del Sur"}
+            <div
+              className="relative w-full aspect-[2.15/1] min-h-[200px] md:min-h-[250px] overflow-hidden"
+              style={{
+                willChange: "transform",
+                transform: "translateZ(0)",
+                contain: "layout style paint",
+              }}
+            >
+              {/* Title Overlay - only show selected barangay name, not hovered (to prevent flickering) */}
+              <div className="absolute top-4 left-0 right-0 text-center pointer-events-none z-10 w-full px-4 h-8 md:h-10">
+                <h3 className="text-xs md:text-lg lg:text-xl font-semibold text-gray-900 dark:text-gray-100 bg-white/50 dark:bg-black/50 backdrop-blur-sm py-1 px-3 rounded-full inline-block mx-auto min-w-[180px]">
+                  {selectedBarangay ? getDisplayName(selectedBarangay) : "Sulop, Davao del Sur"}
                 </h3>
               </div>
               <svg
@@ -773,6 +820,8 @@ export function SulopBarangayMapIntegrated({
                 xmlns="http://www.w3.org/2000/svg"
                 role="img"
                 aria-label="Interactive map of Sulop barangays showing assessment status. Click on a barangay to view details."
+                onMouseMove={handleSvgMouseMove}
+                onMouseLeave={handleSvgMouseLeave}
               >
                 <title>Sulop Barangay Assessment Map</title>
                 <desc>
@@ -786,27 +835,26 @@ export function SulopBarangayMapIntegrated({
                   width="1920"
                   height="892"
                   className="fill-transparent cursor-pointer"
-                  onClick={() => setSelectedBarangay(null)}
+                  onClick={handleClosePanel}
                   aria-hidden="true"
                 />
 
-                {/* Barangay Paths - High Quality SVG with Bezier Curves */}
+                {/* Barangay Paths - Using event delegation on SVG for hover (no per-path handlers) */}
                 {Object.entries(BARANGAY_PATHS).map(([svgId, pathData]) => {
                   const brgy = svgIdToBarangayMap.get(svgId);
                   const displayName = brgy?.name || getDisplayName(svgId);
                   const statusLabel = brgy ? STATUS_LABELS[brgy.status] : "Not Started";
+                  const isSelected = svgId === selectedBarangay;
                   return (
                     <path
                       key={svgId}
                       id={svgId}
                       d={pathData}
                       fill={getBarangayColor(svgId)}
-                      stroke={selectedBarangay === svgId ? getBarangayStrokeColor(svgId) : "none"}
-                      strokeWidth={selectedBarangay === svgId ? 4 : 0}
-                      className="cursor-pointer transition-[fill,stroke,stroke-width] duration-200 hover:brightness-110 focus:outline-none"
+                      stroke={isSelected ? getBarangayStrokeColor(svgId) : "white"}
+                      strokeWidth={isSelected ? 4 : 1}
+                      className="cursor-pointer focus:outline-none"
                       onClick={() => handleBarangayClick(svgId)}
-                      onMouseEnter={() => handleMouseEnter(svgId)}
-                      onMouseLeave={handleMouseLeave}
                       role="button"
                       tabIndex={0}
                       aria-label={`${displayName}: ${statusLabel}${brgy?.compliance_rate !== undefined ? `, ${brgy.compliance_rate.toFixed(1)}% compliance` : ""}`}
@@ -821,63 +869,71 @@ export function SulopBarangayMapIntegrated({
                 })}
               </svg>
 
-              {/* Hover Tooltip */}
-              {hoveredBarangay && displayedBarangay && !showDetailsPanel && (
+              {/* Hover Tooltip - always mounted, visibility controlled by CSS to prevent reflows */}
+              <div
+                className={`absolute top-2 left-2 bg-white dark:bg-slate-900 shadow-lg rounded-sm border border-slate-200 dark:border-slate-700 pointer-events-none z-10 min-w-[160px] overflow-hidden transition-all duration-150 origin-top-left ${
+                  hoveredBarangay && displayedBarangay && !showDetailsPanel
+                    ? "opacity-100 scale-100"
+                    : "opacity-0 scale-95 pointer-events-none"
+                }`}
+                role="tooltip"
+                aria-hidden={!hoveredBarangay || !displayedBarangay || showDetailsPanel}
+              >
+                {/* Header with status color accent */}
                 <div
-                  className="absolute top-2 left-2 bg-white dark:bg-slate-900 shadow-lg rounded-sm border border-slate-200 dark:border-slate-700 pointer-events-none z-10 min-w-[160px] overflow-hidden"
-                  role="tooltip"
-                  aria-live="polite"
+                  className="px-3 py-2 border-b border-slate-100 dark:border-slate-800"
+                  style={{
+                    borderLeftWidth: 3,
+                    borderLeftColor: displayedBarangay
+                      ? STATUS_COLORS[displayedBarangay.status]
+                      : STATUS_COLORS.not_started,
+                  }}
                 >
-                  {/* Header with status color accent */}
-                  <div
-                    className="px-3 py-2 border-b border-slate-100 dark:border-slate-800"
-                    style={{
-                      borderLeftWidth: 3,
-                      borderLeftColor: STATUS_COLORS[displayedBarangay.status],
-                    }}
-                  >
-                    <div className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                      {displayedBarangay.name}
-                    </div>
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400">
-                      Sulop, Davao del Sur
-                    </div>
+                  <div className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                    {displayedBarangay?.name || ""}
                   </div>
-
-                  {/* Status info */}
-                  <div className="px-3 py-2 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                        Status
-                      </span>
-                      <span
-                        className="text-xs font-semibold"
-                        style={{ color: STATUS_COLORS[displayedBarangay.status] }}
-                      >
-                        {STATUS_LABELS[displayedBarangay.status]}
-                      </span>
-                    </div>
-
-                    {displayedBarangay.compliance_rate !== undefined && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                          {displayedBarangay.status === "in_progress" ? "Completion" : "Compliance"}
-                        </span>
-                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                          {displayedBarangay.compliance_rate.toFixed(1)}%
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Footer hint */}
-                  <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800">
-                    <div className="text-[9px] text-slate-400 dark:text-slate-500 text-center">
-                      Click to view details
-                    </div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                    Sulop, Davao del Sur
                   </div>
                 </div>
-              )}
+
+                {/* Status info - fixed height to prevent layout shifts */}
+                <div className="px-3 py-2 space-y-1.5 min-h-[52px]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                      Status
+                    </span>
+                    <span
+                      className="text-xs font-semibold"
+                      style={{
+                        color: displayedBarangay
+                          ? STATUS_COLORS[displayedBarangay.status]
+                          : STATUS_COLORS.not_started,
+                      }}
+                    >
+                      {displayedBarangay ? STATUS_LABELS[displayedBarangay.status] : ""}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                      {displayedBarangay?.status === "in_progress" ? "Completion" : "Compliance"}
+                    </span>
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {displayedBarangay?.compliance_rate !== undefined
+                        ? `${displayedBarangay.compliance_rate.toFixed(1)}%`
+                        : "N/A"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Footer hint */}
+                <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800">
+                  <div className="text-[9px] text-slate-400 dark:text-slate-500 text-center">
+                    Click to view details
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -916,7 +972,7 @@ export function SulopBarangayMapIntegrated({
                   </div>
                 </div>
                 <button
-                  onClick={() => setSelectedBarangay(null)}
+                  onClick={handleClosePanel}
                   className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors flex-shrink-0"
                   aria-label="Close details panel"
                 >

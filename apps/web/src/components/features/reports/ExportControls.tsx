@@ -8,60 +8,22 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { exportToCSV } from "@/lib/csv-export";
 import { FilterState, exportReportToPDF } from "@/lib/pdf-export";
 import { exportToPNG } from "@/lib/png-export";
 import { showError, showWarning } from "@/lib/toast";
-import { AssessmentRow, ReportsDataResponse } from "@sinag/shared";
-import { ChevronDown, Download, FileText, Image, Loader2 } from "lucide-react";
+import { ReportsDataResponse } from "@sinag/shared";
+import { ChevronDown, Download, Image, Loader2 } from "lucide-react";
 import { useState } from "react";
 
 interface ExportControlsProps {
-  tableData: AssessmentRow[];
   currentFilters?: FilterState;
   reportsData?: ReportsDataResponse;
   activeTab: AnalyticsTabId;
 }
 
-export function ExportControls({
-  tableData,
-  currentFilters,
-  reportsData,
-  activeTab,
-}: ExportControlsProps) {
+export function ExportControls({ currentFilters, reportsData, activeTab }: ExportControlsProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [exportType, setExportType] = useState<string | null>(null);
-
-  // Handle CSV export
-  const handleCSVExport = () => {
-    if (!tableData || tableData.length === 0) {
-      showWarning("No data available to export");
-      return;
-    }
-
-    try {
-      setIsExporting(true);
-      setExportType("CSV");
-
-      // Transform data for CSV export
-      const csvData = tableData.map((row) => ({
-        "Barangay Name": row.barangay_name,
-        "Governance Area": row.governance_area,
-        Status: row.status,
-        Score: row.score !== null && row.score !== undefined ? row.score : "N/A",
-      }));
-
-      exportToCSV(csvData, "assessment_report");
-    } catch (error) {
-      console.error("CSV export failed:", error);
-      showError("Failed to export CSV", {
-        description: "Please try again.",
-      });
-    } finally {
-      setIsExporting(false);
-      setExportType(null);
-    }
-  };
 
   // Handle PNG export for specific chart
   const handlePNGExport = async (chartType: string, elementId: string) => {
@@ -115,21 +77,6 @@ export function ExportControls({
 
   return (
     <div className="flex items-center gap-2">
-      {/* CSV Export Button */}
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleCSVExport}
-        disabled={isExporting || !tableData || tableData.length === 0}
-      >
-        {isExporting && exportType === "CSV" ? (
-          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-        ) : (
-          <FileText className="h-4 w-4 mr-2" />
-        )}
-        Export CSV
-      </Button>
-
       {/* PNG Export Dropdown - Only show on Map tab */}
       {activeTab === "map" && (
         <DropdownMenu>

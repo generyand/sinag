@@ -256,7 +256,6 @@ export default function AnalyticsPage() {
                 {reportsData && (
                   <div className="flex-shrink-0">
                     <ExportControls
-                      tableData={reportsData.table_data.rows || []}
                       currentFilters={{
                         year: filters.year,
                         start_date: filters.start_date,

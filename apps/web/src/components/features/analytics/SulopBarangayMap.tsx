@@ -160,7 +160,7 @@ export function SulopBarangayMap({
                     fill={getBarangayColor('1katipunan')}
                     stroke="#000"
                     strokeWidth={selectedBarangay === '1katipunan' ? 3 : 1}
-                    className="cursor-pointer transition-all duration-200 hover:brightness-110"
+                    className="cursor-pointer transition-all duration-200"
                     onClick={() => handleBarangayClick('1katipunan')}
                     onMouseEnter={() => setHoveredBarangay('1katipunan')}
                     onMouseLeave={() => setHoveredBarangay(null)}
@@ -188,7 +188,7 @@ export function SulopBarangayMap({
                         strokeWidth={
                           selectedBarangay === brgy.id || hoveredBarangay === brgy.id ? 3 : 1
                         }
-                        className="cursor-pointer transition-all duration-200 hover:brightness-110"
+                        className="cursor-pointer transition-all duration-200"
                         onClick={() => handleBarangayClick(brgy.id)}
                         onMouseEnter={() => setHoveredBarangay(brgy.id)}
                         onMouseLeave={() => setHoveredBarangay(null)}
