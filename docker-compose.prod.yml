@@ -218,12 +218,12 @@ services:
 
     ports:
       - "80:80"
-      # - "443:443"  # Uncomment when SSL is configured
+      - "443:443"
 
     volumes:
       - nginx-logs:/var/log/nginx
-      # Uncomment for SSL:
-      # - /etc/letsencrypt:/etc/letsencrypt:ro
+      - certbot-conf:/etc/letsencrypt:ro
+      - certbot-www:/var/www/certbot:ro
 
     depends_on:
       api:
@@ -253,6 +253,41 @@ services:
     networks:
       - sinag-network
 
+  # ============================================================================
+  # Certbot - SSL Certificate Management (Let's Encrypt)
+  # ============================================================================
+  certbot:
+    image: certbot/certbot:latest
+    container_name: sinag-certbot
+    restart: unless-stopped
+
+    volumes:
+      - certbot-conf:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+    # Renew certificates every 12 hours and reload Nginx on successful renewal
+    # The deploy-hook runs only when certificates are actually renewed
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --deploy-hook \"docker kill --signal=HUP sinag-nginx\" 2>/dev/null || true; sleep 12h & wait $${!}; done;'"
+
+    depends_on:
+      - nginx
+
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 64M
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+    networks:
+      - sinag-network
+
 # ==============================================================================
 # Networks
 # ==============================================================================
@@ -267,4 +302,8 @@ volumes:
   redis-data:
     driver: local
   nginx-logs:
+    driver: local
+  certbot-conf:
+    driver: local
+  certbot-www:
     driver: local
