@@ -266,6 +266,35 @@ export default function AnalyticsPage() {
                       }}
                       reportsData={reportsData}
                       activeTab={activeTab}
+                      municipalData={
+                        municipalData
+                          ? {
+                              compliance_summary: municipalData.compliance_summary,
+                              governance_area_performance: municipalData.governance_area_performance
+                                ? {
+                                    areas: municipalData.governance_area_performance.areas || [],
+                                    core_areas_pass_rate:
+                                      municipalData.governance_area_performance
+                                        .core_areas_pass_rate,
+                                    essential_areas_pass_rate:
+                                      municipalData.governance_area_performance
+                                        .essential_areas_pass_rate,
+                                  }
+                                : undefined,
+                              top_failing_indicators: municipalData.top_failing_indicators
+                                ? {
+                                    indicators:
+                                      municipalData.top_failing_indicators.indicators || [],
+                                    total_indicators_assessed:
+                                      municipalData.top_failing_indicators
+                                        .total_indicators_assessed,
+                                  }
+                                : undefined,
+                            }
+                          : undefined
+                      }
+                      municipalityName="Sulop"
+                      generatedBy={user?.name}
                     />
                   </div>
                 )}

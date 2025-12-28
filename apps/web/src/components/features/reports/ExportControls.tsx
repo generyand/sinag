@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { FilterState, exportReportToPDF } from "@/lib/pdf-export";
+import type { MunicipalData, BBIAnalyticsData } from "@/lib/pdf-export";
 import { exportToPNG } from "@/lib/png-export";
 import { showError, showWarning } from "@/lib/toast";
 import { ReportsDataResponse } from "@sinag/shared";
@@ -19,9 +20,21 @@ interface ExportControlsProps {
   currentFilters?: FilterState;
   reportsData?: ReportsDataResponse;
   activeTab: AnalyticsTabId;
+  municipalData?: MunicipalData;
+  bbiData?: BBIAnalyticsData;
+  municipalityName?: string;
+  generatedBy?: string;
 }
 
-export function ExportControls({ currentFilters, reportsData, activeTab }: ExportControlsProps) {
+export function ExportControls({
+  currentFilters,
+  reportsData,
+  activeTab,
+  municipalData,
+  bbiData,
+  municipalityName,
+  generatedBy,
+}: ExportControlsProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [exportType, setExportType] = useState<string | null>(null);
 
@@ -54,16 +67,24 @@ export function ExportControls({ currentFilters, reportsData, activeTab }: Expor
       setIsExporting(true);
       setExportType("PDF");
 
-      await exportReportToPDF(reportsData, currentFilters || {}, {
-        generatedAt: new Date().toISOString(),
-        dateRange:
-          currentFilters?.start_date && currentFilters?.end_date
-            ? {
-                start: currentFilters.start_date,
-                end: currentFilters.end_date,
-              }
-            : undefined,
-      });
+      await exportReportToPDF(
+        reportsData,
+        currentFilters || {},
+        {
+          generatedAt: new Date().toISOString(),
+          dateRange:
+            currentFilters?.start_date && currentFilters?.end_date
+              ? {
+                  start: currentFilters.start_date,
+                  end: currentFilters.end_date,
+                }
+              : undefined,
+          municipalityName,
+          generatedBy,
+        },
+        municipalData,
+        bbiData
+      );
     } catch (error) {
       console.error("PDF export failed:", error);
       showError("Failed to export PDF", {
